@@ -1,13 +1,6 @@
-module.exports = {
-  webpack(config) {
-    config.module.rules.push({
-      test: /\.svg$/i,
-      issuer: /\.[jt]sx?$/,
-      use: ["@svgr/webpack"],
-    });
+/** @type {import('next').NextConfig} */
 
-    return config;
-  },
+module.exports = {
   async rewrites() {
     return [
       {
@@ -20,4 +13,4 @@ module.exports = {
       },
     ];
   },
-};
+}

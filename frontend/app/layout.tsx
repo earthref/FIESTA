@@ -1,12 +1,5 @@
-import "./globals.css";
-import { Inter } from "next/font/google";
-
-const inter = Inter({ subsets: ["latin"] });
-
-export const metadata = {
-  title: "FIESTA",
-  description: "The Framework for Integrated Earth Science Technologies and Applications",
-};
+import Link from "next/link";
+import React from "react";
 
 export default function RootLayout({
   children,
@@ -15,7 +8,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body
+        style={{
+          margin: "3rem",
+        }}
+      >
+        <header>
+          <Link href="/">Home</Link>
+          {" | "}
+          <Link href="/posts">Posts</Link>
+        </header>
+        <main>{children}</main>
+      </body>
     </html>
   );
 }
