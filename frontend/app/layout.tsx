@@ -1,5 +1,7 @@
+import "../styles.css";
 import Link from "next/link";
 import React from "react";
+import { Button } from "./components/ui/button";
 
 export default function RootLayout({
   children,
@@ -19,6 +21,7 @@ export default function RootLayout({
           <Link href="/posts">Posts</Link>
         </header>
         <main>{children}</main>
+        <Button>Click me</Button>
       </body>
     </html>
   );
