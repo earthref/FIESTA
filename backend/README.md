@@ -1,198 +1,202 @@
-# FastAPI API
+# FIESTA Backend
 
-## Requirements
+FastAPI-based backend for the EarthRef.org FIESTA API.
 
-* [Docker](https://www.docker.com/).
-* [Poetry](https://python-poetry.org/) for Python package and environment management.
+## Features
 
-## Local Development
+- **RESTful API** built with FastAPI
+- **Asynchronous** database access with SQLAlchemy 2.0
+- **JWT-based authentication** with OAuth2
+- **PostgreSQL** database with async support
+- **Alembic** for database migrations
+- **Pydantic** for data validation and settings management
+- **Testing** with pytest and pytest-asyncio
+- **Documentation** with OpenAPI and Stoplight Elements
+- **Linting** with Ruff
+- **Code formatting** with Black and isort
 
-* Start the stack with Docker Compose:
+## Prerequisites
 
-```bash
-docker compose up -d
-```
+- Python 3.10+
+- PostgreSQL 13+
+- UV package manager (recommended) or pip
 
-* Now you can open your browser and interact with these URLs:
+## Development Setup
 
-Frontend, built with Docker, with routes handled based on the path: http://localhost
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/earthref/FIESTA.git
+   cd FIESTA/backend
+   ```
 
-Backend, JSON based web API based on OpenAPI: http://localhost/api/
+2. **Install UV** (recommended package manager)
+   ```bash
+   curl -sSf https://astral.sh/uv/install.sh | sh
+   ```
 
-Automatic interactive documentation with Swagger UI (from the OpenAPI backend): http://localhost/docs
+3. **Create and activate a virtual environment**
+   ```bash
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
 
-Adminer, database web administration: http://localhost:8080
+4. **Install dependencies**
+   ```bash
+   uv pip install -e ".[dev]"
+   ```
 
-Traefik UI, to see how the routes are being handled by the proxy: http://localhost:8090
+5. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Update the values in `.env` as needed, especially the database connection settings.
 
-**Note**: The first time you start your stack, it might take a minute for it to be ready. While the backend waits for the database to be ready and configures everything. You can check the logs to monitor it.
+6. **Set up the database**
+   - Create a PostgreSQL database
+   - Update the `DATABASE_URL` in `.env` with your database credentials
+   - Run the database initialization script:
+     ```bash
+     python -m scripts.init_db
+     ```
 
-To check the logs, run:
+7. **Run database migrations** (if needed)
+   ```bash
+   alembic upgrade head
+   ```
 
-```bash
-docker compose logs
-```
+## Running the Application
 
-To check the logs of a specific service, add the name of the service, e.g.:
-
-```bash
-docker compose logs backend
-```
-
-If your Docker is not running in `localhost` (the URLs above wouldn't work) you would need to use the IP or domain where your Docker is running.
-
-## Backend local development, additional details
-
-### General workflow
-
-By default, the dependencies are managed with [Poetry](https://python-poetry.org/), go there and install it.
-
-From `./backend/` you can install all the dependencies with:
-
-```console
-$ poetry install
-```
-
-Then you can start a shell session with the new environment with:
-
-```console
-$ poetry shell
-```
-
-Make sure your editor is using the correct Python virtual environment.
-
-Modify or add SQLModel models for data and SQL tables in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, CRUD (Create, Read, Update, Delete) utils in `./backend/app/crud.py`.
-
-### VS Code
-
-There are already configurations in place to run the backend through the VS Code debugger, so that you can use breakpoints, pause and explore variables, etc.
-
-The setup is also already configured so you can run the tests through the VS Code Python tests tab.
-
-### Docker Compose Override
-
-During development, you can change Docker Compose settings that will only affect the local development environment in the file `docker-compose.override.yml`.
-
-The changes to that file only affect the local development environment, not the production environment. So, you can add "temporary" changes that help the development workflow.
-
-For example, the directory with the backend code is mounted as a Docker "host volume", mapping the code you change live to the directory inside the container. That allows you to test your changes right away, without having to build the Docker image again. It should only be done during development, for production, you should build the Docker image with a recent version of the backend code. But during development, it allows you to iterate very fast.
-
-There is also a command override that runs `/start-reload.sh` (included in the base image) instead of the default `/start.sh` (also included in the base image). It starts a single server process (instead of multiple, as would be for production) and reloads the process whenever the code changes. Have in mind that if you have a syntax error and save the Python file, it will break and exit, and the container will stop. After that, you can restart the container by fixing the error and running again:
-
-```console
-$ docker compose up -d
-```
-
-There is also a commented out `command` override, you can uncomment it and comment the default one. It makes the backend container run a process that does "nothing", but keeps the container alive. That allows you to get inside your running container and execute commands inside, for example a Python interpreter to test installed dependencies, or start the development server that reloads when it detects changes.
-
-To get inside the container with a `bash` session you can start the stack with:
-
-```console
-$ docker compose up -d
-```
-
-and then `exec` inside the running container:
-
-```console
-$ docker compose exec backend bash
-```
-
-You should see an output like:
-
-```console
-root@7f2607af31c3:/app#
-```
-
-that means that you are in a `bash` session inside your container, as a `root` user, under the `/app` directory, this directory has another directory called "app" inside, that's where your code lives inside the container: `/app/app`.
-
-There you can use the script `/start-reload.sh` to run the debug live reloading server. You can run that script from inside the container with:
-
-```console
-$ bash /start-reload.sh
-```
-
-...it will look like:
-
-```console
-root@7f2607af31c3:/app# bash /start-reload.sh
-```
-
-and then hit enter. That runs the live reloading server that auto reloads when it detects code changes.
-
-Nevertheless, if it doesn't detect a change but a syntax error, it will just stop with an error. But as the container is still alive and you are in a Bash session, you can quickly restart it after fixing the error, running the same command ("up arrow" and "Enter").
-
-...this previous detail is what makes it useful to have the container alive doing nothing and then, in a Bash session, make it run the live reload server.
-
-### Backend tests
-
-To test the backend run:
-
-```console
-$ bash ./scripts/test.sh
-```
-
-The tests run with Pytest, modify and add tests to `./backend/app/tests/`.
-
-If you use GitHub Actions the tests will run automatically.
-
-#### Test running stack
-
-If your stack is already up and you just want to run the tests, you can use:
+### Development Server
 
 ```bash
-docker compose exec backend bash /app/tests-start.sh
+python -m scripts.run
 ```
 
-That `/app/tests-start.sh` script just calls `pytest` after making sure that the rest of the stack is running. If you need to pass extra arguments to `pytest`, you can pass them to that command and they will be forwarded.
-
-For example, to stop on first error:
+Or with auto-reload:
 
 ```bash
-docker compose exec backend bash /app/tests-start.sh -x
+uvicorn app.main:app --reload
 ```
 
-#### Test Coverage
+The API will be available at http://localhost:8000
 
-When the tests are run, a file `htmlcov/index.html` is generated, you can open it in your browser to see the coverage of the tests.
+### Production
 
-### Migrations
+For production, use a production-grade ASGI server like Uvicorn with Gunicorn:
 
-As during local development your app directory is mounted as a volume inside the container, you can also run the migrations with `alembic` commands inside the container and the migration code will be in your app directory (instead of being only inside the container). So you can add it to your git repository.
-
-Make sure you create a "revision" of your models and that you "upgrade" your database with that revision every time you change them. As this is what will update the tables in your database. Otherwise, your application will have errors.
-
-* Start an interactive session in the backend container:
-
-```console
-$ docker compose exec backend bash
+```bash
+gunicorn -k uvicorn.workers.UvicornWorker app.main:app
 ```
 
-* Alembic is already configured to import your SQLModel models from `./backend/app/models.py`.
+## API Documentation
 
-* After changing a model (for example, adding a column), inside the container, create a revision, e.g.:
+Once the server is running, you can access the API documentation at:
 
-```console
-$ alembic revision --autogenerate -m "Add column last_name to User model"
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **Stoplight Elements**: http://localhost:8000/api-docs
+
+## Testing
+
+Run tests with:
+
+```bash
+pytest
 ```
 
-* Commit to the git repository the files generated in the alembic directory.
+Run tests with coverage:
 
-* After creating the revision, run the migration in the database (this is what will actually change the database):
-
-```console
-$ alembic upgrade head
+```bash
+pytest --cov=app --cov-report=term-missing
 ```
 
-If you don't want to use migrations at all, uncomment the lines in the file at `./backend/app/core/db.py` that end in:
+## Linting and Formatting
 
-```python
-SQLModel.metadata.create_all(engine)
+- **Lint code** with Ruff:
+  ```bash
+  ruff check .
+  ```
+
+- **Format code** with Black and isort:
+  ```bash
+  black .
+  isort .
+  ```
+
+- **Type checking** with mypy:
+  ```bash
+  mypy .
+  ```
+
+## Database Migrations
+
+When you make changes to the database models, you'll need to create and apply migrations:
+
+1. **Create a new migration**:
+   ```bash
+   alembic revision --autogenerate -m "Description of changes"
+   ```
+
+2. **Apply migrations**:
+   ```bash
+   alembic upgrade head
+   ```
+
+## Project Structure
+
+```
+backend/
+├── alembic/               # Database migration scripts
+├── app/                   # Application code
+│   ├── api/               # API routes
+│   │   └── v1/            # API version 1
+│   │       ├── endpoints/  # Route handlers
+│   │       └── deps.py    # Dependencies
+│   ├── core/              # Core functionality
+│   │   ├── config.py      # Configuration
+│   │   └── security.py    # Authentication and security
+│   ├── db/                # Database models and sessions
+│   │   ├── models/        # SQLAlchemy models
+│   │   └── session.py     # Database session management
+│   ├── schemas/           # Pydantic models
+│   └── services/          # Business logic
+├── scripts/               # Utility scripts
+├── tests/                 # Test files
+├── .env.example           # Example environment variables
+├── .gitignore
+├── alembic.ini            # Alembic configuration
+├── pyproject.toml         # Project configuration
+└── README.md              # This file
 ```
 
-and comment the line in the file `prestart.sh` that contains:
+## Environment Variables
 
-```console
-$ alembic upgrade head
-```
+Key environment variables:
 
-If you don't want to start with the default models and want to remove them / modify them, from the beginning, without having any previous revision, you can remove the revision files (`.py` Python files) under `./backend/app/alembic/versions/`. And then create a first migration as described above.
+- `APP_ENV`: Application environment (development, production, test)
+- `DATABASE_URL`: Database connection URL
+- `SECRET_KEY`: Secret key for JWT token generation
+- `ALGORITHM`: Algorithm for JWT (default: HS256)
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration time in minutes
+- `AWS_*`: AWS credentials for S3 storage (if used)
+- `ELASTICSEARCH_HOST`: URL for Elasticsearch (if used)
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [SQLAlchemy](https://www.sqlalchemy.org/)
+- [Alembic](https://alembic.sqlalchemy.org/)
+- [Pydantic](https://pydantic-docs.helpmanual.io/)
+- [UV](https://github.com/astral-sh/uv)

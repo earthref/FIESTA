@@ -1,0 +1,37 @@
+openapi: 3.0.1
+info:
+  title: EarthRef.org API
+  version: '*'
+paths:
+  # v1 FIESTA API
+  /v1/health-check:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1health-check'
+  /v1/authenticate:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1authenticate'
+  /v1/{repository}/download:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1%7Brepository%7D~1download'
+  /v1/{repository}/data:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1%7Brepository%7D~1data'
+  /v1/{repository}/search/{table}:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1%7Brepository%7D~1search~1%7Btable%7D'
+  /v1/{repository}/validate:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1%7Brepository%7D~1validate'
+  /v1/{repository}/private/download:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1%7Brepository%7D~1private~1download'
+  /v1/{repository}/private/data:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1%7Brepository%7D~1private~1data'
+  /v1/{repository}/private/validate:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1%7Brepository%7D~1private~1validate'
+  /v1/{repository}/private/search/{table}:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1%7Brepository%7D~1private~1search~1%7Btable%7D'
+  /v1/{repository}/private:
+    $ref: 'public/v1/openapi.yaml#/paths/~1v1~1%7Brepository%7D~1private'
+  # v1 Interal API
+  /v1/internal/health-check:
+    $ref: 'public/v1/internal/openapi.yaml#/paths/~1v1~1internal~1health-check'
+
+  # vNext FIESTA API
+  /vNext/health-check:
+    $ref: 'public/vNext/openapi.yaml#/paths/~1vNext~1health-check'
+  /vNext/authenticate:
+    $ref: 'public/vNext/openapi.yaml#/paths/~1vNext~1authenticate'

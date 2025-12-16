@@ -1,28 +1,21 @@
+"""
+Main FastAPI application module.
+"""
 import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-import sentry_sdk
-from fastapi import FastAPI, status
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
-from fastapi.routing import APIRoute
-from starlette.middleware.cors import CORSMiddleware
-
-from app.api.main import api_router
 from app.core.config import settings
+from app.api.v1.api import api_router as v1_router
 
-
-def custom_generate_unique_id(route: APIRoute) -> str:
-    return f"{route.tags[0]}-{route.name}"
-
-
-if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
-    sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
-
+# Create FastAPI app
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    openapi_url="/openapi.json",
-    favicon_url="favicon.ico",
+    title="FIESTA API",
     docs_url=None,
     redoc_url=None,
+    openapi_url="/openapi.json",
+    favicon_url="favicon.ico",
     version=settings.API_VERSION_PREFIX,
     description="""
 E-mail: webmaster@earthref.org
@@ -41,18 +34,15 @@ of that solution.
 """,
 )
 
-# Set all CORS enabled origins
+# Set up CORS
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            str(origin).strip("/") for origin in settings.BACKEND_CORS_ORIGINS
-        ],
+        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
@@ -100,5 +90,24 @@ async def api_documentation():
 """
     )
 
+# Mount API routes
+app.include_router(v1_router, prefix="/v1")
 
-app.include_router(api_router, prefix=settings.API_VERSION_PREFIX)
+# Health check endpoint
+@app.get("/health-check", tags=["System"])
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "ok"}
+
+# Serve static files for API documentation
+app.mount("/api-docs", StaticFiles(directory="public/v1", html=True), name="api-docs")
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    uvicorn.run(
+        "app.main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.APP_DEBUG,
+    )
