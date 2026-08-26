@@ -26,9 +26,15 @@ class FiestaPlugin:
         return []
 
     def search_levels(self, node: NodeConfig) -> list[SearchLevel]:
-        """Extra search tabs (e.g. a Poles tab). Appended after the node's
-        configured levels; the level's `table` should match the `type` of the
-        docs this plugin derives."""
+        """Extra top-level search tabs. Appended after the node's configured
+        levels; the level's `table` should match the `type` of the docs this
+        plugin derives."""
+        return []
+
+    def search_tables(self, node: NodeConfig) -> list[str]:
+        """Extra searchable doc `type`s that are NOT top-level tabs — e.g.
+        the `poles` docs surfaced as a sub-tab of the Locations level. These
+        become valid `/api/search/{table}` targets without adding a tab."""
         return []
 
     def build_router(self, node: NodeConfig) -> APIRouter | None:

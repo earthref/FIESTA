@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from fiesta.apps.deps import NodeDep
 from fiesta.plugins import active_plugins
+from fiesta.settings import get_settings
 
 router = APIRouter(prefix="/config", tags=["config"])
 
@@ -15,6 +16,8 @@ async def get_config(node: NodeDep) -> dict:
         lvl.model_dump() for plugin in plugins for lvl in plugin.search_levels(node)
     ]
     config["plugins"] = {plugin.name: plugin.frontend_config(node) for plugin in plugins}
+    # Local-dev portal-bar overrides for sibling nodes running on this host.
+    config["portal_urls"] = get_settings().portal_url_map()
     return config
 
 

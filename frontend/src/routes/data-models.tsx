@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link, Navigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ErrorMessage } from "../components/error-message";
+import { Icon } from "../components/ui/icon";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { useNodeConfig } from "../lib/config";
@@ -142,9 +143,9 @@ function ColumnRow({
         <span
           aria-hidden="true"
           style={titleChildStyle}
-          className={cx("text-[10px] text-gray-400 transition-transform", open && "rotate-90")}
+          className={cx("text-gray-400 transition-transform", open && "rotate-90")}
         >
-          ▶
+          <Icon name="caret-right" size="small" />
         </span>
         <span style={titleChildStyle} className="font-bold text-gray-800">
           {tablePosition}.{column.position ?? "?"} {column.label ?? name}
@@ -284,9 +285,9 @@ function GroupSection({
         <span
           aria-hidden="true"
           style={titleChildStyle}
-          className={cx("text-[10px] transition-transform", expanded && "rotate-90")}
+          className={cx("transition-transform", expanded && "rotate-90")}
         >
-          ▶
+          <Icon name="caret-right" size="small" />
         </span>
         <span style={titleChildStyle}>{group} Group</span>
         <CountBadge>{columns.length}</CountBadge>
@@ -352,9 +353,9 @@ function TableSection({
         <span
           aria-hidden="true"
           style={titleChildStyle}
-          className={cx("text-[11px] text-gray-400 transition-transform", expanded && "rotate-90")}
+          className={cx("text-gray-400 transition-transform", expanded && "rotate-90")}
         >
-          ▶
+          <Icon name="caret-right" size="small" />
         </span>
         <span style={titleChildStyle} className="text-[14px] font-bold text-gray-900">
           {table.position ?? "?"}. {table.label ?? name}
@@ -449,19 +450,11 @@ export function DataModelPage() {
 
   return (
     <div className="data-model">
-      {/* Version tab bar: ui top attached tabular menu */}
-      <div
-        className="flex flex-wrap items-center bg-white"
-        style={{
-          border: `1px solid ${TAB_BORDER}`,
-          borderBottom: "none",
-          borderTopLeftRadius: "0.28571429rem",
-          borderTopRightRadius: "0.28571429rem",
-        }}
-      >
+      {/* Version tab bar: Semantic tabular menu (bottom border only) */}
+      <div className="flex flex-wrap items-end" style={{ borderBottom: `1px solid ${TAB_BORDER}` }}>
         <span
           className="text-[13px] font-bold text-gray-400"
-          style={{ padding: "0.92857143em 1.42857143em" }}
+          style={{ padding: "0.92857143em 1.42857143em", marginBottom: -1 }}
         >
           Version:
         </span>
@@ -474,20 +467,19 @@ export function DataModelPage() {
               params={{ version: entry }}
               search={{ q: search.q }}
               className={cx(
-                "flex items-center text-[13px] font-medium",
-                active ? "text-gray-900" : "text-node",
+                "flex items-center text-[13px]",
+                !active && "hover:bg-[rgba(0,0,0,0.03)]",
               )}
               style={{
                 padding: "0.92857143em 1.42857143em",
-                ...(active
-                  ? {
-                      backgroundColor: "#F0F0F0",
-                      borderLeft: `1px solid ${TAB_BORDER}`,
-                      borderRight: `1px solid ${TAB_BORDER}`,
-                      borderBottom: `1px dashed ${TAB_BORDER}`,
-                      marginBottom: -1,
-                    }
-                  : {}),
+                color: "rgba(0,0,0,.87)",
+                fontWeight: active ? 700 : 400,
+                background: active ? "#fff" : "transparent",
+                border: `1px solid ${active ? TAB_BORDER : "transparent"}`,
+                borderBottomColor: active ? "#fff" : "transparent",
+                borderTopLeftRadius: 4,
+                borderTopRightRadius: 4,
+                marginBottom: -1,
               }}
             >
               {entry}
@@ -508,7 +500,7 @@ export function DataModelPage() {
           );
         })}
         {/* Right: transparent icon search input (min-width 200px) */}
-        <span className="ml-auto flex items-center" style={{ padding: "0 1em" }}>
+        <span className="ml-auto flex items-center self-center" style={{ padding: "0 1em" }}>
           <label htmlFor="model-search" className="sr-only">
             Search the columns
           </label>
@@ -530,21 +522,22 @@ export function DataModelPage() {
               aria-label="Clear column search"
               className="px-2 text-sm font-bold text-node hover:opacity-70"
             >
-              ✕
+              <Icon name="close" size="small" />
             </button>
           ) : (
             <span aria-hidden="true" className="px-2 text-sm text-node">
-              🔍
+              <Icon name="search" size="small" />
             </span>
           )}
         </span>
       </div>
 
-      {/* Bottom attached segment (min-height 200px) */}
+      {/* Bottom attached segment (joined under the tab row, min-height 200px) */}
       <div
         className="bg-white"
         style={{
           border: `1px solid ${TAB_BORDER}`,
+          borderTop: "none",
           minHeight: 200,
           padding: "1em",
           borderBottomLeftRadius: "0.28571429rem",
@@ -571,7 +564,7 @@ export function DataModelPage() {
                   onClick={downloadJson}
                   className="inline-flex items-center gap-1 text-node hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
                 >
-                  <span aria-hidden="true">⬇</span> Download as .json
+                  <Icon name="download" size="small" /> Download as .json
                 </button>
               </span>
             </div>

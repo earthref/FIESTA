@@ -34,10 +34,23 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    # Local-dev only: `slug=url,slug=url` overrides for sibling FIESTA nodes'
+    # portal-bar links so a multi-node stack cross-links to the running
+    # localhost instances. Empty in production (real hostnames route instead).
+    portal_urls: str = ""
+
     @property
     def procrastinate_dsn(self) -> str:
         """Procrastinate connects with psycopg, not asyncpg."""
         return self.database_url.replace("postgresql+asyncpg://", "postgresql://")
+
+    def portal_url_map(self) -> dict[str, str]:
+        result: dict[str, str] = {}
+        for pair in self.portal_urls.split(","):
+            slug, _, url = pair.partition("=")
+            if slug.strip() and url.strip():
+                result[slug.strip().lower()] = url.strip()
+        return result
 
 
 @lru_cache

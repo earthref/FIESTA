@@ -46,6 +46,8 @@ def build_search_body(
     count_field: str | None = None,
     contributor_id: int | None = None,
     private_only: bool = False,
+    ranges: list[dict] | None = None,
+    bbox: tuple[float, float, float, float] | None = None,
 ) -> dict[str, Any]:
     text, tokens = parse_query(query)
     has_private_key = "private_key" in tokens
@@ -69,6 +71,29 @@ def build_search_body(
         if path is None:
             path = f"summary._all.{field}.raw"
         filters.append({"terms": {path: values}})
+
+    for range_filter in ranges or []:
+        field = range_filter.get("field", "")
+        if not field.startswith("summary."):
+            continue
+        bounds = {
+            op: range_filter[op] for op in ("gte", "lte") if range_filter.get(op) is not None
+        }
+        if bounds:
+            filters.append({"range": {field: bounds}})
+
+    if bbox is not None:
+        min_lon, min_lat, max_lon, max_lat = bbox
+        filters.append(
+            {
+                "geo_bounding_box": {
+                    "summary._all._geo_point": {
+                        "top_left": {"lat": max_lat, "lon": min_lon},
+                        "bottom_right": {"lat": min_lat, "lon": max_lon},
+                    }
+                }
+            }
+        )
 
     if text:
         must.append(

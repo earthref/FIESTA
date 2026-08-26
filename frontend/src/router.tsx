@@ -25,6 +25,19 @@ export interface SearchParams {
   q?: string;
   level?: string;
   sort?: string;
+  /** Plugin range filters, each "field:gte:lte" (blank = open end). */
+  ranges?: string[];
+  /** Plugin bounding-box filter: "minLon,minLat,maxLon,maxLat". */
+  bbox?: string;
+}
+
+function strArray(value: unknown): string[] | undefined {
+  if (typeof value === "string" && value !== "") return [value];
+  if (Array.isArray(value)) {
+    const entries = value.filter((entry) => typeof entry === "string" && entry !== "");
+    return entries.length > 0 ? (entries as string[]) : undefined;
+  }
+  return undefined;
 }
 
 export interface PrivateKeyParams {
@@ -57,6 +70,8 @@ const searchRoute = createRoute({
     q: str(search.q),
     level: str(search.level),
     sort: str(search.sort),
+    ranges: strArray(search.ranges),
+    bbox: str(search.bbox),
   }),
   component: SearchPage,
 });

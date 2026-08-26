@@ -31,6 +31,13 @@ per-node OpenSearch index, MinIO bucket, procrastinate queue, and a `node`
 column scoping contributions in Postgres. Accounts are shared across nodes
 (one EarthRef login).
 
+When several nodes run together, `make` cross-links the top portal bar to the
+sibling nodes' localhost URLs (it computes `FIESTA_PORTAL_URLS` from the
+running node list + frontend ports). Nodes not in `FIESTA_NODE` keep their
+production `earthref.org` links. In production this is left empty and the real
+hostnames route instead. (Running `docker compose up` directly skips this
+computation — use `make up`, or set `FIESTA_PORTAL_URLS=slug=url,...`.)
+
 ## Backend only (against the compose infra)
 
 ```sh

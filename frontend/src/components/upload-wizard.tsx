@@ -10,6 +10,7 @@ import { ErrorMessage } from "./error-message";
 import { useLoginModal } from "./login-modal";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { Icon, type IconName } from "./ui/icon";
 import { Spinner } from "./ui/spinner";
 
 type Step = 1 | 2 | 3;
@@ -17,10 +18,15 @@ type Phase = "idle" | "creating" | "uploading" | "processing" | "done" | "error"
 
 const SEGMENT_BORDER = "rgba(34,36,38,.15)";
 
-const stepDefs: { step: Step; icon: string; title: string; description: string }[] = [
-  { step: 1, icon: "📂", title: "Select", description: "Choose a file from your computer" },
-  { step: 2, icon: "📄", title: "Review", description: "Check the file before uploading" },
-  { step: 3, icon: "⬆", title: "Upload", description: "Add it to your private workspace" },
+const stepDefs: { step: Step; icon: IconName; title: string; description: string }[] = [
+  {
+    step: 1,
+    icon: "folder-open",
+    title: "Select",
+    description: "Choose a file from your computer",
+  },
+  { step: 2, icon: "file-text", title: "Review", description: "Check the file before uploading" },
+  { step: 3, icon: "upload", title: "Upload", description: "Add it to your private workspace" },
 ];
 
 /** Legacy "ui top attached stackable three steps" bar (min-height 8em per step). */
@@ -51,8 +57,8 @@ function StepsBar({ current }: { current: Step }) {
               background: active ? "#fff" : "transparent",
             }}
           >
-            <span aria-hidden="true" className="text-[2.5em] leading-none">
-              {def.icon}
+            <span aria-hidden="true" className="leading-none text-[#555555]">
+              <Icon name={def.icon} size="big" />
             </span>
             <span className="text-left">
               <span className="block text-[1.1em] font-bold">
@@ -215,14 +221,7 @@ export function UploadWizard() {
               style={{ gridTemplateColumns: "1fr auto 1fr" }}
             >
               <span className="flex flex-col items-center gap-2">
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="h-[4em] w-[4em] text-node"
-                >
-                  <path d="M3.75 3A1.75 1.75 0 0 0 2 4.75v10.5C2 16.216 2.784 17 3.75 17h12.5A1.75 1.75 0 0 0 18 15.25v-4.507a1.75 1.75 0 0 0-.062-.464l-1.1-4.036A1.75 1.75 0 0 0 15.15 5H10.7L9.324 3.513A1.75 1.75 0 0 0 8.086 3H3.75Zm1.6 5h10.06l1.03 3.78.01.22v3.25a.25.25 0 0 1-.25.25H3.75a.25.25 0 0 1-.25-.25V11.9L4.62 8.6A.75.75 0 0 1 5.35 8Z" />
-                </svg>
+                <Icon name="folder-open" size="huge" className="text-node" />
                 <span className="block text-[1.07rem] font-bold text-gray-800">
                   Click and select
                 </span>
@@ -239,15 +238,7 @@ export function UploadWizard() {
                 <span className="h-10 w-px bg-gray-300" />
               </span>
               <span className="flex flex-col items-center gap-2">
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="h-[4em] w-[4em] text-node"
-                >
-                  <path d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 17h-8.5A2.25 2.25 0 0 1 2 14.75v-8.5A2.25 2.25 0 0 1 4.25 4h5a.75.75 0 0 1 0 1.5h-5Z" />
-                  <path d="M6.194 12.753a.75.75 0 0 0 1.06.053L16.5 4.44v2.81a.75.75 0 0 0 1.5 0v-4.5a.75.75 0 0 0-.75-.75h-4.5a.75.75 0 0 0 0 1.5h2.553l-9.056 8.194a.75.75 0 0 0-.053 1.06Z" />
-                </svg>
+                <Icon name="external" size="huge" className="text-node" />
                 <span className="block text-[1.07rem] font-bold text-gray-800">
                   Drag and drop files
                 </span>

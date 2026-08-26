@@ -25,11 +25,15 @@ def test_poles_derive_docs(magic_node):
     assert doc["summary"]["_all"]["geologic_classes"] == ["Igneous"]
 
 
-def test_poles_level_in_magic_config(magic_node):
+def test_poles_is_searchable_table_not_top_level(magic_node):
     plugins = active_plugins(magic_node)
     assert [p.name for p in plugins] == ["poles"]
-    levels = plugins[0].search_levels(magic_node)
-    assert levels[0].name == "Poles" and levels[0].table == "poles"
+    # Poles is NOT a top-level tab...
+    assert plugins[0].search_levels(magic_node) == []
+    # ...but `poles` is a searchable table, surfaced as a Locations sub-tab.
+    assert plugins[0].search_tables(magic_node) == ["poles"]
+    cfg = plugins[0].frontend_config(magic_node)
+    assert cfg["base_level"] == "Locations" and cfg["after_sub_tab"] == "Rows"
 
 
 def _step(temp, ar40_39, ar36_39, ar39, s40=0.01, s36=0.0001):

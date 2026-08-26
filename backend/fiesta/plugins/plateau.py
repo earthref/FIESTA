@@ -30,7 +30,23 @@ MAX_MSWD = 2.5
 MIN_AR39_PERCENT = 50.0
 
 TEMP_COLUMNS = ["measurement_step_heat_temperature", "temperature", "temp", "step_temperature"]
-AR39_COLUMNS = ["corrected_39ar_potassium", "measurement_ar39_vol_stp", "ar39_vol"]
+AR39_COLUMNS = [
+    "corrected_39ar_potassium",
+    "measurement_ar39_vol_stp",
+    "ar39_vol",
+    "intercept_39ar",  # raw ³⁹Ar intercept (real KArAr 1.0 data)
+]
+
+
+def experiment_matches(row_experiment: str | None, requested: str) -> bool:
+    """Experiment identifiers can differ between the experiments table and the
+    measurements table (e.g. "33922-01" vs "33922"); match either direction on
+    a hyphen-delimited prefix."""
+    if not row_experiment:
+        return False
+    if row_experiment == requested:
+        return True
+    return requested.startswith(f"{row_experiment}-") or row_experiment.startswith(f"{requested}-")
 
 
 def _get(row: dict, *columns: str) -> float | None:
@@ -240,7 +256,7 @@ class PlateauPlugin(FiestaPlugin):
             rows = [
                 row
                 for row in parsed.tables.get("measurements", [])
-                if row.get("experiment") == experiment
+                if experiment_matches(row.get("experiment"), experiment)
             ]
             if not rows:
                 raise HTTPException(

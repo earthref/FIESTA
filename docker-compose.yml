@@ -38,6 +38,9 @@ x-backend-env: &backend-env
   FIESTA_SMTP_HOST: mailpit
   FIESTA_SMTP_PORT: 1025
   FIESTA_CORS_ORIGINS: '["http://localhost:5173","http://localhost:8080","http://localhost:8081","http://localhost:8082","http://localhost:8083"]'
+  # Local-dev portal-bar cross-links to sibling nodes on this host. `make`
+  # computes this from the running node list + frontend ports; empty otherwise.
+  FIESTA_PORTAL_URLS: ${FIESTA_PORTAL_URLS:-}
 
 x-backend: &backend
   build: ./backend

@@ -1,6 +1,7 @@
 """Public search + contribution retrieval for the node frontend."""
 
 import uuid as uuid_mod
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Response
 from opensearchpy.exceptions import NotFoundError
@@ -25,7 +26,46 @@ def _all_levels(node) -> list:
 
 
 def _level_tables(node) -> set[str]:
-    return {lvl.table for lvl in _all_levels(node)} | set(node.search.extra_types)
+    from fiesta.plugins import active_plugins
+
+    tables = {lvl.table for lvl in _all_levels(node)} | set(node.search.extra_types)
+    for plugin in active_plugins(node):
+        tables.update(plugin.search_tables(node))
+    return tables
+
+
+def _parse_ranges(ranges: list[str] | None) -> list[dict] | None:
+    """`range=summary.poles.age:0.5:120` -> {field, gte, lte} (blank = open)."""
+    if not ranges:
+        return None
+    parsed = []
+    for spec in ranges:
+        parts = spec.split(":")
+        if len(parts) != 3:
+            raise HTTPException(422, f"range must be field:gte:lte, got {spec!r}")
+        field, gte, lte = parts
+
+        def _num(s: str, spec: str = spec) -> float | None:
+            if not s:
+                return None
+            try:
+                return float(s)
+            except ValueError:
+                raise HTTPException(422, f"invalid number in range {spec!r}") from None
+
+        parsed.append({"field": field, "gte": _num(gte), "lte": _num(lte)})
+    return parsed
+
+
+def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
+    """`bbox=minLon,minLat,maxLon,maxLat`"""
+    if not bbox:
+        return None
+    try:
+        min_lon, min_lat, max_lon, max_lat = (float(v) for v in bbox.split(","))
+    except ValueError:
+        raise HTTPException(422, "bbox must be minLon,minLat,maxLon,maxLat") from None
+    return (min_lon, min_lat, max_lon, max_lat)
 
 
 @router.get("/search/{table}", response_model=SearchPage)
@@ -36,6 +76,8 @@ async def search(
     size: int = Query(10, ge=1, le=1000),
     from_: int = Query(0, ge=0, alias="from"),
     facets: bool = False,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    bbox: str | None = None,
 ) -> SearchPage:
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
@@ -47,6 +89,8 @@ async def search(
         from_=from_,
         facets=node.search.facets if facets else None,
         count_field=level.count_field if level else None,
+        ranges=_parse_ranges(range_),
+        bbox=_parse_bbox(bbox),
     )
     try:
         response = await get_opensearch().search(index=node.search.index, body=body)

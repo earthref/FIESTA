@@ -51,7 +51,8 @@ interface RequestOptions {
   form?: Record<string, string>;
   /** Multipart body (browser sets the content type + boundary). */
   formData?: FormData;
-  params?: Record<string, string | number | boolean | undefined>;
+  /** Query params; array values are appended as repeated keys (e.g. range=…&range=…). */
+  params?: Record<string, string | number | boolean | undefined | (string | number)[]>;
   signal?: AbortSignal;
 }
 
@@ -75,7 +76,11 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   if (options.params) {
     const qs = new URLSearchParams();
     for (const [key, value] of Object.entries(options.params)) {
-      if (value !== undefined && value !== "") qs.set(key, String(value));
+      if (Array.isArray(value)) {
+        for (const entry of value) qs.append(key, String(entry));
+      } else if (value !== undefined && value !== "") {
+        qs.set(key, String(value));
+      }
     }
     const encoded = qs.toString();
     if (encoded) url += `?${encoded}`;

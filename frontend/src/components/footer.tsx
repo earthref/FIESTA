@@ -1,10 +1,11 @@
 import { useNodeConfig } from "../lib/config";
+import { Icon } from "./ui/icon";
 
 const footerLink = "text-node hover:underline";
 // Legacy: "ui button compact basic" with margin 0.5em 1em (layout.jsx)
 const outlinedButton =
   "inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-gray-300 bg-white " +
-  "px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 m-[0.5em_1em]";
+  "px-2 py-1 text-base font-medium text-gray-700 hover:bg-gray-50 m-[0.5em_1em]";
 
 /** Fixed full-width bottom bar, bg #F8F8F8, segment padding 0.25em (layout.less). */
 export function Footer() {
@@ -12,7 +13,7 @@ export function Footer() {
 
   return (
     <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-[#F8F8F8]">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 px-4 py-[0.25em] text-xs text-gray-500">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 px-4 py-[0.25em] text-base text-gray-500">
         <div className="leading-snug">
           <div>
             Sponsored by{" "}
@@ -48,7 +49,7 @@ export function Footer() {
             href={`mailto:webmaster@earthref.org?subject=[${config?.key ?? "FIESTA"} Help]`}
             className={outlinedButton}
           >
-            <span aria-hidden="true">✉</span> Having trouble? Email Us
+            <Icon name="mail" size="small" className="text-[#555555]" /> Having trouble? Email Us
           </a>
           <a
             href="https://github.com/earthref/FIESTA#readme"

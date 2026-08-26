@@ -1,4 +1,4 @@
-import { Outlet } from "@tanstack/react-router";
+import { Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { Footer } from "../components/footer";
@@ -9,8 +9,15 @@ import { PortalBar } from "../components/portal-bar";
 import { PageSpinner } from "../components/ui/spinner";
 import { applyNodeTheme, useNodeConfig } from "../lib/config";
 
+/** Routes that use the legacy `.full-width` layout variant (padding 0 2em). */
+const FULL_WIDTH_ROUTES = ["/search", "/data-models"];
+
 export function RootLayout() {
   const { data: config, isLoading, error } = useNodeConfig();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const fullWidth = FULL_WIDTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
 
   useEffect(() => {
     if (config) applyNodeTheme(config);
@@ -45,7 +52,9 @@ export function RootLayout() {
         <div className="pb-[4em] pt-[4em]">
           <NodeHeader />
           <NodeMenu />
-          <main className="mx-auto w-full max-w-6xl px-4 py-4">
+          <main
+            className={fullWidth ? "w-full px-[2em] py-4" : "mx-auto w-full max-w-6xl px-4 py-4"}
+          >
             <Outlet />
           </main>
         </div>

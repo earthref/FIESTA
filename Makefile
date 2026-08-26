@@ -20,6 +20,25 @@ export COMPOSE_PROFILES = $(FIESTA_NODE)
 down clean ps logs build: export COMPOSE_PROFILES = *
 up-public-api: export COMPOSE_PROFILES = $(FIESTA_NODE),public-api
 
+# Frontend port per node (defaults mirror docker-compose.yml).
+MAGIC_FRONTEND_PORT ?= 8080
+KDD_FRONTEND_PORT   ?= 8081
+CDR_FRONTEND_PORT   ?= 8082
+KARAR_FRONTEND_PORT ?= 8083
+port-magic := $(MAGIC_FRONTEND_PORT)
+port-kdd   := $(KDD_FRONTEND_PORT)
+port-cdr   := $(CDR_FRONTEND_PORT)
+port-karar := $(KARAR_FRONTEND_PORT)
+
+# Portal-bar cross-links: `slug=http://localhost:<port>` for every running
+# node, so a multi-node local stack links to the sibling instances.
+empty :=
+space := $(empty) $(empty)
+comma := ,
+_node_list := $(subst $(comma), ,$(FIESTA_NODE))
+_portal_pairs := $(foreach n,$(_node_list),$(n)=http://localhost:$(port-$(n)))
+export FIESTA_PORTAL_URLS := $(subst $(space),$(comma),$(_portal_pairs))
+
 .DEFAULT_GOAL := help
 
 .PHONY: help
@@ -30,11 +49,11 @@ help: ## List available targets
 
 .PHONY: up
 up: ## Start the node stack(s) in FIESTA_NODE (e.g. make up FIESTA_NODE=magic,karar)
-	$(COMPOSE) up -d --build
+	$(COMPOSE) up -d --build --remove-orphans
 
 .PHONY: up-public-api
 up-public-api: ## Start the node stack(s) plus the /v1 public API
-	$(COMPOSE) up -d --build
+	$(COMPOSE) up -d --build --remove-orphans
 
 .PHONY: down
 down: ## Stop the stack (keep data volumes)

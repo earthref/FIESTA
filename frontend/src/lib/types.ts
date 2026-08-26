@@ -23,6 +23,10 @@ export interface NodeConfig {
   /** Active plugins with their per-node configuration, keyed by plugin name. */
   plugins: Record<string, Record<string, unknown>>;
   has_method_codes: boolean;
+  /** Local-dev overrides: node slug -> URL for sibling nodes running on this
+   * host, so the portal bar cross-links to the running instances. Empty in
+   * production. */
+  portal_urls?: Record<string, string>;
 }
 
 export interface HealthStatus {

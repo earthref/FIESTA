@@ -59,6 +59,9 @@ async def rebuild_node(session: AsyncSession, node: NodeConfig) -> dict:
     logger.info("rebuilding %s: %d manifests found", node.node.key, len(manifest_keys))
 
     restored = indexed = failed = 0
+    # `previous_id` is a self-referencing FK; manifests can reference version
+    # ids in any order, so set it in a second pass once every row exists.
+    previous_ids: dict[int, int] = {}
     for key in sorted(manifest_keys, key=lambda k: int(k.split("/")[1])):
         manifest = await storage.get_json(key)
         contribution_id = manifest["id"]
@@ -75,7 +78,9 @@ async def rebuild_node(session: AsyncSession, node: NodeConfig) -> dict:
             session.add(contribution)
         contribution.node = manifest.get("node", node.node.slug)
         contribution.version = manifest.get("version", 1)
-        contribution.previous_id = manifest.get("previous_id")
+        contribution.previous_id = None  # set in the second pass
+        if manifest.get("previous_id") is not None:
+            previous_ids[contribution_id] = manifest["previous_id"]
         contribution.contributor_id = contributor.id
         contribution.private_key = uuid.UUID(manifest["private_key"])
         contribution.is_activated = manifest.get("is_activated", False)
@@ -98,6 +103,10 @@ async def rebuild_node(session: AsyncSession, node: NodeConfig) -> dict:
                 logger.exception("failed to re-index contribution %s", contribution_id)
                 failed += 1
 
+    # Second pass: wire up previous_id now that all rows exist.
+    for contribution_id, previous_id in previous_ids.items():
+        if await session.get(Contribution, previous_id) is not None:
+            (await session.get(Contribution, contribution_id)).previous_id = previous_id
     await session.commit()
     # Keep the contributions id sequence ahead of restored ids.
     max_id = (await session.execute(select(func.max(Contribution.id)))).scalar() or 0

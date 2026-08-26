@@ -22,6 +22,13 @@ INDEX_BODY = {
         }
     },
     "mappings": {
+        # Cell values are arbitrary strings; a value that merely looks like a
+        # date (e.g. time_zero "1/1/70") must not be auto-typed as `date` — a
+        # later non-conforming value would then fail to index. Keep everything
+        # a string; the one field we sort on (contribution timestamp) is typed
+        # explicitly below.
+        "date_detection": False,
+        "numeric_detection": False,
         "dynamic_templates": [
             {
                 "geo_points": {
@@ -48,6 +55,21 @@ INDEX_BODY = {
         "properties": {
             "type": {"type": "keyword"},
             "rows": {"type": "object", "enabled": False},
+            "summary": {
+                "properties": {
+                    "contribution": {
+                        "properties": {
+                            # Explicit date so search sort works; the seeder and
+                            # workflow always write an ISO 8601 timestamp here.
+                            "timestamp": {
+                                "type": "date",
+                                "format": "strict_date_optional_time||epoch_millis",
+                                "ignore_malformed": True,
+                            },
+                        }
+                    }
+                }
+            },
         },
     },
 }

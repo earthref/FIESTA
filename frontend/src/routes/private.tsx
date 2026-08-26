@@ -5,6 +5,7 @@ import { ErrorMessage } from "../components/error-message";
 import { useLoginModal } from "../components/login-modal";
 import { ResultItem } from "../components/result-item";
 import { Button } from "../components/ui/button";
+import { Icon } from "../components/ui/icon";
 import { Input } from "../components/ui/input";
 import { Modal } from "../components/ui/modal";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
@@ -68,9 +69,9 @@ function IssueGroup({
       >
         <span
           aria-hidden="true"
-          className={cx("text-xs text-gray-400 transition-transform", open && "rotate-90")}
+          className={cx("text-gray-400 transition-transform", open && "rotate-90")}
         >
-          ▶
+          <Icon name="caret-right" size="small" />
         </span>
         {table}
         <span
@@ -620,7 +621,7 @@ export function PrivateWorkspacePage() {
           className="inline-flex items-center gap-1 rounded-sm bg-node px-3.5 py-2 text-[13px] font-medium text-white hover:bg-node-dark focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-2"
           style={{ margin: "0 0 0.5em" }}
         >
-          <span aria-hidden="true">＋</span> Upload Data Into Your Private Workspace
+          <Icon name="plus" size="small" /> Upload Data Into Your Private Workspace
         </Link>
         <button
           type="button"
@@ -629,7 +630,8 @@ export function PrivateWorkspacePage() {
           className={toggleClass(showPreparation)}
           style={{ margin: "0 1em 0.5em 0", padding: "0.6em 1.2em" }}
         >
-          <span aria-hidden="true">✎</span>&nbsp;In Preparation
+          <Icon name="edit" size="small" />
+          &nbsp;In Preparation
           <span
             className="inline-block rounded-full border border-gray-300 bg-white text-center text-[11px] font-medium"
             style={countLabelStyle}
@@ -644,7 +646,8 @@ export function PrivateWorkspacePage() {
           className={toggleClass(showPublished)}
           style={{ margin: "0 1em 0.5em 0", padding: "0.6em 1.2em" }}
         >
-          <span aria-hidden="true">✓</span>&nbsp;Published
+          <Icon name="check" size="small" />
+          &nbsp;Published
           <span
             className="inline-block rounded-full border border-gray-300 bg-white text-center text-[11px] font-medium"
             style={countLabelStyle}

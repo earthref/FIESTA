@@ -38,6 +38,9 @@ class ParsedContribution:
 
 def parse_text(text: str) -> ParsedContribution:
     parsed = ParsedContribution()
+    # Strip a leading UTF-8 BOM (real exports sometimes include one, which
+    # would otherwise make the first "tab delimited" header unrecognizable).
+    text = text.lstrip("﻿")
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
 
     block_start = 0

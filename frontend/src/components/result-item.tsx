@@ -3,6 +3,7 @@ import { type CSSProperties, type ReactNode, useState } from "react";
 import { useNodeConfig } from "../lib/config";
 import type { SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath } from "../lib/utils";
+import { Icon } from "./ui/icon";
 
 const NAME_COLUMNS = ["location", "site", "sample", "specimen", "core", "section", "experiment"];
 
@@ -165,9 +166,9 @@ export function ResultCardFrame({
       >
         <span
           aria-hidden="true"
-          className={cx("mr-1 text-[10px] text-gray-400 transition-transform", open && "rotate-90")}
+          className={cx("mr-1 self-center text-gray-400 transition-transform", open && "rotate-90")}
         >
-          ▶
+          <Icon name="caret-right" size="small" />
         </span>
         <span className="whitespace-nowrap text-[13px] font-bold">
           {citation}
@@ -226,7 +227,7 @@ export function ResultCardFrame({
         )}
         style={{ margin: "1em auto -2.5em", borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
       >
-        {open ? "▲" : "▼"}
+        <Icon name={open ? "caret-up" : "caret-down"} size="small" />
       </button>
     </div>
   );
@@ -319,8 +320,8 @@ export function ResultItem({
             className="block w-full rounded-sm border border-node text-center font-medium text-node hover:bg-node-soft"
             style={{ padding: "20px 0", height: 100 }}
           >
-            <span aria-hidden="true" className="block text-[1.5em]">
-              📄
+            <span aria-hidden="true" className="block">
+              <Icon name="file-text" size="large" />
             </span>
             Download
           </a>
@@ -489,16 +490,49 @@ export function ResultItem({
     </>
   );
 
+  const summary = (
+    typeof contributionSummary === "object" && contributionSummary !== null
+      ? contributionSummary
+      : {}
+  ) as Record<string, unknown>;
+  const citation = citationOf(doc);
+
   const expanded = (
-    <div className="space-y-3">
-      {typeof contributionSummary === "object" && contributionSummary !== null && (
-        <div>
-          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Contribution summary
-          </h4>
-          <DefinitionTable data={contributionSummary as Record<string, unknown>} />
+    <div className="space-y-3 py-2">
+      {/* Reference block: citation + Publication DOI */}
+      {(citation || publicationDoi) && (
+        <div className="text-[13px]">
+          {citation && <p className="m-0 text-gray-800">{citation}</p>}
+          {publicationDoi && (
+            <p className="m-0 mt-0.5">
+              <b>Publication DOI: </b>
+              <a
+                href={`https://dx.doi.org/${publicationDoi}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-node hover:underline"
+              >
+                {publicationDoi}
+              </a>
+            </p>
+          )}
         </div>
       )}
+
+      {/* Versions table (contribution-level card only) */}
+      {level.table === "contribution" && id && (
+        <VersionsTable
+          doc={doc}
+          currentId={id}
+          isActivated={isActivated}
+          keyParam={keyParam}
+          privateKey={privateKey}
+          config={config}
+          summary={summary}
+        />
+      )}
+
+      {/* Per-level definition table for non-contribution cards */}
       {typeof levelBlock === "object" && levelBlock !== null && (
         <div>
           <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -511,4 +545,124 @@ export function ResultItem({
   );
 
   return <ResultCardFrame doc={doc} level={level} cells={cells} expanded={expanded} />;
+}
+
+// --- Versions table (legacy "history table") ------------------------------------
+
+interface VersionRow {
+  id: string;
+  version: string;
+  dataModel: string;
+  date: unknown;
+  contributor: string;
+  isActivated: boolean;
+}
+
+function versionRows(
+  summary: Record<string, unknown>,
+  currentId: string,
+  currentIsActivated: boolean,
+): VersionRow[] {
+  const toRow = (entry: Record<string, unknown>, fallbackId: string): VersionRow => ({
+    id: String(entry.id ?? fallbackId),
+    version: String(entry.version ?? summary.version ?? "1"),
+    dataModel: String(entry.data_model_version ?? summary.data_model_version ?? ""),
+    date: entry.timestamp ?? summary.timestamp,
+    contributor: firstString(entry._contributor ?? entry.contributor) ?? "",
+    isActivated: typeof entry.is_activated === "boolean" ? entry.is_activated : currentIsActivated,
+  });
+
+  const history = summary._history;
+  if (Array.isArray(history) && history.length > 0) {
+    return history
+      .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === "object")
+      .map((entry) => toRow(entry, currentId));
+  }
+  return [toRow(summary, currentId)];
+}
+
+function VersionsTable({
+  currentId,
+  isActivated,
+  keyParam,
+  privateKey,
+  config,
+  summary,
+}: {
+  doc: SearchResult;
+  currentId: string;
+  isActivated: boolean;
+  keyParam: string;
+  privateKey?: string;
+  config: { key: string; doi_prefix: string | null };
+  summary: Record<string, unknown>;
+}) {
+  const rows = versionRows(summary, currentId, isActivated);
+  return (
+    <div>
+      <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Versions</h4>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-[13px]">
+          <thead>
+            <tr className="text-gray-500">
+              <th className="py-1 pr-3 font-medium">Download</th>
+              <th className="py-1 pr-3 font-medium">Contribution Link</th>
+              <th className="py-1 pr-3 font-medium">EarthRef Data DOI</th>
+              <th className="py-1 pr-3 font-medium">Version</th>
+              <th className="py-1 pr-3 font-medium">Data Model</th>
+              <th className="py-1 pr-3 font-medium">Date</th>
+              <th className="py-1 font-medium">Contributor</th>
+            </tr>
+          </thead>
+          <tbody className="align-top">
+            {rows.map((row) => (
+              <tr key={`${row.id}-${row.version}`}>
+                <td className="py-1 pr-3">
+                  <a
+                    href={`/api/contributions/${row.id}/download${keyParam}`}
+                    download
+                    className="inline-flex items-center gap-1 text-node hover:underline"
+                  >
+                    <Icon name="download" size="small" /> txt
+                  </a>
+                </td>
+                <td className="py-1 pr-3">
+                  <Link
+                    to="/contributions/$id"
+                    params={{ id: row.id }}
+                    search={{ private_key: privateKey }}
+                    className="text-node hover:underline"
+                  >
+                    /contributions/{row.id}
+                  </Link>
+                </td>
+                <td className="py-1 pr-3">
+                  {config.doi_prefix ? (
+                    row.isActivated ? (
+                      <a
+                        href={`https://dx.doi.org/${config.doi_prefix}/${row.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-node hover:underline"
+                      >
+                        {config.doi_prefix}/{row.id}
+                      </a>
+                    ) : (
+                      <span className="text-[#AAAAAA]">Queued For Creation</span>
+                    )
+                  ) : (
+                    <span className="text-[#AAAAAA]">—</span>
+                  )}
+                </td>
+                <td className="py-1 pr-3">{row.version}</td>
+                <td className="py-1 pr-3">{row.dataModel || "—"}</td>
+                <td className="py-1 pr-3 whitespace-nowrap">{formatDateLL(row.date) || "—"}</td>
+                <td className="py-1">{row.contributor || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }

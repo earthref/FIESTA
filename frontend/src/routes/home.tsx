@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton } from "../components/icon-button";
 import { contributionId, ResultItem } from "../components/result-item";
+import { Icon } from "../components/ui/icon";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { useNodeConfig } from "../lib/config";
@@ -23,14 +24,15 @@ function DividerHeader({ children, first }: { children: ReactNode; first?: boole
   );
 }
 
+// Primary cards: base icon ~2em (big). Resource cards: base icon ~1em (medium).
 const icons = {
-  search: <span aria-hidden="true">🗄</span>,
-  upload: <span aria-hidden="true">▦</span>,
-  workspace: <span aria-hidden="true">📄</span>,
-  model: <span aria-hidden="true">▦</span>,
-  book: <span aria-hidden="true">📖</span>,
-  code: <span aria-hidden="true">⚙</span>,
-  help: <span aria-hidden="true">❓</span>,
+  search: <Icon name="database" size="big" />,
+  upload: <Icon name="table" size="big" />,
+  workspace: <Icon name="file-text" size="big" />,
+  model: <Icon name="table" size="medium" />,
+  book: <Icon name="file-text" size="medium" />,
+  code: <Icon name="external" size="medium" />,
+  help: <Icon name="question-circle" size="medium" />,
 };
 
 export function HomePage() {
@@ -61,21 +63,21 @@ export function HomePage() {
           <IconButton
             to="/search"
             icon={icons.search}
-            cornerIcon={<span>🔍</span>}
+            cornerIcon={<Icon name="search" />}
             title="Search Interface"
             subtitle="Browse, combine, and save datasets."
           />
           <IconButton
             to="/upload"
             icon={icons.upload}
-            cornerIcon={<span>＋</span>}
+            cornerIcon={<Icon name="add-circle" />}
             title="Upload Tool"
             subtitle="Import data into your private workspace."
           />
           <IconButton
             to="/private"
             icon={icons.workspace}
-            cornerIcon={<span>✓</span>}
+            cornerIcon={<Icon name="check" />}
             title="Private Workspace"
             subtitle={`Manage your contributions to ${config.key}.`}
           />
@@ -174,7 +176,7 @@ export function HomePage() {
               <IconButton
                 small
                 to="/search"
-                icon={<span aria-hidden="true">🔍</span>}
+                icon={<Icon name="search" size="medium" />}
                 title={`View More Contributions in the ${config.key} Search Interface`}
               />
             </div>

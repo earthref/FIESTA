@@ -16,6 +16,12 @@ export interface PluginSubTabContext {
   level: SearchLevel;
   config: NodeConfig;
   privateKey?: string;
+  /** The current free-text/token query string. */
+  query: string;
+  /** Active plugin range filters, each "field:gte:lte". */
+  ranges: string[];
+  /** Active bounding box: "minLon,minLat,maxLon,maxLat". */
+  bbox?: string;
 }
 
 export interface PluginSubTab {
@@ -23,13 +29,26 @@ export interface PluginSubTab {
   render: (ctx: PluginSubTabContext) => ReactNode;
 }
 
+export interface PluginFiltersProps {
+  levelName: string;
+  /** The name of the active result sub-tab (Summaries/Rows/plugin tabs). */
+  subTabName?: string;
+  config: NodeConfig;
+  /** Current range filters, each "field:gte:lte" (blank = open end). */
+  ranges: string[];
+  /** Current bounding box: "minLon,minLat,maxLon,maxLat". */
+  bbox?: string;
+  setRanges: (ranges: string[]) => void;
+  setBbox: (bbox: string | undefined) => void;
+}
+
 export interface PluginModule {
   /** Return a custom card for this hit, or null to fall through to the default. */
   resultItem?: (props: PluginResultItemProps) => ReactNode | null;
   /** Extra result-view sub-tabs contributed to a search level. */
   levelSubTabs?: (level: SearchLevel, config: NodeConfig) => PluginSubTab[];
-  /** Replace the facet sidebar for a level: return filter names, or null to keep facets. */
-  filtersOverride?: (levelName: string, config: NodeConfig) => string[] | null;
+  /** Replace the facet sidebar for a level; return null to keep the facet sidebar. */
+  filtersPanel?: (props: PluginFiltersProps) => ReactNode | null;
 }
 
 /** All known plugin modules; activation is strictly by key presence in config.plugins. */
@@ -63,14 +82,15 @@ export function pluginSubTabs(config: NodeConfig | undefined, level: SearchLevel
   return activePlugins(config).flatMap((plugin) => plugin.levelSubTabs?.(level, config) ?? []);
 }
 
-export function pluginFiltersOverride(
+/** First plugin-provided filters panel for a level, or null (keep facet sidebar). */
+export function pluginFiltersPanel(
   config: NodeConfig | undefined,
-  levelName: string,
-): string[] | null {
+  props: Omit<PluginFiltersProps, "config">,
+): ReactNode | null {
   if (!config) return null;
   for (const plugin of activePlugins(config)) {
-    const override = plugin.filtersOverride?.(levelName, config);
-    if (override) return override;
+    const panel = plugin.filtersPanel?.({ ...props, config });
+    if (panel) return panel;
   }
   return null;
 }
