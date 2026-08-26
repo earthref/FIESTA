@@ -1,0 +1,77 @@
+# FIESTA deployment configuration — MagIC node
+# A FIESTA deployment is fully described by one of these files:
+# identity/branding, search index, storage bucket, data model, vocabularies,
+# summarization hierarchy, and enabled features. Postgres and OpenSearch are
+# rebuildable projections of this file + the contents of the storage bucket.
+
+fiesta: 1
+deployment: node
+
+node:
+  key: MagIC
+  slug: magic
+  title: Magnetics Information Consortium (MagIC)
+  subtitle: >-
+    Promoting information technology infrastructures for the international
+    paleomagnetic, geomagnetic and rock magnetic community.
+  color: "#800080" # primary brand color (Semantic UI "purple" in the legacy app)
+  links:
+    website: https://earthref.org/MagIC
+    github_issues: https://github.com/earthref/MagIC/issues
+  contact_email: magic@earthref.org
+
+search:
+  index: magic
+  # Ordered search tabs; `table` is the doc `type` in the index and the
+  # data-model table the rows come from.
+  levels:
+    - { name: Contributions, table: contribution }
+    - { name: Locations, table: locations, count_field: summary.locations._n_results }
+    - { name: Sites, table: sites, count_field: summary.sites._n_results }
+    - { name: Samples, table: samples, count_field: summary.samples._n_results }
+    - { name: Specimens, table: specimens, count_field: summary.specimens._n_results }
+    - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
+  # (The Poles search level is contributed by the `poles` plugin below.)
+  extra_types: []
+  # Facets rendered as filter buckets, aggregated on summary._all.<field>.raw
+  facets:
+    - method_codes
+    - geologic_classes
+    - geologic_types
+    - lithologies
+    - location_type
+    - plate_blocks
+    - tectonic_settings
+
+storage:
+  bucket: magic
+  # Bucket layout (convention, not configurable):
+  #   contributions/{id}/{filename}         canonical contribution text file per version id
+  #   uploads/{user_id}/{upload_id}/...     raw uploaded files pre-parse
+
+data_model:
+  versions: ["2.2", "2.3", "2.4", "2.5", "3.0"]
+  latest: "3.0"
+  dir: magic/data_models # relative to this file; {version}.json per version
+
+vocabularies:
+  controlled: magic/controlled_vocabularies.json
+  suggested: magic/suggested_vocabularies.json
+  method_codes: magic/method_codes.json
+
+# Parent -> child chain used to summarize contribution rows into per-level
+# search documents (summary._all aggregates roll up through this chain).
+hierarchy:
+  - contribution
+  - locations
+  - sites
+  - samples
+  - specimens
+  - measurements
+
+doi:
+  prefix: 10.7288/V4/MAGIC
+
+features:
+  pages: [about, help, method-codes, upgrade, links, workshops, jupyter-notebooks, grand-challenges]
+  plugins: [poles]

@@ -1,0 +1,40 @@
+{
+ "boolean": {
+  "label": "Boolean Flags",
+  "database_column": "(multiple_columns)",
+  "items": [
+   {
+    "item": "t",
+    "label": "True"
+   },
+   {
+    "item": "f",
+    "label": "False"
+   }
+  ]
+ },
+ "lab_names": {
+  "label": "Laboratory Names",
+  "database_column": "lab_names",
+  "items": [
+   {
+    "item": "OSU Argon Geochronology Lab (Oregon State University, USA)"
+   },
+   {
+    "item": "40Ar/39Ar Laboratory (Berkeley Geochronology Center, USA)"
+   },
+   {
+    "item": "Not Determined (For Legacy Datasets Only)"
+   }
+  ]
+ },
+ "kdd_version": {
+  "label": "KdD Versions",
+  "database_column": "data_model_version",
+  "items": [
+   {
+    "item": "1.0"
+   }
+  ]
+ }
+}

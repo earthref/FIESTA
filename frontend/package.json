@@ -1,39 +1,32 @@
 {
-  "name": "starter-basic",
-  "version": "0.1.0",
+  "name": "fiesta-frontend",
   "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "dev": "tinacms dev -c \"next dev -p 5073\" --datalayer-port 5072",
-    "build": "tinacms build && next build",
-    "build-local": "tinacms build --local --skip-indexing --skip-cloud-checks && next build",
-    "start": "tinacms build && next start",
-    "lint": "next lint"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "biome check .",
+    "format": "biome format --write ."
   },
   "dependencies": {
-    "@radix-ui/react-slot": "^1.1.0",
-    "@tailwindcss/typography": "^0.5.15",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.468.0",
-    "next": "^14.2.18",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "tailwind-merge": "^2.5.5",
-    "tailwindcss": "^3.4.16",
-    "tailwindcss-animate": "^1.0.7",
-    "tinacms": "^2.5.0",
-    "typescript": "5.5.2"
+    "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-router": "^1.170.17",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@babel/preset-react": "^7.26.3",
-    "@tinacms/cli": "^1.6.12",
-    "@types/node": "^22.10.1",
-    "@types/react": "^18.3.1",
-    "autoprefixer": "^10.4.20",
-    "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.18",
-    "postcss": "^8.4.49",
-    "postcss-import": "^16.1.0",
-    "postcss-nesting": "^13.0.1"
+    "@biomejs/biome": "^2.5.2",
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.3"
   }
 }

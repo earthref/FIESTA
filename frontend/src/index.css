@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/*
+  Node branding colors are CSS-var-backed: applyNodeTheme() sets --node-color
+  (and derived vars) on :root at bootstrap from GET /api/config. `@theme inline`
+  makes utilities like bg-node reference the runtime variable directly.
+*/
+@theme inline {
+  --color-node: var(--node-color);
+  --color-node-soft: var(--node-color-soft);
+  --color-node-dark: var(--node-color-dark);
+}
+
+/*
+  The default border color changed to `currentcolor` in Tailwind CSS v4; keep
+  the v3 default so existing markup renders identically.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* Legacy Semantic UI globals: Open Sans (system fallback), 1em = 14px. */
+  html {
+    font-size: 14px;
+    font-family:
+      "Open Sans", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  /* Legacy injected per-portal anchor color (page.jsx:16-20). */
+  a {
+    color: var(--node-color);
+  }
+}
+
+:root {
+  /* Overridden at bootstrap from GET /api/config (config.color). */
+  --node-color: #4b5563;
+  --node-color-soft: color-mix(in srgb, #4b5563 8%, white);
+  --node-color-dark: color-mix(in srgb, #4b5563 85%, black);
+}
+
+body {
+  @apply bg-white text-gray-900 antialiased;
+}

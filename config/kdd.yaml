@@ -1,0 +1,49 @@
+# FIESTA deployment configuration — KdD node
+# (Partition coefficient database; data model fetched from the live
+# kdd.earthref.org node, 2021-03-12.)
+
+fiesta: 1
+deployment: node
+
+node:
+  key: KdD
+  slug: kdd
+  title: Partition Coefficient (Kd) Database (KdD)
+  subtitle: >-
+    Partition coefficients describing the distribution of trace elements
+    between minerals, rocks, and melts.
+  color: "#217e5c" # Semantic UI "green" family (EarthRef.org heritage)
+  links:
+    website: https://earthref.org/KdD
+    github_issues: https://github.com/earthref/KdD/issues
+  contact_email: kdd@earthref.org
+
+search:
+  index: kdd
+  levels:
+    - { name: Contributions, table: contribution }
+    - { name: Partition Coefficients, table: kds, count_field: summary.kds._n_results }
+  extra_types: []
+  facets: []
+
+storage:
+  bucket: kdd
+
+data_model:
+  versions: ["1.0"]
+  latest: "1.0"
+  dir: kdd/data_models
+
+vocabularies:
+  controlled: kdd/controlled_vocabularies.json
+
+hierarchy:
+  - contribution
+  - kds
+
+doi:
+  prefix: 10.7288/V4/KDD
+
+features:
+  pages: []
+  plugins: []

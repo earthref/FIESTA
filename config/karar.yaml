@@ -1,0 +1,57 @@
+# FIESTA deployment configuration — KArAr node
+
+fiesta: 1
+deployment: node
+
+node:
+  key: KArAr
+  slug: karar
+  title: K/Ar and ⁴⁰Ar/³⁹Ar Data Repository (KArAr)
+  subtitle: >-
+    K/Ar and ⁴⁰Ar/³⁹Ar geochronology results including ages recalculated
+    against community-agreed standards and constants.
+  color: "#3030bb" # Semantic UI "blue" in the legacy app
+  links:
+    website: https://earthref.org/KArAr
+    github_issues: https://github.com/earthref/KArAr/issues
+  contact_email: karar@earthref.org
+
+search:
+  index: karar
+  levels:
+    - { name: Contributions, table: contribution }
+    - { name: Samples, table: samples, count_field: summary.samples._n_results }
+    - { name: Specimens, table: specimens, count_field: summary.specimens._n_results }
+    - { name: Experiments, table: experiments, count_field: summary.experiments._n_results }
+    - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
+  extra_types: []
+  facets:
+    - geologic_classes
+    - geologic_types
+    - lithologies
+
+storage:
+  bucket: karar
+
+data_model:
+  versions: ["1.0"]
+  latest: "1.0"
+  dir: karar/data_models
+
+vocabularies:
+  controlled: karar/controlled_vocabularies.json
+  suggested: karar/suggested_vocabularies.json
+
+hierarchy:
+  - contribution
+  - samples
+  - specimens
+  - experiments
+  - measurements
+
+doi:
+  prefix: 10.7288/V4/KARAR
+
+features:
+  pages: []
+  plugins: [plateau-calculations]

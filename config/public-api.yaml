@@ -1,0 +1,16 @@
+# FIESTA deployment configuration — public API (api.earthref.org)
+# Serves the versioned public REST API (/v1) across all FIESTA nodes.
+# Each entry in `nodes` is another FIESTA node config file; the public API
+# uses its search index, storage bucket, and data model to serve
+# /v1/{repository}/... endpoints.
+
+fiesta: 1
+deployment: public-api
+
+public_api:
+  title: EarthRef FIESTA API
+  nodes:
+    - magic.yaml
+    - kdd.yaml
+    - cdr.yaml
+    - karar.yaml

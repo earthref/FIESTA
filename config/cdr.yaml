@@ -1,0 +1,55 @@
+# FIESTA deployment configuration — CDR node
+
+fiesta: 1
+deployment: node
+
+node:
+  key: CDR
+  slug: cdr
+  title: Core Data Repository (CDR)
+  subtitle: >-
+    Archiving geological drilling samples multi-sensor track data for sediment
+    and rock cores.
+  color: "#e09f00" # Semantic UI "yellow" in the legacy app
+  links:
+    website: https://earthref.org/CDR
+    github_issues: https://github.com/earthref/CDR/issues
+  contact_email: cdr@earthref.org
+
+search:
+  index: cdr
+  levels:
+    - { name: Contributions, table: contribution }
+    - { name: Cores, table: cores, count_field: summary.cores._n_results }
+    - { name: Sections, table: sections, count_field: summary.sections._n_results }
+    - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
+  extra_types: []
+  facets:
+    - geologic_classes
+    - geologic_types
+    - lithologies
+
+storage:
+  bucket: cdr
+
+data_model:
+  versions: ["1.0"]
+  latest: "1.0"
+  dir: cdr/data_models
+
+vocabularies:
+  controlled: cdr/controlled_vocabularies.json
+  suggested: cdr/suggested_vocabularies.json
+
+hierarchy:
+  - contribution
+  - cores
+  - sections
+  - measurements
+
+doi:
+  prefix: 10.7288/V4/CDR
+
+features:
+  pages: []
+  plugins: [depth-plot]

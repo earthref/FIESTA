@@ -1,0 +1,198 @@
+import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { ContactPage } from "./routes/contact";
+import { ContributionPage } from "./routes/contribution";
+import { DataModelPage, DataModelsIndex } from "./routes/data-models";
+import { HomePage } from "./routes/home";
+import { RootLayout } from "./routes/layout";
+import { LoginPage } from "./routes/login";
+import { MethodCodesPage } from "./routes/method-codes";
+import { NotFoundPage } from "./routes/not-found";
+import { PrivateWorkspacePage } from "./routes/private";
+import { SearchPage } from "./routes/search";
+import {
+  AboutPage,
+  GrandChallengesPage,
+  HelpPage,
+  LinksPage,
+  TechnologyPage,
+  WorkshopsPage,
+} from "./routes/stubs";
+import { UploadPage } from "./routes/upload";
+import { ValidatePage } from "./routes/validate";
+import { VocabulariesPage } from "./routes/vocabularies";
+
+export interface SearchParams {
+  q?: string;
+  level?: string;
+  sort?: string;
+}
+
+export interface PrivateKeyParams {
+  private_key?: string;
+}
+
+export interface FilterParams {
+  q?: string;
+}
+
+function str(value: unknown): string | undefined {
+  return typeof value === "string" && value !== "" ? value : undefined;
+}
+
+const rootRoute = createRootRoute({
+  component: RootLayout,
+  notFoundComponent: NotFoundPage,
+});
+
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: HomePage,
+});
+
+const searchRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/search",
+  validateSearch: (search: Record<string, unknown>): SearchParams => ({
+    q: str(search.q),
+    level: str(search.level),
+    sort: str(search.sort),
+  }),
+  component: SearchPage,
+});
+
+const contributionRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/contributions/$id",
+  validateSearch: (search: Record<string, unknown>): PrivateKeyParams => ({
+    private_key: str(search.private_key),
+  }),
+  component: ContributionPage,
+});
+
+const uploadRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/upload",
+  component: UploadPage,
+});
+
+const privateRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/private",
+  component: PrivateWorkspacePage,
+});
+
+const validateRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/validate",
+  component: ValidatePage,
+});
+
+const dataModelsIndexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/data-models",
+  component: DataModelsIndex,
+});
+
+const dataModelRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/data-models/$version",
+  validateSearch: (search: Record<string, unknown>): FilterParams => ({
+    q: str(search.q),
+  }),
+  component: DataModelPage,
+});
+
+const vocabulariesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/vocabularies",
+  validateSearch: (search: Record<string, unknown>): FilterParams => ({
+    q: str(search.q),
+  }),
+  component: VocabulariesPage,
+});
+
+const methodCodesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/method-codes",
+  validateSearch: (search: Record<string, unknown>): FilterParams => ({
+    q: str(search.q),
+  }),
+  component: MethodCodesPage,
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: LoginPage,
+});
+
+const contactRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/contact",
+  component: ContactPage,
+});
+
+// Stub pages gated by config.features.pages (menu items appear only when enabled).
+const aboutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/about",
+  component: AboutPage,
+});
+const technologyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/technology",
+  component: TechnologyPage,
+});
+const grandChallengesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/grand-challenges",
+  component: GrandChallengesPage,
+});
+const workshopsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workshops",
+  component: WorkshopsPage,
+});
+const linksRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/links",
+  component: LinksPage,
+});
+const helpRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/help",
+  component: HelpPage,
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  searchRoute,
+  contributionRoute,
+  uploadRoute,
+  privateRoute,
+  validateRoute,
+  dataModelsIndexRoute,
+  dataModelRoute,
+  vocabulariesRoute,
+  methodCodesRoute,
+  loginRoute,
+  contactRoute,
+  aboutRoute,
+  technologyRoute,
+  grandChallengesRoute,
+  workshopsRoute,
+  linksRoute,
+  helpRoute,
+]);
+
+export const router = createRouter({
+  routeTree,
+  defaultPreload: "intent",
+});
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}

@@ -1,64 +1,53 @@
+[project]
+name = "fiesta"
+version = "0.1.0"
+description = "FIESTA — Framework for Integrated Earth Science and Technology Applications"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0.30",
+    "asyncpg>=0.29",
+    "alembic>=1.13",
+    "pydantic[email]>=2.7",
+    "pydantic-settings>=2.3",
+    "procrastinate>=2.9",
+    "psycopg[binary]>=3.1",
+    "opensearch-py[async]>=2.6",
+    "aioboto3>=13.0",
+    "pyyaml>=6.0",
+    "httpx>=0.27",
+    "pyjwt>=2.8",
+    "bcrypt>=4.1",
+    "python-multipart>=0.0.9",
+    "typer>=0.12",
+    "aiosmtplib>=3.0",
+]
+
+[project.scripts]
+fiesta = "fiesta.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[project]
-name = "fiesta-backend"
-version = "0.1.0"
-description = "FIESTA Backend API for EarthRef.org"
-authors = [
-    { name = "EarthRef", email = "webmaster@earthref.org" },
-]
-readme = "README.md"
-requires-python = ">=3.10"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
-dependencies = [
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.23.2",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.4",
-    "python-multipart>=0.0.6",
-    "sqlalchemy>=2.0.0",
-    "alembic>=1.12.0",
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
-    "httpx>=0.25.0",
-    "python-dotenv>=1.0.0",
-    "boto3>=1.28.0",
-    "elasticsearch>=8.10.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "ruff>=0.1.0",
-    "mypy>=1.5.0",
-    "black>=23.7.0",
-    "isort>=5.12.0",
-    "pytest-cov>=4.1.0",
-]
-
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["fiesta"]
 
 [tool.ruff]
-line-length = 88
-select = ["E", "F", "I"]
-ignore = []
+line-length = 100
+target-version = "py312"
 
-[tool.ruff.isort]
-known-first-party = ["app"]
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC"]
 
-[tool.black]
-line-length = 88
-target-version = ["py310"]
-include = '\.pyi?$'
-
-[project.urls]
-"Homepage" = "https://earthref.org"
-"Bug Tracker" = "https://github.com/earthref/FIESTA/issues"
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
