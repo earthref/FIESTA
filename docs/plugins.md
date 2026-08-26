@@ -38,7 +38,7 @@ extra sub-tabs on a search level, filter overrides). A plugin's components
 live under `src/plugins/<name>/` and activate only when the name appears in
 `config.plugins` — nothing node-specific leaks into core components.
 
-## The three built-in plugins
+## The built-in plugins
 
 - **`poles` (MagIC)** — derives a server-backed `poles` search level from
   location rows carrying `pole_lat`/`pole_lon` (the legacy app's Poles tab
@@ -58,3 +58,10 @@ live under `src/plugins/<name>/` and activate only when the name appears in
   `GET /api/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau`
   returns the full age spectrum + plateau. UI: age-spectrum thumbnail/modal
   on Experiments result items.
+- **`digital-objects` (ERDA)** — ERDA archives files, not measurements, so
+  the default result card (geologic classes, lithologies, method codes,
+  intensities) has nothing to show. The plugin is config-only on the
+  backend: `frontend_config` names the object/file search tables and the
+  columns that belong on their cards. UI: title + description cards with
+  data types, expert level, keywords, project, and human-readable file
+  sizes.

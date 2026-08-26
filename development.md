@@ -26,7 +26,7 @@ make up FIESTA_NODE=magic,karar,cdr
 
 Each node gets its own backend/worker/frontend (compose profiles named after
 the node) with per-node default ports (magic 8000/8080, kdd 8001/8081, cdr
-8002/8082, karar 8003/8083). Infrastructure is shared; isolation comes from a
+8002/8082, karar 8003/8083, erda 8004/8084). Infrastructure is shared; isolation comes from a
 per-node OpenSearch index, MinIO bucket, procrastinate queue, and a `node`
 column scoping contributions in Postgres. Accounts are shared across nodes
 (one EarthRef login).

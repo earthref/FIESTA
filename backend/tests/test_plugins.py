@@ -89,4 +89,9 @@ def test_identify_plateau_prefers_low_mswd():
 
 
 def test_registry_names():
-    assert set(all_plugins()) == {"poles", "depth-plot", "plateau-calculations"}
+    assert set(all_plugins()) == {
+        "poles",
+        "depth-plot",
+        "plateau-calculations",
+        "digital-objects",
+    }

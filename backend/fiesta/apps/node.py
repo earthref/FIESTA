@@ -29,6 +29,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=f"FIESTA — {node.node.title}",
         version="0.1.0",
+        license_info={"name": "MIT License", "url": "https://opensource.org/licenses/MIT"},
         lifespan=lifespan,
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",

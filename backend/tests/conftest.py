@@ -20,3 +20,8 @@ def magic_node(magic_deployment):
 @pytest.fixture(scope="session")
 def karar_node():
     return load_deployment(CONFIG_DIR / "karar.yaml").node
+
+
+@pytest.fixture(scope="session")
+def erda_node():
+    return load_deployment(CONFIG_DIR / "erda.yaml").node

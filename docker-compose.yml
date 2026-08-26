@@ -1,7 +1,7 @@
 # FIESTA local development stack — one or more nodes at once.
 #
 # FIESTA_NODE in .env is a comma-separated list of nodes to run
-# (magic | kdd | cdr | karar), e.g.:
+# (magic | kdd | cdr | karar | erda), e.g.:
 #
 #   FIESTA_NODE=magic,karar,cdr
 #
@@ -21,6 +21,7 @@
 #   kdd      8001      8081
 #   cdr      8002      8082
 #   karar    8003      8083
+#   erda     8004      8084
 #   public-api  8005 (profile: public-api)
 #
 # Postgres and OpenSearch are projections: `make rebuild` regenerates both
@@ -37,7 +38,7 @@ x-backend-env: &backend-env
   FIESTA_SECRET_KEY: ${FIESTA_SECRET_KEY:-dev-only-change-me}
   FIESTA_SMTP_HOST: mailpit
   FIESTA_SMTP_PORT: 1025
-  FIESTA_CORS_ORIGINS: '["http://localhost:5173","http://localhost:8080","http://localhost:8081","http://localhost:8082","http://localhost:8083"]'
+  FIESTA_CORS_ORIGINS: '["http://localhost:5173","http://localhost:8080","http://localhost:8081","http://localhost:8082","http://localhost:8083","http://localhost:8084"]'
   # Local-dev portal-bar cross-links to sibling nodes on this host. `make`
   # computes this from the running node list + frontend ports; empty otherwise.
   FIESTA_PORTAL_URLS: ${FIESTA_PORTAL_URLS:-}
@@ -274,6 +275,43 @@ services:
       - "${KARAR_FRONTEND_PORT:-8083}:80"
     depends_on:
       backend-karar:
+        condition: service_healthy
+
+  # ---- ERDA ----------------------------------------------------------------
+  backend-erda:
+    <<: *backend
+    profiles: [erda]
+    environment:
+      <<: *backend-env
+      FIESTA_CONFIG_FILE: /config/erda.yaml
+    command: *backend-command
+    ports:
+      - "${ERDA_BACKEND_PORT:-8004}:8000"
+
+  worker-erda:
+    build: ./backend
+    profiles: [erda]
+    environment:
+      <<: *backend-env
+      FIESTA_CONFIG_FILE: /config/erda.yaml
+    volumes:
+      - ./config:/config:ro
+    command: fiesta worker
+    depends_on:
+      backend-erda:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+  frontend-erda:
+    build: ./frontend
+    profiles: [erda]
+    environment:
+      BACKEND_HOST: backend-erda
+    ports:
+      - "${ERDA_FRONTEND_PORT:-8084}:80"
+    depends_on:
+      backend-erda:
         condition: service_healthy
 
   # ---- Public API (all nodes) ------------------------------------------------

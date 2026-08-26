@@ -36,7 +36,7 @@ bucket.
 ## Quick start
 
 ```sh
-cp .env.example .env          # FIESTA_NODE=magic  or a list: magic,karar,cdr
+cp .env.example .env          # FIESTA_NODE=magic  or a list: magic,karar,erda
 make up                       # one backend+worker+frontend per listed node
 ```
 
@@ -52,6 +52,7 @@ Default ports per node (frontend / backend API docs at `/api/docs`):
 | KdD | :8081 | :8001 |
 | CDR | :8082 | :8002 |
 | KArAr | :8083 | :8003 |
+| ERDA | :8084 | :8004 |
 
 - MinIO console: http://localhost:9001 · Mailpit (dev email): http://localhost:8025
 - Public API (all nodes): `make up-public-api` → http://localhost:8005/v1/docs
@@ -71,3 +72,7 @@ old-backend/    Legacy Koa/OpenSearch API — reference for porting remaining fe
 ```
 
 See [development.md](development.md) and [deployment.md](deployment.md).
+
+## License
+
+FIESTA is released under the [MIT License](LICENSE).

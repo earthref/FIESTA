@@ -45,6 +45,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=public.title,
         version="1.0.0",
+        license_info={"name": "MIT License", "url": "https://opensource.org/licenses/MIT"},
         lifespan=lifespan,
         docs_url="/v1/docs",
         openapi_url="/v1/openapi.json",

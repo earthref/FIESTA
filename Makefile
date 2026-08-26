@@ -25,10 +25,12 @@ MAGIC_FRONTEND_PORT ?= 8080
 KDD_FRONTEND_PORT   ?= 8081
 CDR_FRONTEND_PORT   ?= 8082
 KARAR_FRONTEND_PORT ?= 8083
+ERDA_FRONTEND_PORT  ?= 8084
 port-magic := $(MAGIC_FRONTEND_PORT)
 port-kdd   := $(KDD_FRONTEND_PORT)
 port-cdr   := $(CDR_FRONTEND_PORT)
 port-karar := $(KARAR_FRONTEND_PORT)
+port-erda  := $(ERDA_FRONTEND_PORT)
 
 # Portal-bar cross-links: `slug=http://localhost:<port>` for every running
 # node, so a multi-node local stack links to the sibling instances.

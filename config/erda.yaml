@@ -1,0 +1,66 @@
+# FIESTA deployment configuration — ERDA node
+# EarthRef.org Digital Archive: a general-purpose archive for any digital
+# object associated with the Earth sciences. Unlike the measurement-oriented
+# nodes, an ERDA contribution publishes *objects* (a spreadsheet, a poster, a
+# video, a program) described by rich discovery metadata; the object's bytes
+# live in the bucket alongside the canonical contribution file.
+
+fiesta: 1
+deployment: node
+
+node:
+  key: ERDA
+  slug: erda
+  title: EarthRef.org Digital Archive (ERDA)
+  subtitle: >-
+    Archiving any type of digital data object associated with the Earth
+    sciences — data tables, diagrams, reports, maps, presentations and videos.
+  color: "#006600" # EarthRef.org green (see frontend/src/lib/portals.ts)
+  links:
+    website: https://earthref.org/ERDA
+    github_issues: https://github.com/earthref/ERDA/issues
+  contact_email: erda@earthref.org
+
+search:
+  index: erda
+  levels:
+    - { name: Contributions, table: contribution }
+    - { name: Digital Objects, table: objects, count_field: summary.objects._n_results }
+    - { name: Files, table: files, count_field: summary.files._n_results }
+  extra_types: []
+  # Aggregated on summary._all.<field>.raw — the legacy Advanced Search
+  # dropdowns (data type, expert level, project) plus the geographic and
+  # timescale terms its term_type selector scoped queries to.
+  facets:
+    - data_types
+    - expert_level
+    - education_topics
+    - project
+    - project_group
+    - continents_oceans
+    - countries
+    - timescale_period
+
+storage:
+  bucket: erda
+
+data_model:
+  versions: ["1.0"]
+  latest: "1.0"
+  dir: erda/data_models
+
+vocabularies:
+  controlled: erda/controlled_vocabularies.json
+  suggested: erda/suggested_vocabularies.json
+
+hierarchy:
+  - contribution
+  - objects
+  - files
+
+doi:
+  prefix: 10.7288/V4/ERDA
+
+features:
+  pages: []
+  plugins: [digital-objects]

@@ -1,0 +1,861 @@
+{
+	"updated_day": "2026:08:26",
+	"published_day": "2026:08:26",
+	"data_model_version": "1.0",
+	"tables": {
+		"contribution": {
+			"label": "Contribution",
+			"position": 1,
+			"description": "Contribution metadata",
+			"notes": "One ERDA contribution publishes one or more digital objects as a single citable, versioned unit.",
+			"columns": {
+				"id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique ERDA Contribution ID",
+					"notes": "Written during contribution activation",
+					"examples": [
+						"1"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"version": {
+					"label": "Version",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Contribution version number",
+					"notes": "1 for the original contribution, empty if the contribution is not activated, written during contribution activation",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"timestamp": {
+					"label": "Activation Timestamp",
+					"group": "Contribution",
+					"position": 3,
+					"type": "Timestamp",
+					"description": "Date and time of contribution activation",
+					"notes": "ISO 8601 date and time (e.g. \"yyyy-mm-ddThh:mm:ss.sssZ\"), written during contribution activation",
+					"examples": [
+						"2004-08-13T19:03:00Z"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"contributor": {
+					"label": "Contributor",
+					"group": "Contribution",
+					"position": 4,
+					"type": "String",
+					"description": "Contributor EarthRef handle",
+					"notes": "Written during contribution activation",
+					"examples": [
+						"@rminnett"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"is_validated": {
+					"label": "Is Validated",
+					"group": "Contribution",
+					"position": 5,
+					"type": "String",
+					"unit": "Flag",
+					"description": "Contribution has passed the ERDA Data Model validation",
+					"validations": [
+						"cv(\"boolean\")",
+						"downloadOnly()"
+					]
+				},
+				"is_reviewed": {
+					"label": "Is Reviewed",
+					"group": "Contribution",
+					"position": 6,
+					"type": "String",
+					"unit": "Flag",
+					"description": "Contribution has been reviewed for correct usage of the ERDA Data Model",
+					"validations": [
+						"cv(\"boolean\")",
+						"downloadOnly()"
+					]
+				},
+				"data_model_version": {
+					"label": "Data Model Version",
+					"group": "Contribution",
+					"position": 7,
+					"type": "String",
+					"description": "ERDA data model version",
+					"notes": "Written during contribution activation",
+					"examples": [
+						"1.0"
+					],
+					"validations": [
+						"cv(\"erda_version\")",
+						"downloadOnly()"
+					]
+				},
+				"reference": {
+					"label": "Contribution Reference",
+					"group": "Contribution",
+					"position": 8,
+					"type": "String",
+					"description": "DOI or citation of the publication this contribution supports",
+					"notes": "ERDA archives unpublished material, so a reference is recommended rather than required; the per-object `citations` column carries the source of an individual object.",
+					"examples": [
+						"10.1029/2003GC000626"
+					],
+					"validations": [
+						"type(\"references\")",
+						"recommended()"
+					]
+				},
+				"author": {
+					"label": "Contribution Author",
+					"group": "Contribution",
+					"position": 9,
+					"type": "String",
+					"description": "EarthRef handle, ORCID, or name and email of the author of the contribution",
+					"examples": [
+						"@hstaudigel"
+					],
+					"validations": [
+						"type(\"users\")"
+					]
+				},
+				"description": {
+					"label": "Description",
+					"group": "Contribution",
+					"position": 10,
+					"type": "String",
+					"description": "Description of the contribution as a whole",
+					"validations": [
+						"recommended()"
+					]
+				},
+				"supplemental_links": {
+					"label": "Supplemental Links",
+					"group": "Contribution",
+					"position": 11,
+					"type": "Dictionary",
+					"description": "Links to supplemental material hosted elsewhere",
+					"examples": [
+						"{\"Project Web Site\": \"http://earthref.org/PACER/vailuluu/\"}"
+					]
+				}
+			}
+		},
+		"objects": {
+			"label": "Digital Objects",
+			"position": 2,
+			"description": "An archived digital data object: the ERDA record a persistent link resolves to",
+			"notes": "One row per object. The files that make up the object are listed in the `files` table and reference this row by `object`.",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique ERDA Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"object": {
+					"label": "Object Name",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Name for the digital object, unique within the contribution",
+					"notes": "Used by rows in the `files` table to reference their object",
+					"examples": [
+						"garnet-peridotite-xenoliths"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"title": {
+					"label": "Title",
+					"group": "Names",
+					"position": 4,
+					"type": "String",
+					"description": "Title of the digital object as it is displayed and cited",
+					"examples": [
+						"Composition database of garnet peridotite xenoliths"
+					],
+					"validations": [
+						"required()"
+					]
+				},
+				"alternate_titles": {
+					"label": "Alternate Titles",
+					"group": "Names",
+					"position": 5,
+					"type": "List",
+					"description": "Colon-delimited list of alternate titles the object is also known by"
+				},
+				"data_types": {
+					"label": "Data Types",
+					"group": "Description",
+					"position": 6,
+					"type": "List",
+					"description": "Colon-delimited list of the kinds of digital object this is",
+					"examples": [
+						"spreadsheet:data",
+						"poster"
+					],
+					"validations": [
+						"cv(\"data_type\")",
+						"required()"
+					]
+				},
+				"expert_level": {
+					"label": "Expert Level",
+					"group": "Description",
+					"position": 7,
+					"type": "String",
+					"description": "Audience the object is pitched at",
+					"examples": [
+						"College and Introduction to Science"
+					],
+					"validations": [
+						"cv(\"expert_level\")",
+						"required()"
+					]
+				},
+				"description": {
+					"label": "Description",
+					"group": "Description",
+					"position": 8,
+					"type": "Text",
+					"description": "Free-text description of the object and its contents",
+					"validations": [
+						"recommended()"
+					]
+				},
+				"instructions": {
+					"label": "Instructions",
+					"group": "Description",
+					"position": 9,
+					"type": "Text",
+					"description": "How to open, run, or interpret the object"
+				},
+				"keywords": {
+					"label": "Keywords",
+					"group": "Description",
+					"position": 10,
+					"type": "List",
+					"description": "Colon-delimited list of free-text keywords",
+					"examples": [
+						"xenolith:peridotite:garnet:REE"
+					],
+					"validations": [
+						"recommended()"
+					]
+				},
+				"parameters": {
+					"label": "Parameters",
+					"group": "Description",
+					"position": 11,
+					"type": "List",
+					"description": "Colon-delimited list of the measured or derived parameters the object reports",
+					"examples": [
+						"La:Ce:Pr:Nd:Sm"
+					]
+				},
+				"materials": {
+					"label": "Materials",
+					"group": "Description",
+					"position": 12,
+					"type": "List",
+					"description": "Colon-delimited list of the materials the object describes",
+					"examples": [
+						"upper crust:soil:loess:shale"
+					]
+				},
+				"samples": {
+					"label": "Samples",
+					"group": "Description",
+					"position": 13,
+					"type": "List",
+					"description": "Colon-delimited list of sample names the object reports on",
+					"examples": [
+						"SO-4:GSS-8:GSD-9"
+					]
+				},
+				"education_topics": {
+					"label": "Education Topics",
+					"group": "Description",
+					"position": 14,
+					"type": "List",
+					"description": "Colon-delimited list of ERESE Resource Matrix topics this object teaches",
+					"examples": [
+						"The Earth's Magnetic Field:Magnetic Reversals"
+					],
+					"validations": [
+						"sv(\"education_topics\")"
+					]
+				},
+				"computer_program": {
+					"label": "Computer Program",
+					"group": "Software",
+					"position": 15,
+					"type": "String",
+					"description": "Program needed to open or run the object",
+					"examples": [
+						"Microsoft Excel"
+					],
+					"validations": [
+						"sv(\"computer_programs\")"
+					]
+				},
+				"computer_program_version": {
+					"label": "Computer Program Version",
+					"group": "Software",
+					"position": 16,
+					"type": "String",
+					"description": "Version of the computer program the object was created with or requires",
+					"examples": [
+						"1997"
+					]
+				},
+				"citations": {
+					"label": "Citations",
+					"group": "Provenance",
+					"position": 17,
+					"type": "List",
+					"description": "Colon-delimited list of DOIs or citations for the source of this object",
+					"notes": "Empty for the unpublished material ERDA exists to archive",
+					"examples": [
+						"10.1029/2001GC000150"
+					],
+					"validations": [
+						"type(\"references\")"
+					]
+				},
+				"source_url": {
+					"label": "Source Web Site",
+					"group": "Provenance",
+					"position": 18,
+					"type": "String",
+					"description": "Web site the object was sourced from",
+					"examples": [
+						"http://earthref.org/PACER/vailuluu/"
+					]
+				},
+				"project": {
+					"label": "Project",
+					"group": "Provenance",
+					"position": 19,
+					"type": "String",
+					"description": "Project, workshop, or research theme the object belongs to",
+					"examples": [
+						"Vailulu'u: the Active Samoan Hotspot Volcano"
+					],
+					"validations": [
+						"sv(\"projects\")"
+					]
+				},
+				"project_group": {
+					"label": "Project Group",
+					"group": "Provenance",
+					"position": 20,
+					"type": "String",
+					"description": "Group the project belongs to",
+					"examples": [
+						"Other Projects"
+					],
+					"validations": [
+						"cv(\"project_group\")"
+					]
+				},
+				"project_url": {
+					"label": "Project Web Site",
+					"group": "Provenance",
+					"position": 21,
+					"type": "String",
+					"description": "Web site of the project",
+					"examples": [
+						"http://www.earthref.org/PACER/vailuluu/main.htm"
+					]
+				},
+				"external_url": {
+					"label": "External Link",
+					"group": "Provenance",
+					"position": 22,
+					"type": "String",
+					"description": "Location of the object when it is hosted elsewhere",
+					"notes": "Required in practice for the \"web link\" data type, which archives a link rather than a file",
+					"examples": [
+						"https://www.youtube.com/playlist?list=PLirL2unikKCi9u90CHr8o06QC"
+					]
+				},
+				"doi": {
+					"label": "DOI",
+					"group": "Provenance",
+					"position": 23,
+					"type": "String",
+					"description": "DOI minted for this object, if it has one of its own",
+					"examples": [
+						"10.7288/V4/ERDA/155"
+					]
+				},
+				"license": {
+					"label": "License",
+					"group": "Rights",
+					"position": 24,
+					"type": "String",
+					"description": "License the object is distributed under",
+					"examples": [
+						"CC BY 4.0"
+					],
+					"validations": [
+						"cv(\"license\")",
+						"recommended()"
+					]
+				},
+				"copyright_owner": {
+					"label": "Copyright Owner",
+					"group": "Rights",
+					"position": 25,
+					"type": "String",
+					"description": "Holder of the copyright on the object",
+					"examples": [
+						"American Geophysical Union"
+					]
+				},
+				"copyright_description": {
+					"label": "Copyright Description",
+					"group": "Rights",
+					"position": 26,
+					"type": "Text",
+					"description": "Copyright terms, permissions granted, and attribution requirements"
+				},
+				"copyright_url": {
+					"label": "Copyright Web Site",
+					"group": "Rights",
+					"position": 27,
+					"type": "String",
+					"description": "Web site stating the copyright terms",
+					"examples": [
+						"http://www.agu.org"
+					]
+				},
+				"continents_oceans": {
+					"label": "Continents and Oceans",
+					"group": "Geography",
+					"position": 28,
+					"type": "List",
+					"description": "Colon-delimited list of continents and oceans the object covers",
+					"examples": [
+						"Pacific Ocean"
+					],
+					"validations": [
+						"cv(\"continent_ocean\")"
+					]
+				},
+				"countries": {
+					"label": "Countries",
+					"group": "Geography",
+					"position": 29,
+					"type": "List",
+					"description": "Colon-delimited list of countries the object covers",
+					"examples": [
+						"American Samoa"
+					],
+					"validations": [
+						"cv(\"country\")"
+					]
+				},
+				"state_provinces": {
+					"label": "States or Provinces",
+					"group": "Geography",
+					"position": 30,
+					"type": "List",
+					"description": "Colon-delimited list of states or provinces the object covers",
+					"examples": [
+						"California"
+					],
+					"validations": [
+						"cv(\"state_province\")"
+					]
+				},
+				"regions": {
+					"label": "Regions",
+					"group": "Geography",
+					"position": 31,
+					"type": "List",
+					"description": "Colon-delimited list of regions the object covers",
+					"examples": [
+						"Southwest"
+					],
+					"validations": [
+						"sv(\"region\")"
+					]
+				},
+				"oceans_seas": {
+					"label": "Oceans and Seas",
+					"group": "Geography",
+					"position": 32,
+					"type": "List",
+					"description": "Colon-delimited list of oceans and seas the object covers",
+					"examples": [
+						"Coral Sea"
+					],
+					"validations": [
+						"cv(\"ocean_sea\")"
+					]
+				},
+				"locations": {
+					"label": "Locations",
+					"group": "Geography",
+					"position": 33,
+					"type": "List",
+					"description": "Colon-delimited list of free-text place names",
+					"examples": [
+						"Vailulu'u Volcano:Samoan Islands:Samoan Hotspot Trail"
+					]
+				},
+				"lat": {
+					"label": "Latitude",
+					"group": "Geography",
+					"position": 34,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Representative latitude of the object",
+					"notes": "Decimal degrees north; the center of the area for an object covering one",
+					"examples": [
+						"-14.2122"
+					],
+					"validations": [
+						"min(-90)",
+						"max(90)"
+					]
+				},
+				"lon": {
+					"label": "Longitude",
+					"group": "Geography",
+					"position": 35,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Representative longitude of the object",
+					"notes": "Decimal degrees east, -180 to 180 as in the legacy ERDA search (MagIC's 0-360 convention does not apply here)",
+					"examples": [
+						"-169.0573"
+					],
+					"validations": [
+						"min(-180)",
+						"max(180)"
+					]
+				},
+				"lat_s": {
+					"label": "Southern Latitude",
+					"group": "Geography",
+					"position": 36,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Southern bound of the area the object covers",
+					"validations": [
+						"min(-90)",
+						"max(90)"
+					]
+				},
+				"lat_n": {
+					"label": "Northern Latitude",
+					"group": "Geography",
+					"position": 37,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Northern bound of the area the object covers",
+					"validations": [
+						"min(-90)",
+						"max(90)"
+					]
+				},
+				"lon_w": {
+					"label": "Western Longitude",
+					"group": "Geography",
+					"position": 38,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Western bound of the area the object covers",
+					"validations": [
+						"min(-180)",
+						"max(180)"
+					]
+				},
+				"lon_e": {
+					"label": "Eastern Longitude",
+					"group": "Geography",
+					"position": 39,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Eastern bound of the area the object covers",
+					"validations": [
+						"min(-180)",
+						"max(180)"
+					]
+				},
+				"age_high": {
+					"label": "Oldest Age",
+					"group": "Geologic Age",
+					"position": 40,
+					"type": "Number",
+					"unit": "Ma or age_unit",
+					"description": "Oldest age of the material the object describes",
+					"examples": [
+						"1"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"age_low": {
+					"label": "Youngest Age",
+					"group": "Geologic Age",
+					"position": 41,
+					"type": "Number",
+					"unit": "Ma or age_unit",
+					"description": "Youngest age of the material the object describes",
+					"examples": [
+						"0"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"age_unit": {
+					"label": "Age Unit",
+					"group": "Geologic Age",
+					"position": 42,
+					"type": "String",
+					"description": "Unit the ages are given in",
+					"examples": [
+						"Ma"
+					],
+					"validations": [
+						"cv(\"age_unit\")",
+						"recommended()"
+					]
+				},
+				"timescale_eon": {
+					"label": "Timescale Eon",
+					"group": "Geologic Age",
+					"position": 43,
+					"type": "String",
+					"description": "Geological timescale eon",
+					"examples": [
+						"Phanerozoic"
+					],
+					"validations": [
+						"cv(\"timescale_eon\")"
+					]
+				},
+				"timescale_era": {
+					"label": "Timescale Era",
+					"group": "Geologic Age",
+					"position": 44,
+					"type": "String",
+					"description": "Geological timescale era",
+					"examples": [
+						"Cenozoic"
+					],
+					"validations": [
+						"cv(\"timescale_era\")"
+					]
+				},
+				"timescale_period": {
+					"label": "Timescale Period",
+					"group": "Geologic Age",
+					"position": 45,
+					"type": "String",
+					"description": "Geological timescale period",
+					"examples": [
+						"Cretaceous"
+					],
+					"validations": [
+						"cv(\"timescale_period\")"
+					]
+				},
+				"timescale_epoch": {
+					"label": "Timescale Epoch",
+					"group": "Geologic Age",
+					"position": 46,
+					"type": "String",
+					"description": "Geological timescale epoch",
+					"examples": [
+						"Holocene"
+					],
+					"validations": [
+						"cv(\"timescale_epoch\")"
+					]
+				},
+				"timescale_stage": {
+					"label": "Timescale Stage",
+					"group": "Geologic Age",
+					"position": 47,
+					"type": "String",
+					"description": "Geological timescale stage",
+					"examples": [
+						"Albian"
+					],
+					"validations": [
+						"cv(\"timescale_stage\")"
+					]
+				}
+			}
+		},
+		"files": {
+			"label": "Files",
+			"position": 3,
+			"description": "The files that make up a digital object",
+			"notes": "One row per archived file. A single-file object has one row; a bundle (a zipped folder, an image series) has one row per file.",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique ERDA Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"file": {
+					"label": "File Name",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Name of the file as it is stored and downloaded",
+					"examples": [
+						"garnet.peridotite.xenoliths.xls"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"object": {
+					"label": "Object Name",
+					"group": "Parent",
+					"position": 4,
+					"type": "String",
+					"description": "Name of the digital object this file belongs to",
+					"validations": [
+						"in(\"objects.object\")",
+						"required()"
+					]
+				},
+				"title": {
+					"label": "Title",
+					"group": "Description",
+					"position": 5,
+					"type": "String",
+					"description": "Short title for this file within the object"
+				},
+				"description": {
+					"label": "Description",
+					"group": "Description",
+					"position": 6,
+					"type": "Text",
+					"description": "What this file contains and how it relates to the rest of the object"
+				},
+				"format": {
+					"label": "Format",
+					"group": "Description",
+					"position": 7,
+					"type": "String",
+					"description": "File format, normally the file name extension",
+					"examples": [
+						"xls"
+					],
+					"validations": [
+						"sv(\"file_formats\")"
+					]
+				},
+				"media_type": {
+					"label": "Media Type",
+					"group": "Description",
+					"position": 8,
+					"type": "String",
+					"description": "IANA media type of the file",
+					"examples": [
+						"application/vnd.ms-excel"
+					]
+				},
+				"size_bytes": {
+					"label": "File Size",
+					"group": "Description",
+					"position": 9,
+					"type": "Integer",
+					"unit": "Bytes",
+					"description": "Size of the file",
+					"examples": [
+						"503808"
+					],
+					"validations": [
+						"min(0)",
+						"downloadOnly()"
+					]
+				},
+				"checksum": {
+					"label": "Checksum",
+					"group": "Description",
+					"position": 10,
+					"type": "String",
+					"description": "Algorithm-prefixed checksum of the stored file",
+					"notes": "Written during contribution activation",
+					"examples": [
+						"sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"timestamp": {
+					"label": "File Timestamp",
+					"group": "Description",
+					"position": 11,
+					"type": "Timestamp",
+					"description": "Date and time the file was created",
+					"examples": [
+						"2000-11-14T09:00:00Z"
+					],
+					"validations": [
+						"type(\"date_time\")"
+					]
+				}
+			}
+		}
+	}
+}

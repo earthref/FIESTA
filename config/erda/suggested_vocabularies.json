@@ -1,0 +1,419 @@
+{
+	"projects": {
+		"label": "Projects",
+		"database_column": "project",
+		"items": [
+			{
+				"item": "ArArCALC",
+				"group": "Earth Science Software"
+			},
+			{
+				"item": "EC-RAFC",
+				"group": "Earth Science Software"
+			},
+			{
+				"item": "EarthRef.org Data Population Tools",
+				"group": "Earth Science Software"
+			},
+			{
+				"item": "TnT2000",
+				"group": "Earth Science Software"
+			},
+			{
+				"item": "Compendium of Geochemistry",
+				"group": "Earth Science Data Compilations"
+			},
+			{
+				"item": "PMCID",
+				"group": "Earth Science Data Compilations"
+			},
+			{
+				"item": "ERESE Workshops",
+				"group": "Meetings and Workshops"
+			},
+			{
+				"item": "Fall AGU Meetings",
+				"group": "Meetings and Workshops"
+			},
+			{
+				"item": "GERM Workshops",
+				"group": "Meetings and Workshops"
+			},
+			{
+				"item": "MagIC Workshops",
+				"group": "Meetings and Workshops"
+			},
+			{
+				"item": "SBN Workshops",
+				"group": "Meetings and Workshops"
+			},
+			{
+				"item": "Accretionary Processes Along the Ultra-Slow Spreading Southwest Indian Ridge",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Alkenone-Based Paleoceanographic Indicators",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Biogenic Calcium Carbonate",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Geochemical Earth Referenc Model (GERM)",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Geomagnetic Field Behavior over the Past 5 Myr",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Hawaii Scientific Drilling Project",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Movement, Dynamics and Geochemical evolution of the Hawaiian hotspot",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Oceanic Inputs to the Subduction Factory",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Phase Relations and Trace Element Partitioning on the Mantle Solidus",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Plume-Ridge Interaction",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "The Oman Ophiolite and Mid-Ocean Ridge Processes",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Thermochemical Convection in the Earth's Interior",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Trench to Subarc: Diagenetic and Metamorphic Mass Flux in Subduction Zones",
+				"group": "G-cubed.org Themes"
+			},
+			{
+				"item": "Alteration of the Oceanic Crust",
+				"group": "Other Projects"
+			},
+			{
+				"item": "Biomediation",
+				"group": "Other Projects"
+			},
+			{
+				"item": "Hawaii Scientific Drilling Project",
+				"group": "Other Projects"
+			},
+			{
+				"item": "Vailulu'u: the Active Samoan Hotspot Volcano",
+				"group": "Other Projects"
+			},
+			{
+				"item": "Rupturing Continental Crust: Gulf of California and Salton Trough",
+				"group": "MARGINS Focus Sites"
+			},
+			{
+				"item": "Rupturing Continental Crust: Red Sea and Gulf of Suez",
+				"group": "MARGINS Focus Sites"
+			},
+			{
+				"item": "Seismogenic Zone: Costa Rica and Nicaragua",
+				"group": "MARGINS Focus Sites"
+			},
+			{
+				"item": "Seismogenic Zone: Nankai and Japan Trench",
+				"group": "MARGINS Focus Sites"
+			},
+			{
+				"item": "Source to Sink: New Zealand",
+				"group": "MARGINS Focus Sites"
+			},
+			{
+				"item": "Source to Sink: Papua-New Guinea",
+				"group": "MARGINS Focus Sites"
+			},
+			{
+				"item": "Subduction Factory: Costa Rica and Nicaragua",
+				"group": "MARGINS Focus Sites"
+			},
+			{
+				"item": "Subduction Factory: Izu Bonin and Mariana Trench",
+				"group": "MARGINS Focus Sites"
+			},
+			{
+				"item": "Geomagnetic Field: 0-5 Ma",
+				"group": "MagIC Research Themes"
+			},
+			{
+				"item": "Holocene Geomagnetic Field Variations",
+				"group": "MagIC Research Themes"
+			},
+			{
+				"item": "Magnetic Field Modeling",
+				"group": "MagIC Research Themes"
+			},
+			{
+				"item": "Exploratory Studies",
+				"group": "Ridge 2000 Target Areas"
+			},
+			{
+				"item": "Integrated Studies",
+				"group": "Ridge 2000 Target Areas"
+			},
+			{
+				"item": "Time-Critical Studies",
+				"group": "Ridge 2000 Target Areas"
+			}
+		]
+	},
+	"education_topics": {
+		"label": "Education Topics (ERESE Resource Matrix)",
+		"database_column": "education_topics",
+		"items": [
+			{
+				"item": "40Ar/39Ar Geochronology"
+			},
+			{
+				"item": "Continental Crust"
+			},
+			{
+				"item": "Earthquakes"
+			},
+			{
+				"item": "Fish and Benthic Life in the Oceans"
+			},
+			{
+				"item": "Geological Time Scale"
+			},
+			{
+				"item": "Global Warming"
+			},
+			{
+				"item": "Hotspots and Absolute Plate Motion"
+			},
+			{
+				"item": "Magnetic Reversals"
+			},
+			{
+				"item": "Microbes in the Oceans"
+			},
+			{
+				"item": "Ocean Currents"
+			},
+			{
+				"item": "Pangaea"
+			},
+			{
+				"item": "Plate Motion on the Earth"
+			},
+			{
+				"item": "Seafloor Spreading"
+			},
+			{
+				"item": "Sediments"
+			},
+			{
+				"item": "Tectonic Plates"
+			},
+			{
+				"item": "The Carbon Cycle"
+			},
+			{
+				"item": "The Chemistry of Oceans"
+			},
+			{
+				"item": "The Earth's Core, Mantle and Crust"
+			},
+			{
+				"item": "The Earth's Magnetic Field"
+			},
+			{
+				"item": "The Earth's Mantle"
+			},
+			{
+				"item": "The Formation of Seamounts"
+			},
+			{
+				"item": "The Morphology of the Ocean Floor"
+			},
+			{
+				"item": "The Physics of Oceans"
+			},
+			{
+				"item": "Volcanoes"
+			}
+		]
+	},
+	"computer_programs": {
+		"label": "Computer Programs",
+		"database_column": "computer_program",
+		"items": [
+			{
+				"item": "Adobe Acrobat"
+			},
+			{
+				"item": "Adobe Illustrator"
+			},
+			{
+				"item": "Adobe Photoshop"
+			},
+			{
+				"item": "ArArCALC"
+			},
+			{
+				"item": "ArcGIS"
+			},
+			{
+				"item": "GMT"
+			},
+			{
+				"item": "Google Earth"
+			},
+			{
+				"item": "Jupyter Notebook"
+			},
+			{
+				"item": "MATLAB"
+			},
+			{
+				"item": "Microsoft Excel"
+			},
+			{
+				"item": "Microsoft PowerPoint"
+			},
+			{
+				"item": "Microsoft Word"
+			},
+			{
+				"item": "PmagPy"
+			},
+			{
+				"item": "Python"
+			},
+			{
+				"item": "QGIS"
+			},
+			{
+				"item": "R"
+			},
+			{
+				"item": "Not specified"
+			}
+		]
+	},
+	"file_formats": {
+		"label": "File Formats",
+		"database_column": "format",
+		"items": [
+			{
+				"item": "csv"
+			},
+			{
+				"item": "doc"
+			},
+			{
+				"item": "docx"
+			},
+			{
+				"item": "gif"
+			},
+			{
+				"item": "html"
+			},
+			{
+				"item": "jpg"
+			},
+			{
+				"item": "json"
+			},
+			{
+				"item": "m"
+			},
+			{
+				"item": "mov"
+			},
+			{
+				"item": "mp4"
+			},
+			{
+				"item": "nc"
+			},
+			{
+				"item": "netcdf"
+			},
+			{
+				"item": "pdf"
+			},
+			{
+				"item": "png"
+			},
+			{
+				"item": "ppt"
+			},
+			{
+				"item": "pptx"
+			},
+			{
+				"item": "ps"
+			},
+			{
+				"item": "py"
+			},
+			{
+				"item": "tif"
+			},
+			{
+				"item": "txt"
+			},
+			{
+				"item": "xls"
+			},
+			{
+				"item": "xlsx"
+			},
+			{
+				"item": "xml"
+			},
+			{
+				"item": "zip"
+			}
+		]
+	},
+	"region": {
+		"label": "Regions",
+		"database_name": "region",
+		"items": [
+			{
+				"item": "Alps"
+			},
+			{
+				"item": "Gilberts Ridge"
+			},
+			{
+				"item": "Lord Howe Rise"
+			},
+			{
+				"item": "Louisville Seamount Trail"
+			},
+			{
+				"item": "Rocky Mountains"
+			},
+			{
+				"item": "Samoan Seamount Trail"
+			},
+			{
+				"item": "Tokelau Seamounts"
+			},
+			{
+				"item": "West Pacific Seamount Province"
+			}
+		]
+	}
+}

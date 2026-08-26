@@ -5,7 +5,17 @@ import type { SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath } from "../lib/utils";
 import { Icon } from "./ui/icon";
 
-const NAME_COLUMNS = ["location", "site", "sample", "specimen", "core", "section", "experiment"];
+const NAME_COLUMNS = [
+  "location",
+  "site",
+  "sample",
+  "specimen",
+  "core",
+  "section",
+  "experiment",
+  "object",
+  "file",
+];
 
 function firstString(value: unknown): string | undefined {
   if (typeof value === "string" && value) return value;
