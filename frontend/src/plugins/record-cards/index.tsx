@@ -11,17 +11,18 @@ interface CellDef {
   format?: "bytes";
 }
 
-interface DigitalObjectsConfig {
-  object_table?: string;
-  object_title_column?: string;
-  file_table?: string;
-  file_title_column?: string;
-  object_cells?: CellDef[];
-  file_cells?: CellDef[];
+interface CardDef {
+  title_column: string;
+  subtitle_column?: string;
+  cells: CellDef[];
 }
 
-function pluginConfig(config: NodeConfig): DigitalObjectsConfig {
-  return (config.plugins["digital-objects"] ?? {}) as DigitalObjectsConfig;
+/** Cards keyed by the search table they apply to. */
+type RecordCardsConfig = { cards?: Record<string, CardDef> };
+
+function cardFor(config: NodeConfig, table: string): CardDef | undefined {
+  const cards = (config.plugins["record-cards"] as RecordCardsConfig | undefined)?.cards;
+  return cards?.[table];
 }
 
 function joined(value: unknown): string {
@@ -30,7 +31,7 @@ function joined(value: unknown): string {
   return String(value);
 }
 
-/** "2.2 MB" — the legacy ERDA file-size rendering, from a byte count. */
+/** "2.20 MB" — a byte count as the legacy repositories render file sizes. */
 function formatBytes(value: unknown): string {
   const bytes = Number(Array.isArray(value) ? value[0] : value);
   if (!Number.isFinite(bytes)) return joined(value);
@@ -49,20 +50,19 @@ function cellText(block: Record<string, unknown>, def: CellDef): string {
   return def.format === "bytes" ? formatBytes(value) : joined(value);
 }
 
-function ArchiveResultItem({
+function RecordCard({
   hit,
   level,
-  cells,
-  title,
-  subtitle,
+  card,
+  block,
 }: {
   hit: SearchResult;
   level: SearchLevel;
-  cells: CellDef[];
-  title: string;
-  subtitle?: string;
+  card: CardDef;
+  block: Record<string, unknown>;
 }) {
-  const block = (getPath(hit, `summary.${level.table}`) ?? {}) as Record<string, unknown>;
+  const title = joined(block[card.title_column]) || "Untitled";
+  const subtitle = card.subtitle_column ? joined(block[card.subtitle_column]) : "";
   return (
     <ResultCardFrame
       doc={hit}
@@ -77,7 +77,7 @@ function ArchiveResultItem({
               </p>
             )}
           </Cell>
-          {cells.map((def) => {
+          {card.cells.map((def) => {
             const text = cellText(block, def);
             return text ? (
               <Cell key={def.column} width={def.width} wrap>
@@ -97,37 +97,11 @@ function ArchiveResultItem({
 }
 
 function resultItem({ hit, level, config }: PluginResultItemProps) {
-  const pconfig = pluginConfig(config);
+  const card = cardFor(config, level.table);
+  if (!card) return null;
   const block = getPath(hit, `summary.${level.table}`) as Record<string, unknown> | undefined;
   if (!block) return null;
-
-  if (level.table === pconfig.object_table) {
-    const titleColumn = pconfig.object_title_column ?? "title";
-    return (
-      <ArchiveResultItem
-        hit={hit}
-        level={level}
-        cells={pconfig.object_cells ?? []}
-        title={joined(block[titleColumn]) || joined(block.object) || "Untitled object"}
-        subtitle={joined(block.description)}
-      />
-    );
-  }
-
-  if (level.table === pconfig.file_table) {
-    const titleColumn = pconfig.file_title_column ?? "file";
-    return (
-      <ArchiveResultItem
-        hit={hit}
-        level={level}
-        cells={pconfig.file_cells ?? []}
-        title={joined(block[titleColumn]) || "Untitled file"}
-        subtitle={joined(block.description) || joined(block.title)}
-      />
-    );
-  }
-
-  return null;
+  return <RecordCard hit={hit} level={level} card={card} block={block} />;
 }
 
-export const digitalObjectsPlugin: PluginModule = { resultItem };
+export const recordCardsPlugin: PluginModule = { resultItem };

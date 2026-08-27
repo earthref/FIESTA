@@ -58,10 +58,11 @@ live under `src/plugins/<name>/` and activate only when the name appears in
   `GET /api/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau`
   returns the full age spectrum + plateau. UI: age-spectrum thumbnail/modal
   on Experiments result items.
-- **`digital-objects` (ERDA)** — ERDA archives files, not measurements, so
-  the default result card (geologic classes, lithologies, method codes,
-  intensities) has nothing to show. The plugin is config-only on the
-  backend: `frontend_config` names the object/file search tables and the
-  columns that belong on their cards. UI: title + description cards with
-  data types, expert level, keywords, project, and human-readable file
-  sizes.
+- **`record-cards` (ERDA, OSU-MGR)** — some nodes publish *records* rather than
+  measurements: an ERDA digital object, an OSU-MGR core or dredged rock. The
+  default result card (geologic classes, lithologies, method codes,
+  intensities) has nothing to show for them. The plugin is config-only on the
+  backend: `frontend_config` returns, per search table, the column that titles
+  the card and the columns that become cells, and fails at startup if a card
+  names a table the node's data model does not have. UI: title + subtitle
+  cards with the configured cells and human-readable file sizes.

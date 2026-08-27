@@ -1,7 +1,7 @@
 # FIESTA local development stack — one or more nodes at once.
 #
 # FIESTA_NODE in .env is a comma-separated list of nodes to run
-# (magic | kdd | cdr | karar | erda), e.g.:
+# (magic | kdd | cdr | karar | erda | osu-mgr), e.g.:
 #
 #   FIESTA_NODE=magic,karar,cdr
 #
@@ -23,6 +23,7 @@
 #   karar    8003      8083
 #   erda     8004      8084
 #   public-api  8005 (profile: public-api)
+#   osu-mgr  8006      8086
 #
 # Postgres and OpenSearch are projections: `make rebuild` regenerates both
 # from the YAML config + MinIO bucket.
@@ -38,7 +39,7 @@ x-backend-env: &backend-env
   FIESTA_SECRET_KEY: ${FIESTA_SECRET_KEY:-dev-only-change-me}
   FIESTA_SMTP_HOST: mailpit
   FIESTA_SMTP_PORT: 1025
-  FIESTA_CORS_ORIGINS: '["http://localhost:5173","http://localhost:8080","http://localhost:8081","http://localhost:8082","http://localhost:8083","http://localhost:8084"]'
+  FIESTA_CORS_ORIGINS: '["http://localhost:5173","http://localhost:8080","http://localhost:8081","http://localhost:8082","http://localhost:8083","http://localhost:8084","http://localhost:8086"]'
   # Local-dev portal-bar cross-links to sibling nodes on this host. `make`
   # computes this from the running node list + frontend ports; empty otherwise.
   FIESTA_PORTAL_URLS: ${FIESTA_PORTAL_URLS:-}
@@ -312,6 +313,43 @@ services:
       - "${ERDA_FRONTEND_PORT:-8084}:80"
     depends_on:
       backend-erda:
+        condition: service_healthy
+
+  # ---- OSU-MGR -------------------------------------------------------------
+  backend-osu-mgr:
+    <<: *backend
+    profiles: [osu-mgr]
+    environment:
+      <<: *backend-env
+      FIESTA_CONFIG_FILE: /config/osu-mgr.yaml
+    command: *backend-command
+    ports:
+      - "${OSU_MGR_BACKEND_PORT:-8006}:8000"
+
+  worker-osu-mgr:
+    build: ./backend
+    profiles: [osu-mgr]
+    environment:
+      <<: *backend-env
+      FIESTA_CONFIG_FILE: /config/osu-mgr.yaml
+    volumes:
+      - ./config:/config:ro
+    command: fiesta worker
+    depends_on:
+      backend-osu-mgr:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+  frontend-osu-mgr:
+    build: ./frontend
+    profiles: [osu-mgr]
+    environment:
+      BACKEND_HOST: backend-osu-mgr
+    ports:
+      - "${OSU_MGR_FRONTEND_PORT:-8086}:80"
+    depends_on:
+      backend-osu-mgr:
         condition: service_healthy
 
   # ---- Public API (all nodes) ------------------------------------------------

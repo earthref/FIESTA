@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import type { NodeConfig, SearchLevel, SearchResult } from "../lib/types";
 import { depthPlotPlugin } from "./depth-plot";
-import { digitalObjectsPlugin } from "./digital-objects";
 import { plateauPlugin } from "./plateau-calculations";
 import { polesPlugin } from "./poles";
+import { recordCardsPlugin } from "./record-cards";
 
 export interface PluginResultItemProps {
   hit: SearchResult;
@@ -56,7 +56,7 @@ export interface PluginModule {
 export const PLUGINS: Record<string, PluginModule> = {
   poles: polesPlugin,
   "depth-plot": depthPlotPlugin,
-  "digital-objects": digitalObjectsPlugin,
+  "record-cards": recordCardsPlugin,
   "plateau-calculations": plateauPlugin,
 };
 

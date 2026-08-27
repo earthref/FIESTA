@@ -93,5 +93,5 @@ def test_registry_names():
         "poles",
         "depth-plot",
         "plateau-calculations",
-        "digital-objects",
+        "record-cards",
     }

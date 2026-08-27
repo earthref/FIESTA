@@ -1,0 +1,1964 @@
+{
+	"updated_day": "2026:08:26",
+	"published_day": "2026:08:26",
+	"data_model_version": "1.0",
+	"tables": {
+		"contribution": {
+			"label": "Contribution",
+			"position": 1,
+			"description": "Contribution metadata",
+			"notes": "One contribution publishes the holdings of one cruise or programme — the grain the repository accessions and lifts moratoria at.",
+			"columns": {
+				"id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"notes": "Written during contribution activation",
+					"examples": [
+						"1"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"version": {
+					"label": "Version",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Contribution version number",
+					"notes": "1 for the original contribution, empty if the contribution is not activated",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"timestamp": {
+					"label": "Activation Timestamp",
+					"group": "Contribution",
+					"position": 3,
+					"type": "Timestamp",
+					"description": "Date and time of contribution activation",
+					"notes": "ISO 8601 date and time (e.g. \"yyyy-mm-ddThh:mm:ss.sssZ\")",
+					"examples": [
+						"2026-08-26T19:03:00Z"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"contributor": {
+					"label": "Contributor",
+					"group": "Contribution",
+					"position": 4,
+					"type": "String",
+					"description": "Contributor EarthRef handle",
+					"notes": "Written during contribution activation",
+					"examples": [
+						"@osu-mgr-pipeline"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"is_validated": {
+					"label": "Is Validated",
+					"group": "Contribution",
+					"position": 5,
+					"type": "String",
+					"unit": "Flag",
+					"description": "Contribution has passed the OSU-MGR Data Model validation",
+					"validations": [
+						"cv(\"boolean\")",
+						"downloadOnly()"
+					]
+				},
+				"is_reviewed": {
+					"label": "Is Reviewed",
+					"group": "Contribution",
+					"position": 6,
+					"type": "String",
+					"unit": "Flag",
+					"description": "Contribution has been reviewed for correct usage of the OSU-MGR Data Model",
+					"validations": [
+						"cv(\"boolean\")",
+						"downloadOnly()"
+					]
+				},
+				"data_model_version": {
+					"label": "Data Model Version",
+					"group": "Contribution",
+					"position": 7,
+					"type": "String",
+					"description": "OSU-MGR data model version",
+					"examples": [
+						"1.0"
+					],
+					"validations": [
+						"cv(\"osu_mgr_version\")",
+						"downloadOnly()"
+					]
+				},
+				"reference": {
+					"label": "Contribution Reference",
+					"group": "Contribution",
+					"position": 8,
+					"type": "String",
+					"description": "DOI or citation of the publication this contribution supports",
+					"notes": "Repository holdings are usually accessioned before they are published",
+					"validations": [
+						"type(\"references\")"
+					]
+				},
+				"author": {
+					"label": "Contribution Author",
+					"group": "Contribution",
+					"position": 9,
+					"type": "String",
+					"description": "EarthRef handle, ORCID, or name and email of the author of the contribution",
+					"validations": [
+						"type(\"users\")"
+					]
+				},
+				"description": {
+					"label": "Description",
+					"group": "Contribution",
+					"position": 10,
+					"type": "String",
+					"description": "Description of the contribution as a whole",
+					"validations": [
+						"recommended()"
+					]
+				},
+				"supplemental_links": {
+					"label": "Supplemental Links",
+					"group": "Contribution",
+					"position": 11,
+					"type": "Dictionary",
+					"description": "Links to related resources hosted elsewhere",
+					"examples": [
+						"{\"OSU-MGR\": \"https://osu-mgr.org/search?osu=OSU-SR2113\"}"
+					]
+				}
+			}
+		},
+		"cruises": {
+			"label": "Cruises",
+			"position": 2,
+			"description": "The cruise or programme the material was collected on",
+			"notes": "Normally one row: the contribution's accession unit. Moratorium state and accession date live here because the repository manages them per cruise.",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"cruise": {
+					"label": "Cruise",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Cruise or programme ID as it appears in OSU-IDs",
+					"examples": [
+						"SR2113",
+						"ELT24"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"osu_id": {
+					"label": "OSU-ID",
+					"group": "Names",
+					"position": 4,
+					"type": "String",
+					"description": "Persistent OSU-MGR identifier for this record",
+					"notes": "Resolves at osu-mgr.org; derived from the cruise, station and sample parts",
+					"examples": [
+						"OSU-SR2113"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"cruise_name": {
+					"label": "Cruise Name",
+					"group": "Names",
+					"position": 5,
+					"type": "String",
+					"description": "Full cruise or programme name",
+					"examples": [
+						"2021 North Atlantic Stepping Stones"
+					]
+				},
+				"r2r_cruise_id": {
+					"label": "R2R Cruise ID",
+					"group": "Names",
+					"position": 6,
+					"type": "String",
+					"description": "Rolling Deck to Repository cruise identifier",
+					"examples": [
+						"SR2113"
+					]
+				},
+				"collection": {
+					"label": "Collection",
+					"group": "Names",
+					"position": 7,
+					"type": "String",
+					"description": "Repository collection the holdings belong to",
+					"validations": [
+						"cv(\"collection\")",
+						"recommended()"
+					]
+				},
+				"rv_name": {
+					"label": "Research Vessel",
+					"group": "Expedition",
+					"position": 8,
+					"type": "String",
+					"description": "Name of the research vessel",
+					"examples": [
+						"R/V Sally Ride"
+					]
+				},
+				"rov_name": {
+					"label": "ROV Name",
+					"group": "Expedition",
+					"position": 9,
+					"type": "String",
+					"description": "Name of the remotely operated vehicle, when one was used",
+					"examples": [
+						"ROV Jason"
+					]
+				},
+				"pi": {
+					"label": "Principal Investigator",
+					"group": "Expedition",
+					"position": 10,
+					"type": "String",
+					"description": "Contact PI for the cruise",
+					"validations": [
+						"type(\"users\")"
+					]
+				},
+				"pi_email": {
+					"label": "PI Email",
+					"group": "Expedition",
+					"position": 11,
+					"type": "String",
+					"description": "Contact email for the PI"
+				},
+				"pi_institution": {
+					"label": "PI Institution",
+					"group": "Expedition",
+					"position": 12,
+					"type": "String",
+					"description": "Institution the contact PI is affiliated with",
+					"examples": [
+						"Oregon State University"
+					]
+				},
+				"start_date": {
+					"label": "Start Date",
+					"group": "Expedition",
+					"position": 13,
+					"type": "String",
+					"description": "Date the cruise started",
+					"examples": [
+						"2021-08-03"
+					]
+				},
+				"end_date": {
+					"label": "End Date",
+					"group": "Expedition",
+					"position": 14,
+					"type": "String",
+					"description": "Date the cruise ended"
+				},
+				"place": {
+					"label": "Place",
+					"group": "Expedition",
+					"position": 15,
+					"type": "String",
+					"description": "Region the cruise worked in",
+					"examples": [
+						"Northeast Pacific"
+					]
+				},
+				"notes": {
+					"label": "Notes",
+					"group": "Expedition",
+					"position": 16,
+					"type": "Text",
+					"description": "Free-text notes on the cruise"
+				},
+				"accession_date": {
+					"label": "Accession Date",
+					"group": "Curation",
+					"position": 17,
+					"type": "String",
+					"description": "Date the material was accessioned into the repository",
+					"examples": [
+						"2022-03-14"
+					]
+				},
+				"moratorium": {
+					"label": "Moratorium",
+					"group": "Curation",
+					"position": 18,
+					"type": "String",
+					"unit": "Flag",
+					"description": "Holdings from this cruise are under moratorium",
+					"notes": "Moratorium files are withheld from public search and download",
+					"validations": [
+						"cv(\"boolean\")"
+					]
+				},
+				"moratorium_expiration": {
+					"label": "Moratorium Expiration",
+					"group": "Curation",
+					"position": 19,
+					"type": "String",
+					"description": "Date the moratorium lifts",
+					"examples": [
+						"2027-01-01"
+					]
+				},
+				"lat_s": {
+					"label": "Southern Latitude",
+					"group": "Position",
+					"position": 20,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Southern bound of the cruise's stations",
+					"notes": "Aggregated from the cruise's cores and dives",
+					"validations": [
+						"min(-90)",
+						"max(90)",
+						"downloadOnly()"
+					]
+				},
+				"lat_n": {
+					"label": "Northern Latitude",
+					"group": "Position",
+					"position": 21,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Northern bound of the cruise's stations",
+					"validations": [
+						"min(-90)",
+						"max(90)",
+						"downloadOnly()"
+					]
+				},
+				"lon_w": {
+					"label": "Western Longitude",
+					"group": "Position",
+					"position": 22,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Western bound of the cruise's stations",
+					"validations": [
+						"min(-180)",
+						"max(180)",
+						"downloadOnly()"
+					]
+				},
+				"lon_e": {
+					"label": "Eastern Longitude",
+					"group": "Position",
+					"position": 23,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Eastern bound of the cruise's stations",
+					"validations": [
+						"min(-180)",
+						"max(180)",
+						"downloadOnly()"
+					]
+				},
+				"methods": {
+					"label": "Collection Methods",
+					"group": "Aggregates",
+					"position": 24,
+					"type": "List",
+					"description": "Colon-delimited list of the collection methods used on this cruise",
+					"notes": "Rolled up from the cruise's cores and dives",
+					"validations": [
+						"cv(\"collection_method\")",
+						"downloadOnly()"
+					]
+				},
+				"materials": {
+					"label": "Materials",
+					"group": "Aggregates",
+					"position": 25,
+					"type": "List",
+					"description": "Colon-delimited list of the materials this cruise recovered",
+					"validations": [
+						"sv(\"material\")",
+						"downloadOnly()"
+					]
+				}
+			}
+		},
+		"cores": {
+			"label": "Cores",
+			"position": 3,
+			"description": "A cored, grabbed or drilled station in the core hierarchy",
+			"notes": "Cruise -> core -> section -> section half -> core sample. Dredges, grabs and ROV stations use the dive hierarchy instead (see `dives`).",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"core": {
+					"label": "Core",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Core name as it appears in the metadata sheet, unique within the contribution",
+					"examples": [
+						"SR2113-17GC"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"cruise": {
+					"label": "Cruise",
+					"group": "Parent",
+					"position": 4,
+					"type": "String",
+					"description": "Cruise this core was collected on",
+					"validations": [
+						"in(\"cruises.cruise\")",
+						"required()"
+					]
+				},
+				"osu_id": {
+					"label": "OSU-ID",
+					"group": "Names",
+					"position": 5,
+					"type": "String",
+					"description": "Persistent OSU-MGR identifier for this record",
+					"notes": "Resolves at osu-mgr.org; derived from the cruise, station and sample parts",
+					"examples": [
+						"OSU-SR2113-17GC"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"core_number": {
+					"label": "Core Number",
+					"group": "Names",
+					"position": 6,
+					"type": "Integer",
+					"description": "Numeric part of the core name, used for hierarchical sorting",
+					"examples": [
+						"17"
+					]
+				},
+				"core_type": {
+					"label": "Core Type",
+					"group": "Collection",
+					"position": 7,
+					"type": "String",
+					"description": "Abbreviated core type code",
+					"examples": [
+						"GC",
+						"PC",
+						"MC"
+					],
+					"validations": [
+						"cv(\"core_type\")"
+					]
+				},
+				"method": {
+					"label": "Collection Method",
+					"group": "Collection",
+					"position": 8,
+					"type": "String",
+					"description": "Recovery method as displayed to users",
+					"examples": [
+						"Gravity Core"
+					],
+					"validations": [
+						"cv(\"collection_method\")",
+						"recommended()"
+					]
+				},
+				"material": {
+					"label": "Material",
+					"group": "Collection",
+					"position": 9,
+					"type": "String",
+					"description": "Material recovered",
+					"examples": [
+						"Sediment"
+					],
+					"validations": [
+						"sv(\"material\")"
+					]
+				},
+				"length": {
+					"label": "Core Length",
+					"group": "Collection",
+					"position": 10,
+					"type": "Number",
+					"unit": "Centimeters",
+					"description": "Length of the parent core",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"diameter": {
+					"label": "Core Diameter",
+					"group": "Collection",
+					"position": 11,
+					"type": "Number",
+					"unit": "Centimeters",
+					"description": "Diameter of the core",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"n_sections": {
+					"label": "Number of Sections",
+					"group": "Collection",
+					"position": 12,
+					"type": "Integer",
+					"description": "Number of sections the parent core was cut into",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"lat": {
+					"label": "Latitude",
+					"group": "Position",
+					"position": 13,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Latitude of the station",
+					"notes": "Decimal degrees north",
+					"examples": [
+						"44.6368"
+					],
+					"validations": [
+						"min(-90)",
+						"max(90)"
+					]
+				},
+				"lon": {
+					"label": "Longitude",
+					"group": "Position",
+					"position": 14,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Longitude of the station",
+					"notes": "Decimal degrees east, -180 to 180 (marine convention; not MagIC's 0-360)",
+					"examples": [
+						"-124.9012"
+					],
+					"validations": [
+						"min(-180)",
+						"max(180)"
+					]
+				},
+				"water_depth": {
+					"label": "Water Depth",
+					"group": "Position",
+					"position": 15,
+					"type": "Number",
+					"unit": "Meters",
+					"description": "Water depth at the station",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"lat_end": {
+					"label": "End Latitude",
+					"group": "Position",
+					"position": 16,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Latitude at the end of the station",
+					"notes": "Dredges and trawls are tracks, not points",
+					"validations": [
+						"min(-90)",
+						"max(90)"
+					]
+				},
+				"lon_end": {
+					"label": "End Longitude",
+					"group": "Position",
+					"position": 17,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Longitude at the end of the station",
+					"validations": [
+						"min(-180)",
+						"max(180)"
+					]
+				},
+				"water_depth_end": {
+					"label": "End Water Depth",
+					"group": "Position",
+					"position": 18,
+					"type": "Number",
+					"unit": "Meters",
+					"description": "Water depth at the end of the station",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"start_date": {
+					"label": "Date Collected",
+					"group": "Position",
+					"position": 19,
+					"type": "String",
+					"description": "Date the station was occupied",
+					"examples": [
+						"2021-08-14"
+					]
+				},
+				"start_time": {
+					"label": "Time Collected",
+					"group": "Position",
+					"position": 20,
+					"type": "String",
+					"description": "Time the station was occupied (UTC)",
+					"examples": [
+						"18:42"
+					]
+				},
+				"end_date": {
+					"label": "End Date Collected",
+					"group": "Position",
+					"position": 21,
+					"type": "String",
+					"description": "Date collection at the station finished"
+				},
+				"end_time": {
+					"label": "End Time Collected",
+					"group": "Position",
+					"position": 22,
+					"type": "String",
+					"description": "Time collection at the station finished (UTC)"
+				},
+				"area": {
+					"label": "Area",
+					"group": "Position",
+					"position": 23,
+					"type": "String",
+					"description": "Named feature or region the station is in",
+					"examples": [
+						"Cascadia Margin",
+						"Corner Rise Seamounts"
+					]
+				},
+				"notes": {
+					"label": "Notes",
+					"group": "Position",
+					"position": 24,
+					"type": "Text",
+					"description": "Free-text notes on the station"
+				},
+				"storage_location": {
+					"label": "Storage Location",
+					"group": "Curation",
+					"position": 25,
+					"type": "String",
+					"description": "Where the material is stored in the repository",
+					"examples": [
+						"Cold Room A, Rack 12, Shelf 3"
+					]
+				}
+			}
+		},
+		"sections": {
+			"label": "Sections",
+			"position": 4,
+			"description": "A cut section of a core",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"section": {
+					"label": "Section",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Section name, unique within the contribution",
+					"examples": [
+						"SR2113-17GC-1"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"core": {
+					"label": "Core",
+					"group": "Parent",
+					"position": 4,
+					"type": "String",
+					"description": "Core this section was cut from",
+					"validations": [
+						"in(\"cores.core\")",
+						"required()"
+					]
+				},
+				"osu_id": {
+					"label": "OSU-ID",
+					"group": "Names",
+					"position": 5,
+					"type": "String",
+					"description": "Persistent OSU-MGR identifier for this record",
+					"notes": "Resolves at osu-mgr.org; derived from the cruise, station and sample parts",
+					"examples": [
+						"OSU-SR2113-17GC-1"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"section_number": {
+					"label": "Section Number",
+					"group": "Names",
+					"position": 6,
+					"type": "Integer",
+					"description": "Position of this section in the core, counted from the top",
+					"examples": [
+						"1"
+					]
+				},
+				"alternate_name": {
+					"label": "Alternate Section Name",
+					"group": "Names",
+					"position": 7,
+					"type": "String",
+					"description": "Another name this section is known by"
+				},
+				"depth_top": {
+					"label": "Depth Top",
+					"group": "Depth",
+					"position": 8,
+					"type": "Number",
+					"unit": "Centimeters",
+					"description": "Depth of the top of the section below the sea floor",
+					"validations": [
+						"min(0)",
+						"recommended()"
+					]
+				},
+				"depth_bottom": {
+					"label": "Depth Bottom",
+					"group": "Depth",
+					"position": 9,
+					"type": "Number",
+					"unit": "Centimeters",
+					"description": "Depth of the bottom of the section below the sea floor",
+					"validations": [
+						"min(0)",
+						"recommended()"
+					]
+				},
+				"length": {
+					"label": "Section Length",
+					"group": "Depth",
+					"position": 10,
+					"type": "Number",
+					"unit": "Centimeters",
+					"description": "Length of the section",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"igsn": {
+					"label": "IGSN",
+					"group": "Names",
+					"position": 6,
+					"type": "String",
+					"description": "International Generic Sample Number registered with SESAR",
+					"examples": [
+						"OSU-EX1606-D1-1"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"notes": {
+					"label": "Notes",
+					"group": "Curation",
+					"position": 12,
+					"type": "Text",
+					"description": "Free-text notes on the section"
+				},
+				"storage_location": {
+					"label": "Storage Location",
+					"group": "Curation",
+					"position": 13,
+					"type": "String",
+					"description": "Where the section is stored in the repository"
+				}
+			}
+		},
+		"section_halves": {
+			"label": "Section Halves",
+			"position": 5,
+			"description": "An archive half, working half or round of a section",
+			"notes": "The level most IGSNs are registered at.",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"section_half": {
+					"label": "Section Half",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Section half name, unique within the contribution",
+					"examples": [
+						"SR2113-17GC-1A"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"section": {
+					"label": "Section",
+					"group": "Parent",
+					"position": 4,
+					"type": "String",
+					"description": "Section this half was split from",
+					"validations": [
+						"in(\"sections.section\")",
+						"required()"
+					]
+				},
+				"osu_id": {
+					"label": "OSU-ID",
+					"group": "Names",
+					"position": 5,
+					"type": "String",
+					"description": "Persistent OSU-MGR identifier for this record",
+					"notes": "Resolves at osu-mgr.org; derived from the cruise, station and sample parts",
+					"examples": [
+						"OSU-SR2113-17GC-1A"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"half_type": {
+					"label": "Half Type",
+					"group": "Names",
+					"position": 6,
+					"type": "String",
+					"description": "Whether this is the archive half, the working half or a whole round",
+					"examples": [
+						"Archive"
+					],
+					"validations": [
+						"cv(\"section_half_type\")",
+						"required()"
+					]
+				},
+				"igsn": {
+					"label": "IGSN",
+					"group": "Names",
+					"position": 6,
+					"type": "String",
+					"description": "International Generic Sample Number registered with SESAR",
+					"examples": [
+						"OSU-EX1606-D1-1"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"alternate_igsn": {
+					"label": "Alternate IGSN",
+					"group": "Names",
+					"position": 7,
+					"type": "String",
+					"description": "Earlier IGSN this sample was registered under",
+					"notes": "Antarctic Research Facility (ARF) handles for legacy ACC material",
+					"examples": [
+						"ARF0009J7"
+					]
+				},
+				"sesar_resource_type": {
+					"label": "SESAR Resource Type",
+					"group": "Names",
+					"position": 8,
+					"type": "String",
+					"description": "SESAR resource type the IGSN is registered as",
+					"examples": [
+						"Core Half Round"
+					],
+					"validations": [
+						"cv(\"sesar_resource_type\")"
+					]
+				},
+				"notes": {
+					"label": "Notes",
+					"group": "Curation",
+					"position": 10,
+					"type": "Text",
+					"description": "Free-text notes on the section half"
+				},
+				"storage_location": {
+					"label": "Storage Location",
+					"group": "Curation",
+					"position": 11,
+					"type": "String",
+					"description": "Where the section half is stored in the repository"
+				}
+			}
+		},
+		"core_samples": {
+			"label": "Core Samples",
+			"position": 6,
+			"description": "A sample taken from a section half on request",
+			"notes": "One row per satisfied sample request; the repository's record of what has been removed from a core and by whom.",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"core_sample": {
+					"label": "Core Sample",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Sample name, unique within the contribution",
+					"examples": [
+						"SR2113-17GC-1A.SMITH24-ND"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"section_half": {
+					"label": "Section Half",
+					"group": "Parent",
+					"position": 4,
+					"type": "String",
+					"description": "Section half this sample was taken from",
+					"validations": [
+						"in(\"section_halves.section_half\")",
+						"required()"
+					]
+				},
+				"osu_id": {
+					"label": "OSU-ID",
+					"group": "Names",
+					"position": 5,
+					"type": "String",
+					"description": "Persistent OSU-MGR identifier for this record",
+					"notes": "Resolves at osu-mgr.org; derived from the cruise, station and sample parts",
+					"examples": [
+						"OSU-SR2113-17GC-1A.SMITH24-ND"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"igsn": {
+					"label": "IGSN",
+					"group": "Names",
+					"position": 6,
+					"type": "String",
+					"description": "International Generic Sample Number registered with SESAR",
+					"examples": [
+						"OSU-EX1606-D1-1"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"sample_top": {
+					"label": "Sample Top",
+					"group": "Depth",
+					"position": 7,
+					"type": "Number",
+					"unit": "Centimeters",
+					"description": "Depth of the top of the sample in the section half",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"sample_bottom": {
+					"label": "Sample Bottom",
+					"group": "Depth",
+					"position": 8,
+					"type": "Number",
+					"unit": "Centimeters",
+					"description": "Depth of the bottom of the sample in the section half",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"sample_size": {
+					"label": "Sample Size",
+					"group": "Depth",
+					"position": 9,
+					"type": "Number",
+					"unit": "Cubic centimeters",
+					"description": "Volume of material taken",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"weight": {
+					"label": "Sample Weight",
+					"group": "Depth",
+					"position": 10,
+					"type": "Number",
+					"unit": "Grams",
+					"description": "Mass of material taken",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"sample_status": {
+					"label": "Sample Status",
+					"group": "Request",
+					"position": 12,
+					"type": "String",
+					"description": "Where the sample request stands",
+					"examples": [
+						"Complete"
+					]
+				},
+				"date_received": {
+					"label": "Date Received",
+					"group": "Request",
+					"position": 13,
+					"type": "String",
+					"description": "Date the sample request was received"
+				},
+				"date_complete": {
+					"label": "Date Completed",
+					"group": "Request",
+					"position": 14,
+					"type": "String",
+					"description": "Date the sample was taken and the request closed"
+				},
+				"purpose": {
+					"label": "Purpose",
+					"group": "Request",
+					"position": 15,
+					"type": "Text",
+					"description": "What the sample was taken for"
+				},
+				"analysis_on": {
+					"label": "Analysis On",
+					"group": "Request",
+					"position": 16,
+					"type": "String",
+					"description": "What the sample is analysed for"
+				},
+				"tool": {
+					"label": "Tool",
+					"group": "Request",
+					"position": 17,
+					"type": "String",
+					"description": "Tool or instrument the sample was taken with or analysed on"
+				},
+				"scientist": {
+					"label": "Scientist",
+					"group": "Request",
+					"position": 18,
+					"type": "String",
+					"description": "Scientist the sample was issued to",
+					"validations": [
+						"type(\"users\")"
+					]
+				},
+				"comments": {
+					"label": "Comments",
+					"group": "Request",
+					"position": 19,
+					"type": "Text",
+					"description": "Free-text comments on the request"
+				}
+			}
+		},
+		"dives": {
+			"label": "Dives",
+			"position": 7,
+			"description": "A dredge, grab or ROV dive station",
+			"notes": "Cruise -> dive -> rock -> rock subsample. Stations whose type code is D, G or SG take this branch instead of the core hierarchy.",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"dive": {
+					"label": "Dive",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Dive, dredge or grab name, unique within the contribution",
+					"examples": [
+						"EX1606-D1"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"cruise": {
+					"label": "Cruise",
+					"group": "Parent",
+					"position": 4,
+					"type": "String",
+					"description": "Cruise this station was occupied on",
+					"validations": [
+						"in(\"cruises.cruise\")",
+						"required()"
+					]
+				},
+				"osu_id": {
+					"label": "OSU-ID",
+					"group": "Names",
+					"position": 5,
+					"type": "String",
+					"description": "Persistent OSU-MGR identifier for this record",
+					"notes": "Resolves at osu-mgr.org; derived from the cruise, station and sample parts",
+					"examples": [
+						"OSU-EX1606-D1"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"dive_number": {
+					"label": "Dive Number",
+					"group": "Names",
+					"position": 6,
+					"type": "Integer",
+					"description": "Numeric part of the dive name, used for hierarchical sorting",
+					"examples": [
+						"1"
+					]
+				},
+				"method": {
+					"label": "Collection Method",
+					"group": "Collection",
+					"position": 7,
+					"type": "String",
+					"description": "Recovery method as displayed to users",
+					"notes": "ROV samples are filed under this hierarchy but keep the method 'ROV'",
+					"examples": [
+						"Dredge",
+						"Grab",
+						"ROV"
+					],
+					"validations": [
+						"cv(\"collection_method\")",
+						"recommended()"
+					]
+				},
+				"rov_name": {
+					"label": "ROV Name",
+					"group": "Collection",
+					"position": 8,
+					"type": "String",
+					"description": "Remotely operated vehicle used, when the method is ROV",
+					"examples": [
+						"ROV Deep Discoverer"
+					]
+				},
+				"material": {
+					"label": "Material",
+					"group": "Collection",
+					"position": 9,
+					"type": "String",
+					"description": "Material recovered",
+					"examples": [
+						"Rock"
+					],
+					"validations": [
+						"sv(\"material\")"
+					]
+				},
+				"weight": {
+					"label": "Recovery Weight",
+					"group": "Collection",
+					"position": 10,
+					"type": "Number",
+					"unit": "Kilograms",
+					"description": "Total mass recovered at the station",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"lat": {
+					"label": "Latitude",
+					"group": "Position",
+					"position": 11,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Latitude of the station",
+					"notes": "Decimal degrees north",
+					"examples": [
+						"44.6368"
+					],
+					"validations": [
+						"min(-90)",
+						"max(90)"
+					]
+				},
+				"lon": {
+					"label": "Longitude",
+					"group": "Position",
+					"position": 12,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Longitude of the station",
+					"notes": "Decimal degrees east, -180 to 180 (marine convention; not MagIC's 0-360)",
+					"examples": [
+						"-124.9012"
+					],
+					"validations": [
+						"min(-180)",
+						"max(180)"
+					]
+				},
+				"water_depth": {
+					"label": "Water Depth",
+					"group": "Position",
+					"position": 13,
+					"type": "Number",
+					"unit": "Meters",
+					"description": "Water depth at the station",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"lat_end": {
+					"label": "End Latitude",
+					"group": "Position",
+					"position": 14,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Latitude at the end of the station",
+					"notes": "Dredges and trawls are tracks, not points",
+					"validations": [
+						"min(-90)",
+						"max(90)"
+					]
+				},
+				"lon_end": {
+					"label": "End Longitude",
+					"group": "Position",
+					"position": 15,
+					"type": "Number",
+					"unit": "Degrees",
+					"description": "Longitude at the end of the station",
+					"validations": [
+						"min(-180)",
+						"max(180)"
+					]
+				},
+				"water_depth_end": {
+					"label": "End Water Depth",
+					"group": "Position",
+					"position": 16,
+					"type": "Number",
+					"unit": "Meters",
+					"description": "Water depth at the end of the station",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"start_date": {
+					"label": "Date Collected",
+					"group": "Position",
+					"position": 17,
+					"type": "String",
+					"description": "Date the station was occupied",
+					"examples": [
+						"2021-08-14"
+					]
+				},
+				"start_time": {
+					"label": "Time Collected",
+					"group": "Position",
+					"position": 18,
+					"type": "String",
+					"description": "Time the station was occupied (UTC)",
+					"examples": [
+						"18:42"
+					]
+				},
+				"end_date": {
+					"label": "End Date Collected",
+					"group": "Position",
+					"position": 19,
+					"type": "String",
+					"description": "Date collection at the station finished"
+				},
+				"end_time": {
+					"label": "End Time Collected",
+					"group": "Position",
+					"position": 20,
+					"type": "String",
+					"description": "Time collection at the station finished (UTC)"
+				},
+				"area": {
+					"label": "Area",
+					"group": "Position",
+					"position": 21,
+					"type": "String",
+					"description": "Named feature or region the station is in",
+					"examples": [
+						"Cascadia Margin",
+						"Corner Rise Seamounts"
+					]
+				},
+				"notes": {
+					"label": "Notes",
+					"group": "Position",
+					"position": 22,
+					"type": "Text",
+					"description": "Free-text notes on the station"
+				}
+			}
+		},
+		"dive_samples": {
+			"label": "Rocks",
+			"position": 8,
+			"description": "An individual rock recovered by a dive, dredge or grab",
+			"notes": "Displayed as 'Rocks' in the repository's own search.",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"dive_sample": {
+					"label": "Rock",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Rock name, unique within the contribution",
+					"examples": [
+						"EX1606-D1-1"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"dive": {
+					"label": "Dive",
+					"group": "Parent",
+					"position": 4,
+					"type": "String",
+					"description": "Station this rock was recovered at",
+					"validations": [
+						"in(\"dives.dive\")",
+						"required()"
+					]
+				},
+				"osu_id": {
+					"label": "OSU-ID",
+					"group": "Names",
+					"position": 5,
+					"type": "String",
+					"description": "Persistent OSU-MGR identifier for this record",
+					"notes": "Resolves at osu-mgr.org; derived from the cruise, station and sample parts",
+					"examples": [
+						"OSU-EX1606-D1-1"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"dive_sample_number": {
+					"label": "Rock Number",
+					"group": "Names",
+					"position": 6,
+					"type": "Integer",
+					"description": "Numeric part of the rock name, used for hierarchical sorting"
+				},
+				"igsn": {
+					"label": "IGSN",
+					"group": "Names",
+					"position": 6,
+					"type": "String",
+					"description": "International Generic Sample Number registered with SESAR",
+					"examples": [
+						"OSU-EX1606-D1-1"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"alternate_igsn": {
+					"label": "Alternate IGSN",
+					"group": "Names",
+					"position": 7,
+					"type": "String",
+					"description": "Earlier IGSN this sample was registered under",
+					"notes": "Antarctic Research Facility (ARF) handles for legacy ACC material",
+					"examples": [
+						"ARF0009J7"
+					]
+				},
+				"sesar_resource_type": {
+					"label": "SESAR Resource Type",
+					"group": "Names",
+					"position": 8,
+					"type": "String",
+					"description": "SESAR resource type the IGSN is registered as",
+					"examples": [
+						"Core Half Round"
+					],
+					"validations": [
+						"cv(\"sesar_resource_type\")"
+					]
+				},
+				"material": {
+					"label": "Material",
+					"group": "Description",
+					"position": 10,
+					"type": "String",
+					"description": "Material of the rock",
+					"examples": [
+						"Rock"
+					],
+					"validations": [
+						"sv(\"material\")"
+					]
+				},
+				"texture": {
+					"label": "Principal Texture",
+					"group": "Description",
+					"position": 11,
+					"type": "String",
+					"description": "Principal texture or lithology of the rock",
+					"examples": [
+						"Basalt",
+						"Volcanic breccia"
+					],
+					"validations": [
+						"sv(\"texture\")"
+					]
+				},
+				"weight": {
+					"label": "Sample Weight",
+					"group": "Description",
+					"position": 12,
+					"type": "Number",
+					"unit": "Kilograms",
+					"description": "Mass of the rock",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"notes": {
+					"label": "Notes",
+					"group": "Curation",
+					"position": 13,
+					"type": "Text",
+					"description": "Free-text notes on the rock"
+				},
+				"storage_location": {
+					"label": "Storage Location",
+					"group": "Curation",
+					"position": 14,
+					"type": "String",
+					"description": "Where the rock is stored in the repository"
+				}
+			}
+		},
+		"dive_subsamples": {
+			"label": "Rock Subsamples",
+			"position": 9,
+			"description": "A subsample cut from a rock",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"dive_subsample": {
+					"label": "Rock Subsample",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Subsample name, unique within the contribution",
+					"examples": [
+						"EX1606-D1-1.KOPP12.SA"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"dive_sample": {
+					"label": "Rock",
+					"group": "Parent",
+					"position": 4,
+					"type": "String",
+					"description": "Rock this subsample was cut from",
+					"validations": [
+						"in(\"dive_samples.dive_sample\")",
+						"required()"
+					]
+				},
+				"osu_id": {
+					"label": "OSU-ID",
+					"group": "Names",
+					"position": 5,
+					"type": "String",
+					"description": "Persistent OSU-MGR identifier for this record",
+					"notes": "Resolves at osu-mgr.org; derived from the cruise, station and sample parts",
+					"examples": [
+						"OSU-EX1606-D1-1.KOPP12.SA"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"igsn": {
+					"label": "IGSN",
+					"group": "Names",
+					"position": 6,
+					"type": "String",
+					"description": "International Generic Sample Number registered with SESAR",
+					"examples": [
+						"OSU-EX1606-D1-1"
+					],
+					"validations": [
+						"unique()"
+					]
+				},
+				"alternate_igsn": {
+					"label": "Alternate IGSN",
+					"group": "Names",
+					"position": 7,
+					"type": "String",
+					"description": "Earlier IGSN this sample was registered under",
+					"notes": "Antarctic Research Facility (ARF) handles for legacy ACC material",
+					"examples": [
+						"ARF0009J7"
+					]
+				},
+				"sesar_resource_type": {
+					"label": "SESAR Resource Type",
+					"group": "Names",
+					"position": 8,
+					"type": "String",
+					"description": "SESAR resource type the IGSN is registered as",
+					"examples": [
+						"Core Half Round"
+					],
+					"validations": [
+						"cv(\"sesar_resource_type\")"
+					]
+				},
+				"texture": {
+					"label": "Principal Texture",
+					"group": "Description",
+					"position": 9,
+					"type": "String",
+					"description": "Principal texture or lithology of the subsample",
+					"validations": [
+						"sv(\"texture\")"
+					]
+				},
+				"weight": {
+					"label": "Subsample Weight",
+					"group": "Description",
+					"position": 10,
+					"type": "Number",
+					"unit": "Grams",
+					"description": "Mass of the subsample",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"storage_location": {
+					"label": "Storage Location",
+					"group": "Curation",
+					"position": 11,
+					"type": "String",
+					"description": "Where the subsample is stored in the repository"
+				},
+				"sample_status": {
+					"label": "Sample Status",
+					"group": "Request",
+					"position": 12,
+					"type": "String",
+					"description": "Where the sample request stands",
+					"examples": [
+						"Complete"
+					]
+				},
+				"date_received": {
+					"label": "Date Received",
+					"group": "Request",
+					"position": 13,
+					"type": "String",
+					"description": "Date the sample request was received"
+				},
+				"date_complete": {
+					"label": "Date Completed",
+					"group": "Request",
+					"position": 14,
+					"type": "String",
+					"description": "Date the sample was taken and the request closed"
+				},
+				"purpose": {
+					"label": "Purpose",
+					"group": "Request",
+					"position": 15,
+					"type": "Text",
+					"description": "What the sample was taken for"
+				},
+				"analysis_on": {
+					"label": "Analysis On",
+					"group": "Request",
+					"position": 16,
+					"type": "String",
+					"description": "What the sample is analysed for"
+				},
+				"tool": {
+					"label": "Tool",
+					"group": "Request",
+					"position": 17,
+					"type": "String",
+					"description": "Tool or instrument the sample was taken with or analysed on"
+				},
+				"scientist": {
+					"label": "Scientist",
+					"group": "Request",
+					"position": 18,
+					"type": "String",
+					"description": "Scientist the sample was issued to",
+					"validations": [
+						"type(\"users\")"
+					]
+				},
+				"comments": {
+					"label": "Comments",
+					"group": "Request",
+					"position": 19,
+					"type": "Text",
+					"description": "Free-text comments on the request"
+				}
+			}
+		},
+		"files": {
+			"label": "Files",
+			"position": 10,
+			"description": "A data file, image or document attached to a record",
+			"notes": "Files attach at eight different levels, so the parent is one `osu_id` plus its `level` rather than one column per level (CDR's `supplements` shape does not scale to a two-branch hierarchy).",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique OSU-MGR Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"file": {
+					"label": "File",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Path of the file in the repository's object store",
+					"examples": [
+						"Collection/Holdings/SR2113/mstdata/OSU-SR2113-17GC-1A-mstdata.csv"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"file_type": {
+					"label": "File Type",
+					"group": "Names",
+					"position": 4,
+					"type": "String",
+					"description": "What kind of file this is",
+					"examples": [
+						"mst-data",
+						"core-image"
+					],
+					"validations": [
+						"cv(\"file_type\")",
+						"required()"
+					]
+				},
+				"osu_id": {
+					"label": "OSU-ID",
+					"group": "Parent",
+					"position": 5,
+					"type": "String",
+					"description": "OSU-ID of the record this file describes",
+					"examples": [
+						"OSU-SR2113-17GC-1A"
+					],
+					"validations": [
+						"required()"
+					]
+				},
+				"level": {
+					"label": "Level",
+					"group": "Parent",
+					"position": 6,
+					"type": "String",
+					"description": "Hierarchy level the OSU-ID belongs to",
+					"examples": [
+						"section_halves"
+					],
+					"validations": [
+						"cv(\"osu_level\")",
+						"required()"
+					]
+				},
+				"title": {
+					"label": "Title",
+					"group": "Description",
+					"position": 7,
+					"type": "String",
+					"description": "Short title for the file"
+				},
+				"description": {
+					"label": "Description",
+					"group": "Description",
+					"position": 8,
+					"type": "Text",
+					"description": "What the file contains"
+				},
+				"media_type": {
+					"label": "Media Type",
+					"group": "Description",
+					"position": 9,
+					"type": "String",
+					"description": "IANA media type of the file",
+					"examples": [
+						"text/csv"
+					]
+				},
+				"size_bytes": {
+					"label": "File Size",
+					"group": "Description",
+					"position": 10,
+					"type": "Integer",
+					"unit": "Bytes",
+					"description": "Size of the file",
+					"validations": [
+						"min(0)",
+						"downloadOnly()"
+					]
+				},
+				"timestamp": {
+					"label": "File Timestamp",
+					"group": "Description",
+					"position": 11,
+					"type": "Timestamp",
+					"description": "Date and time the file was last modified",
+					"validations": [
+						"type(\"date_time\")"
+					]
+				},
+				"thumbnail": {
+					"label": "Thumbnail",
+					"group": "Description",
+					"position": 12,
+					"type": "String",
+					"description": "Path of the generated thumbnail, for images and PDFs",
+					"examples": [
+						"Collection/Thumbnails/OSU-SR2113-17GC-1A-image.jpg"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"moratorium": {
+					"label": "Moratorium",
+					"group": "Curation",
+					"position": 13,
+					"type": "String",
+					"unit": "Flag",
+					"description": "File is under moratorium and withheld from public access",
+					"validations": [
+						"cv(\"boolean\")"
+					]
+				},
+				"moratorium_expiration": {
+					"label": "Moratorium Expiration",
+					"group": "Curation",
+					"position": 14,
+					"type": "String",
+					"description": "Date the moratorium on this file lifts"
+				}
+			}
+		}
+	}
+}

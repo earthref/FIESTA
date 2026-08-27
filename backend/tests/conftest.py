@@ -25,3 +25,8 @@ def karar_node():
 @pytest.fixture(scope="session")
 def erda_node():
     return load_deployment(CONFIG_DIR / "erda.yaml").node
+
+
+@pytest.fixture(scope="session")
+def osu_mgr_node():
+    return load_deployment(CONFIG_DIR / "osu-mgr.yaml").node

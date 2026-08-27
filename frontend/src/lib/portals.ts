@@ -11,6 +11,7 @@ export const PORTALS: Portal[] = [
   { label: "KdD", url: "https://earthref.org/KdD", color: "#217e5c" },
   { label: "CDR", url: "https://earthref.org/CDR", color: "#e09f00" },
   { label: "KArAr", url: "https://earthref.org/KArAr", color: "#3030bb" },
+  { label: "OSU-MGR", url: "https://osu-mgr.org", color: "#D73F09" },
   { label: "GERM", url: "https://earthref.org/GERM/", color: "#bb4b1c" },
   { label: "SBN", url: "https://earthref.org/SBN/", color: "#005b87" },
   { label: "FeMO", url: "https://earthref.org/FeMO/", color: "#9f0202" },

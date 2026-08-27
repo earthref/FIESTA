@@ -1,0 +1,87 @@
+# FIESTA deployment configuration — OSU-MGR node
+# Oregon State University Marine and Geology Repository: the curation catalogue
+# for the repository's holdings — cruises, cores and their sections, dredge and
+# ROV rocks, sample requests, IGSN registrations, and the data files, images and
+# reports attached to each of them.
+#
+# Scope note: this node catalogues *holdings*, not measurements. The MST and XRF
+# measurement series that come off this material are published through the CDR
+# node (see osu-mgr-pipeline/CDR_PREVIEW.md); here they appear as `files` rows of
+# type mst-data / xrf-data.
+
+fiesta: 1
+deployment: node
+
+node:
+  key: OSU-MGR
+  slug: osu-mgr
+  title: OSU Marine and Geology Repository (OSU-MGR)
+  subtitle: >-
+    Curating marine and terrestrial sediment cores, dredged and ROV-collected
+    rocks, and the data collected from them at Oregon State University.
+  color: "#D73F09" # OSU Beaver Orange (osu-mgr.org tailwind.config.js)
+  links:
+    website: https://osu-mgr.org
+    github_issues: https://github.com/earthref/OSU-MGR/issues
+  contact_email: osu-mgr@oregonstate.edu
+
+search:
+  # NOT `osu-mgr`: the repository's own pipeline owns an OpenSearch alias by
+  # that name (osu_mgr_pipeline.py). Keeping the names distinct means a FIESTA
+  # deployment can share a cluster with the pipeline without either clobbering
+  # the other.
+  index: osumgr
+  levels:
+    - { name: Contributions, table: contribution }
+    - { name: Cruises, table: cruises, count_field: summary.cruises._n_results }
+    - { name: Cores, table: cores, count_field: summary.cores._n_results }
+    - { name: Sections, table: sections, count_field: summary.sections._n_results }
+    - { name: Dives, table: dives, count_field: summary.dives._n_results }
+    - { name: Rocks, table: dive_samples, count_field: summary.dive_samples._n_results }
+    - { name: Files, table: files, count_field: summary.files._n_results }
+  # Searchable without a tab of their own — the leaf levels the repository's own
+  # search does not surface as a type but which /api/search/{table} can target.
+  extra_types: [section_halves, core_samples, dive_subsamples]
+  # The repository search's filter groups: file types, collection methods,
+  # materials, research vessels, institutions, plus the collection itself.
+  facets:
+    - file_type
+    - method
+    - material
+    - texture
+    - rv_name
+    - pi_institution
+    - collection
+
+storage:
+  bucket: osu-mgr
+
+data_model:
+  versions: ["1.0"]
+  latest: "1.0"
+  dir: osu-mgr/data_models
+
+vocabularies:
+  controlled: osu-mgr/controlled_vocabularies.json
+  suggested: osu-mgr/suggested_vocabularies.json
+
+# Two branches (core and dive) flattened into the summarization order; parentage
+# is carried by each table's `in("<parent>.<key>")` column, not by this list.
+hierarchy:
+  - contribution
+  - cruises
+  - cores
+  - sections
+  - section_halves
+  - core_samples
+  - dives
+  - dive_samples
+  - dive_subsamples
+  - files
+
+doi:
+  prefix: 10.7288/V4/OSU-MGR
+
+features:
+  pages: []
+  plugins: [record-cards]

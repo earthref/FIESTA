@@ -25,6 +25,12 @@ Three tables, hierarchy `contribution → objects → files`:
 `objects` columns are grouped: **Names**, **Description**, **Software**,
 **Provenance**, **Rights**, **Geography**, **Geologic Age**.
 
+Long-form fields (`description`, `instructions`, `copyright_description`)
+use column type `Text`. It is listed as a valid type in
+`fiesta/domain/data_model.py` but ERDA is the first model to use it; it
+behaves exactly as `String` everywhere in the code today, and marks the
+fields a future editor should render as a textarea rather than an input.
+
 ### Mapping from the legacy record
 
 | Legacy ERDA | Data model 1.0 |
@@ -73,7 +79,7 @@ Levels: **Contributions**, **Digital Objects**, **Files**. Facets:
 Search dropdowns plus the geographic and timescale terms its `term_type`
 selector scoped queries to.
 
-Result cards come from the `digital-objects` plugin (see plugins.md); without
+Result cards come from the `record-cards` plugin (see plugins.md); without
 it the default MagIC-shaped card would render nothing but "No … Data".
 
 ## Known gaps

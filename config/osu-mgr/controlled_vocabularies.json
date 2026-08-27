@@ -1,0 +1,494 @@
+{
+	"boolean": {
+		"label": "Boolean Flags",
+		"database_column": "(multiple_columns)",
+		"items": [
+			{
+				"item": "t",
+				"label": "True"
+			},
+			{
+				"item": "f",
+				"label": "False"
+			}
+		]
+	},
+	"osu_mgr_version": {
+		"label": "OSU-MGR Versions",
+		"database_column": "data_model_version",
+		"items": [
+			{
+				"item": "1.0"
+			}
+		]
+	},
+	"collection": {
+		"label": "Collections",
+		"database_column": "collection",
+		"items": [
+			{
+				"item": "MGG Holdings",
+				"label": "Marine Geology and Geophysics holdings"
+			},
+			{
+				"item": "ACC Holdings",
+				"label": "Antarctic Core Collection holdings"
+			},
+			{
+				"item": "Oregon Drill Core Holdings",
+				"label": "Oregon drill core holdings"
+			}
+		]
+	},
+	"core_type": {
+		"label": "Core Type Codes",
+		"database_column": "core_type",
+		"items": [
+			{
+				"item": "BC",
+				"label": "Box Core"
+			},
+			{
+				"item": "C",
+				"label": "Fugro Core"
+			},
+			{
+				"item": "CC",
+				"label": "Calypso Core"
+			},
+			{
+				"item": "D",
+				"label": "Dredge"
+			},
+			{
+				"item": "DC",
+				"label": "Drill Core"
+			},
+			{
+				"item": "FF",
+				"label": "Free Fall Core"
+			},
+			{
+				"item": "G",
+				"label": "Grab"
+			},
+			{
+				"item": "GC",
+				"label": "Gravity Core"
+			},
+			{
+				"item": "GP",
+				"label": "Geoprobe"
+			},
+			{
+				"item": "H",
+				"label": "IODP APC Core"
+			},
+			{
+				"item": "JC",
+				"label": "Jumbo Piston Core"
+			},
+			{
+				"item": "KB",
+				"label": "Wildco KB Gravity Core"
+			},
+			{
+				"item": "KC",
+				"label": "Kasten Core"
+			},
+			{
+				"item": "KT",
+				"label": "Kullenberg Trigger Core"
+			},
+			{
+				"item": "KU",
+				"label": "Kullenberg"
+			},
+			{
+				"item": "LI",
+				"label": "Livingstone"
+			},
+			{
+				"item": "MC",
+				"label": "Multicore"
+			},
+			{
+				"item": "MG",
+				"label": "Multi Gravity Core"
+			},
+			{
+				"item": "NP",
+				"label": "Nesje Percussion Core"
+			},
+			{
+				"item": "P",
+				"label": "IODP Pressure Core"
+			},
+			{
+				"item": "PC",
+				"label": "Piston Core"
+			},
+			{
+				"item": "PH",
+				"label": "Phleger"
+			},
+			{
+				"item": "PU",
+				"label": "Push Core"
+			},
+			{
+				"item": "R",
+				"label": "IODP Rotary Core"
+			},
+			{
+				"item": "RB",
+				"label": "Reinek Box"
+			},
+			{
+				"item": "RC",
+				"label": "Rock Core"
+			},
+			{
+				"item": "SG",
+				"label": "Sediment Grab"
+			},
+			{
+				"item": "SP",
+				"label": "Surface Lake Piston Core"
+			},
+			{
+				"item": "TC",
+				"label": "Trigger Core"
+			},
+			{
+				"item": "UN",
+				"label": "Universal"
+			},
+			{
+				"item": "UW",
+				"label": "UWITEC"
+			},
+			{
+				"item": "VC",
+				"label": "Vibracore"
+			},
+			{
+				"item": "X",
+				"label": "IODP XCB Core"
+			}
+		]
+	},
+	"collection_method": {
+		"label": "Collection Methods",
+		"database_column": "method",
+		"items": [
+			{
+				"item": "Box Core"
+			},
+			{
+				"item": "Calypso Core"
+			},
+			{
+				"item": "Dredge"
+			},
+			{
+				"item": "Drill Core"
+			},
+			{
+				"item": "Free Fall Core"
+			},
+			{
+				"item": "Fugro Core"
+			},
+			{
+				"item": "Geoprobe"
+			},
+			{
+				"item": "Grab"
+			},
+			{
+				"item": "Gravity Core"
+			},
+			{
+				"item": "IODP APC Core"
+			},
+			{
+				"item": "IODP Pressure Core"
+			},
+			{
+				"item": "IODP Rotary Core"
+			},
+			{
+				"item": "IODP XCB Core"
+			},
+			{
+				"item": "Jumbo Piston Core"
+			},
+			{
+				"item": "Kasten Core"
+			},
+			{
+				"item": "Kullenberg"
+			},
+			{
+				"item": "Kullenberg Trigger Core"
+			},
+			{
+				"item": "Livingstone"
+			},
+			{
+				"item": "Multi Gravity Core"
+			},
+			{
+				"item": "Multicore"
+			},
+			{
+				"item": "Nesje Percussion Core"
+			},
+			{
+				"item": "Phleger"
+			},
+			{
+				"item": "Piston Core"
+			},
+			{
+				"item": "Push Core"
+			},
+			{
+				"item": "ROV"
+			},
+			{
+				"item": "Reinek Box"
+			},
+			{
+				"item": "Rock Core"
+			},
+			{
+				"item": "Sediment Grab"
+			},
+			{
+				"item": "Surface Lake Piston Core"
+			},
+			{
+				"item": "Trigger Core"
+			},
+			{
+				"item": "UWITEC"
+			},
+			{
+				"item": "Universal"
+			},
+			{
+				"item": "Vibracore"
+			},
+			{
+				"item": "Wildco KB Gravity Core"
+			}
+		]
+	},
+	"section_half_type": {
+		"label": "Section Half Types",
+		"database_column": "half_type",
+		"items": [
+			{
+				"item": "Archive",
+				"label": "A — Archive"
+			},
+			{
+				"item": "Round",
+				"label": "R — Round"
+			},
+			{
+				"item": "Working",
+				"label": "W — Working"
+			}
+		]
+	},
+	"file_type": {
+		"label": "File Types",
+		"database_column": "file_type",
+		"items": [
+			{
+				"item": "core-description",
+				"label": "Core Description"
+			},
+			{
+				"item": "core-image",
+				"label": "Core Image"
+			},
+			{
+				"item": "coring-data-sheet",
+				"label": "Coring Data Sheet"
+			},
+			{
+				"item": "cruise-report",
+				"label": "Cruise Report"
+			},
+			{
+				"item": "ct-color-image",
+				"label": "CT Color Image"
+			},
+			{
+				"item": "ct-density",
+				"label": "CT Density"
+			},
+			{
+				"item": "ct-gray-image",
+				"label": "CT Gray Image"
+			},
+			{
+				"item": "ct-image",
+				"label": "CT Image"
+			},
+			{
+				"item": "dredge-log",
+				"label": "Dredge Log"
+			},
+			{
+				"item": "field-image",
+				"label": "Field Image"
+			},
+			{
+				"item": "igsn-sheet",
+				"label": "IGSN Sheet"
+			},
+			{
+				"item": "imlgs-file",
+				"label": "IMLGS File"
+			},
+			{
+				"item": "itrax-image",
+				"label": "Itrax Image"
+			},
+			{
+				"item": "itrax-xray-image",
+				"label": "Itrax X-Ray Image"
+			},
+			{
+				"item": "mst-data",
+				"label": "MST Data"
+			},
+			{
+				"item": "ptmag-data",
+				"label": "PtMag Data"
+			},
+			{
+				"item": "publications-data",
+				"label": "Publications Data"
+			},
+			{
+				"item": "samples-data",
+				"label": "Samples Data"
+			},
+			{
+				"item": "thin-section-cross-polarized-foi-image",
+				"label": "Thin Section Cross Polarized FOI Image"
+			},
+			{
+				"item": "thin-section-cross-polarized-image",
+				"label": "Thin Section Cross Polarized Image"
+			},
+			{
+				"item": "thin-section-plane-polarized-foi-image",
+				"label": "Thin Section Plane Polarized FOI Image"
+			},
+			{
+				"item": "thin-section-plane-polarized-image",
+				"label": "Thin Section Plane Polarized Image"
+			},
+			{
+				"item": "whole-rock-foi-image",
+				"label": "Whole Rock FOI Image"
+			},
+			{
+				"item": "whole-rock-image",
+				"label": "Whole Rock Image"
+			},
+			{
+				"item": "xray-image",
+				"label": "X-Ray Image"
+			},
+			{
+				"item": "xrf-data",
+				"label": "XRF Data"
+			}
+		]
+	},
+	"osu_level": {
+		"label": "OSU-MGR Hierarchy Levels",
+		"database_column": "level",
+		"items": [
+			{
+				"item": "cruises",
+				"label": "Cruise"
+			},
+			{
+				"item": "cores",
+				"label": "Core"
+			},
+			{
+				"item": "sections",
+				"label": "Section"
+			},
+			{
+				"item": "section_halves",
+				"label": "Section Half"
+			},
+			{
+				"item": "core_samples",
+				"label": "Core Sample"
+			},
+			{
+				"item": "dives",
+				"label": "Dive, Dredge or Grab"
+			},
+			{
+				"item": "dive_samples",
+				"label": "Rock"
+			},
+			{
+				"item": "dive_subsamples",
+				"label": "Rock Subsample"
+			}
+		]
+	},
+	"sesar_resource_type": {
+		"label": "SESAR Resource Types",
+		"database_column": "sesar_resource_type",
+		"items": [
+			{
+				"item": "Core Sub-Piece"
+			},
+			{
+				"item": "Core Half Round"
+			},
+			{
+				"item": "Dredge"
+			},
+			{
+				"item": "Other"
+			},
+			{
+				"item": "Grab"
+			},
+			{
+				"item": "Core"
+			},
+			{
+				"item": "Site"
+			},
+			{
+				"item": "Core Piece"
+			},
+			{
+				"item": "Oriented Core"
+			},
+			{
+				"item": "Core Whole Round"
+			},
+			{
+				"item": "Trawl"
+			}
+		]
+	}
+}

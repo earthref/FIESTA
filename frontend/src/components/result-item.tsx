@@ -5,6 +5,7 @@ import type { SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath } from "../lib/utils";
 import { Icon } from "./ui/icon";
 
+/** Fallback name columns, tried in order when a level's own key column is absent. */
 const NAME_COLUMNS = [
   "location",
   "site",
@@ -15,7 +16,17 @@ const NAME_COLUMNS = [
   "experiment",
   "object",
   "file",
+  "cruise",
+  "dive",
+  "dive_sample",
 ];
+
+/** A level's own key column: the singular of its table ("sections" -> "section").
+ * Tried before NAME_COLUMNS so a block that also holds its parent's key (a
+ * sections row carries `core`) is still named after itself. */
+function keyColumnOf(table: string): string {
+  return table.endsWith("s") ? table.slice(0, -1) : table;
+}
 
 function firstString(value: unknown): string | undefined {
   if (typeof value === "string" && value) return value;
@@ -64,7 +75,7 @@ function breadcrumbOf(doc: SearchResult, level: SearchLevel, levels: SearchLevel
     seen.add(entry.table);
     const block = getPath(doc, `summary.${entry.table}`);
     if (block && typeof block === "object") {
-      for (const column of NAME_COLUMNS) {
+      for (const column of [keyColumnOf(entry.table), ...NAME_COLUMNS]) {
         const name = firstString((block as Record<string, unknown>)[column]);
         if (name) {
           parts.push(name);

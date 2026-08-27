@@ -1,0 +1,161 @@
+{
+	"material": {
+		"label": "Materials",
+		"database_column": "material",
+		"items": [
+			{
+				"item": "Rock"
+			},
+			{
+				"item": "Sediment"
+			}
+		]
+	},
+	"texture": {
+		"label": "Principal Textures",
+		"database_column": "texture",
+		"items": [
+			{
+				"item": "Basalt"
+			},
+			{
+				"item": "Breccia"
+			},
+			{
+				"item": "Sediment"
+			},
+			{
+				"item": "Porphyritic basalt"
+			},
+			{
+				"item": "Coral"
+			},
+			{
+				"item": "volcaniclastic, basalt"
+			},
+			{
+				"item": "Aphyric basalt"
+			},
+			{
+				"item": "Basalt, thick Mn crust"
+			},
+			{
+				"item": "Basalt, thin Mn crust"
+			},
+			{
+				"item": "Mn crust"
+			},
+			{
+				"item": "Volcanic breccia"
+			},
+			{
+				"item": "Aphanitic basalt"
+			},
+			{
+				"item": "Plutonic"
+			},
+			{
+				"item": "Basaltoid"
+			},
+			{
+				"item": "Aphanitic vesicular basalt"
+			},
+			{
+				"item": "Aphyric vesicular basalt"
+			},
+			{
+				"item": "Volcaniclastic"
+			},
+			{
+				"item": "Pillow basalt"
+			},
+			{
+				"item": "Mn nodule"
+			},
+			{
+				"item": "Basalt, Volcaniclastic"
+			},
+			{
+				"item": "Volcaniclastic, basalt, thick Mn crust"
+			},
+			{
+				"item": "pumice"
+			},
+			{
+				"item": "sediment, thick Mn crust"
+			},
+			{
+				"item": "Sedimentary"
+			},
+			{
+				"item": "Volcaniclastic rock"
+			},
+			{
+				"item": "Coquina"
+			},
+			{
+				"item": "Shells"
+			},
+			{
+				"item": "Fine-grained basalt"
+			},
+			{
+				"item": "Volcaniclastic, basalt, thin Mn crust"
+			},
+			{
+				"item": "Volcaniclastic, thick Mn crust"
+			},
+			{
+				"item": "Chert"
+			},
+			{
+				"item": "Conglomerate"
+			},
+			{
+				"item": "Med-grained basalt"
+			},
+			{
+				"item": "Sandstone"
+			},
+			{
+				"item": "sediment, thin Mn crust"
+			},
+			{
+				"item": "Basalt Pebble"
+			},
+			{
+				"item": "Gabbro"
+			},
+			{
+				"item": "Hyaloclastite"
+			},
+			{
+				"item": "Siltstone"
+			},
+			{
+				"item": "Sponge"
+			},
+			{
+				"item": "volcaniclastic breccia, thick Mn crust"
+			},
+			{
+				"item": "Basalt, volcaniclastic, thick Mn crust"
+			},
+			{
+				"item": "Basanite"
+			},
+			{
+				"item": "Corals"
+			},
+			{
+				"item": "Fine-grained aphyric basalt"
+			},
+			{
+				"item": "Manganese crust with sediments"
+			},
+			{
+				"item": "Mn crust, some breccia"
+			}
+		]
+	}
+}

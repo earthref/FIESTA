@@ -19,11 +19,11 @@ from fiesta.plugins.base import FiestaPlugin
 
 def _registry() -> dict[str, FiestaPlugin]:
     from fiesta.plugins.depth_plot import DepthPlotPlugin
-    from fiesta.plugins.digital_objects import DigitalObjectsPlugin
     from fiesta.plugins.plateau import PlateauPlugin
     from fiesta.plugins.poles import PolesPlugin
+    from fiesta.plugins.record_cards import RecordCardsPlugin
 
-    plugins = [PolesPlugin(), DepthPlotPlugin(), PlateauPlugin(), DigitalObjectsPlugin()]
+    plugins = [PolesPlugin(), DepthPlotPlugin(), PlateauPlugin(), RecordCardsPlugin()]
     return {plugin.name: plugin for plugin in plugins}
 
 
