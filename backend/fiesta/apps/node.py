@@ -17,8 +17,8 @@ from fiesta.storage import Storage
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     node = get_node()
-    await Storage(node.storage.bucket).ensure_bucket()
-    await ensure_index(get_opensearch(), node.search.index)
+    await Storage.for_node(node).ensure_bucket()
+    await ensure_index(get_opensearch(), node.search_index)
     async with get_job_app().open_async():
         yield
     await get_opensearch().close()
@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         license_info={"name": "MIT License", "url": "https://opensource.org/licenses/MIT"},
         lifespan=lifespan,
+        root_path=get_settings().fastapi_root_path,
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
     )

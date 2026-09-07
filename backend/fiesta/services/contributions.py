@@ -76,17 +76,17 @@ def contribution_meta(contribution: Contribution, contributor: User) -> dict:
 
 
 async def save_manifest(node: NodeConfig, contribution: Contribution, contributor: User) -> None:
-    storage = Storage(node.storage.bucket)
+    storage = Storage.for_node(node)
     await storage.put_json(manifest_key(contribution.id), manifest_for(contribution, contributor))
 
 
 async def store_file(node: NodeConfig, contribution: Contribution, data: bytes) -> None:
-    storage = Storage(node.storage.bucket)
+    storage = Storage.for_node(node)
     await storage.put_bytes(file_key(contribution.id, contribution.filename), data)
 
 
 async def load_file(node: NodeConfig, contribution_id: int, filename: str) -> bytes:
-    storage = Storage(node.storage.bucket)
+    storage = Storage.for_node(node)
     return await storage.get_bytes(file_key(contribution_id, filename))
 
 
@@ -163,12 +163,12 @@ async def index_parsed(
     from fiesta.plugins import active_plugins
 
     client = get_opensearch()
-    await ensure_index(client, node.search.index)
+    await ensure_index(client, node.search_index)
     meta = contribution_meta(contribution, contributor)
     docs = summarize(node, parsed, meta)
     for plugin in active_plugins(node):
         docs.extend(plugin.derive_docs(node, parsed, meta))
-    await index_contribution_docs(client, node.search.index, contribution.id, docs)
+    await index_contribution_docs(client, node.search_index, contribution.id, docs)
 
 
 async def latest_validation(session: AsyncSession, contribution_id: int) -> ValidationResult | None:
@@ -192,7 +192,7 @@ async def activate(session: AsyncSession, node: NodeConfig, contribution: Contri
         if previous is not None and previous.is_latest:
             previous.is_latest = False
             await update_contribution_flags(
-                client, node.search.index, previous.id, {"_is_latest": False}
+                client, node.search_index, previous.id, {"_is_latest": False}
             )
             previous_contributor = await session.get(User, previous.contributor_id)
             await save_manifest(node, previous, previous_contributor)
@@ -202,7 +202,7 @@ async def activate(session: AsyncSession, node: NodeConfig, contribution: Contri
     await session.commit()
     await update_contribution_flags(
         client,
-        node.search.index,
+        node.search_index,
         contribution.id,
         {"_is_activated": True, "timestamp": contribution.activated_at.isoformat()},
     )
@@ -214,7 +214,7 @@ async def deactivate(session: AsyncSession, node: NodeConfig, contribution: Cont
     contribution.is_activated = False
     await session.commit()
     await update_contribution_flags(
-        get_opensearch(), node.search.index, contribution.id, {"_is_activated": False}
+        get_opensearch(), node.search_index, contribution.id, {"_is_activated": False}
     )
     await save_manifest(node, contribution, contributor)
 
@@ -222,7 +222,7 @@ async def deactivate(session: AsyncSession, node: NodeConfig, contribution: Cont
 async def delete_contribution(
     session: AsyncSession, node: NodeConfig, contribution: Contribution
 ) -> None:
-    await delete_contribution_docs(get_opensearch(), node.search.index, contribution.id)
-    await Storage(node.storage.bucket).delete_prefix(contribution_prefix(contribution.id))
+    await delete_contribution_docs(get_opensearch(), node.search_index, contribution.id)
+    await Storage.for_node(node).delete_prefix(contribution_prefix(contribution.id))
     await session.delete(contribution)
     await session.commit()

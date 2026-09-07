@@ -20,7 +20,7 @@ async def health(session: SessionDep, node: NodeDep) -> HealthOut:
     with suppress(Exception):
         search = bool(await get_opensearch().ping())
     with suppress(Exception):
-        async with Storage(node.storage.bucket).client() as s3:
+        async with Storage.for_node(node).client() as s3:
             await s3.list_buckets()
         storage = True
     ok = database and search and storage

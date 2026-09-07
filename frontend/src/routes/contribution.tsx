@@ -5,6 +5,7 @@ import { Badge } from "../components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
+import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type { SearchResult } from "../lib/types";
 import { formatDate, formatNumber, getPath } from "../lib/utils";
@@ -81,7 +82,7 @@ export function ContributionPage() {
           </div>
         </div>
         <a
-          href={`/api/contributions/${id}/download${keyParam}`}
+          href={siteUrl(`/api/contributions/${id}/download${keyParam}`)}
           download
           className="rounded-md bg-node px-3.5 py-2 text-sm font-medium text-white hover:bg-node-dark focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-2"
         >

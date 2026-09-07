@@ -3,15 +3,19 @@ across all FIESTA nodes, compatible with the legacy api.earthref.org."""
 
 import io
 import zipfile
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Query, Response, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, Query, Response, UploadFile
 from opensearchpy.exceptions import NotFoundError
 from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fiesta.apps.deps import BasicUser, SessionDep
 from fiesta.apps.schemas import SearchPage, UserOut
 from fiesta.db.models import Contribution
+from fiesta.db.session import get_sessionmaker
 from fiesta.domain.parse import ParseError, parse_text
 from fiesta.domain.validate import guess_data_model_version, validate_contribution
 from fiesta.nodeconfig import NodeConfig, get_deployment
@@ -32,6 +36,16 @@ def _node(repository: str) -> NodeConfig:
         return get_public_api().node_for(repository)
     except KeyError:
         raise HTTPException(404, f"unknown repository {repository!r}") from None
+
+
+async def get_repo_session(repository: str) -> AsyncIterator[AsyncSession]:
+    """Session bound to the schema of the node named in the path. The plain
+    SessionDep (shared schema only) still serves users/auth and health."""
+    async with get_sessionmaker(_node(repository).node.slug)() as session:
+        yield session
+
+
+RepoSession = Annotated[AsyncSession, Depends(get_repo_session)]
 
 
 @asynccontextmanager
@@ -72,7 +86,7 @@ def create_app() -> FastAPI:
 
     @app.get("/v1/{repository}/data/{contribution_id}", tags=["data"])
     async def get_data(
-        session: SessionDep, repository: str, contribution_id: int, key: str | None = None
+        session: RepoSession, repository: str, contribution_id: int, key: str | None = None
     ) -> Response:
         node = _node(repository)
         contribution = await _visible(session, node, contribution_id, key)
@@ -85,7 +99,7 @@ def create_app() -> FastAPI:
 
     @app.get("/v1/{repository}/download/{contribution_id}", tags=["data"])
     async def download_zip(
-        session: SessionDep, repository: str, contribution_id: int, key: str | None = None
+        session: RepoSession, repository: str, contribution_id: int, key: str | None = None
     ) -> Response:
         node = _node(repository)
         contribution = await _visible(session, node, contribution_id, key)
@@ -117,7 +131,7 @@ def create_app() -> FastAPI:
             raise HTTPException(404, f"unknown search table {table!r}")
         body = build_search_body(table=table, query=query, size=size, from_=from_)
         try:
-            response = await get_opensearch().search(index=node.search.index, body=body)
+            response = await get_opensearch().search(index=node.search_index, body=body)
         except NotFoundError:
             return SearchPage(total=0, results=[])
         hits = response["hits"]
@@ -172,7 +186,7 @@ def create_app() -> FastAPI:
             private_only=True,
         )
         try:
-            response = await get_opensearch().search(index=node.search.index, body=body)
+            response = await get_opensearch().search(index=node.search_index, body=body)
         except NotFoundError:
             return SearchPage(total=0, results=[])
         hits = response["hits"]
@@ -181,7 +195,7 @@ def create_app() -> FastAPI:
 
     @app.post("/v1/{repository}/private/contribution", status_code=201, tags=["private"])
     async def private_create(
-        user: BasicUser, session: SessionDep, repository: str, file: UploadFile | None = None
+        user: BasicUser, session: RepoSession, repository: str, file: UploadFile | None = None
     ) -> dict:
         node = _node(repository)
         contribution = Contribution(
@@ -199,7 +213,7 @@ def create_app() -> FastAPI:
     @app.put("/v1/{repository}/private/contribution/{contribution_id}", tags=["private"])
     async def private_replace(
         user: BasicUser,
-        session: SessionDep,
+        session: RepoSession,
         repository: str,
         contribution_id: int,
         file: UploadFile,
@@ -215,7 +229,7 @@ def create_app() -> FastAPI:
         "/v1/{repository}/private/contribution/{contribution_id}", status_code=204, tags=["private"]
     )
     async def private_delete(
-        user: BasicUser, session: SessionDep, repository: str, contribution_id: int
+        user: BasicUser, session: RepoSession, repository: str, contribution_id: int
     ) -> None:
         node = _node(repository)
         contribution = await _owned(session, node, user, contribution_id)
@@ -248,7 +262,7 @@ def create_app() -> FastAPI:
         await session.refresh(contribution)
 
     @app.get("/v1/{repository}/private/contributions", tags=["private"])
-    async def private_list(user: BasicUser, session: SessionDep, repository: str) -> list[dict]:
+    async def private_list(user: BasicUser, session: RepoSession, repository: str) -> list[dict]:
         node = _node(repository)
         result = await session.execute(
             select(Contribution)

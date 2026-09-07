@@ -19,7 +19,7 @@ app = get_job_app()
 @app.task(name="process_contribution", retry=2)
 async def process_contribution(contribution_id: int) -> None:
     node = get_node()
-    async with get_sessionmaker()() as session:
+    async with get_sessionmaker(node.node.slug)() as session:
         await svc.process_contribution(session, node, contribution_id)
 
 

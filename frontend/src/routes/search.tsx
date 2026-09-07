@@ -16,6 +16,7 @@ import { PageSpinner } from "../components/ui/spinner";
 import { Table, TBody, Td, THead, Th, Tr } from "../components/ui/table";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type {
   FacetBucket,
@@ -481,7 +482,9 @@ export function SearchPage() {
           </form>
           {topContributionId ? (
             <a
-              href={`/api/contributions/${topContributionId}/download${privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : ""}`}
+              href={siteUrl(
+                `/api/contributions/${topContributionId}/download${privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : ""}`,
+              )}
               download
               className="flex items-center gap-1 self-start whitespace-nowrap rounded-sm border border-node bg-white px-3 py-2 text-[13px] font-medium text-node hover:bg-node-soft"
               style={{ margin: "1em 1em 0 0" }}

@@ -27,9 +27,10 @@ make up FIESTA_NODE=magic,karar,cdr
 Each node gets its own backend/worker/frontend (compose profiles named after
 the node) with per-node default ports (magic 8000/8080, kdd 8001/8081, cdr
 8002/8082, karar 8003/8083, erda 8004/8084, osu-mgr 8006/8086). Infrastructure is shared; isolation comes from a
-per-node OpenSearch index, MinIO bucket, procrastinate queue, and a `node`
-column scoping contributions in Postgres. Accounts are shared across nodes
-(one EarthRef login).
+per-node OpenSearch index, MinIO bucket, procrastinate queue, and a Postgres
+schema per node (`magic`, `cdr`, ...) for the workflow tables. Accounts are
+shared across nodes (one EarthRef login, in the `public` schema). If your
+local database predates the per-node schemas, `make clean` once.
 
 When several nodes run together, `make` cross-links the top portal bar to the
 sibling nodes' localhost URLs (it computes `FIESTA_PORTAL_URLS` from the
@@ -37,6 +38,41 @@ running node list + frontend ports). Nodes not in `FIESTA_NODE` keep their
 production `earthref.org` links. In production this is left empty and the real
 hostnames route instead. (Running `docker compose up` directly skips this
 computation — use `make up`, or set `FIESTA_PORTAL_URLS=slug=url,...`.)
+
+## Several nodes on one hostname (base paths)
+
+By default each node owns its hostname (or localhost port) and is served at
+`/`. To publish several nodes under ONE hostname — `dev.earthref.org/MagIC/`,
+`/CDR/`, `/KArAr/`, `/KdD/`, and later `earthref.org/MagIC/` — give each node
+a base path in `.env`:
+
+```sh
+MAGIC_BASE_PATH=/MagIC/
+CDR_BASE_PATH=/CDR/
+KARAR_BASE_PATH=/KArAr/
+KDD_BASE_PATH=/KdD/
+```
+
+The value must start and end with `/`. It is a **build arg** of the frontend
+image (asset URLs, the router `basepath`, and the nginx location blocks all
+derive from it), so `make up` rebuilds the image after a change. The backend
+receives it as `FIESTA_ROOT_PATH`, which only tells FastAPI where to
+advertise `/api/docs`; the proxy strips the prefix, so routes stay at `/api`.
+
+The reverse proxy in front then needs one plain-prefix location per node,
+forwarding the full URI (no trailing slash on `proxy_pass`):
+
+```nginx
+location /MagIC/ { proxy_pass http://10.10.10.115:8080; }   # frontend-magic
+location /CDR/   { proxy_pass http://10.10.10.115:8082; }   # frontend-cdr
+```
+
+Everything inside the SPA goes through `siteUrl()` in
+`frontend/src/lib/base.ts` (the `api()` helper applies it for you); a new
+root-absolute `href` or `fetch("/api/...")` that bypasses it will break under a
+prefix, so route those through `siteUrl()` too. For a local build outside
+Docker, `VITE_BASE_PATH=/MagIC/ npm run build` (or `npm run dev`, which then
+serves at `http://localhost:5173/MagIC/`).
 
 ## Backend only (against the compose infra)
 

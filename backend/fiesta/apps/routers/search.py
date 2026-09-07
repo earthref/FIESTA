@@ -93,7 +93,7 @@ async def search(
         bbox=_parse_bbox(bbox),
     )
     try:
-        response = await get_opensearch().search(index=node.search.index, body=body)
+        response = await get_opensearch().search(index=node.search_index, body=body)
     except NotFoundError:
         return SearchPage(total=0, results=[], aggregations={} if facets else None)
     hits = response["hits"]
@@ -142,7 +142,7 @@ async def get_contribution(
         and "summary.contribution._is_latest" not in str(f)
     ]
     try:
-        response = await get_opensearch().search(index=node.search.index, body=body)
+        response = await get_opensearch().search(index=node.search_index, body=body)
         hits = response["hits"]["hits"]
     except NotFoundError:
         hits = []

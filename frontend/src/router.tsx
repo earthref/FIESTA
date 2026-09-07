@@ -1,4 +1,5 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { BASE_PATH } from "./lib/base";
 import { ContactPage } from "./routes/contact";
 import { ContributionPage } from "./routes/contribution";
 import { DataModelPage, DataModelsIndex } from "./routes/data-models";
@@ -203,6 +204,7 @@ const routeTree = rootRoute.addChildren([
 
 export const router = createRouter({
   routeTree,
+  basepath: BASE_PATH,
   defaultPreload: "intent",
 });
 

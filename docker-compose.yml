@@ -27,6 +27,11 @@
 #
 # Postgres and OpenSearch are projections: `make rebuild` regenerates both
 # from the YAML config + MinIO bucket.
+#
+# Several nodes on ONE hostname (dev.earthref.org/MagIC/, /CDR/, ...): set
+# <NODE>_BASE_PATH=/MagIC/ etc. in .env. It is baked into that node's frontend
+# image (asset URLs, router base, nginx locations) and passed to its backend
+# as FIESTA_ROOT_PATH. Default "/" keeps the one-hostname-per-node layout.
 
 name: fiesta
 
@@ -137,6 +142,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/magic.yaml
+      FIESTA_ROOT_PATH: ${MAGIC_BASE_PATH:-/}
     command: *backend-command
     ports:
       - "${MAGIC_BACKEND_PORT:-8000}:8000"
@@ -147,6 +153,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/magic.yaml
+      FIESTA_ROOT_PATH: ${MAGIC_BASE_PATH:-/}
     volumes:
       - ./config:/config:ro
     command: fiesta worker
@@ -157,7 +164,10 @@ services:
         condition: service_healthy
 
   frontend-magic:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${MAGIC_BASE_PATH:-/}
     profiles: [magic]
     environment:
       BACKEND_HOST: backend-magic
@@ -174,6 +184,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/kdd.yaml
+      FIESTA_ROOT_PATH: ${KDD_BASE_PATH:-/}
     command: *backend-command
     ports:
       - "${KDD_BACKEND_PORT:-8001}:8000"
@@ -184,6 +195,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/kdd.yaml
+      FIESTA_ROOT_PATH: ${KDD_BASE_PATH:-/}
     volumes:
       - ./config:/config:ro
     command: fiesta worker
@@ -194,7 +206,10 @@ services:
         condition: service_healthy
 
   frontend-kdd:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${KDD_BASE_PATH:-/}
     profiles: [kdd]
     environment:
       BACKEND_HOST: backend-kdd
@@ -211,6 +226,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/cdr.yaml
+      FIESTA_ROOT_PATH: ${CDR_BASE_PATH:-/}
     command: *backend-command
     ports:
       - "${CDR_BACKEND_PORT:-8002}:8000"
@@ -221,6 +237,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/cdr.yaml
+      FIESTA_ROOT_PATH: ${CDR_BASE_PATH:-/}
     volumes:
       - ./config:/config:ro
     command: fiesta worker
@@ -231,7 +248,10 @@ services:
         condition: service_healthy
 
   frontend-cdr:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${CDR_BASE_PATH:-/}
     profiles: [cdr]
     environment:
       BACKEND_HOST: backend-cdr
@@ -248,6 +268,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/karar.yaml
+      FIESTA_ROOT_PATH: ${KARAR_BASE_PATH:-/}
     command: *backend-command
     ports:
       - "${KARAR_BACKEND_PORT:-8003}:8000"
@@ -258,6 +279,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/karar.yaml
+      FIESTA_ROOT_PATH: ${KARAR_BASE_PATH:-/}
     volumes:
       - ./config:/config:ro
     command: fiesta worker
@@ -268,7 +290,10 @@ services:
         condition: service_healthy
 
   frontend-karar:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${KARAR_BASE_PATH:-/}
     profiles: [karar]
     environment:
       BACKEND_HOST: backend-karar
@@ -285,6 +310,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/erda.yaml
+      FIESTA_ROOT_PATH: ${ERDA_BASE_PATH:-/}
     command: *backend-command
     ports:
       - "${ERDA_BACKEND_PORT:-8004}:8000"
@@ -295,6 +321,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/erda.yaml
+      FIESTA_ROOT_PATH: ${ERDA_BASE_PATH:-/}
     volumes:
       - ./config:/config:ro
     command: fiesta worker
@@ -305,7 +332,10 @@ services:
         condition: service_healthy
 
   frontend-erda:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${ERDA_BASE_PATH:-/}
     profiles: [erda]
     environment:
       BACKEND_HOST: backend-erda
@@ -322,6 +352,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/osu-mgr.yaml
+      FIESTA_ROOT_PATH: ${OSU_MGR_BASE_PATH:-/}
     command: *backend-command
     ports:
       - "${OSU_MGR_BACKEND_PORT:-8006}:8000"
@@ -332,6 +363,7 @@ services:
     environment:
       <<: *backend-env
       FIESTA_CONFIG_FILE: /config/osu-mgr.yaml
+      FIESTA_ROOT_PATH: ${OSU_MGR_BASE_PATH:-/}
     volumes:
       - ./config:/config:ro
     command: fiesta worker
@@ -342,7 +374,10 @@ services:
         condition: service_healthy
 
   frontend-osu-mgr:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${OSU_MGR_BASE_PATH:-/}
     profiles: [osu-mgr]
     environment:
       BACKEND_HOST: backend-osu-mgr

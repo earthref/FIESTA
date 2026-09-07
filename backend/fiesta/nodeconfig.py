@@ -121,6 +121,24 @@ class NodeConfig(BaseModel):
             return None
         return self._load_json(self.vocabularies.method_codes)
 
+    # --- names resolved against the environment (fiesta.settings) ---------
+
+    @property
+    def search_index(self) -> str:
+        """OpenSearch index for this node: FIESTA_INDEX_PREFIX + search.index."""
+        return f"{get_settings().index_prefix}{self.search.index}"
+
+    @property
+    def bucket(self) -> str:
+        """Bucket holding this node's objects: FIESTA_S3_BUCKET if set (one
+        shared bucket, keys under storage_prefix), else the YAML bucket."""
+        return get_settings().s3_bucket or self.storage.bucket
+
+    @property
+    def storage_prefix(self) -> str:
+        """Key prefix inside the bucket: "<slug>/" in a shared bucket, else ""."""
+        return f"{self.node.slug}/" if get_settings().s3_bucket else ""
+
     def public_config(self) -> dict:
         """The shape served at GET /api/config for the frontend."""
         return {

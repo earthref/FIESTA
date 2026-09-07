@@ -17,9 +17,12 @@ from fiesta.settings import get_settings
 app = typer.Typer(help="FIESTA operations")
 
 
-def _alembic_config() -> AlembicConfig:
+def _migrate(node_slug: str) -> None:
+    """Apply migrations for one node: its schema, its alembic_version, and
+    (first time only) the shared users table. See alembic/env.py."""
     config = AlembicConfig("alembic.ini")
-    return config
+    config.attributes["node_slug"] = node_slug
+    alembic_command.upgrade(config, "head")
 
 
 def _apply_procrastinate_schema() -> None:
@@ -38,9 +41,16 @@ def init(with_admin: bool = typer.Option(False, help="create an initial admin ac
     once): a Postgres advisory lock serializes the schema work."""
     import psycopg
 
+    from fiesta.nodeconfig import get_deployment
+
+    deployment = get_deployment()
+    nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
+
     with psycopg.connect(get_settings().procrastinate_dsn) as lock_conn:
         lock_conn.execute("SELECT pg_advisory_lock(715517)")
-        alembic_command.upgrade(_alembic_config(), "head")
+        for node in nodes:
+            _migrate(node.node.slug)
+            typer.echo(f"migrated schema {node.node.slug!r}")
         try:
             _apply_procrastinate_schema()
             typer.echo("procrastinate schema applied")
@@ -48,18 +58,18 @@ def init(with_admin: bool = typer.Option(False, help="create an initial admin ac
             typer.echo(f"procrastinate schema: {exc}")
 
     async def ensure() -> None:
-        from fiesta.nodeconfig import get_deployment
         from fiesta.search.client import get_opensearch
         from fiesta.search.index import ensure_index
         from fiesta.storage import Storage
 
-        deployment = get_deployment()
-        nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
         client = get_opensearch()
         for node in nodes:
-            await Storage(node.storage.bucket).ensure_bucket()
-            await ensure_index(client, node.search.index)
-            typer.echo(f"ensured bucket {node.storage.bucket!r} and index {node.search.index!r}")
+            await Storage.for_node(node).ensure_bucket()
+            await ensure_index(client, node.search_index)
+            typer.echo(
+                f"ensured bucket {node.bucket!r} (prefix {node.storage_prefix!r}) "
+                f"and index {node.search_index!r}"
+            )
         await client.close()
 
     asyncio.run(ensure())
@@ -83,7 +93,7 @@ def create_user(
         from fiesta.db.session import get_sessionmaker
         from fiesta.security import hash_password
 
-        async with get_sessionmaker()() as session:
+        async with get_sessionmaker(None)() as session:
             existing = (
                 await session.execute(select(User).where(User.email == email))
             ).scalar_one_or_none()
@@ -117,7 +127,7 @@ def rebuild(
         deployment = get_deployment()
         nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
         for node in nodes:
-            async with get_sessionmaker()() as session:
+            async with get_sessionmaker(node.node.slug)() as session:
                 stats = await rebuild_node(session, node)
             typer.echo(f"{node.node.key}: {stats}")
         await get_opensearch().close()

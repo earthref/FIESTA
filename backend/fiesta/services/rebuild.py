@@ -48,10 +48,10 @@ async def _get_or_create_user(session: AsyncSession, info: dict) -> User:
 async def rebuild_node(session: AsyncSession, node: NodeConfig) -> dict:
     """Full rebuild. Wipes the node's search index and repopulates both stores
     from the bucket. Returns counts for reporting."""
-    storage = Storage(node.storage.bucket)
+    storage = Storage.for_node(node)
     await storage.ensure_bucket()
     client = get_opensearch()
-    await recreate_index(client, node.search.index)
+    await recreate_index(client, node.search_index)
 
     manifest_keys = [
         k for k in await storage.list_keys("contributions/") if k.endswith("/manifest.json")

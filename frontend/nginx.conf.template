@@ -1,3 +1,13 @@
+# Rendered by the nginx image's envsubst entrypoint. Only ${BACKEND_HOST} and
+# ${BASE_PATH} are substituted (they are the defined env vars); nginx's own
+# $uri/$host variables pass through untouched.
+#
+# BASE_PATH is "/" or a node prefix like "/MagIC/" (leading + trailing slash),
+# so the locations render as /api/, /assets/, / -- or /MagIC/api/,
+# /MagIC/assets/, /MagIC/. The build is installed at <root><BASE_PATH>, which
+# is why the static locations need no alias. A request for the bare prefix
+# without its slash (/MagIC) hits no location and nginx's directory handling
+# redirects it to /MagIC/.
 server {
     listen 80;
     server_name _;
@@ -8,10 +18,11 @@ server {
     gzip on;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml;
 
-    # Proxy API requests to this node's backend service. BACKEND_HOST is
-    # substituted by the nginx image's envsubst entrypoint (templates dir).
-    location /api/ {
-        proxy_pass http://${BACKEND_HOST}:8000;
+    # Proxy API requests to this node's backend service. The URI part on
+    # proxy_pass replaces the matched prefix, so the backend always sees /api/
+    # whatever BASE_PATH is.
+    location ${BASE_PATH}api/ {
+        proxy_pass http://${BACKEND_HOST}:8000/api/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -22,14 +33,14 @@ server {
     }
 
     # Hashed build assets are safe to cache forever.
-    location /assets/ {
+    location ${BASE_PATH}assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
         try_files $uri =404;
     }
 
-    # SPA history fallback: every other path serves the app shell.
-    location / {
-        try_files $uri $uri/ /index.html;
+    # SPA history fallback: every other path under the base serves the app shell.
+    location ${BASE_PATH} {
+        try_files $uri $uri/ ${BASE_PATH}index.html;
     }
 }

@@ -11,6 +11,7 @@ import { Modal } from "../components/ui/modal";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { ApiError, api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type {
   ContributionOut,
@@ -258,7 +259,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
     }
   };
 
-  const shareUrl = `${window.location.origin}/contributions/${contribution.id}?private_key=${contribution.private_key ?? ""}`;
+  const shareUrl = `${window.location.origin}${siteUrl(`/contributions/${contribution.id}`)}?private_key=${contribution.private_key ?? ""}`;
 
   const share = async () => {
     try {

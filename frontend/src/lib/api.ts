@@ -1,5 +1,8 @@
-// Minimal fetch wrapper for the FIESTA node backend. All URLs are relative
-// (/api/...) so the SPA works behind the Vite dev proxy, nginx, or compose.
+// Minimal fetch wrapper for the FIESTA node backend. Callers pass root-relative
+// paths (/api/...); they are resolved under the site base path (see base.ts) so
+// the SPA works behind the Vite dev proxy, nginx, or compose, at "/" or "/MagIC/".
+
+import { siteUrl } from "./base";
 
 const TOKEN_KEY = "fiesta_token";
 
@@ -72,7 +75,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     body = options.formData;
   }
 
-  let url = path;
+  let url = siteUrl(path);
   if (options.params) {
     const qs = new URLSearchParams();
     for (const [key, value] of Object.entries(options.params)) {

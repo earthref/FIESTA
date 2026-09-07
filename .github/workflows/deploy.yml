@@ -1,0 +1,28 @@
+name: Deploy
+
+# Push only -- deliberately no pull_request trigger. This repo is public and
+# the runner is self-hosted on the deploy host, so a workflow from a fork PR
+# would execute untrusted code next to production credentials. Push events
+# only fire for accounts with write access.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Queue rather than cancel: a superseded run should still finish its release
+# swap and restart instead of being killed mid-swap.
+concurrency:
+  group: deploy-fiesta
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, fiesta-deploy]
+    timeout-minutes: 30
+    steps:
+      # No actions/checkout on purpose: deploy-fiesta.sh keeps its own clone
+      # and builds a fresh release directory from origin/<branch>. It runs
+      # ruff + pytest + the frontend type-check/build before anything is
+      # swapped, and rolls back if a node fails its health check.
+      - name: Pull, test, build, swap
+        run: /srv/fiesta/bin/deploy-fiesta.sh "${{ github.ref_name }}"

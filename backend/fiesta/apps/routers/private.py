@@ -133,7 +133,7 @@ async def set_reference(
     await svc.save_manifest(node, contribution, user)
     await update_contribution_flags(
         get_opensearch(),
-        node.search.index,
+        node.search_index,
         contribution.id,
         {"_reference": {"doi": contribution.reference_doi}},
     )

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { type CSSProperties, type ReactNode, useState } from "react";
+import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type { SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath } from "../lib/utils";
@@ -336,7 +337,7 @@ export function ResultItem({
       {id ? (
         <Cell width={100}>
           <a
-            href={`/api/contributions/${id}/download${keyParam}`}
+            href={siteUrl(`/api/contributions/${id}/download${keyParam}`)}
             download
             className="block w-full rounded-sm border border-node text-center font-medium text-node hover:bg-node-soft"
             style={{ padding: "20px 0", height: 100 }}
@@ -640,7 +641,7 @@ function VersionsTable({
               <tr key={`${row.id}-${row.version}`}>
                 <td className="py-1 pr-3">
                   <a
-                    href={`/api/contributions/${row.id}/download${keyParam}`}
+                    href={siteUrl(`/api/contributions/${row.id}/download${keyParam}`)}
                     download
                     className="inline-flex items-center gap-1 text-node hover:underline"
                   >
