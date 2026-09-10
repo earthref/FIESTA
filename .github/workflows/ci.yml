@@ -1,0 +1,179 @@
+name: CI
+
+# Replaces the template-inherited test.yml / playwright.yml / smokeshow.yml,
+# which referenced scripts and a `backend` compose service that no longer
+# exist and only ever triggered on `master`.
+#
+# Everything here runs the same targets a developer runs locally (see the
+# Makefile), so a green CI means `make lint`, `make test` and `make e2e` pass.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# One run per ref; a new push cancels the in-flight run for the same branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (ruff + pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: backend
+
+      - name: Lint
+        run: uv run ruff check .
+        working-directory: backend
+
+      - name: Test
+        run: uv run pytest -q
+        working-directory: backend
+
+  frontend:
+    name: Frontend (biome + tsc + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Lint
+        run: npx biome check .
+        working-directory: frontend
+
+      # `npm run build` is tsc (type-check) followed by the production build.
+      - name: Type-check and build
+        run: npm run build
+        working-directory: frontend
+
+  config:
+    name: Node configs load
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: backend
+
+      # Every config/*.yaml must parse, its data model and vocabularies must
+      # load, its hierarchy tables must exist, and its plugins must resolve.
+      # This is the check that catches a broken node config before deploy.
+      - name: Load every deployment config
+        working-directory: backend
+        run: |
+          uv run python - <<'PY'
+          import sys
+          from pathlib import Path
+          from fiesta.nodeconfig import load_deployment
+          from fiesta.plugins import active_plugins
+
+          failed = False
+          for path in sorted(Path("../config").glob("*.yaml")):
+              try:
+                  deployment = load_deployment(path)
+                  nodes = (
+                      [deployment.node]
+                      if deployment.node
+                      else list(deployment.public_api.nodes.values())
+                  )
+                  for node in nodes:
+                      for version in node.data_model.versions:
+                          node.load_data_model(version)
+                      node.load_controlled_vocabularies()
+                      node.load_suggested_vocabularies()
+                      for plugin in active_plugins(node):
+                          plugin.frontend_config(node)
+                  print(f"ok   {path.name}")
+              except Exception as exc:  # noqa: BLE001 - report every bad config
+                  failed = True
+                  print(f"FAIL {path.name}: {exc}")
+          sys.exit(1 if failed else 0)
+          PY
+
+  e2e:
+    name: End-to-end (compose stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      # OpenSearch refuses to start below this; GitHub runners default lower.
+      - name: Raise vm.max_map_count for OpenSearch
+        run: sudo sysctl -w vm.max_map_count=262144
+
+      - name: Start the MagIC node plus the public API
+        run: make up-public-api FIESTA_NODE=magic
+
+      - name: Wait for the stack to become healthy
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -sf http://localhost:8000/api/health >/dev/null \
+               && curl -sf http://localhost:8005/v1/health-check >/dev/null; then
+              echo "stack is up"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "stack did not become healthy in 5 minutes"
+          exit 1
+
+      - name: Run the end-to-end workflow test
+        run: make e2e
+
+      - name: Dump container logs
+        if: failure()
+        run: docker compose logs --no-color --tail 200
+
+      - name: Tear down
+        if: always()
+        run: make down
+
+  # Single required check for branch protection: green only if every job above
+  # succeeded. Add this as the required status check when protecting `main`.
+  ci:
+    name: CI
+    if: always()
+    needs: [backend, frontend, config, e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that all jobs succeeded
+        run: |
+          echo '${{ toJSON(needs) }}'
+          if echo '${{ toJSON(needs) }}' | grep -q '"result": *"\(failure\|cancelled\)"'; then
+            echo "one or more jobs failed"
+            exit 1
+          fi

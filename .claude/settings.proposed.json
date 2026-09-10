@@ -1,0 +1,66 @@
+{
+  "_note": "Proposed .claude/settings.json (Claude cannot write permission config itself). Review, then: mv .claude/settings.proposed.json .claude/settings.json. settings.json is gitignored in this repo, so it is per-clone. CLAUDE.md 'Models and Delegation' expects the env below; the allowlist mirrors CLAUDE.md 'Commands'.",
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-opus-4-8"
+  },
+  "permissions": {
+    "allow": [
+      "Read(//home/rminnett/git/earthref/**)",
+      "Read(//home/rminnett/.nvm/versions/node/**)",
+
+      "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)", "Bash(git show:*)",
+      "Bash(git branch:*)", "Bash(git blame:*)", "Bash(git rev-parse:*)", "Bash(git stash list:*)",
+      "Bash(git worktree list:*)", "Bash(git add:*)", "Bash(git mv:*)", "Bash(git restore --staged:*)",
+      "Bash(gh pr view:*)", "Bash(gh pr list:*)", "Bash(gh run list:*)", "Bash(gh run view:*)",
+
+      "Bash(make up:*)", "Bash(make up-public-api:*)", "Bash(make down:*)", "Bash(make ps:*)",
+      "Bash(make logs:*)", "Bash(make build:*)", "Bash(make infra:*)", "Bash(make init:*)",
+      "Bash(make user:*)", "Bash(make test:*)", "Bash(make test-backend:*)", "Bash(make test-frontend:*)",
+      "Bash(make lint:*)", "Bash(make fix:*)", "Bash(make e2e:*)",
+      "Bash(make backend-dev:*)", "Bash(make worker-dev:*)", "Bash(make frontend-dev:*)",
+
+      "Bash(uv sync:*)", "Bash(uv run pytest:*)", "Bash(uv run ruff:*)", "Bash(uv run alembic:*)",
+      "Bash(uv run python:*)", "Bash(uv run fiesta:*)", "Bash(uv run uvicorn:*)",
+      "Bash(cd backend && uv run:*)", "Bash(cd backend && FIESTA_CONFIG_FILE=*)",
+      "Bash(python3 -c:*)", "Bash(python3 -m json.tool:*)",
+
+      "Bash(npm ci:*)", "Bash(npm install:*)", "Bash(npm run:*)", "Bash(npm test:*)",
+      "Bash(npx biome:*)", "Bash(npx tsc:*)", "Bash(npx vite:*)",
+      "Bash(cd frontend && npm:*)", "Bash(cd frontend && npx:*)",
+
+      "Bash(docker compose ps:*)", "Bash(docker compose logs:*)", "Bash(docker compose up:*)",
+      "Bash(docker compose down)", "Bash(docker compose build:*)", "Bash(docker compose run --rm:*)",
+      "Bash(docker compose exec:*)", "Bash(docker compose config:*)",
+      "Bash(docker ps:*)", "Bash(docker logs:*)", "Bash(docker inspect:*)", "Bash(docker images:*)",
+
+      "Bash(curl -s:*)", "Bash(curl -sS:*)", "Bash(curl -fsS:*)", "Bash(curl -sf:*)",
+      "Bash(ls:*)", "Bash(cat:*)", "Bash(head:*)", "Bash(tail:*)", "Bash(wc:*)", "Bash(grep:*)", "Bash(rg:*)",
+      "Bash(find:*)", "Bash(sed -n:*)", "Bash(sort:*)", "Bash(uniq:*)", "Bash(cut:*)", "Bash(awk:*)", "Bash(jq:*)",
+      "Bash(diff:*)", "Bash(tree:*)", "Bash(date:*)", "Bash(echo:*)", "Bash(which:*)", "Bash(ss -ltnp:*)",
+      "Bash(mkdir -p:*)", "Bash(cp:*)", "Bash(mv:*)", "Bash(touch:*)", "Bash(chmod:*)",
+
+      "WebSearch",
+      "WebFetch(domain:github.com)", "WebFetch(domain:fastapi.tiangolo.com)", "WebFetch(domain:docs.procrastinate.dev)",
+      "WebFetch(domain:docs.sqlalchemy.org)", "WebFetch(domain:opensearch.org)", "WebFetch(domain:tanstack.com)",
+      "WebFetch(domain:vite.dev)", "WebFetch(domain:www.npmjs.com)", "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:earthref.org)", "WebFetch(domain:api.earthref.org)", "WebFetch(domain:www2.earthref.org)"
+    ],
+    "ask": [
+      "Bash(git push:*)", "Bash(git commit:*)", "Bash(git reset:*)", "Bash(git checkout:*)",
+      "Bash(git rebase:*)", "Bash(git stash:*)", "Bash(gh pr merge:*)", "Bash(gh pr create:*)",
+      "Bash(make clean:*)", "Bash(make rebuild:*)", "Bash(docker compose down -v:*)",
+      "Bash(docker volume rm:*)", "Bash(docker system prune:*)",
+      "Bash(* rebuild --yes*)", "Bash(*psql*)", "Bash(*DROP *)", "Bash(*DELETE FROM*)", "Bash(*TRUNCATE*)",
+      "Bash(rm -rf:*)", "Bash(sudo:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)", "Bash(git push -f:*)",
+      "Read(//home/rminnett/git/earthref/FIESTA/.env)",
+      "Read(//home/rminnett/git/earthref/FIESTA/.env.*)",
+      "Edit(//home/rminnett/git/earthref/FIESTA/old-backend/**)",
+      "Edit(//home/rminnett/git/earthref/MagIC/**)", "Edit(//home/rminnett/git/earthref/CDR/**)",
+      "Edit(//home/rminnett/git/earthref/KArAr/**)", "Edit(//home/rminnett/git/earthref/KDD/**)",
+      "Edit(//home/rminnett/git/earthref/FIESTA-API/**)"
+    ]
+  }
+}
