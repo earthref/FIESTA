@@ -113,7 +113,62 @@ CSS facts:
 - **View container** (`renderView`, `:3223-3230`): inline `borderLeft:1px solid #d4d4d5`; height = `state.height − tabs.outerHeight()`; width = `state.width`.
 - **Scroller** (`search_summaries_view.jsx:12`): `{overflowY:scroll; background:white; padding:0 1em; borderRadius:0; boxShadow:none}`. Default pageSize 5.
 
+### Measured metrics (pixel pass 2026-09-10, 1400×900, vs magic.earthref.org)
+
+Computed styles read off the live legacy page with a headless browser; the
+rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
+`components/result-item.tsx`, `portal-bar.tsx`, `node-menu.tsx`, `footer.tsx`):
+
+- **Font**: Open Sans 400/700 loaded from Google Fonts with Semantic's own
+  `@importGoogleFonts` URL (`index.html`); body `line-height 1.4285em`, text
+  `rgba(0,0,0,.87)`. Without the webfont every width differs by 5–15%.
+- **Top bar**: 40px, `#F8F8F8`, 2px bottom border `rgba(34,36,38,.15)`; items
+  14px/400, padding `.857em 1.143em`, line-height 1em, sidebar (hamburger) item
+  first (53.5px), the first portal item has no left padding; active portal =
+  node color + 2px node-colored bottom border (not bold).
+- **Header**: logo 57.75px square (1px segment border + 1px inset node shadow),
+  h1 28px/36px, h4 15px **bold**/19.29px. The node menu is a flex BFC placed
+  after the subtitle (top = subtitle bottom + .25em = 114.5px), *not* cleared
+  below the floated logo; `main` clears.
+- **Node menu**: `ui secondary small pointing menu` — 13px, min-height 2.857em,
+  margin `.25em 0 1.25em`, items padding `.5em 1em`, line-height 1em, 28px tall,
+  aligned to the bottom edge (`margin-bottom:-2px` over the 2px border); icons
+  1.18em wide, margin-right .357em.
+- **Search shell**: bottom attached segment is `#F0F0F0` (not #f3f4f5), text
+  `rgba(0,0,0,.6)`, border `rgba(34,36,38,.15)`. Tabular items: padding
+  `.92857143em 1.42857143em` at 14px (level tabs) and 13px (small menus);
+  the 14px active item is 1px taller (43px bar); every active item has a **1px
+  dashed #d4d4d5 bottom border**. Count pills: 11px bold, `line-height .7em`,
+  padding .5em, min-width 4em, min-height 2em (22px), margin `-1em -1em -1em .5em`.
+- **Buttons**: `ui basic` buttons are weight 400 with a 1px inset box-shadow (no
+  border), padding `.78571429em 1.5em`, line-height 1em, disabled opacity .45;
+  icons 1em with margin `0 .43em 0 -.21em`. Search input 14px, padding
+  `.678em 1em`, line-height 1.214em (38px tall); label icon margin-right .75em.
+  Clear Filters: 13px, padding .5em, margin `-.5em 0` (26px pill in a 38px bar).
+  Sort: 12px bold pill, padding .5em, line-height 1em (24px), caret .857em.
+- **Results row**: width = segment width − 10px; height = window − 79px − row top
+  (legacy: `window − 60 − filtersSegment.top + 20`). Scroller padding `0 1em`,
+  list margin `1em 0`, fitted dividers `.5em 0 1em`.
+- **Card**: line-height 16px, `rgba(0,0,0,.87)`; the trigger row is 3.5px above
+  the card box and 1em wider (padding `0 1em .5em`); caret box 1.25em at
+  (−4.2px, +0.8px); cells row also 1em wider; download cell 14px/104px tall with
+  a 42px block icon, 14px bold label, line-height 18px; map cell 14px; plot slot
+  is a 98px content box with a 1px `rgba(0,0,0,.1)` border ("No Plots
+  Available"); links cell line-height 1.4285em; other cells 13px with 1em
+  (13px) right margins and 5px bottom margins; cell labels sit on 1.4285em
+  lines above 16px clamped values.
+- **Footer**: fixed, 13px, min-height 2.857em, 1px top border + `0 1px 2px`
+  shadow; container margin `0 2em`; text segments 14px, padding `.25em 0`;
+  the two `compact basic` buttons (14px/400, padding `.589em 1.125em`, margin
+  `.5em 1em`) sit between the left/right blocks' auto margins.
+
 ### Deliberate deviations (search page, FIESTA rebuild)
+
+- **Footer**: legacy renders a broken 16px `FIESTA.png` in "Powered by FIESTA";
+  FIESTA shows the real logo at 1.75em. Legacy also prints "Updated on <deploy
+  date>"; FIESTA has no deploy-date source yet.
+- **Portal bar** lists the FIESTA nodes (KdD, CDR, KArAr, OSU-MGR) that the
+  legacy bar lacks, styled identically.
 
 - **Sort options** are the legacy list, served by `GET /api/search/{table}?sort=…`. Legacy "Largest ID First" sorted `summary.contribution.id` *ascending* (`search.jsx:115`, a bug); FIESTA sorts it descending so the label is true. "Recently Published" and "Most Cited" sort on `_reference.year` / `_reference.n_citations`, which are empty until reference enrichment (ROADMAP C6) lands — they fall back to newest first.
 - **Page size** is 10 (legacy 5) with the same infinite-scroll behaviour; a "Load More" button remains as the no-IntersectionObserver fallback.

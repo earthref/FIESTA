@@ -8,6 +8,7 @@ import { NodeMenu } from "../components/node-menu";
 import { PortalBar } from "../components/portal-bar";
 import { PageSpinner } from "../components/ui/spinner";
 import { applyNodeTheme, useNodeConfig } from "../lib/config";
+import { cx } from "../lib/utils";
 
 /** Routes that use the legacy `.full-width` layout variant (padding 0 2em). */
 const FULL_WIDTH_ROUTES = ["/search", "/data-models"];
@@ -53,7 +54,10 @@ export function RootLayout() {
           <NodeHeader fullWidth={fullWidth} />
           <NodeMenu fullWidth={fullWidth} />
           <main
-            className={fullWidth ? "w-full px-[2em] py-4" : "mx-auto w-full max-w-6xl px-4 py-4"}
+            className={cx(
+              "clear-both",
+              fullWidth ? "w-full px-[2em]" : "mx-auto w-full max-w-6xl px-4",
+            )}
           >
             <Outlet />
           </main>

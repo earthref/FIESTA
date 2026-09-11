@@ -47,6 +47,18 @@ const TAB_BORDER = "#d4d4d5";
 /** Legacy `styles.activeTab` on the level tabs and the Filters tab. */
 const ACTIVE_TAB_BG = "#F0F0F0";
 const SEGMENT_BORDER = "rgba(34,36,38,.15)";
+const SEGMENT_BG = "#F0F0F0";
+/** `.ui.basic.button` look: transparent/white, 1px inset shadow, weight 400. */
+function basicButtonStyle(color: string): CSSProperties {
+  return {
+    boxShadow: `0 0 0 1px ${color} inset`,
+    color,
+    fontWeight: 400,
+    borderRadius: "0.28571429rem",
+  };
+}
+/** Semantic `.ui.button > .icon`: 1em glyph, margin 0 .43em 0 -.21em. */
+const buttonIconStyle: CSSProperties = { margin: "0 0.42857143em 0 -0.21428571em" };
 
 /** Legacy sort dropdown (search.jsx `sortOptions`), keyed by the API's `sort` names. */
 const SORT_OPTIONS: { value: string; label: string }[] = [
@@ -73,8 +85,9 @@ function tabItemStyle(active: boolean, small = false, activeBg = "#fff"): CSSPro
     color: active ? "rgba(0,0,0,.95)" : "var(--node-color)",
     fontWeight: active ? 700 : 400,
     background: active ? activeBg : "transparent",
+    ...(active && !small ? { paddingBottom: "calc(0.92857143em + 1px)" } : {}),
     border: `1px solid ${active ? TAB_BORDER : "transparent"}`,
-    borderBottomColor: active ? activeBg : "transparent",
+    borderBottom: active ? `1px dashed ${TAB_BORDER}` : "1px solid transparent",
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
     marginBottom: -1,
@@ -92,6 +105,7 @@ function CountLabel({ children }: { children: ReactNode }) {
         borderColor: SEGMENT_BORDER,
         margin: "-1em -1em -1em 0.5em",
         minWidth: "4em",
+        minHeight: "2em",
         fontSize: 11,
         lineHeight: "0.7em",
         padding: "0.5em",
@@ -105,11 +119,19 @@ function CountLabel({ children }: { children: ReactNode }) {
 /** Semantic "basic small compact button" (Clear buttons) / node-colored when active. */
 function compactButtonClass(active: boolean): string {
   return cx(
-    "flex items-center gap-1 whitespace-nowrap rounded-sm text-[12px] font-bold",
-    active
-      ? "bg-node text-white hover:bg-node-dark"
-      : "cursor-not-allowed border border-gray-300 bg-white text-gray-400 opacity-60",
+    "flex items-center whitespace-nowrap rounded-sm",
+    active ? "bg-node font-bold text-white hover:bg-node-dark" : "cursor-default bg-white",
   );
+}
+function compactButtonStyle(active: boolean): CSSProperties {
+  return {
+    fontSize: "0.92857143rem",
+    lineHeight: "1em",
+    padding: "0.5em",
+    margin: "-0.5em 0",
+    ...(active ? {} : { ...basicButtonStyle("rgba(0,0,0,.6)"), opacity: 0.45 }),
+    ...(active ? {} : { boxShadow: "0 0 0 1px rgba(34,36,38,.15) inset" }),
+  };
 }
 
 function searchRequestParams(
@@ -180,6 +202,7 @@ function FilterRow({
           lineHeight: "0.7em",
           padding: "0.5em",
           minWidth: "2em",
+          minHeight: "2em",
         }}
       >
         {abbreviateNumber(bucket.doc_count)}
@@ -229,7 +252,11 @@ function FacetSection({
   return (
     <div
       className="text-[13px]"
-      style={{ padding: "0.25em 1em 0.5em", borderBottom: "1px solid #D4D4D5" }}
+      style={{
+        padding: "0.25em 1em 0.5em",
+        borderBottom: "1px solid #D4D4D5",
+        color: "rgba(0,0,0,.87)",
+      }}
     >
       {/* Title: caret + bold name, then the active filters (always visible) */}
       <div style={{ padding: "0.5em 0 0", lineHeight: "1.4285em" }}>
@@ -240,8 +267,16 @@ function FacetSection({
           className="flex w-full cursor-pointer items-center text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
           style={{ marginBottom: "0.25em" }}
         >
-          <span aria-hidden="true" className={cx("mr-1 transition-transform", open && "rotate-90")}>
-            <Icon name="caret-right" size="small" />
+          <span
+            aria-hidden="true"
+            className="inline-flex shrink-0 items-center justify-center"
+            style={{ width: "1.25em", height: "1.25em", marginRight: "0.25rem" }}
+          >
+            <Icon
+              name="caret-right"
+              className={cx("transition-transform", open && "rotate-90")}
+              style={{ width: "1.15em", height: "1.15em" }}
+            />
           </span>
           <span className="grow whitespace-normal font-bold" style={{ marginRight: "0.5em" }}>
             {title}
@@ -435,7 +470,7 @@ export function SearchPage() {
     const update = () => {
       if (!regionRef.current) return;
       const top = regionRef.current.getBoundingClientRect().top;
-      setRegionHeight(Math.max(300, window.innerHeight - top - 60));
+      setRegionHeight(Math.max(300, window.innerHeight - top - 79));
     };
     update();
     window.addEventListener("resize", update);
@@ -612,9 +647,10 @@ export function SearchPage() {
 
       {/* Attached secondary segment (light grey, padding 0, joined to the tab row) */}
       <div
-        className="bg-[#f3f4f5]"
         style={{
-          border: `1px solid ${TAB_BORDER}`,
+          background: SEGMENT_BG,
+          color: "rgba(0,0,0,.6)",
+          border: `1px solid ${SEGMENT_BORDER}`,
           borderTop: "none",
           padding: 0,
           borderBottomLeftRadius: "0.28571429rem",
@@ -630,10 +666,10 @@ export function SearchPage() {
           >
             <label
               htmlFor="search-input"
-              className="flex items-center gap-1 whitespace-nowrap rounded-l-sm bg-node font-bold text-white"
+              className="flex items-center whitespace-nowrap rounded-l-sm bg-node font-bold text-white"
               style={{ fontSize: "1rem", padding: "0.78571429em 0.833em", lineHeight: "1em" }}
             >
-              <Icon name="search" size="small" />
+              <Icon name="search" style={{ marginRight: "0.75em" }} />
               Search {config.key}
             </label>
             <input
@@ -656,10 +692,17 @@ export function SearchPage() {
             <button
               type="submit"
               disabled={!input.trim() && !q}
-              className="flex items-center gap-1 whitespace-nowrap border border-[#1b1c1d] bg-white font-bold text-[#1b1c1d] hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ fontSize: "1rem", padding: "0.78571429em 1.5em", lineHeight: "1em" }}
+              className="flex items-center whitespace-nowrap bg-white disabled:cursor-default disabled:opacity-45"
+              style={{
+                ...basicButtonStyle("#1b1c1d"),
+                borderRadius: 0,
+                fontSize: "1rem",
+                padding: "0.78571429em 1.5em",
+                lineHeight: "1em",
+              }}
             >
-              <Icon name="search" size="small" /> Search
+              <Icon name="search" style={buttonIconStyle} />
+              Search
             </button>
             <button
               type="button"
@@ -668,15 +711,18 @@ export function SearchPage() {
                 setInput("");
                 setSearch({ q: "" });
               }}
-              className="flex items-center gap-1 whitespace-nowrap rounded-r-sm border border-[#1b1c1d] bg-white font-bold text-[#1b1c1d] hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center whitespace-nowrap bg-white disabled:cursor-default disabled:opacity-45"
               style={{
+                ...basicButtonStyle("#1b1c1d"),
+                borderRadius: "0 0.28571429rem 0.28571429rem 0",
                 fontSize: "1rem",
                 padding: "0.78571429em 1.5em",
                 lineHeight: "1em",
                 marginLeft: -1,
               }}
             >
-              <Icon name="remove-circle" size="small" /> Clear
+              <Icon name="remove-circle" style={buttonIconStyle} />
+              Clear
             </button>
           </form>
           {/* Download Results: hidden when searching a private_key (legacy) */}
@@ -685,15 +731,17 @@ export function SearchPage() {
               <a
                 href={siteUrl(`/api/contributions/${topContributionId}/download`)}
                 download
-                className="flex items-center gap-1 self-start whitespace-nowrap rounded-sm border border-node bg-white font-bold text-node hover:bg-node-soft"
+                className="flex items-center self-start whitespace-nowrap bg-white hover:bg-node-soft"
                 style={{
+                  ...basicButtonStyle("var(--node-color)"),
                   margin: "1em 1em 0 0",
                   fontSize: "1rem",
                   padding: "0.78571429em 1.5em",
                   lineHeight: "1em",
                 }}
               >
-                <Icon name="download" size="small" /> Download Results
+                <Icon name="download" style={buttonIconStyle} />
+                Download Results
               </a>
             ) : (
               <button
@@ -704,16 +752,19 @@ export function SearchPage() {
                     ? "No results to download"
                     : "Switch to the Contributions level to download results"
                 }
-                className="flex items-center gap-1 self-start whitespace-nowrap rounded-sm border border-gray-300 bg-white font-bold text-gray-400"
+                className="flex items-center self-start whitespace-nowrap bg-white"
                 style={{
+                  ...basicButtonStyle("var(--node-color)"),
+                  opacity: 0.45,
                   margin: "1em 1em 0 0",
-                  cursor: "not-allowed",
+                  cursor: "default",
                   fontSize: "1rem",
                   padding: "0.78571429em 1.5em",
                   lineHeight: "1em",
                 }}
               >
-                <Icon name="download" size="small" /> Download Results
+                <Icon name="download" style={buttonIconStyle} />
+                Download Results
               </button>
             ))}
         </div>
@@ -722,13 +773,21 @@ export function SearchPage() {
         <div
           ref={regionRef}
           className="flex"
-          style={{ marginTop: "1em", height: regionHeight ?? "100%", width: "100%" }}
+          style={{
+            marginTop: "1em",
+            height: regionHeight ?? "100%",
+            width: "calc(100% - 10px)",
+          }}
         >
           {/* Sidebar: fixed 275px */}
           <div className="flex h-full flex-col" style={{ width: 275, flexShrink: 0 }}>
             <div
               className="flex items-end"
-              style={{ borderBottom: `1px solid ${TAB_BORDER}`, paddingLeft: "1em" }}
+              style={{
+                borderBottom: `1px solid ${TAB_BORDER}`,
+                paddingLeft: "1em",
+                fontSize: "0.92857143rem",
+              }}
             >
               <span style={tabItemStyle(true, true, ACTIVE_TAB_BG)}>Filters</span>
               <span className="ml-auto self-center" style={{ padding: "0 1em" }}>
@@ -737,16 +796,23 @@ export function SearchPage() {
                   onClick={clearFilters}
                   disabled={!clearActive}
                   className={compactButtonClass(clearActive)}
-                  style={{ padding: "0.5em" }}
+                  style={compactButtonStyle(clearActive)}
                 >
-                  <Icon name="remove-circle" size="small" /> Clear Filters
+                  <Icon name="remove-circle" style={buttonIconStyle} />
+                  Clear Filters
                 </button>
               </span>
             </div>
             {/* `ui small basic attached segment`: transparent, borderless, scrolls */}
             <div
               className="flex-1 overflow-y-scroll whitespace-nowrap"
-              style={{ border: "none", margin: 0, padding: 0, width: "100%" }}
+              style={{
+                border: "none",
+                margin: 0,
+                padding: 0,
+                width: "100%",
+                fontSize: "0.92857143rem",
+              }}
             >
               {filtersPanel ?? (
                 <>
@@ -773,7 +839,10 @@ export function SearchPage() {
           {/* Results pane */}
           <div className="flex h-full min-w-0 flex-1 flex-col">
             {/* Sub-tab bar (small tabular; white active tab) + sort dropdown */}
-            <div className="flex items-end" style={{ borderBottom: `1px solid ${TAB_BORDER}` }}>
+            <div
+              className="flex items-end"
+              style={{ borderBottom: `1px solid ${TAB_BORDER}`, fontSize: "0.92857143rem" }}
+            >
               {subTabs.map((tab) => {
                 const active = tab.name === (activeTab?.name ?? "Summaries");
                 return (
@@ -803,11 +872,12 @@ export function SearchPage() {
                   id="sort-select"
                   value={sort}
                   onChange={(event) => setSearch({ sort: event.target.value })}
-                  className="cursor-pointer appearance-none rounded-sm border-0 bg-node font-bold text-white focus:outline-hidden"
+                  className="cursor-pointer appearance-none border-0 bg-node font-bold text-white focus:outline-hidden"
                   style={{
-                    padding: "0.9em 1.9em 0.9em 0.833em",
+                    padding: "0.5em calc(1.86em - 8px) 0.5em 0.5em",
                     fontSize: "0.85714286rem",
                     lineHeight: "1em",
+                    borderRadius: "0.28571429rem",
                   }}
                 >
                   {sortOptions.map((option) => (
@@ -818,9 +888,8 @@ export function SearchPage() {
                 </select>
                 <Icon
                   name="caret-down"
-                  size="small"
                   className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-white"
-                  style={{ right: "1.5em" }}
+                  style={{ right: "1.5em", width: "0.857em", height: "0.857em" }}
                 />
               </span>
             </div>

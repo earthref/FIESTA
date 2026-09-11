@@ -6,13 +6,12 @@ import type { CSSProperties } from "react";
  */
 const PATHS = {
   search:
-    "M10 2a8 8 0 1 0 4.94 14.32l5.37 5.37 1.41-1.41-5.37-5.37A8 8 0 0 0 10 2Zm0 2.2a5.8 5.8 0 1 1 0 11.6 5.8 5.8 0 0 1 0-11.6Z",
+    "M9.6 1.4a8.2 8.2 0 1 0 0 16.4 8.2 8.2 0 0 0 0-16.4Zm0 3.2a5 5 0 1 1 0 10 5 5 0 0 1 0-10ZM15.1 17.5l2.4-2.4 5.3 5.3-2.4 2.4z",
   close:
     "M6.22 4.81 4.81 6.22 10.59 12l-5.78 5.78 1.41 1.41L12 13.41l5.78 5.78 1.41-1.41L13.41 12l5.78-5.78-1.41-1.41L12 10.59 6.22 4.81Z",
   "remove-circle":
-    "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM4.2 12c0-4.3 3.5-7.8 7.8-7.8 1.8 0 3.5.6 4.8 1.7L5.9 16.8A7.76 7.76 0 0 1 4.2 12Zm7.8 7.8c-1.8 0-3.5-.6-4.8-1.7L18.1 7.2a7.76 7.76 0 0 1 1.7 4.8c0 4.3-3.5 7.8-7.8 7.8Z",
-  download:
-    "M11 3h2v9.59l3.54-3.54 1.41 1.42L12 16.41l-5.95-5.94 1.41-1.42L11 12.59V3ZM4 18h16v2H4v-2Z",
+    "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm3.9 6.1 1.4 1.4-2.5 2.5 2.5 2.5-1.4 1.4-2.5-2.5-2.5 2.5-1.4-1.4 2.5-2.5-2.5-2.5 1.4-1.4 2.5 2.5z",
+  download: "M9.8 2h4.4v8.2h4.2L12 17.4 5.6 10.2h4.2V2ZM3 18.6h18V22H3v-3.4Z",
   upload:
     "M12 3.59l5.95 5.94-1.41 1.42L13 7.41V17h-2V7.41l-3.54 3.54-1.41-1.42L12 3.59ZM4 19h16v2H4v-2Z",
   user: "M12 3a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 11c4.42 0 8 2.24 8 5v2H4v-2c0-2.76 3.58-5 8-5Z",
@@ -58,6 +57,9 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS;
 
+/** Glyphs whose cut-outs are same-direction sub-paths (need even-odd filling). */
+const EVENODD: ReadonlySet<IconName> = new Set<IconName>(["search", "remove-circle"]);
+
 /** Semantic UI size scale in em. */
 const SIZES = {
   small: "0.875em",
@@ -96,7 +98,7 @@ export function Icon({
         ...style,
       }}
     >
-      <path d={PATHS[name]} />
+      <path d={PATHS[name]} fillRule={EVENODD.has(name) ? "evenodd" : undefined} />
     </svg>
   );
 }

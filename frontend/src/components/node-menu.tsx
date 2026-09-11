@@ -1,14 +1,28 @@
 import { Link } from "@tanstack/react-router";
+import type { CSSProperties } from "react";
 import { useNodeConfig } from "../lib/config";
 import type { NodeConfig } from "../lib/types";
 import { cx } from "../lib/utils";
 import { Icon, type IconName } from "./ui/icon";
 
+/**
+ * Legacy `ui secondary small pointing <color> menu` (magic/components/menu/menu.jsx,
+ * measured): 13px, min-height 2.857em, margin .25em 0 1.25em, 2px bottom border;
+ * items padding .5em 1em, line-height 1em, rgba(0,0,0,.87), aligned to the
+ * bottom edge with a 2px transparent border that turns node-colored (+ bold
+ * text) when active. Icons are 1em with margin-right .357em.
+ */
 const itemClass =
-  "flex items-center gap-1 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm " +
-  "font-medium text-gray-600 hover:text-gray-900 focus-visible:outline-hidden " +
-  "focus-visible:ring-2 focus-visible:ring-node " +
-  "[&.active]:border-node [&.active]:font-semibold [&.active]:text-node";
+  "flex items-center self-end whitespace-nowrap text-[rgba(0,0,0,0.87)] " +
+  "hover:text-[rgba(0,0,0,0.95)] focus-visible:outline-hidden focus-visible:ring-2 " +
+  "focus-visible:ring-node [&.active]:border-node [&.active]:font-bold [&.active]:text-node";
+
+const itemStyle: CSSProperties = {
+  padding: "0.5em 1em",
+  lineHeight: "1em",
+  margin: "0 0 -2px",
+  borderBottom: "2px solid transparent",
+};
 
 export interface NodeMenuItem {
   key: string;
@@ -56,6 +70,8 @@ export function nodeMenuItems(config: NodeConfig | undefined): {
   return { left, right };
 }
 
+const iconStyle: CSSProperties = { width: "1.18em", height: "1em", margin: "0 0.35714286em 0 0" };
+
 /** Node-colored secondary pointing menu directly under the node header (≥1024px only). */
 export function NodeMenu({ fullWidth = false }: { fullWidth?: boolean }) {
   const { data: config } = useNodeConfig();
@@ -63,8 +79,15 @@ export function NodeMenu({ fullWidth = false }: { fullWidth?: boolean }) {
 
   const renderItem = (item: NodeMenuItem) =>
     item.href ? (
-      <a key={item.key} href={item.href} target="_blank" rel="noreferrer" className={itemClass}>
-        {item.icon && <Icon name={item.icon} size="small" className="text-[#555555]" />}
+      <a
+        key={item.key}
+        href={item.href}
+        target="_blank"
+        rel="noreferrer"
+        className={itemClass}
+        style={itemStyle}
+      >
+        {item.icon && <Icon name={item.icon} style={iconStyle} />}
         {item.label}
       </a>
     ) : (
@@ -72,23 +95,29 @@ export function NodeMenu({ fullWidth = false }: { fullWidth?: boolean }) {
         key={item.key}
         to={item.to ?? "/"}
         className={itemClass}
+        style={itemStyle}
         activeOptions={item.exact ? { exact: true } : undefined}
       >
-        {item.icon && <Icon name={item.icon} size="small" className="text-[#555555]" />}
+        {item.icon && <Icon name={item.icon} style={iconStyle} />}
         {item.label}
       </Link>
     );
 
   return (
-    <nav aria-label="Node" className="hidden border-b border-gray-200 lg:block">
-      <div
-        className={cx(
-          "flex w-full items-center overflow-x-auto",
-          fullWidth ? "px-[2em]" : "mx-auto max-w-6xl px-4",
-        )}
-      >
-        <div className="flex items-center">{left.map(renderItem)}</div>
-        <div className="ml-auto flex items-center">{right.map(renderItem)}</div>
+    <nav aria-label="Node" className="hidden lg:block">
+      <div className={cx("block", fullWidth ? "px-[2em]" : "mx-auto max-w-6xl px-4")}>
+        <div
+          className="flex w-full"
+          style={{
+            fontSize: "0.92857143rem",
+            minHeight: "2.85714286em",
+            margin: "0.25em 0 1.25em",
+            borderBottom: "2px solid rgba(34,36,38,.15)",
+          }}
+        >
+          <div className="flex">{left.map(renderItem)}</div>
+          <div className="ml-auto flex">{right.map(renderItem)}</div>
+        </div>
       </div>
     </nav>
   );

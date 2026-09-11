@@ -1,83 +1,140 @@
+import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
+import { PORTALS } from "../lib/portals";
 import { Icon } from "./ui/icon";
 
-const footerLink = "text-node hover:underline";
-// Legacy: "ui button compact basic" with margin 0.5em 1em (layout.jsx)
-const outlinedButton =
-  "inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-gray-300 bg-white " +
-  "px-2 py-1 text-base font-medium text-gray-700 hover:bg-gray-50 m-[0.5em_1em]";
+/** `ui header <color>` at 1rem: bold, node-colored inline link. */
+const headerLink = "font-bold text-node hover:underline";
 
-/** Fixed full-width bottom bar, bg #F8F8F8, segment padding 0.25em (layout.less). */
+/** `ui button compact basic <color>` with inline margin .5em 1em (layout.jsx). */
+function basicButtonStyle(color: string) {
+  return {
+    color,
+    boxShadow: `0 0 0 1px ${color} inset`,
+    background: "#fff",
+    fontSize: "1rem",
+    fontWeight: 400,
+    lineHeight: "1em",
+    padding: "0.58928571em 1.125em",
+    margin: "0.5em 1em",
+    borderRadius: "0.28571429rem",
+  } as const;
+}
+
+const earthrefColor = PORTALS[0]?.color ?? "#006600";
+
+/**
+ * Legacy `ui bottom fixed small menu footer` (layout.jsx:117-160, layout.less):
+ * fixed, bg #F8F8F8, 13px, container width calc(100% - 4em); left/right
+ * `ui vertical segment`s (14px, padding .25em 0) and two basic buttons between
+ * them, centred by the left/right menus' auto margins.
+ */
 export function Footer() {
   const { data: config } = useNodeConfig();
 
   return (
-    <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-[#F8F8F8]">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 px-4 py-[0.25em] text-base text-gray-500">
-        <div className="leading-snug">
-          <div>
-            Sponsored by{" "}
-            <a href="https://www.nsf.gov" target="_blank" rel="noreferrer" className={footerLink}>
-              NSF
-            </a>
-            .
-          </div>
-          <div>
-            Supported by{" "}
-            <a
-              href="https://scripps.ucsd.edu/"
-              target="_blank"
-              rel="noreferrer"
-              className={footerLink}
-            >
-              UCSD-SIO
-            </a>{" "}
-            and{" "}
-            <a
-              href="http://ceoas.oregonstate.edu/"
-              target="_blank"
-              rel="noreferrer"
-              className={footerLink}
-            >
-              OSU-CEOAS
-            </a>
-            .
+    <footer
+      className="fixed inset-x-0 bottom-0 z-40 bg-[#F8F8F8]"
+      style={{
+        fontSize: "0.92857143rem",
+        minHeight: "2.85714286em",
+        borderTop: "1px solid rgba(34,36,38,.15)",
+        boxShadow: "0 1px 2px 0 rgba(34,36,38,.15)",
+        color: "rgba(0,0,0,.87)",
+      }}
+    >
+      <div className="flex items-stretch" style={{ margin: "0 2em" }}>
+        <div className="flex" style={{ marginRight: "auto" }}>
+          <div style={{ fontSize: "1rem", padding: "0.25em 0", lineHeight: "1.4285em" }}>
+            <div>
+              Sponsored by{" "}
+              <a href="https://www.nsf.gov" target="_blank" rel="noreferrer" className={headerLink}>
+                NSF
+              </a>
+              .
+            </div>
+            <div>
+              Supported by{" "}
+              <a
+                href="https://scripps.ucsd.edu/"
+                target="_blank"
+                rel="noreferrer"
+                className={headerLink}
+              >
+                UCSD-SIO
+              </a>
+              {" and "}
+              <a
+                href="http://ceoas.oregonstate.edu/"
+                target="_blank"
+                rel="noreferrer"
+                className={headerLink}
+              >
+                OSU-CEOAS
+              </a>
+              .
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex">
           <a
             href={`mailto:webmaster@earthref.org?subject=[${config?.key ?? "FIESTA"} Help]`}
-            className={outlinedButton}
+            className="inline-flex items-center whitespace-nowrap self-start"
+            style={basicButtonStyle("var(--node-color)")}
           >
-            <Icon name="mail" size="small" className="text-[#555555]" /> Having trouble? Email Us
+            <Icon
+              name="mail"
+              style={{ width: "1.18em", height: "1em", margin: "0 0.42857143em 0 -0.21428571em" }}
+            />
+            <b>Having trouble?</b>
+            {" Email Us"}
           </a>
+        </div>
+        <div className="flex">
           <a
             href="https://github.com/earthref/FIESTA#readme"
             target="_blank"
             rel="noreferrer"
-            className={outlinedButton}
+            className="inline-flex items-center whitespace-nowrap self-start"
+            style={basicButtonStyle(earthrefColor)}
           >
-            Powered by FIESTA
+            Powered by
+            <img
+              src={siteUrl("/FIESTA.png")}
+              alt=""
+              style={{ height: "1.75em", margin: "-1.25em 0.5em -0.5em" }}
+            />
+            <b>FIESTA</b>
           </a>
         </div>
-        <div className="text-right leading-snug">
-          <div>
-            Unless otherwise noted,{" "}
-            <a href="https://earthref.org/" target="_blank" rel="noreferrer" className={footerLink}>
-              EarthRef.org
-            </a>
-          </div>
-          <div>
-            content is licensed under{" "}
-            <a
-              href="https://creativecommons.org/licenses/by/4.0/"
-              target="_blank"
-              rel="noreferrer"
-              className={footerLink}
-            >
-              CC BY 4.0
-            </a>
-            .
+        <div className="flex" style={{ marginLeft: "auto" }}>
+          <div
+            className="text-right"
+            style={{ fontSize: "1rem", padding: "0.25em 0", lineHeight: "1.4285em" }}
+          >
+            <div>
+              Unless otherwise noted,{" "}
+              <a
+                href="https://earthref.org/"
+                target="_blank"
+                rel="noreferrer"
+                className={headerLink}
+              >
+                EarthRef.org
+              </a>
+            </div>
+            <div>
+              content is licensed under{" "}
+              <a
+                href="https://creativecommons.org/licenses/by/4.0/"
+                target="_blank"
+                rel="noreferrer"
+                className={headerLink}
+              >
+                CC BY 4.0
+              </a>
+              .
+            </div>
           </div>
         </div>
       </div>
