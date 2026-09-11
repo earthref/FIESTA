@@ -6,11 +6,12 @@ import { useNodeConfig } from "../lib/config";
  * page-logo = serif bold capital letter, font-size 2.75em in a 1.5em square
  * bordered button floating left; h1 page-title margin 0; h4 page-subtitle.
  */
-export function NodeHeader() {
+export function NodeHeader({ fullWidth = false }: { fullWidth?: boolean }) {
   const { data: config } = useNodeConfig();
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4">
+    // Legacy `.full-width` layout variant (padding 0 2em) frames the header too.
+    <div className={fullWidth ? "w-full px-[2em]" : "mx-auto w-full max-w-6xl px-4"}>
       <div className="pt-2">
         <Link
           to="/"

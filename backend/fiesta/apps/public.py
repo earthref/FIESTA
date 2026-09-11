@@ -20,7 +20,7 @@ from fiesta.domain.parse import ParseError, parse_text
 from fiesta.domain.validate import guess_data_model_version, validate_contribution
 from fiesta.nodeconfig import NodeConfig, get_deployment
 from fiesta.search.client import get_opensearch
-from fiesta.search.queries import build_search_body
+from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services import contributions as svc
 
 
@@ -124,12 +124,15 @@ def create_app() -> FastAPI:
         query: str | None = None,
         size: int = Query(10, ge=1, le=1000),
         from_: int = Query(0, ge=0, alias="from"),
+        sort: str | None = None,
     ) -> SearchPage:
         node = _node(repository)
         tables = {lvl.table for lvl in node.search.levels} | set(node.search.extra_types)
         if table not in tables:
             raise HTTPException(404, f"unknown search table {table!r}")
-        body = build_search_body(table=table, query=query, size=size, from_=from_)
+        if sort is not None and sort not in SORT_OPTIONS:
+            raise HTTPException(422, f"sort must be one of {sorted(SORT_OPTIONS)}")
+        body = build_search_body(table=table, query=query, size=size, from_=from_, sort=sort)
         try:
             response = await get_opensearch().search(index=node.search_index, body=body)
         except NotFoundError:

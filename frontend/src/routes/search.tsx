@@ -10,9 +10,9 @@ import {
   useState,
 } from "react";
 import { ErrorMessage } from "../components/error-message";
-import { contributionId, ResultItem } from "../components/result-item";
+import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
 import { Icon } from "../components/ui/icon";
-import { PageSpinner } from "../components/ui/spinner";
+import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { Table, TBody, Td, THead, Th, Tr } from "../components/ui/table";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -27,9 +27,9 @@ import type {
 import {
   abbreviateNumber,
   cx,
+  facetTitle,
   formatNumber,
   getQueryToken,
-  hasQueryToken,
   parseQueryTokens,
   titleCase,
   toggleQueryToken,
@@ -44,41 +44,71 @@ import {
 const PAGE_SIZE = 10;
 const routeApi = getRouteApi("/search");
 const TAB_BORDER = "#d4d4d5";
+/** Legacy `styles.activeTab` on the level tabs and the Filters tab. */
+const ACTIVE_TAB_BG = "#F0F0F0";
+const SEGMENT_BORDER = "rgba(34,36,38,.15)";
 
-type SortOption = "relevance" | "recent" | "id";
+/** Legacy sort dropdown (search.jsx `sortOptions`), keyed by the API's `sort` names. */
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "recent", label: "Recently Contributed First" },
+  { value: "recent_asc", label: "Recently Contributed Last" },
+  { value: "published", label: "Recently Published First" },
+  { value: "published_asc", label: "Recently Published Last" },
+  { value: "cited", label: "Most Cited Publication First" },
+  { value: "citation_az", label: "Citations A-z" },
+  { value: "citation_za", label: "Citations z-A" },
+  { value: "id_desc", label: "Largest ID First" },
+  { value: "id_asc", label: "Largest ID Last" },
+];
+const RELEVANCE_OPTION = { value: "relevance", label: "Most Relevant First" };
 
-/** Semantic tabular menu: row has only a bottom border; the active tab is a
- * white, top/left/right-bordered, top-rounded item overlapping it by 1px. */
-function tabItemStyle(active: boolean, small = false): CSSProperties {
+/** Semantic tabular menu item: the row has only a bottom border; the active
+ * tab is a top/left/right-bordered, top-rounded item overlapping it by 1px.
+ * Inactive items are node-colored links (legacy `styles.a`). */
+function tabItemStyle(active: boolean, small = false, activeBg = "#fff"): CSSProperties {
   return {
-    padding: small ? "0.78em 1.14em" : "0.92857143em 1.42857143em",
-    color: "rgba(0,0,0,.87)",
+    fontSize: small ? "0.92857143rem" : "1rem",
+    lineHeight: "1em",
+    padding: small ? "0.92857143em 1.14285714em" : "0.92857143em 1.42857143em",
+    color: active ? "rgba(0,0,0,.95)" : "var(--node-color)",
     fontWeight: active ? 700 : 400,
-    background: active ? "#fff" : "transparent",
+    background: active ? activeBg : "transparent",
     border: `1px solid ${active ? TAB_BORDER : "transparent"}`,
-    borderBottomColor: active ? "#fff" : "transparent",
+    borderBottomColor: active ? activeBg : "transparent",
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
     marginBottom: -1,
   };
 }
 
-const tabHoverClass = "hover:bg-[rgba(0,0,0,0.03)]";
-
-/** Circular basic count label: white bg, 1px border, min-width 4em. */
+/** `ui circular small basic label` + legacy `styles.countLabel`: white bg, 1px
+ * border, bold 11px text, min-width 4em, pulled into the tab's padding. */
 function CountLabel({ children }: { children: ReactNode }) {
   return (
     <span
-      className="inline-block rounded-full border border-gray-300 bg-white text-center text-[11px] font-normal"
+      className="inline-block rounded-full border bg-white text-center font-bold"
       style={{
         color: "#0C0C0C",
-        margin: "-1em -0.25em -1em 0.5em",
+        borderColor: SEGMENT_BORDER,
+        margin: "-1em -1em -1em 0.5em",
         minWidth: "4em",
-        padding: "0.5em 0.6em",
+        fontSize: 11,
+        lineHeight: "0.7em",
+        padding: "0.5em",
       }}
     >
       {children}
     </span>
+  );
+}
+
+/** Semantic "basic small compact button" (Clear buttons) / node-colored when active. */
+function compactButtonClass(active: boolean): string {
+  return cx(
+    "flex items-center gap-1 whitespace-nowrap rounded-sm text-[12px] font-bold",
+    active
+      ? "bg-node text-white hover:bg-node-dark"
+      : "cursor-not-allowed border border-gray-300 bg-white text-gray-400 opacity-60",
   );
 }
 
@@ -89,6 +119,7 @@ function searchRequestParams(
   facets = false,
   ranges?: string[],
   bbox?: string,
+  sort?: string,
 ) {
   return {
     query: query || undefined,
@@ -97,86 +128,185 @@ function searchRequestParams(
     facets: facets || undefined,
     range: ranges && ranges.length > 0 ? ranges : undefined,
     bbox: bbox || undefined,
+    sort,
   };
 }
 
-// --- Facet accordion section ----------------------------------------------------
+// --- Facet accordion section (legacy SearchFiltersBuckets) -----------------------
+
+function FilterRow({
+  bucket,
+  active,
+  highlight,
+  onToggle,
+}: {
+  bucket: FacetBucket;
+  active: boolean;
+  highlight?: string;
+  onToggle: () => void;
+}) {
+  const label = bucket.key;
+  const at = highlight ? label.toLowerCase().indexOf(highlight.toLowerCase()) : -1;
+  return (
+    <label className="flex cursor-pointer" style={{ marginBottom: "0.25em" }}>
+      <span className="flex shrink-0 items-start" style={{ minWidth: 22, maxWidth: 22 }}>
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={onToggle}
+          className="mt-[1px] h-[17px] w-[17px] cursor-pointer rounded-sm border-gray-300 accent-node"
+        />
+      </span>
+      <span
+        className={cx("min-w-0 grow whitespace-normal break-words", active && "font-bold")}
+        style={{ marginRight: "0.5em" }}
+      >
+        {at >= 0 && highlight ? (
+          <>
+            {label.slice(0, at)}
+            <mark className="bg-yellow-200">{label.slice(at, at + highlight.length)}</mark>
+            {label.slice(at + highlight.length)}
+          </>
+        ) : (
+          label
+        )}
+      </span>
+      <span
+        className="inline-block shrink-0 self-start rounded-full border bg-white text-center font-bold"
+        style={{
+          borderColor: SEGMENT_BORDER,
+          color: "rgba(0,0,0,.87)",
+          fontSize: 11,
+          lineHeight: "0.7em",
+          padding: "0.5em",
+          minWidth: "2em",
+        }}
+      >
+        {abbreviateNumber(bucket.doc_count)}
+      </span>
+    </label>
+  );
+}
 
 function FacetSection({
   facet,
   buckets,
+  loading,
   q,
   onToggle,
 }: {
   facet: string;
   buckets: FacetBucket[];
+  loading: boolean;
   q: string;
   onToggle: (facet: string, value: string) => void;
 }) {
-  const hasChecked = buckets.some((bucket) => hasQueryToken(q, facet, bucket.key));
-  const [open, setOpen] = useState(hasChecked);
+  const [open, setOpen] = useState(false);
   const [find, setFind] = useState("");
+  const title = facetTitle(facet);
+  const itemsName = titleCase(facet);
 
-  const visible = find
-    ? buckets.filter((bucket) => bucket.key.toLowerCase().includes(find.toLowerCase()))
-    : buckets;
+  // Active values may come from another level and no longer be in the
+  // buckets: the legacy component prepends them with a zero count.
+  const activeKeys = parseQueryTokens(q)
+    .tokens.filter(([field]) => field === facet)
+    .map(([, value]) => value);
+  const activeSet = new Set(activeKeys);
+  const active = activeKeys.map(
+    (key) => buckets.find((bucket) => bucket.key === key) ?? { key, doc_count: 0 },
+  );
+  const needle = find.trim().toLowerCase();
+  const matched = needle
+    ? buckets.filter(
+        (bucket) => !activeSet.has(bucket.key) && bucket.key.toLowerCase().includes(needle),
+      )
+    : [];
+  const matchedSet = new Set(matched.map((bucket) => bucket.key));
+  const inactive = buckets.filter(
+    (bucket) => !activeSet.has(bucket.key) && !matchedSet.has(bucket.key),
+  );
 
   return (
-    <div style={{ padding: "0.25em 1em 0.5em", borderBottom: "1px solid #D4D4D5" }}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        className="flex w-full items-center text-left text-[13px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
-        style={{ marginBottom: "0.25em" }}
-      >
-        <span
-          aria-hidden="true"
-          className={cx("mr-1 text-gray-500 transition-transform", open && "rotate-90")}
+    <div
+      className="text-[13px]"
+      style={{ padding: "0.25em 1em 0.5em", borderBottom: "1px solid #D4D4D5" }}
+    >
+      {/* Title: caret + bold name, then the active filters (always visible) */}
+      <div style={{ padding: "0.5em 0 0", lineHeight: "1.4285em" }}>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="flex w-full cursor-pointer items-center text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+          style={{ marginBottom: "0.25em" }}
         >
-          <Icon name="caret-right" size="small" />
-        </span>
-        <span className="grow whitespace-normal font-bold" style={{ marginRight: "0.5em" }}>
-          {titleCase(facet)}
-        </span>
-        {hasChecked && <span className="h-2 w-2 rounded-full bg-node" aria-hidden="true" />}
-      </button>
+          <span aria-hidden="true" className={cx("mr-1 transition-transform", open && "rotate-90")}>
+            <Icon name="caret-right" size="small" />
+          </span>
+          <span className="grow whitespace-normal font-bold" style={{ marginRight: "0.5em" }}>
+            {title}
+          </span>
+        </button>
+        {active.map((bucket) => (
+          <FilterRow
+            key={bucket.key}
+            bucket={bucket}
+            active
+            onToggle={() => onToggle(facet, bucket.key)}
+          />
+        ))}
+      </div>
       {open && (
-        <div style={{ padding: "0 0 0.25em" }}>
-          {buckets.length > 10 && (
-            <input
-              type="search"
-              value={find}
-              onChange={(event) => setFind(event.target.value)}
-              placeholder={`Find ${titleCase(facet).toLowerCase()}…`}
-              aria-label={`Find ${titleCase(facet)}`}
-              className="mb-1 w-full rounded-sm border border-gray-300 px-2 py-1 text-[12px] placeholder:text-[#AAAAAA] focus:border-node focus:outline-hidden"
-            />
+        <div style={{ paddingTop: 0 }}>
+          <input
+            type="text"
+            value={find}
+            onChange={(event) => setFind(event.target.value)}
+            placeholder={`Find ${itemsName}`}
+            aria-label={`Find ${itemsName}`}
+            className="w-full rounded-sm border border-gray-300 bg-white px-[0.8em] py-[0.5em] text-[13px] placeholder:text-[#AAAAAA] focus:border-node focus:outline-hidden"
+            style={{ marginBottom: "0.25em" }}
+          />
+          {needle && matched.length === 0 && (
+            <div className="text-center">
+              <b>No Matches</b>
+            </div>
           )}
-          <ul className="max-h-64 space-y-0.5 overflow-y-auto">
-            {visible.map((bucket) => (
-              <li key={bucket.key}>
-                <label className="flex cursor-pointer items-center gap-1.5 text-[13px] text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={hasQueryToken(q, facet, bucket.key)}
-                    onChange={() => onToggle(facet, bucket.key)}
-                    className="h-3.5 w-3.5 shrink-0 rounded-sm border-gray-300 accent-node"
-                  />
-                  <span className="min-w-0 flex-1 truncate" title={bucket.key}>
-                    {bucket.key}
-                  </span>
-                  <span
-                    className="inline-block shrink-0 rounded-full border border-gray-300 bg-white px-1.5 text-center text-[11px]"
-                    style={{ color: "#0C0C0C", minWidth: "3em", lineHeight: "1.4em" }}
-                  >
-                    {abbreviateNumber(bucket.doc_count)}
-                  </span>
-                </label>
-              </li>
-            ))}
-            {visible.length === 0 && <li className="text-[12px] text-[#AAAAAA]">No matches</li>}
-          </ul>
+          {matched.map((bucket) => (
+            <FilterRow
+              key={bucket.key}
+              bucket={bucket}
+              active={false}
+              highlight={find.trim()}
+              onToggle={() => onToggle(facet, bucket.key)}
+            />
+          ))}
+          <hr
+            style={{
+              margin: "1em 0",
+              border: 0,
+              borderTop: `1px solid ${SEGMENT_BORDER}`,
+              borderBottom: "1px solid rgba(255,255,255,.1)",
+            }}
+          />
+          {loading && (
+            <div className="text-center">
+              <Spinner /> Loading ...
+            </div>
+          )}
+          {!loading && inactive.length === 0 && (
+            <div className="text-center">
+              <b>No {itemsName}</b>
+            </div>
+          )}
+          {inactive.map((bucket) => (
+            <FilterRow
+              key={bucket.key}
+              bucket={bucket}
+              active={false}
+              onToggle={() => onToggle(facet, bucket.key)}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -238,6 +368,39 @@ function RowsView({ results }: { results: SearchResult[] }) {
   );
 }
 
+/** Legacy SearchDividedList placeholder: a 100px item with a "Loading" dimmer. */
+function LoadingItem({ divider }: { divider: boolean }) {
+  return (
+    <div>
+      <div className="flex items-center justify-center" style={{ minHeight: 100 }}>
+        <Spinner label="Loading" />
+      </div>
+      {divider && <ResultDivider />}
+    </div>
+  );
+}
+
+/** Legacy `ui fluid warning message` + `ui center aligned huge basic segment`. */
+function NoItemsMessage() {
+  return (
+    <div style={{ margin: "1em 0" }}>
+      <div
+        className="rounded-sm"
+        style={{
+          background: "#fffaf3",
+          color: "#573a08",
+          boxShadow: "0 0 0 1px #c9ba9b inset",
+          padding: "1em 1.5em",
+        }}
+      >
+        <div className="text-center" style={{ fontSize: "1.42857143rem", padding: "1em" }}>
+          No Items to Display
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Search page ----------------------------------------------------------------
 
 export function SearchPage() {
@@ -247,7 +410,6 @@ export function SearchPage() {
   const navigate = routeApi.useNavigate();
 
   const q = search.q ?? "";
-  const sort: SortOption = (search.sort as SortOption) ?? "recent";
   const ranges = useMemo(() => search.ranges ?? [], [search.ranges]);
   const bbox = search.bbox;
   const levels = config?.search_levels ?? [];
@@ -257,6 +419,9 @@ export function SearchPage() {
   const hasFreeText = parseQueryTokens(q).freeText.length > 0;
   const hasFacetFilters =
     parseQueryTokens(q).tokens.filter(([field]) => config?.facets.includes(field)).length > 0;
+  // Legacy `sortDefault`: relevance whenever there is free text and the user
+  // has not picked a sort, otherwise newest first.
+  const sort = search.sort ?? (hasFreeText ? RELEVANCE_OPTION.value : SORT_OPTIONS[0].value);
 
   const [input, setInput] = useState(q);
   const [view, setView] = useState("Summaries");
@@ -288,7 +453,7 @@ export function SearchPage() {
       search: {
         q: next.q !== undefined ? next.q || undefined : q || undefined,
         level: next.level ?? search.level,
-        sort: (next.sort ?? search.sort) === "recent" ? undefined : (next.sort ?? search.sort),
+        sort: next.sort ?? search.sort,
         ranges: (next.ranges ?? ranges).length > 0 ? (next.ranges ?? ranges) : undefined,
         bbox: "bbox" in next ? next.bbox || undefined : bbox,
       },
@@ -308,7 +473,9 @@ export function SearchPage() {
     })),
   });
 
-  // Result sub-tabs: Summaries, Rows (non-contribution), then plugin tabs.
+  // Result sub-tabs: Summaries, Rows (non-contribution), then plugin tabs. The
+  // chosen view persists across levels and falls back to the first tab when a
+  // level lacks it (legacy `state.view`).
   type SubTab = { name: string; render?: (ctx: PluginSubTabContext) => ReactNode };
   const subTabs = useMemo<SubTab[]>(() => {
     if (!config || !level) return [];
@@ -334,10 +501,10 @@ export function SearchPage() {
   const pluginFiltersActive = ranges.length > 0 || !!bbox;
 
   const results = useInfiniteQuery({
-    queryKey: ["search", level?.table, q],
+    queryKey: ["search", level?.table, q, sort],
     queryFn: ({ pageParam }) =>
       api<SearchPageData>(`/api/search/${level?.table}`, {
-        params: searchRequestParams(q, PAGE_SIZE, pageParam, true),
+        params: searchRequestParams(q, PAGE_SIZE, pageParam, true, undefined, undefined, sort),
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
@@ -356,6 +523,29 @@ export function SearchPage() {
   const aggregations = results.data?.pages[0]?.aggregations ?? null;
   const topContributionId =
     level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
+
+  // Infinite scroll (legacy InfiniteScroller): load the next page when the
+  // sentinel at the end of the list scrolls within 50px of the view. The
+  // observer is re-armed after every page so a still-visible sentinel keeps
+  // loading until the view is full.
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = results;
+  const autoLoad = !activeTab?.render;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: hits.length re-arms the observer after each page loads
+  useEffect(() => {
+    const root = scrollerRef.current;
+    const target = sentinelRef.current;
+    if (!root || !target || !autoLoad || !hasNextPage) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting) && !isFetchingNextPage) fetchNextPage();
+      },
+      { root, rootMargin: "0px 0px 50px 0px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [autoLoad, hasNextPage, isFetchingNextPage, fetchNextPage, hits.length]);
 
   const clearFilters = () => {
     if (filtersPanel) {
@@ -382,9 +572,11 @@ export function SearchPage() {
       <ResultItem doc={doc} level={level} privateKey={privateKey} />
     );
 
+  const sortOptions = hasFreeText ? [RELEVANCE_OPTION, ...SORT_OPTIONS] : SORT_OPTIONS;
+
   return (
     <div className="magic-search">
-      {/* Level tabs: Semantic tabular menu (bottom border only; white active tab) */}
+      {/* Level tabs: Semantic tabular menu (bottom border only; grey active tab) */}
       <div className="flex flex-wrap items-end" style={{ borderBottom: `1px solid ${TAB_BORDER}` }}>
         {levels.map((entry, index) => {
           const active = entry.name === level.name;
@@ -393,18 +585,15 @@ export function SearchPage() {
             <button
               key={entry.name}
               type="button"
-              onClick={() => {
-                setView("Summaries");
-                setSearch({ level: entry.name, ranges: [], bbox: undefined });
-              }}
+              onClick={() => setSearch({ level: entry.name, ranges: [], bbox: undefined })}
               className={cx(
-                "flex items-center text-[13px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
-                !active && cx("cursor-pointer", tabHoverClass),
+                "flex items-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
+                !active && "cursor-pointer hover:text-node-dark",
               )}
-              style={tabItemStyle(active)}
+              style={tabItemStyle(active, false, ACTIVE_TAB_BG)}
             >
               {entry.name}
-              <CountLabel>{count === undefined ? "…" : abbreviateNumber(count)}</CountLabel>
+              <CountLabel>{count === undefined ? "…" : formatNumber(count)}</CountLabel>
             </button>
           );
         })}
@@ -412,7 +601,7 @@ export function SearchPage() {
           <div className="ml-auto flex items-center self-center" style={{ paddingRight: 0 }}>
             <Link
               to="/private"
-              className="mr-1 inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-medium text-white hover:bg-node-dark"
+              className="mr-1 inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
               style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
             >
               Private Workspace
@@ -441,7 +630,8 @@ export function SearchPage() {
           >
             <label
               htmlFor="search-input"
-              className="flex items-center gap-1 whitespace-nowrap rounded-l-sm bg-node px-[0.9em] text-[13px] font-bold text-white"
+              className="flex items-center gap-1 whitespace-nowrap rounded-l-sm bg-node font-bold text-white"
+              style={{ fontSize: "1rem", padding: "0.78571429em 0.833em", lineHeight: "1em" }}
             >
               <Icon name="search" size="small" />
               Search {config.key}
@@ -452,8 +642,11 @@ export function SearchPage() {
               placeholder='e.g. metamorphic "field intensity" -precambrian'
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              className="min-w-0 bg-white px-3 py-2 text-sm placeholder:text-[#AAAAAA] focus:outline-hidden"
+              className="min-w-0 bg-white placeholder:text-[#AAAAAA] focus:outline-hidden"
               style={{
+                fontSize: "1rem",
+                lineHeight: "1.21428571em",
+                padding: "0.67857143em 1em",
                 border: "1px solid #888888",
                 borderLeft: "none",
                 borderRight: "none",
@@ -463,7 +656,8 @@ export function SearchPage() {
             <button
               type="submit"
               disabled={!input.trim() && !q}
-              className="flex items-center gap-1 whitespace-nowrap border border-[#1b1c1d] bg-white px-3 py-2 text-[13px] font-bold text-[#1b1c1d] hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-1 whitespace-nowrap border border-[#1b1c1d] bg-white font-bold text-[#1b1c1d] hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ fontSize: "1rem", padding: "0.78571429em 1.5em", lineHeight: "1em" }}
             >
               <Icon name="search" size="small" /> Search
             </button>
@@ -474,38 +668,54 @@ export function SearchPage() {
                 setInput("");
                 setSearch({ q: "" });
               }}
-              className="flex items-center gap-1 whitespace-nowrap rounded-r-sm border border-[#1b1c1d] bg-white px-3 py-2 text-[13px] font-bold text-[#1b1c1d] hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ marginLeft: -1 }}
+              className="flex items-center gap-1 whitespace-nowrap rounded-r-sm border border-[#1b1c1d] bg-white font-bold text-[#1b1c1d] hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{
+                fontSize: "1rem",
+                padding: "0.78571429em 1.5em",
+                lineHeight: "1em",
+                marginLeft: -1,
+              }}
             >
               <Icon name="remove-circle" size="small" /> Clear
             </button>
           </form>
-          {topContributionId ? (
-            <a
-              href={siteUrl(
-                `/api/contributions/${topContributionId}/download${privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : ""}`,
-              )}
-              download
-              className="flex items-center gap-1 self-start whitespace-nowrap rounded-sm border border-node bg-white px-3 py-2 text-[13px] font-medium text-node hover:bg-node-soft"
-              style={{ margin: "1em 1em 0 0" }}
-            >
-              <Icon name="download" size="small" /> Download Results
-            </a>
-          ) : (
-            <button
-              type="button"
-              disabled
-              title={
-                level.table === "contribution"
-                  ? "No results to download"
-                  : "Switch to the Contributions level to download results"
-              }
-              className="flex items-center gap-1 self-start whitespace-nowrap rounded-sm border border-gray-300 bg-white px-3 py-2 text-[13px] font-medium text-gray-400"
-              style={{ margin: "1em 1em 0 0", cursor: "not-allowed" }}
-            >
-              <Icon name="download" size="small" /> Download Results
-            </button>
-          )}
+          {/* Download Results: hidden when searching a private_key (legacy) */}
+          {!privateKey &&
+            (topContributionId ? (
+              <a
+                href={siteUrl(`/api/contributions/${topContributionId}/download`)}
+                download
+                className="flex items-center gap-1 self-start whitespace-nowrap rounded-sm border border-node bg-white font-bold text-node hover:bg-node-soft"
+                style={{
+                  margin: "1em 1em 0 0",
+                  fontSize: "1rem",
+                  padding: "0.78571429em 1.5em",
+                  lineHeight: "1em",
+                }}
+              >
+                <Icon name="download" size="small" /> Download Results
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                title={
+                  level.table === "contribution"
+                    ? "No results to download"
+                    : "Switch to the Contributions level to download results"
+                }
+                className="flex items-center gap-1 self-start whitespace-nowrap rounded-sm border border-gray-300 bg-white font-bold text-gray-400"
+                style={{
+                  margin: "1em 1em 0 0",
+                  cursor: "not-allowed",
+                  fontSize: "1rem",
+                  padding: "0.78571429em 1.5em",
+                  lineHeight: "1em",
+                }}
+              >
+                <Icon name="download" size="small" /> Download Results
+              </button>
+            ))}
         </div>
 
         {/* Results flex row with independent scroll regions */}
@@ -517,37 +727,26 @@ export function SearchPage() {
           {/* Sidebar: fixed 275px */}
           <div className="flex h-full flex-col" style={{ width: 275, flexShrink: 0 }}>
             <div
-              className="flex items-end bg-white"
+              className="flex items-end"
               style={{ borderBottom: `1px solid ${TAB_BORDER}`, paddingLeft: "1em" }}
             >
-              <span className="text-[13px]" style={tabItemStyle(true, true)}>
-                Filters
-              </span>
+              <span style={tabItemStyle(true, true, ACTIVE_TAB_BG)}>Filters</span>
               <span className="ml-auto self-center" style={{ padding: "0 1em" }}>
                 <button
                   type="button"
                   onClick={clearFilters}
                   disabled={!clearActive}
-                  className={cx(
-                    "flex items-center gap-1 whitespace-nowrap rounded-sm text-[12px] font-medium",
-                    clearActive
-                      ? "bg-node text-white hover:bg-node-dark"
-                      : "cursor-not-allowed border border-gray-300 bg-white text-gray-400",
-                  )}
+                  className={compactButtonClass(clearActive)}
                   style={{ padding: "0.5em" }}
                 >
                   <Icon name="remove-circle" size="small" /> Clear Filters
                 </button>
               </span>
             </div>
+            {/* `ui small basic attached segment`: transparent, borderless, scrolls */}
             <div
-              className="flex-1 overflow-y-scroll whitespace-nowrap bg-white"
-              style={{
-                border: `1px solid ${TAB_BORDER}`,
-                borderTop: "none",
-                margin: 0,
-                padding: 0,
-              }}
+              className="flex-1 overflow-y-scroll whitespace-nowrap"
+              style={{ border: "none", margin: 0, padding: 0, width: "100%" }}
             >
               {filtersPanel ?? (
                 <>
@@ -556,6 +755,7 @@ export function SearchPage() {
                       key={facet}
                       facet={facet}
                       buckets={aggregations?.[facet] ?? []}
+                      loading={results.isPending}
                       q={q}
                       onToggle={(name, value) => setSearch({ q: toggleQueryToken(q, name, value) })}
                     />
@@ -572,11 +772,8 @@ export function SearchPage() {
 
           {/* Results pane */}
           <div className="flex h-full min-w-0 flex-1 flex-col">
-            {/* Sub-tab bar (small tabular) */}
-            <div
-              className="flex items-end bg-white"
-              style={{ borderBottom: `1px solid ${TAB_BORDER}` }}
-            >
+            {/* Sub-tab bar (small tabular; white active tab) + sort dropdown */}
+            <div className="flex items-end" style={{ borderBottom: `1px solid ${TAB_BORDER}` }}>
               {subTabs.map((tab) => {
                 const active = tab.name === (activeTab?.name ?? "Summaries");
                 return (
@@ -585,55 +782,78 @@ export function SearchPage() {
                     type="button"
                     onClick={() => setView(tab.name)}
                     className={cx(
-                      "flex items-center text-[13px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
-                      !active && cx("cursor-pointer", tabHoverClass),
+                      "flex items-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
+                      !active && "cursor-pointer hover:text-node-dark",
                     )}
                     style={tabItemStyle(active, true)}
                   >
                     {tab.name}
-                    {tab.name === "Summaries" && <CountLabel>{abbreviateNumber(total)}</CountLabel>}
+                    {tab.name === "Summaries" && (
+                      <CountLabel>{results.isPending ? "…" : formatNumber(total)}</CountLabel>
+                    )}
                   </button>
                 );
               })}
-              <span className="ml-auto self-center" style={{ padding: "0 1em" }}>
+              <span className="relative ml-auto self-center" style={{ padding: "0 1em" }}>
                 <label htmlFor="sort-select" className="sr-only">
                   Sort results
                 </label>
+                {/* Legacy `<color> ui dropdown label`: node-colored pill with a caret */}
                 <select
                   id="sort-select"
                   value={sort}
                   onChange={(event) => setSearch({ sort: event.target.value })}
-                  className="rounded-sm border-0 bg-node text-[13px] font-medium text-white focus:outline-hidden"
-                  style={{ padding: "0.5em" }}
+                  className="cursor-pointer appearance-none rounded-sm border-0 bg-node font-bold text-white focus:outline-hidden"
+                  style={{
+                    padding: "0.9em 1.9em 0.9em 0.833em",
+                    fontSize: "0.85714286rem",
+                    lineHeight: "1em",
+                  }}
                 >
-                  {hasFreeText && <option value="relevance">Most Relevant First</option>}
-                  <option value="recent">Recently Contributed First</option>
-                  <option value="id">Largest ID First</option>
+                  {sortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
+                <Icon
+                  name="caret-down"
+                  size="small"
+                  className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-white"
+                  style={{ right: "1.5em" }}
+                />
               </span>
             </div>
 
-            {/* View container: border-left 1px #d4d4d5, independent scroll */}
+            {/* View container: border-left 1px #d4d4d5, white, independent scroll */}
             <div
+              ref={scrollerRef}
               className="flex-1 overflow-y-scroll bg-white"
               style={{ borderLeft: `1px solid ${TAB_BORDER}`, padding: "0 1em" }}
             >
-              {results.isPending && <PageSpinner label="Searching…" />}
               {results.error && <ErrorMessage error={results.error} className="my-3" />}
+
+              {results.isPending && !results.error && (
+                <div style={{ margin: "1em 0" }}>
+                  {Array.from({ length: 5 }, (_, index) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count placeholders
+                    <LoadingItem key={index} divider />
+                  ))}
+                </div>
+              )}
 
               {results.data && (
                 <>
-                  <p className="pt-2 text-[13px] text-gray-500" aria-live="polite">
-                    {formatNumber(total)} {level.name.toLowerCase()} found
-                    {results.isFetching && !results.isFetchingNextPage ? " (updating…)" : ""}
-                  </p>
-
                   {activeTab?.name === "Summaries" && (
-                    <div className="divide-y divide-gray-200">
+                    <div style={{ margin: "1em 0" }}>
                       {hits.map((doc, index) => (
                         // biome-ignore lint/suspicious/noArrayIndexKey: sub-contribution hits can share a contribution id; pages are append-only
-                        <div key={`${contributionId(doc) ?? "hit"}-${index}`}>{renderHit(doc)}</div>
+                        <div key={`${contributionId(doc) ?? "hit"}-${index}`}>
+                          {renderHit(doc)}
+                          {hits.length > 1 && <ResultDivider />}
+                        </div>
                       ))}
+                      {isFetchingNextPage && <LoadingItem divider={false} />}
                     </div>
                   )}
                   {activeTab?.name === "Rows" && <RowsView results={hits} />}
@@ -651,23 +871,18 @@ export function SearchPage() {
                     </div>
                   )}
 
-                  {hits.length === 0 && (
-                    <p className="py-8 text-center text-[13px] text-gray-500">
-                      No results. Try a different query or level.
-                    </p>
-                  )}
+                  {hits.length === 0 && <NoItemsMessage />}
 
-                  {results.hasNextPage && (
-                    <div className="flex justify-center py-4">
+                  {/* Infinite-scroll sentinel; the button is the no-observer fallback */}
+                  <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
+                  {autoLoad && hasNextPage && !isFetchingNextPage && (
+                    <div className="flex justify-center pb-4">
                       <button
                         type="button"
-                        disabled={results.isFetchingNextPage}
-                        onClick={() => results.fetchNextPage()}
-                        className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        onClick={() => fetchNextPage()}
+                        className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
                       >
-                        {results.isFetchingNextPage
-                          ? "Loading…"
-                          : `Load More (showing ${hits.length} of ${formatNumber(total)})`}
+                        Load More (showing {hits.length} of {formatNumber(total)})
                       </button>
                     </div>
                   )}

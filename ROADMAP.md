@@ -138,7 +138,9 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
 - [ ] **D1 Stub pages** — About, Technology, Grand Challenges, Workshops, Links, Help
       get per-node content (YAML `features.pages` already lists which a node shows).
 - [ ] **D2 Parity pass per route** against `docs/legacy-ux-spec.md`; record every
-      deliberate deviation in that file.
+      deliberate deviation in that file. Search page pass shipped 2026-09-10
+      (legacy tabs/filters/sort/infinite scroll, result card cells, globe map
+      thumbnail, `sort` API param); deviations listed in the spec's search section.
 - [ ] **D3 Mobile** — the drawer shipped 2026-08-26; the search and contribution pages
       still need a pass at phone width.
 - [ ] **D4 Poles globe** per `docs/poles-globe-spec.md` — check what remains.

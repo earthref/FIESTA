@@ -50,8 +50,8 @@ export function RootLayout() {
         <PortalBar />
         {/* layout-content: padding-top/bottom 4em clears the fixed bars (layout.less:41-44) */}
         <div className="pb-[4em] pt-[4em]">
-          <NodeHeader />
-          <NodeMenu />
+          <NodeHeader fullWidth={fullWidth} />
+          <NodeMenu fullWidth={fullWidth} />
           <main
             className={fullWidth ? "w-full px-[2em] py-4" : "mx-auto w-full max-w-6xl px-4 py-4"}
           >

@@ -10,7 +10,7 @@ from fiesta.apps.deps import NodeDep, SessionDep
 from fiesta.apps.schemas import SearchPage
 from fiesta.db.models import Contribution
 from fiesta.search.client import get_opensearch
-from fiesta.search.queries import build_search_body
+from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services.contributions import load_file
 
 router = APIRouter(tags=["search"])
@@ -78,9 +78,12 @@ async def search(
     facets: bool = False,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    sort: str | None = None,
 ) -> SearchPage:
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
+    if sort is not None and sort not in SORT_OPTIONS:
+        raise HTTPException(422, f"sort must be one of {sorted(SORT_OPTIONS)}")
     level = next((lvl for lvl in _all_levels(node) if lvl.table == table), None)
     body = build_search_body(
         table=table,
@@ -91,6 +94,7 @@ async def search(
         count_field=level.count_field if level else None,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        sort=sort,
     )
     try:
         response = await get_opensearch().search(index=node.search_index, body=body)

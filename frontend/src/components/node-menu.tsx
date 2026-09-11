@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useNodeConfig } from "../lib/config";
 import type { NodeConfig } from "../lib/types";
+import { cx } from "../lib/utils";
 import { Icon, type IconName } from "./ui/icon";
 
 const itemClass =
@@ -56,7 +57,7 @@ export function nodeMenuItems(config: NodeConfig | undefined): {
 }
 
 /** Node-colored secondary pointing menu directly under the node header (≥1024px only). */
-export function NodeMenu() {
+export function NodeMenu({ fullWidth = false }: { fullWidth?: boolean }) {
   const { data: config } = useNodeConfig();
   const { left, right } = nodeMenuItems(config);
 
@@ -80,7 +81,12 @@ export function NodeMenu() {
 
   return (
     <nav aria-label="Node" className="hidden border-b border-gray-200 lg:block">
-      <div className="mx-auto flex w-full max-w-6xl items-center overflow-x-auto px-4">
+      <div
+        className={cx(
+          "flex w-full items-center overflow-x-auto",
+          fullWidth ? "px-[2em]" : "mx-auto max-w-6xl px-4",
+        )}
+      >
         <div className="flex items-center">{left.map(renderItem)}</div>
         <div className="ml-auto flex items-center">{right.map(renderItem)}</div>
       </div>
