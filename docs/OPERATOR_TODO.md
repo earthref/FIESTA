@@ -18,6 +18,12 @@ Last updated: 2026-09-10
 - [ ] **Cutover shape**: `dev.earthref.org/<Node>/` first, then `earthref.org/<Node>/`
       as a proxy change (deployment.md) — confirm or change. Unblocks: E4.
 
+- [ ] **Check `/srv/fiesta/bin/deploy-fiesta.sh` does not call plain `make up`.**
+      Since 2026-09-11 `make up` layers `docker-compose.dev.yml` (Vite dev server,
+      uvicorn --reload, bind-mounted source). A deployment must use
+      `make up PROD=1` or `docker compose up -d --build` (no `-f` overlay).
+      The script lives on the runner, not in the repo, so only you can verify it.
+
 ## B — Credentials and access (names only)
 
 - [ ] Production Postgres, OpenSearch, and S3 access for the FIESTA API host:

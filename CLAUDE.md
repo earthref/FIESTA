@@ -39,8 +39,8 @@ scripts/               e2e.sh (full workflow against a running stack), pg-node-r
 ## Commands (use exactly these forms — they match the permission allowlist)
 
 ```bash
-make up                         # compose: infra + one backend/worker/frontend per node in FIESTA_NODE (.env)
-make up FIESTA_NODE=magic       # one node; make up-public-api adds /v1 on PUBLIC_API_PORT
+make up                         # compose: infra + one backend/worker/frontend per node in FIESTA_NODE (.env); hot reload (Vite dev server, uvicorn --reload) — a git pull is live
+make up FIESTA_NODE=magic       # one node; make up-public-api adds /v1 on PUBLIC_API_PORT; PROD=1 runs the built images (what CI e2e and a deployment use)
 make down / make clean          # stop (keep volumes) / stop and DELETE volumes
 make infra                      # only postgres+opensearch+minio+mailpit, for host-run app processes
 make backend-dev                # uv sync + fiesta init + uvicorn --reload for the first node in FIESTA_NODE
@@ -48,7 +48,7 @@ make worker-dev                 # procrastinate worker for that node
 make frontend-dev               # Vite on :5173 (nvm use first — Node 22); VITE_API_TARGET=http://localhost:18000 to re-point
 make test                       # backend pytest + frontend tsc/build   (make test-backend / make test-frontend)
 make lint / make fix            # ruff + biome check / auto-fix
-make e2e                        # scripts/e2e.sh against a running `make up-public-api FIESTA_NODE=magic`
+make e2e                        # scripts/e2e.sh against a running `make up-public-api FIESTA_NODE=magic PROD=1`
 make init / make rebuild / make user EMAIL=… NAME=…   # run inside the backend image
 cd backend && uv run pytest tests/test_domain.py -x --tb=short
 cd backend && FIESTA_CONFIG_FILE=../config/magic.yaml uv run fiesta <init|rebuild --yes|worker|create-user>

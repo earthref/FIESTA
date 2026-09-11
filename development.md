@@ -15,8 +15,19 @@ each wraps.
 
 ```sh
 cp .env.example .env      # FIESTA_NODE selects the node(s); ports overridable
-make up                   # or: docker compose up --build (honors COMPOSE_PROFILES)
+make up                   # hot reload: Vite dev server + uvicorn --reload + watchfiles worker
+make up PROD=1            # the built images, exactly as CI e2e and a deployment run them
 ```
+
+`make up` layers `docker-compose.dev.yml` over `docker-compose.yml`: the
+backend package is bind-mounted into the image and uvicorn reloads on change,
+the worker restarts via `watchfiles`, and each frontend container runs the
+Vite dev server (HMR, `/api` proxied to that node's backend) on the same host
+port as the nginx image would. A `git pull` is therefore live without a
+rebuild. Two things still need a `make up`: a change to a node YAML (config
+loads at startup) and a dependency change (`npm install` runs on container
+start; the backend image is rebuilt by `--build`). Frontend `node_modules`
+live in a per-node named volume (`node-modules-<node>`), removed by `make clean`.
 
 `FIESTA_NODE` accepts a comma-separated list to run several nodes at once:
 
@@ -55,7 +66,8 @@ KDD_BASE_PATH=/KdD/
 
 The value must start and end with `/`. It is a **build arg** of the frontend
 image (asset URLs, the router `basepath`, and the nginx location blocks all
-derive from it), so `make up` rebuilds the image after a change. The backend
+derive from it), so `make up PROD=1` rebuilds the image after a change (the
+dev overlay passes it to Vite as `VITE_BASE_PATH`). The backend
 receives it as `FIESTA_ROOT_PATH`, which only tells FastAPI where to
 advertise `/api/docs`; the proxy strips the prefix, so routes stay at `/api`.
 

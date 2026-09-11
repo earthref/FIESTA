@@ -5,7 +5,13 @@
 #   make up FIESTA_NODE=karar
 #   make e2e BACKEND_PORT=18000 PUBLIC_API_PORT=18001
 
-COMPOSE := docker compose
+# `make up` layers the hot-reload overlay (Vite dev server, uvicorn --reload,
+# watchfiles worker) so a `git pull` is live without rebuilding images.
+# PROD=1 runs the built images exactly as deployed (CI's e2e job does this).
+# (The dev overlay mounts a named volume at frontend/node_modules; `up` creates
+# that directory first so Docker does not leave a root-owned one behind.)
+COMPOSE_FILES := -f docker-compose.yml$(if $(PROD),, -f docker-compose.dev.yml)
+COMPOSE := docker compose $(COMPOSE_FILES)
 
 # Read the local .env so FIESTA_NODE / port overrides are visible to make.
 -include .env
@@ -52,11 +58,13 @@ help: ## List available targets
 ## ---- Docker Compose stack -------------------------------------------------
 
 .PHONY: up
-up: ## Start the node stack(s) in FIESTA_NODE (e.g. make up FIESTA_NODE=magic,karar)
+up: ## Start the node stack(s) in FIESTA_NODE with hot reload (PROD=1 for the built images)
+	@mkdir -p frontend/node_modules
 	$(COMPOSE) up -d --build --remove-orphans
 
 .PHONY: up-public-api
-up-public-api: ## Start the node stack(s) plus the /v1 public API
+up-public-api: ## Start the node stack(s) plus the /v1 public API (PROD=1 for the built images)
+	@mkdir -p frontend/node_modules
 	$(COMPOSE) up -d --build --remove-orphans
 
 .PHONY: down
