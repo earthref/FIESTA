@@ -134,6 +134,14 @@ Point the proxy elsewhere with `VITE_API_TARGET=http://localhost:18000 npm run d
 The config loader validates the YAML on startup (e.g. every `hierarchy` table
 must exist in the latest data model).
 
+Home page content is YAML too: `features.home.resources` lists the resource
+cards (title, Semantic icon name, optional corner icon, `to` for an SPA route
+or `href` for an external URL) and `features.home.news` the news items
+(title, HTML body, optional image and link). Images and other files a node's
+YAML refers to live in `config/<slug>/assets/` and are served at
+`/api/config/assets/<path>`. A node with no `resources` gets a default set
+(data model, vocabularies, method codes, API, help).
+
 Node-specific features (MagIC poles, CDR depth plots, KArAr age plateaus)
 are **plugins** activated per node via `features.plugins` — see
 [docs/plugins.md](docs/plugins.md) for the authoring guide.

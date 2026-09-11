@@ -64,6 +64,7 @@ Authenticated endpoints take `Authorization: Bearer <jwt>`.
 | Method | Path | Query params | Returns |
 |---|---|---|---|
 | GET | `/api/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10), `from`, `facets` (bool), `sort` (see below) | `SearchPage` |
+| GET | `/api/config/assets/{path}` | — | static file from `config/<slug>/assets/` (news images, …) |
 | GET | `/api/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/api/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 

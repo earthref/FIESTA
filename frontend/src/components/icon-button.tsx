@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
 import { cx } from "../lib/utils";
-import { Icon, type IconName } from "./ui/icon";
+import { SemanticIcon } from "./ui/fa-icon";
 
 /**
  * Legacy IconButton (icon_button.jsx/.less), measured on the MagIC home page:
@@ -15,11 +15,12 @@ import { Icon, type IconName } from "./ui/icon";
  *          32px icon (3× the 10.71px small header); title 1.0714em/700. 82px tall.
  * - wide   (`tiny card` / `small card`, full width): padding .786em, no icon,
  *          title on one or two header lines.
- * Hover bg #f0f0f0 on all of them.
+ * Hover bg #f0f0f0 on all of them. Icons are Semantic icon names (`i.icons`
+ * stack: base glyph + `corner` glyph bottom-right, white-outlined).
  */
 export interface IconButtonProps {
-  icon?: IconName;
-  cornerIcon?: IconName;
+  icon?: string;
+  cornerIcon?: string;
   title: ReactNode;
   subtitle?: ReactNode;
   to?: string;
@@ -30,6 +31,18 @@ export interface IconButtonProps {
   fontSize?: number;
   /** Title size in em of the card font (legacy header 1.2857, small header 1.0714). */
   titleEm?: number;
+}
+
+/** Split a config title on "\n" into lines (legacy `<br/>` in `.title`). */
+export function titleLines(title: string): ReactNode {
+  const lines = title.split("\n");
+  return lines.map((line, index) => (
+    // biome-ignore lint/suspicious/noArrayIndexKey: static text lines
+    <span key={index}>
+      {index > 0 && <br />}
+      {line}
+    </span>
+  ));
 }
 
 export function IconButton({
@@ -61,6 +74,7 @@ export function IconButton({
     borderRadius: "0.28571429rem",
     ...(small ? {} : { background: "#f8f8f9", boxShadow: "0 0 0 1px var(--node-color) inset" }),
   };
+  const outline = small ? "#fff" : "#f8f8f9";
 
   const content = (
     <>
@@ -69,21 +83,20 @@ export function IconButton({
           className="relative inline-block text-[#555555]"
           style={{ fontSize: iconPx, lineHeight: 1, marginBottom: small ? 5 : 16 }}
         >
-          <Icon name={icon} />
+          <SemanticIcon name={icon} />
           {cornerIcon && (
             <span
               aria-hidden="true"
               className="absolute text-node"
               style={{
-                right: 0,
-                bottom: 0,
+                right: "-0.15em",
+                bottom: "-0.1em",
                 fontSize: "0.45em",
                 lineHeight: 1,
-                textShadow:
-                  "-1px -1px 0 #f8f8f9, 1px -1px 0 #f8f8f9, -1px 1px 0 #f8f8f9, 1px 1px 0 #f8f8f9",
+                textShadow: `-1px -1px 0 ${outline}, 1px -1px 0 ${outline}, -1px 1px 0 ${outline}, 1px 1px 0 ${outline}`,
               }}
             >
-              <Icon name={cornerIcon} />
+              <SemanticIcon name={cornerIcon} />
             </span>
           )}
         </span>
@@ -96,7 +109,7 @@ export function IconButton({
           margin: subtitle ? "0 0 0.5rem" : 0,
         }}
       >
-        {title}
+        {typeof title === "string" ? titleLines(title) : title}
       </div>
       {subtitle && (
         <div className="text-[#555555]" style={{ fontSize: "1em", lineHeight: 1.2 }}>

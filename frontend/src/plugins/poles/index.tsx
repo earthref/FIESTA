@@ -544,13 +544,7 @@ export const polesPlugin: PluginModule = {
     return [
       {
         key: "poles",
-        title: (
-          <>
-            Poles
-            <br />
-            View
-          </>
-        ),
+        title: "Poles\nView",
         to: "/search",
         search: { level: pconfig.base_level },
       },

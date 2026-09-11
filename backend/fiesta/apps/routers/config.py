@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 from fiesta.apps.deps import NodeDep
 from fiesta.plugins import active_plugins
@@ -19,6 +20,15 @@ async def get_config(node: NodeDep) -> dict:
     # Local-dev portal-bar overrides for sibling nodes running on this host.
     config["portal_urls"] = get_settings().portal_url_map()
     return config
+
+
+@router.get("/assets/{path:path}")
+async def get_asset(node: NodeDep, path: str) -> FileResponse:
+    """Static files a node's YAML refers to (news images, ...) from config/<slug>/assets/."""
+    file = node.asset_path(path)
+    if file is None:
+        raise HTTPException(404, f"no asset {path!r}")
+    return FileResponse(file, headers={"Cache-Control": "public, max-age=3600"})
 
 
 @router.get("/data-models/{version}")

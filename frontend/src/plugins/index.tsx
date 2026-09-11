@@ -45,7 +45,7 @@ export interface PluginFiltersProps {
 
 export interface PluginHomeCard {
   key: string;
-  title: ReactNode;
+  title: string;
   subtitle?: ReactNode;
   to: string;
   search?: Record<string, unknown>;
