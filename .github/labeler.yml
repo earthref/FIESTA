@@ -1,7 +1,7 @@
 docs:
   - all:
     - changed-files:
-      - any-glob-to-any-file:
+      - all-globs-to-all-files:
         - '**/*.md'
 
 internal:
