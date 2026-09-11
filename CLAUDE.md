@@ -15,7 +15,7 @@ Database:   Postgres 16 — shared `users` schema + one schema per node (magic, 
 Search:     OpenSearch, one index per node (FIESTA_INDEX_PREFIX when the cluster is shared)
 Storage:    S3-compatible (prod: AWS S3, one bucket + `<slug>/` prefix; local: MinIO) — canonical files + manifest.json
 Email:      SMTP (local: Mailpit :8025)
-Infra:      Docker Compose locally; deploy.yml runs /srv/fiesta/bin/deploy-fiesta.sh on a self-hosted runner (label fiesta-deploy) on push to main — runner offline 2026-09-10, so pushes queue
+Infra:      Docker Compose locally (`make up` = hot-reload overlay, `PROD=1` = built images); deploy.yml runs /srv/fiesta/bin/deploy-fiesta.sh on the self-hosted runner `fiesta-ct` (label fiesta-deploy) on push to main — it is a release-dir swap (uv sync + ruff/pytest, npm ci + per-node vite build with base paths, `fiesta init` per node, symlink /srv/fiesta/current, health checks), no docker compose, so compose changes never reach production
 Linting:    ruff (Python), biome (TypeScript)
 ```
 
@@ -39,8 +39,8 @@ scripts/               e2e.sh (full workflow against a running stack), pg-node-r
 ## Commands (use exactly these forms — they match the permission allowlist)
 
 ```bash
-make up                         # compose: infra + one backend/worker/frontend per node in FIESTA_NODE (.env)
-make up FIESTA_NODE=magic       # one node; make up-public-api adds /v1 on PUBLIC_API_PORT
+make up                         # compose: infra + one backend/worker/frontend per node in FIESTA_NODE (.env); hot reload (Vite dev server, uvicorn --reload) — a git pull is live
+make up FIESTA_NODE=magic       # one node; make up-public-api adds /v1 on PUBLIC_API_PORT; PROD=1 runs the built images (what CI e2e and a deployment use)
 make down / make clean          # stop (keep volumes) / stop and DELETE volumes
 make infra                      # only postgres+opensearch+minio+mailpit, for host-run app processes
 make backend-dev                # uv sync + fiesta init + uvicorn --reload for the first node in FIESTA_NODE
@@ -48,7 +48,7 @@ make worker-dev                 # procrastinate worker for that node
 make frontend-dev               # Vite on :5173 (nvm use first — Node 22); VITE_API_TARGET=http://localhost:18000 to re-point
 make test                       # backend pytest + frontend tsc/build   (make test-backend / make test-frontend)
 make lint / make fix            # ruff + biome check / auto-fix
-make e2e                        # scripts/e2e.sh against a running `make up-public-api FIESTA_NODE=magic`
+make e2e                        # scripts/e2e.sh against a running `make up-public-api FIESTA_NODE=magic PROD=1`
 make init / make rebuild / make user EMAIL=… NAME=…   # run inside the backend image
 cd backend && uv run pytest tests/test_domain.py -x --tb=short
 cd backend && FIESTA_CONFIG_FILE=../config/magic.yaml uv run fiesta <init|rebuild --yes|worker|create-user>
@@ -69,7 +69,7 @@ On this machine host ports 5432/8000/8001 are taken: `.env` publishes Postgres o
 - **`old-backend/` and the sibling legacy repos are read-only reference.** Port from them; never edit them from a FIESTA session.
 - **Never `git stash`/pop to compare against HEAD** — the tree can carry concurrent uncommitted work.
 - **Sessions do not share this tree for edits.** A session that will modify files runs `EnterWorktree` first (subagents: `isolation: "worktree"`); one that must edit here anyway commits ONLY by explicit pathspec (`git commit -- <files>`, never `git add .`/`-a`) and checks `git status` on each file it touches immediately before committing.
-- **Claude merges its own PRs.** Once the work is committed on the worktree branch, pushed, and `make lint` + `make test` are green locally, open the PR and merge it yourself when `gh pr view <n> --json mergeable` says `MERGEABLE` and the `CI` check is green — `gh pr merge <n> --merge` (no `--delete-branch`: it fails from a worktree because `main` is checked out in the main tree; `git push origin --delete <branch>` and `ExitWorktree` remove instead). A PR with conflicts is rebased onto `origin/main` and re-pushed, never merged with conflicts; if the rebase needs a judgement call, stop and ask. Nothing deploys on merge today — production rollout is a human action (OPERATOR_TODO).
+- **Claude merges its own PRs.** Once the work is committed on the worktree branch, pushed, and `make lint` + `make test` are green locally, open the PR with exactly one of the labels `feature|bug|refactor|upgrade|docs|internal|security|breaking` (`gh pr create --label feature …`; the `check-labels` job fails on zero or two labels, and the auto-labeler adds `docs` only for all-Markdown PRs and `internal` only for all-`.github`/`scripts` PRs) and merge it yourself when `gh pr view <n> --json mergeable` says `MERGEABLE` and the `CI` check is green — `gh pr merge <n> --merge` (no `--delete-branch`: it fails from a worktree because `main` is checked out in the main tree; `git push origin --delete <branch>` and `ExitWorktree` remove instead). A PR with conflicts is rebased onto `origin/main` and re-pushed, never merged with conflicts; if the rebase needs a judgement call, stop and ask. Nothing deploys on merge today — production rollout is a human action (OPERATOR_TODO).
 - **Human-only actions** (prod credentials, AWS/OpenSearch/Postgres access, DNS, ORCID/EZID registrations, CORS on the live API, cutover decisions) go in [docs/OPERATOR_TODO.md](docs/OPERATOR_TODO.md), never only in chat.
 
 ## Models and Delegation
