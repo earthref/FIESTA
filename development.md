@@ -23,8 +23,10 @@ make up PROD=1            # the built images, exactly as CI e2e and a deployment
 backend package is bind-mounted into the image and uvicorn reloads on change,
 the worker restarts via `watchfiles`, and each frontend container runs the
 Vite dev server (HMR, `/api` proxied to that node's backend) on the same host
-port as the nginx image would. A `git pull` is therefore live without a
-rebuild. Two things still need a `make up`: a change to a node YAML (config
+port as the nginx image would. `make up` returns only once every service is
+healthy (`--wait`), so the first start blocks for the ~30 s `npm install` into
+the empty `node_modules` volume; later starts are ready in about a second.
+A `git pull` is therefore live without a rebuild. Two things still need a `make up`: a change to a node YAML (config
 loads at startup) and a dependency change (`npm install` runs on container
 start; the backend image is rebuilt by `--build`). Frontend `node_modules`
 live in a per-node named volume (`node-modules-<node>`), removed by `make clean`.
