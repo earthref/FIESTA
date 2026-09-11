@@ -108,15 +108,7 @@ function PolesResultItem({ hit, level }: { hit: SearchResult; level: SearchLevel
 
   const expanded = block ? <DefinitionTable data={block} /> : undefined;
 
-  return (
-    <ResultCardFrame
-      doc={hit}
-      level={level}
-      cells={cells}
-      expanded={expanded}
-      collapsedMaxHeight={155}
-    />
-  );
+  return <ResultCardFrame doc={hit} level={level} cells={cells} expanded={expanded} />;
 }
 
 // --- Side panel (max poles, ellipse toggle, color legend) -------------------------
