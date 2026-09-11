@@ -73,5 +73,5 @@ doi:
   prefix: 10.7288/V4/MAGIC
 
 features:
-  pages: [about, help, method-codes, upgrade, links, workshops, jupyter-notebooks, grand-challenges]
+  pages: [about, technology, help, method-codes, upgrade, links, workshops, jupyter-notebooks, grand-challenges]
   plugins: [poles]

@@ -351,3 +351,26 @@ def test_osu_mgr_facets_are_summarized_columns(osu_mgr_node):
 def test_osu_mgr_extra_types_are_hierarchy_tables(osu_mgr_node):
     """Levels searchable without a tab still need documents to search."""
     assert set(osu_mgr_node.search.extra_types) <= set(osu_mgr_node.hierarchy)
+
+
+def test_search_body_sort_options():
+    from fiesta.search.queries import DEFAULT_SORT, SORT_OPTIONS, build_search_body
+
+    # Default: newest first without free text, relevance with it.
+    body = build_search_body(table="contribution", query=None)
+    assert body["sort"] == SORT_OPTIONS[DEFAULT_SORT]
+    body = build_search_body(table="contribution", query="basalt")
+    assert body["sort"] == SORT_OPTIONS["relevance"]
+    # A token-only query has no free text, so it still sorts newest first.
+    body = build_search_body(table="contribution", query='id:"1"')
+    assert body["sort"] == SORT_OPTIONS["recent"]
+    # Explicit option wins; every option is a valid, non-empty sort list.
+    assert build_search_body(table="sites", query="basalt", sort="id_desc")["sort"] == [
+        {"summary.contribution.id": {"order": "desc", "unmapped_type": "long"}}
+    ]
+    for name, clauses in SORT_OPTIONS.items():
+        assert clauses, name
+        for clause in clauses:
+            if clause != "_score":
+                (spec,) = clause.values()
+                assert "unmapped_type" in spec, name

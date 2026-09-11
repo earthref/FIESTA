@@ -63,7 +63,7 @@ Authenticated endpoints take `Authorization: Bearer <jwt>`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/api/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10), `from`, `facets` (bool) | `SearchPage` |
+| GET | `/api/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10), `from`, `facets` (bool), `sort` (see below) | `SearchPage` |
 | GET | `/api/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/api/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 
@@ -78,6 +78,13 @@ SearchPage = {
 Search results are always restricted to `_is_latest`, and to `_is_activated`
 unless a valid `private_key` token (`private_key:"<uuid>"` with `id:"<id>"`)
 is in the query.
+
+`sort` is one of the legacy sort-dropdown options: `relevance` (score, then
+newest), `recent` / `recent_asc` (contribution timestamp), `published` /
+`published_asc` (`_reference.year`), `cited` (`_reference.n_citations`),
+`citation_az` / `citation_za` (`_reference.citation`), `id_desc` / `id_asc`.
+When omitted the API sorts by relevance if the query has free text and by
+`recent` otherwise. Unknown values are a 422.
 
 ### Private workspace (Bearer auth)
 
@@ -130,7 +137,7 @@ HTTP Basic auth (EarthRef account email/handle + password) on private routes.
 | GET | `/v1/authenticate` | Basic auth → user info |
 | GET | `/v1/{repository}/data/{id}` | contribution file (`?format=txt|json`) |
 | GET | `/v1/{repository}/download/{id}` | zip archive of the contribution |
-| GET | `/v1/{repository}/search/{table}` | `query`, `size`, `from`, `id`, `doi` params |
+| GET | `/v1/{repository}/search/{table}` | `query`, `size`, `from`, `sort`, `id`, `doi` params |
 | POST | `/v1/{repository}/validate` | upload a file, synchronous validation report |
 | POST | `/v1/{repository}/private/contribution` | create private contribution (Basic auth) |
 | PUT | `/v1/{repository}/private/contribution/{id}` | replace file |

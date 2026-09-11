@@ -3,7 +3,8 @@ import { type CSSProperties, type ReactNode, useState } from "react";
 import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type { SearchLevel, SearchResult } from "../lib/types";
-import { abbreviateNumber, cx, getPath } from "../lib/utils";
+import { abbreviateNumber, cx, getPath, singularize } from "../lib/utils";
+import { type MapMarker, MapThumbnail, markersFromGeoPoint } from "./map-thumbnail";
 import { Icon } from "./ui/icon";
 
 /** Fallback name columns, tried in order when a level's own key column is absent. */
@@ -35,10 +36,10 @@ function firstString(value: unknown): string | undefined {
   return undefined;
 }
 
-function joined(value: unknown): string {
-  if (Array.isArray(value)) return value.map(String).join(", ");
-  if (value === undefined || value === null) return "";
-  return String(value);
+function listOf(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (value === undefined || value === null || value === "") return [];
+  return [String(value)];
 }
 
 /** moment "LL" format: July 7, 2026 */
@@ -66,7 +67,10 @@ function citationOf(doc: SearchResult): string | undefined {
   return undefined;
 }
 
-/** "{location} ⇒ {site}" breadcrumb from each summary block's name column. */
+/** "{location} ⇒ {site}" breadcrumb (legacy renderTitle): each ancestor
+ * level's name column, from that level's summary block when the doc carries
+ * one, else from the row's own `summary._all` (a sites doc has no `locations`
+ * block but its `_all.location` names the parent). */
 function breadcrumbOf(doc: SearchResult, level: SearchLevel, levels: SearchLevel[]): string[] {
   if (level.table === "contribution") return [];
   const parts: string[] = [];
@@ -75,15 +79,16 @@ function breadcrumbOf(doc: SearchResult, level: SearchLevel, levels: SearchLevel
     if (entry.table === "contribution" || seen.has(entry.table)) continue;
     seen.add(entry.table);
     const block = getPath(doc, `summary.${entry.table}`);
+    const keyColumn = keyColumnOf(entry.table);
+    let name: string | undefined;
     if (block && typeof block === "object") {
-      for (const column of [keyColumnOf(entry.table), ...NAME_COLUMNS]) {
-        const name = firstString((block as Record<string, unknown>)[column]);
-        if (name) {
-          parts.push(name);
-          break;
-        }
+      for (const column of [keyColumn, ...NAME_COLUMNS]) {
+        name = firstString((block as Record<string, unknown>)[column]);
+        if (name) break;
       }
     }
+    name ??= firstString(getPath(doc, `summary._all.${keyColumn}`));
+    if (name) parts.push(name);
     if (entry.table === level.table) break;
   }
   return parts;
@@ -124,8 +129,18 @@ export function Cell({
   );
 }
 
-/** Grey centered "No X Data" placeholder with the legacy <br> structure. */
-export function NoDataCell({ label, width }: { label: string; width: number }) {
+/** Grey centered "No X Data" placeholder with the legacy <br> structure. The
+ * label may be multi-line (legacy "No Method<br/>Codes"); `dataWord` is false
+ * for placeholders whose label already ends the sentence. */
+export function NoDataCell({
+  label,
+  width,
+  dataWord = true,
+}: {
+  label: ReactNode;
+  width: number;
+  dataWord?: boolean;
+}) {
   return (
     <div
       className="shrink-0 overflow-hidden text-ellipsis text-center text-[#AAAAAA]"
@@ -136,10 +151,55 @@ export function NoDataCell({ label, width }: { label: string; width: number }) {
       <br />
       <b>{label}</b>
       <br />
-      Data
-      <br />
+      {dataWord && (
+        <>
+          Data
+          <br />
+        </>
+      )}
       <br />
     </div>
+  );
+}
+
+/** Label on its own line above a value clamped to `lines` (legacy <b/> + Clamp). */
+function ClampedField({
+  label,
+  lines,
+  children,
+}: {
+  label: string;
+  lines: number;
+  children: ReactNode;
+}) {
+  return (
+    <span>
+      <b>{label}</b>
+      <div
+        className="overflow-hidden"
+        style={{
+          display: "-webkit-box",
+          WebkitLineClamp: lines,
+          WebkitBoxOrient: "vertical",
+        }}
+      >
+        {children}
+      </div>
+    </span>
+  );
+}
+
+/** Legacy `ui fitted divider` between result list items (margin 1em 0). */
+export function ResultDivider() {
+  return (
+    <hr
+      style={{
+        margin: "1em 0",
+        border: 0,
+        borderTop: "1px solid rgba(34,36,38,.15)",
+        borderBottom: "1px solid rgba(255,255,255,.1)",
+      }}
+    />
   );
 }
 
@@ -166,8 +226,12 @@ export function ResultCardFrame({
   const [hovered, setHovered] = useState(false);
 
   const id = contributionId(doc);
-  const citation = citationOf(doc) ?? (id ? `Contribution ${id}` : "Contribution");
+  const citation = citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown");
   const version = getPath(doc, "summary.contribution.version");
+  const referenceTitle =
+    level.table === "contribution"
+      ? firstString(getPath(doc, "summary.contribution._reference.title"))
+      : undefined;
   const breadcrumb = breadcrumbOf(doc, level, config?.search_levels ?? []);
   const timestamp = getPath(doc, "summary.contribution.timestamp");
   const contributor = firstString(getPath(doc, "summary.contribution._contributor"));
@@ -175,7 +239,8 @@ export function ResultCardFrame({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: hover only toggles the caret button's visibility; expansion is keyboard-accessible via the header button
     <div
-      className="relative py-2 text-left"
+      className="relative text-left"
+      style={{ lineHeight: "16px" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -188,31 +253,32 @@ export function ResultCardFrame({
       >
         <span
           aria-hidden="true"
-          className={cx("mr-1 self-center text-gray-400 transition-transform", open && "rotate-90")}
+          className={cx("mr-1 self-center transition-transform", open && "rotate-90")}
         >
           <Icon name="caret-right" size="small" />
         </span>
         <span className="whitespace-nowrap text-[13px] font-bold">
           {citation}
-          {version !== undefined && version !== null ? `, v.${String(version)}` : ""}
+          {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
         </span>
         <span
           className="mx-[0.5em] flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[13px]"
           style={{ height: "1.25em" }}
         >
+          {referenceTitle}
           {breadcrumb.map((part, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: breadcrumb parts can repeat and the ordered list is static per hit
             <span key={`${index}-${part}`}>
-              {index > 0 && " ⇒ "}
+              {" ⇒ "}
               {index === breadcrumb.length - 1 ? <b>{part}</b> : part}
             </span>
           ))}
         </span>
-        <span className="whitespace-nowrap text-right text-[13px] text-gray-600">
+        <span className="whitespace-nowrap text-right text-[13px]">
           {formatDateLL(timestamp)}
           {contributor && (
             <>
-              {" by "}
+              {" by "}
               <b>{contributor}</b>
             </>
           )}
@@ -279,13 +345,54 @@ export function DefinitionTable({ data }: { data: Record<string, unknown> }) {
 function rangeText(value: unknown): string {
   if (Array.isArray(value) && value.length > 0) {
     const numbers = value.map(Number).filter((n) => Number.isFinite(n));
-    if (numbers.length === 0) return joined(value);
+    if (numbers.length === 0) return listOf(value).join(", ");
     const min = Math.min(...numbers);
     const max = Math.max(...numbers);
     return min === max ? String(min) : `${min} to ${max}`;
   }
   if (value === undefined || value === null) return "";
   return String(value);
+}
+
+/** Legacy intensity formatting: values are in Tesla; show nT/µT/mT/T. */
+function formatIntensity(tesla: number): string {
+  const nano = tesla * 1e9;
+  const units: [number, string][] = [
+    [1e9, "T"],
+    [1e6, "mT"],
+    [1e3, "µT"],
+  ];
+  for (const [threshold, unit] of units) {
+    if (Math.abs(nano) >= threshold) return `${trimNumber(nano / threshold)} ${unit}`;
+  }
+  return `${trimNumber(nano)} nT`;
+}
+
+/** numeral "0[.]0[00]": up to three decimals, no trailing zeros. */
+function trimNumber(value: number): string {
+  return String(Number(value.toFixed(3)));
+}
+
+const THIS_STUDY = /^this[_ ]study$/i;
+
+/** Union of `summary._all.<column>` lists across several columns (legacy renderGeo). */
+function unionOf(doc: SearchResult, columns: string[]): string[] {
+  return columns.flatMap((column) => listOf(getPath(doc, `summary._all.${column}`)));
+}
+
+function markersOf(doc: SearchResult, level: SearchLevel): MapMarker[] {
+  const sources =
+    level.table === "contribution"
+      ? [getPath(doc, "summary._all._geo_point")]
+      : [
+          getPath(doc, `summary.${level.table}._geo_point`),
+          getPath(doc, "summary._all._geo_point"),
+        ];
+  for (const source of sources) {
+    const markers = markersFromGeoPoint(source);
+    if (markers.length > 0) return markers;
+  }
+  return [];
 }
 
 export function ResultItem({
@@ -311,39 +418,67 @@ export function ResultItem({
   const counts = config.search_levels
     .filter((entry) => entry.count_field)
     .map((entry) => ({ entry, count: getPath(doc, entry.count_field as string) }))
-    .filter(({ count }) => typeof count === "number");
+    .filter(
+      (item): item is { entry: SearchLevel; count: number } => typeof item.count === "number",
+    );
 
-  const geologyClasses = joined(getPath(doc, "summary._all.geologic_classes"));
-  const geologyTypes = joined(getPath(doc, "summary._all.geologic_types"));
-  const lithologies = joined(getPath(doc, "summary._all.lithologies"));
-  const methodCodes = joined(getPath(doc, "summary._all.method_codes"));
-  const lat = rangeText(getPath(doc, "summary._all.lat"));
-  const lon = rangeText(getPath(doc, "summary._all.lon"));
+  const geologyClasses = listOf(getPath(doc, "summary._all.geologic_classes"));
+  const geologyTypes = listOf(getPath(doc, "summary._all.geologic_types"));
+  const lithologies = listOf(getPath(doc, "summary._all.lithologies"));
+  const geologyDefined = [geologyClasses, geologyTypes, lithologies].filter(
+    (list) => list.length > 0,
+  ).length;
+  const geologyClamp = geologyDefined === 3 ? 1 : geologyDefined === 2 ? 2 : 5;
+
+  const geologic = unionOf(doc, [
+    "plate_blocks",
+    "terranes",
+    "geological_province_sections",
+    "tectonic_settings",
+  ]);
+  const geographic = unionOf(doc, [
+    "continent_ocean",
+    "country",
+    "ocean_sea",
+    "region",
+    "village_city",
+    "location",
+    "location_type",
+    "location_alternatives",
+  ]);
+
+  const methodCodes = listOf(getPath(doc, "summary._all.method_codes"));
+  const citations = listOf(
+    getPath(doc, "summary._all.citation_dois") ?? getPath(doc, "summary._all.citations"),
+  ).filter((citation) => !THIS_STUDY.test(citation));
   const age = rangeText(getPath(doc, "summary._all.ages") ?? getPath(doc, "summary._all.age"));
   const ageUnit = firstString(getPath(doc, "summary._all.age_unit"));
-  const intensity = rangeText(
+  const intensities = listOf(
     getPath(doc, "summary._all.int_abs") ?? getPath(doc, "summary._all.intensities"),
-  );
-  const citations = joined(
-    getPath(doc, "summary._all.citation_dois") ?? getPath(doc, "summary._all.citations"),
-  );
+  )
+    .map(Number)
+    .filter((n) => Number.isFinite(n));
+  const markers = markersOf(doc, level);
 
   const contributionSummary = getPath(doc, "summary.contribution");
   const levelBlock = level.table !== "contribution" ? getPath(doc, `summary.${level.table}`) : null;
 
+  // Legacy renderDownloadButton/renderLinks only exist on contribution cards.
+  const isContribution = level.table === "contribution";
+
   const cells = (
     <>
-      {/* 1. Download (100px cell, button height 100px, padding 20px 0) */}
-      {id ? (
+      {/* 1. Download (100px cell; basic tiny fluid compact icon header button, height 100px) */}
+      {!isContribution ? null : id ? (
         <Cell width={100}>
           <a
             href={siteUrl(`/api/contributions/${id}/download${keyParam}`)}
             download
-            className="block w-full rounded-sm border border-node text-center font-medium text-node hover:bg-node-soft"
-            style={{ padding: "20px 0", height: 100 }}
+            className="block w-full rounded-sm border border-node bg-white text-center text-[13px] font-bold text-node hover:bg-node-soft"
+            style={{ padding: "20px 0", height: 100, lineHeight: 1 }}
           >
-            <span aria-hidden="true" className="block">
-              <Icon name="file-text" size="large" />
+            <span aria-hidden="true" className="mb-[0.25em] block">
+              <Icon name="file-text" style={{ width: 42, height: 42 }} />
             </span>
             Download
           </a>
@@ -353,7 +488,7 @@ export function ResultItem({
       )}
 
       {/* 2. Links (200px) */}
-      {id ? (
+      {!isContribution ? null : id ? (
         <Cell width={200}>
           <b>{config.key} Contribution Link:</b>
           <p className="m-0 overflow-hidden text-ellipsis">
@@ -405,64 +540,80 @@ export function ResultItem({
         <NoDataCell label="Link" width={200} />
       )}
 
-      {/* 3. Counts (135px table, right-aligned counts, line-height 1) */}
+      {/* 3. Counts (135px table, right-aligned counts, singular/plural labels, line-height 1);
+          legacy renders the (possibly empty) table, never a placeholder */}
       {counts.length > 0 ? (
         <Cell width={135}>
           <table style={{ lineHeight: 1 }}>
             <tbody>
               {counts.map(({ entry, count }) => (
                 <tr key={entry.name}>
-                  <td className="pr-1 text-right font-medium">{abbreviateNumber(count)}</td>
-                  <td className="text-gray-600">{entry.name}</td>
+                  <td className="text-right" style={{ padding: 1 }}>
+                    {abbreviateNumber(count)}
+                  </td>
+                  <td style={{ padding: 1 }}>
+                    {` ${count === 1 ? singularize(entry.name) : entry.name}`}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Cell>
       ) : (
-        <NoDataCell label="Count" width={135} />
+        <Cell width={135}>{null}</Cell>
       )}
 
-      {/* 4. Map thumbnail placeholder (100px) */}
-      <NoDataCell label="Map" width={100} />
+      {/* 4. Map thumbnail (100px globe) */}
+      {markers.length > 0 ? (
+        <Cell width={100}>
+          <MapThumbnail markers={markers} width={100} height={100} />
+        </Cell>
+      ) : (
+        <NoDataCell label="Geospatial" width={100} />
+      )}
 
       {/* 5. Plot thumbnail — plugin slot */}
       {extraCell ?? <NoDataCell label="Plot" width={125} />}
 
-      {/* 6. Geo (125px) */}
-      {lat || lon ? (
+      {/* 6. Geo (125px): geologic units then geographic names */}
+      {geologic.length > 0 || geographic.length > 0 ? (
         <Cell width={125} wrap>
-          <b>Geographic:</b>
-          <br />
-          {lat && <>Lat {lat}</>}
-          {lat && lon && <br />}
-          {lon && <>Lon {lon}</>}
+          {geologic.length > 0 && (
+            <ClampedField label="Geologic:" lines={geographic.length > 0 ? 2 : 5}>
+              {geologic.join(", ")}
+            </ClampedField>
+          )}
+          {geographic.length > 0 && (
+            <ClampedField label="Geographic:" lines={geologic.length > 0 ? 2 : 5}>
+              {geographic.join(", ")}
+            </ClampedField>
+          )}
         </Cell>
       ) : (
         <NoDataCell label="Geographic" width={125} />
       )}
 
-      {/* 7. Geology (125px) */}
-      {geologyClasses || geologyTypes || lithologies ? (
+      {/* 7. Geology (125px): Class / Type / Lithology */}
+      {geologyDefined > 0 ? (
         <Cell width={125} wrap>
-          {geologyClasses && (
-            <div className="line-clamp-2">
-              <b>Class:</b> {geologyClasses}
-            </div>
+          {geologyClasses.length > 0 && (
+            <ClampedField label="Class:" lines={geologyClamp}>
+              {geologyClasses.join(", ")}
+            </ClampedField>
           )}
-          {geologyTypes && (
-            <div className="line-clamp-2">
-              <b>Type:</b> {geologyTypes}
-            </div>
+          {geologyTypes.length > 0 && (
+            <ClampedField label="Type:" lines={geologyClamp}>
+              {geologyTypes.join(", ")}
+            </ClampedField>
           )}
-          {lithologies && (
-            <div className="line-clamp-2">
-              <b>Lithology:</b> {lithologies}
-            </div>
+          {lithologies.length > 0 && (
+            <ClampedField label="Lithology:" lines={geologyClamp}>
+              {lithologies.join(", ")}
+            </ClampedField>
           )}
         </Cell>
       ) : (
-        <NoDataCell label="Geology" width={125} />
+        <NoDataCell label="Geologic" width={125} />
       )}
 
       {/* 8. Age (120px) */}
@@ -478,36 +629,74 @@ export function ResultItem({
       )}
 
       {/* 9. Intensity (75px) */}
-      {intensity ? (
+      {intensities.length > 0 ? (
         <Cell width={75} wrap>
-          <b>Intensity:</b>
-          <br />
-          {intensity}
+          {Math.min(...intensities) === Math.max(...intensities) ? (
+            <>
+              <b>Int:</b>
+              <br />
+              {formatIntensity(intensities[0])}
+              <br />
+            </>
+          ) : (
+            <>
+              <b>Min Int:</b>
+              <br />
+              {formatIntensity(Math.min(...intensities))}
+              <br />
+              <b>Max Int:</b>
+              <br />
+              {formatIntensity(Math.max(...intensities))}
+              <br />
+            </>
+          )}
+          <b>N: </b>
+          {intensities.length}
         </Cell>
       ) : (
         <NoDataCell label="Intensity" width={75} />
       )}
 
       {/* 10. Method Codes (125px) */}
-      {methodCodes ? (
+      {methodCodes.length > 0 ? (
         <Cell width={125} wrap>
-          <div className="line-clamp-4">
-            <b>Method Codes:</b> {methodCodes}
-          </div>
+          <ClampedField label="Method Codes:" lines={5}>
+            {methodCodes.join(", ")}
+          </ClampedField>
         </Cell>
       ) : (
-        <NoDataCell label="Method Codes" width={125} />
+        <NoDataCell
+          label={
+            <>
+              Method
+              <br />
+              Codes
+            </>
+          }
+          width={125}
+          dataWord={false}
+        />
       )}
 
       {/* 11. Citations (125px) */}
-      {citations ? (
+      {citations.length > 0 ? (
         <Cell width={125} wrap>
-          <div className="line-clamp-4">
-            <b>Citations:</b> {citations}
-          </div>
+          <ClampedField label="Citations:" lines={5}>
+            {citations.join(", ")}
+          </ClampedField>
         </Cell>
       ) : (
-        <NoDataCell label="Citations" width={125} />
+        <NoDataCell
+          label={
+            <>
+              Additional
+              <br />
+              Citations
+            </>
+          }
+          width={125}
+          dataWord={false}
+        />
       )}
     </>
   );

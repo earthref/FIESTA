@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton } from "../components/icon-button";
-import { contributionId, ResultItem } from "../components/result-item";
+import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
 import { Icon } from "../components/ui/icon";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
@@ -162,13 +162,14 @@ export function HomePage() {
         {recent.error && <ErrorMessage error={recent.error} />}
         {recent.data && (
           <>
-            <div className="divide-y divide-gray-200">
+            <div style={{ margin: "1em 0" }}>
               {recent.data.results.map((doc, index) => (
                 <div
                   // biome-ignore lint/suspicious/noArrayIndexKey: static list of 7, replaced wholesale on refetch
                   key={`${contributionId(doc) ?? "recent"}-${index}`}
                 >
                   <ResultItem doc={doc} level={contributionLevel} />
+                  {recent.data.results.length > 1 && <ResultDivider />}
                 </div>
               ))}
             </div>

@@ -56,6 +56,23 @@ export function titleCase(name: string): string {
     .join(" ");
 }
 
+/** Naive English singular: "classes" → "class", "lithologies" → "lithology". */
+export function singularize(word: string): string {
+  if (/ies$/i.test(word)) return word.replace(/ies$/i, "y");
+  if (/(ss|sh|ch|x|z)es$/i.test(word)) return word.replace(/es$/i, "");
+  if (/[^s]s$/i.test(word)) return word.slice(0, -1);
+  return word;
+}
+
+/** Legacy filter titles are singular: method_codes → "Method Code". */
+export function facetTitle(name: string): string {
+  return name
+    .split(/[_\s]+/)
+    .map(singularize)
+    .map(titleCase)
+    .join(" ");
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB"];

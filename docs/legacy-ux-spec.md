@@ -113,6 +113,16 @@ CSS facts:
 - **View container** (`renderView`, `:3223-3230`): inline `borderLeft:1px solid #d4d4d5`; height = `state.height − tabs.outerHeight()`; width = `state.width`.
 - **Scroller** (`search_summaries_view.jsx:12`): `{overflowY:scroll; background:white; padding:0 1em; borderRadius:0; boxShadow:none}`. Default pageSize 5.
 
+### Deliberate deviations (search page, FIESTA rebuild)
+
+- **Sort options** are the legacy list, served by `GET /api/search/{table}?sort=…`. Legacy "Largest ID First" sorted `summary.contribution.id` *ascending* (`search.jsx:115`, a bug); FIESTA sorts it descending so the label is true. "Recently Published" and "Most Cited" sort on `_reference.year` / `_reference.n_citations`, which are empty until reference enrichment (ROADMAP C6) lands — they fall back to newest first.
+- **Page size** is 10 (legacy 5) with the same infinite-scroll behaviour; a "Load More" button remains as the no-IntersectionObserver fallback.
+- **Card header fallback** is "Contribution {id}" instead of legacy "Unknown" when a hit has no `_reference.citation` (no Crossref enrichment yet).
+- **Download Results** downloads the top contribution file (no bulk-zip endpoint yet, ROADMAP); legacy zipped every matching contribution.
+- **Level tabs** omit legacy "Experiments" until the derived experiment docs exist (ROADMAP C4).
+- **Filter sidebar** shows only the YAML `facets` (bucket filters); the legacy range filters (Publication Year, Geospatial, Age, Intensity) and with/without-data toggles are not ported yet. Facet titles are the singular of the facet name ("Method Code"), matching legacy titles.
+- **Map thumbnail** uses one representative `_geo_point` per level (the summarizer's) rather than every distinct point/envelope of the legacy summary.
+
 ### RESULT ITEM CARD (`search_summaries_list_item.jsx`) — most detailed
 
 ```
