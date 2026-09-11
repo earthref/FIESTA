@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { type CSSProperties, type ReactNode, useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type { SearchLevel, SearchResult } from "../lib/types";
@@ -177,7 +177,7 @@ function ClampedField({
 }) {
   return (
     <span>
-      <b style={{ lineHeight: "1.4285em" }}>{label}</b>
+      <b>{label}</b>
       <div
         className="overflow-hidden"
         style={{
@@ -227,6 +227,18 @@ export function ResultCardFrame({
   const { data: config } = useNodeConfig();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  // The caret tab hangs 1em below the card box (negative margin), so leaving
+  // the card fires before the pointer reaches it; hide on a delay like legacy.
+  const hideTimer = useRef<number | undefined>(undefined);
+  const showCaret = () => {
+    window.clearTimeout(hideTimer.current);
+    setHovered(true);
+  };
+  const hideCaret = () => {
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => setHovered(false), 500);
+  };
+  useEffect(() => () => window.clearTimeout(hideTimer.current), []);
 
   const id = contributionId(doc);
   const citation = citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown");
@@ -244,8 +256,8 @@ export function ResultCardFrame({
     <div
       className="relative flow-root text-left"
       style={{ lineHeight: "16px", color: "rgba(0,0,0,.87)" }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={showCaret}
+      onMouseLeave={hideCaret}
     >
       {/* Header/citation row (accordion trigger) */}
       <button
@@ -322,6 +334,7 @@ export function ResultCardFrame({
         type="button"
         tabIndex={-1}
         aria-hidden="true"
+        onMouseEnter={showCaret}
         onClick={() => setOpen(!open)}
         className={cx(
           "relative z-10 block h-[1.5em] w-[10em] rounded-b-sm border border-gray-300 bg-[#e0e1e2] p-[0.25em] text-center text-[10px] leading-none text-gray-600 hover:bg-[#cacbcd]",
@@ -510,9 +523,9 @@ export function ResultItem({
 
       {/* 2. Links (200px) */}
       {!isContribution ? null : id ? (
-        <Cell width={200} className="leading-[1.4285em]">
+        <Cell width={200}>
           <b>{config.key} Contribution Link:</b>
-          <p className="m-0 overflow-hidden text-ellipsis">
+          <p className="m-0 overflow-hidden text-ellipsis leading-[1.4285em]">
             <Link
               to="/contributions/$id"
               params={{ id }}
@@ -525,7 +538,7 @@ export function ResultItem({
           {config.doi_prefix && (
             <>
               <b>EarthRef Data DOI:</b>
-              <p className="m-0 overflow-hidden text-ellipsis">
+              <p className="m-0 overflow-hidden text-ellipsis leading-[1.4285em]">
                 {isActivated ? (
                   <a
                     href={`https://dx.doi.org/${config.doi_prefix}/${id}`}
@@ -544,7 +557,7 @@ export function ResultItem({
           {publicationDoi && (
             <>
               <b>Publication DOI:</b>
-              <p className="m-0 overflow-hidden text-ellipsis">
+              <p className="m-0 overflow-hidden text-ellipsis leading-[1.4285em]">
                 <a
                   href={`https://dx.doi.org/${publicationDoi}`}
                   target="_blank"

@@ -79,7 +79,7 @@ export function Footer() {
         <div className="flex">
           <a
             href={`mailto:webmaster@earthref.org?subject=[${config?.key ?? "FIESTA"} Help]`}
-            className="inline-flex items-center whitespace-nowrap self-start"
+            className="inline-block whitespace-nowrap self-start"
             style={basicButtonStyle("var(--node-color)")}
           >
             <Icon
@@ -95,14 +95,19 @@ export function Footer() {
             href="https://github.com/earthref/FIESTA#readme"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center whitespace-nowrap self-start"
+            className="inline-block whitespace-nowrap self-start"
             style={basicButtonStyle(earthrefColor)}
           >
             Powered by
             <img
               src={siteUrl("/FIESTA.png")}
               alt=""
-              style={{ height: "1.75em", margin: "-1.25em 0.5em -0.5em" }}
+              style={{
+                display: "inline",
+                verticalAlign: "baseline",
+                height: "1.75em",
+                margin: "-1.25em 0.5em -0.5em",
+              }}
             />
             <b>FIESTA</b>
           </a>

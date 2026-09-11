@@ -105,7 +105,7 @@ export function NodeMenu({ fullWidth = false }: { fullWidth?: boolean }) {
 
   return (
     <nav aria-label="Node" className="hidden lg:block">
-      <div className={cx("block", fullWidth ? "px-[2em]" : "mx-auto max-w-6xl px-4")}>
+      <div className={cx("block", fullWidth ? "px-[2em]" : "er-container")}>
         <div
           className="flex w-full"
           style={{

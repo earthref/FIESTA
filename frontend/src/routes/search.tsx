@@ -78,15 +78,23 @@ const RELEVANCE_OPTION = { value: "relevance", label: "Most Relevant First" };
  * tab is a top/left/right-bordered, top-rounded item overlapping it by 1px.
  * Inactive items are node-colored links (legacy `styles.a`). */
 function tabItemStyle(active: boolean, small = false, activeBg = "#fff"): CSSProperties {
+  const sideColor = active ? TAB_BORDER : "transparent";
+  const sidePad = small ? "1.14285714em" : "1.42857143em";
   return {
     fontSize: small ? "0.92857143rem" : "1rem",
     lineHeight: "1em",
-    padding: small ? "0.92857143em 1.14285714em" : "0.92857143em 1.42857143em",
+    // Longhands only: React removes a longhand that disappears from the style
+    // object without restoring the shorthand it overrode.
+    paddingTop: "0.92857143em",
+    paddingRight: sidePad,
+    paddingBottom: active && !small ? "calc(0.92857143em + 1px)" : "0.92857143em",
+    paddingLeft: sidePad,
     color: active ? "rgba(0,0,0,.95)" : "var(--node-color)",
     fontWeight: active ? 700 : 400,
     background: active ? activeBg : "transparent",
-    ...(active && !small ? { paddingBottom: "calc(0.92857143em + 1px)" } : {}),
-    border: `1px solid ${active ? TAB_BORDER : "transparent"}`,
+    borderTop: `1px solid ${sideColor}`,
+    borderRight: `1px solid ${sideColor}`,
+    borderLeft: `1px solid ${sideColor}`,
     borderBottom: active ? `1px dashed ${TAB_BORDER}` : "1px solid transparent",
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,

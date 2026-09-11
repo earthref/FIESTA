@@ -353,6 +353,32 @@ ui grid divided → Grid.Row
 - **Recent contributions**: `SearchDividedList pageSize={7}` of `SearchSummariesListItem table="contribution"` (`:249-257`), then a `small card` "View More…" with `margin:0`.
 - **News column** = `<News/>` component (`home_news`, `:270`).
 
+### Measured metrics (home page, 2026-09-11, 1400×900 vs magic.earthref.org/magic)
+
+- **Container**: `ui container` = 1127px at ≥1200px (933px ≥992, 723px ≥768,
+  else 1em side margins) — `.er-container` in `index.css`; the header and node
+  menu share it. `ui grid divided`: margin −1rem, row padding 1rem 0, twelve/four
+  wide columns (75%/25%) with 1rem side padding; the news column's divider is a
+  `−1px 0 0 0` box-shadow, and it opens with a `ui divider` (margin 1rem 0).
+- **Primary cards** (`ui three cards`): wrapper margin −.875em −1em, cards
+  margin .875em 1em, width calc(33.33% − 2em), 14px, padding .875em, bg
+  #f8f8f9 + 1px inset node-colored shadow, radius .2857rem; 54px base icon
+  (3× the 18px header) with a .45em corner icon, 16px below it the 18px/700
+  title (line 23.14px, margin-bottom .5rem), then the 14px/1.2 #555 sub header.
+  158px tall. Hover bg #f0f0f0.
+- **Tiny card** ("Poles / View", plugin `homeCards`): full width, padding .786em,
+  two 18px header lines, 68px tall, .875em below the cards.
+- **Divider headers**: 24px/700 on a 24px line, margin calc(2rem − .1428em) 0
+  1rem (first: bottom 0).
+- **Resource cards** (`ui nine cards`): 10px cards, wrapper margin 0 −.5em
+  −.875em, cards margin .875em .5em, width calc(11.11% − 1em) (84.7px),
+  transparent, 32px icon, 5px gap, 10.71px/700 small header on 13.78px lines.
+  82px tall.
+- **View more**: full-width `small card` (15px), padding .786em, one 15px/700
+  title line, 44px tall, 1em below the list.
+- **News**: h3 18px/700 (margin calc(2rem − .1428em) 0 1rem), p 14px with
+  1em bottom margin.
+
 ---
 
 ### Key file:line index for the developer

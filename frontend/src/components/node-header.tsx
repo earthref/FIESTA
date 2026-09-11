@@ -12,7 +12,7 @@ export function NodeHeader({ fullWidth = false }: { fullWidth?: boolean }) {
 
   return (
     // Legacy `.full-width` layout variant (padding 0 2em) frames the header too.
-    <div className={fullWidth ? "w-full px-[2em]" : "mx-auto w-full max-w-6xl px-4"}>
+    <div className={fullWidth ? "w-full px-[2em]" : "er-container"}>
       <div>
         <Link
           to="/"
