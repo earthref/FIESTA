@@ -1,11 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  lazy,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type { SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath, singularize } from "../lib/utils";
 import { type MapMarker, MapThumbnail, markersFromGeoPoint } from "./map-thumbnail";
 import { Icon } from "./ui/icon";
+import { Modal } from "./ui/modal";
+import { PageSpinner } from "./ui/spinner";
+
+// echarts + echarts-gl live in a lazily loaded chunk (shared with the poles plugin).
+const GlobeView = lazy(() => import("./globe-view"));
 
 /** Fallback name columns, tried in order when a level's own key column is absent. */
 const NAME_COLUMNS = [
@@ -213,9 +226,17 @@ export interface ResultCardFrameProps {
   level: SearchLevel;
   cells: ReactNode;
   expanded?: ReactNode;
+  /** Collapsed row height cap (one row of blocks); 105px default. */
+  collapsedMaxHeight?: number;
 }
 
-export function ResultCardFrame({ doc, level, cells, expanded }: ResultCardFrameProps) {
+export function ResultCardFrame({
+  doc,
+  level,
+  cells,
+  expanded,
+  collapsedMaxHeight = 105,
+}: ResultCardFrameProps) {
   const { data: config } = useNodeConfig();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -298,10 +319,17 @@ export function ResultCardFrame({ doc, level, cells, expanded }: ResultCardFrame
         </span>
       </button>
 
-      {/* Flex data row. Legacy clipped the collapsed row at 105px so blocks past
-          the pane's width were cut off; FIESTA wraps them so every block renders
-          (docs/legacy-ux-spec.md deviations). */}
-      <div className="flex flex-wrap font-normal" style={{ marginRight: "-1em" }}>
+      {/* Flex data row. Legacy clipped the collapsed row at 105px mid-block;
+          FIESTA wraps the blocks and shows only the first row while collapsed,
+          every row when expanded (docs/legacy-ux-spec.md deviations). */}
+      <div
+        className="flex flex-wrap font-normal"
+        style={
+          open
+            ? { marginRight: "-1em" }
+            : { marginRight: "-1em", maxHeight: collapsedMaxHeight, overflow: "hidden" }
+        }
+      >
         {cells}
       </div>
 
@@ -417,10 +445,17 @@ export function ResultItem({
   extraCell?: ReactNode;
 }) {
   const { data: config } = useNodeConfig();
+  const [mapOpen, setMapOpen] = useState(false);
   if (!config) return null;
 
   const id = contributionId(doc);
   const isActivated = doc._is_activated !== false;
+  // The poles plugin ships an equirectangular relief texture for its globes;
+  // reuse it for the map modal when that plugin is active on this node.
+  const polesConfig = config.plugins?.poles as { has_base_texture?: boolean } | undefined;
+  const baseTexture = polesConfig?.has_base_texture
+    ? siteUrl("/api/plugins/poles/base-texture")
+    : undefined;
   const keyParam = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
   const publicationDoi = firstString(getPath(doc, "summary.contribution._reference.doi"));
 
@@ -579,10 +614,31 @@ export function ResultItem({
         <Cell width={135}>{null}</Cell>
       )}
 
-      {/* 4. Map thumbnail (100px globe) */}
+      {/* 4. Map thumbnail (100px globe); click opens the 3D globe modal */}
       {markers.length > 0 ? (
         <Cell width={100} style={{ fontSize: 14, height: 104 }}>
-          <MapThumbnail markers={markers} width={100} height={100} />
+          <button
+            type="button"
+            onClick={() => setMapOpen(true)}
+            aria-label="Show the locations on a globe"
+            className="block cursor-pointer rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+          >
+            <MapThumbnail markers={markers} width={100} height={100} />
+          </button>
+          {mapOpen && (
+            <Modal
+              open
+              onClose={() => setMapOpen(false)}
+              title={`${citationOf(doc) ?? (id ? `Contribution ${id}` : "Unnamed")} - Map`}
+              wide
+            >
+              <div style={{ height: "60vh", minHeight: 320 }}>
+                <Suspense fallback={<PageSpinner label="Loading globe…" />}>
+                  <GlobeView markers={markers} baseTexture={baseTexture} color={config.color} />
+                </Suspense>
+              </div>
+            </Modal>
+          )}
         </Cell>
       ) : (
         <NoDataCell label="Geospatial" width={100} />

@@ -114,6 +114,7 @@ export function FaIcon({
         width: `${width / height}em`,
         display: "inline-block",
         verticalAlign: "-0.125em",
+        ...(outline ? { overflow: "visible" } : {}),
         ...style,
       }}
     >
