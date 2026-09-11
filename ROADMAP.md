@@ -35,8 +35,9 @@ on the pages people actually use, and (4) a deploy and cutover story. In that or
 ## The thesis
 
 - **One codebase, any node, one YAML per node.** Nothing node-specific in core code.
-- **The bucket is the record.** Postgres and OpenSearch are rebuildable projections.
-  Every feature must survive `fiesta rebuild --yes`.
+- **Postgres owns application state; the bucket preserves contribution history;
+  OpenSearch is a rebuildable search projection.** New direction 2026-09-11; the
+  implementation and recovery contract must change through Phase M below.
 - **One API.** The SPA and external clients hit the same versioned surface,
   `/v1/{node}/...`. Frontend contributors point at the live API with their EarthRef
   login and need no infrastructure; backend contributors run one API locally with seed
@@ -54,6 +55,11 @@ on the pages people actually use, and (4) a deploy and cutover story. In that or
 4. **Phase D — UI parity and the stub pages.**
 5. **Phase E — deployment and cutover.** Needs operator decisions first.
 6. **Phase F — keep it up.** Tests for routers, branch protection, dependency bumps.
+
+**Added 2026-09-11: Phase M — data migration and redesign.** Start the data contract
+alongside Phase A; build revision storage and reliable indexing before online
+editing, then migrate and continuously sync legacy data. M is a prerequisite for
+Phase E's production cutover, with node pilots possible before the full migration.
 
 Before any of it: get `CI` green on `main` (the migration 0002 fix and the log-dump fix
 from 2026-09-10) and untrack `.claude/settings.proposed.json`.
@@ -98,9 +104,10 @@ Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend
 
 ## Phase B — Contributor dev experience
 
-- [ ] **B1 `fiesta seed`.** A demo account plus a few contributions per node from
-      fixture files (satisfying the required MagIC 3.0 columns), processed inline so
-      search works immediately. `make seed`. Idempotent.
+- [ ] **B1 `fiesta seed`.** Implement with M0: per-node YAML selects checked-in
+      seed manifests and fixtures, including demo accounts and representative
+      contribution histories. `make seed` waits for processing so search works
+      immediately. Idempotent; no MARFIK or AWS connection required.
 - [ ] **B2 Frontend-only mode against live data.** `FIESTA_NODE=magic
       VITE_API_URL=https://api.earthref.org make frontend-dev` with an EarthRef login.
       Needs the live API to allow the localhost Vite origin in CORS — **BLOCKED
@@ -145,14 +152,186 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
       still need a pass at phone width.
 - [ ] **D4 Poles globe** per `docs/poles-globe-spec.md` — check what remains.
 
+## Phase M — Data migration and redesign — **DECIDED 2026-09-11**
+
+Direction: make Postgres the authoritative data layer for accounts, private
+workspaces, user settings, permissions, and contribution management; synchronize
+searchable contribution projections to OpenSearch. Move every node's legacy S3
+contributions into the shared FIESTA bucket, preserving history and attachments,
+with repeatable incremental imports until cutover. The SPA's online editor,
+uploads, and external FIESTA API clients must use the same revision workflow.
+The details below are the recommended design to implement, not shipped behavior.
+
+**Local development is a requirement — added 2026-09-11.** Developers must be able
+to build and exercise Phase M entirely against Docker Postgres, OpenSearch, MinIO,
+and Mailpit, with the API, worker, and selected node frontends. No MARFIK PG/OS,
+AWS credentials, production account, or live contribution download is required.
+Image/package downloads during initial setup are separate from runtime service
+dependencies. Live-API frontend development remains optional.
+
+Put a seed selector in each node YAML, for example
+`development: {seed_manifest: magic/seeds/manifest.yaml}`, resolved relative to
+that YAML. Keep the manifest, small contribution files, and attachments under
+`config/<node>/seeds/`; reuse shared synthetic account fixtures where appropriate.
+This is a proposed config extension, not a currently supported field. Seed
+manifests describe stable fixture IDs, account/workspace roles, settings, revision
+sequences, files, and expected validation/publication states. Include valid public
+data, private drafts, failing validation, multiple revisions/published versions,
+attachments, and representative enabled plugins for each node. Use synthetic or
+redistributable public data, never production credentials or private user data.
+
+**Implementation inputs.** M0–M4 can start using repository data models and
+synthetic fixtures without production access. Establish workspace roles and
+sharing semantics, the settings to support, editor scope (start with explicit
+saves and optimistic concurrency), and deletion/history retention before those
+contracts are finalized. M5–M6 additionally need a per-node source inventory and
+representative legacy metadata/file exports: bucket/key conventions, identity and
+ownership mappings, version/DOI links, visibility, and how updates/deletions are
+recorded. Infer these from the legacy repositories first and record remaining
+ambiguities. Build import/sync against local legacy fixtures before a live dry
+run. Production rehearsal and M7 need scoped source-read/destination-write access,
+sizing, backup/restore targets, and an agreed cutover/rollback window; track these
+operator inputs in `docs/OPERATOR_TODO.md` when preparing the live migration.
+
+**Starting point and change in contract.** Postgres already stores shared users,
+node-scoped contributions, and validation results. This is an extension and
+redesign, not the first addition of Postgres. Current storage overwrites a
+contribution's file and manifest, and `fiesta rebuild` restores contribution rows
+and placeholder accounts from manifests. That cannot preserve full account state,
+settings, workspace permissions, or private edit history. This direction supersedes
+the roadmap's former "Postgres is a projection" rule; update the matching rule in
+`CLAUDE.md`, README, storage/rebuild documentation, and recovery tooling when
+implementing M1. Bucket-only recovery must no longer claim to restore the whole app.
+
+**Recommended ownership and artifact storage.**
+
+| Store | Responsibility |
+|---|---|
+| Postgres | Accounts/authentication, settings, workspace membership and permissions, contribution identity and published-version links, immutable revision metadata, current draft/published pointers, audit events, processing status, artifact references, and transactional indexing outbox. |
+| FIESTA S3 bucket | Immutable original uploads, canonical text, supplemental documents, images and other assets; revision manifests identifying the complete file set by key/checksum; versioned validation reports and derived indexing artifacts. All keys scoped by node and contribution. |
+| OpenSearch | Denormalized scientific search documents derived from selected revisions. No account/settings authority; private workspace listing and editing work without it. Never copy credentials or account settings into search documents. |
+
+**Recommendation: store both validation results and summarized indexing documents
+in the bucket alongside the contribution's revision.** Keep validation runs as
+historical evidence of what passed or failed at that time; a later validator run
+creates a new report and does not replace the original. Keep summaries and plugin
+documents as regenerable artifacts, useful for inspection and faster reindexing.
+Postgres holds compact status/counts and artifact pointers for UI/API queries.
+Neither artifact is editable source data or the mechanism for undo.
+
+Use a layout such as
+`<node>/contributions/<id>/revisions/<revision-id>/manifest.json`, with immutable
+file references and `artifacts/<run-id>/` for reports and compressed indexing
+documents. Record revision/input checksums, data-model and vocabulary versions,
+validator/summarizer/plugin versions, configuration hash, artifact schema version,
+and run timestamps. Preserve or identify the exact processing inputs. Reuse a
+summary only when its provenance matches the requested index build; otherwise
+regenerate it. Apply current visibility from Postgres when indexing, never from
+an old cached summary. Keep private files, manifests, reports, and summaries behind
+the same API authorization checks.
+
+- [ ] **M0 Docker development and config-driven seeds.** Deliver alongside B1
+      before the new workflows. Reuse the existing Compose infrastructure and
+      converge with Phase A's single API/worker. Provide documented
+      `make up FIESTA_NODE=magic,cdr` and `make seed FIESTA_NODE=magic,cdr` workflows
+      using only local services, with local demo login and deterministic substitutes
+      for DOI minting, OAuth, and reference enrichment. Keep local endpoint settings
+      separate from production configuration; seed/reset commands must refuse
+      non-development targets and never inherit MARFIK/AWS endpoints silently.
+      Seed through the contribution services so revisions, artifacts, validation,
+      and indexing follow real workflows. Repeated seeds must not duplicate data
+      or overwrite developer edits; make fixture reset a separate, explicit local
+      operation. Add synthetic legacy buckets and metadata snapshots to exercise
+      initial import, subsequent changes/deletions, and interrupted/resumed sync.
+      Run these workflows in CI with external service access disabled after setup,
+      and validate every node's seed manifest and representative fixtures.
+- [ ] **M1 Postgres authority and recovery.** Model shared account settings and
+      node/workspace permissions, contribution revisions, draft/published pointers,
+      and audit history. Route management reads/writes and authorization through
+      Postgres. Separate index rebuild from explicit data restoration; index
+      rebuild must not recreate users or overwrite application state. Design and
+      rehearse Postgres backup/PITR plus bucket recovery, including reconciliation
+      of revision references after restore. PostgreSQL documents the required
+      base backups and WAL archive in its [PITR guide](https://www.postgresql.org/docs/16/continuous-archiving.html).
+- [ ] **M2 Immutable revisions and undo.** Every accepted edit, upload, attachment
+      addition/removal, and contribution metadata change creates a revision with
+      parent, actor, timestamp, operation, and complete snapshot references.
+      Reuse unchanged immutable blobs. Undo creates a new revision restoring an
+      earlier snapshot; published versions stay immutable and retain legacy
+      `id`/`previous_id`/DOI semantics separately from private draft revisions.
+      Record permission/publication events separately from content undo so undo
+      cannot restore obsolete access grants. Retain all accepted private revisions;
+      define explicit deletion/retention rules and never garbage-collect blobs
+      referenced by retained history. Enable S3 Versioning as additional object
+      recovery protection, while application revisions group changes across files
+      and metadata ([S3 Versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html)).
+- [ ] **M3 Shared editing/upload/API workflow.** Add revision list/read/restore,
+      draft save, attachment management, upload finalization, validation, and
+      publication to `/v1/{node}/...`. Use expected-revision checks to reject
+      conflicting saves and idempotency keys for retries. Stage and verify immutable
+      objects before committing a revision and its outbox event in one Postgres
+      transaction; reconcile abandoned uploads and interrupted operations. Bind
+      validation and publication to the exact revision so stale successful
+      validation cannot publish newer unvalidated edits.
+- [ ] **M4 Durable processing and Postgres → OpenSearch sync.** Process revision
+      events asynchronously with retries, deduplication, per-contribution ordering,
+      stale-job protection, failure visibility, and reconciliation. Persist M's
+      validation/summary artifacts with provenance. Track indexing status separately
+      from whether a draft was saved or validated; OpenSearch downtime must not
+      block account management, workspace access, uploads, or editing. Reindex from
+      Postgres revision selections plus bucket data/artifacts into a new index,
+      then switch the alias. Recheck visibility against Postgres before returning
+      results, counts, facets, or downloads so indexing lag cannot expose withdrawn
+      or private data.
+- [ ] **M5 Inventory and initial legacy import.** For each configured node, map
+      source buckets/prefixes and metadata sources, count objects/bytes and versions,
+      and identify canonical files, supplemental docs, images, ownership, private
+      state, timestamps, DOIs, and version chains. Import available historical
+      versions; record missing history rather than inventing it. Preserve public
+      identifiers and links, map legacy users explicitly, and quarantine ambiguous
+      ownership as inaccessible pending resolution. Build a dry-run, resumable,
+      idempotent migration script with source-to-target mappings, checksums,
+      checkpoints, and error reports. Verify complete revision file sets before
+      committing imported metadata; retain originals and flag validation failures
+      without silently altering legacy published data.
+- [ ] **M6 Incremental legacy sync until cutover.** Extend that script to discover
+      new/updated files and metadata-only changes (including visibility, ownership,
+      publication, and deletions). Use source version IDs/checksums and metadata
+      fingerprints, overlap scan windows, and periodic full reconciliation; do not
+      assume ETags are content hashes. Append changed imports as revisions and
+      record tombstones without erasing history. Keep legacy authoritative per
+      node until cutover; pilot edits use isolated copies so sync cannot overwrite
+      FIESTA edits. Report lag, changed/skipped/failed contributions, bytes, and
+      unresolved mappings after every run.
+- [ ] **M7 Rehearsal and cutover gate.** Pilot representative public/private,
+      multi-version, and attachment-heavy contributions for every node. Reconcile
+      inventories/checksums, owners, visibility, DOIs, version chains, downloads,
+      validation, and search parity. Prepare a per-node runbook: freeze legacy
+      writes, final delta and reconciliation, drain indexing, switch reads/writes,
+      then disable legacy sync. Preserve legacy sources through an agreed rollback
+      window. Rollback after FIESTA accepts writes requires preserving/replaying
+      those revisions, not just switching traffic back. Coordinate live access,
+      write freezes, and cutover approvals through `docs/OPERATOR_TODO.md`.
+
+Acceptance: a fresh checkout starts and seeds selected nodes in Docker without
+MARFIK/AWS access, supports local login/edit/upload/undo/search, and repeats seed
+without damaging developer changes; every node's inventory reconciles with explicit exceptions; repeated
+syncs neither duplicate nor lose changes; original and historical files download
+correctly; API and SPA saves share conflict/undo behavior; stale validation cannot
+publish another revision; private access remains correct during indexing lag;
+management and editing work with OpenSearch stopped; indexing catches up after
+restart; a restore drill recovers accounts, settings, permissions, revisions, and
+attachments before rebuilding search. No unresolved ownership or privacy mismatch
+at cutover.
+
 ## Phase E — Deployment and cutover
 
 Every item here starts with a human decision (hosting, credentials, DNS).
 
 - [ ] **E1 Hosting decision** and a CI deploy on push to `main` — **BLOCKED (operator)**.
-- [ ] **E2 Import the existing contributions** into the bucket layout (canonical file +
-      `manifest.json` per contribution) from the legacy stores, then `fiesta rebuild`.
-      Needs sizing: source of the files, how versions/`previous_id` map, DOIs.
+- [ ] **E2 Complete Phase M's migration and cutover gates.** Initial import,
+      incremental sync, history/attachment verification, and the final delta are
+      tracked in M5–M7; use M1's recovery contract rather than bucket-only rebuild.
 - [ ] **E3 Shared-cluster safety** — `FIESTA_INDEX_PREFIX` set, read-only Postgres
       roles per node (`scripts/pg-node-readonly-role.sql`).
 - [ ] **E4 dev.earthref.org/<Node>/** path-prefix deployment, then `earthref.org/<Node>/`
