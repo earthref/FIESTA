@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 ## A — Decisions
 
@@ -36,6 +36,25 @@ Last updated: 2026-09-10
 
 - [ ] **Where do the existing contributions live** (files + metadata) and may Claude
       read them to size the import (E2)? A read-only export is enough.
+
+## 2026-09-11 — MARFIK legacy app deploys
+
+- [ ] **Fix the deploy checkout permissions on MARFIK and re-run the four Deploy
+      workflows.** Every `main` push on 2026-09-11 failed inside
+      `/home/earthref/bin/deploy-app.sh` at "fetching origin/main": MagIC with
+      `insufficient permission for adding an object to repository database
+      .git/objects`, CDR/KArAr/KdD with `unable to append to
+      '.git/logs/refs/remotes/origin/main': Permission denied`. The runs from
+      2026-09-10 22:18 UTC succeeded, so something since then wrote to those
+      long-lived checkouts as a different user (a manual `git fetch`/`pull` as
+      root or earthref, most likely). On the host: `chown -R` each app checkout
+      back to the runner's user, then re-run the failed `Deploy` runs from the
+      Actions tab (MagIC 34620748778, CDR 34621097555, KArAr 34621148511, KDD
+      34621202148) or push an empty commit. Unblocks: the `assetUrl` fix (MagIC
+      #598 and the matching commits on the other three repos) that makes the
+      About/news/technology images, FIESTA header logo and ORCID icon render
+      under the `/MagIC` (etc.) path prefix. After: Claude checks the four
+      sites' About pages and closes this item.
 
 ## Done
 
