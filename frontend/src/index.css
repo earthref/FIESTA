@@ -24,11 +24,15 @@
     border-color: var(--color-gray-200, currentcolor);
   }
 
-  /* Legacy Semantic UI globals: Open Sans (system fallback), 1em = 14px. */
+  /* Legacy Semantic UI globals (site.variables): Open Sans, 1em = 14px,
+     body line-height 1.4285em, text rgba(0,0,0,.87). */
   html {
     font-size: 14px;
-    font-family:
-      "Open Sans", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: "Open Sans", "Helvetica Neue", Arial, Helvetica, sans-serif;
+  }
+  body {
+    line-height: 1.4285em;
+    color: rgba(0, 0, 0, 0.87);
   }
 
   /* Legacy injected per-portal anchor color (page.jsx:16-20). */
@@ -45,5 +49,5 @@
 }
 
 body {
-  @apply bg-white text-gray-900 antialiased;
+  @apply bg-white antialiased;
 }

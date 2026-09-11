@@ -1,11 +1,30 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useAuth } from "../lib/auth";
 import { useNodeConfig } from "../lib/config";
 import { PORTALS } from "../lib/portals";
 import { useLoginModal } from "./login-modal";
 import { MobileDrawer } from "./mobile-drawer";
 import { Icon } from "./ui/icon";
+
+/**
+ * Legacy `ui top fixed secondary pointing menu top-menu` (layout.jsx:89-160,
+ * measured): 40px tall, bg #F8F8F8, 2px bottom border; every item 14px/400,
+ * padding .857em 1.143em, line-height 1em, rgba(0,0,0,.87), aligned to the
+ * bottom edge with a 2px transparent border. The active portal is node-colored
+ * with a node-colored border. A sidebar (hamburger) item always comes first.
+ */
+const itemClass =
+  "flex items-center self-end whitespace-nowrap text-[rgba(0,0,0,0.87)] " +
+  "hover:bg-[rgba(0,0,0,0.05)] hover:text-[rgba(0,0,0,0.95)] focus-visible:outline-hidden " +
+  "focus-visible:ring-2 focus-visible:ring-node";
+
+const itemStyle: CSSProperties = {
+  padding: "0.85714286em 1.14285714em",
+  lineHeight: "1em",
+  margin: "0 0 -2px",
+  borderBottom: "2px solid transparent",
+};
 
 /** Fixed thin EarthRef portal bar across the very top of every page. */
 export function PortalBar() {
@@ -25,50 +44,53 @@ export function PortalBar() {
   }, [pathname]);
 
   return (
-    <div className="fixed inset-x-0 top-0 z-40 border-b border-gray-200 bg-[#F8F8F8]">
-      <div className="flex h-9 items-center gap-1 px-2">
-        {/* Narrow (<1024px): hamburger + active portal label */}
+    <div
+      className="fixed inset-x-0 top-0 z-40 bg-[#F8F8F8]"
+      style={{ borderBottom: "2px solid rgba(34,36,38,.15)", minHeight: 40 }}
+    >
+      <div className="flex items-stretch" style={{ minHeight: 38 }}>
+        {/* Sidebar button (legacy `a.item.sidebar-button` with `i.sidebar.icon`) */}
         <button
           ref={hamburgerRef}
           type="button"
           aria-label="Open menu"
           aria-expanded={drawerOpen}
           onClick={() => setDrawerOpen(true)}
-          className="flex items-center rounded-sm px-2 py-1 text-gray-700 hover:bg-gray-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node lg:hidden"
+          className={itemClass}
+          style={itemStyle}
         >
-          <Icon name="sidebar" size="large" />
+          <Icon name="sidebar" style={{ width: "1.18em", height: "1em", marginRight: 5 }} />
         </button>
+        {/* Narrow (<1024px): active portal label next to the sidebar button */}
         <Link
           to="/"
-          className="text-base font-bold lg:hidden"
-          style={{ color: config?.color ?? "inherit" }}
+          className={`${itemClass} font-bold lg:hidden`}
+          style={{ ...itemStyle, color: config?.color ?? "inherit" }}
         >
           {config?.key}
         </Link>
 
         {/* Wide (≥1024px): full portal bar */}
-        <nav aria-label="EarthRef portals" className="hidden h-full items-center lg:flex">
-          {PORTALS.map((portal) => {
+        <nav aria-label="EarthRef portals" className="hidden items-stretch lg:flex">
+          {PORTALS.map((portal, index) => {
             const active = portal.label === config?.key;
-            const className =
-              "flex h-full items-center whitespace-nowrap border-b-2 px-2 text-base hover:bg-gray-50";
             const style = {
-              color: portal.color,
-              borderBottomColor: active ? portal.color : "transparent",
-              fontWeight: active ? 700 : 500,
+              ...itemStyle,
+              ...(index === 0 ? { paddingLeft: 0 } : {}),
+              ...(active ? { color: portal.color, borderBottomColor: portal.color } : {}),
             };
             // In a multi-node local stack, cross-link to sibling nodes running
             // on this host instead of the production URLs.
             const localUrl = config?.portal_urls?.[portal.label.toLowerCase()];
             return active ? (
-              <Link key={portal.label} to="/" className={className} style={style}>
+              <Link key={portal.label} to="/" className={itemClass} style={style}>
                 {portal.label}
               </Link>
             ) : (
               <a
                 key={portal.label}
                 href={localUrl ?? portal.url}
-                className={className}
+                className={itemClass}
                 style={style}
               >
                 {portal.label}
@@ -78,7 +100,7 @@ export function PortalBar() {
         </nav>
 
         {/* User / login menu (always visible, right) */}
-        <div className="ml-auto flex shrink-0 items-center gap-1 pl-2">
+        <div className="ml-auto flex shrink-0 items-stretch">
           {user ? (
             <>
               <button
@@ -87,16 +109,19 @@ export function PortalBar() {
                   logout();
                   navigate({ to: "/" });
                 }}
-                className="whitespace-nowrap rounded-sm px-2 py-1 text-base font-medium text-gray-600 hover:bg-gray-100"
+                className={itemClass}
+                style={itemStyle}
               >
+                <Icon name="close" style={{ marginRight: "0.35714286em" }} />
                 Log Out
               </button>
               <Link
                 to="/private"
-                className="flex items-center gap-1 whitespace-nowrap rounded-sm px-2 py-1 text-base font-semibold text-node hover:bg-gray-100"
+                className={itemClass}
+                style={{ ...itemStyle, color: "var(--node-color)" }}
                 title={user.email}
               >
-                <Icon name="user" size="small" />
+                <Icon name="user" style={{ marginRight: "0.35714286em" }} />
                 {user.name}
               </Link>
             </>
@@ -104,9 +129,10 @@ export function PortalBar() {
             <button
               type="button"
               onClick={openLogin}
-              className="flex items-center gap-1 whitespace-nowrap rounded-sm px-2 py-1 text-base font-semibold text-node hover:bg-gray-100"
+              className={itemClass}
+              style={{ ...itemStyle, color: "var(--node-color)" }}
             >
-              <Icon name="user" size="small" />
+              <Icon name="user" style={{ marginRight: "0.35714286em" }} />
               <span className="hidden sm:inline">Log In / Register</span>
               <span className="sm:hidden">Log In</span>
             </button>

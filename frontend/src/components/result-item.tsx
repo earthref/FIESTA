@@ -108,11 +108,13 @@ export function Cell({
   wrap,
   children,
   className,
+  style,
 }: {
   width: number;
   wrap?: boolean;
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }) {
   return (
     <div
@@ -122,6 +124,7 @@ export function Cell({
         minWidth: width,
         maxWidth: width,
         whiteSpace: wrap ? "normal" : "nowrap",
+        ...style,
       }}
     >
       {children}
@@ -174,7 +177,7 @@ function ClampedField({
 }) {
   return (
     <span>
-      <b>{label}</b>
+      <b style={{ lineHeight: "1.4285em" }}>{label}</b>
       <div
         className="overflow-hidden"
         style={{
@@ -194,7 +197,7 @@ export function ResultDivider() {
   return (
     <hr
       style={{
-        margin: "1em 0",
+        margin: "0.5em 0 1em",
         border: 0,
         borderTop: "1px solid rgba(34,36,38,.15)",
         borderBottom: "1px solid rgba(255,255,255,.1)",
@@ -239,8 +242,8 @@ export function ResultCardFrame({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: hover only toggles the caret button's visibility; expansion is keyboard-accessible via the header button
     <div
-      className="relative text-left"
-      style={{ lineHeight: "16px" }}
+      className="relative flow-root text-left"
+      style={{ lineHeight: "16px", color: "rgba(0,0,0,.87)" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -249,13 +252,19 @@ export function ResultCardFrame({
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-full cursor-pointer items-baseline px-[1em] pb-[0.5em] text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+        className="relative flex w-full cursor-pointer items-stretch text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+        style={{ padding: "0 1em 0.5em", margin: "-3.5px -1em 0 0" }}
       >
         <span
           aria-hidden="true"
-          className={cx("mr-1 self-center transition-transform", open && "rotate-90")}
+          className="absolute inline-flex items-center justify-center"
+          style={{ left: -4.2, top: 0.8, width: "1.25em", height: "1.25em", fontSize: 14 }}
         >
-          <Icon name="caret-right" size="small" />
+          <Icon
+            name="caret-right"
+            className={cx("transition-transform", open && "rotate-90")}
+            style={{ width: "1.15em", height: "1.15em" }}
+          />
         </span>
         <span className="whitespace-nowrap text-[13px] font-bold">
           {citation}
@@ -287,18 +296,23 @@ export function ResultCardFrame({
 
       {/* Flex data row: collapsed max-height cap with overflow hidden */}
       <div
-        className="flex px-[1em] font-normal"
+        className="flex font-normal"
         style={
           open
-            ? { flexWrap: "wrap" }
-            : { maxHeight: collapsedMaxHeight, overflow: "hidden", whiteSpace: "nowrap" }
+            ? { flexWrap: "wrap", marginRight: "-1em" }
+            : {
+                maxHeight: collapsedMaxHeight,
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                marginRight: "-1em",
+              }
         }
       >
         {cells}
       </div>
 
       {open && expanded && (
-        <div className="px-[1em] text-[13px]" style={{ paddingBottom: 0 }}>
+        <div className="text-[13px]" style={{ padding: "0.5em 0 0" }}>
           {expanded}
         </div>
       )}
@@ -470,15 +484,22 @@ export function ResultItem({
     <>
       {/* 1. Download (100px cell; basic tiny fluid compact icon header button, height 100px) */}
       {!isContribution ? null : id ? (
-        <Cell width={100}>
+        <Cell width={100} style={{ fontSize: 14, height: 104 }}>
           <a
             href={siteUrl(`/api/contributions/${id}/download${keyParam}`)}
             download
-            className="block w-full rounded-sm border border-node bg-white text-center text-[13px] font-bold text-node hover:bg-node-soft"
-            style={{ padding: "20px 0", height: 100, lineHeight: 1 }}
+            className="inline-block w-full bg-white text-center font-bold text-node hover:bg-node-soft"
+            style={{
+              padding: "20px 0",
+              height: 100,
+              fontSize: 14,
+              lineHeight: "18px",
+              borderRadius: "0.28571429rem",
+              boxShadow: "0 0 0 1px var(--node-color) inset",
+            }}
           >
-            <span aria-hidden="true" className="mb-[0.25em] block">
-              <Icon name="file-text" style={{ width: 42, height: 42 }} />
+            <span aria-hidden="true" className="block" style={{ lineHeight: "42px" }}>
+              <Icon name="file-text" style={{ width: 42, height: 42, verticalAlign: "top" }} />
             </span>
             Download
           </a>
@@ -489,7 +510,7 @@ export function ResultItem({
 
       {/* 2. Links (200px) */}
       {!isContribution ? null : id ? (
-        <Cell width={200}>
+        <Cell width={200} className="leading-[1.4285em]">
           <b>{config.key} Contribution Link:</b>
           <p className="m-0 overflow-hidden text-ellipsis">
             <Link
@@ -565,15 +586,39 @@ export function ResultItem({
 
       {/* 4. Map thumbnail (100px globe) */}
       {markers.length > 0 ? (
-        <Cell width={100}>
+        <Cell width={100} style={{ fontSize: 14, height: 104 }}>
           <MapThumbnail markers={markers} width={100} height={100} />
         </Cell>
       ) : (
         <NoDataCell label="Geospatial" width={100} />
       )}
 
-      {/* 5. Plot thumbnail — plugin slot */}
-      {extraCell ?? <NoDataCell label="Plot" width={125} />}
+      {/* 5. Plot thumbnail — plugin slot (legacy SearchPlotThumbnail container) */}
+      {extraCell ?? (
+        <div
+          className="shrink-0 overflow-hidden text-ellipsis text-center text-[#AAAAAA]"
+          style={{
+            boxSizing: "content-box",
+            minWidth: 98,
+            maxWidth: 98,
+            minHeight: 98,
+            maxHeight: 98,
+            marginRight: "1rem",
+            marginBottom: 5,
+            fontSize: 13,
+            border: "1px solid rgba(0,0,0,.1)",
+          }}
+        >
+          <br />
+          No
+          <br />
+          <b>Plots</b>
+          <br />
+          Available
+          <br />
+          <br />
+        </div>
+      )}
 
       {/* 6. Geo (125px): geologic units then geographic names */}
       {geologic.length > 0 || geographic.length > 0 ? (
