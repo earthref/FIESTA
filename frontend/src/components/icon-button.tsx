@@ -8,11 +8,13 @@ import { SemanticIcon } from "./ui/fa-icon";
  * `ui icon header basic fluid button <color> card er-icon-button`.
  *
  * - card   (`ui three cards`): 14px, padding .875em, bg #f8f8f9 with a 1px
- *          inset node-colored shadow; 54px base icon (3× the 18px header) with
- *          a .45em corner icon; title 1.2857em/700 node color; `ui sub header`
- *          14px/1.2 #555. 158px tall.
+ *          inset node-colored shadow; `i.large.icons` (21px) → 63px base glyph
+ *          with margin-bottom .5rem and a 31.5px corner glyph at its
+ *          bottom-right, white-outlined; title 1.2857em/700 node color;
+ *          `ui sub header` 14px/1.2 #555. 158px tall.
  * - small  (`ui nine cards`, borderless): 10px, padding .875em, transparent;
- *          32px icon (3× the 10.71px small header); title 1.0714em/700. 82px tall.
+ *          `i.icons` (10px) → 30px base glyph + 15px corner; title
+ *          1.0714em/700. 82px tall.
  * - wide   (`tiny card` / `small card`, full width): padding .786em, no icon,
  *          title on one or two header lines.
  * Hover bg #f0f0f0 on all of them. Icons are Semantic icon names (`i.icons`
@@ -61,7 +63,12 @@ export function IconButton({
   const wide = variant === "wide";
   const cardFont = fontSize ?? (small ? 10 : 14);
   const titleSize = titleEm ?? (small ? 1.07142857 : 1.28571429);
-  const iconPx = Math.round(cardFont * titleSize * 3);
+  // `i.large.icons` on the primary cards (1.5em), plain `i.icons` on the small
+  // ones; the base glyph is 3em of that and the corner glyph 1.5em (measured
+  // 63/31.5px and 30/15px).
+  const iconsPx = cardFont * (small ? 1 : 1.5);
+  const iconPx = iconsPx * 3;
+  const cornerPx = iconsPx * 1.5;
 
   const className = cx(
     "er-icon-button block text-center transition-colors hover:bg-[#f0f0f0]",
@@ -74,29 +81,25 @@ export function IconButton({
     borderRadius: "0.28571429rem",
     ...(small ? {} : { background: "#f8f8f9", boxShadow: "0 0 0 1px var(--node-color) inset" }),
   };
-  const outline = small ? "#fff" : "#f8f8f9";
-
   const content = (
     <>
       {icon && (
         <span
           className="relative inline-block text-[#555555]"
-          style={{ fontSize: iconPx, lineHeight: 1, marginBottom: small ? 5 : 16 }}
+          style={{ fontSize: iconPx, lineHeight: 1, marginBottom: "0.5rem" }}
         >
-          <SemanticIcon name={icon} />
+          <SemanticIcon name={icon} style={{ display: "block", verticalAlign: "top" }} />
           {cornerIcon && (
             <span
               aria-hidden="true"
               className="absolute text-node"
-              style={{
-                right: "-0.15em",
-                bottom: "-0.1em",
-                fontSize: "0.45em",
-                lineHeight: 1,
-                textShadow: `-1px -1px 0 ${outline}, 1px -1px 0 ${outline}, -1px 1px 0 ${outline}, 1px 1px 0 ${outline}`,
-              }}
+              style={{ right: 0, bottom: 0, fontSize: cornerPx, lineHeight: 1 }}
             >
-              <SemanticIcon name={cornerIcon} />
+              <SemanticIcon
+                name={cornerIcon}
+                style={{ display: "block", verticalAlign: "top" }}
+                outline={(2 * 512) / cornerPx}
+              />
             </span>
           )}
         </span>

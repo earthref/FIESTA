@@ -7,9 +7,11 @@ import {
   faBook,
   faCalculator,
   faChartBar,
+  faChartColumn,
   faChartLine,
   faCheck,
   faCircleQuestion,
+  faCircleXmark,
   faCode,
   faDatabase,
   faDownload,
@@ -50,7 +52,8 @@ export const SEMANTIC_ICONS: Record<string, IconDefinition> = {
   plus: faPlus,
   checkmark: faCheck,
   check: faCheck,
-  "file text outline": faFileLinesRegular,
+  "file text outline": faFileRegular,
+  "file alternate outline": faFileLinesRegular,
   "file text": faFileLines,
   "file outline": faFileRegular,
   sitemap: faSitemap,
@@ -60,7 +63,8 @@ export const SEMANTIC_ICONS: Record<string, IconDefinition> = {
   pencil: faPencil,
   list: faList,
   info: faInfo,
-  "bar chart": faChartBar,
+  "bar chart": faChartColumn,
+  "chart bar": faChartBar,
   "bar chart outline": faChartBarRegular,
   "chart line": faChartLine,
   calculator: faCalculator,
@@ -71,6 +75,8 @@ export const SEMANTIC_ICONS: Record<string, IconDefinition> = {
   exchange: faRightLeft,
   question: faQuestion,
   "question circle": faCircleQuestion,
+  "remove circle": faCircleXmark,
+  "times circle": faCircleXmark,
   users: faUsers,
   download: faDownload,
   upload: faUpload,
@@ -80,17 +86,22 @@ export const SEMANTIC_ICONS: Record<string, IconDefinition> = {
   warning: faTriangleExclamation,
 };
 
-/** One FA glyph, 1em tall, width from its aspect ratio (like `i.icon`). */
+/** One FA glyph, 1em tall, width from its aspect ratio (like `i.icon`).
+ * `outline` draws a white stroke behind the glyph, in viewBox units (legacy
+ * corner icons have a 1px white text-shadow on every side). */
 export function FaIcon({
   icon,
   className,
   style,
+  outline,
 }: {
   icon: IconDefinition;
   className?: string;
   style?: CSSProperties;
+  outline?: number;
 }) {
   const [width, height, , , path] = icon.icon;
+  const d = Array.isArray(path) ? path.join(" ") : path;
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
@@ -106,7 +117,8 @@ export function FaIcon({
         ...style,
       }}
     >
-      <path d={Array.isArray(path) ? path.join(" ") : path} />
+      {outline && <path d={d} stroke="#fff" strokeWidth={outline} strokeLinejoin="round" />}
+      <path d={d} />
     </svg>
   );
 }
@@ -116,11 +128,21 @@ export function SemanticIcon({
   name,
   className,
   style,
+  outline,
 }: {
   name: string;
   className?: string;
   style?: CSSProperties;
+  outline?: number;
 }) {
   const icon = SEMANTIC_ICONS[name];
-  return icon ? <FaIcon icon={icon} className={className} style={style} /> : null;
+  return icon ? <FaIcon icon={icon} className={className} style={style} outline={outline} /> : null;
 }
+
+/** `.ui.button > .icon`: a 1.18em × 1em box, margin 0 .43em 0 −.21em, opacity .8. */
+export const buttonIconStyle: CSSProperties = {
+  width: "1.18em",
+  height: "1em",
+  margin: "0 0.42857143em 0 -0.21428571em",
+  opacity: 0.8,
+};

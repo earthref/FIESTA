@@ -11,6 +11,7 @@ import {
 } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
+import { buttonIconStyle, SemanticIcon } from "../components/ui/fa-icon";
 import { Icon } from "../components/ui/icon";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { Table, TBody, Td, THead, Th, Tr } from "../components/ui/table";
@@ -57,8 +58,6 @@ function basicButtonStyle(color: string): CSSProperties {
     borderRadius: "0.28571429rem",
   };
 }
-/** Semantic `.ui.button > .icon`: 1em glyph, margin 0 .43em 0 -.21em. */
-const buttonIconStyle: CSSProperties = { margin: "0 0.42857143em 0 -0.21428571em" };
 
 /** Legacy sort dropdown (search.jsx `sortOptions`), keyed by the API's `sort` names. */
 const SORT_OPTIONS: { value: string; label: string }[] = [
@@ -677,7 +676,7 @@ export function SearchPage() {
               className="flex items-center whitespace-nowrap rounded-l-sm bg-node font-bold text-white"
               style={{ fontSize: "1rem", padding: "0.78571429em 0.833em", lineHeight: "1em" }}
             >
-              <Icon name="search" style={{ marginRight: "0.75em" }} />
+              <SemanticIcon name="search" style={{ marginRight: "0.75em" }} />
               Search {config.key}
             </label>
             <input
@@ -709,7 +708,7 @@ export function SearchPage() {
                 lineHeight: "1em",
               }}
             >
-              <Icon name="search" style={buttonIconStyle} />
+              <SemanticIcon name="search" style={buttonIconStyle} />
               Search
             </button>
             <button
@@ -729,7 +728,7 @@ export function SearchPage() {
                 marginLeft: -1,
               }}
             >
-              <Icon name="remove-circle" style={buttonIconStyle} />
+              <SemanticIcon name="remove circle" style={buttonIconStyle} />
               Clear
             </button>
           </form>
@@ -748,7 +747,7 @@ export function SearchPage() {
                   lineHeight: "1em",
                 }}
               >
-                <Icon name="download" style={buttonIconStyle} />
+                <SemanticIcon name="download" style={buttonIconStyle} />
                 Download Results
               </a>
             ) : (
@@ -771,7 +770,7 @@ export function SearchPage() {
                   lineHeight: "1em",
                 }}
               >
-                <Icon name="download" style={buttonIconStyle} />
+                <SemanticIcon name="download" style={buttonIconStyle} />
                 Download Results
               </button>
             ))}
@@ -806,7 +805,7 @@ export function SearchPage() {
                   className={compactButtonClass(clearActive)}
                   style={compactButtonStyle(clearActive)}
                 >
-                  <Icon name="remove-circle" style={buttonIconStyle} />
+                  <SemanticIcon name="remove circle" style={buttonIconStyle} />
                   Clear Filters
                 </button>
               </span>

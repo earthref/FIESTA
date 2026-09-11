@@ -213,17 +213,9 @@ export interface ResultCardFrameProps {
   level: SearchLevel;
   cells: ReactNode;
   expanded?: ReactNode;
-  /** Collapsed data-row height cap; 105px default, 155px for the poles variant. */
-  collapsedMaxHeight?: number;
 }
 
-export function ResultCardFrame({
-  doc,
-  level,
-  cells,
-  expanded,
-  collapsedMaxHeight = 105,
-}: ResultCardFrameProps) {
+export function ResultCardFrame({ doc, level, cells, expanded }: ResultCardFrameProps) {
   const { data: config } = useNodeConfig();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -306,20 +298,10 @@ export function ResultCardFrame({
         </span>
       </button>
 
-      {/* Flex data row: collapsed max-height cap with overflow hidden */}
-      <div
-        className="flex font-normal"
-        style={
-          open
-            ? { flexWrap: "wrap", marginRight: "-1em" }
-            : {
-                maxHeight: collapsedMaxHeight,
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                marginRight: "-1em",
-              }
-        }
-      >
+      {/* Flex data row. Legacy clipped the collapsed row at 105px so blocks past
+          the pane's width were cut off; FIESTA wraps them so every block renders
+          (docs/legacy-ux-spec.md deviations). */}
+      <div className="flex flex-wrap font-normal" style={{ marginRight: "-1em" }}>
         {cells}
       </div>
 

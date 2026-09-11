@@ -176,6 +176,9 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 - **Download Results** downloads the top contribution file (no bulk-zip endpoint yet, ROADMAP); legacy zipped every matching contribution.
 - **Level tabs** omit legacy "Experiments" until the derived experiment docs exist (ROADMAP C4).
 - **Filter sidebar** shows only the YAML `facets` (bucket filters); the legacy range filters (Publication Year, Geospatial, Age, Intensity) and with/without-data toggles are not ported yet. Facet titles are the singular of the facet name ("Method Code"), matching legacy titles.
+- **Collapsed result cards wrap their blocks** (`flex-wrap`, no 105px cap)
+  so a block that does not fit the pane is rendered on the next line instead
+  of being cut off; expanding still reveals the reference/versions content.
 - **Map thumbnail** uses one representative `_geo_point` per level (the summarizer's) rather than every distinct point/envelope of the legacy summary.
 
 ### RESULT ITEM CARD (`search_summaries_list_item.jsx`) — most detailed
