@@ -17,14 +17,15 @@ COMPOSE := docker compose $(COMPOSE_FILES)
 -include .env
 
 # FIESTA_NODE is a comma-separated node list (magic,karar,cdr). Compose
-# activates one profile per node, so mirror it into COMPOSE_PROFILES.
+# activates one profile per node, so mirror it into COMPOSE_PROFILES. The /v1
+# public API (profile public-api) always runs alongside: the node work is
+# moving onto it (ROADMAP Phase A).
 FIESTA_NODE ?= magic
 export FIESTA_NODE
-export COMPOSE_PROFILES = $(FIESTA_NODE)
+export COMPOSE_PROFILES = $(FIESTA_NODE),public-api
 
 # Targets that must see every service regardless of the selected nodes.
 down clean ps logs build: export COMPOSE_PROFILES = *
-up-public-api: export COMPOSE_PROFILES = $(FIESTA_NODE),public-api
 
 # Frontend port per node (defaults mirror docker-compose.yml).
 MAGIC_FRONTEND_PORT ?= 8080
@@ -58,14 +59,12 @@ help: ## List available targets
 ## ---- Docker Compose stack -------------------------------------------------
 
 .PHONY: up
-up: ## Start the node stack(s) in FIESTA_NODE with hot reload (PROD=1 for the built images)
+up: ## Start the node stack(s) in FIESTA_NODE plus the /v1 public API, hot reload (PROD=1 for the built images)
 	@mkdir -p frontend/node_modules
 	$(COMPOSE) up -d --build --remove-orphans --wait
 
 .PHONY: up-public-api
-up-public-api: ## Start the node stack(s) plus the /v1 public API (PROD=1 for the built images)
-	@mkdir -p frontend/node_modules
-	$(COMPOSE) up -d --build --remove-orphans --wait
+up-public-api: up ## Deprecated alias: `make up` already includes the public API
 
 .PHONY: down
 down: ## Stop the stack (keep data volumes)

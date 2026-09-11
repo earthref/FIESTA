@@ -1,6 +1,6 @@
 #!/bin/bash
 # End-to-end FIESTA workflow test against a running compose stack
-# (`make up-public-api`). Exercises: register -> login -> create -> upload ->
+# (`make up`). Exercises: register -> login -> create -> upload ->
 # async worker processing -> validation -> publish -> search/facets ->
 # download -> public /v1 API -> notification email.
 #

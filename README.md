@@ -58,7 +58,7 @@ Default ports per node (frontend / backend API docs at `/api/docs`):
 - MinIO console: http://localhost:9001 · Mailpit (dev email): http://localhost:8025
 - Several nodes under one hostname (`dev.earthref.org/MagIC/`, `/CDR/`, ...): set
   `<NODE>_BASE_PATH=/MagIC/` per node in `.env` — see [development.md](development.md).
-- Public API (all nodes): `make up-public-api` → http://localhost:8005/v1/docs
+- Public API (all nodes, started by `make up`): http://localhost:8005/v1/docs
 
 Create an account in the UI (or `docker compose run --rm backend fiesta
 create-user you@example.org "Your Name"`), upload a contribution text file in
