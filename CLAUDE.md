@@ -15,7 +15,7 @@ Database:   Postgres 16 — shared `users` schema + one schema per node (magic, 
 Search:     OpenSearch, one index per node (FIESTA_INDEX_PREFIX when the cluster is shared)
 Storage:    S3-compatible (prod: AWS S3, one bucket + `<slug>/` prefix; local: MinIO) — canonical files + manifest.json
 Email:      SMTP (local: Mailpit :8025)
-Infra:      Docker Compose locally; deploy.yml runs /srv/fiesta/bin/deploy-fiesta.sh on a self-hosted runner (label fiesta-deploy) on push to main — runner offline 2026-09-10, so pushes queue
+Infra:      Docker Compose locally (`make up` = hot-reload overlay, `PROD=1` = built images); deploy.yml runs /srv/fiesta/bin/deploy-fiesta.sh on the self-hosted runner `fiesta-ct` (label fiesta-deploy) on push to main — it is a release-dir swap (uv sync + ruff/pytest, npm ci + per-node vite build with base paths, `fiesta init` per node, symlink /srv/fiesta/current, health checks), no docker compose, so compose changes never reach production
 Linting:    ruff (Python), biome (TypeScript)
 ```
 

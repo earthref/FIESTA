@@ -22,7 +22,7 @@ Counted from the tree, not estimated:
 | Backend tests | 26 (domain + plugins; no infra) — routers are covered only by `scripts/e2e.sh` |
 | Frontend routes | home, search, contribution, private workspace, upload, validate, data-models, vocabularies, method-codes, contact, login; **6 stubs** (about, technology, grand challenges, workshops, links, help) |
 | CI | `ci.yml` (ruff, pytest, biome, tsc/build, every YAML loads, compose e2e) — committed 2026-09-10; first run failed on the e2e job (migration 0002, fixed same day) |
-| Deploy | `deploy.yml` → self-hosted runner `fiesta-deploy` running `/srv/fiesta/bin/deploy-fiesta.sh`; the runner was offline on 2026-09-10 so the push-to-main run sat queued. Production still runs the legacy Meteor apps |
+| Deploy | `deploy.yml` → self-hosted runner `fiesta-ct` (label `fiesta-deploy`) running `/srv/fiesta/bin/deploy-fiesta.sh`: release dir under `/srv/fiesta/releases`, uv sync + tests, npm ci + per-node vite build (`/MagIC/`, `/KdD/`, …), `fiesta init` per node, symlink swap, health checks. Runner back online 2026-09-10 evening; every merge since deploys in ~1 min. `fiesta init` logs "procrastinate schema: Database error." on each node — check it. Production still runs the legacy Meteor apps |
 | Local stack | `make up` = infra + backend/worker/frontend **per node** (6 duplicated compose triplets) |
 
 **Read of the position.** The core workflow (register → upload → validate → publish
