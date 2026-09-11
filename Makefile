@@ -60,12 +60,12 @@ help: ## List available targets
 .PHONY: up
 up: ## Start the node stack(s) in FIESTA_NODE with hot reload (PROD=1 for the built images)
 	@mkdir -p frontend/node_modules
-	$(COMPOSE) up -d --build --remove-orphans
+	$(COMPOSE) up -d --build --remove-orphans --wait
 
 .PHONY: up-public-api
 up-public-api: ## Start the node stack(s) plus the /v1 public API (PROD=1 for the built images)
 	@mkdir -p frontend/node_modules
-	$(COMPOSE) up -d --build --remove-orphans
+	$(COMPOSE) up -d --build --remove-orphans --wait
 
 .PHONY: down
 down: ## Stop the stack (keep data volumes)

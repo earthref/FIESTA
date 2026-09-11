@@ -36,6 +36,15 @@ x-dev-frontend: &dev-frontend
   command: >-
     sh -c "npm install --no-audit --no-fund &&
            exec npx vite --host 0.0.0.0 --port 80 --strictPort"
+  # Healthy once Vite answers; `make up` passes --wait so it returns only then.
+  # The first start includes `npm install` into the empty volume (~30 s), so
+  # allow several minutes. 127.0.0.1, not localhost: Vite binds IPv4 only.
+  healthcheck:
+    test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
+    interval: 5s
+    timeout: 5s
+    retries: 60
+    start_period: 10s
 
 services:
   # ---- MagIC ---------------------------------------------------------------
