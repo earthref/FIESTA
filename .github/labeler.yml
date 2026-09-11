@@ -13,6 +13,6 @@ internal:
         - .gitignore
         - .pre-commit-config.yaml
       - all-globs-to-all-files:
-        - '!./**/*.md'
+        - '!**/*.md'
         - '!frontend/**'
         - '!backend/**'
