@@ -6,6 +6,23 @@ export interface SearchLevel {
   count_field: string | null;
 }
 
+/** features.home.resources entry: a resource card (title lines split on "\n"). */
+export interface HomeCard {
+  title: string;
+  icon: string;
+  corner_icon: string | null;
+  to: string | null;
+  href: string | null;
+}
+
+/** features.home.news entry; `html` is trusted markup from the node YAML. */
+export interface HomeNews {
+  title: string;
+  html: string;
+  image: string | null;
+  link: string | null;
+}
+
 export interface NodeConfig {
   key: string;
   slug: string;
@@ -19,7 +36,11 @@ export interface NodeConfig {
   doi_prefix: string | null;
   search_levels: SearchLevel[];
   facets: string[];
-  features: { pages: string[]; plugins: string[] };
+  features: {
+    pages: string[];
+    plugins: string[];
+    home?: { resources: HomeCard[]; news: HomeNews[] };
+  };
   /** Active plugins with their per-node configuration, keyed by plugin name. */
   plugins: Record<string, Record<string, unknown>>;
   has_method_codes: boolean;

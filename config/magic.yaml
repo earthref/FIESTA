@@ -75,3 +75,89 @@ doi:
 features:
   pages: [about, technology, help, method-codes, upgrade, links, workshops, jupyter-notebooks, grand-challenges]
   plugins: [poles]
+  # Home page content (legacy client/modules/magic/components/home.jsx + home_news.jsx).
+  home:
+    # `ui nine cards` resource row: Semantic icon names; `to` = SPA route, `href` = external.
+    resources:
+      - { title: "Data\nModel", icon: sitemap, corner_icon: table, to: /data-models/3.0 }
+      - { title: "Method\nCodes", icon: lab, corner_icon: write, to: /method-codes }
+      - { title: "Vocabulary\nLists", icon: list, corner_icon: info, to: /vocabularies }
+      - { title: "PmagPy\nSoftware", icon: bar chart, corner_icon: calculator, href: "https://pmagpy.github.io/PmagPy-docs/intro.html" }
+      - { title: "Paleomag\nTextbook", icon: book, corner_icon: info, href: "https://earthref.org/MagIC/books/Tauxe/Essentials/" }
+      - { title: "Jupyter\nNotebooks", icon: file outline, corner_icon: code, to: /jupyter-notebooks }
+      - { title: "YouTube\nChannel", icon: tv, corner_icon: headphones, href: "https://www.youtube.com/channel/UC-DbvhEu49a6dZXdvUWorhQ" }
+      - { title: "MagIC/FIESTA\nAPI", icon: exchange, corner_icon: info, href: "https://api.earthref.org/" }
+      - { title: "MagIC FAQ\nand Help", icon: question, to: /help }
+    # Right-hand news column, newest first. `image` is a file in config/magic/assets/ or a URL.
+    news:
+      - title: Paleomagnetism.org file converter
+        image: pmag_org_logo.png
+        html: >-
+          To facilitate direction paleomagnetic data sharing between laboratories,
+          Paleomagnetism.org has developed a
+          <a href="https://beta.paleomagnetism.org/converter"><b>File Format Converter</b></a>.
+          Visit the beta site and try it out. Please send comments, problem reports, or
+          requests for additional formats to paleomagnetism.org@gmail.com
+      - title: MagIC at AGU
+        image: agu.jpg
+        html: >-
+          MagIC will be presenting a poster that this year's AGU conference. It will be in the
+          Monday afternoon poster session <b>(GP13B-0307)</b>. Please drop by and see what is new
+          with MagIC in 2025 and talk with us about what you would like to see MagIC do for you in
+          the future. A copy of this year's poster can be found at
+          <a href="https://njarboe.com/public/JarboeMagIC2025AGUPoster.pdf"><b>here</b></a>.
+          See you there!
+      - title: Mag-NetZ
+        image: https://github.com/earthref/MagIC-MagNetS/raw/master/MagnetZ_Logo.jpg
+        html: >-
+          <a href="https://earthref.org/MagIC/MagNetZ"><b>MagNetZ (Magnetic NetworkZ)</b></a>
+          is a biweekly online seminar organized by <b>Greig Paterson</b> and
+          <b>Anita Di Chiara</b>. The seminars cover topics in the geomagnetism, paleomagnetism,
+          rock magnetism, archeomagnetism, and environmental magnetism (all things magnetic).
+          Visit the <a href="https://earthref.org/MagIC/MagNetZ"><b>website</b></a> for info on
+          all the <b>speakers</b>, their <b>abstracts</b>, as well as links to the <b>YouTube</b>
+          videos, <b>ERDA</b> entries, <b>citable DOIs</b>.
+      - title: 2021 MagIC Workshop
+        image: sio.jpg
+        html: >-
+          MagIC hosted its 2021 workshop on <b>January 19th-21st, 2021</b> online via Zoom and
+          Slack with 194 participants. Titled
+          "<a href="https://earthref.org/events/MAGIC/2021/"><b>2021 MagIC Workshop: Rock and
+          Paleomagnetism through Time and Space</b></a>", it consisted of three days of science
+          talks in four sessions. Visit the
+          <a href="https://earthref.org/events/MAGIC/2021/"><b>workshop website</b></a> for the
+          full schedule and other workshop details. The
+          <a href="https://www.youtube.com/playlist?list=PLirL2unikKCi2xvyly82krC-_jWpelB0P"><b>workshop talks</b></a>
+          and
+          <a href="https://www.youtube.com/playlist?list=PLirL2unikKChSOapeWSKBZRbj1aGiT48r"><b>poster lightning talks</b></a>
+          are up on our YouTube channel. The posters can be found on MagIC's Slack channel.
+          Email Nick Jarboe (njarboe@ucsd.edu) to request an invite to the channel.
+      - title: 2020 MagIC Workshop Tutorial Videos
+        image: youtube.png
+        link: https://www.youtube.com/playlist?list=PLirL2unikKCgUkHQ3m8nT29tMCJNBj4kj
+        html: >-
+          In lieu of the postponed 2020 MagIC Workshop, Magic hosted a series of
+          <a href="https://www.youtube.com/playlist?list=PLirL2unikKCgUkHQ3m8nT29tMCJNBj4kj"><b>tutorials</b></a>
+          over three days covering some of the material which was to be presented in the hands-on
+          part of the workshop. The <a href="https://youtu.be/pchdPBzSmT0"><b>first</b></a> was on
+          the MagIC data model and the uploading of data to the MagIC database, the
+          <a href="https://youtu.be/GUjf33aNnFQ"><b>second</b></a> was on the PmagPy Demag GUI
+          data import, analysis, and MagIC file export software, the
+          <a href="https://www.youtube.com/watch?v=9yGPbATqRtI"><b>third</b></a> was on using
+          PmagPy and Jupyter notebooks. These tutorial videos and others can be found on the
+          <a href="https://www.youtube.com/playlist?list=PLirL2unikKCgUkHQ3m8nT29tMCJNBj4kj"><b>2020 MagIC Workshop Tutorial playlist</b></a>
+          on the
+          <a href="https://www.youtube.com/channel/UC-DbvhEu49a6dZXdvUWorhQ"><b>MagIC YouTube Channel</b></a>.
+      - title: Project 419 / GeoCODES
+        image: ec.jpg
+        html: >-
+          MagIC is working with EarthCube
+          <a href="https://www.earthcube.org/geocodes" target="_blank" rel="noreferrer"><b>GeoCODES</b></a>
+          to publish <a href="https://json-ld.org/" target="_blank" rel="noreferrer"><b>JSON-LD</b></a>
+          contribution metadata. MagIC is providing a rich selection of HTML5 microdata
+          <a href="https://schema.org/" target="_blank" rel="noreferrer"><b>schema.org</b></a>
+          parameters for its versioned datasets and associated references. These embedded metadata
+          are also suitable for crawling by the
+          <a href="https://www.epos-ip.org/" target="_blank" rel="noreferrer"><b>European Plate Observing System</b></a>
+          and
+          <a href="https://developers.google.com/search/docs/guides/intro-structured-data" target="_blank" rel="noreferrer"><b>Google Search with Structured Data</b></a>.

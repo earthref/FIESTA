@@ -374,3 +374,17 @@ def test_search_body_sort_options():
             if clause != "_score":
                 (spec,) = clause.values()
                 assert "unmapped_type" in spec, name
+
+
+def test_magic_home_config(magic_node):
+    home = magic_node.features.home
+    assert len(home.resources) == 9
+    for card in home.resources:
+        assert (card.to is None) != (card.href is None)
+    assert home.news and all(item.html for item in home.news)
+    # Referenced local images exist under config/magic/assets and resolve safely.
+    for item in home.news:
+        if item.image and not item.image.startswith("http"):
+            assert magic_node.asset_path(item.image) is not None, item.image
+    assert magic_node.asset_path("../magic.yaml") is None
+    assert "home" in magic_node.public_config()["features"]

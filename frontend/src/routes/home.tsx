@@ -6,8 +6,9 @@ import { IconButton, type IconButtonProps } from "../components/icon-button";
 import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
+import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
-import type { SearchPage } from "../lib/types";
+import type { HomeCard, HomeNews, NodeConfig, SearchPage } from "../lib/types";
 import { pluginHomeCards } from "../plugins";
 
 const RULE = "rgba(34,36,38,.15)";
@@ -47,7 +48,7 @@ const nineCard: CSSProperties = {
   minWidth: 84,
 };
 
-/** `ui fitted divider` inside the news column (margin 1rem 0). */
+/** `ui divider` (margin 1rem 0). */
 function Rule() {
   return (
     <hr
@@ -58,6 +59,104 @@ function Rule() {
         borderBottom: "1px solid rgba(255,255,255,.1)",
       }}
     />
+  );
+}
+
+/** Resource cards for a node whose YAML defines none. */
+function defaultResources(config: NodeConfig): HomeCard[] {
+  const cards: HomeCard[] = [
+    {
+      title: "Data\nModel",
+      icon: "sitemap",
+      corner_icon: "table",
+      to: `/data-models/${config.data_model_latest}`,
+      href: null,
+    },
+  ];
+  if (config.has_method_codes) {
+    cards.push({
+      title: "Method\nCodes",
+      icon: "lab",
+      corner_icon: "write",
+      to: "/method-codes",
+      href: null,
+    });
+  }
+  cards.push({
+    title: "Vocabulary\nLists",
+    icon: "list",
+    corner_icon: "info",
+    to: "/vocabularies",
+    href: null,
+  });
+  cards.push({
+    title: `${config.key}/FIESTA\nAPI`,
+    icon: "exchange",
+    corner_icon: "info",
+    to: null,
+    href: "https://api.earthref.org/",
+  });
+  if (config.features.pages.includes("help")) {
+    cards.push({
+      title: "Help\nPages",
+      icon: "question",
+      corner_icon: null,
+      to: "/help",
+      href: null,
+    });
+  }
+  return cards;
+}
+
+function cardProps(card: HomeCard): IconButtonProps {
+  return {
+    title: card.title,
+    icon: card.icon,
+    cornerIcon: card.corner_icon ?? undefined,
+    to: card.to ?? undefined,
+    href: card.href ?? undefined,
+  };
+}
+
+function imageUrl(image: string): string {
+  return /^https?:\/\//.test(image) ? image : siteUrl(`/api/config/assets/${image}`);
+}
+
+/** Legacy home_news.jsx: `h3` with a `ui mini image floated left` (35px), then
+ * a justified paragraph; items separated by `ui divider`s. The HTML comes from
+ * this repo's node YAML, so it is trusted. */
+function NewsItem({ item }: { item: HomeNews }) {
+  const heading = item.link ? (
+    <a href={item.link} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>
+      {item.title}
+    </a>
+  ) : (
+    item.title
+  );
+  return (
+    <>
+      <h3
+        className="font-bold"
+        style={{
+          fontSize: "1.28571429em",
+          lineHeight: "1.28571429em",
+          margin: "calc(2rem - 0.14285714em) 0 1rem",
+          color: "rgba(0,0,0,.87)",
+        }}
+      >
+        {item.image && (
+          <img
+            src={imageUrl(item.image)}
+            alt=""
+            className="float-left"
+            style={{ width: 35, margin: "0 1em 1em 0" }}
+          />
+        )}
+        {heading}
+      </h3>
+      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: markup authored in config/<node>.yaml, part of this repo */}
+      <p style={{ margin: "0 0 1em" }} dangerouslySetInnerHTML={{ __html: item.html }} />
+    </>
   );
 }
 
@@ -80,86 +179,8 @@ export function HomePage() {
     count_field: null,
   };
 
-  const resources: IconButtonProps[] = [
-    {
-      to: `/data-models/${config.data_model_latest}`,
-      icon: "table",
-      title: (
-        <>
-          Data
-          <br />
-          Model
-        </>
-      ),
-    },
-    ...(config.has_method_codes
-      ? [
-          {
-            to: "/method-codes",
-            icon: "file-text" as IconName,
-            title: (
-              <>
-                Method
-                <br />
-                Codes
-              </>
-            ),
-          },
-        ]
-      : []),
-    {
-      to: "/vocabularies",
-      icon: "file-text",
-      title: (
-        <>
-          Vocabulary
-          <br />
-          Lists
-        </>
-      ),
-    },
-    ...(config.features.pages.includes("jupyter-notebooks")
-      ? [
-          {
-            to: "/jupyter-notebooks",
-            icon: "external" as IconName,
-            title: (
-              <>
-                Jupyter
-                <br />
-                Notebooks
-              </>
-            ),
-          },
-        ]
-      : []),
-    {
-      href: "https://api.earthref.org/",
-      icon: "external",
-      title: (
-        <>
-          {config.key}/FIESTA
-          <br />
-          API
-        </>
-      ),
-    },
-    ...(config.features.pages.includes("help")
-      ? [
-          {
-            to: "/help",
-            icon: "question-circle" as IconName,
-            title: (
-              <>
-                {config.key} FAQ
-                <br />
-                and Help
-              </>
-            ),
-          },
-        ]
-      : []),
-  ];
+  const home = config.features.home ?? { resources: [], news: [] };
+  const resources = home.resources.length > 0 ? home.resources : defaultResources(config);
 
   return (
     /* `ui grid divided`: margin −1rem, row padding 1rem 0, 12/4 columns with
@@ -181,7 +202,7 @@ export function HomePage() {
               <IconButton
                 to="/upload"
                 icon="table"
-                cornerIcon="add-circle"
+                cornerIcon="add"
                 title="Upload Tool"
                 subtitle="Import data into your private workspace."
               />
@@ -189,8 +210,8 @@ export function HomePage() {
             <div style={threeCard}>
               <IconButton
                 to="/private"
-                icon="file-text"
-                cornerIcon="check"
+                icon="file text outline"
+                cornerIcon="checkmark"
                 title="Private Workspace"
                 subtitle={`Manage your contributions to ${config.key}.`}
               />
@@ -206,10 +227,9 @@ export function HomePage() {
 
           <DividerHeader first>{config.key} Resources</DividerHeader>
           <div className="flex flex-wrap" style={nineCards}>
-            {resources.map((props, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: static card list
-              <div key={index} style={nineCard}>
-                <IconButton variant="small" {...props} />
+            {resources.map((card) => (
+              <div key={card.title} style={nineCard}>
+                <IconButton variant="small" {...cardProps(card)} />
               </div>
             ))}
           </div>
@@ -241,34 +261,31 @@ export function HomePage() {
           )}
         </div>
 
-        {/* News column (4 of 16) with the grid's vertical divider */}
+        {/* News column (4 of 16) with the grid's vertical divider; justified like legacy */}
         <aside
           className="hidden lg:block lg:w-1/4"
-          style={{ padding: "0 1rem", boxShadow: `-1px 0 0 0 ${RULE}` }}
+          style={{ padding: "0 1rem", boxShadow: `-1px 0 0 0 ${RULE}`, textAlign: "justify" }}
           aria-label="News"
         >
           <Rule />
-          <h3
-            className="font-bold"
-            style={{
-              fontSize: "1.28571429em",
-              lineHeight: "1.28571429em",
-              margin: "calc(2rem - 0.14285714em) 0 1rem",
-              color: "rgba(0,0,0,.87)",
-            }}
-          >
-            News
-          </h3>
-          <p style={{ margin: "0 0 1em" }}>No news yet.</p>
-          <p style={{ margin: "0 0 1em" }}>
-            <Link to="/contact" className="text-node hover:underline">
-              Contact the {config.key} team
-            </Link>
-          </p>
+          {home.news.length === 0 && (
+            <>
+              <p style={{ margin: "1em 0" }}>No news yet.</p>
+              <p style={{ margin: "0 0 1em" }}>
+                <Link to="/contact" className="text-node hover:underline">
+                  Contact the {config.key} team
+                </Link>
+              </p>
+            </>
+          )}
+          {home.news.map((item, index) => (
+            <div key={item.title}>
+              {index > 0 && <Rule />}
+              <NewsItem item={item} />
+            </div>
+          ))}
         </aside>
       </div>
     </div>
   );
 }
-
-type IconName = NonNullable<IconButtonProps["icon"]>;

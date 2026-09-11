@@ -65,9 +65,40 @@ class DoiConfig(BaseModel):
     prefix: str | None = None
 
 
+class HomeCardConfig(BaseModel):
+    """A resource card on the home page (legacy `ui nine cards` IconButton)."""
+
+    title: str  # "\n" breaks the title onto two lines
+    icon: str  # Semantic UI icon name (database, sitemap, lab, ...)
+    corner_icon: str | None = None
+    to: str | None = None  # SPA route, e.g. /method-codes
+    href: str | None = None  # external URL
+
+    @model_validator(mode="after")
+    def _one_target(self) -> "HomeCardConfig":
+        if (self.to is None) == (self.href is None):
+            raise ValueError(f"home card {self.title!r} needs exactly one of to/href")
+        return self
+
+
+class HomeNewsConfig(BaseModel):
+    """A news item in the home page's right column."""
+
+    title: str
+    html: str  # trusted markup from this repo's YAML
+    image: str | None = None  # path under config/<slug>/assets/ or an absolute URL
+    link: str | None = None  # optional URL the title links to
+
+
+class HomeConfig(BaseModel):
+    resources: list[HomeCardConfig] = []
+    news: list[HomeNewsConfig] = []
+
+
 class FeaturesConfig(BaseModel):
     pages: list[str] = []
     plugins: list[str] = []
+    home: HomeConfig = HomeConfig()
 
 
 class NodeConfig(BaseModel):
@@ -102,6 +133,14 @@ class NodeConfig(BaseModel):
         if rel not in self._asset_cache:
             self._asset_cache[rel] = json.loads((self.base_dir / rel).read_text())
         return self._asset_cache[rel]
+
+    def asset_path(self, rel: str) -> Path | None:
+        """Resolve `config/<slug>/assets/<rel>`; None if outside that dir or missing."""
+        root = (self.base_dir / self.node.slug / "assets").resolve()
+        candidate = (root / rel).resolve()
+        if root not in candidate.parents or not candidate.is_file():
+            return None
+        return candidate
 
     def load_data_model(self, version: str) -> dict:
         if version not in self.data_model.versions:
