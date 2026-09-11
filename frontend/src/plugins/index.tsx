@@ -43,7 +43,17 @@ export interface PluginFiltersProps {
   setBbox: (bbox: string | undefined) => void;
 }
 
+export interface PluginHomeCard {
+  key: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  to: string;
+  search?: Record<string, unknown>;
+}
+
 export interface PluginModule {
+  /** Full-width cards under the home page's primary cards (legacy "Poles / View"). */
+  homeCards?: (config: NodeConfig) => PluginHomeCard[];
   /** Return a custom card for this hit, or null to fall through to the default. */
   resultItem?: (props: PluginResultItemProps) => ReactNode | null;
   /** Extra result-view sub-tabs contributed to a search level. */
@@ -65,6 +75,11 @@ export function activePlugins(config: NodeConfig | undefined): PluginModule[] {
   return Object.keys(config.plugins ?? {})
     .filter((name) => name in PLUGINS)
     .map((name) => PLUGINS[name]);
+}
+
+export function pluginHomeCards(config: NodeConfig | undefined): PluginHomeCard[] {
+  if (!config) return [];
+  return activePlugins(config).flatMap((plugin) => plugin.homeCards?.(config) ?? []);
 }
 
 /** First plugin-provided card for a hit, or null. */

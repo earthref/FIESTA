@@ -537,6 +537,25 @@ function PolesFiltersPanel(props: PluginFiltersProps) {
 // --- Plugin module -------------------------------------------------------------------
 
 export const polesPlugin: PluginModule = {
+  // Legacy home page: a full-width "Poles / View" tiny card under the primary cards.
+  homeCards(config) {
+    const pconfig = polesConfig(config);
+    if (!pconfig.base_level) return [];
+    return [
+      {
+        key: "poles",
+        title: (
+          <>
+            Poles
+            <br />
+            View
+          </>
+        ),
+        to: "/search",
+        search: { level: pconfig.base_level },
+      },
+    ];
+  },
   // Poles is a sub-tab of its base level (Locations), added after `after_sub_tab`.
   levelSubTabs(level, config) {
     const pconfig = polesConfig(config);
