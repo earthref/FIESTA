@@ -45,6 +45,12 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection, slug: str) -> None:
     settings = get_settings()
+    # Resolved schema names for migrations. Alembic's ALTER TABLE family
+    # (add_column / alter_column / drop_column) renders the schema literally
+    # and bypasses schema_translate_map, so migrations that alter a table
+    # must use these instead of the NODE_SCHEMA / SHARED_SCHEMA tokens.
+    config.attributes["node_schema"] = slug
+    config.attributes["shared_schema"] = settings.db_shared_schema
     connection = connection.execution_options(
         schema_translate_map=schema_translate_map(slug, settings.db_shared_schema)
     )

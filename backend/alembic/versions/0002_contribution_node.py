@@ -2,6 +2,11 @@
 
 Rows created before this migration default to the migrating node's slug.
 
+Uses the resolved schema name (config.attributes["node_schema"], set by
+env.py) rather than the NODE_SCHEMA token: op.add_column / op.alter_column
+emit ALTER TABLE with the schema rendered literally, bypassing the
+schema_translate_map that op.create_table / op.create_index honor.
+
 Revision ID: 0002
 Revises: 0001
 Create Date: 2026-07-05
@@ -10,7 +15,6 @@ Create Date: 2026-07-05
 import sqlalchemy as sa
 
 from alembic import context, op
-from fiesta.db.base import NODE_SCHEMA
 
 revision = "0002"
 down_revision = "0001"
@@ -19,16 +23,17 @@ depends_on = None
 
 
 def upgrade() -> None:
-    slug = context.config.attributes.get("node_slug") or "magic"
+    schema = context.config.attributes["node_schema"]
     op.add_column(
         "contributions",
-        sa.Column("node", sa.String(32), nullable=False, server_default=slug),
-        schema=NODE_SCHEMA,
+        sa.Column("node", sa.String(32), nullable=False, server_default=schema),
+        schema=schema,
     )
-    op.alter_column("contributions", "node", server_default=None, schema=NODE_SCHEMA)
-    op.create_index("ix_contributions_node", "contributions", ["node"], schema=NODE_SCHEMA)
+    op.alter_column("contributions", "node", server_default=None, schema=schema)
+    op.create_index("ix_contributions_node", "contributions", ["node"], schema=schema)
 
 
 def downgrade() -> None:
-    op.drop_index("ix_contributions_node", table_name="contributions", schema=NODE_SCHEMA)
-    op.drop_column("contributions", "node", schema=NODE_SCHEMA)
+    schema = context.config.attributes["node_schema"]
+    op.drop_index("ix_contributions_node", table_name="contributions", schema=schema)
+    op.drop_column("contributions", "node", schema=schema)

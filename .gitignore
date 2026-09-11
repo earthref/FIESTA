@@ -1,14 +1,20 @@
+# secrets and local config
 .env
+.env.*
+!.env.example
 .vscode
+
+# Claude Code: per-clone settings and worktrees; CLAUDE.md, skills, ROADMAP are committed
+.claude/settings.json
+.claude/settings.local.json
+.claude/settings.proposed.json
+.claude/worktrees/
+
+# build and tool caches
 node_modules/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
 __pycache__/
 *.pyc
 .venv/
 .pytest_cache/
 .ruff_cache/
 dist/
-settings.json

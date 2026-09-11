@@ -21,8 +21,8 @@ Counted from the tree, not estimated:
 | Backend apps | 2 — node app (`/api`, one process per node) + public API (`/v1`, all nodes) |
 | Backend tests | 26 (domain + plugins; no infra) — routers are covered only by `scripts/e2e.sh` |
 | Frontend routes | home, search, contribution, private workspace, upload, validate, data-models, vocabularies, method-codes, contact, login; **6 stubs** (about, technology, grand challenges, workshops, links, help) |
-| CI | `ci.yml` (ruff, pytest, biome, tsc/build, every YAML loads, compose e2e) — written, **not yet committed** |
-| Deploy | none — the template deploy workflows were removed 2026-09-07; production still runs the legacy Meteor apps |
+| CI | `ci.yml` (ruff, pytest, biome, tsc/build, every YAML loads, compose e2e) — committed 2026-09-10; first run failed on the e2e job (migration 0002, fixed same day) |
+| Deploy | `deploy.yml` → self-hosted runner `fiesta-deploy` running `/srv/fiesta/bin/deploy-fiesta.sh`; the runner was offline on 2026-09-10 so the push-to-main run sat queued. Production still runs the legacy Meteor apps |
 | Local stack | `make up` = infra + backend/worker/frontend **per node** (6 duplicated compose triplets) |
 
 **Read of the position.** The core workflow (register → upload → validate → publish
@@ -55,8 +55,8 @@ on the pages people actually use, and (4) a deploy and cutover story. In that or
 5. **Phase E — deployment and cutover.** Needs operator decisions first.
 6. **Phase F — keep it up.** Tests for routers, branch protection, dependency bumps.
 
-Before any of it: commit the CI workflow (the tree has `ci.yml` untracked and the three
-template workflows staged as deleted).
+Before any of it: get `CI` green on `main` (the migration 0002 fix and the log-dump fix
+from 2026-09-10) and untrack `.claude/settings.proposed.json`.
 
 ## Phase A — One FIESTA API — **DECIDED 2026-09-10**
 
@@ -187,7 +187,7 @@ interactive chat/AI features in the app.
 - `a15a8b9` mobile drawer + icon set
 - `f98d3a6` `scripts/e2e.sh` replaces the obsolete build/push/deploy/test scripts
 - Dependabot: actions bumps (#3, #4, #5, #8)
-- Uncommitted: `.github/workflows/ci.yml` (replaces `test.yml`, `playwright.yml`, `smokeshow.yml`)
+- `ba4a1df` CLAUDE.md, ROADMAP.md, OPERATOR_TODO.md, skills, `ci.yml` (replaces `test.yml`, `playwright.yml`, `smokeshow.yml`)
 
 ### July 2026 — the rebuild
 
