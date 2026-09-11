@@ -94,4 +94,4 @@ Edit files surgically; never rewrite a file to change a few lines. Scratch check
 
 ## What NOT to Add
 
-Meteor, Semantic-UI, Blaze, Koa (all replaced); Redis/Celery (procrastinate is the queue); a second search engine; per-node forks of core code; node-specific env vars (everything node-specific goes in the YAML). Do not resurrect the deleted template workflows (`test.yml`, `playwright.yml`, `smokeshow.yml`) — `ci.yml` replaces them.
+Meteor, Semantic-UI, Blaze, Koa (all replaced); Redis/Celery (procrastinate is the queue); a second search engine; per-node forks of core code; node-specific env vars (everything node-specific goes in the YAML). Do not resurrect the deleted template workflows (`test.yml`, `playwright.yml`, `smokeshow.yml`, `add-to-project.yml`, `issue-manager.yml`, `latest-changes.yml`) — `ci.yml` replaces them.
