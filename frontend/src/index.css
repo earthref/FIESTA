@@ -70,6 +70,7 @@
   --node-color: #4b5563;
   --node-color-soft: color-mix(in srgb, #4b5563 8%, white);
   --node-color-dark: color-mix(in srgb, #4b5563 85%, black);
+  --node-color-light: color-mix(in srgb, #4b5563 80%, white);
 }
 
 body {

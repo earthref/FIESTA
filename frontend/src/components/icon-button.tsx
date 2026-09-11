@@ -71,15 +71,17 @@ export function IconButton({
   const cornerPx = iconsPx * 1.5;
 
   const className = cx(
-    "er-icon-button block text-center transition-colors hover:bg-[#f0f0f0]",
+    "er-icon-button block text-center transition-colors",
     "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
     wide ? "w-full" : "h-full",
+    small
+      ? "bg-transparent hover:bg-[#f8f8f9] active:bg-[#f0f0f0] hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]"
+      : "bg-[#f8f8f9] hover:bg-[#f0f0f0] active:bg-transparent shadow-[inset_0_0_0_1px_var(--node-color)] hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]",
   );
   const style: CSSProperties = {
     fontSize: cardFont,
     padding: wide ? "0.786em" : "0.875em",
     borderRadius: "0.28571429rem",
-    ...(small ? {} : { background: "#f8f8f9", boxShadow: "0 0 0 1px var(--node-color) inset" }),
   };
   const content = (
     <>

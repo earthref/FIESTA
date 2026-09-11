@@ -20,5 +20,6 @@ export function applyNodeTheme(config: NodeConfig): void {
   root.style.setProperty("--node-color", config.color);
   root.style.setProperty("--node-color-soft", `color-mix(in srgb, ${config.color} 8%, white)`);
   root.style.setProperty("--node-color-dark", `color-mix(in srgb, ${config.color} 85%, black)`);
+  root.style.setProperty("--node-color-light", `color-mix(in srgb, ${config.color} 80%, white)`);
   document.title = config.title;
 }
