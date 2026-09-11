@@ -125,7 +125,7 @@ function imageUrl(image: string): string {
 /** Legacy home_news.jsx: `h3` with a `ui mini image floated left` (35px), then
  * a justified paragraph; items separated by `ui divider`s. The HTML comes from
  * this repo's node YAML, so it is trusted. */
-function NewsItem({ item }: { item: HomeNews }) {
+function NewsItem({ item, first }: { item: HomeNews; first?: boolean }) {
   const heading = item.link ? (
     <a href={item.link} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>
       {item.title}
@@ -140,7 +140,7 @@ function NewsItem({ item }: { item: HomeNews }) {
         style={{
           fontSize: "1.28571429em",
           lineHeight: "1.28571429em",
-          margin: "calc(2rem - 0.14285714em) 0 1rem",
+          margin: first ? "0 0 1rem" : "calc(2rem - 0.14285714em) 0 1rem",
           color: "rgba(0,0,0,.87)",
         }}
       >
@@ -267,6 +267,7 @@ export function HomePage() {
           style={{ padding: "0 1rem", textAlign: "justify" }}
           aria-label="News"
         >
+          <DividerHeader>News</DividerHeader>
           {home.news.length === 0 && (
             <>
               <p style={{ margin: "1em 0" }}>No news yet.</p>
@@ -280,7 +281,7 @@ export function HomePage() {
           {home.news.map((item, index) => (
             <div key={item.title}>
               {index > 0 && <Rule />}
-              <NewsItem item={item} />
+              <NewsItem item={item} first={index === 0} />
             </div>
           ))}
         </aside>
