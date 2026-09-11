@@ -43,8 +43,8 @@ export function Footer() {
         color: "rgba(0,0,0,.87)",
       }}
     >
-      <div className="flex items-stretch" style={{ margin: "0 2em" }}>
-        <div className="flex" style={{ marginRight: "auto" }}>
+      <div className="flex flex-wrap items-stretch" style={{ margin: "0 2em" }}>
+        <div className="flex shrink-0" style={{ marginRight: "auto" }}>
           <div style={{ fontSize: "1rem", padding: "0.25em 0", lineHeight: "1.4285em" }}>
             <div>
               Sponsored by{" "}
@@ -76,10 +76,10 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="flex">
+        <div className="flex flex-wrap justify-center">
           <a
             href={`mailto:webmaster@earthref.org?subject=[${config?.key ?? "FIESTA"} Help]`}
-            className="inline-block whitespace-nowrap self-start"
+            className="inline-block shrink-0 whitespace-nowrap self-start"
             style={basicButtonStyle("var(--node-color)")}
           >
             <Icon
@@ -89,13 +89,11 @@ export function Footer() {
             <b>Having trouble?</b>
             {" Email Us"}
           </a>
-        </div>
-        <div className="flex">
           <a
             href="https://github.com/earthref/FIESTA#readme"
             target="_blank"
             rel="noreferrer"
-            className="inline-block whitespace-nowrap self-start"
+            className="inline-block shrink-0 whitespace-nowrap self-start"
             style={basicButtonStyle(earthrefColor)}
           >
             Powered by
@@ -112,7 +110,7 @@ export function Footer() {
             <b>FIESTA</b>
           </a>
         </div>
-        <div className="flex" style={{ marginLeft: "auto" }}>
+        <div className="flex shrink-0" style={{ marginLeft: "auto" }}>
           <div
             className="text-right"
             style={{ fontSize: "1rem", padding: "0.25em 0", lineHeight: "1.4285em" }}

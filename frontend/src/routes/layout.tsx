@@ -53,7 +53,12 @@ export function RootLayout() {
         <div className="pb-[4em] pt-[4em]">
           <NodeHeader fullWidth={fullWidth} />
           <NodeMenu fullWidth={fullWidth} />
-          <main className={cx("clear-both", fullWidth ? "w-full px-[2em]" : "er-container")}>
+          <main
+            className={cx(
+              "clear-both pt-[1.25em] lg:pt-0",
+              fullWidth ? "w-full px-[2em]" : "er-container",
+            )}
+          >
             <Outlet />
           </main>
         </div>

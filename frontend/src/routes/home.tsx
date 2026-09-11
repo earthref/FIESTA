@@ -136,7 +136,7 @@ function NewsItem({ item }: { item: HomeNews }) {
   return (
     <>
       <h3
-        className="font-bold"
+        className="flex items-center font-bold"
         style={{
           fontSize: "1.28571429em",
           lineHeight: "1.28571429em",
@@ -148,11 +148,11 @@ function NewsItem({ item }: { item: HomeNews }) {
           <img
             src={imageUrl(item.image)}
             alt=""
-            className="float-left"
-            style={{ width: 35, margin: "0 1em 1em 0" }}
+            className="shrink-0"
+            style={{ width: 35, marginRight: "1em" }}
           />
         )}
-        {heading}
+        <span>{heading}</span>
       </h3>
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: markup authored in config/<node>.yaml, part of this repo */}
       <p style={{ margin: "0 0 1em" }} dangerouslySetInnerHTML={{ __html: item.html }} />
@@ -185,8 +185,8 @@ export function HomePage() {
   return (
     /* `ui grid divided`: margin −1rem, row padding 1rem 0, 12/4 columns with
        1rem side padding; the news column carries the 1px left divider. */
-    <div style={{ margin: "-1rem" }}>
-      <div className="flex flex-col lg:flex-row" style={{ padding: "1rem 0" }}>
+    <div className="-mx-[1rem] lg:-my-[1rem]">
+      <div className="flex flex-col py-[1rem] lg:flex-row">
         <div className="min-w-0 lg:w-3/4" style={{ padding: "0 1rem" }}>
           <div className="flex flex-wrap" style={threeCards}>
             <div style={threeCard}>
@@ -263,11 +263,10 @@ export function HomePage() {
 
         {/* News column (4 of 16) with the grid's vertical divider; justified like legacy */}
         <aside
-          className="hidden lg:block lg:w-1/4"
-          style={{ padding: "0 1rem", boxShadow: `-1px 0 0 0 ${RULE}`, textAlign: "justify" }}
+          className="mt-[1rem] lg:mt-0 lg:w-1/4 lg:shadow-[-1px_0_0_0_rgba(34,36,38,0.15)]"
+          style={{ padding: "0 1rem", textAlign: "justify" }}
           aria-label="News"
         >
-          <Rule />
           {home.news.length === 0 && (
             <>
               <p style={{ margin: "1em 0" }}>No news yet.</p>
