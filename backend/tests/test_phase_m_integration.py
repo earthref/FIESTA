@@ -464,37 +464,40 @@ async def test_v2_serves_every_enabled_node_from_one_process():
         assert login.status_code == 200, login.text
         client.headers["Authorization"] = "Bearer " + login.json()["access_token"]
 
+        async def mine(slug: str) -> list[int]:
+            listing = await client.get(f"/v2/{slug}/private/contributions")
+            assert listing.status_code == 200, (slug, listing.text)
+            return sorted(c["id"] for c in listing.json())
+
         for node in deployment.node_list:
             for repository in (node.node.slug, node.node.key, node.node.key.upper()):
                 config = await client.get(f"/v2/{repository}/config")
                 assert config.status_code == 200, (repository, config.text)
                 assert config.json()["slug"] == node.node.slug
             slug = node.node.slug
-            assert (
-                await client.get(f"/v2/{slug}/config/vocabularies/controlled")
-            ).status_code == 200
+            vocab = await client.get(f"/v2/{slug}/config/vocabularies/controlled")
+            assert vocab.status_code == 200
             search = await client.get(f"/v2/{slug}/search/contribution", params={"size": 5})
             assert search.status_code == 200, search.text
             for hit in search.json()["results"]:
                 assert hit["summary"]["contribution"]["_is_activated"] is True
             unknown = await client.get(f"/v2/{slug}/search/not-a-table")
             assert unknown.status_code == 404
+            # Ids are per node schema, so isolation shows as counts: creating
+            # under one node changes only that node's workspace listing.
+            before = {n.node.slug: await mine(n.node.slug) for n in deployment.node_list}
             created = await client.post(f"/v2/{slug}/private/contributions")
             assert created.status_code == 201, (slug, created.text)
-            mine = await client.get(f"/v2/{slug}/private/contributions")
-            assert created.json()["id"] in [c["id"] for c in mine.json()]
+            after = {n.node.slug: await mine(n.node.slug) for n in deployment.node_list}
+            assert set(after[slug]) - set(before[slug]) == {created.json()["id"]}
+            for other, ids in before.items():
+                if other != slug:
+                    assert after[other] == ids, (slug, other)
             deleted = await client.delete(
                 f"/v2/{slug}/private/contributions/{created.json()['id']}"
             )
             assert deleted.status_code == 204, (slug, deleted.text)
-            # A contribution created under one node is not visible under another.
-            for other in deployment.node_list:
-                if other is node:
-                    continue
-                crossed = await client.get(
-                    f"/v2/{other.node.slug}/private/contributions/{created.json()['id']}"
-                )
-                assert crossed.status_code == 404, (slug, other.node.slug, crossed.text)
+            assert await mine(slug) == before[slug]
 
         assert (await client.get("/v2/nope/config")).status_code == 404
         plugin_routes = {
