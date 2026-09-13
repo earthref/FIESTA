@@ -34,7 +34,7 @@ export function Footer() {
 
   return (
     <footer
-      className="fixed inset-x-0 bottom-0 z-40 bg-[#F8F8F8]"
+      className="bg-[#F8F8F8] sm:fixed sm:inset-x-0 sm:bottom-0 sm:z-40"
       style={{
         fontSize: "0.92857143rem",
         minHeight: "2.85714286em",
@@ -43,8 +43,11 @@ export function Footer() {
         color: "rgba(0,0,0,.87)",
       }}
     >
-      <div className="flex items-start" style={{ margin: "0 2em" }}>
-        <div className="flex min-w-[9em] flex-1 sm:min-w-0">
+      <div
+        className="flex flex-col items-center gap-y-2 sm:flex-row sm:items-start sm:gap-y-0"
+        style={{ margin: "0 2em" }}
+      >
+        <div className="flex w-full justify-center text-center sm:w-auto sm:min-w-0 sm:flex-1 sm:justify-start sm:text-left">
           <div style={{ fontSize: "1rem", padding: "0.25em 0", lineHeight: "1.4285em" }}>
             <div>
               Sponsored by{" "}
@@ -110,9 +113,9 @@ export function Footer() {
             <b>FIESTA</b>
           </a>
         </div>
-        <div className="flex min-w-[9em] flex-1 justify-end sm:min-w-0">
+        <div className="flex w-full justify-center text-center sm:w-auto sm:min-w-0 sm:flex-1 sm:justify-end sm:text-right">
           <div
-            className="text-right"
+            className="sm:text-right"
             style={{ fontSize: "1rem", padding: "0.25em 0", lineHeight: "1.4285em" }}
           >
             <div>
