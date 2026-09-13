@@ -22,7 +22,7 @@ make up PROD=1            # the built images, exactly as CI e2e and a deployment
 `make up` layers `docker-compose.dev.yml` over `docker-compose.yml`: the
 backend package is bind-mounted into the image and uvicorn reloads on change,
 the worker restarts via `watchfiles`, and each frontend container runs the
-Vite dev server (HMR, `/api` proxied to that node's backend) on the same host
+Vite dev server (HMR, `<base>v1/` proxied to the API) on the same host
 port as the nginx image would. `make up` returns only once every service is
 healthy (`--wait`), so the first start blocks for the ~30 s `npm install` into
 the empty `node_modules` volume; later starts are ready in about a second.
@@ -37,9 +37,10 @@ live in a per-node named volume (`node-modules-<node>`), removed by `make clean`
 make up FIESTA_NODE=magic,karar,cdr
 ```
 
-Each node gets its own backend/worker/frontend (compose profiles named after
-the node) with per-node default ports (magic 8000/8080, kdd 8001/8081, cdr
-8002/8082, karar 8003/8083, erda 8004/8084, osu-mgr 8006/8086). Infrastructure is shared; isolation comes from a
+One API (`API_PORT`, default 8000) and one worker serve every listed node;
+each node additionally gets its own frontend (compose profiles named after the
+node) on its own port (magic 8080, kdd 8081, cdr 8082, karar 8083, erda 8084,
+osu-mgr 8086). Infrastructure is shared; isolation comes from a
 per-node OpenSearch index, MinIO bucket, procrastinate queue, and a Postgres
 schema per node (`magic`, `cdr`, ...) for the workflow tables. Accounts are
 shared across nodes (one EarthRef login, in the `public` schema). If your
@@ -69,9 +70,9 @@ KDD_BASE_PATH=/KdD/
 The value must start and end with `/`. It is a **build arg** of the frontend
 image (asset URLs, the router `basepath`, and the nginx location blocks all
 derive from it), so `make up PROD=1` rebuilds the image after a change (the
-dev overlay passes it to Vite as `VITE_BASE_PATH`). The backend
-receives it as `FIESTA_ROOT_PATH`, which only tells FastAPI where to
-advertise `/api/docs`; the proxy strips the prefix, so routes stay at `/api`.
+dev overlay passes it to Vite as `VITE_BASE_PATH`). The single API is not
+per-node and is unaffected by base paths: each frontend's nginx proxies
+`<base>v1/` to it, so the API's routes stay at `/v1/{node}/...`.
 
 The reverse proxy in front then needs one plain-prefix location per node,
 forwarding the full URI (no trailing slash on `proxy_pass`):
@@ -83,8 +84,9 @@ location /CDR/   { proxy_pass http://10.10.10.115:8082; }   # frontend-cdr
 
 Everything inside the SPA goes through `siteUrl()` in
 `frontend/src/lib/base.ts` (the `api()` helper applies it for you); a new
-root-absolute `href` or `fetch("/api/...")` that bypasses it will break under a
-prefix, so route those through `siteUrl()` too. For a local build outside
+root-absolute `href` or `fetch("/v1/...")` that bypasses it will break under a
+prefix, so route API calls through `api()` / `nodeUrl()` and links through
+`siteUrl()`. For a local build outside
 Docker, `VITE_BASE_PATH=/MagIC/ npm run build` (or `npm run dev`, which then
 serves at `http://localhost:5173/MagIC/`).
 
@@ -94,11 +96,16 @@ serves at `http://localhost:5173/MagIC/`).
 docker compose up -d postgres opensearch minio mailpit
 cd backend
 uv sync
-export FIESTA_CONFIG_FILE=../config/magic.yaml
-uv run fiesta init                      # migrations + job schema + bucket + index
-uv run uvicorn fiesta.apps.node:create_app --factory --reload   # http://localhost:8000
+export FIESTA_CONFIG_FILE=../config/fiesta.yaml
+export FIESTA_NODE=magic                 # comma-separated list, or unset for all nodes
+uv run fiesta init                      # migrations + job schema + bucket + index (per node)
+uv run uvicorn fiesta.apps.api:create_app --factory --reload   # http://localhost:8000/v1/docs
 uv run fiesta worker                    # in another shell
 ```
+
+`make backend-dev` / `make worker-dev` wrap the same commands. Point
+`FIESTA_CONFIG_FILE` at a single node YAML (e.g. `../config/magic.yaml`) to run
+that node as a one-node deployment instead.
 
 Tests and linting:
 
@@ -107,20 +114,20 @@ uv run pytest
 uv run ruff check .
 ```
 
-The public API instead: `uv run uvicorn fiesta.apps.public:create_app --factory`
-with `FIESTA_CONFIG_FILE=../config/public-api.yaml`.
-
 ## Frontend only
 
 ```sh
 cd frontend
 npm ci
-npm run dev        # http://localhost:5173, proxies /api to localhost:8000
+VITE_NODE=magic npm run dev   # http://localhost:5173, proxies /v1 to localhost:8000
 npm run lint       # biome
 npm run build      # tsc + vite build
 ```
 
-Point the proxy elsewhere with `VITE_API_TARGET=http://localhost:18000 npm run dev`.
+`VITE_NODE` picks which node's `/v1/{node}` routes the SPA uses. With no
+`VITE_API_URL` the SPA calls same-origin `<base>v1/...` and the dev server
+proxies it to the API; re-point that proxy with
+`VITE_API_TARGET=http://localhost:18000 npm run dev`.
 
 ## Adding or changing a node
 
@@ -139,7 +146,7 @@ cards (title, Semantic icon name, optional corner icon, `to` for an SPA route
 or `href` for an external URL) and `features.home.news` the news items
 (title, HTML body, optional image and link). Images and other files a node's
 YAML refers to live in `config/<slug>/assets/` and are served at
-`/api/config/assets/<path>`. A node with no `resources` gets a default set
+`/v1/{node}/config/assets/<path>`. A node with no `resources` gets a default set
 (data model, vocabularies, method codes, API, help).
 
 Node-specific features (MagIC poles, CDR depth plots, KArAr age plateaus)
@@ -158,8 +165,8 @@ uv run fiesta worker          # run the job worker
 
 ## Offline Phase M development
 
-`make up FIESTA_NODE=magic,cdr` starts Docker infrastructure, APIs, workers and
-frontends. `make seed FIESTA_NODE=magic,cdr` loads the manifests selected by each
+`make up FIESTA_NODE=magic,cdr` starts Docker infrastructure, the API, the worker
+and a frontend per node. `make seed FIESTA_NODE=magic,cdr` loads the manifests selected by each
 node YAML under `development.seed_manifest`. On page load, local development
 automatically signs in as Local Developer (`developer@example.test`) once seeded.
 Sign-out lasts until the next page refresh. An existing valid login is preserved;

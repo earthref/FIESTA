@@ -2,8 +2,8 @@
 
 Source: `MagIC/client/modules/magic/components/search_poles_view.jsx`. The
 rebuild's poles view should match this. Backend already provides everything:
-`GET /api/plugins/poles/base-texture` (earth relief JPEG),
-`GET /api/plugins/poles/plate-boundaries` (GeoJSON), `GET /api/search/poles`
+`GET /v1/{node}/plugins/poles/base-texture` (earth relief JPEG),
+`GET /v1/{node}/plugins/poles/plate-boundaries` (GeoJSON), `GET /v1/{node}/search/poles`
 (pole docs), and `config.plugins.poles` (colors, columns, filters, flags).
 
 ## ECharts-GL globe option (both globes share this)
@@ -12,7 +12,7 @@ rebuild's poles view should match this. Backend already provides everything:
 {
   backgroundColor: "#FFF",
   globe: {
-    baseTexture: "/api/plugins/poles/base-texture",   // when has_base_texture
+    baseTexture: nodeUrl("/plugins/poles/base-texture"),   // when has_base_texture
     shading: "lambert",
     viewControl: { autoRotate: false, distance: 200, rotateSensitivity: 2, zoomSensitivity: 2 },
     light: { ambient: { intensity: 1 }, main: { intensity: 0 } },  // flat, evenly lit

@@ -49,10 +49,10 @@ calls are needed for this suite; those integrations remain Phase C work.
 
 ## Revisions and APIs
 
-The node API uses `/api/private/contributions`; the versioned API uses
-`/v1/{repository}/private/contributions`. Bearer tokens and HTTP Basic identify
-Postgres accounts on the shared management routes. Login/settings routes are
-`/api/auth/*` and `/v1/auth/*`. Account settings are a JSON object capped at 16 KiB.
+The contribution-management API is at `/v1/{repository}/private/contributions`.
+Bearer tokens and HTTP Basic both identify Postgres accounts on these shared
+management routes. Login/settings routes are node-less: `/v1/auth/*`. Account
+settings are a JSON object capped at 16 KiB.
 
 All content mutations share the revision service. A save requires the expected
 head revision and an idempotency key. Multipart uploads use `If-Match` (omit only
@@ -84,7 +84,7 @@ and revisions are not physically erased. No automatic history expiration or blob
 purging runs. Permission changes are audited separately and cannot be undone by
 restoring content.
 
-Workspace endpoints under `/api/workspaces` or `/v1/{repository}/workspaces` create
+Workspace endpoints under `/v1/{repository}/workspaces` create
 workspaces, assign owned contributions, and grant/revoke `viewer` or `editor` roles.
 Workspace owners control membership; contributions remain editable by their original
 owner and administrators. Settings and workspace management currently have API

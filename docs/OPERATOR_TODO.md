@@ -56,6 +56,19 @@ Last updated: 2026-09-11
       under the `/MagIC` (etc.) path prefix. After: Claude checks the four
       sites' About pages and closes this item.
 
+## 2026-09-12 — Phase A one-API deploy script
+
+- [ ] **Update the production deploy script for the one FIESTA API.**
+      `/srv/fiesta/bin/deploy-fiesta.sh` on the `fiesta-ct` runner (not in this
+      repo) still starts a per-node uvicorn process and proxies `/api`. Phase A
+      is now one process: change it to run a single
+      `uvicorn fiesta.apps.api:create_app` with
+      `FIESTA_CONFIG_FILE=config/fiesta.yaml` (optionally `FIESTA_NODE` to narrow
+      the set), proxy `<base>v1/` to that process instead of `/api`, and build
+      each node's SPA with `VITE_NODE=<slug>` (or serve `fiesta-env.js` per node)
+      so each frontend resolves its node and API origin. See deployment.md,
+      "The production deploy script". Unblocks: E1 rollout on the current host.
+
 ## Done
 
 _(none yet)_
