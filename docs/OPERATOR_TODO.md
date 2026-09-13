@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 ## A — Decisions
 
 - [ ] **Approve Phase A (one FIESTA API).** Confirms: node in the path
-      (`/v1/{node}/...`), `/api` folds into `/v1`, SPA talks to the API directly,
+      (`/v2/{node}/...`), `/api` folds into `/v2`, SPA talks to the API directly,
       SPA node comes from `FIESTA_NODE`. Then Claude starts A1 on a worktree branch.
       Unblocks: ROADMAP Phase A, B1, B3.
 - [ ] **Hosting for the FIESTA API and frontends** (where, who pays, how deploys

@@ -1,6 +1,6 @@
 # FIESTA local development stack.
 #
-# One API process (`api`, /v1/{node}/...) and one job worker serve every node
+# One API process (`api`, /v2/{node}/...) and one job worker serve every node
 # in FIESTA_NODE; each enabled node gets its own frontend (compose profile
 # named after the node). Postgres, OpenSearch, MinIO and Mailpit are shared.
 # Contributions are scoped per node in Postgres (one schema each), each node
@@ -12,7 +12,7 @@
 #   docker compose up -d            # honors COMPOSE_PROFILES from .env
 #
 # Default host ports (override in .env):
-#   api        8000      (all nodes: http://localhost:8000/v1/magic/config)
+#   api        8000      (all nodes: http://localhost:8000/v2/magic/config)
 #   frontend   magic 8080 · kdd 8081 · cdr 8082 · karar 8083 · erda 8084 · osu-mgr 8086
 #
 # Postgres owns application state; MinIO holds revision files.
@@ -135,7 +135,7 @@ services:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/health-check')"
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/v2/health-check')"
       interval: 10s
       timeout: 5s
       retries: 10

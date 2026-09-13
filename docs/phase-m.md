@@ -13,7 +13,7 @@ make seed FIESTA_NODE=magic,cdr
 
 Docker runs Postgres, OpenSearch, MinIO, Mailpit, APIs, workers and frontends.
 The current per-node process layout remains until Phase A; the same management
-routers are also available on the multi-node API under `/v1/{repository}`.
+routers are also available on the multi-node API under `/v2/{repository}`.
 No MARFIK, AWS, production credentials or live account is needed. Seed commands
 refuse production mode, nonlocal endpoints and database URL connection overrides.
 Docker sets `FIESTA_ENVIRONMENT=development` and a shared `fiesta-local` bucket.
@@ -49,9 +49,9 @@ calls are needed for this suite; those integrations remain Phase C work.
 
 ## Revisions and APIs
 
-The contribution-management API is at `/v1/{repository}/private/contributions`.
+The contribution-management API is at `/v2/{repository}/private/contributions`.
 Bearer tokens and HTTP Basic both identify Postgres accounts on these shared
-management routes. Login/settings routes are node-less: `/v1/auth/*`. Account
+management routes. Login/settings routes are node-less: `/v2/auth/*`. Account
 settings are a JSON object capped at 16 KiB.
 
 All content mutations share the revision service. A save requires the expected
@@ -84,7 +84,7 @@ and revisions are not physically erased. No automatic history expiration or blob
 purging runs. Permission changes are audited separately and cannot be undone by
 restoring content.
 
-Workspace endpoints under `/v1/{repository}/workspaces` create
+Workspace endpoints under `/v2/{repository}/workspaces` create
 workspaces, assign owned contributions, and grant/revoke `viewer` or `editor` roles.
 Workspace owners control membership; contributions remain editable by their original
 owner and administrators. Settings and workspace management currently have API

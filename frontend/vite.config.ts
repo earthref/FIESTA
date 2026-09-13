@@ -52,7 +52,7 @@ export default defineConfig({
       [`${base}v1`]: {
         target: process.env.VITE_API_TARGET || "http://localhost:8000",
         changeOrigin: true,
-        // Strip the base path: the API always serves /v1 at its root.
+        // Strip the base path: the API always serves /v2 at its root.
         rewrite: (path) => path.slice(base.length - 1),
       },
     },

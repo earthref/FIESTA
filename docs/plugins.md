@@ -22,9 +22,9 @@ Four optional hooks:
 | Hook | When it runs | Use for |
 |---|---|---|
 | `derive_docs(node, parsed, meta)` | every (re)process and `fiesta rebuild` | extra search documents derived from contribution rows (e.g. one `poles` doc per location row with `pole_lat`/`pole_lon`) — always reproducible from the bucket |
-| `search_levels(node)` | config load | extra search tabs; merged into `GET /v1/{node}/config` `search_levels` and the search API's allowed tables |
-| `build_router()` | app startup | API routes mounted once at `/v1/{repository}/plugins/{name}` (e.g. plot-ready measurement series, plateau computation); handlers read the node from `NodeDep`. The router is guarded so a node that does not activate the plugin gets a 404 |
-| `frontend_config(node)` | `GET /v1/{node}/config` | arbitrary JSON under `plugins[name]` telling the UI plugin what to mount and with which options |
+| `search_levels(node)` | config load | extra search tabs; merged into `GET /v2/{node}/config` `search_levels` and the search API's allowed tables |
+| `build_router()` | app startup | API routes mounted once at `/v2/{repository}/plugins/{name}` (e.g. plot-ready measurement series, plateau computation); handlers read the node from `NodeDep`. The router is guarded so a node that does not activate the plugin gets a 404 |
+| `frontend_config(node)` | `GET /v2/{node}/config` | arbitrary JSON under `plugins[name]` telling the UI plugin what to mount and with which options |
 
 Plugin routes read contribution data through
 `fiesta.plugins.util.load_visible_parsed`, which enforces the same
@@ -45,7 +45,7 @@ live under `src/plugins/<name>/` and activate only when the name appears in
   queried `type: "poles"` docs that nothing actually indexed; the plugin
   makes them real). UI: pole result items + an SVG pole map with α95 circles
   and a reduced filter set.
-- **`depth-plot` (CDR)** — `GET /v1/{node}/plugins/depth-plot/contributions/{id}/measurements`
+- **`depth-plot` (CDR)** — `GET /v2/{node}/plugins/depth-plot/contributions/{id}/measurements`
   returns depth-sorted measurement rows grouped by core (depth =
   `mbs_corrected` falling back to `depth`; ten series tracks matching the
   legacy view). UI: multi-track SVG depth plots as a "Plots" sub-tab on the
@@ -55,7 +55,7 @@ live under `src/plugins/<name>/` and activate only when the name appears in
   `t = (1/λ)·ln(1 + J·R)` (λ = 5.543e-10/yr, atmospheric ⁴⁰Ar/³⁶Ar = 295.5),
   cumulative ³⁹Ar release, plateau = lowest-MSWD run of ≥3 consecutive steps
   spanning ≥50% ³⁹Ar with MSWD ≤ 2.5.
-  `GET /v1/{node}/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau`
+  `GET /v2/{node}/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau`
   returns the full age spectrum + plateau. UI: age-spectrum thumbnail/modal
   on Experiments result items.
 - **`record-cards` (ERDA, OSU-MGR)** — some nodes publish *records* rather than

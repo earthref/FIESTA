@@ -18,7 +18,7 @@ Counted from the tree, not estimated:
 |---|---|
 | Nodes configured (`config/*.yaml`) | 6 — MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR |
 | Plugins | poles (MagIC), depth-plot (CDR), plateau-calculations (KArAr), record-cards, digital-objects (ERDA) |
-| Backend apps | 2 — node app (`/api`, one process per node) + public API (`/v1`, all nodes) |
+| Backend apps | 2 — node app (`/api`, one process per node) + public API (`/v2`, all nodes) |
 | Backend tests | 26 (domain + plugins; no infra) — routers are covered only by `scripts/e2e.sh` |
 | Frontend routes | home, search, contribution, private workspace, upload, validate, data-models, vocabularies, method-codes, contact, login; **6 stubs** (about, technology, grand challenges, workshops, links, help) |
 | CI | `ci.yml` (ruff, pytest, biome, tsc/build, every YAML loads, compose e2e) — committed 2026-09-10; first run failed on the e2e job (migration 0002, fixed same day) |
@@ -26,7 +26,7 @@ Counted from the tree, not estimated:
 | Local stack | `make up` = infra + backend/worker/frontend **per node** (6 duplicated compose triplets) |
 
 **Read of the position.** The core workflow (register → upload → validate → publish
-→ search → download → `/v1`) works end to end, six nodes load from YAML, and
+→ search → download → `/v2`) works end to end, six nodes load from YAML, and
 node-specific science is isolated in plugins. What stands between this and replacing
 the Meteor apps is: (1) a backend shape contributors can work against without
 production credentials, (2) the legacy features that were never ported, (3) UI parity
@@ -39,7 +39,7 @@ on the pages people actually use, and (4) a deploy and cutover story. In that or
   OpenSearch is a rebuildable search projection.** New direction 2026-09-11; the
   implementation and recovery contract must change through Phase M below.
 - **One API.** The SPA and external clients hit the same versioned surface,
-  `/v1/{node}/...`. Frontend contributors point at the live API with their EarthRef
+  `/v2/{node}/...`. Frontend contributors point at the live API with their EarthRef
   login and need no infrastructure; backend contributors run one API locally with seed
   data. Decided 2026-09-10.
 - **Parity before novelty.** Until cutover, the measure of a page is
@@ -79,11 +79,11 @@ the node app is the outlier.
 - [x] **A2 Node per request.** `NodeDep` resolves `{node}` from the path (case-insensitive
       key or slug); `get_session` depends on it; lifespan ensures every enabled node's
       bucket and index; plugin routers mount at concrete slugs
-      (`/v1/magic/plugins/poles`). Node-less routes: `/v1/auth/*`, `/v1/health-check`.
-- [x] **A3 Merge the two apps.** `/api` folds into `/v1`: config, data models,
+      (`/v2/magic/plugins/poles`). Node-less routes: `/v2/auth/*`, `/v2/health-check`.
+- [x] **A3 Merge the two apps.** `/api` folds into `/v2`: config, data models,
       vocabularies, method codes, the full private workspace (validate/validation,
       reference, activate/deactivate), contribution summary + download. Add a token
-      login on `/v1` for the SPA; HTTP Basic stays for legacy `api.earthref.org`
+      login on `/v2` for the SPA; HTTP Basic stays for legacy `api.earthref.org`
       clients. Rewrite `docs/api.md` as the single contract.
 - [x] **A4 Jobs.** `process_contribution` takes the node slug as an argument instead
       of the process-global config; one worker listens on every enabled node's queue
@@ -97,7 +97,7 @@ the node app is the outlier.
       `development.md`, `deployment.md`, README ports table.
 
 Acceptance: `make up FIESTA_NODE=magic,karar` starts infra + 1 API + 1 worker + 2
-frontends; `make e2e` and CI green; `GET /v1/karar/config` and `GET /v1/magic/config`
+frontends; `make e2e` and CI green; `GET /v2/karar/config` and `GET /v2/magic/config`
 served by the same process.
 
 Verified by `make e2e` locally and CI's e2e job.
@@ -139,7 +139,7 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
 - [ ] **C6 Reference enrichment** — Crossref/DataCite lookup on `reference_doi` to
       fill `summary.contribution._reference` (authors, year, journal) as the legacy
       search docs have it.
-- [ ] **C7 `/v1` compatibility audit** against `../FIESTA-API`'s OpenAPI: `id`, `doi`,
+- [ ] **C7 `/v2` compatibility audit** against `../FIESTA-API`'s OpenAPI: `id`, `doi`,
       `format=json` params, response shapes, error codes. Diff, then close the gaps.
 
 ## Phase D — UI parity and the stub pages
@@ -281,7 +281,7 @@ the same API authorization checks.
       and metadata ([S3 Versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html)).
 - [ ] **M3 Shared editing/upload/API workflow.** Add revision list/read/restore,
       draft save, attachment management, upload finalization, validation, and
-      publication to `/v1/{node}/...`. Use expected-revision checks to reject
+      publication to `/v2/{node}/...`. Use expected-revision checks to reject
       conflicting saves and idempotency keys for retries. Stage and verify immutable
       objects before committing a revision and its outbox event in one Postgres
       transaction; reconcile abandoned uploads and interrupted operations. Bind
@@ -389,4 +389,4 @@ interactive chat/AI features in the app.
 FastAPI + async SQLAlchemy + procrastinate backend, Vite/React SPA, Postgres 16 +
 OpenSearch + MinIO compose stack, YAML-per-node config, plugins (poles, depth-plot,
 plateau-calculations), multi-node compose profiles, per-node Postgres schemas, public
-`/v1` API compatible with the legacy surface.
+`/v2` API compatible with the legacy surface.

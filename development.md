@@ -22,7 +22,7 @@ make up PROD=1            # the built images, exactly as CI e2e and a deployment
 `make up` layers `docker-compose.dev.yml` over `docker-compose.yml`: the
 backend package is bind-mounted into the image and uvicorn reloads on change,
 the worker restarts via `watchfiles`, and each frontend container runs the
-Vite dev server (HMR, `<base>v1/` proxied to the API) on the same host
+Vite dev server (HMR, `<base>v2/` proxied to the API) on the same host
 port as the nginx image would. `make up` returns only once every service is
 healthy (`--wait`), so the first start blocks for the ~30 s `npm install` into
 the empty `node_modules` volume; later starts are ready in about a second.
@@ -72,7 +72,7 @@ image (asset URLs, the router `basepath`, and the nginx location blocks all
 derive from it), so `make up PROD=1` rebuilds the image after a change (the
 dev overlay passes it to Vite as `VITE_BASE_PATH`). The single API is not
 per-node and is unaffected by base paths: each frontend's nginx proxies
-`<base>v1/` to it, so the API's routes stay at `/v1/{node}/...`.
+`<base>v2/` to it, so the API's routes stay at `/v2/{node}/...`.
 
 The reverse proxy in front then needs one plain-prefix location per node,
 forwarding the full URI (no trailing slash on `proxy_pass`):
@@ -84,7 +84,7 @@ location /CDR/   { proxy_pass http://10.10.10.115:8082; }   # frontend-cdr
 
 Everything inside the SPA goes through `siteUrl()` in
 `frontend/src/lib/base.ts` (the `api()` helper applies it for you); a new
-root-absolute `href` or `fetch("/v1/...")` that bypasses it will break under a
+root-absolute `href` or `fetch("/v2/...")` that bypasses it will break under a
 prefix, so route API calls through `api()` / `nodeUrl()` and links through
 `siteUrl()`. For a local build outside
 Docker, `VITE_BASE_PATH=/MagIC/ npm run build` (or `npm run dev`, which then
@@ -99,7 +99,7 @@ uv sync
 export FIESTA_CONFIG_FILE=../config/fiesta.yaml
 export FIESTA_NODE=magic                 # comma-separated list, or unset for all nodes
 uv run fiesta init                      # migrations + job schema + bucket + index (per node)
-uv run uvicorn fiesta.apps.api:create_app --factory --reload   # http://localhost:8000/v1/docs
+uv run uvicorn fiesta.apps.api:create_app --factory --reload   # http://localhost:8000/v2/docs
 uv run fiesta worker                    # in another shell
 ```
 
@@ -119,13 +119,13 @@ uv run ruff check .
 ```sh
 cd frontend
 npm ci
-VITE_NODE=magic npm run dev   # http://localhost:5173, proxies /v1 to localhost:8000
+VITE_NODE=magic npm run dev   # http://localhost:5173, proxies /v2 to localhost:8000
 npm run lint       # biome
 npm run build      # tsc + vite build
 ```
 
-`VITE_NODE` picks which node's `/v1/{node}` routes the SPA uses. With no
-`VITE_API_URL` the SPA calls same-origin `<base>v1/...` and the dev server
+`VITE_NODE` picks which node's `/v2/{node}` routes the SPA uses. With no
+`VITE_API_URL` the SPA calls same-origin `<base>v2/...` and the dev server
 proxies it to the API; re-point that proxy with
 `VITE_API_TARGET=http://localhost:18000 npm run dev`.
 
@@ -146,7 +146,7 @@ cards (title, Semantic icon name, optional corner icon, `to` for an SPA route
 or `href` for an external URL) and `features.home.news` the news items
 (title, HTML body, optional image and link). Images and other files a node's
 YAML refers to live in `config/<slug>/assets/` and are served at
-`/v1/{node}/config/assets/<path>`. A node with no `resources` gets a default set
+`/v2/{node}/config/assets/<path>`. A node with no `resources` gets a default set
 (data model, vocabularies, method codes, API, help).
 
 Node-specific features (MagIC poles, CDR depth plots, KArAr age plateaus)

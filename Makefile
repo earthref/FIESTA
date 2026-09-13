@@ -116,7 +116,7 @@ worker-dev: ## Run the job worker locally (every node in FIESTA_NODE)
 	cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) uv run fiesta worker
 
 .PHONY: frontend-dev
-frontend-dev: ## Run the Vite dev server for the first FIESTA_NODE (proxies /v1 to localhost:8000)
+frontend-dev: ## Run the Vite dev server for the first FIESTA_NODE (proxies /v2 to localhost:8000)
 	cd frontend && npm install && VITE_NODE=$(NODE1) npm run dev
 
 ## ---- Tests & linting --------------------------------------------------------

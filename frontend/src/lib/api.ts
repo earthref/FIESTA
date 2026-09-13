@@ -1,7 +1,7 @@
 // Minimal fetch wrapper for the FIESTA API (see base.ts for where it lives).
 // Callers pass a path relative to this node -- "/config" becomes
-// <api>/v1/<node>/config -- or, for the node-less account routes, a full
-// "/v1/auth/..." path.
+// <api>/v2/<node>/config -- or, for the node-less account routes, a full
+// "/v2/auth/..." path.
 
 import { apiUrl, nodeUrl } from "./base";
 
@@ -77,7 +77,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     body = options.formData;
   }
 
-  let url = path.startsWith("/v1/") ? apiUrl(path.slice(3)) : nodeUrl(path);
+  let url = path.startsWith("/v2/") ? apiUrl(path.slice(3)) : nodeUrl(path);
   if (options.params) {
     const qs = new URLSearchParams();
     for (const [key, value] of Object.entries(options.params)) {

@@ -1,7 +1,7 @@
 # FIESTA API contract
 
 There is **one** FastAPI process — `fiesta.apps.api:create_app` — serving every
-node in the deployment under `/v1/{repository}/...` (this is `api.earthref.org`
+node in the deployment under `/v2/{repository}/...` (this is `api.earthref.org`
 and what the SPA talks to directly). The deployment is described by
 `config/fiesta.yaml` (`deployment: api`, `api: {title, nodes: [magic.yaml, ...]}`);
 `FIESTA_NODE` (comma-separated keys/slugs, empty = all) narrows which of those
@@ -12,7 +12,7 @@ one-node deployment (used by the tests).
 resolved per request by `NodeDep`; an unknown repository is a 404. Every
 node-scoped router is mounted once and serves all enabled nodes.
 
-Interactive docs live at `/v1/docs`; the schema at `/v1/openapi.json`.
+Interactive docs live at `/v2/docs`; the schema at `/v2/openapi.json`.
 
 All endpoints return JSON unless noted. Errors follow
 `{"detail": string | [{loc, msg, type}]}` (FastAPI convention).
@@ -21,7 +21,7 @@ All endpoints return JSON unless noted. Errors follow
 
 Two schemes are accepted; the private routes take either.
 
-- **Bearer token** — `POST /v1/auth/login` (OAuth2 password form) returns a
+- **Bearer token** — `POST /v2/auth/login` (OAuth2 password form) returns a
   HS256 JWT; send it as `Authorization: Bearer <jwt>`. This is what the SPA uses.
 - **HTTP Basic** — EarthRef account email or handle + password. Kept for legacy
   `api.earthref.org` clients; the legacy routes accept Basic only, while the
@@ -31,18 +31,18 @@ Two schemes are accepted; the private routes take either.
 
 | Method | Path | Auth | Returns |
 |---|---|---|---|
-| GET | `/v1/health-check` | — | `{status, database, search, storage, repositories}` |
-| GET | `/v1/authenticate` | Basic | `UserOut` (legacy Basic check) |
-| POST | `/v1/auth/register` | — | `UserOut` (201); body `{email, password, name}`, password ≥ 8 chars |
-| POST | `/v1/auth/login` | — | `{access_token, token_type: "bearer"}`; OAuth2 password form (`username`, `password`) |
-| GET | `/v1/auth/me` | Bearer/Basic | `UserOut` |
-| GET | `/v1/auth/settings` | Bearer/Basic | the account's settings JSON object |
-| PUT | `/v1/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
-| POST | `/v1/auth/local-login` | — | `{access_token, ...}` or `null` — signs in the seeded `developer@example.test` only against local dev infrastructure |
+| GET | `/v2/health-check` | — | `{status, database, search, storage, repositories}` |
+| GET | `/v2/authenticate` | Basic | `UserOut` (legacy Basic check) |
+| POST | `/v2/auth/register` | — | `UserOut` (201); body `{email, password, name}`, password ≥ 8 chars |
+| POST | `/v2/auth/login` | — | `{access_token, token_type: "bearer"}`; OAuth2 password form (`username`, `password`) |
+| GET | `/v2/auth/me` | Bearer/Basic | `UserOut` |
+| GET | `/v2/auth/settings` | Bearer/Basic | the account's settings JSON object |
+| PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
+| POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in the seeded `developer@example.test` only against local dev infrastructure |
 
 `UserOut = {id, email, name, orcid: string|null, is_admin: bool}`
 
-`GET /v1/health-check` reports each dependency and the nodes this process serves:
+`GET /v2/health-check` reports each dependency and the nodes this process serves:
 
 ```json
 {
@@ -54,20 +54,20 @@ Two schemes are accepted; the private routes take either.
 }
 ```
 
-## Per-node routes (`/v1/{repository}/...`)
+## Per-node routes (`/v2/{repository}/...`)
 
 ### Config & reference (public, cacheable)
 
 | Method | Path | Returns |
 |---|---|---|
-| GET | `/v1/{repository}/config` | Public node config (below) |
-| GET | `/v1/{repository}/config/assets/{path}` | static file from `config/<slug>/assets/` (news images, …) |
-| GET | `/v1/{repository}/config/data-models/{version}` | Full data model JSON for a version (404 if unknown) |
-| GET | `/v1/{repository}/config/vocabularies/controlled` | `{<name>: {label, database_column, items: [{item, label?}]}}` |
-| GET | `/v1/{repository}/config/vocabularies/suggested` | same shape |
-| GET | `/v1/{repository}/config/method-codes` | `{<group>: {label, codes: [{code, definition, ...}]}}` (404 if the node has none) |
+| GET | `/v2/{repository}/config` | Public node config (below) |
+| GET | `/v2/{repository}/config/assets/{path}` | static file from `config/<slug>/assets/` (news images, …) |
+| GET | `/v2/{repository}/config/data-models/{version}` | Full data model JSON for a version (404 if unknown) |
+| GET | `/v2/{repository}/config/vocabularies/controlled` | `{<name>: {label, database_column, items: [{item, label?}]}}` |
+| GET | `/v2/{repository}/config/vocabularies/suggested` | same shape |
+| GET | `/v2/{repository}/config/method-codes` | `{<group>: {label, codes: [{code, definition, ...}]}}` (404 if the node has none) |
 
-`GET /v1/{repository}/config` response:
+`GET /v2/{repository}/config` response:
 
 ```json
 {
@@ -102,9 +102,9 @@ sibling-node links) are added by the config route on top of the node's own
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v1/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below) | `SearchPage` |
-| GET | `/v1/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
-| GET | `/v1/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below) | `SearchPage` |
+| GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
+| GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 
 ```json
 SearchPage = {
@@ -130,7 +130,7 @@ newest), `recent` / `recent_asc` (contribution timestamp), `published` /
 When omitted the API sorts by relevance if the query has free text and by
 `recent` otherwise.
 
-### Private workspace (`/v1/{repository}/private/contributions`, Bearer or Basic)
+### Private workspace (`/v2/{repository}/private/contributions`, Bearer or Basic)
 
 | Method | Path | Body / params | Returns |
 |---|---|---|---|
@@ -183,19 +183,19 @@ ValidationResult = {
 See [Phase M revision management](#phase-m-revision-management) below for the
 concurrency and idempotency semantics of the mutating routes.
 
-### Workspaces (`/v1/{repository}/workspaces`, Bearer or Basic)
+### Workspaces (`/v2/{repository}/workspaces`, Bearer or Basic)
 
 Shared workspaces: owners control membership, editors save, viewers read.
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| GET | `/v1/{repository}/workspaces` | | workspaces the caller owns, is a member of, or (admin) all — with the caller's `role` |
-| POST | `/v1/{repository}/workspaces` | `{name}` | `{id, name}` (201) |
-| PUT | `/v1/{repository}/workspaces/{workspace_id}/members` | `{user_id, role: "viewer"\|"editor"}` | `{role}` (owner only) |
-| DELETE | `/v1/{repository}/workspaces/{workspace_id}/members/{user_id}` | | 204 (owner only) |
-| PUT | `/v1/{repository}/workspaces/{workspace_id}/contributions/{contribution_id}` | | `{workspace_id}` (assign an owned contribution) |
+| GET | `/v2/{repository}/workspaces` | | workspaces the caller owns, is a member of, or (admin) all — with the caller's `role` |
+| POST | `/v2/{repository}/workspaces` | `{name}` | `{id, name}` (201) |
+| PUT | `/v2/{repository}/workspaces/{workspace_id}/members` | `{user_id, role: "viewer"\|"editor"}` | `{role}` (owner only) |
+| DELETE | `/v2/{repository}/workspaces/{workspace_id}/members/{user_id}` | | 204 (owner only) |
+| PUT | `/v2/{repository}/workspaces/{workspace_id}/contributions/{contribution_id}` | | `{workspace_id}` (assign an owned contribution) |
 
-### Legacy compatibility (`/v1/{repository}`, HTTP Basic on private routes)
+### Legacy compatibility (`/v2/{repository}`, HTTP Basic on private routes)
 
 Kept for legacy `api.earthref.org` clients: the singular `/private/contribution`
 shape, `/data` and `/download`. New clients and the SPA use the search, private
@@ -203,16 +203,16 @@ and workspace routes above.
 
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/v1/{repository}/data/{id}` | — (`key?`) | contribution file as `text/plain` |
-| GET | `/v1/{repository}/download/{id}` | — (`key?`) | zip archive of the contribution's revision files |
-| POST | `/v1/{repository}/validate` | — | upload a file, synchronous validation report |
-| GET | `/v1/{repository}/private/search/{table}` | Basic | search the caller's own private data |
-| POST | `/v1/{repository}/private/contribution` | Basic | create a private contribution (optional `file`) → `{id, private_key}` (201) |
-| PUT | `/v1/{repository}/private/contribution/{id}` | Basic | replace the file → `{id, status}` |
-| DELETE | `/v1/{repository}/private/contribution/{id}` | Basic | delete a private (unactivated) contribution → 204 |
-| GET | `/v1/{repository}/private/contribution-list` | Basic | the caller's contributions |
+| GET | `/v2/{repository}/data/{id}` | — (`key?`) | contribution file as `text/plain` |
+| GET | `/v2/{repository}/download/{id}` | — (`key?`) | zip archive of the contribution's revision files |
+| POST | `/v2/{repository}/validate` | — | upload a file, synchronous validation report |
+| GET | `/v2/{repository}/private/search/{table}` | Basic | search the caller's own private data |
+| POST | `/v2/{repository}/private/contribution` | Basic | create a private contribution (optional `file`) → `{id, private_key}` (201) |
+| PUT | `/v2/{repository}/private/contribution/{id}` | Basic | replace the file → `{id, status}` |
+| DELETE | `/v2/{repository}/private/contribution/{id}` | Basic | delete a private (unactivated) contribution → 204 |
+| GET | `/v2/{repository}/private/contribution-list` | Basic | the caller's contributions |
 
-### Plugins (`/v1/{repository}/plugins/{name}/...`)
+### Plugins (`/v2/{repository}/plugins/{name}/...`)
 
 Each plugin router mounts once per plugin. A request to a node that does not
 activate that plugin (`features.plugins` in its YAML) is a 404. Plugin routes
@@ -221,10 +221,10 @@ enforces the same visibility rules as the core API.
 
 | Method | Path | Plugin (node) |
 |---|---|---|
-| GET | `/v1/{repository}/plugins/poles/base-texture` | `poles` (MagIC) — earth-relief JPEG |
-| GET | `/v1/{repository}/plugins/poles/plate-boundaries` | `poles` (MagIC) — GeoJSON |
-| GET | `/v1/{repository}/plugins/depth-plot/contributions/{id}/measurements` | `depth-plot` (CDR) |
-| GET | `/v1/{repository}/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau` | `plateau-calculations` (KArAr) |
+| GET | `/v2/{repository}/plugins/poles/base-texture` | `poles` (MagIC) — earth-relief JPEG |
+| GET | `/v2/{repository}/plugins/poles/plate-boundaries` | `poles` (MagIC) — GeoJSON |
+| GET | `/v2/{repository}/plugins/depth-plot/contributions/{id}/measurements` | `depth-plot` (CDR) |
+| GET | `/v2/{repository}/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau` | `plateau-calculations` (KArAr) |
 
 ## Search document shape
 
