@@ -105,7 +105,7 @@ export function UploadWizard() {
 
   const contributionQuery = useQuery({
     queryKey: ["private", "contribution", contributionId],
-    queryFn: () => api<ContributionOut>(`/api/private/contributions/${contributionId}`),
+    queryFn: () => api<ContributionOut>(`/private/contributions/${contributionId}`),
     enabled: contributionId !== null && phase === "processing",
     refetchInterval: (query) => {
       const status = query.state.data?.status;
@@ -125,9 +125,7 @@ export function UploadWizard() {
     queryKey: ["private", "validation", contributionId],
     queryFn: async () => {
       try {
-        return await api<ValidationResult>(
-          `/api/private/contributions/${contributionId}/validation`,
-        );
+        return await api<ValidationResult>(`/private/contributions/${contributionId}/validation`);
       } catch (err) {
         if (err instanceof ApiError && err.status === 404) return null;
         throw err;
@@ -159,16 +157,17 @@ export function UploadWizard() {
     setError(null);
     try {
       setPhase("creating");
-      const contribution = await api<ContributionOut>("/api/private/contributions", {
+      const contribution = await api<ContributionOut>("/private/contributions", {
         method: "POST",
       });
       setContributionId(contribution.id);
       setPhase("uploading");
       const formData = new FormData();
       formData.append("file", file);
-      await api<ContributionOut>(`/api/private/contributions/${contribution.id}/file`, {
+      await api<ContributionOut>(`/private/contributions/${contribution.id}/file`, {
         method: "PUT",
         formData,
+        headers: { "Idempotency-Key": crypto.randomUUID() },
       });
       setPhase("processing");
     } catch (err) {

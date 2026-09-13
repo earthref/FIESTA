@@ -1,0 +1,39 @@
+tab delimited	contribution
+id	version	timestamp	contributor	is_validated	is_reviewed	data_model_version	reference	author	description	supplemental_links
+1	1	2024-01-15T12:00:00Z	@osu-mgr-pipeline	f	f	1.0	Synthetic example	Synthetic example	Synthetic osu-mgr all-fields coverage example	{"OSU-MGR": "https://osu-mgr.org/search?osu=OSU-SR2113"}
+>>>>>>>>>>
+tab delimited	cruises
+contribution_id	row_id	cruise	osu_id	cruise_name	r2r_cruise_id	collection	rv_name	rov_name	pi	pi_email	pi_institution	start_date	end_date	place	notes	accession_date	moratorium	moratorium_expiration	lat_s	lat_n	lon_w	lon_e	methods	materials
+1	1	SR2113	OSU-SR2113	2021 North Atlantic Stepping Stones	SR2113	ACC Holdings	R/V Sally Ride	ROV Jason	Synthetic example	Synthetic example	Oregon State University	2021-08-03	Synthetic example	Northeast Pacific	Synthetic example	2022-03-14	f	2027-01-01	1	1	1	1	Box Core	Rock
+>>>>>>>>>>
+tab delimited	cores
+contribution_id	row_id	core	cruise	osu_id	core_number	core_type	method	material	length	diameter	n_sections	lat	lon	water_depth	lat_end	lon_end	water_depth_end	start_date	start_time	end_date	end_time	area	notes	storage_location
+1	1	SR2113-17GC	SR2113	OSU-SR2113-17GC	17	BC	Box Core	Rock	1	1	1	44.6368	-124.9012	1	1	1	1	2021-08-14	18:42	Synthetic example	Synthetic example	Cascadia Margin	Synthetic example	Cold Room A, Rack 12, Shelf 3
+>>>>>>>>>>
+tab delimited	sections
+contribution_id	row_id	section	core	osu_id	section_number	alternate_name	depth_top	depth_bottom	length	igsn	notes	storage_location
+1	1	SR2113-17GC-1	SR2113-17GC	OSU-SR2113-17GC-1	1	Synthetic example	1	1	1	OSU-EX1606-D1-1	Synthetic example	Synthetic example
+>>>>>>>>>>
+tab delimited	section_halves
+contribution_id	row_id	section_half	section	osu_id	half_type	igsn	alternate_igsn	sesar_resource_type	notes	storage_location
+1	1	SR2113-17GC-1A	SR2113-17GC-1	OSU-SR2113-17GC-1A	Archive	OSU-EX1606-D1-1	ARF0009J7	Core	Synthetic example	Synthetic example
+>>>>>>>>>>
+tab delimited	core_samples
+contribution_id	row_id	core_sample	section_half	osu_id	igsn	sample_top	sample_bottom	sample_size	weight	sample_status	date_received	date_complete	purpose	analysis_on	tool	scientist	comments
+1	1	SR2113-17GC-1A.SMITH24-ND	SR2113-17GC-1A	OSU-SR2113-17GC-1A.SMITH24-ND	OSU-EX1606-D1-1	1	1	1	1	Complete	Synthetic example	Synthetic example	Synthetic example	Synthetic example	Synthetic example	Synthetic example	Synthetic example
+>>>>>>>>>>
+tab delimited	dives
+contribution_id	row_id	dive	cruise	osu_id	dive_number	method	rov_name	material	weight	lat	lon	water_depth	lat_end	lon_end	water_depth_end	start_date	start_time	end_date	end_time	area	notes
+1	1	EX1606-D1	SR2113	OSU-EX1606-D1	1	Box Core	ROV Deep Discoverer	Rock	1	44.6368	-124.9012	1	1	1	1	2021-08-14	18:42	Synthetic example	Synthetic example	Cascadia Margin	Synthetic example
+>>>>>>>>>>
+tab delimited	dive_samples
+contribution_id	row_id	dive_sample	dive	osu_id	dive_sample_number	igsn	alternate_igsn	sesar_resource_type	material	texture	weight	notes	storage_location
+1	1	EX1606-D1-1	EX1606-D1	OSU-EX1606-D1-1	1	OSU-EX1606-D1-1	ARF0009J7	Core	Rock	Aphanitic basalt	1	Synthetic example	Synthetic example
+>>>>>>>>>>
+tab delimited	dive_subsamples
+contribution_id	row_id	dive_subsample	dive_sample	osu_id	igsn	alternate_igsn	sesar_resource_type	texture	weight	storage_location	sample_status	date_received	date_complete	purpose	analysis_on	tool	scientist	comments
+1	1	EX1606-D1-1.KOPP12.SA	EX1606-D1-1	OSU-EX1606-D1-1.KOPP12.SA	OSU-EX1606-D1-1	ARF0009J7	Core	Aphanitic basalt	1	Synthetic example	Complete	Synthetic example	Synthetic example	Synthetic example	Synthetic example	Synthetic example	Synthetic example	Synthetic example
+>>>>>>>>>>
+tab delimited	files
+contribution_id	row_id	file	file_type	osu_id	level	title	description	media_type	size_bytes	timestamp	thumbnail	moratorium	moratorium_expiration
+1	1	Collection/Holdings/SR2113/mstdata/OSU-SR2113-17GC-1A-mstdata.csv	core-description	OSU-SR2113-17GC-1A	core_samples	Synthetic osu-mgr all-fields coverage example	Synthetic osu-mgr all-fields coverage example	text/csv	1	2024-01-15T12:00:00Z	Collection/Thumbnails/OSU-SR2113-17GC-1A-image.jpg	f	Synthetic example

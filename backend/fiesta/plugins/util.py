@@ -22,6 +22,7 @@ async def load_visible_parsed(
     contribution = await session.get(Contribution, contribution_id)
     if (
         contribution is None
+        or contribution.deleted_at is not None
         or contribution.node != node.node.slug
         or contribution.filename is None
     ):

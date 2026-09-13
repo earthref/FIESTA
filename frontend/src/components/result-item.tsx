@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { siteUrl } from "../lib/base";
+import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type { SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath, singularize } from "../lib/utils";
@@ -454,7 +454,7 @@ export function ResultItem({
   // reuse it for the map modal when that plugin is active on this node.
   const polesConfig = config.plugins?.poles as { has_base_texture?: boolean } | undefined;
   const baseTexture = polesConfig?.has_base_texture
-    ? siteUrl("/api/plugins/poles/base-texture")
+    ? nodeUrl("/plugins/poles/base-texture")
     : undefined;
   const keyParam = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
   const publicationDoi = firstString(getPath(doc, "summary.contribution._reference.doi"));
@@ -516,7 +516,7 @@ export function ResultItem({
       {!isContribution ? null : id ? (
         <Cell width={100} style={{ fontSize: 14, height: 104 }}>
           <a
-            href={siteUrl(`/api/contributions/${id}/download${keyParam}`)}
+            href={nodeUrl(`/contributions/${id}/download${keyParam}`)}
             download
             className="inline-block w-full bg-white text-center font-bold text-node hover:bg-node-soft"
             style={{
@@ -926,7 +926,7 @@ function VersionsTable({
               <tr key={`${row.id}-${row.version}`}>
                 <td className="py-1 pr-3">
                   <a
-                    href={siteUrl(`/api/contributions/${row.id}/download${keyParam}`)}
+                    href={nodeUrl(`/contributions/${row.id}/download${keyParam}`)}
                     download
                     className="inline-flex items-center gap-1 text-node hover:underline"
                   >

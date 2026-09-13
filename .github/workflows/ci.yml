@@ -104,13 +104,7 @@ jobs:
           failed = False
           for path in sorted(Path("../config").glob("*.yaml")):
               try:
-                  deployment = load_deployment(path)
-                  nodes = (
-                      [deployment.node]
-                      if deployment.node
-                      else list(deployment.public_api.nodes.values())
-                  )
-                  for node in nodes:
+                  for node in load_deployment(path).node_list:
                       for version in node.data_model.versions:
                           node.load_data_model(version)
                       node.load_controlled_vocabularies()
@@ -135,14 +129,13 @@ jobs:
       - name: Raise vm.max_map_count for OpenSearch
         run: sudo sysctl -w vm.max_map_count=262144
 
-      - name: Start the MagIC node plus the public API
+      - name: Start the stack (API + worker + MagIC frontend)
         run: make up FIESTA_NODE=magic PROD=1
 
       - name: Wait for the stack to become healthy
         run: |
           for _ in $(seq 1 60); do
-            if curl -sf http://localhost:8000/api/health >/dev/null \
-               && curl -sf http://localhost:8005/v1/health-check >/dev/null; then
+            if curl -sf http://localhost:8000/v1/health-check >/dev/null; then
               echo "stack is up"
               exit 0
             fi
@@ -155,7 +148,7 @@ jobs:
         run: make e2e
 
       # Without the profiles, `docker compose logs` only shows the shared infra
-      # and hides the node backend's own startup error.
+      # and hides the frontend's own startup error.
       - name: Dump container logs
         if: failure()
         run: COMPOSE_PROFILES='*' docker compose logs --no-color --tail 200
@@ -164,12 +157,28 @@ jobs:
         if: always()
         run: make down
 
+  phase-m:
+    name: Phase M (offline Docker integration)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo sysctl -w vm.max_map_count=262144
+      - run: make test-phase-m
+      - run: make test-phase-m-restore
+      - name: Logs
+        if: failure()
+        run: docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml logs --no-color --tail 100
+      - name: Tear down isolated stack
+        if: always()
+        run: docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml down -v
+
   # Single required check for branch protection: green only if every job above
   # succeeded. Add this as the required status check when protecting `main`.
   ci:
     name: CI
     if: always()
-    needs: [backend, frontend, config, e2e]
+    needs: [backend, frontend, config, e2e, phase-m]
     runs-on: ubuntu-latest
     steps:
       - name: Check that all jobs succeeded

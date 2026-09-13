@@ -1,8 +1,9 @@
-// Minimal fetch wrapper for the FIESTA node backend. Callers pass root-relative
-// paths (/api/...); they are resolved under the site base path (see base.ts) so
-// the SPA works behind the Vite dev proxy, nginx, or compose, at "/" or "/MagIC/".
+// Minimal fetch wrapper for the FIESTA API (see base.ts for where it lives).
+// Callers pass a path relative to this node -- "/config" becomes
+// <api>/v1/<node>/config -- or, for the node-less account routes, a full
+// "/v1/auth/..." path.
 
-import { siteUrl } from "./base";
+import { apiUrl, nodeUrl } from "./base";
 
 const TOKEN_KEY = "fiesta_token";
 
@@ -48,6 +49,7 @@ function detailToMessage(detail: unknown): string {
 
 interface RequestOptions {
   method?: string;
+  headers?: Record<string, string>;
   /** JSON-serialized as the request body. */
   json?: unknown;
   /** Form-encoded body (application/x-www-form-urlencoded), e.g. OAuth2 login. */
@@ -60,7 +62,7 @@ interface RequestOptions {
 }
 
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...options.headers };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -75,7 +77,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     body = options.formData;
   }
 
-  let url = siteUrl(path);
+  let url = path.startsWith("/v1/") ? apiUrl(path.slice(3)) : nodeUrl(path);
   if (options.params) {
     const qs = new URLSearchParams();
     for (const [key, value] of Object.entries(options.params)) {

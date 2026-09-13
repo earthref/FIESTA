@@ -56,6 +56,36 @@ Last updated: 2026-09-11
       under the `/MagIC` (etc.) path prefix. After: Claude checks the four
       sites' About pages and closes this item.
 
+## 2026-09-12 — Phase A one-API deploy script
+
+- [ ] **Update the production deploy script for the one FIESTA API.**
+      `/srv/fiesta/bin/deploy-fiesta.sh` on the `fiesta-ct` runner (not in this
+      repo) still starts a per-node uvicorn process and proxies `/api`. Phase A
+      is now one process: change it to run a single
+      `uvicorn fiesta.apps.api:create_app` with
+      `FIESTA_CONFIG_FILE=config/fiesta.yaml` (optionally `FIESTA_NODE` to narrow
+      the set), proxy `<base>v1/` to that process instead of `/api`, and build
+      each node's SPA with `VITE_NODE=<slug>` (or serve `fiesta-env.js` per node)
+      so each frontend resolves its node and API origin. See deployment.md,
+      "The production deploy script". Unblocks: E1 rollout on the current host.
+
 ## Done
 
 _(none yet)_
+## Phase M — live migration and recovery gates
+
+- [ ] Supply and verify each node's full source inventory (public/private buckets,
+      pipeline indices, metadata export contracts, available historical objects,
+      attachment keys and deletion markers). Review ownership/account mappings and
+      DOI/version links; approve explicit exceptions for unavailable history.
+- [ ] Provide scoped legacy source-read and FIESTA destination-write credentials
+      through environment/secret management. Confirm production bucket Versioning
+      and retention preserve every retained revision and its processing artifacts.
+- [ ] Set Postgres backup/WAL archive destinations, retention, RPO/RTO, matching
+      object retention and application-image retention. Rehearse an isolated full
+      restore with `fiesta verify-storage`, rebuild and outbox replay.
+- [ ] Size full-inventory imports and allowed-ID search filters on a production-sized
+      rehearsal; set batch sizes and operational limits before enabling live traffic.
+- [ ] Approve per-node write freeze, final sync/reconciliation, traffic switch and
+      rollback window. Disable legacy sync at cutover; preserve new FIESTA revisions
+      if rolling back after accepting writes. See [phase-m.md](phase-m.md).

@@ -247,7 +247,7 @@ function PolesMapView({ query, ranges, bbox, config }: PluginSubTabContext) {
   const polesQuery = useQuery({
     queryKey: ["plugin", "poles", "search", query, ranges, bbox, maxPoles],
     queryFn: () =>
-      api<SearchPageData>("/api/search/poles", {
+      api<SearchPageData>("/search/poles", {
         params: {
           query: query || undefined,
           size: maxPoles,
@@ -260,7 +260,7 @@ function PolesMapView({ query, ranges, bbox, config }: PluginSubTabContext) {
 
   const boundaries = useQuery({
     queryKey: ["plugin", "poles", "plate-boundaries"],
-    queryFn: () => api<unknown>("/api/plugins/poles/plate-boundaries"),
+    queryFn: () => api<unknown>("/plugins/poles/plate-boundaries"),
     enabled: pconfig.has_plate_boundaries === true,
     staleTime: Number.POSITIVE_INFINITY,
   });

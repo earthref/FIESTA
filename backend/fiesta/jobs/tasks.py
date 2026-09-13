@@ -8,7 +8,7 @@ import aiosmtplib
 
 from fiesta.db.session import get_sessionmaker
 from fiesta.jobs.app import get_job_app
-from fiesta.nodeconfig import get_node
+from fiesta.nodeconfig import get_deployment
 from fiesta.services import contributions as svc
 from fiesta.settings import get_settings
 
@@ -17,19 +17,18 @@ app = get_job_app()
 
 
 @app.task(name="process_contribution", retry=2)
-async def process_contribution(contribution_id: int) -> None:
-    node = get_node()
+async def process_contribution(contribution_id: int, node_slug: str) -> None:
+    node = get_deployment().node_for(node_slug)
     async with get_sessionmaker(node.node.slug)() as session:
         await svc.process_contribution(session, node, contribution_id)
 
 
 async def defer_process_contribution(node, contribution_id: int) -> int:
-    """Defer processing onto the node's own queue. Multiple nodes share one
-    Postgres (and thus one procrastinate schema); each node's worker only
-    consumes its own queue, so jobs are always processed with the right node
-    config."""
+    """Defer processing onto the node's own queue. One worker listens on
+    every enabled node's queue plus `default` (email); the node slug travels
+    with the job so it is processed with that node's config."""
     return await process_contribution.configure(queue=node.node.slug).defer_async(
-        contribution_id=contribution_id
+        contribution_id=contribution_id, node_slug=node.node.slug
     )
 
 

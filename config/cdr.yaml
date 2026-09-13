@@ -53,3 +53,7 @@ doi:
 features:
   pages: []
   plugins: [depth-plot]
+
+# Local fixtures only; never read during normal application startup.
+development:
+  seed_manifest: cdr/seeds/manifest.yaml

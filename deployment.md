@@ -1,30 +1,31 @@
 # FIESTA - Deployment
 
-A FIESTA deployment = one YAML file from `config/` + the compose stack (or the
-equivalent services in your orchestrator).
+A FIESTA deployment = `config/fiesta.yaml` (which lists the nodes) + the compose
+stack (or the equivalent services in your orchestrator).
 
 ## Roles
 
 | Role | Config | Entrypoint |
 |---|---|---|
-| Node (MagIC/CDR/KArAr) | `config/<node>.yaml` | `uvicorn fiesta.apps.node:create_app --factory` |
-| Public API | `config/public-api.yaml` | `uvicorn fiesta.apps.public:create_app --factory` |
-| Worker | same as its node | `fiesta worker` |
+| API (every node under `/v1/{node}/...`) | `config/fiesta.yaml` | `uvicorn fiesta.apps.api:create_app --factory` |
+| Worker | `config/fiesta.yaml` | `fiesta worker` |
 
-All three run from the same `backend/` image; the role is just the command +
-`FIESTA_CONFIG_FILE`.
+Both run from the same `backend/` image; the role is just the command. One API
+process serves every node listed in `config/fiesta.yaml`; `FIESTA_NODE`
+(comma-separated keys/slugs, empty = all) narrows the set a process serves.
 
 ## Multiple nodes on one instance
 
 Set `FIESTA_NODE` to a comma-separated list (e.g. `magic,karar,cdr`) and the
-compose stack runs one backend + worker + frontend per node against shared
-infrastructure. Isolation per node: its own OpenSearch index, MinIO bucket,
-procrastinate job queue, and node-scoped contribution rows in Postgres; user
-accounts are shared (one EarthRef login works on every node). Concurrent
-start-up is safe — `fiesta init` serializes schema migrations behind a
-Postgres advisory lock. In front of it all, route each node's hostname
-(e.g. `karar.earthref.org`) to that node's frontend container, which proxies
-`/api` to its own backend via the `BACKEND_HOST` env var.
+compose stack runs one API + one worker for every listed node plus one frontend
+per node, all against shared infrastructure. Isolation per node: its own
+OpenSearch index, MinIO bucket, procrastinate job queue, and node-scoped
+contribution rows in Postgres; user accounts are shared (one EarthRef login
+works on every node). Concurrent start-up is safe — `fiesta init` serializes
+schema migrations behind a Postgres advisory lock. In front of it all, route
+each node's hostname (e.g. `karar.earthref.org`) to that node's frontend
+container, whose nginx proxies `<base>v1/` to the API (`BACKEND_HOST`, default
+`api`); the node is named in the path, so one API serves them all.
 
 ## Several nodes on one hostname
 
@@ -77,22 +78,39 @@ the procrastinate schema, and ensures the bucket + search index exist.
 
 ## Disaster recovery / migration
 
-The bucket is the durable record (canonical contribution files +
-`manifest.json` per contribution). To rebuild a node from scratch:
+Postgres backups and the revision bucket are both required. Restore the database
+first into an isolated environment, attach the matching immutable bucket objects,
+and verify references before exposing the API:
 
 ```sh
-fiesta init
-fiesta rebuild --yes    # restores contributions to Postgres and re-indexes OpenSearch
+fiesta init             # apply compatible schema migrations
+fiesta verify-storage   # checks retained revisions, manifests and file checksums
+fiesta rebuild --yes    # rebuild search only, then switch its alias
+fiesta drain-outbox     # retry pending work
 ```
 
-Accounts restored from manifests have no passwords (manifests never store
-credentials) — users reset via the normal flow. Only back up Postgres if you
-want to preserve password hashes and accounts that never contributed.
+Retain database base backups and WAL archives for PITR, the corresponding S3 object
+versions, deployment configuration and application image. Never expire objects
+referenced by retained revisions. `fiesta rebuild` preserves users, settings and
+workspace permissions; it cannot recover lost Postgres state from contribution
+manifests. See [Phase M operations](docs/phase-m.md) for migration and cutover gates.
+
+## The production deploy script
+
+The production rollout (`/srv/fiesta/bin/deploy-fiesta.sh` on the `fiesta-ct`
+runner — not in this repo) predates Phase A: it still starts a per-node uvicorn
+process per node and proxies `/api`. It must change to run **one**
+`uvicorn fiesta.apps.api:create_app` with
+`FIESTA_CONFIG_FILE=config/fiesta.yaml` (optionally `FIESTA_NODE` to narrow the
+set), proxy `<base>v1/` to that single process instead of `/api`, and build each
+node's SPA with `VITE_NODE=<slug>` (or serve `fiesta-env.js` per node) so the
+frontend resolves its node and API origin. This is tracked in
+[OPERATOR_TODO](OPERATOR_TODO.md).
 
 ## Production notes
 
-- Put the frontend's nginx (or any reverse proxy) in front of the backend and
-  route `/api/*` to it — the SPA only uses relative URLs.
+- Put the frontend's nginx (or any reverse proxy) in front of the API and
+  route `<base>v1/*` to it — the SPA calls `/v1/{node}/...` on its own origin.
 - Set a strong `FIESTA_SECRET_KEY`; tokens are HS256 JWTs.
 - OpenSearch: single index per node, created automatically with mappings from
   `fiesta/search/index.py`; re-run `fiesta rebuild` after mapping changes.

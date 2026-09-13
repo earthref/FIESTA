@@ -1,9 +1,9 @@
-# Rendered by the nginx image's envsubst entrypoint. Only ${BACKEND_HOST} and
-# ${BASE_PATH} are substituted (they are the defined env vars); nginx's own
-# $uri/$host variables pass through untouched.
+# Rendered by the nginx image's envsubst entrypoint. Only ${BACKEND_HOST},
+# ${BASE_PATH}, ${FIESTA_NODE} and ${API_URL} are substituted (they are the
+# defined env vars); nginx's own $uri/$host variables pass through untouched.
 #
 # BASE_PATH is "/" or a node prefix like "/MagIC/" (leading + trailing slash),
-# so the locations render as /api/, /assets/, / -- or /MagIC/api/,
+# so the locations render as /v1/, /assets/, / -- or /MagIC/v1/,
 # /MagIC/assets/, /MagIC/. The build is installed at <root><BASE_PATH>, which
 # is why the static locations need no alias. A request for the bare prefix
 # without its slash (/MagIC) hits no location and nginx's directory handling
@@ -18,11 +18,20 @@ server {
     gzip on;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml;
 
-    # Proxy API requests to this node's backend service. The URI part on
-    # proxy_pass replaces the matched prefix, so the backend always sees /api/
-    # whatever BASE_PATH is.
-    location ${BASE_PATH}api/ {
-        proxy_pass http://${BACKEND_HOST}:8000/api/;
+    # Runtime SPA settings: which node this frontend is for and where the API
+    # is (empty = same origin, proxied below). Overrides the copy `vite build`
+    # put in dist, so one image serves any node.
+    location = ${BASE_PATH}fiesta-env.js {
+        default_type application/javascript;
+        add_header Cache-Control "no-cache";
+        return 200 'window.__FIESTA__={"node":"${FIESTA_NODE}","apiUrl":"${API_URL}"};';
+    }
+
+    # Proxy API requests to the FIESTA API service. The URI part on proxy_pass
+    # replaces the matched prefix, so the API always sees /v1/ whatever
+    # BASE_PATH is.
+    location ${BASE_PATH}v1/ {
+        proxy_pass http://${BACKEND_HOST}:8000/v1/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

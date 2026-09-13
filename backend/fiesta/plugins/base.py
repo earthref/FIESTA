@@ -37,8 +37,9 @@ class FiestaPlugin:
         become valid `/api/search/{table}` targets without adding a tab."""
         return []
 
-    def build_router(self, node: NodeConfig) -> APIRouter | None:
-        """Extra API routes, mounted under /api/plugins/{plugin.name}."""
+    def build_router(self) -> APIRouter | None:
+        """Extra API routes, mounted at /v1/{repository}/plugins/{plugin.name} and
+        served only for nodes that activate this plugin; handlers take NodeDep."""
         return None
 
     def frontend_config(self, node: NodeConfig) -> dict:

@@ -1,0 +1,8 @@
+tab delimited	contribution
+data_model_version	reference
+1.0	10.1029/92JB01202
+>>>>>>>>>>
+tab delimited	kds
+rock_types	minerals	element	kd
+Alkali Basalt	Amphibole	Na	1
+

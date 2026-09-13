@@ -1,0 +1,7 @@
+tab delimited	contribution
+id	version	timestamp	contributor	is_validated	is_reviewed	data_model_version	reference	author	lab_names	supplemental_links	description
+112	1	2024-01-15T12:00:00Z	@njarboe	f	f	1.0	10.1029/92JB01202	@cconstable	40Ar/39Ar Laboratory (Berkeley Geochronology Center, USA)	Geomagnetic Field Model[https://earthref.org/ERDA/1137/]	Synthetic kdd all-fields coverage example
+>>>>>>>>>>
+tab delimited	kds
+contribution_id	rock_types	minerals	element	kd	kd_sigma	kd_low	kd_high	kd_definition	kd_types
+5412	Alkali Basalt	Amphibole	Na	1	1	1	1	Solid-Melt	Experimental

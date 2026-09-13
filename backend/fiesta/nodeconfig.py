@@ -1,15 +1,16 @@
 """Deployment configuration loader.
 
-A FIESTA deployment is described by a single YAML file (config/*.yaml):
-either one node (MagIC, CDR, KArAr, ...) or the public API spanning several
-nodes. Large assets (data models, controlled vocabularies) are JSON files
-referenced from the YAML, resolved relative to the YAML file's directory.
+A FIESTA deployment is `config/fiesta.yaml`: the node YAMLs (MagIC, CDR,
+KArAr, ...) one API process serves. Each node YAML fully describes that node;
+a node YAML also loads on its own as a one-node deployment. Large assets
+(data models, controlled vocabularies) are JSON files referenced from the
+YAML, resolved relative to the YAML file's directory.
 """
 
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, PrivateAttr, model_validator
@@ -101,6 +102,10 @@ class FeaturesConfig(BaseModel):
     home: HomeConfig = HomeConfig()
 
 
+class DevelopmentConfig(BaseModel):
+    seed_manifest: str | None = None
+
+
 class NodeConfig(BaseModel):
     """A single FIESTA node, fully described."""
 
@@ -112,6 +117,7 @@ class NodeConfig(BaseModel):
     hierarchy: list[str]
     doi: DoiConfig = DoiConfig()
     features: FeaturesConfig = FeaturesConfig()
+    development: DevelopmentConfig = DevelopmentConfig()
 
     # Directory the YAML was loaded from; asset paths resolve against it.
     base_dir: Path
@@ -200,23 +206,24 @@ class NodeConfig(BaseModel):
     model_config = {"frozen": True, "arbitrary_types_allowed": True}
 
 
-class PublicApiConfig(BaseModel):
+class Deployment(BaseModel):
+    """Every node one FIESTA process serves (`config/fiesta.yaml`), keyed by
+    lowercase node key. FIESTA_NODE narrows the list for a local stack."""
+
     title: str = "EarthRef FIESTA API"
-    nodes: dict[str, NodeConfig]  # keyed by lowercase node key
+    nodes: dict[str, NodeConfig]
 
     def node_for(self, repository: str) -> NodeConfig:
-        try:
-            return self.nodes[repository.lower()]
-        except KeyError:
-            raise KeyError(f"unknown repository {repository!r}") from None
+        """Resolve the `{repository}` path segment: node key or slug, any case."""
+        wanted = repository.lower()
+        for key, node in self.nodes.items():
+            if wanted in (key, node.node.slug.lower()):
+                return node
+        raise KeyError(f"unknown repository {repository!r}")
 
-    model_config = {"frozen": True}
-
-
-class Deployment(BaseModel):
-    mode: Literal["node", "public-api"]
-    node: NodeConfig | None = None
-    public_api: PublicApiConfig | None = None
+    @property
+    def node_list(self) -> list[NodeConfig]:
+        return list(self.nodes.values())
 
     model_config = {"frozen": True}
 
@@ -230,34 +237,35 @@ def _load_node_yaml(path: Path) -> NodeConfig:
     return NodeConfig(base_dir=path.parent, **raw)
 
 
-def load_deployment(path: Path | None = None) -> Deployment:
+def load_deployment(path: Path | None = None, only: list[str] | None = None) -> Deployment:
+    """Load `deployment: api` (a title plus the node YAMLs it serves) or, for
+    convenience, a single node YAML as a one-node deployment. `only` keeps
+    just the named nodes (keys or slugs, any case)."""
     path = (path or get_settings().config_file).resolve()
     raw = yaml.safe_load(path.read_text())
     if raw.get("fiesta") != 1:
         raise ValueError(f"{path}: unsupported or missing `fiesta` config version")
     mode = raw.get("deployment")
     if mode == "node":
-        return Deployment(mode="node", node=_load_node_yaml(path))
-    if mode == "public-api":
-        pub = raw["public_api"]
-        nodes = {}
-        for ref in pub["nodes"]:
-            node = _load_node_yaml((path.parent / ref).resolve())
-            nodes[node.node.key.lower()] = node
-        return Deployment(
-            mode="public-api",
-            public_api=PublicApiConfig(title=pub.get("title", "EarthRef FIESTA API"), nodes=nodes),
-        )
-    raise ValueError(f"{path}: unknown deployment mode {mode!r}")
+        node = _load_node_yaml(path)
+        return Deployment(title=f"FIESTA — {node.node.title}", nodes={node.node.key.lower(): node})
+    if mode != "api":
+        raise ValueError(f"{path}: unknown deployment mode {mode!r}")
+    api = raw["api"]
+    nodes: dict[str, NodeConfig] = {}
+    for ref in api["nodes"]:
+        node = _load_node_yaml((path.parent / ref).resolve())
+        nodes[node.node.key.lower()] = node
+    wanted = {name.strip().lower() for name in only or () if name.strip()}
+    if wanted:
+        known = {k for k in nodes} | {n.node.slug.lower() for n in nodes.values()}
+        if unknown := wanted - known:
+            raise ValueError(f"{path}: FIESTA_NODE names unknown node(s) {sorted(unknown)}")
+        nodes = {k: n for k, n in nodes.items() if k in wanted or n.node.slug.lower() in wanted}
+    return Deployment(title=api.get("title", "EarthRef FIESTA API"), nodes=nodes)
 
 
 @lru_cache
 def get_deployment() -> Deployment:
-    return load_deployment()
-
-
-def get_node() -> NodeConfig:
-    dep = get_deployment()
-    if dep.node is None:
-        raise RuntimeError("this deployment is not a node (deployment: public-api)")
-    return dep.node
+    """The process-wide deployment: FIESTA_CONFIG_FILE filtered by FIESTA_NODE."""
+    return load_deployment(only=get_settings().node.split(","))

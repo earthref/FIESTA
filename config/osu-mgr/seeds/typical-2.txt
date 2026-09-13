@@ -1,0 +1,33 @@
+tab delimited	contribution
+id	version	data_model_version	description
+42	1	1.0	Synthetic osu-mgr typical example 2
+>>>>>>>>>>
+tab delimited	cruises
+cruise	osu_id	cruise_name	collection	rv_name	pi	pi_institution	accession_date	moratorium	methods	materials
+DEMO-ATL02	OSU-DEMO-ATL02	Synthetic Atlantic sediment survey	MGG Holdings	R/V Sally Ride	@hstaudigel	Oregon State University	2022-03-14	f	Gravity Core:Dredge	Sediment:Rock
+>>>>>>>>>>
+tab delimited	cores
+core	cruise	osu_id	core_number	core_type	method	material	length	lat	lon	water_depth	start_date
+DEMO-ATL02-17GC	DEMO-ATL02	OSU-DEMO-ATL02-17GC	17	GC	Gravity Core	Sediment	412	30	-40	2840	2021-08-14
+>>>>>>>>>>
+tab delimited	sections
+section	core	osu_id	section_number	depth_top	depth_bottom	length
+DEMO-ATL02-17GC-1	DEMO-ATL02-17GC	OSU-DEMO-ATL02-17GC-1	1	0	150	150
+DEMO-ATL02-17GC-2	DEMO-ATL02-17GC	OSU-DEMO-ATL02-17GC-2	2	150	300	150
+>>>>>>>>>>
+tab delimited	section_halves
+section_half	section	osu_id	half_type	igsn	sesar_resource_type
+DEMO-ATL02-17GC-1A	DEMO-ATL02-17GC-1	OSU-DEMO-ATL02-17GC-1A	Archive	OSU-DEMO-ATL02-17GC-1A	Core Half Round
+>>>>>>>>>>
+tab delimited	dives
+dive	cruise	osu_id	dive_number	method	material	lat	lon	water_depth
+DEMO-ATL02-D1	DEMO-ATL02	OSU-DEMO-ATL02-D1	1	Dredge	Rock	30	-40	2200
+>>>>>>>>>>
+tab delimited	dive_samples
+dive_sample	dive	osu_id	igsn	material	texture	weight
+DEMO-ATL02-D1-1	DEMO-ATL02-D1	OSU-DEMO-ATL02-D1-1	OSU-DEMO-ATL02-D1-1	Rock	Basalt	3.4
+>>>>>>>>>>
+tab delimited	files
+file	file_type	osu_id	level	media_type	size_bytes
+Collection/Holdings/DEMO-ATL02/mstdata/OSU-DEMO-ATL02-17GC-1A-mstdata.csv	mst-data	OSU-DEMO-ATL02-17GC-1A	section_halves	text/csv	918273
+Collection/Holdings/DEMO-ATL02/cruisereport/OSU-DEMO-ATL02-cruisereport.pdf	cruise-report	OSU-DEMO-ATL02	cruises	application/pdf	4021994

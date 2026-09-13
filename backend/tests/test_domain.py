@@ -1,8 +1,13 @@
+from pathlib import Path
+
 import pytest
 
 from fiesta.domain.parse import ParseError, export_text, parse_text
 from fiesta.domain.summarize import summarize
 from fiesta.domain.validate import guess_data_model_version, validate_contribution
+from fiesta.nodeconfig import load_deployment
+
+CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
 
 # Longitudes are 0-360 per the MagIC data model (min 0.0).
 MAGIC_TEXT = """tab delimited\tcontribution
@@ -388,3 +393,60 @@ def test_magic_home_config(magic_node):
             assert magic_node.asset_path(item.image) is not None, item.image
     assert magic_node.asset_path("../magic.yaml") is None
     assert "home" in magic_node.public_config()["features"]
+
+
+# ---- deployment: one API process, every node ---------------------------------
+
+
+def test_deployment_lists_every_node_and_resolves_key_or_slug():
+    deployment = load_deployment(CONFIG_DIR / "fiesta.yaml")
+    assert [n.node.slug for n in deployment.node_list] == [
+        "magic",
+        "kdd",
+        "cdr",
+        "karar",
+        "erda",
+        "osu-mgr",
+    ]
+    assert deployment.node_for("MagIC") is deployment.node_for("magic")
+    assert deployment.node_for("OSU-MGR").node.slug == "osu-mgr"
+    with pytest.raises(KeyError):
+        deployment.node_for("nope")
+
+
+def test_deployment_narrowed_by_fiesta_node():
+    narrowed = load_deployment(CONFIG_DIR / "fiesta.yaml", only=["magic", " KArAr", ""])
+    assert sorted(narrowed.nodes) == ["karar", "magic"]
+    everything = load_deployment(CONFIG_DIR / "fiesta.yaml", only=[""])
+    assert len(everything.nodes) == 6
+    with pytest.raises(ValueError, match="nope"):
+        load_deployment(CONFIG_DIR / "fiesta.yaml", only=["nope"])
+
+
+def test_api_mounts_every_node_router_once_under_v1(monkeypatch):
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.settings import get_settings
+
+    monkeypatch.setenv("FIESTA_CONFIG_FILE", str(CONFIG_DIR / "fiesta.yaml"))
+    monkeypatch.delenv("FIESTA_NODE", raising=False)
+    get_settings.cache_clear()
+    get_deployment.cache_clear()
+    try:
+        from fiesta.apps.api import create_app
+
+        paths = create_app().openapi()["paths"]
+    finally:
+        get_settings.cache_clear()
+        get_deployment.cache_clear()
+    assert "/v1/health-check" in paths and "/v1/auth/login" in paths
+    for route in (
+        "/v1/{repository}/config",
+        "/v1/{repository}/search/{table}",
+        "/v1/{repository}/private/contributions",
+        "/v1/{repository}/workspaces",
+        "/v1/{repository}/data/{contribution_id}",
+        "/v1/{repository}/plugins/poles/plate-boundaries",
+        "/v1/{repository}/plugins/depth-plot/contributions/{contribution_id}/measurements",
+    ):
+        assert route in paths, route
+    assert not [p for p in paths if p.startswith("/api")]

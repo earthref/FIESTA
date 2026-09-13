@@ -1,0 +1,11 @@
+tab delimited	contribution
+id	version	timestamp	contributor	is_validated	is_reviewed	data_model_version	reference	author	description	supplemental_links
+1	1	2024-01-15T12:00:00Z	@rminnett	f	f	1.0	10.1029/2003GC000626	@hstaudigel	Synthetic erda all-fields coverage example	{"Project Web Site": "http://earthref.org/PACER/vailuluu/"}
+>>>>>>>>>>
+tab delimited	objects
+contribution_id	row_id	object	title	alternate_titles	data_types	expert_level	description	instructions	keywords	parameters	materials	samples	education_topics	computer_program	computer_program_version	citations	source_url	project	project_group	project_url	external_url	doi	license	copyright_owner	copyright_description	copyright_url	continents_oceans	countries	state_provinces	regions	oceans_seas	locations	lat	lon	lat_s	lat_n	lon_w	lon_e	age_high	age_low	age_unit	timescale_eon	timescale_era	timescale_period	timescale_epoch	timescale_stage
+1	1	garnet-peridotite-xenoliths	Synthetic erda all-fields coverage example	Synthetic example	PhD thesis	College and Introduction to Science	Synthetic erda all-fields coverage example	Synthetic example	xenolith:peridotite:garnet:REE	La:Ce:Pr:Nd:Sm	upper crust:soil:loess:shale	SO-4:GSS-8:GSD-9	40Ar/39Ar Geochronology	Adobe Acrobat	1997	10.1029/2001GC000150	http://earthref.org/PACER/vailuluu/	Accretionary Processes Along the Ultra-Slow Spreading Southwest Indian Ridge	Earth Science Data Compilations	http://www.earthref.org/PACER/vailuluu/main.htm	https://www.youtube.com/playlist?list=PLirL2unikKCi9u90CHr8o06QC	10.7288/V4/ERDA/155	All Rights Reserved	American Geophysical Union	Synthetic example	http://www.agu.org	Africa	Afghanistan	'Ajman	Alps	Adriatic Sea	Vailulu'u Volcano:Samoan Islands:Samoan Hotspot Trail	-14.2122	-169.0573	1	1	1	1	1	0	Ga	Archean	Cenozoic	Calymmian	Cisuralian	Aalenian
+>>>>>>>>>>
+tab delimited	files
+contribution_id	row_id	file	object	title	description	format	media_type	size_bytes	checksum	timestamp
+1	1	garnet.peridotite.xenoliths.xls	garnet-peridotite-xenoliths	Synthetic erda all-fields coverage example	Synthetic erda all-fields coverage example	csv	application/vnd.ms-excel	503808	sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08	2024-01-15T12:00:00Z

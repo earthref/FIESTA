@@ -1,0 +1,22 @@
+tab delimited	contribution
+data_model_version	lab_names	description
+1.0	OSU Argon Geochronology Lab (Oregon State University, USA)	Synthetic cdr typical example 2
+>>>>>>>>>>
+tab delimited	cores
+core	cruise	method	lat	lon
+DEMO-ATL02	San Francisco Volcanic Province	1	30	320
+>>>>>>>>>>
+tab delimited	sections
+section	core	type
+DEMO-ATL02-03	DEMO-ATL02	working
+>>>>>>>>>>
+tab delimited	measurements
+measurement	experiment	section	depth	quality	method_codes	citations	gamma_density
+DEMO2-M1	DEMO-ATL02-01a-LT-AF-Z	DEMO-ATL02-03	0.1	g	1	10.1029/92JB01202	1.83
+DEMO2-M2	DEMO-ATL02-01a-LT-AF-Z	DEMO-ATL02-03	0.2	g	1	10.1029/92JB01202	1.86
+DEMO2-M3	DEMO-ATL02-01a-LT-AF-Z	DEMO-ATL02-03	0.30000000000000004	g	1	10.1029/92JB01202	1.89
+DEMO2-M4	DEMO-ATL02-01a-LT-AF-Z	DEMO-ATL02-03	0.4	g	1	10.1029/92JB01202	1.92
+DEMO2-M5	DEMO-ATL02-01a-LT-AF-Z	DEMO-ATL02-03	0.5	g	1	10.1029/92JB01202	1.95
+DEMO2-M6	DEMO-ATL02-01a-LT-AF-Z	DEMO-ATL02-03	0.6000000000000001	g	1	10.1029/92JB01202	1.98
+DEMO2-M7	DEMO-ATL02-01a-LT-AF-Z	DEMO-ATL02-03	0.7000000000000001	g	1	10.1029/92JB01202	2.01
+DEMO2-M8	DEMO-ATL02-01a-LT-AF-Z	DEMO-ATL02-03	0.8	g	1	10.1029/92JB01202	2.04

@@ -17,7 +17,7 @@ import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { Table, TBody, Td, THead, Th, Tr } from "../components/ui/table";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { siteUrl } from "../lib/base";
+import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type {
   FacetBucket,
@@ -507,7 +507,7 @@ export function SearchPage() {
     queries: levels.map((entry) => ({
       queryKey: ["search-count", entry.table, q],
       queryFn: () =>
-        api<SearchPageData>(`/api/search/${entry.table}`, {
+        api<SearchPageData>(`/search/${entry.table}`, {
           params: searchRequestParams(q, 1),
         }),
       staleTime: 60_000,
@@ -545,7 +545,7 @@ export function SearchPage() {
   const results = useInfiniteQuery({
     queryKey: ["search", level?.table, q, sort],
     queryFn: ({ pageParam }) =>
-      api<SearchPageData>(`/api/search/${level?.table}`, {
+      api<SearchPageData>(`/search/${level?.table}`, {
         params: searchRequestParams(q, PAGE_SIZE, pageParam, true, undefined, undefined, sort),
       }),
     initialPageParam: 0,
@@ -736,7 +736,7 @@ export function SearchPage() {
           {!privateKey &&
             (topContributionId ? (
               <a
-                href={siteUrl(`/api/contributions/${topContributionId}/download`)}
+                href={nodeUrl(`/contributions/${topContributionId}/download`)}
                 download
                 className="flex items-center self-start whitespace-nowrap bg-white hover:bg-node-soft"
                 style={{

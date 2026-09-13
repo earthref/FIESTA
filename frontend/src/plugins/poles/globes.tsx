@@ -1,7 +1,7 @@
 import * as echarts from "echarts";
 import "echarts-gl";
 import { useEffect, useRef, useState } from "react";
-import { siteUrl } from "../../lib/base";
+import { nodeUrl } from "../../lib/base";
 import { type AgeScale, boundaryRings, ellipsePoints, type Pole } from "./poles-data";
 
 interface GlobesProps {
@@ -16,7 +16,7 @@ interface GlobesProps {
 }
 
 const SELECTED_COLOR = "#800080";
-const BASE_TEXTURE_URL = siteUrl("/api/plugins/poles/base-texture");
+const BASE_TEXTURE_URL = nodeUrl("/plugins/poles/base-texture");
 
 interface Camera {
   alpha: number;
@@ -102,7 +102,7 @@ function buildOption(
     backgroundColor: "#FFF",
     globe: {
       baseTexture: hasBaseTexture ? BASE_TEXTURE_URL : undefined,
-      baseColor: hasBaseTexture ? undefined : "#e8e4dc",
+      baseColor: hasBaseTexture ? "#fff" : "#e8e4dc",
       shading: "lambert",
       environment: "#FFF",
       light: { ambient: { intensity: 1 }, main: { intensity: 0 } },

@@ -40,13 +40,13 @@ function LoginModalDialog({ onClose }: { onClose: () => void }) {
   const mutation = useMutation({
     mutationFn: async () => {
       if (mode === "register") {
-        await api<UserOut>("/api/auth/register", {
+        await api<UserOut>("/v1/auth/register", {
           method: "POST",
           json: { email, password, name },
         });
       }
       // OAuth2 password flow: form-encoded body with username/password fields.
-      return api<TokenResponse>("/api/auth/login", {
+      return api<TokenResponse>("/v1/auth/login", {
         method: "POST",
         form: { username: email, password },
       });

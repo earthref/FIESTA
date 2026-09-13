@@ -399,7 +399,7 @@ export function DataModelPage() {
 
   const query = useQuery({
     queryKey: ["data-model", version],
-    queryFn: () => api<unknown>(`/api/config/data-models/${version}`),
+    queryFn: () => api<unknown>(`/config/data-models/${version}`),
     staleTime: Number.POSITIVE_INFINITY,
   });
 

@@ -101,7 +101,7 @@ class PolesPlugin(FiestaPlugin):
             )
         return docs
 
-    def build_router(self, node: NodeConfig) -> APIRouter:
+    def build_router(self) -> APIRouter:
         router = APIRouter()
 
         @router.get("/plate-boundaries")

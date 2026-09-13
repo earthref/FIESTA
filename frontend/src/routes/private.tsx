@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { ContributionEditor } from "../components/contribution-editor";
 import { ErrorMessage } from "../components/error-message";
 import { useLoginModal } from "../components/login-modal";
 import { ResultItem } from "../components/result-item";
@@ -28,7 +29,7 @@ function sleep(ms: number): Promise<void> {
 
 async function fetchValidation(id: number): Promise<ValidationResult | null> {
   try {
-    return await api<ValidationResult>(`/api/private/contributions/${id}/validation`);
+    return await api<ValidationResult>(`/private/contributions/${id}/validation`);
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) return null;
     throw err;
@@ -167,6 +168,7 @@ function ValidationModal({
 function ContributionCard({ contribution }: { contribution: ContributionOut }) {
   const { data: config } = useNodeConfig();
   const queryClient = useQueryClient();
+  const [editorOpen, setEditorOpen] = useState(false);
   const [name, setName] = useState(contribution.filename ?? `Contribution ${contribution.id}`);
   const [doi, setDoi] = useState(contribution.reference_doi ?? "");
   const [shareOpen, setShareOpen] = useState(false);
@@ -188,9 +190,13 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
 
   const doiMutation = useMutation({
     mutationFn: () =>
-      api<ContributionOut>(`/api/private/contributions/${contribution.id}/reference`, {
+      api<ContributionOut>(`/private/contributions/${contribution.id}/reference`, {
         method: "PUT",
-        json: { doi: doi.trim() },
+        json: {
+          doi: doi.trim(),
+          expected_revision: contribution.head_revision,
+          request_key: crypto.randomUUID(),
+        },
       }),
     onSuccess: invalidate,
     onError: setActionError,
@@ -198,7 +204,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
 
   const activateMutation = useMutation({
     mutationFn: () =>
-      api<ContributionOut>(`/api/private/contributions/${contribution.id}/activate`, {
+      api<ContributionOut>(`/private/contributions/${contribution.id}/activate`, {
         method: "POST",
       }),
     onSuccess: () => {
@@ -213,7 +219,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
 
   const deactivateMutation = useMutation({
     mutationFn: () =>
-      api<ContributionOut>(`/api/private/contributions/${contribution.id}/deactivate`, {
+      api<ContributionOut>(`/private/contributions/${contribution.id}/deactivate`, {
         method: "POST",
       }),
     onSuccess: invalidate,
@@ -221,8 +227,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () =>
-      api<void>(`/api/private/contributions/${contribution.id}`, { method: "DELETE" }),
+    mutationFn: () => api<void>(`/private/contributions/${contribution.id}`, { method: "DELETE" }),
     onSuccess: () => {
       setDeleteOpen(false);
       invalidate();
@@ -238,7 +243,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
     setValidating(true);
     try {
       const before = (await fetchValidation(contribution.id))?.validated_at;
-      await api<JobOut>(`/api/private/contributions/${contribution.id}/validate`, {
+      await api<JobOut>(`/private/contributions/${contribution.id}/validate`, {
         method: "POST",
       });
       for (let attempt = 0; ; attempt++) {
@@ -476,6 +481,36 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
         <ResultItem doc={doc} level={contributionLevel} privateKey={contribution.private_key} />
       </div>
 
+      <div className="my-2 flex gap-2">
+        <Button variant="secondary" onClick={() => setEditorOpen(true)}>
+          Edit / History / Files
+        </Button>
+        {contribution.published_revision && (
+          <Button
+            onClick={async () => {
+              try {
+                await api(`/private/contributions/${contribution.id}/versions`, {
+                  method: "POST",
+                });
+                await invalidate();
+              } catch (error) {
+                setActionError(error);
+              }
+            }}
+          >
+            Create new version
+          </Button>
+        )}
+      </div>
+      {editorOpen && (
+        <ContributionEditor
+          contribution={contribution}
+          onClose={() => {
+            setEditorOpen(false);
+            invalidate();
+          }}
+        />
+      )}
       {/* Modals */}
       {shareOpen && (
         <Modal
@@ -574,7 +609,7 @@ export function PrivateWorkspacePage() {
 
   const list = useQuery({
     queryKey: ["private", "contributions"],
-    queryFn: () => api<ContributionOut[]>("/api/private/contributions"),
+    queryFn: () => api<ContributionOut[]>("/private/contributions"),
     enabled: !!user,
   });
 

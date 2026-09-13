@@ -14,11 +14,17 @@ class UserOut(BaseModel):
     name: str
     orcid: str | None = None
     is_admin: bool = False
+    settings: dict = {}
 
     @classmethod
     def from_db(cls, user: User) -> "UserOut":
         return cls(
-            id=user.id, email=user.email, name=user.name, orcid=user.orcid, is_admin=user.is_admin
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            orcid=user.orcid,
+            is_admin=user.is_admin,
+            settings=user.settings,
         )
 
 
@@ -46,6 +52,9 @@ class ContributionOut(BaseModel):
     reference_doi: str | None
     filename: str | None
     status: str
+    head_revision: str | None = None
+    published_revision: str | None = None
+    indexing_status: str = "pending"
     error: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -69,6 +78,9 @@ class ContributionOut(BaseModel):
             filename=c.filename,
             status=c.status.value,
             error=c.error,
+            head_revision=c.head_revision,
+            published_revision=c.published_revision,
+            indexing_status=c.indexing_status,
             created_at=c.created_at,
             updated_at=c.updated_at,
             activated_at=c.activated_at,
@@ -77,6 +89,8 @@ class ContributionOut(BaseModel):
 
 class ReferenceIn(BaseModel):
     doi: str
+    expected_revision: str | None
+    request_key: str
 
 
 class ValidationOut(BaseModel):

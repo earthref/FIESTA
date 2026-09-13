@@ -4,7 +4,7 @@ import type { NodeConfig } from "./types";
 
 export const configQueryOptions = {
   queryKey: ["config"] as const,
-  queryFn: () => api<NodeConfig>("/api/config"),
+  queryFn: () => api<NodeConfig>("/config"),
   staleTime: Number.POSITIVE_INFINITY,
   gcTime: Number.POSITIVE_INFINITY,
 };

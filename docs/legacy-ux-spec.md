@@ -170,7 +170,7 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 - **Portal bar** lists the FIESTA nodes (KdD, CDR, KArAr, OSU-MGR) that the
   legacy bar lacks, styled identically.
 
-- **Sort options** are the legacy list, served by `GET /api/search/{table}?sort=…`. Legacy "Largest ID First" sorted `summary.contribution.id` *ascending* (`search.jsx:115`, a bug); FIESTA sorts it descending so the label is true. "Recently Published" and "Most Cited" sort on `_reference.year` / `_reference.n_citations`, which are empty until reference enrichment (ROADMAP C6) lands — they fall back to newest first.
+- **Sort options** are the legacy list, served by `GET /v1/{node}/search/{table}?sort=…`. Legacy "Largest ID First" sorted `summary.contribution.id` *ascending* (`search.jsx:115`, a bug); FIESTA sorts it descending so the label is true. "Recently Published" and "Most Cited" sort on `_reference.year` / `_reference.n_citations`, which are empty until reference enrichment (ROADMAP C6) lands — they fall back to newest first.
 - **Page size** is 10 (legacy 5) with the same infinite-scroll behaviour; a "Load More" button remains as the no-IntersectionObserver fallback.
 - **Card header fallback** is "Contribution {id}" instead of legacy "Unknown" when a hit has no `_reference.citation` (no Crossref enrichment yet).
 - **Download Results** downloads the top contribution file (no bulk-zip endpoint yet, ROADMAP); legacy zipped every matching contribution.

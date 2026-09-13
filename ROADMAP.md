@@ -64,7 +64,7 @@ Phase E's production cutover, with node pilots possible before the full migratio
 Before any of it: get `CI` green on `main` (the migration 0002 fix and the log-dump fix
 from 2026-09-10) and untrack `.claude/settings.proposed.json`.
 
-## Phase A — One FIESTA API — **DECIDED 2026-09-10**
+## Phase A — One FIESTA API — **DECIDED 2026-09-10** — **DONE 2026-09-12**
 
 Collapse the per-node node app into the public API's shape: one FastAPI service, node
 named in the path, one deployment YAML listing every node. `backend/fiesta/apps/public.py`
@@ -72,33 +72,35 @@ already resolves the node per request from `{repository}` and binds the session 
 node's schema, and the CLI's `init` / `rebuild` / `worker` already loop over all nodes —
 the node app is the outlier.
 
-- [ ] **A1 Deployment config.** One YAML listing nodes (the current `public-api.yaml`
+- [x] **A1 Deployment config.** One YAML listing nodes (the current `public-api.yaml`
       shape) becomes the only deployment mode; `FIESTA_NODE` filters which nodes a
       local stack enables. Retire `deployment: node`. CI's "every YAML loads" job
       adapts.
-- [ ] **A2 Node per request.** `NodeDep` resolves `{node}` from the path (case-insensitive
+- [x] **A2 Node per request.** `NodeDep` resolves `{node}` from the path (case-insensitive
       key or slug); `get_session` depends on it; lifespan ensures every enabled node's
       bucket and index; plugin routers mount at concrete slugs
       (`/v1/magic/plugins/poles`). Node-less routes: `/v1/auth/*`, `/v1/health-check`.
-- [ ] **A3 Merge the two apps.** `/api` folds into `/v1`: config, data models,
+- [x] **A3 Merge the two apps.** `/api` folds into `/v1`: config, data models,
       vocabularies, method codes, the full private workspace (validate/validation,
       reference, activate/deactivate), contribution summary + download. Add a token
       login on `/v1` for the SPA; HTTP Basic stays for legacy `api.earthref.org`
       clients. Rewrite `docs/api.md` as the single contract.
-- [ ] **A4 Jobs.** `process_contribution` takes the node slug as an argument instead
+- [x] **A4 Jobs.** `process_contribution` takes the node slug as an argument instead
       of the process-global config; one worker listens on every enabled node's queue
       (the CLI already does this).
-- [ ] **A5 Frontend.** `VITE_API_URL` selects the API origin (live or local);
+- [x] **A5 Frontend.** `VITE_API_URL` selects the API origin (live or local);
       node from `FIESTA_NODE` at dev time and injected by the frontend container's
       nginx at runtime (one image, any node, any base path). All 28 `api()` calls and
       the 4 direct download/texture URLs gain the node prefix.
-- [ ] **A6 Compose and docs.** One `api` + one `worker` + a frontend per enabled node;
+- [x] **A6 Compose and docs.** One `api` + one `worker` + a frontend per enabled node;
       delete the six triplets; Makefile, `.env.example`, `scripts/e2e.sh`,
       `development.md`, `deployment.md`, README ports table.
 
 Acceptance: `make up FIESTA_NODE=magic,karar` starts infra + 1 API + 1 worker + 2
 frontends; `make e2e` and CI green; `GET /v1/karar/config` and `GET /v1/magic/config`
 served by the same process.
+
+Verified by `make e2e` locally and CI's e2e job.
 
 Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend) → A6.
 
@@ -152,7 +154,7 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
       still need a pass at phone width.
 - [ ] **D4 Poles globe** per `docs/poles-globe-spec.md` — check what remains.
 
-## Phase M — Data migration and redesign — **DECIDED 2026-09-11**
+## Phase M — Data migration and redesign — **IN PROGRESS**
 
 Direction: make Postgres the authoritative data layer for accounts, private
 workspaces, user settings, permissions, and contribution management; synchronize
@@ -192,6 +194,18 @@ ambiguities. Build import/sync against local legacy fixtures before a live dry
 run. Production rehearsal and M7 need scoped source-read/destination-write access,
 sizing, backup/restore targets, and an agreed cutover/rollback window; track these
 operator inputs in `docs/OPERATOR_TODO.md` when preparing the live migration.
+
+**Implementation branch — 2026-09-11.** `feature/phase-m` implements migration 0003,
+Postgres settings/workspace permissions, immutable file revisions and undo, shared
+management routers, the SPA text/history/attachment editor, durable outbox processing,
+versioned validation/summary artifacts, config-driven offline seeds, explicit-inventory
+legacy import/sync, storage verification, and search-only rebuild. Local Docker
+verification is tracked in [docs/phase-m.md](docs/phase-m.md). Status remains IN
+PROGRESS until reviewed and merged; checkboxes below are not claims of deployment.
+Live source inventories/export mappings, production sizing and backup/cutover
+rehearsals remain operator gates in `docs/OPERATOR_TODO.md`. Phase A's process
+consolidation remains separate; the current Docker stack still runs per-node APIs
+and workers plus the multi-node API.
 
 **Starting point and change in contract.** Postgres already stores shared users,
 node-scoped contributions, and validation results. This is an extension and

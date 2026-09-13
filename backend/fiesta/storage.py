@@ -1,14 +1,16 @@
 """S3-compatible object storage (MinIO in dev, AWS S3 in production).
 
-The bucket is the durable record of a node: for every contribution version it
-holds the canonical text file plus a manifest.json with the workflow metadata.
-Postgres and OpenSearch are projections that `fiesta rebuild` can regenerate
-from the bucket + the deployment YAML.
+The bucket stores immutable revision files, manifests and derived artifacts.
+Postgres is authoritative for accounts, permissions and workflow pointers; recovery
+requires both its backup and this bucket. Search alone is rebuildable.
 
 Layout within a node's bucket (or, with FIESTA_S3_BUCKET, under the node's
 "<slug>/" prefix inside the shared bucket -- Storage adds and strips that
 prefix, callers only ever see the keys below):
-    contributions/{id}/{filename}      canonical contribution file
+    contributions/{id}/blobs/{sha256}/{filename}  immutable content
+    contributions/{id}/revisions/{uuid}/manifest.json  revision snapshot
+    contributions/{id}/revisions/{uuid}/artifacts/{run}/  validation and summaries
+    contributions/{id}/{filename}      legacy canonical file (before backfill)
     contributions/{id}/manifest.json   workflow metadata (see manifest_for)
     uploads/{user_id}/{uuid}/{name}    raw uploads before parsing
 """
@@ -78,9 +80,10 @@ class Storage:
             key, json.dumps(data, default=str).encode(), content_type="application/json"
         )
 
-    async def get_bytes(self, key: str) -> bytes:
+    async def get_bytes(self, key: str, version_id: str | None = None) -> bytes:
         async with self.client() as s3:
-            obj = await s3.get_object(Bucket=self.bucket, Key=self._key(key))
+            options = {"VersionId": version_id} if version_id else {}
+            obj = await s3.get_object(Bucket=self.bucket, Key=self._key(key), **options)
             return await obj["Body"].read()
 
     async def get_json(self, key: str) -> Any:

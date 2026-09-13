@@ -1,0 +1,24 @@
+tab delimited	contribution
+data_model_version	reference	description
+1.0	10.1126/SCIENCE.ADE8666	Synthetic karar typical example 2
+>>>>>>>>>>
+tab delimited	samples
+sample	igsn	location
+DEMO-SAMPLE-2	DEMO-SAMPLE-2	San Francisco Volcanic Province
+>>>>>>>>>>
+tab delimited	specimens
+specimen	sample	material_type	material_name	age_calculation_method	age	age_sigma_analytical	age_unit	stnd_name	stnd_citation	stnd_material	stnd_age	stnd_age_sigma	stnd_age_unit	is_flux_monitor
+DEMO-TUFF-01a	DEMO-SAMPLE-2	Mineral	Plagioclase	Plateau	1.678	1.5	Ma	Fish Canyon Sanidine	10.1016/j.epsl.2011.09.017	Sandine	28.172	0.014	Ma	t
+>>>>>>>>>>
+tab delimited	experiments
+experiment	specimen	age_calculation_method	age	age_sigma_analytical	age_unit
+DEMO-EXP-2	DEMO-TUFF-01a	Plateau	0.9287	1.5	Ma
+>>>>>>>>>>
+tab delimited	measurements
+measurement	experiment	age	age_sigma_analytical	age_unit	temp_unit	mdf_law_applied	total_36ar_39ar_ratio	total_36ar_39ar_ratio_sigma	corrected_39ar_potassium
+DEMO2-STEP1	DEMO-EXP-2	24.1	.2	Ma	Celcius	Linear	0.001	0.0001	1
+DEMO2-STEP2	DEMO-EXP-2	24.2	.2	Ma	Celcius	Linear	0.001	0.0001	2
+DEMO2-STEP3	DEMO-EXP-2	24.3	.2	Ma	Celcius	Linear	0.001	0.0001	3
+DEMO2-STEP4	DEMO-EXP-2	24.4	.2	Ma	Celcius	Linear	0.001	0.0001	4
+DEMO2-STEP5	DEMO-EXP-2	24.5	.2	Ma	Celcius	Linear	0.001	0.0001	5
+DEMO2-STEP6	DEMO-EXP-2	24.6	.2	Ma	Celcius	Linear	0.001	0.0001	6

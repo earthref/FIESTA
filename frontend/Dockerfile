@@ -15,15 +15,18 @@ COPY . .
 ENV VITE_BASE_PATH=$BASE_PATH
 RUN npm run build
 
-# Serve with nginx (SPA history fallback + /api proxy to the backend service).
+# Serve with nginx (SPA history fallback + /v1 proxy to the API service).
 # The nginx image's entrypoint runs envsubst over /etc/nginx/templates/, so
-# BACKEND_HOST selects which backend service this frontend proxies to
-# (per-node in multi-node compose stacks) and BASE_PATH places the location
-# blocks. The build lands at <html root><BASE_PATH> so nginx serves it from
-# the same prefix the bundle was built for.
+# at runtime FIESTA_NODE picks the node this frontend is for (one image, any
+# node), API_URL optionally points the SPA at another API origin (empty =
+# proxy <base>v1/ to BACKEND_HOST), and BASE_PATH places the location blocks.
+# The build lands at <html root><BASE_PATH> so nginx serves it from the same
+# prefix the bundle was built for.
 FROM nginx:alpine
 ARG BASE_PATH=/
-ENV BACKEND_HOST=backend
+ENV BACKEND_HOST=api
+ENV FIESTA_NODE=magic
+ENV API_URL=
 ENV BASE_PATH=$BASE_PATH
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html${BASE_PATH}

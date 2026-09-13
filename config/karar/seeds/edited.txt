@@ -1,0 +1,20 @@
+tab delimited	contribution
+data_model_version	reference
+1.0	10.1126/SCIENCE.ADE8666
+>>>>>>>>>>
+tab delimited	samples
+sample	igsn	location
+ICDP5054EXF4601	ICDP5054EXF4601	San Francisco Volcanic Province
+>>>>>>>>>>
+tab delimited	specimens
+specimen	sample	material_type	material_name	age_calculation_method	age	age_sigma_analytical	age_unit	stnd_name	stnd_citation	stnd_material	stnd_age	stnd_age_sigma	stnd_age_unit	is_flux_monitor
+SFVP01-01a	ICDP5054EXF4601	Mineral	Plagioclase	Plateau	1.678	1.5	Ga	Fish Canyon Sanidine	10.1016/j.epsl.2011.09.017	Sandine	28.172	0.014	Ga	t
+>>>>>>>>>>
+tab delimited	experiments
+experiment	specimen	age_calculation_method	age	age_sigma_analytical	age_unit
+14D26122	SFVP01-01a	Plateau	0.9287	1.5	Ga
+>>>>>>>>>>
+tab delimited	measurements
+measurement	experiment	age	age_sigma_analytical	age_unit	temp_unit	mdf_law_applied	total_36ar_39ar_ratio	total_36ar_39ar_ratio_sigma	corrected_39ar_potassium
+SFVP01-01a-LT-AF-Z-1	14D26122	46.171427	1.5	Ga	Celcius	Linear	0.001	0.0001	1
+

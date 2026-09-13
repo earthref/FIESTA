@@ -1,0 +1,12 @@
+tab delimited	contribution
+id	version	data_model_version	reference	lab_names	description
+12345	1	3.0	10.1029/93JB00024	Paleomagnetic Laboratory (AGICO Inc., Czech Republic)	Synthetic magic typical example 1
+>>>>>>>>>>
+tab delimited	locations
+location	location_type	geologic_classes	lithologies	age_unit	lat_s	lat_n	lon_w	lon_e
+Synthetic Hawaii lava flows	Outcrop	Igneous	Basalt	Ma	19.0	20.3	203.9	205.2
+>>>>>>>>>>
+tab delimited	sites
+site	location	citations	geologic_types	geologic_classes	lithologies	age_unit	lat	lon	method_codes
+DEMO1-01	Synthetic Hawaii lava flows	This study	Lava Flow	Igneous	Basalt	Ma	19.5	204.5	LP-DC3:SM-VSM
+DEMO1-02	Synthetic Hawaii lava flows	This study	Lava Flow	Igneous	Basalt	Ma	19.6	204.6	LP-DC3

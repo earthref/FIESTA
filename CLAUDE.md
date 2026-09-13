@@ -8,7 +8,7 @@ FIESTA is the platform behind the EarthRef.org data repositories (nodes): MagIC,
 
 ```
 Backend:    FastAPI + SQLAlchemy (async) + asyncpg + Pydantic v2 + Alembic      (backend/, package `fiesta`)
-Public API: same image, `fiesta.apps.public` — /v1 across all nodes (api.earthref.org; being merged with the node app)
+API:        one process, `fiesta.apps.api` — every node under /v1/{repository}/... (api.earthref.org, and what the SPA talks to); `config/fiesta.yaml` lists the nodes, FIESTA_NODE narrows them
 Jobs:       procrastinate (Postgres-native LISTEN/NOTIFY) — parse / validate / summarize / index, email
 Frontend:   Vite + React + TanStack Router/Query SPA, Tailwind; one build serves any node (branding from the API)
 Database:   Postgres 16 — shared `users` schema + one schema per node (magic, cdr, …), Alembic per schema
@@ -22,8 +22,8 @@ Linting:    ruff (Python), biome (TypeScript)
 ## Repo Layout
 
 ```
-config/                <node>.yaml + <node>/{data_models/*.json, vocabularies}; public-api.yaml lists every node
-backend/fiesta/        apps/ (node + public FastAPI, routers, deps) · domain/ (parse, validate, summarize)
+config/                <node>.yaml + <node>/{data_models/*.json, vocabularies}; fiesta.yaml lists every node the API serves
+backend/fiesta/        apps/ (api.py — one FastAPI, routers/, deps) · domain/ (parse, validate, summarize)
                        services/ (contributions, rebuild) · jobs/ (procrastinate) · search/ · plugins/ · cli.py
 backend/alembic/       migrations (applied per node schema by `fiesta init`)
 backend/tests/         pytest (domain + plugins; no infra needed)
@@ -39,26 +39,26 @@ scripts/               e2e.sh (full workflow against a running stack), pg-node-r
 ## Commands (use exactly these forms — they match the permission allowlist)
 
 ```bash
-make up                         # compose: infra + one backend/worker/frontend per node in FIESTA_NODE (.env) + the /v1 public API on PUBLIC_API_PORT; hot reload (Vite dev server, uvicorn --reload) — a git pull is live; returns once healthy
+make up                         # compose: infra + one API (/v1/{node}/…, API_PORT) + one worker + a frontend per node in FIESTA_NODE (.env); hot reload (Vite dev server, uvicorn --reload) — a git pull is live; returns once healthy
 make up FIESTA_NODE=magic       # one node; PROD=1 runs the built images (what CI e2e and a deployment use)
 make down / make clean          # stop (keep volumes) / stop and DELETE volumes
 make infra                      # only postgres+opensearch+minio+mailpit, for host-run app processes
-make backend-dev                # uv sync + fiesta init + uvicorn --reload for the first node in FIESTA_NODE
-make worker-dev                 # procrastinate worker for that node
-make frontend-dev               # Vite on :5173 (nvm use first — Node 22); VITE_API_TARGET=http://localhost:18000 to re-point
+make backend-dev                # uv sync + fiesta init + uvicorn fiesta.apps.api --reload for every node in FIESTA_NODE (:8000)
+make worker-dev                 # procrastinate worker for every node in FIESTA_NODE
+make frontend-dev               # Vite on :5173 for the first FIESTA_NODE (nvm use first — Node 22); VITE_API_TARGET=http://localhost:18000 to re-point
 make test                       # backend pytest + frontend tsc/build   (make test-backend / make test-frontend)
 make lint / make fix            # ruff + biome check / auto-fix
 make e2e                        # scripts/e2e.sh against a running `make up FIESTA_NODE=magic PROD=1`
-make init / make rebuild / make user EMAIL=… NAME=…   # run inside the backend image
+make init / make rebuild / make user EMAIL=… NAME=…   # run once on the `api` service
 cd backend && uv run pytest tests/test_domain.py -x --tb=short
-cd backend && FIESTA_CONFIG_FILE=../config/magic.yaml uv run fiesta <init|rebuild --yes|worker|create-user>
+cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=magic uv run fiesta <init|rebuild --yes|worker|create-user>
 ```
 
-On this machine host ports 5432/8000/8001 are taken: `.env` publishes Postgres on 55432 and the backends on 18000+ (`MAGIC_BACKEND_PORT=18000`, …). `make e2e` reads the same overrides. `.env` holds secrets — do not print it.
+On this machine host ports 5432/8000/8001 are taken: `.env` publishes Postgres on 55432 and the API on `API_PORT` (the old per-node `<NODE>_BACKEND_PORT` variables are retired, so this machine's `.env` must set `API_PORT`, e.g. 18000). `make e2e API_PORT=…` reads the same override. `.env` holds secrets — do not print it.
 
 ## Hard Rules (each links to its rationale)
 
-- **The bucket is the record; Postgres and OpenSearch are projections.** Every contribution's canonical text file + `manifest.json` in S3 must be enough to regenerate both (`fiesta rebuild --yes`). Anything a job derives (summaries, plugin docs like `poles`) is recomputed on rebuild, never hand-edited. Never write to Postgres or the index in a way the manifest cannot reproduce. → [deployment.md](deployment.md) "Disaster recovery"
+- **Postgres owns application state; the bucket preserves immutable contribution history; OpenSearch is a projection.** Save content through the revision service with optimistic concurrency and an idempotency key. Commit revision pointers and outbox events together. Never edit published revision content or erase retained history. `fiesta rebuild` rebuilds search only; full recovery needs Postgres plus S3. Local development uses Docker and per-node seed manifests, never production credentials. → [docs/phase-m.md](docs/phase-m.md)
 - **A node is a YAML file, never a code branch.** Identity, colors, index, bucket, data model, vocabularies, hierarchy, facets, and enabled features all live in `config/<node>.yaml`; the loader validates it on startup and CI loads every YAML. No `if node == "magic"` in core code. → [README.md](README.md), [development.md](development.md) "Adding or changing a node"
 - **Node-specific science is a plugin** (`backend/fiesta/plugins/` + `frontend/src/plugins/<name>/`, activated by `features.plugins`). Poles, depth plots, age plateaus, record cards, digital objects — all plugins. New node feature ⇒ new plugin, not a core special case. → [docs/plugins.md](docs/plugins.md)
 - **Data models and vocabularies are the legacy repos' JSON, converted, not rewritten.** `config/<node>/data_models/<version>.json` comes from the Meteor repos' `export const` modules. MagIC 3.0 gotchas: no `experiments` table (it is a derived search level); longitudes are 0–360; `lab_names`, `citations`, `geologic_types`, `lithologies`, `age_unit`, `reference` are required — fixtures and seeds must satisfy them.
