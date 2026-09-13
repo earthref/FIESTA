@@ -49,7 +49,7 @@ echo "token ok"
 echo "== node config (same process, two nodes) =="
 curl -sf "$API/config" | json '"magic: " + d["title"]'
 curl -sf "$V1/MagIC/config" | json '"MagIC (key, any case): " + d["slug"]'
-curl -sf "$V1/kdd/config" | json '"kdd: " + d["title"]' || echo "(kdd not enabled in this stack)"
+curl -s -o /dev/null -w "kdd: HTTP %{http_code} (404 = not enabled in this stack)\n" "$V1/kdd/config"
 
 echo "== create contribution =="
 CID=$(curl -sf -X POST "$API/private/contributions" -H "$AUTH" | json 'd["id"]')
@@ -76,7 +76,14 @@ curl -sf "$API/private/contributions/$CID/validation" -H "$AUTH" \
 echo "== publish =="
 curl -sf -X POST "$API/private/contributions/$CID/activate" -H "$AUTH" | json '"activated: " + str(d["is_activated"])'
 
-echo "== public search after publish =="
+echo "== public search after publish (the outbox flips the index flags asynchronously) =="
+TOTAL=0
+for _ in $(seq 1 30); do
+  TOTAL=$(curl -sf "$API/search/contribution?query=Hawaii" | json 'd["total"]')
+  [ "$TOTAL" -ge 1 ] && break
+  sleep 2
+done
+[ "$TOTAL" -ge 1 ] || { echo "TIMEOUT waiting for the published contribution to be searchable"; exit 1; }
 curl -sf "$API/search/contribution?query=Hawaii&facets=true" \
   | json '"total: %d | method_codes facet: %s" % (d["total"], d["aggregations"]["method_codes"])'
 curl -sf "$API/search/contribution?query=doi:%2210.1029/93JB00024%22" | json '"doi search total: %d" % d["total"]'
