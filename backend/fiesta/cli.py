@@ -239,7 +239,7 @@ def sync_legacy(inventory: str, apply: bool = False):
 
 
 @app.command("legacy-inventory")
-def legacy_inventory(node: str, out: str):
+def legacy_inventory(node: str, out: str = typer.Option(..., "--out", help="snapshot directory")):
     """Snapshot NODE's legacy OpenSearch index + S3 buckets into OUT/inventory.json and owners.json.
 
     Read-only against the legacy sources; review the output, then `ensure-owners`
