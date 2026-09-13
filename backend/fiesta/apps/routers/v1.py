@@ -507,9 +507,11 @@ async def openapi_yaml() -> PlainTextResponse:
 
 @router.get("/v1/health-check")
 async def health_check():
+    # As esCheckConnection did: the cluster answers and is yellow or green.
     try:
-        healthy = bool(await get_opensearch().ping())
-    except Exception:  # noqa: BLE001 — any failure is an unhealthy answer
+        health = await get_opensearch().cluster.health()
+        healthy = health.get("status") in ("yellow", "green")
+    except Exception:  # any failure is an unhealthy answer
         healthy = False
     if healthy:
         return {"message": "Healthy!"}

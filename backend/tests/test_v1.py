@@ -81,10 +81,14 @@ class FakeSearch:
         self.healthy = healthy
         self.bodies = []
 
-    async def ping(self):
+    @property
+    def cluster(self):
+        return self
+
+    async def health(self):
         if isinstance(self.healthy, Exception):
             raise self.healthy
-        return self.healthy
+        return {"status": "green" if self.healthy else "red"}
 
     async def search(self, index, body):
         self.bodies.append(body)

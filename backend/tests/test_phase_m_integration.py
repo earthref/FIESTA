@@ -535,13 +535,17 @@ async def test_v1_legacy_contract_roundtrip():
     import zipfile
 
     from fiesta.apps.api import create_app
-    from fiesta.db.session import get_engine
+    from fiesta.db.session import get_engine, get_sessionmaker
     from fiesta.nodeconfig import get_deployment
     from fiesta.search.client import get_opensearch
     from fiesta.services.outbox import drain
     from fiesta.services.seed import require_local
 
     require_local()
+    # Cached clients belong to the previous test's event loop.
+    get_opensearch.cache_clear()
+    get_engine.cache_clear()
+    get_sessionmaker.cache_clear()
     node = get_deployment().node_for("magic")
     app = create_app()
     raw = (node.base_dir / "magic/seeds/valid.txt").read_text()

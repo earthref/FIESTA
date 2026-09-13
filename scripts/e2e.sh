@@ -105,8 +105,14 @@ echo "== plugin route guard =="
 curl -sf "$API/plugins/poles/plate-boundaries" | json '"poles on magic: %s" % d["type"]'
 curl -s -o /dev/null -w "poles on kdd: HTTP %{http_code}\n" "$V2/kdd/plugins/poles/plate-boundaries"
 
-echo "== notification email (mailpit) =="
-curl -sf "$MAILPIT/api/v2/messages" \
-  | json '"messages: %d | latest: %s" % (d["total"], d["messages"][0]["Subject"] if d["messages"] else None)'
+echo "== notification email (mailpit; the worker sends it asynchronously) =="
+MESSAGES=0
+for _ in $(seq 1 15); do
+  MESSAGES=$(curl -s "$MAILPIT/api/v2/messages" | json 'd["total"]' 2>/dev/null || echo 0)
+  [ "$MESSAGES" -ge 1 ] && break
+  sleep 2
+done
+[ "$MESSAGES" -ge 1 ] || { echo "TIMEOUT waiting for the publication email"; curl -si "$MAILPIT/api/v2/messages" | head -5; exit 1; }
+curl -sf "$MAILPIT/api/v2/messages" | json '"messages: %d | latest: %s" % (d["total"], d["messages"][0]["Subject"])'
 
 echo "ALL E2E CHECKS PASSED"
