@@ -27,7 +27,7 @@ async def test_seed_waits_for_claimed_event(monkeypatch):
     from fiesta.services.seed import require_local, settle_seed_events
 
     require_local()
-    node = get_deployment().public_api.node_for("cdr")
+    node = get_deployment().node_for("cdr")
     sessions = get_sessionmaker(node.node.slug)
     async with sessions() as session:
         contribution = (
@@ -75,7 +75,7 @@ async def test_seed_waits_for_claimed_event(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
-    from fiesta.apps.public import create_app
+    from fiesta.apps.api import create_app
     from fiesta.db.models import Contribution, User
     from fiesta.db.session import get_engine, get_sessionmaker
     from fiesta.nodeconfig import get_deployment
@@ -88,7 +88,7 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
     from fiesta.services.seed import require_local
 
     require_local()
-    node = get_deployment().public_api.node_for("magic")
+    node = get_deployment().node_for("magic")
     app = create_app()
     raw = (node.base_dir / "magic/seeds/valid.txt").read_text()
     async with (
@@ -374,7 +374,7 @@ async def test_real_worker_process(tmp_path):
     """Exercise the actual worker/outbox subprocess rather than invoking drain."""
     import sys
 
-    from fiesta.apps.public import create_app
+    from fiesta.apps.api import create_app
     from fiesta.db.session import get_engine, get_sessionmaker
     from fiesta.search.client import get_opensearch
     from fiesta.services.seed import require_local
@@ -404,7 +404,7 @@ async def test_real_worker_process(tmp_path):
                 base = f"/v1/cdr/private/contributions/{c['id']}"
                 from fiesta.nodeconfig import get_deployment
 
-                node = get_deployment().public_api.node_for("cdr")
+                node = get_deployment().node_for("cdr")
                 raw = (node.base_dir / "cdr/seeds/valid.txt").read_bytes()
                 response = await client.put(
                     base + "/file",

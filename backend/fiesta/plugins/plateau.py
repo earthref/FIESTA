@@ -239,7 +239,7 @@ def process_plateau_data(
 class PlateauPlugin(FiestaPlugin):
     name = "plateau-calculations"
 
-    def build_router(self, node: NodeConfig) -> APIRouter:
+    def build_router(self) -> APIRouter:
         router = APIRouter()
 
         @router.get("/contributions/{contribution_id}/experiments/{experiment}/plateau")

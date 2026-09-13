@@ -16,7 +16,7 @@ from fiesta.settings import Settings
 @pytest.mark.parametrize("node", ["magic", "cdr", "karar", "kdd", "erda", "osu-mgr"])
 def test_seed_fixtures(node):
     config = Path(__file__).resolve().parents[2] / "config" / f"{node}.yaml"
-    node = load_deployment(config).node
+    node = load_deployment(config).node_list[0]
     root, manifest = load_seed(node)
     for item in manifest["contributions"]:
         if item.get("published"):

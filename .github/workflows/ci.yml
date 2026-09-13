@@ -104,13 +104,7 @@ jobs:
           failed = False
           for path in sorted(Path("../config").glob("*.yaml")):
               try:
-                  deployment = load_deployment(path)
-                  nodes = (
-                      [deployment.node]
-                      if deployment.node
-                      else list(deployment.public_api.nodes.values())
-                  )
-                  for node in nodes:
+                  for node in load_deployment(path).node_list:
                       for version in node.data_model.versions:
                           node.load_data_model(version)
                       node.load_controlled_vocabularies()

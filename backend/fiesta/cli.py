@@ -37,14 +37,14 @@ def _apply_procrastinate_schema() -> None:
 def init(with_admin: bool = typer.Option(False, help="create an initial admin account")) -> None:
     """Apply migrations, job-queue schema, and ensure search index + bucket.
 
-    Safe to run concurrently (multi-node stacks start several backends at
-    once): a Postgres advisory lock serializes the schema work."""
+    Safe to run concurrently (the API and worker containers both run it on
+    start): a Postgres advisory lock serializes the schema work."""
     import psycopg
 
     from fiesta.nodeconfig import get_deployment
 
     deployment = get_deployment()
-    nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
+    nodes = deployment.node_list
 
     with psycopg.connect(get_settings().procrastinate_dsn) as lock_conn:
         lock_conn.execute("SELECT pg_advisory_lock(715517)")
@@ -126,7 +126,7 @@ def rebuild(
         from fiesta.services.rebuild import rebuild_node
 
         deployment = get_deployment()
-        nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
+        nodes = deployment.node_list
         for node in nodes:
             async with get_sessionmaker(node.node.slug)() as session:
                 stats = await rebuild_node(session, node)
@@ -142,17 +142,16 @@ def rebuild(
 
 @app.command()
 def worker(concurrency: int = 4) -> None:
-    """Run the procrastinate worker for this deployment's node(s).
+    """Run the procrastinate worker for every enabled node.
 
-    Listens to the node's own queue (contribution processing) plus the shared
-    "default" queue (emails), so several node workers can share one Postgres
-    without picking up each other's contributions."""
+    Listens to each node's own queue (contribution processing) plus the shared
+    "default" queue (emails)."""
     import fiesta.jobs.tasks  # noqa: F401 — register tasks
     from fiesta.jobs.app import get_job_app
     from fiesta.nodeconfig import get_deployment
 
     deployment = get_deployment()
-    nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
+    nodes = deployment.node_list
     queues = [n.node.slug for n in nodes] + ["default"]
     typer.echo(f"worker listening on queues: {queues}")
     import subprocess
@@ -178,7 +177,7 @@ def drain_outbox():
 
     async def run():
         deployment = get_deployment()
-        nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
+        nodes = deployment.node_list
         for node in nodes:
             typer.echo(f"{node.node.slug}: {await drain(node)}")
         from fiesta.search.client import get_opensearch
@@ -194,7 +193,7 @@ def outbox_worker():
     from fiesta.services.outbox import serve
 
     deployment = get_deployment()
-    nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
+    nodes = deployment.node_list
     asyncio.run(serve(nodes))
 
 
@@ -208,7 +207,7 @@ def seed():
 
     async def run():
         deployment = get_deployment()
-        nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
+        nodes = deployment.node_list
         from fiesta.search.client import get_opensearch
 
         try:
@@ -232,7 +231,7 @@ def sync_legacy(inventory: str, apply: bool = False):
     inventory = str(Path(inventory).resolve())
     config = load_inventory(inventory)
     deployment = get_deployment()
-    node = deployment.node or deployment.public_api.node_for(config.node)
+    node = deployment.node_for(config.node)
     result = asyncio.run(sync_inventory(node, inventory, apply=apply))
     typer.echo(json.dumps(result, indent=2))
     if result["errors"]:
@@ -250,7 +249,7 @@ def verify_storage_command():
 
     async def run():
         deployment = get_deployment()
-        nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
+        nodes = deployment.node_list
         failed = False
         for node in nodes:
             async with get_sessionmaker(node.node.slug)() as session:
@@ -275,7 +274,7 @@ def backfill_revisions():
 
     async def run():
         deployment = get_deployment()
-        nodes = [deployment.node] if deployment.node else list(deployment.public_api.nodes.values())
+        nodes = deployment.node_list
         for node in nodes:
             count = 0
             async with get_sessionmaker(node.node.slug)() as session:

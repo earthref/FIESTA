@@ -41,24 +41,17 @@ def get_sessionmaker(node_slug: str | None = None) -> async_sessionmaker[AsyncSe
     return async_sessionmaker(engine, expire_on_commit=False)
 
 
-def current_node_slug() -> str | None:
-    """The node this process serves, or None for the public-API deployment
-    (which picks the node per request, see fiesta.apps.public)."""
+async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
+    """FastAPI dependency: a session bound to the schema of the node named by
+    the `{repository}` path segment, or to the shared schema only (accounts,
+    health) on node-less routes."""
     from fiesta.nodeconfig import get_deployment
 
-    node = get_deployment().node
-    return node.node.slug if node else None
-
-
-async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency: a session for this deployment's node."""
-    slug = current_node_slug()
+    slug = None
     if repository := request.path_params.get("repository"):
-        from fiesta.nodeconfig import get_deployment
-
         try:
-            slug = get_deployment().public_api.node_for(repository).node.slug
+            slug = get_deployment().node_for(repository).node.slug
         except KeyError:
-            raise HTTPException(404, "unknown repository") from None
+            raise HTTPException(404, f"unknown repository {repository!r}") from None
     async with get_sessionmaker(slug)() as session:
         yield session

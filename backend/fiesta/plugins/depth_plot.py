@@ -33,7 +33,7 @@ DEPTH_COLUMNS = ["mbs_corrected", "depth"]
 class DepthPlotPlugin(FiestaPlugin):
     name = "depth-plot"
 
-    def build_router(self, node: NodeConfig) -> APIRouter:
+    def build_router(self) -> APIRouter:
         router = APIRouter()
 
         @router.get("/contributions/{contribution_id}/measurements")

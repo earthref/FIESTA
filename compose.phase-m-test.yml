@@ -48,7 +48,7 @@ services:
     environment:
       FIESTA_INTEGRATION: '1'
       FIESTA_ENVIRONMENT: development
-      FIESTA_CONFIG_FILE: /config/public-api.yaml
+      FIESTA_CONFIG_FILE: /config/fiesta.yaml
       FIESTA_DATABASE_URL: postgresql+asyncpg://fiesta:fiesta@postgres:5432/fiesta
       FIESTA_OPENSEARCH_URL: http://opensearch:9200
       FIESTA_S3_ENDPOINT: http://minio:9000

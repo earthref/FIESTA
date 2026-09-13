@@ -1,0 +1,18 @@
+# FIESTA deployment configuration — the API (api.earthref.org)
+# One FastAPI process serves every node listed here under /v1/{node}/...
+# (search, contributions, the private workspace, config, plugins) using each
+# node's own Postgres schema, OpenSearch index, storage prefix and job queue.
+# FIESTA_NODE=magic,karar narrows a local stack to some of them.
+
+fiesta: 1
+deployment: api
+
+api:
+  title: EarthRef FIESTA API
+  nodes:
+    - magic.yaml
+    - kdd.yaml
+    - cdr.yaml
+    - karar.yaml
+    - erda.yaml
+    - osu-mgr.yaml

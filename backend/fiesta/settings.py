@@ -44,7 +44,11 @@ class Settings(BaseSettings):
 
     environment: str = "production"
 
-    config_file: Path = Path("../config/magic.yaml")
+    # The deployment YAML: `config/fiesta.yaml` lists every node one API
+    # process serves. FIESTA_NODE (comma-separated keys or slugs) narrows it
+    # for a local stack; empty means every node in the file.
+    config_file: Path = Path("../config/fiesta.yaml")
+    node: str = ""
 
     # Postgres. Either SQLAlchemy form (postgresql+asyncpg://...) or a plain
     # libpq URL as used by psql (postgresql://...?sslmode=verify-full&
