@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from fiesta.apps.deps import NodeDep, SessionDep
-from fiesta.apps.routers import auth, config, private, search, workspaces
+from fiesta.apps.routers import auth, config, private, search, v1, workspaces
 from fiesta.nodeconfig import get_deployment
 from fiesta.search.client import get_opensearch
 from fiesta.settings import get_settings
@@ -82,6 +82,11 @@ def create_app() -> FastAPI:
             "storage": storage,
             "repositories": sorted(n.node.key for n in deployment.node_list),
         }
+
+    # The frozen legacy contract: its own YAML at /v1/openapi.yaml, Koa-style
+    # error bodies, and nothing in the /v2 schema.
+    v1.install(app)
+    app.include_router(v1.router)
 
     app.include_router(auth.router, prefix="/v2")
     for router in (config.router, search.router, private.router, workspaces.router):

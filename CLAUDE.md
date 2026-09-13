@@ -8,7 +8,7 @@ FIESTA is the platform behind the EarthRef.org data repositories (nodes): MagIC,
 
 ```
 Backend:    FastAPI + SQLAlchemy (async) + asyncpg + Pydantic v2 + Alembic      (backend/, package `fiesta`)
-API:        one process, `fiesta.apps.api` — every node under /v2/{repository}/... (api.earthref.org, and what the SPA talks to); `config/fiesta.yaml` lists the nodes, FIESTA_NODE narrows them
+API:        one process, `fiesta.apps.api` — every node under /v2/{repository}/... (api.earthref.org, and what the SPA talks to); `config/fiesta.yaml` lists the nodes, FIESTA_NODE narrows them. /v1 is the frozen legacy api.earthref.org contract (`routers/v1.py`, MagIC only, ported from old-backend) — never change its behaviour, add to /v2
 Jobs:       procrastinate (Postgres-native LISTEN/NOTIFY) — parse / validate / summarize / index, email
 Frontend:   Vite + React + TanStack Router/Query SPA, Tailwind; one build serves any node (branding from the API)
 Database:   Postgres 16 — shared `users` schema + one schema per node (magic, cdr, …), Alembic per schema

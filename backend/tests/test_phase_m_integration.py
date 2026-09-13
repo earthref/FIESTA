@@ -523,3 +523,134 @@ async def test_v2_serves_every_enabled_node_from_one_process():
                         name,
                         response.text,
                     )
+
+
+@pytest.mark.asyncio
+async def test_v1_legacy_contract_roundtrip():
+    """The frozen api.earthref.org contract on FIESTA's Postgres, revisions
+    and search projection: create → upload → validate → data → search →
+    download → publish → public data/search/download → append (next version)
+    → delete, all through /v1 with HTTP Basic."""
+    import io
+    import zipfile
+
+    from fiesta.apps.api import create_app
+    from fiesta.db.session import get_engine
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.search.client import get_opensearch
+    from fiesta.services.outbox import drain
+    from fiesta.services.seed import require_local
+
+    require_local()
+    node = get_deployment().node_for("magic")
+    app = create_app()
+    raw = (node.base_dir / "magic/seeds/valid.txt").read_text()
+    creds = ("developer@example.test", "local-fiesta-only")
+
+    def names(response) -> list[str]:
+        assert response.status_code == 200, response.text
+        assert response.headers["content-type"] == "application/zip"
+        return sorted(zipfile.ZipFile(io.BytesIO(response.content)).namelist())
+
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://local"
+        ) as client,
+    ):
+        assert (await client.get("/v1/health-check")).json() == {"message": "Healthy!"}
+        assert (await client.get("/v1/authenticate")).status_code == 401
+        me = await client.get("/v1/authenticate", auth=creds)
+        assert me.status_code == 200 and me.json()["email"] == creds[0], me.text
+        anonymous = await client.get("/v1/MagIC/private/search/contributions")
+        assert anonymous.status_code == 401 and anonymous.json()["errors"]
+        assert (await client.get("/v1/MagIC/nope")).status_code == 404
+
+        created = await client.post("/v1/MagIC/private", auth=creds)
+        assert created.status_code == 201, created.text
+        cid = created.json()["id"]
+        uploaded = await client.put(
+            f"/v1/MagIC/private?id={cid}", auth=creds, files=[("file", ("valid.txt", raw))]
+        )
+        assert uploaded.status_code == 202, uploaded.text
+        assert uploaded.json() == {"id": cid}
+        assert (await drain(node))["failed"] == 0
+
+        report = await client.put(f"/v1/MagIC/private/validate?id={cid}", auth=creds)
+        assert report.status_code == 200, report.text
+        assert report.json()["validation"]["errors"] == []
+        text = await client.get(f"/v1/MagIC/private/data?id={cid}", auth=creds)
+        assert text.status_code == 200 and text.text.startswith("tab delimited"), text.text
+        tables = await client.get(
+            f"/v1/MagIC/private/data?id={cid}",
+            auth=creds,
+            headers={"Accept": "application/json"},
+        )
+        assert "sites" in tables.json()
+        page = await client.get(
+            "/v1/MagIC/private/search/contributions", auth=creds, params={"n_max_rows": 100}
+        )
+        assert page.status_code == 200, page.text
+        assert cid in [r["id"] for r in page.json()["results"]]
+        assert not [k for r in page.json()["results"] for k in r if k.startswith("_")]
+        assert names(await client.get(f"/v1/MagIC/private/download?id={cid}", auth=creds)) == [
+            f"{cid}/magic_contribution_{cid}.json",
+            f"{cid}/magic_contribution_{cid}.txt",
+        ]
+
+        # Public routes: invisible until published, except with the private key.
+        assert (await client.get(f"/v1/MagIC/data?id={cid}")).status_code == 204
+        assert (await client.get(f"/v1/MagIC/download?id={cid}")).status_code == 204
+        detail = await client.get(f"/v2/magic/private/contributions/{cid}", auth=creds)
+        key = detail.json()["private_key"]
+        assert (await client.get(f"/v1/MagIC/data?id={cid}&key={key}")).status_code == 200
+        published = await client.post(f"/v2/magic/private/contributions/{cid}/activate", auth=creds)
+        assert published.status_code == 200, published.text
+        assert (await drain(node))["failed"] == 0
+        assert (await client.get(f"/v1/MagIC/data?id={cid}")).text == text.text
+        found = await client.get(
+            "/v1/MagIC/search/contributions", params={"query": f"summary.contribution.id:{cid}"}
+        )
+        assert found.status_code == 200, found.text
+        assert [r["id"] for r in found.json()["results"]] == [cid]
+        sites = await client.get(
+            "/v1/MagIC/search/sites",
+            params={"query": f"summary.contribution.id:{cid}", "n_max_rows": 2},
+        )
+        assert sites.status_code == 200, sites.text
+        assert len(sites.json()["results"]) == 2 and "site" in sites.json()["results"][0]
+        assert names(await client.get(f"/v1/MagIC/download?id={cid}&only_latest=true")) == [
+            f"{cid}/magic_contribution_{cid}.txt"
+        ]
+
+        # Appending to a published contribution starts its next version.
+        more = "tab delimited\tsites\nsite\tlocation\nV1-APPENDED\tHawaii\n"
+        appended = await client.patch(
+            f"/v1/MagIC/private?id={cid}", auth=creds, files=[("file", ("more.txt", more))]
+        )
+        assert appended.status_code == 202, appended.text
+        new_id = appended.json()["id"]
+        assert new_id != cid and appended.json()["rows_added"] == 1
+        draft = (await client.get(f"/v2/magic/private/contributions/{new_id}", auth=creds)).json()
+        assert draft["previous_id"] == cid and draft["version"] == 2
+        assert (await drain(node))["failed"] == 0
+        new_tables = await client.get(
+            f"/v1/MagIC/private/data?id={new_id}",
+            auth=creds,
+            headers={"Accept": "application/json"},
+        )
+        assert len(new_tables.json()["sites"]) == len(tables.json()["sites"]) + 1
+        # The unpublished draft is part of the lineage but not of the public archive.
+        assert names(await client.get(f"/v1/MagIC/download?id={new_id}")) == [
+            f"{cid}/magic_contribution_{cid}.txt"
+        ]
+
+        refused = await client.delete(f"/v1/MagIC/private?id={cid}", auth=creds)
+        assert refused.status_code == 409 and refused.json()["errors"], refused.text
+        removed = await client.delete(f"/v1/MagIC/private?id={new_id}", auth=creds)
+        assert removed.json() == {"rowsDeleted": 1}, removed.text
+        again = await client.delete(f"/v1/MagIC/private?id={new_id}", auth=creds)
+        assert again.json() == {"rowsDeleted": 0}
+
+    await get_opensearch().close()
+    await get_engine().dispose()

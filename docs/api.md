@@ -14,6 +14,19 @@ node-scoped router is mounted once and serves all enabled nodes.
 
 Interactive docs live at `/v2/docs`; the schema at `/v2/openapi.json`.
 
+## API versions
+
+- **`/v2/...`** is FIESTA's own API, documented below: what the SPA uses and
+  what new integrations should target. It serves every node.
+- **`/v1/...`** is the legacy `api.earthref.org` contract, kept unchanged so
+  existing clients (scripts, PmagPy, notebooks) keep working: the same paths,
+  query parameters, Accept-header formats (`text/plain` MagIC text,
+  `application/json`, `application/vnd.ms-excel`), HTTP Basic auth and
+  `{"errors": [{"message": ...}]}` error shape as `old-backend/public/v1/openapi.yaml`.
+  It only ever served MagIC and is tested against MagIC. See
+  [Legacy v1](#legacy-v1-apiearthreforg-contract) at the end of this document.
+  v1 is frozen: new behaviour goes into v2.
+
 All endpoints return JSON unless noted. Errors follow
 `{"detail": string | [{loc, msg, type}]}` (FastAPI convention).
 
@@ -195,23 +208,6 @@ Shared workspaces: owners control membership, editors save, viewers read.
 | DELETE | `/v2/{repository}/workspaces/{workspace_id}/members/{user_id}` | | 204 (owner only) |
 | PUT | `/v2/{repository}/workspaces/{workspace_id}/contributions/{contribution_id}` | | `{workspace_id}` (assign an owned contribution) |
 
-### Legacy compatibility (`/v2/{repository}`, HTTP Basic on private routes)
-
-Kept for legacy `api.earthref.org` clients: the singular `/private/contribution`
-shape, `/data` and `/download`. New clients and the SPA use the search, private
-and workspace routes above.
-
-| Method | Path | Auth | Notes |
-|---|---|---|---|
-| GET | `/v2/{repository}/data/{id}` | — (`key?`) | contribution file as `text/plain` |
-| GET | `/v2/{repository}/download/{id}` | — (`key?`) | zip archive of the contribution's revision files |
-| POST | `/v2/{repository}/validate` | — | upload a file, synchronous validation report |
-| GET | `/v2/{repository}/private/search/{table}` | Basic | search the caller's own private data |
-| POST | `/v2/{repository}/private/contribution` | Basic | create a private contribution (optional `file`) → `{id, private_key}` (201) |
-| PUT | `/v2/{repository}/private/contribution/{id}` | Basic | replace the file → `{id, status}` |
-| DELETE | `/v2/{repository}/private/contribution/{id}` | Basic | delete a private (unactivated) contribution → 204 |
-| GET | `/v2/{repository}/private/contribution-list` | Basic | the caller's contributions |
-
 ### Plugins (`/v2/{repository}/plugins/{name}/...`)
 
 Each plugin router mounts once per plugin. A request to a node that does not
@@ -249,3 +245,85 @@ search is current. Publishing validates the exact current revision. See
 [Phase M API contract and examples](phase-m.md#revisions-and-apis) for details.
 </content>
 </invoke>
+
+## Legacy v1 (api.earthref.org contract)
+
+`/v1/...` is the API that `old-backend` served at api.earthref.org, ported onto
+FIESTA's Postgres-owned contributions, revision service and search projection
+(`backend/fiesta/apps/routers/v1.py`). Its own OpenAPI document — the one the
+legacy service published — is served unchanged at `/v1/openapi.yaml` (ReDoc at
+`/v1`); nothing under `/v1` appears in `/v2/openapi.json`. It only ever served
+MagIC and is tested against MagIC, though `{repository}` resolves any enabled
+node key or slug. The surface is frozen: new behaviour goes into `/v2`.
+
+Conventions, all as the legacy service had them:
+
+- **Errors** are `{"errors": [{"message": string}]}`. An undefined path *or
+  method* is a 404 with `Path '...' is not defined for this API. See
+  https://api.earthref.org for more information.`; a query-parameter
+  violation (`id=1a`, `n_max_rows=0`) is a 400 whose entries also carry `path`.
+- **No matches** is an empty 204 (search, data, download, private routes).
+- **Auth** is HTTP Basic with an EarthRef handle (case-insensitive) or email
+  plus password on `/authenticate` and every `/private` route; a missing or
+  wrong credential is a 401 `Username or password is not recognized.` and is
+  slowed down by half a second.
+- **Formats**: contribution data is MagIC text unless the `Accept` header
+  names only other types — `application/json` (and nothing text-like) returns
+  `{table: [rows]}`. `text/plain`, `text/*`, `*/*`, no header and
+  `application/vnd.ms-excel` (the legacy "xls" export was the text file) all
+  return text.
+- **Tables**: `search/contributions` is the `contribution` level;
+  `search/experiments` (the legacy measurement level) is FIESTA's
+  `measurements` rows. Contribution results are `summary.contribution` without
+  the `_`-prefixed workflow fields; every other table is the flattened `rows`.
+  Queries are OpenSearch `query_string` expressions (public search joins them
+  with `AND`).
+
+| Method | Path | Auth | Parameters | Response |
+|---|---|---|---|---|
+| GET | `/v1/health-check` | — | | `{message: "Healthy!"}`, or 500 when search is unreachable |
+| GET | `/v1/authenticate` | Basic | | `{id, handle, name: {given, family}, email, orcid, has_password}` |
+| GET | `/v1/{repository}/download` | — | `n_max_contributions` (1–100, default 10), `only_latest`, `query`*, `id`*, `doi`*, `contributor_name`*, `reference_title`* — at least one of the starred | zip of `<id>/magic_contribution_<id>.txt` (`.json` when JSON is negotiated), newest first; 400 without a criterion |
+| GET | `/v1/{repository}/data` | — | `id` (required), `key` | the contribution text or JSON; a private contribution only with its `key`; 502 without an `id` |
+| GET | `/v1/{repository}/search/{table}` | — | `n_max_rows` (1–10000, default 10), `from` (default 0), `query`*, `included_columns`*, `missing_columns`* | `{total, table, size, from, queries, results}` |
+| POST | `/v1/{repository}/validate` | — | multipart `file` (repeatable) or a raw text body | `{validation: {errors, warnings}}` of `{table, column, message, rows}` |
+| GET | `/v1/{repository}/private/download` | Basic | `id`*, `doi`*, `query`*, `n_max_contributions` | zip of the caller's unpublished contributions, `.txt` and `.json` per contribution |
+| GET | `/v1/{repository}/private/data` | Basic | `id` | text or JSON of an unpublished contribution the caller can read |
+| PUT | `/v1/{repository}/private/validate` | Basic | `id` | `{validation}` for an unpublished contribution |
+| GET | `/v1/{repository}/private/search/{table}` | Basic | `n_max_rows`, `from`, `query`* | the search page (plus `exists_fields`, `not_exists_fields`) over the caller's unpublished contributions |
+| POST | `/v1/{repository}/private` | Basic | | `{id}` (201) — an empty draft |
+| PUT | `/v1/{repository}/private` | Basic | `id`, multipart `file`* | `{id}` (202): the uploaded tables replace the draft's tables of the same name |
+| PATCH | `/v1/{repository}/private` | Basic | `id`, multipart `file`* | `{id, rows_added}` (202): the uploaded rows are appended |
+| DELETE | `/v1/{repository}/private` | Basic | `id` | `{rowsDeleted: 1}`, or `0` when nothing matched |
+
+\* repeatable
+
+Uploads (PUT/PATCH) go through the revision service like every other write:
+the merged tables are exported as the draft's canonical file, a revision is
+recorded and the process job validates and indexes it (the legacy service
+parsed and summarized inline). A PUT or PATCH on a *published* contribution
+starts its next version (`version + 1`, `previous_id` pointing back) and
+returns the new draft's id — the legacy "new private contribution" — carrying
+the original's attachments; the `contribution` table row of the existing
+content is kept, as before.
+
+Deliberate differences from the legacy code, each toward the published spec or
+FIESTA's invariants:
+
+- `/data` returns a private contribution only with its private key (the legacy
+  query skipped the activation check).
+- `id` on `/download` matches every version in a contribution's history (the
+  legacy `_history.id` match) through Postgres lineage, and `only_latest` is a
+  real boolean rather than "present".
+- Public search shows every published version, superseded ones included (the
+  legacy behaviour); `/v2` search shows only the latest.
+- An unknown `id` on PUT/PATCH is a 204 (the spec's "no matches") rather than
+  an empty 202; a file that is not MagIC text is a 500 naming the file.
+- DELETE of a published contribution is a 409 (retained history is never
+  erased) rather than a silent delete; `rowsDeleted` is 0 when nothing matched.
+- `/private/download` archives `.txt` and `.json`; the legacy `.xls` entry was
+  the text file again.
+- Creating a draft no longer requires an account handle.
+- `contributor_name` matches the contributor's display name and
+  `reference_title` matches `summary.contribution._reference.title`, which
+  FIESTA does not populate until reference enrichment (ROADMAP C6) lands.

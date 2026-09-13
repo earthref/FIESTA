@@ -18,8 +18,8 @@ Counted from the tree, not estimated:
 |---|---|
 | Nodes configured (`config/*.yaml`) | 6 — MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR |
 | Plugins | poles (MagIC), depth-plot (CDR), plateau-calculations (KArAr), record-cards, digital-objects (ERDA) |
-| Backend apps | 2 — node app (`/api`, one process per node) + public API (`/v2`, all nodes) |
-| Backend tests | 26 (domain + plugins; no infra) — routers are covered only by `scripts/e2e.sh` |
+| Backend apps | 1 — `fiesta.apps.api`: `/v2/{node}/...` for every node plus the frozen legacy `/v1` api.earthref.org contract (`routers/v1.py`) |
+| Backend tests | 84 (domain, plugins, deployment, the `/v1` contract against a fake session; no infra) + the Phase M integration suite in Docker; `scripts/e2e.sh` drives the compose stack |
 | Frontend routes | home, search, contribution, private workspace, upload, validate, data-models, vocabularies, method-codes, contact, login; **6 stubs** (about, technology, grand challenges, workshops, links, help) |
 | CI | `ci.yml` (ruff, pytest, biome, tsc/build, every YAML loads, compose e2e) — committed 2026-09-10; first run failed on the e2e job (migration 0002, fixed same day) |
 | Deploy | `deploy.yml` → self-hosted runner `fiesta-ct` (label `fiesta-deploy`) running `/srv/fiesta/bin/deploy-fiesta.sh`: release dir under `/srv/fiesta/releases`, uv sync + tests, npm ci + per-node vite build (`/MagIC/`, `/KdD/`, …), `fiesta init` per node, symlink swap, health checks. Runner back online 2026-09-10 evening; every merge since deploys in ~1 min. `fiesta init` logs "procrastinate schema: Database error." on each node — check it. Production still runs the legacy Meteor apps |
@@ -139,8 +139,12 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
 - [ ] **C6 Reference enrichment** — Crossref/DataCite lookup on `reference_doi` to
       fill `summary.contribution._reference` (authors, year, journal) as the legacy
       search docs have it.
-- [ ] **C7 `/v2` compatibility audit** against `../FIESTA-API`'s OpenAPI: `id`, `doi`,
-      `format=json` params, response shapes, error codes. Diff, then close the gaps.
+- [x] **C7 Legacy `/v1` contract** (2026-09-13). FIESTA's own API moved to `/v2`;
+      `/v1` is a port of `old-backend`'s api.earthref.org surface (`routers/v1.py`,
+      its published YAML at `/v1/openapi.yaml`, Koa error bodies, HTTP Basic),
+      unit-tested without infra (`tests/test_v1.py`) and round-tripped in the
+      Phase M integration suite. `reference_title` matches nothing until C6 fills
+      `_reference.title`.
 
 ## Phase D — UI parity and the stub pages
 

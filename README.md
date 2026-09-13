@@ -43,7 +43,8 @@ make up                       # infra + one API + one worker + a frontend per li
 Run `make` for all targets (tests, linting, e2e, rebuild, local dev servers).
 Multiple nodes run side by side sharing Postgres/OpenSearch/MinIO — each node
 has its own search index, bucket, job queue, and node-scoped contributions,
-all served by the single API under `/v2/{node}/...`.
+all served by the single API under `/v2/{node}/...`. The legacy
+`api.earthref.org` contract stays available unchanged at `/v1/...` for existing clients.
 
 Default ports (one API for every node; one frontend per node):
 

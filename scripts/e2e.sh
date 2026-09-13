@@ -92,6 +92,15 @@ echo "== detail + download =="
 curl -sf "$API/contributions/$CID" | json '"n sites: %d" % d["summary"]["sites"]["_n_results"]'
 curl -sf "$API/contributions/$CID/download" | head -1
 
+echo "== legacy /v1 contract (same process, frozen api.earthref.org surface) =="
+V1=http://localhost:${API_PORT:-8000}/v1
+curl -sf "$V1/health-check" | json '"v1 health: " + d["message"]'
+curl -sf "$V1/MagIC/search/contributions?query=summary.contribution.id:$CID" | json '"v1 search: id %d of %d" % (d["results"][0]["id"], d["total"])'
+curl -sf "$V1/MagIC/data?id=$CID" | head -1
+curl -sf -o /dev/null -w "v1 download: HTTP %{http_code} %{content_type}\n" "$V1/MagIC/download?id=$CID&only_latest=true"
+curl -s -o /dev/null -w "v1 undefined path: HTTP %{http_code}\n" "$V1/MagIC/nope"
+curl -s -o /dev/null -w "v1 private without credentials: HTTP %{http_code}\n" "$V1/MagIC/private/search/contributions"
+
 echo "== plugin route guard =="
 curl -sf "$API/plugins/poles/plate-boundaries" | json '"poles on magic: %s" % d["type"]'
 curl -s -o /dev/null -w "poles on kdd: HTTP %{http_code}\n" "$V2/kdd/plugins/poles/plate-boundaries"
