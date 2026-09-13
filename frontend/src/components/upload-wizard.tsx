@@ -169,6 +169,7 @@ export function UploadWizard() {
       await api<ContributionOut>(`/api/private/contributions/${contribution.id}/file`, {
         method: "PUT",
         formData,
+        headers: { "Idempotency-Key": crypto.randomUUID() },
       });
       setPhase("processing");
     } catch (err) {

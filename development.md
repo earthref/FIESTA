@@ -151,6 +151,24 @@ are **plugins** activated per node via `features.plugins` — see
 ```sh
 uv run fiesta init            # migrations, procrastinate schema, bucket, index
 uv run fiesta create-user EMAIL NAME [--admin]
-uv run fiesta rebuild --yes   # regenerate Postgres + OpenSearch from the bucket
+uv run fiesta rebuild --yes   # rebuild search from Postgres + revision files
 uv run fiesta worker          # run the job worker
 ```
+
+
+## Offline Phase M development
+
+`make up FIESTA_NODE=magic,cdr` starts Docker infrastructure, APIs, workers and
+frontends. `make seed FIESTA_NODE=magic,cdr` loads the manifests selected by each
+node YAML under `development.seed_manifest`. On page load, local development
+automatically signs in as Local Developer (`developer@example.test`) once seeded.
+Sign-out lasts until the next page refresh. An existing valid login is preserved;
+you can sign in as `viewer@example.test`, password `local-fiesta-only`, to test sharing.
+Automatic login is disabled outside development mode or with remote infrastructure.
+The viewer can read shared
+workspace contributions but cannot edit them. Repeated seeds preserve developer
+edits and settings. No production credentials, MARFIK, or AWS are needed.
+
+`make test-phase-m` builds and runs all-node seed, revision and migration checks in
+an isolated Docker network without external runtime connectivity. Image/dependency
+downloads occur during setup. See [Phase M operations](docs/phase-m.md).

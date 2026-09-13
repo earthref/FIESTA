@@ -28,10 +28,10 @@ opensearch  Denormalized search documents, one index per node
 minio       S3-compatible storage: canonical contribution files + manifests
 ```
 
-**Reproducibility:** the storage bucket (canonical files + `manifest.json` per
-contribution) plus the YAML config are the durable record of a node. Postgres
-and OpenSearch are projections — `fiesta rebuild` regenerates both from the
-bucket.
+**Durability:** Postgres owns accounts, permissions, settings and contribution
+revision pointers. The bucket preserves immutable files, revision manifests and
+processing artifacts. `fiesta rebuild` rebuilds only OpenSearch; recovery requires
+Postgres backups plus the bucket. See [Phase M operations](docs/phase-m.md).
 
 ## Quick start
 

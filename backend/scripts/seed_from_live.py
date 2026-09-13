@@ -287,4 +287,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(
+        "Retired: use fiesta seed for offline development, or fiesta sync-legacy for migration. "
+        "This historical helper fabricates versions and is not compatible with Phase M."
+    )

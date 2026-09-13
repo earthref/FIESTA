@@ -11,6 +11,7 @@ from fiesta.apps.schemas import SearchPage
 from fiesta.db.models import Contribution
 from fiesta.search.client import get_opensearch
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
+from fiesta.services.access import constrain_search
 from fiesta.services.contributions import load_file
 
 router = APIRouter(tags=["search"])
@@ -70,6 +71,7 @@ def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
 
 @router.get("/search/{table}", response_model=SearchPage)
 async def search(
+    session: SessionDep,
     node: NodeDep,
     table: str,
     query: str | None = None,
@@ -96,6 +98,7 @@ async def search(
         bbox=_parse_bbox(bbox),
         sort=sort,
     )
+    await constrain_search(session, node, body, query=query)
     try:
         response = await get_opensearch().search(index=node.search_index, body=body)
     except NotFoundError:
@@ -104,10 +107,7 @@ async def search(
     aggregations = None
     if facets and "aggregations" in response:
         aggregations = {
-            name: [
-                {"key": b["key"], "doc_count": b["doc_count"]}
-                for b in agg.get("buckets", [])
-            ]
+            name: [{"key": b["key"], "doc_count": b["doc_count"]} for b in agg.get("buckets", [])]
             for name, agg in response["aggregations"].items()
         }
     total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
@@ -120,7 +120,11 @@ async def _get_visible_contribution(
     session, node, contribution_id: int, private_key: str | None
 ) -> Contribution:
     contribution = await session.get(Contribution, contribution_id)
-    if contribution is None or contribution.node != node.node.slug:
+    if (
+        contribution is None
+        or contribution.deleted_at is not None
+        or contribution.node != node.node.slug
+    ):
         raise HTTPException(404, f"contribution {contribution_id} not found")
     if not contribution.is_activated:
         try:

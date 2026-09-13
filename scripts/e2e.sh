@@ -47,7 +47,7 @@ CID=$(curl -sf -X POST "$API/private/contributions" -H "$AUTH" | json 'd["id"]')
 echo "id=$CID"
 
 echo "== upload file =="
-curl -sf -X PUT "$API/private/contributions/$CID/file" -H "$AUTH" -F "file=@$FILE" | json '"status: " + d["status"]'
+curl -sf -X PUT "$API/private/contributions/$CID/file" -H "$AUTH" -H "Idempotency-Key: e2e-upload-$CID" -F "file=@$FILE" | json '"status: " + d["status"]'
 
 echo "== wait for worker =="
 STATUS=unknown

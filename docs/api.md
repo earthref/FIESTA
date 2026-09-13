@@ -144,3 +144,17 @@ HTTP Basic auth (EarthRef account email/handle + password) on private routes.
 | PUT | `/v1/{repository}/private/contribution/{id}` | replace file |
 | DELETE | `/v1/{repository}/private/contribution/{id}` | delete private contribution |
 | GET | `/v1/{repository}/private/search/{table}` | search own private data |
+
+
+## Phase M revision management
+
+The shared contribution-management API is now also available at
+`/v1/{repository}/private/contributions`, with Bearer or HTTP Basic authentication.
+See [Phase M API contract and examples](phase-m.md#revisions-and-apis) for revision,
+attachment, history, workspace and settings operations. File uploads require
+`Idempotency-Key` and the current `If-Match` revision (omit `If-Match` only for the
+first upload). JSON edits/references/restores use `request_key` and
+`expected_revision`. Old public-version content is immutable; `/versions` creates
+a successor draft. `JobOut.job_id` for validation identifies a Postgres outbox event.
+Processing and indexing are separate: `status=ready` does not imply search is current;
+inspect `indexing_status`. Publishing validates the exact current revision.

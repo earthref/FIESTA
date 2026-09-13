@@ -102,7 +102,7 @@ function buildOption(
     backgroundColor: "#FFF",
     globe: {
       baseTexture: hasBaseTexture ? BASE_TEXTURE_URL : undefined,
-      baseColor: hasBaseTexture ? undefined : "#e8e4dc",
+      baseColor: hasBaseTexture ? "#fff" : "#e8e4dc",
       shading: "lambert",
       environment: "#FFF",
       light: { ambient: { intensity: 1 }, main: { intensity: 0 } },

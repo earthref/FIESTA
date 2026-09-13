@@ -152,7 +152,7 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
       still need a pass at phone width.
 - [ ] **D4 Poles globe** per `docs/poles-globe-spec.md` — check what remains.
 
-## Phase M — Data migration and redesign — **DECIDED 2026-09-11**
+## Phase M — Data migration and redesign — **IN PROGRESS**
 
 Direction: make Postgres the authoritative data layer for accounts, private
 workspaces, user settings, permissions, and contribution management; synchronize
@@ -192,6 +192,18 @@ ambiguities. Build import/sync against local legacy fixtures before a live dry
 run. Production rehearsal and M7 need scoped source-read/destination-write access,
 sizing, backup/restore targets, and an agreed cutover/rollback window; track these
 operator inputs in `docs/OPERATOR_TODO.md` when preparing the live migration.
+
+**Implementation branch — 2026-09-11.** `feature/phase-m` implements migration 0003,
+Postgres settings/workspace permissions, immutable file revisions and undo, shared
+management routers, the SPA text/history/attachment editor, durable outbox processing,
+versioned validation/summary artifacts, config-driven offline seeds, explicit-inventory
+legacy import/sync, storage verification, and search-only rebuild. Local Docker
+verification is tracked in [docs/phase-m.md](docs/phase-m.md). Status remains IN
+PROGRESS until reviewed and merged; checkboxes below are not claims of deployment.
+Live source inventories/export mappings, production sizing and backup/cutover
+rehearsals remain operator gates in `docs/OPERATOR_TODO.md`. Phase A's process
+consolidation remains separate; the current Docker stack still runs per-node APIs
+and workers plus the multi-node API.
 
 **Starting point and change in contract.** Postgres already stores shared users,
 node-scoped contributions, and validation results. This is an extension and

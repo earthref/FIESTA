@@ -45,3 +45,36 @@ async def login(
 @router.get("/me", response_model=UserOut)
 async def me(user: CurrentUser) -> UserOut:
     return UserOut.from_db(user)
+
+
+@router.post("/local-login", response_model=TokenOut | None)
+async def local_login(session: SessionDep) -> TokenOut | None:
+    """Sign in the seeded developer only against local development infrastructure."""
+    from fiesta.services.seed import require_local
+
+    try:
+        require_local()
+    except ValueError:
+        return None
+    user = (
+        await session.execute(select(User).where(User.email == "developer@example.test"))
+    ).scalar_one_or_none()
+    if user is None:
+        return None  # `make seed` has not been run yet.
+    return TokenOut(access_token=create_access_token(user.id))
+
+
+@router.get("/settings")
+async def settings(user: CurrentUser):
+    return user.settings
+
+
+@router.put("/settings")
+async def save_settings(payload: dict, user: CurrentUser, session: SessionDep):
+    import json
+
+    if len(json.dumps(payload)) > 16384:
+        raise HTTPException(422, "settings exceed 16 KiB")
+    user.settings = payload
+    await session.commit()
+    return user.settings

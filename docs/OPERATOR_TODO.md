@@ -59,3 +59,20 @@ Last updated: 2026-09-11
 ## Done
 
 _(none yet)_
+## Phase M — live migration and recovery gates
+
+- [ ] Supply and verify each node's full source inventory (public/private buckets,
+      pipeline indices, metadata export contracts, available historical objects,
+      attachment keys and deletion markers). Review ownership/account mappings and
+      DOI/version links; approve explicit exceptions for unavailable history.
+- [ ] Provide scoped legacy source-read and FIESTA destination-write credentials
+      through environment/secret management. Confirm production bucket Versioning
+      and retention preserve every retained revision and its processing artifacts.
+- [ ] Set Postgres backup/WAL archive destinations, retention, RPO/RTO, matching
+      object retention and application-image retention. Rehearse an isolated full
+      restore with `fiesta verify-storage`, rebuild and outbox replay.
+- [ ] Size full-inventory imports and allowed-ID search filters on a production-sized
+      rehearsal; set batch sizes and operational limits before enabling live traffic.
+- [ ] Approve per-node write freeze, final sync/reconciliation, traffic switch and
+      rollback window. Disable legacy sync at cutover; preserve new FIESTA revisions
+      if rolling back after accepting writes. See [phase-m.md](phase-m.md).

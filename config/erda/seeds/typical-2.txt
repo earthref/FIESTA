@@ -1,0 +1,13 @@
+tab delimited	contribution
+id	version	data_model_version	reference	description
+155	1	1.0	10.1029/2003GC000626	Synthetic erda typical example 2
+>>>>>>>>>>
+tab delimited	objects
+object	title	data_types	expert_level	keywords	computer_program	project	project_group	continents_oceans	countries	locations	lat	lon	age_high	age_low	age_unit	timescale_epoch	license
+df2000-hydrocast	Synthetic Atlantic ocean survey	graphs:spreadsheet	State-of-the-art Science	Seamount:Hotspot:CTD	Microsoft Excel	Synthetic Atlantic: the Active Samoan Hotspot Volcano	Other Projects	Atlantic Ocean	American Samoa	Synthetic Atlantic survey station	30	-40	1	0	Ma	Holocene	CC BY 4.0
+garnet-peridotite-xenoliths	Synthetic Atlantic ocean survey	spreadsheet:data	College and Introduction to Science	xenolith:peridotite:garnet:REE	Microsoft Excel			Atlantic Ocean		Synthetic Atlantic survey station	30	-40					CC BY 4.0
+>>>>>>>>>>
+tab delimited	files
+file	object	format	media_type	size_bytes
+df2000.cmb.zip	df2000-hydrocast	zip	application/zip	2306867
+garnet.peridotite.xenoliths.xls	garnet-peridotite-xenoliths	xls	application/vnd.ms-excel	503808

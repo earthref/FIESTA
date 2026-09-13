@@ -77,17 +77,22 @@ the procrastinate schema, and ensures the bucket + search index exist.
 
 ## Disaster recovery / migration
 
-The bucket is the durable record (canonical contribution files +
-`manifest.json` per contribution). To rebuild a node from scratch:
+Postgres backups and the revision bucket are both required. Restore the database
+first into an isolated environment, attach the matching immutable bucket objects,
+and verify references before exposing the API:
 
 ```sh
-fiesta init
-fiesta rebuild --yes    # restores contributions to Postgres and re-indexes OpenSearch
+fiesta init             # apply compatible schema migrations
+fiesta verify-storage   # checks retained revisions, manifests and file checksums
+fiesta rebuild --yes    # rebuild search only, then switch its alias
+fiesta drain-outbox     # retry pending work
 ```
 
-Accounts restored from manifests have no passwords (manifests never store
-credentials) — users reset via the normal flow. Only back up Postgres if you
-want to preserve password hashes and accounts that never contributed.
+Retain database base backups and WAL archives for PITR, the corresponding S3 object
+versions, deployment configuration and application image. Never expire objects
+referenced by retained revisions. `fiesta rebuild` preserves users, settings and
+workspace permissions; it cannot recover lost Postgres state from contribution
+manifests. See [Phase M operations](docs/phase-m.md) for migration and cutover gates.
 
 ## Production notes
 

@@ -1,0 +1,19 @@
+tab delimited	contribution
+id	version	timestamp	contributor	is_validated	is_reviewed	data_model_version	reference	author	lab_names	supplemental_links	description
+5412	1	2024-01-15T12:00:00Z	@njarboe	f	f	1.0	10.1029/92JB01202	@cconstable	40Ar/39Ar Laboratory (Berkeley Geochronology Center, USA)	Geomagnetic Field Model[https://earthref.org/ERDA/1137/]	Synthetic cdr all-fields coverage example
+>>>>>>>>>>
+tab delimited	cores
+contribution_id	row_id	core	core_alternatives	cruise	cruise_alternatives	research_vessel	pis	scientists	method	igsn	material	diameter	length	mbs_top	lat	lat_sigma	lon	lon_sigma	geographic_precision	continent_ocean	country	state_province	ocean_sea	region	village_city	start_timestamp	end_timestamp	description	mst_processing_params	external_database_ids
+5412	743	SFVP01	San Francisco Volcanic Province	San Francisco Volcanic Province	Synthetic example	SFVP01:SFVP02	@user1:@user2:0000-0002-9000-2100:Not A. Member <no.earthref.handle@gmail.com>	@user1:@user2:0000-0002-9000-2100:Not A. Member <no.earthref.handle@gmail.com>	Synthetic example	Synthetic example	Synthetic example	1	1	1	1	1	1	1	1	Africa	Afghanistan	'Ajman	Adriatic Sea	Alps	Aarhus	Synthetic example	Synthetic example	Synthetic cdr all-fields coverage example	Synthetic example	GEOMAGIA50[1435]:CALS7K.2[23]
+>>>>>>>>>>
+tab delimited	sections
+contribution_id	row_id	section	section_alternatives	core	type	number	igsn	depth_top	depth_bottom	description	external_database_ids
+5412	743	SFVP01-03	San Francisco Volcanic Province	SFVP01	working	2017	Synthetic example	2017	1	Synthetic cdr all-fields coverage example	GEOMAGIA50[1435]:CALS7K.2[23]
+>>>>>>>>>>
+tab delimited	measurements
+contribution_id	row_id	measurement	experiment	section	sequence	depth	mbs_corrected	thickness	standard	quality	method_codes	instrument_codes	result_type	citations	raw_ctd	raw_pwave_t	raw_pwave_a	raw_gamma	raw_mag_susc	raw_temp	raw_res	pwave_a	pwave_v	gamma_density	mag_susc_chi_mass	fp	imp	res	mst_processing_params	cl	ar	k	ca	ti	mn	fe	ni	cu	zn	br	rb	sr	y	zr	i	hg	pb	description	timestamp	software_packages	external_database_ids	analysts
+5412	743	SFVP01-01a-LT-AF-Z-1	SFVP01-01a-LT-AF-Z	SFVP01-03	-50	1	1	1	s	b	Synthetic example	SIO-Bubba	a	10.1029/92JB01202	1	1	1	1	1	1	1	1	1	1	1	1	1	1	Synthetic example	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	Synthetic cdr all-fields coverage example	2024-01-15T12:00:00Z	PmagPy v1.67b	GEOMAGIA50[1435]:CALS7K.2[23]	@user1:@user2:0000-0002-9000-2100:Not A. Member <no.earthref.handle@gmail.com>
+>>>>>>>>>>
+tab delimited	supplements
+contribution_id	core	section	measurement	file	type	title	keywords	description	timestamp	software_packages	analysts	photographers	citations
+5412	San Francisco Volcanic Province	Bas123a	Bas123a-01a	IMG_1429.jpg	ARAI Plot	Synthetic cdr all-fields coverage example	Simrad Computer	Synthetic cdr all-fields coverage example	2024-01-15T12:00:00Z	PmagPy v1.67b	@user1:@user2:0000-0002-9000-2100:Not A. Member <no.earthref.handle@gmail.com>	@user1:@user2:0000-0002-9000-2100:Not A. Member <no.earthref.handle@gmail.com>	10.1029/92JB01202

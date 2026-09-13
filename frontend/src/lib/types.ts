@@ -103,6 +103,9 @@ export type ContributionStatus =
   | "failed";
 
 export interface ContributionOut {
+  head_revision: string | null;
+  published_revision: string | null;
+  indexing_status: string;
   id: number;
   version: number;
   previous_id: number | null;

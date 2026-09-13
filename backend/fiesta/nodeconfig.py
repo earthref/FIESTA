@@ -101,6 +101,10 @@ class FeaturesConfig(BaseModel):
     home: HomeConfig = HomeConfig()
 
 
+class DevelopmentConfig(BaseModel):
+    seed_manifest: str | None = None
+
+
 class NodeConfig(BaseModel):
     """A single FIESTA node, fully described."""
 
@@ -112,6 +116,7 @@ class NodeConfig(BaseModel):
     hierarchy: list[str]
     doi: DoiConfig = DoiConfig()
     features: FeaturesConfig = FeaturesConfig()
+    development: DevelopmentConfig = DevelopmentConfig()
 
     # Directory the YAML was loaded from; asset paths resolve against it.
     base_dir: Path

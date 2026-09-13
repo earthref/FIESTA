@@ -1,0 +1,98 @@
+version: 1
+accounts:
+- key: owner
+  email: developer@example.test
+  name: Local Developer
+  password: local-fiesta-only
+  settings:
+    theme: system
+- key: viewer
+  email: viewer@example.test
+  name: Local Viewer
+  password: local-fiesta-only
+workspace:
+  name: Local demo workspace
+  owner: owner
+  members:
+  - user: viewer
+    role: viewer
+contributions:
+- key: public
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: valid.txt
+      supplement.txt: supplement.txt
+      image.svg: image.svg
+- key: draft
+  owner: owner
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: valid.txt
+  - canonical: contribution.txt
+    files:
+      contribution.txt: edited.txt
+      supplement.txt: supplement.txt
+- key: invalid
+  owner: owner
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: invalid.txt
+- key: public-v2
+  owner: owner
+  published: true
+  previous: public
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: edited.txt
+      supplement.txt: supplement.txt
+- key: typical-1
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: typical-1.txt
+      supplement.txt: supplement.txt
+      image.svg: image.svg
+- key: typical-2
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: typical-2.txt
+      supplement.txt: supplement.txt
+      image.svg: image.svg
+- key: all-fields
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: all-fields.txt
+      supplement.txt: supplement.txt
+      image.svg: image.svg
+- key: poles-1
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: poles-1.txt
+      supplement.txt: supplement.txt
+      image.svg: image.svg
+- key: poles-2
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: poles-2.txt
+      supplement.txt: supplement.txt
+      image.svg: image.svg

@@ -33,7 +33,7 @@ export default function GlobeView({
       backgroundColor: "#FFF",
       globe: {
         baseTexture,
-        baseColor: baseTexture ? undefined : "#e8e4dc",
+        baseColor: baseTexture ? "#fff" : "#e8e4dc",
         shading: "lambert",
         environment: "#FFF",
         light: { ambient: { intensity: 1 }, main: { intensity: 0 } },

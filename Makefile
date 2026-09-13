@@ -101,7 +101,7 @@ user: ## Create an account: make user EMAIL=you@example.org NAME="Your Name"
 	$(COMPOSE) run --rm backend-$(NODE1) fiesta create-user $(EMAIL) "$(NAME)"
 
 .PHONY: rebuild
-rebuild: ## Rebuild Postgres + OpenSearch from the YAML config + bucket (all nodes)
+rebuild: ## Rebuild search from Postgres + immutable revision files (all nodes)
 	@for n in $(NODES); do $(COMPOSE) run --rm backend-$$n fiesta rebuild --yes; done
 
 ## ---- Local development (outside docker) ------------------------------------
@@ -144,7 +144,8 @@ test-frontend: ## Frontend type-check + production build
 .PHONY: e2e
 e2e: ## End-to-end workflow test against a running magic + public-api stack
 	BACKEND_PORT=$(or $(MAGIC_BACKEND_PORT),8000) \
-	PUBLIC_API_PORT=$(or $(PUBLIC_API_PORT),8005) bash scripts/e2e.sh
+	PUBLIC_API_PORT=$(or $(PUBLIC_API_PORT),8005) \
+	MAILPIT_PORT=$(or $(MAILPIT_WEB_PORT),8025) bash scripts/e2e.sh
 
 .PHONY: lint
 lint: ## Lint everything (ruff + biome)
@@ -155,3 +156,15 @@ lint: ## Lint everything (ruff + biome)
 fix: ## Auto-fix lint issues (ruff --fix + biome --write)
 	cd backend && uv run ruff check --fix .
 	cd frontend && npx biome check --write .
+
+.PHONY: seed
+seed: ## Seed selected Docker nodes with config-defined local fixtures (preserves edits)
+	@set -e; for n in $(NODES); do $(COMPOSE) run --rm backend-$$n fiesta seed; done
+
+.PHONY: test-phase-m
+test-phase-m: ## Run all-node seeds and migration/revision integration tests without external services
+	docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml run --build --rm tests
+
+.PHONY: test-phase-m-restore
+test-phase-m-restore: ## Rehearse a logical database restore against the isolated Phase M test bucket
+	bash scripts/rehearse-phase-m-restore.sh

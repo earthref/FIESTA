@@ -1,0 +1,15 @@
+tab delimited	contribution
+data_model_version	lab_names
+1.0	OSU Argon Geochronology Lab (Oregon State University, USA)
+>>>>>>>>>>
+tab delimited	cores
+core	cruise	method	lat	lon
+SFVP01	San Francisco Volcanic Province	1	1	1
+>>>>>>>>>>
+tab delimited	sections
+section	core	type
+SFVP01-03	SFVP01	working
+>>>>>>>>>>
+tab delimited	measurements
+measurement	experiment	section	depth	quality	method_codes	citations	gamma_density
+SFVP01-01a-LT-AF-Z-1	SFVP01-01a-LT-AF-Z	SFVP01-03	1	b	1	10.1029/92JB01202	2.1

@@ -9,6 +9,7 @@ to different schemas. See fiesta.db.base.
 from collections.abc import AsyncIterator
 from functools import lru_cache
 
+from fastapi import HTTPException, Request
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -49,7 +50,15 @@ def current_node_slug() -> str | None:
     return node.node.slug if node else None
 
 
-async def get_session() -> AsyncIterator[AsyncSession]:
+async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
     """FastAPI dependency: a session for this deployment's node."""
-    async with get_sessionmaker(current_node_slug())() as session:
+    slug = current_node_slug()
+    if repository := request.path_params.get("repository"):
+        from fiesta.nodeconfig import get_deployment
+
+        try:
+            slug = get_deployment().public_api.node_for(repository).node.slug
+        except KeyError:
+            raise HTTPException(404, "unknown repository") from None
+    async with get_sessionmaker(slug)() as session:
         yield session

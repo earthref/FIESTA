@@ -48,6 +48,7 @@ function detailToMessage(detail: unknown): string {
 
 interface RequestOptions {
   method?: string;
+  headers?: Record<string, string>;
   /** JSON-serialized as the request body. */
   json?: unknown;
   /** Form-encoded body (application/x-www-form-urlencoded), e.g. OAuth2 login. */
@@ -60,7 +61,7 @@ interface RequestOptions {
 }
 
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...options.headers };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 

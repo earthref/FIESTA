@@ -164,12 +164,28 @@ jobs:
         if: always()
         run: make down
 
+  phase-m:
+    name: Phase M (offline Docker integration)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo sysctl -w vm.max_map_count=262144
+      - run: make test-phase-m
+      - run: make test-phase-m-restore
+      - name: Logs
+        if: failure()
+        run: docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml logs --no-color --tail 100
+      - name: Tear down isolated stack
+        if: always()
+        run: docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml down -v
+
   # Single required check for branch protection: green only if every job above
   # succeeded. Add this as the required status check when protecting `main`.
   ci:
     name: CI
     if: always()
-    needs: [backend, frontend, config, e2e]
+    needs: [backend, frontend, config, e2e, phase-m]
     runs-on: ubuntu-latest
     steps:
       - name: Check that all jobs succeeded

@@ -2,6 +2,7 @@
 across all FIESTA nodes, compatible with the legacy api.earthref.org."""
 
 import io
+import uuid
 import zipfile
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
@@ -22,6 +23,8 @@ from fiesta.nodeconfig import NodeConfig, get_deployment
 from fiesta.search.client import get_opensearch
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services import contributions as svc
+from fiesta.services.access import constrain_search
+from fiesta.services.revisions import revision_file, save_revision, snapshot_for
 
 
 def get_public_api():
@@ -50,7 +53,10 @@ RepoSession = Annotated[AsyncSession, Depends(get_repo_session)]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    yield
+    from fiesta.jobs.app import get_job_app
+
+    async with get_job_app().open_async():
+        yield
     await get_opensearch().close()
 
 
@@ -64,6 +70,12 @@ def create_app() -> FastAPI:
         docs_url="/v1/docs",
         openapi_url="/v1/openapi.json",
     )
+
+    from fiesta.apps.routers import auth, private, workspaces
+
+    app.include_router(auth.router, prefix="/v1")
+    app.include_router(private.router, prefix="/v1/{repository}")
+    app.include_router(workspaces.router, prefix="/v1/{repository}")
 
     @app.get("/v1/health-check", tags=["health"])
     async def health_check(session: SessionDep) -> dict:
@@ -106,7 +118,12 @@ def create_app() -> FastAPI:
         data = await svc.load_file(node, contribution.id, contribution.filename)
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr(contribution.filename, data)
+            if contribution.head_revision:
+                snapshot = await snapshot_for(session, contribution)
+                for name in snapshot["files"]:
+                    archive.writestr(name, await revision_file(session, node, contribution, name))
+            else:
+                archive.writestr(contribution.filename, data)
         return Response(
             content=buffer.getvalue(),
             media_type="application/zip",
@@ -119,6 +136,7 @@ def create_app() -> FastAPI:
 
     @app.get("/v1/{repository}/search/{table}", response_model=SearchPage, tags=["search"])
     async def search(
+        session: RepoSession,
         repository: str,
         table: str,
         query: str | None = None,
@@ -133,6 +151,7 @@ def create_app() -> FastAPI:
         if sort is not None and sort not in SORT_OPTIONS:
             raise HTTPException(422, f"sort must be one of {sorted(SORT_OPTIONS)}")
         body = build_search_body(table=table, query=query, size=size, from_=from_, sort=sort)
+        await constrain_search(session, node, body, query=query)
         try:
             response = await get_opensearch().search(index=node.search_index, body=body)
         except NotFoundError:
@@ -162,6 +181,7 @@ def create_app() -> FastAPI:
         contribution = await session.get(Contribution, contribution_id)
         if (
             contribution is None
+            or contribution.deleted_at is not None
             or contribution.node != node.node.slug
             or contribution.filename is None
         ):
@@ -172,6 +192,7 @@ def create_app() -> FastAPI:
 
     @app.get("/v1/{repository}/private/search/{table}", response_model=SearchPage, tags=["private"])
     async def private_search(
+        session: RepoSession,
         user: BasicUser,
         repository: str,
         table: str,
@@ -188,6 +209,7 @@ def create_app() -> FastAPI:
             contributor_id=user.id,
             private_only=True,
         )
+        await constrain_search(session, node, body, user, query=query)
         try:
             response = await get_opensearch().search(index=node.search_index, body=body)
         except NotFoundError:
@@ -224,7 +246,7 @@ def create_app() -> FastAPI:
         node = _node(repository)
         contribution = await _owned(session, node, user, contribution_id)
         if contribution.is_activated:
-            raise HTTPException(409, "contribution is published; deactivate it first")
+            raise HTTPException(409, "published content is immutable; create a new version")
         await _store_and_process(session, node, contribution, user, file)
         return {"id": contribution.id, "status": contribution.status.value}
 
@@ -238,12 +260,13 @@ def create_app() -> FastAPI:
         contribution = await _owned(session, node, user, contribution_id)
         if contribution.is_activated:
             raise HTTPException(409, "cannot delete a published contribution")
-        await svc.delete_contribution(session, node, contribution)
+        await svc.delete_contribution(session, node, contribution, actor_id=user.id)
 
     async def _owned(session, node: NodeConfig, user, contribution_id: int) -> Contribution:
         contribution = await session.get(Contribution, contribution_id)
         if (
             contribution is None
+            or contribution.deleted_at is not None
             or contribution.node != node.node.slug
             or (contribution.contributor_id != user.id and not user.is_admin)
         ):
@@ -251,20 +274,24 @@ def create_app() -> FastAPI:
         return contribution
 
     async def _store_and_process(session, node, contribution, user, file: UploadFile) -> None:
-        from fiesta.db.models import ContributionStatus
 
         data = await file.read()
         if not data:
             raise HTTPException(422, "uploaded file is empty")
-        contribution.filename = svc.default_filename(node, contribution.id)
-        contribution.status = ContributionStatus.UPLOADED
+        await save_revision(
+            session,
+            node,
+            contribution,
+            user.id,
+            expected_revision=contribution.head_revision,
+            request_key=str(uuid.uuid4()),
+            files={svc.default_filename(node, contribution.id): data},
+            canonical=svc.default_filename(node, contribution.id),
+            operation="legacy-upload",
+        )
         await session.commit()
-        await svc.store_file(node, contribution, data)
-        # Processed inline: the public API deployment has no job worker.
-        await svc.process_contribution(session, node, contribution.id)
-        await session.refresh(contribution)
 
-    @app.get("/v1/{repository}/private/contributions", tags=["private"])
+    @app.get("/v1/{repository}/private/contribution-list", tags=["private"])
     async def private_list(user: BasicUser, session: RepoSession, repository: str) -> list[dict]:
         node = _node(repository)
         result = await session.execute(
@@ -272,6 +299,7 @@ def create_app() -> FastAPI:
             .where(
                 Contribution.contributor_id == user.id,
                 Contribution.node == node.node.slug,
+                Contribution.deleted_at.is_(None),
             )
             .order_by(Contribution.created_at.desc())
         )

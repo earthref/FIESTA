@@ -5,26 +5,27 @@ Used by the private API, the procrastinate worker, and the CLI so behavior is
 identical however the workflow is driven.
 """
 
+import gzip
+import json
 import logging
-import re
 from datetime import UTC, datetime
+from functools import lru_cache
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fiesta.db.models import Contribution, ContributionStatus, User, ValidationResult
-from fiesta.domain.parse import ParsedContribution, ParseError, parse_text
+from fiesta.domain.parse import ParseError, parse_text
 from fiesta.domain.summarize import summarize
 from fiesta.domain.validate import guess_data_model_version, validate_contribution
 from fiesta.nodeconfig import NodeConfig
 from fiesta.search.client import get_opensearch
 from fiesta.search.documents import (
-    delete_contribution_docs,
     index_contribution_docs,
-    update_contribution_flags,
 )
 from fiesta.search.index import ensure_index
-from fiesta.storage import Storage, contribution_prefix, file_key, manifest_key
+from fiesta.storage import Storage, file_key, manifest_key
 
 logger = logging.getLogger(__name__)
 
@@ -81,148 +82,222 @@ async def save_manifest(node: NodeConfig, contribution: Contribution, contributo
 
 
 async def store_file(node: NodeConfig, contribution: Contribution, data: bytes) -> None:
-    storage = Storage.for_node(node)
-    await storage.put_bytes(file_key(contribution.id, contribution.filename), data)
+    raise RuntimeError("Use save_revision in the contribution transaction")
 
 
 async def load_file(node: NodeConfig, contribution_id: int, filename: str) -> bytes:
+    from fiesta.db.session import get_sessionmaker
+    from fiesta.services.revisions import revision_file
+
+    async with get_sessionmaker(node.node.slug)() as session:
+        contribution = await session.get(Contribution, contribution_id)
+        if contribution.head_revision:
+            return await revision_file(session, node, contribution)
+    return await Storage.for_node(node).get_bytes(file_key(contribution_id, filename))
+
+
+@lru_cache
+def pipeline_hash():
+    from fiesta.services.revisions import digest, fingerprint
+
+    root = Path(__file__).resolve().parents[1]
+    return fingerprint(
+        {str(p.relative_to(root)): digest(p.read_bytes()) for p in sorted(root.rglob("*.py"))}
+    )
+
+
+async def derive_artifacts(session, node, contribution):
+    """Validation survives search failure and is tied to an immutable revision."""
+    import uuid
+
+    from fiesta.db.models import Revision
+    from fiesta.plugins import active_plugins
+    from fiesta.services.revisions import fingerprint, revision_file
+
+    revision = await session.get(Revision, contribution.head_revision)
+    raw = await revision_file(session, node, contribution)
+    run_id = str(uuid.uuid4())
+    prefix = f"contributions/{contribution.id}/revisions/{revision.id}/artifacts/{run_id}"
+    inputs = {
+        "data_models": {v: node.load_data_model(v) for v in node.data_model.versions},
+        "controlled_vocabularies": node.load_controlled_vocabularies(),
+        "suggested_vocabularies": node.load_suggested_vocabularies(),
+        "config": node.model_dump(mode="json"),
+    }
+    inputs_key = f"processing-inputs/{fingerprint(inputs)}.json"
     storage = Storage.for_node(node)
-    return await storage.get_bytes(file_key(contribution_id, filename))
-
-
-async def process_contribution(
-    session: AsyncSession, node: NodeConfig, contribution_id: int
-) -> None:
-    """Parse + validate + summarize + index a contribution's stored file, then
-    persist the outcome. Safe to re-run at any time (idempotent projection)."""
-    contribution = await session.get(Contribution, contribution_id)
-    if contribution is None or contribution.filename is None:
-        logger.warning("contribution %s missing or has no file; skipping", contribution_id)
-        return
-    if contribution.node != node.node.slug:
-        logger.error(
-            "contribution %s belongs to node %r, not %r; skipping",
-            contribution_id,
-            contribution.node,
-            node.node.slug,
-        )
-        return
-    contributor = await session.get(User, contribution.contributor_id)
-
+    if not await storage.exists(inputs_key):
+        await storage.put_json(inputs_key, inputs)
+    provenance = {
+        "inputs_key": inputs_key,
+        "revision_id": revision.id,
+        "snapshot_hash": fingerprint(revision.snapshot),
+        "config_hash": fingerprint(node.model_dump(mode="json")),
+        "model_hash": fingerprint(node.load_data_model(contribution.data_model_version)),
+        "vocabulary_hash": fingerprint(node.load_controlled_vocabularies()),
+        "pipeline_version": pipeline_hash(),
+        "artifact_schema": 1,
+        "plugins": node.features.plugins,
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    docs = []
     try:
-        contribution.status = ContributionStatus.PARSING
-        await session.commit()
-        raw = await load_file(node, contribution.id, contribution.filename)
-        parsed = parse_text(raw.decode("utf-8", errors="replace"))
-        contribution.data_model_version = guess_data_model_version(node, parsed)
-        if not contribution.reference_doi:
-            rows = parsed.tables.get("contribution", [])
-            reference = rows[0].get("reference", "") if rows else ""
-            if re.match(r"^10\.\S+/\S+$", reference):
-                contribution.reference_doi = reference
-
-        contribution.status = ContributionStatus.VALIDATING
-        await session.commit()
-        report = validate_contribution(node, parsed, contribution.data_model_version)
-        session.add(
-            ValidationResult(
-                contribution_id=contribution.id,
-                is_valid=report.is_valid,
-                errors=[e.as_dict() for e in report.errors],
-                warnings=[w.as_dict() for w in report.warnings],
+        parsed = parse_text(raw.decode("utf-8"))
+        version = guess_data_model_version(node, parsed)
+        provenance["data_model_version"] = version
+        provenance["model_hash"] = fingerprint(node.load_data_model(version))
+        report = validate_contribution(node, parsed, version)
+        errors = [e.as_dict() for e in report.errors]
+        warnings = [w.as_dict() for w in report.warnings]
+        contributor = await session.get(User, contribution.contributor_id)
+        docs = summarize(node, parsed, contribution_meta(contribution, contributor))
+        for plugin in active_plugins(node):
+            docs.extend(
+                plugin.derive_docs(node, parsed, contribution_meta(contribution, contributor))
             )
-        )
-
-        contribution.status = ContributionStatus.SUMMARIZING
-        await session.commit()
-        await index_parsed(node, contribution, contributor, parsed)
-
+        contribution.data_model_version = version
         contribution.status = ContributionStatus.READY
         contribution.error = None
-    except ParseError as exc:
+    except (ParseError, UnicodeDecodeError) as exc:
+        errors = [{"table": None, "row": None, "column": None, "message": str(exc)}]
+        warnings = []
         contribution.status = ContributionStatus.FAILED
         contribution.error = str(exc)
-        session.add(
-            ValidationResult(
-                contribution_id=contribution.id,
-                is_valid=False,
-                errors=[{"table": None, "row": exc.line, "column": None, "message": str(exc)}],
-            )
+    storage = Storage.for_node(node)
+    validation_key = f"{prefix}/validation.json"
+    await storage.put_json(
+        validation_key,
+        {"provenance": provenance, "is_valid": not errors, "errors": errors, "warnings": warnings},
+    )
+    await storage.put_bytes(
+        f"{prefix}/summary.json.gz",
+        gzip.compress(
+            json.dumps({"provenance": provenance, "documents": docs}, default=str).encode()
+        ),
+        content_type="application/gzip",
+    )
+    session.add(
+        ValidationResult(
+            contribution_id=contribution.id,
+            revision_id=revision.id,
+            artifact_key=validation_key,
+            is_valid=not errors,
+            errors=errors,
+            warnings=warnings,
         )
-    except Exception as exc:  # pragma: no cover — defensive: mark failed, don't lose the job
-        logger.exception("processing contribution %s failed", contribution_id)
-        contribution.status = ContributionStatus.FAILED
-        contribution.error = str(exc)
+    )
+    return docs
+
+
+async def process_contribution(session: AsyncSession, node: NodeConfig, contribution_id: int):
+    from fiesta.services.revisions import enqueue, locked
+
+    contribution = await locked(session, contribution_id)
+    enqueue(session, contribution)
     await session.commit()
-    await save_manifest(node, contribution, contributor)
 
 
-async def index_parsed(
-    node: NodeConfig, contribution: Contribution, contributor: User, parsed: ParsedContribution
-) -> None:
+async def index_parsed(node, contribution, contributor, parsed):
     from fiesta.plugins import active_plugins
 
-    client = get_opensearch()
-    await ensure_index(client, node.search_index)
-    meta = contribution_meta(contribution, contributor)
-    docs = summarize(node, parsed, meta)
+    docs = summarize(node, parsed, contribution_meta(contribution, contributor))
     for plugin in active_plugins(node):
-        docs.extend(plugin.derive_docs(node, parsed, meta))
-    await index_contribution_docs(client, node.search_index, contribution.id, docs)
+        docs.extend(plugin.derive_docs(node, parsed, contribution_meta(contribution, contributor)))
+    await ensure_index(get_opensearch(), node.search_index)
+    await index_contribution_docs(get_opensearch(), node.search_index, contribution.id, docs)
 
 
 async def latest_validation(session: AsyncSession, contribution_id: int) -> ValidationResult | None:
     result = await session.execute(
         select(ValidationResult)
-        .where(ValidationResult.contribution_id == contribution_id)
+        .where(
+            ValidationResult.contribution_id == contribution_id,
+            ValidationResult.revision_id
+            == select(Contribution.head_revision)
+            .where(Contribution.id == contribution_id)
+            .scalar_subquery(),
+        )
         .order_by(ValidationResult.validated_at.desc(), ValidationResult.id.desc())
         .limit(1)
     )
     return result.scalar_one_or_none()
 
 
-async def activate(session: AsyncSession, node: NodeConfig, contribution: Contribution) -> None:
-    """Publish: mark the previous version superseded, flag this one activated,
-    and update projections + manifests."""
-    contributor = await session.get(User, contribution.contributor_id)
-    client = get_opensearch()
+async def activate(
+    session: AsyncSession, node: NodeConfig, contribution: Contribution, *, actor_id=None
+) -> None:
+    from fastapi import HTTPException
 
-    if contribution.previous_id is not None:
-        previous = await session.get(Contribution, contribution.previous_id)
-        if previous is not None and previous.is_latest:
-            previous.is_latest = False
-            await update_contribution_flags(
-                client, node.search_index, previous.id, {"_is_latest": False}
-            )
-            previous_contributor = await session.get(User, previous.contributor_id)
-            await save_manifest(node, previous, previous_contributor)
+    from fiesta.db.models import AuditEvent
+    from fiesta.services.revisions import enqueue, locked
 
+    contribution = await locked(session, contribution.id)
+    report = await latest_validation(session, contribution.id)
+    if (
+        contribution.deleted_at
+        or not contribution.head_revision
+        or not report
+        or not report.is_valid
+    ):
+        raise HTTPException(409, "current revision must pass validation before publishing")
+    if contribution.previous_id:
+        previous = await locked(session, contribution.previous_id)
+        previous.is_latest = False
+        enqueue(session, previous, "index")
     contribution.is_activated = True
+    contribution.published_revision = contribution.head_revision
     contribution.activated_at = datetime.now(UTC)
-    await session.commit()
-    await update_contribution_flags(
-        client,
-        node.search_index,
-        contribution.id,
-        {"_is_activated": True, "timestamp": contribution.activated_at.isoformat()},
+    session.add(
+        AuditEvent(
+            contribution_id=contribution.id,
+            actor_id=actor_id or contribution.contributor_id,
+            operation="publish",
+            details={"revision": contribution.head_revision},
+        )
     )
-    await save_manifest(node, contribution, contributor)
+    enqueue(session, contribution, "index")
+    await session.commit()
 
 
-async def deactivate(session: AsyncSession, node: NodeConfig, contribution: Contribution) -> None:
-    contributor = await session.get(User, contribution.contributor_id)
+async def deactivate(
+    session: AsyncSession, node: NodeConfig, contribution: Contribution, *, actor_id=None
+) -> None:
+    from fiesta.db.models import AuditEvent
+    from fiesta.services.revisions import enqueue, locked
+
+    contribution = await locked(session, contribution.id)
     contribution.is_activated = False
-    await session.commit()
-    await update_contribution_flags(
-        get_opensearch(), node.search_index, contribution.id, {"_is_activated": False}
+    session.add(
+        AuditEvent(
+            contribution_id=contribution.id,
+            actor_id=actor_id or contribution.contributor_id,
+            operation="withdraw",
+            details={},
+        )
     )
-    await save_manifest(node, contribution, contributor)
+    enqueue(session, contribution, "index")
+    await session.commit()
 
 
 async def delete_contribution(
-    session: AsyncSession, node: NodeConfig, contribution: Contribution
-) -> None:
-    await delete_contribution_docs(get_opensearch(), node.search_index, contribution.id)
-    await Storage.for_node(node).delete_prefix(contribution_prefix(contribution.id))
-    await session.delete(contribution)
+    session: AsyncSession, node: NodeConfig, contribution: Contribution, *, actor_id=None
+):
+    from fastapi import HTTPException
+
+    from fiesta.db.models import AuditEvent
+    from fiesta.services.revisions import enqueue, locked
+
+    contribution = await locked(session, contribution.id)
+    if contribution.is_activated:
+        raise HTTPException(409, "withdraw a published contribution before deleting")
+    contribution.deleted_at = datetime.now(UTC)
+    session.add(
+        AuditEvent(
+            contribution_id=contribution.id,
+            actor_id=actor_id or contribution.contributor_id,
+            operation="delete",
+            details={},
+        )
+    )
+    enqueue(session, contribution, "index")
     await session.commit()

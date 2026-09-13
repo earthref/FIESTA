@@ -9,7 +9,6 @@ from fiesta.apps.routers import auth, config, health, private, search
 from fiesta.jobs.app import get_job_app
 from fiesta.nodeconfig import get_node
 from fiesta.search.client import get_opensearch
-from fiesta.search.index import ensure_index
 from fiesta.settings import get_settings
 from fiesta.storage import Storage
 
@@ -18,7 +17,6 @@ from fiesta.storage import Storage
 async def lifespan(app: FastAPI):
     node = get_node()
     await Storage.for_node(node).ensure_bucket()
-    await ensure_index(get_opensearch(), node.search_index)
     async with get_job_app().open_async():
         yield
     await get_opensearch().close()
@@ -42,7 +40,16 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for router in (health.router, config.router, auth.router, search.router, private.router):
+    from fiesta.apps.routers import workspaces
+
+    for router in (
+        health.router,
+        config.router,
+        auth.router,
+        search.router,
+        private.router,
+        workspaces.router,
+    ):
         app.include_router(router, prefix="/api")
     # Node-specific plugin routes (fails at startup on unknown plugin names).
     from fiesta.plugins import active_plugins

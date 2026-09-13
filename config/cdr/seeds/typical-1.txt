@@ -1,0 +1,22 @@
+tab delimited	contribution
+data_model_version	lab_names	description
+1.0	OSU Argon Geochronology Lab (Oregon State University, USA)	Synthetic cdr typical example 1
+>>>>>>>>>>
+tab delimited	cores
+core	cruise	method	lat	lon
+DEMO-PAC01	San Francisco Volcanic Province	1	44	235
+>>>>>>>>>>
+tab delimited	sections
+section	core	type
+DEMO-PAC01-03	DEMO-PAC01	working
+>>>>>>>>>>
+tab delimited	measurements
+measurement	experiment	section	depth	quality	method_codes	citations	gamma_density
+DEMO1-M1	DEMO-PAC01-01a-LT-AF-Z	DEMO-PAC01-03	0.1	g	1	10.1029/92JB01202	1.73
+DEMO1-M2	DEMO-PAC01-01a-LT-AF-Z	DEMO-PAC01-03	0.2	g	1	10.1029/92JB01202	1.76
+DEMO1-M3	DEMO-PAC01-01a-LT-AF-Z	DEMO-PAC01-03	0.30000000000000004	g	1	10.1029/92JB01202	1.79
+DEMO1-M4	DEMO-PAC01-01a-LT-AF-Z	DEMO-PAC01-03	0.4	g	1	10.1029/92JB01202	1.82
+DEMO1-M5	DEMO-PAC01-01a-LT-AF-Z	DEMO-PAC01-03	0.5	g	1	10.1029/92JB01202	1.85
+DEMO1-M6	DEMO-PAC01-01a-LT-AF-Z	DEMO-PAC01-03	0.6000000000000001	g	1	10.1029/92JB01202	1.88
+DEMO1-M7	DEMO-PAC01-01a-LT-AF-Z	DEMO-PAC01-03	0.7000000000000001	g	1	10.1029/92JB01202	1.91
+DEMO1-M8	DEMO-PAC01-01a-LT-AF-Z	DEMO-PAC01-03	0.8	g	1	10.1029/92JB01202	1.94

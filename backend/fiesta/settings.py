@@ -42,6 +42,8 @@ _LIBPQ_ONLY = {
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="FIESTA_", env_file=".env", extra="ignore")
 
+    environment: str = "production"
+
     config_file: Path = Path("../config/magic.yaml")
 
     # Postgres. Either SQLAlchemy form (postgresql+asyncpg://...) or a plain

@@ -25,8 +25,8 @@
 #   public-api  8005 (profile: public-api)
 #   osu-mgr  8006      8086
 #
-# Postgres and OpenSearch are projections: `make rebuild` regenerates both
-# from the YAML config + MinIO bucket.
+# Postgres owns application state; MinIO holds revision files.
+# `make rebuild` regenerates only the OpenSearch projection.
 #
 # Several nodes on ONE hostname (dev.earthref.org/MagIC/, /CDR/, ...): set
 # <NODE>_BASE_PATH=/MagIC/ etc. in .env. It is baked into that node's frontend
@@ -36,6 +36,8 @@
 name: fiesta
 
 x-backend-env: &backend-env
+  FIESTA_ENVIRONMENT: development
+  FIESTA_S3_BUCKET: fiesta-local
   FIESTA_DATABASE_URL: postgresql+asyncpg://fiesta:${POSTGRES_PASSWORD:-fiesta}@postgres:5432/fiesta
   FIESTA_OPENSEARCH_URL: http://opensearch:9200
   FIESTA_S3_ENDPOINT: http://minio:9000
@@ -101,7 +103,7 @@ services:
     volumes:
       - opensearch-data:/usr/share/opensearch/data
     ports:
-      - "9200:9200"
+      - "${OPENSEARCH_PORT:-9200}:9200"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
       interval: 10s
@@ -117,8 +119,8 @@ services:
     volumes:
       - minio-data:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
       interval: 5s
@@ -128,7 +130,7 @@ services:
   mailpit:
     image: axllent/mailpit:latest
     ports:
-      - "8025:8025" # web UI
+      - "${MAILPIT_WEB_PORT:-8025}:8025" # web UI
     healthcheck:
       test: ["CMD", "/mailpit", "readyz"]
       interval: 10s

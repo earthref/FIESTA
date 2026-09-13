@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,12 +16,30 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=Fals
 basic_scheme = HTTPBasic(auto_error=False)
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-NodeDep = Annotated[NodeConfig, Depends(get_node)]
+
+
+def request_node(request: Request) -> NodeConfig:
+    from fiesta.nodeconfig import get_deployment
+
+    repository = request.path_params.get("repository")
+    if repository:
+        deployment = get_deployment()
+        try:
+            return deployment.public_api.node_for(repository)
+        except KeyError:
+            raise HTTPException(404, "unknown repository") from None
+    return get_node()
+
+
+NodeDep = Annotated[NodeConfig, Depends(request_node)]
 
 
 async def get_current_user(
-    session: SessionDep, token: Annotated[str | None, Depends(oauth2_scheme)]
+    session: SessionDep, token: Annotated[str | None, Depends(oauth2_scheme)],
+    credentials: Annotated[HTTPBasicCredentials | None, Depends(basic_scheme)]
 ) -> User:
+    if not token and credentials:
+        return await get_basic_user(session, credentials)
     user_id = decode_access_token(token) if token else None
     user = await session.get(User, user_id) if user_id is not None else None
     if user is None:

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { ContributionEditor } from "../components/contribution-editor";
 import { ErrorMessage } from "../components/error-message";
 import { useLoginModal } from "../components/login-modal";
 import { ResultItem } from "../components/result-item";
@@ -167,6 +168,7 @@ function ValidationModal({
 function ContributionCard({ contribution }: { contribution: ContributionOut }) {
   const { data: config } = useNodeConfig();
   const queryClient = useQueryClient();
+  const [editorOpen, setEditorOpen] = useState(false);
   const [name, setName] = useState(contribution.filename ?? `Contribution ${contribution.id}`);
   const [doi, setDoi] = useState(contribution.reference_doi ?? "");
   const [shareOpen, setShareOpen] = useState(false);
@@ -190,7 +192,11 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
     mutationFn: () =>
       api<ContributionOut>(`/api/private/contributions/${contribution.id}/reference`, {
         method: "PUT",
-        json: { doi: doi.trim() },
+        json: {
+          doi: doi.trim(),
+          expected_revision: contribution.head_revision,
+          request_key: crypto.randomUUID(),
+        },
       }),
     onSuccess: invalidate,
     onError: setActionError,
@@ -476,6 +482,36 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
         <ResultItem doc={doc} level={contributionLevel} privateKey={contribution.private_key} />
       </div>
 
+      <div className="my-2 flex gap-2">
+        <Button variant="secondary" onClick={() => setEditorOpen(true)}>
+          Edit / History / Files
+        </Button>
+        {contribution.published_revision && (
+          <Button
+            onClick={async () => {
+              try {
+                await api(`/api/private/contributions/${contribution.id}/versions`, {
+                  method: "POST",
+                });
+                await invalidate();
+              } catch (error) {
+                setActionError(error);
+              }
+            }}
+          >
+            Create new version
+          </Button>
+        )}
+      </div>
+      {editorOpen && (
+        <ContributionEditor
+          contribution={contribution}
+          onClose={() => {
+            setEditorOpen(false);
+            invalidate();
+          }}
+        />
+      )}
       {/* Modals */}
       {shareOpen && (
         <Modal

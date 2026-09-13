@@ -1,0 +1,9 @@
+tab delimited	contribution
+data_model_version	reference	description
+1.0	10.1029/92JB01202	Synthetic kdd typical example 2
+>>>>>>>>>>
+tab delimited	kds
+rock_types	minerals	element	kd
+Alkali Basalt	Amphibole	Na	0.6
+Alkali Basalt	Amphibole	Ca	2.4
+Alkali Basalt	Amphibole	Fe	1.4
