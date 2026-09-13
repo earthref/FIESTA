@@ -18,3 +18,5 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 dist/
+# legacy inventory snapshots (may contain private contributions)
+migration/

@@ -194,6 +194,20 @@ are checkpoints, so an interrupted run resumes without importing them twice.
 Original source metadata is retained in S3. Legacy remains authoritative until the
 node's final cutover; use isolated copies for FIESTA pilot editing.
 
+`fiesta legacy-inventory <node> --out <dir>` generates that snapshot from a node's
+legacy Meteor sources when the node YAML has a `legacy:` block (`source_id`, `index`,
+`buckets`, `users_index`). It scrolls the legacy index for `type: contribution`
+documents, resolves each `@handle` through the shared `er_users` index, hashes the
+activated file from the first bucket that has `<id>/<slug>_contribution_<id>.txt`,
+and exports private contributions (index-only) from their indexed tables into
+`<dir>/files/`. It writes `inventory.json` and `owners.json`; unresolved handles are
+errors and their contributions are left out. `fiesta ensure-owners <node> <dir>/owners.json
+--apply` creates the missing accounts without passwords. Run it with the production
+environment file only through `make fiesta ENV_FILE=.env.prod ARGS="..."`; the
+snapshot directory (`migration/`) is gitignored because it may hold private data.
+The legacy index keeps one document per contribution updated in place, so history
+before the snapshot is not recoverable and `_history` records reference changes only.
+
 The actual six-node source inventory and metadata export adapters require verified
 legacy source contracts. Existing repository evidence includes activated S3 buckets
 for MagIC/KArAr/KdD and a CDR pipeline index; that is not proof of a complete current

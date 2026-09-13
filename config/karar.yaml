@@ -56,6 +56,15 @@ features:
   pages: []
   plugins: [plateau-calculations]
 
+# Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).
+# The public archive bucket comes first; `karar-contributions` is the latest-only
+# mirror. Private contributions have no S3 object and are exported from the index.
+legacy:
+  source_id: legacy-karar
+  index: karar
+  buckets: [karar-activated-contributions, karar-contributions]
+  users_index: er_users
+
 # Local fixtures only; never read during normal application startup.
 development:
   seed_manifest: karar/seeds/manifest.yaml
