@@ -89,11 +89,10 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173"]
 
-    # Path prefix the node is published under when several nodes share one
-    # hostname (dev.earthref.org/MagIC/ -> "/MagIC/"). The reverse proxy strips
-    # it before the request reaches uvicorn, so routes stay at /api; this only
-    # tells FastAPI where to advertise /api/docs and openapi.json. "" or "/"
-    # means the node owns the hostname.
+    # Path prefix the API is published under when a reverse proxy strips one
+    # before the request reaches uvicorn (routes stay at /v1); this only tells
+    # FastAPI where to advertise /v1/docs and openapi.json. "" or "/" means the
+    # API owns the hostname (api.earthref.org).
     root_path: str = ""
 
     # Local-dev only: `slug=url,slug=url` overrides for sibling FIESTA nodes'
