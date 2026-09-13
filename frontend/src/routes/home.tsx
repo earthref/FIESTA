@@ -38,7 +38,9 @@ function DividerHeader({ children, first }: { children: ReactNode; first?: boole
 /** `ui three cards`: wrapper margin −.875em −1em, each card margin .875em 1em
  * and width calc(33.33% − 2em). */
 const threeCards: CSSProperties = { margin: "-0.875em -1em" };
-const threeCard: CSSProperties = { margin: "0.875em 1em", width: "calc(33.3333% - 2em)" };
+const threeCard: CSSProperties = { margin: "0.875em 1em" };
+/** Full-width on phones, a third of the row from sm up. */
+const threeCardClass = "w-full sm:w-[calc(33.3333%-2em)]";
 /** `ui nine cards` (10px cards): wrapper margin 0 −.5em −.875em, cards margin
  * .875em .5em and width calc(11.11% − 1em). */
 const nineCards: CSSProperties = { margin: "0 -5px -8.75px" };
@@ -189,7 +191,7 @@ export function HomePage() {
       <div className="flex flex-col py-[1rem] lg:flex-row">
         <div className="min-w-0 lg:w-3/4" style={{ padding: "0 1rem" }}>
           <div className="flex flex-wrap" style={threeCards}>
-            <div style={threeCard}>
+            <div className={threeCardClass} style={threeCard}>
               <IconButton
                 to="/search"
                 icon="database"
@@ -198,7 +200,7 @@ export function HomePage() {
                 subtitle="Browse, combine, and save datasets."
               />
             </div>
-            <div style={threeCard}>
+            <div className={threeCardClass} style={threeCard}>
               <IconButton
                 to="/upload"
                 icon="table"
@@ -207,7 +209,7 @@ export function HomePage() {
                 subtitle="Import data into your private workspace."
               />
             </div>
-            <div style={threeCard}>
+            <div className={threeCardClass} style={threeCard}>
               <IconButton
                 to="/private"
                 icon="file text outline"
