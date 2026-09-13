@@ -2,13 +2,13 @@
 
 ## What This Is
 
-FIESTA is the platform behind the EarthRef.org data repositories (nodes): MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR. One codebase serves any node; a deployment is fully described by one YAML in `config/`. Rebuilt from scratch in July 2026 (Meteor/Semantic-UI → FastAPI + Vite/React). The direction as of 2026-09-10 is **one FIESTA API for every node** (`/v1/{node}/...`) that the SPA talks to directly — see `ROADMAP.md` Phase A. Long-form rationale lives in `docs/`, `development.md`, `deployment.md` and `ROADMAP.md`; this file is the rules.
+FIESTA is the platform behind the EarthRef.org data repositories (nodes): MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR. One codebase serves any node; a deployment is fully described by one YAML in `config/`. Rebuilt from scratch in July 2026 (Meteor/Semantic-UI → FastAPI + Vite/React). The direction as of 2026-09-10 is **one FIESTA API for every node** (`/v2/{node}/...`) that the SPA talks to directly — see `ROADMAP.md` Phase A. Long-form rationale lives in `docs/`, `development.md`, `deployment.md` and `ROADMAP.md`; this file is the rules.
 
 ## Stack
 
 ```
 Backend:    FastAPI + SQLAlchemy (async) + asyncpg + Pydantic v2 + Alembic      (backend/, package `fiesta`)
-API:        one process, `fiesta.apps.api` — every node under /v1/{repository}/... (api.earthref.org, and what the SPA talks to); `config/fiesta.yaml` lists the nodes, FIESTA_NODE narrows them
+API:        one process, `fiesta.apps.api` — every node under /v2/{repository}/... (api.earthref.org, and what the SPA talks to); `config/fiesta.yaml` lists the nodes, FIESTA_NODE narrows them. /v1 is the frozen legacy api.earthref.org contract (`routers/v1.py`, MagIC only, ported from old-backend) — never change its behaviour, add to /v2
 Jobs:       procrastinate (Postgres-native LISTEN/NOTIFY) — parse / validate / summarize / index, email
 Frontend:   Vite + React + TanStack Router/Query SPA, Tailwind; one build serves any node (branding from the API)
 Database:   Postgres 16 — shared `users` schema + one schema per node (magic, cdr, …), Alembic per schema
@@ -39,7 +39,7 @@ scripts/               e2e.sh (full workflow against a running stack), pg-node-r
 ## Commands (use exactly these forms — they match the permission allowlist)
 
 ```bash
-make up                         # compose: infra + one API (/v1/{node}/…, API_PORT) + one worker + a frontend per node in FIESTA_NODE (.env); hot reload (Vite dev server, uvicorn --reload) — a git pull is live; returns once healthy
+make up                         # compose: infra + one API (/v2/{node}/…, API_PORT) + one worker + a frontend per node in FIESTA_NODE (.env); hot reload (Vite dev server, uvicorn --reload) — a git pull is live; returns once healthy
 make up FIESTA_NODE=magic       # one node; PROD=1 runs the built images (what CI e2e and a deployment use)
 make down / make clean          # stop (keep volumes) / stop and DELETE volumes
 make infra                      # only postgres+opensearch+minio+mailpit, for host-run app processes

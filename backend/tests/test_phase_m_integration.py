@@ -98,12 +98,12 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
         ) as client,
     ):
         login = await client.post(
-            "/v1/auth/login",
+            "/v2/auth/login",
             data={"username": "developer@example.test", "password": "local-fiesta-only"},
         )
         assert login.status_code == 200, login.text
         client.headers["Authorization"] = "Bearer " + login.json()["access_token"]
-        root = "/v1/magic/private/contributions"
+        root = "/v2/magic/private/contributions"
         c = (await client.post(root)).json()
         path = f"{root}/{c['id']}"
         edit = {"expected_revision": None, "request_key": str(uuid.uuid4()), "text": raw}
@@ -170,14 +170,14 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
             assert validation.is_valid
             assert validation.revision_id == c["head_revision"]
         assert (await client.get(root)).status_code == 200
-        assert (await client.put("/v1/auth/settings", json={"theme": "dark"})).status_code == 200
+        assert (await client.put("/v2/auth/settings", json={"theme": "dark"})).status_code == 200
         assert (await client.post(path + "/activate")).status_code == 200
         monkeypatch.setattr(search.indices, "exists", original_exists)
         assert (await drain(node))["failed"] == 0
         # Private links remain usable, while workspace membership does not disclose them.
         key = c["private_key"]
         keyed = await client.get(
-            "/v1/magic/search/contribution", params={"query": f'private_key:"{key}"'}
+            "/v2/magic/search/contribution", params={"query": f'private_key:"{key}"'}
         )
         assert keyed.status_code == 200 and keyed.json()["total"] == 1
 
@@ -195,21 +195,21 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
         # Withdrawal is enforced before search totals/facets despite a stale index.
         assert (await client.post(path + "/deactivate")).status_code == 200
         response = await client.get(
-            "/v1/magic/search/contribution", params={"query": f'id:"{c["id"]}"'}
+            "/v2/magic/search/contribution", params={"query": f'id:"{c["id"]}"'}
         )
         assert response.status_code == 200, response.text
         assert response.json()["total"] == 0
-        assert (await client.get(f"/v1/magic/data/{c['id']}")).status_code == 404
+        assert (await client.get(f"/v2/magic/data/{c['id']}")).status_code == 404
         new = await client.post(path + "/versions")
         assert new.status_code == 201, new.text
         assert new.json()["previous_id"] == c["id"]
         assert (await client.post(f"{root}/{new.json()['id']}/activate")).status_code == 409
 
         # Shared viewers can inspect but cannot save or change membership.
-        workspace = (await client.post("/v1/magic/workspaces", json={"name": "integration"})).json()
+        workspace = (await client.post("/v2/magic/workspaces", json={"name": "integration"})).json()
         assert (
             await client.put(
-                f"/v1/magic/workspaces/{workspace['id']}/contributions/{new.json()['id']}"
+                f"/v2/magic/workspaces/{workspace['id']}/contributions/{new.json()['id']}"
             )
         ).status_code == 200
         async with get_sessionmaker("magic")() as session:
@@ -219,13 +219,13 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
             viewer_id = viewer.id
         assert (
             await client.put(
-                f"/v1/magic/workspaces/{workspace['id']}/members",
+                f"/v2/magic/workspaces/{workspace['id']}/members",
                 json={"user_id": viewer_id, "role": "viewer"},
             )
         ).status_code == 200
         viewer_login = (
             await client.post(
-                "/v1/auth/login",
+                "/v2/auth/login",
                 data={"username": "viewer@example.test", "password": "local-fiesta-only"},
             )
         ).json()
@@ -252,7 +252,7 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
             result = await rebuild_node(session, node)
             assert result["indexed"] > 0
             assert (await session.get(Contribution, c["id"])).head_revision == before
-        assert (await client.get("/v1/auth/settings")).json() == {"theme": "dark"}
+        assert (await client.get("/v2/auth/settings")).json() == {"theme": "dark"}
 
         # Inventory verification, repeat sync, metadata changes, and edit conflict.
         legacy_id = 100000 + int(uuid.uuid4().hex[:5], 16)
@@ -363,7 +363,7 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
         assert (await client.get(f"{root}/{draft_id}")).json()["head_revision"] == changed.json()[
             "head_revision"
         ]
-        assert (await client.get("/v1/auth/settings")).json() == {"theme": "dark"}
+        assert (await client.get("/v2/auth/settings")).json() == {"theme": "dark"}
 
     await get_opensearch().close()
     await get_engine().dispose()
@@ -396,12 +396,12 @@ async def test_real_worker_process(tmp_path):
                 ) as client,
             ):
                 login = await client.post(
-                    "/v1/auth/login",
+                    "/v2/auth/login",
                     data={"username": "developer@example.test", "password": "local-fiesta-only"},
                 )
                 client.headers["Authorization"] = "Bearer " + login.json()["access_token"]
-                c = (await client.post("/v1/cdr/private/contributions")).json()
-                base = f"/v1/cdr/private/contributions/{c['id']}"
+                c = (await client.post("/v2/cdr/private/contributions")).json()
+                base = f"/v2/cdr/private/contributions/{c['id']}"
                 from fiesta.nodeconfig import get_deployment
 
                 node = get_deployment().node_for("cdr")
@@ -428,5 +428,233 @@ async def test_real_worker_process(tmp_path):
             except TimeoutError:
                 worker.kill()
                 await worker.wait()
+    await get_opensearch().close()
+    await get_engine().dispose()
+
+
+@pytest.mark.asyncio
+async def test_v2_serves_every_enabled_node_from_one_process():
+    """Every node in config/fiesta.yaml answers its own config, vocabularies,
+    search and private-workspace routes from the same app, and a plugin route
+    is reachable only on the nodes that activate that plugin."""
+    from fiesta.apps.api import create_app
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.plugins import active_plugins
+    from fiesta.services.seed import require_local
+
+    require_local()
+    deployment = get_deployment()
+    assert len(deployment.nodes) >= 6, sorted(deployment.nodes)
+    app = create_app()
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://local"
+        ) as client,
+    ):
+        health = await client.get("/v2/health-check")
+        assert health.status_code == 200, health.text
+        assert sorted(health.json()["repositories"]) == sorted(
+            n.node.key for n in deployment.node_list
+        )
+        login = await client.post(
+            "/v2/auth/login",
+            data={"username": "developer@example.test", "password": "local-fiesta-only"},
+        )
+        assert login.status_code == 200, login.text
+        client.headers["Authorization"] = "Bearer " + login.json()["access_token"]
+
+        async def mine(slug: str) -> list[int]:
+            listing = await client.get(f"/v2/{slug}/private/contributions")
+            assert listing.status_code == 200, (slug, listing.text)
+            return sorted(c["id"] for c in listing.json())
+
+        for node in deployment.node_list:
+            for repository in (node.node.slug, node.node.key, node.node.key.upper()):
+                config = await client.get(f"/v2/{repository}/config")
+                assert config.status_code == 200, (repository, config.text)
+                assert config.json()["slug"] == node.node.slug
+            slug = node.node.slug
+            vocab = await client.get(f"/v2/{slug}/config/vocabularies/controlled")
+            assert vocab.status_code == 200
+            search = await client.get(f"/v2/{slug}/search/contribution", params={"size": 5})
+            assert search.status_code == 200, search.text
+            for hit in search.json()["results"]:
+                assert hit["summary"]["contribution"]["_is_activated"] is True
+            unknown = await client.get(f"/v2/{slug}/search/not-a-table")
+            assert unknown.status_code == 404
+            # Ids are per node schema, so isolation shows as counts: creating
+            # under one node changes only that node's workspace listing.
+            before = {n.node.slug: await mine(n.node.slug) for n in deployment.node_list}
+            created = await client.post(f"/v2/{slug}/private/contributions")
+            assert created.status_code == 201, (slug, created.text)
+            after = {n.node.slug: await mine(n.node.slug) for n in deployment.node_list}
+            assert set(after[slug]) - set(before[slug]) == {created.json()["id"]}
+            for other, ids in before.items():
+                if other != slug:
+                    assert after[other] == ids, (slug, other)
+            deleted = await client.delete(
+                f"/v2/{slug}/private/contributions/{created.json()['id']}"
+            )
+            assert deleted.status_code == 204, (slug, deleted.text)
+            assert await mine(slug) == before[slug]
+
+        assert (await client.get("/v2/nope/config")).status_code == 404
+        plugin_routes = {
+            "poles": "/plugins/poles/plate-boundaries",
+            "depth-plot": "/plugins/depth-plot/contributions/1/measurements",
+            "plateau-calculations": (
+                "/plugins/plateau-calculations/contributions/1/experiments/x/plateau"
+            ),
+        }
+        for node in deployment.node_list:
+            names = {plugin.name for plugin in active_plugins(node)}
+            for name, route in plugin_routes.items():
+                response = await client.get(f"/v2/{node.node.slug}{route}")
+                if name in names:
+                    assert response.status_code != 404 or "not enabled" not in response.text, (
+                        node.node.slug,
+                        name,
+                        response.text,
+                    )
+                else:
+                    assert response.status_code == 404 and "not enabled" in response.text, (
+                        node.node.slug,
+                        name,
+                        response.text,
+                    )
+
+
+@pytest.mark.asyncio
+async def test_v1_legacy_contract_roundtrip():
+    """The frozen api.earthref.org contract on FIESTA's Postgres, revisions
+    and search projection: create → upload → validate → data → search →
+    download → publish → public data/search/download → append (next version)
+    → delete, all through /v1 with HTTP Basic."""
+    import io
+    import zipfile
+
+    from fiesta.apps.api import create_app
+    from fiesta.db.session import get_engine, get_sessionmaker
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.search.client import get_opensearch
+    from fiesta.services.outbox import drain
+    from fiesta.services.seed import require_local
+
+    require_local()
+    # Cached clients belong to the previous test's event loop.
+    get_opensearch.cache_clear()
+    get_engine.cache_clear()
+    get_sessionmaker.cache_clear()
+    node = get_deployment().node_for("magic")
+    app = create_app()
+    raw = (node.base_dir / "magic/seeds/valid.txt").read_text()
+    creds = ("developer@example.test", "local-fiesta-only")
+
+    def names(response) -> list[str]:
+        assert response.status_code == 200, response.text
+        assert response.headers["content-type"] == "application/zip"
+        return sorted(zipfile.ZipFile(io.BytesIO(response.content)).namelist())
+
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://local"
+        ) as client,
+    ):
+        assert (await client.get("/v1/health-check")).json() == {"message": "Healthy!"}
+        assert (await client.get("/v1/authenticate")).status_code == 401
+        me = await client.get("/v1/authenticate", auth=creds)
+        assert me.status_code == 200 and me.json()["email"] == creds[0], me.text
+        anonymous = await client.get("/v1/MagIC/private/search/contributions")
+        assert anonymous.status_code == 401 and anonymous.json()["errors"]
+        assert (await client.get("/v1/MagIC/nope")).status_code == 404
+
+        created = await client.post("/v1/MagIC/private", auth=creds)
+        assert created.status_code == 201, created.text
+        cid = created.json()["id"]
+        uploaded = await client.put(
+            f"/v1/MagIC/private?id={cid}", auth=creds, files=[("file", ("valid.txt", raw))]
+        )
+        assert uploaded.status_code == 202, uploaded.text
+        assert uploaded.json() == {"id": cid}
+        assert (await drain(node))["failed"] == 0
+
+        report = await client.put(f"/v1/MagIC/private/validate?id={cid}", auth=creds)
+        assert report.status_code == 200, report.text
+        assert report.json()["validation"]["errors"] == []
+        text = await client.get(f"/v1/MagIC/private/data?id={cid}", auth=creds)
+        assert text.status_code == 200 and text.text.startswith("tab delimited"), text.text
+        tables = await client.get(
+            f"/v1/MagIC/private/data?id={cid}",
+            auth=creds,
+            headers={"Accept": "application/json"},
+        )
+        assert "sites" in tables.json()
+        page = await client.get(
+            "/v1/MagIC/private/search/contributions", auth=creds, params={"n_max_rows": 100}
+        )
+        assert page.status_code == 200, page.text
+        assert cid in [r["id"] for r in page.json()["results"]]
+        assert not [k for r in page.json()["results"] for k in r if k.startswith("_")]
+        assert names(await client.get(f"/v1/MagIC/private/download?id={cid}", auth=creds)) == [
+            f"{cid}/magic_contribution_{cid}.json",
+            f"{cid}/magic_contribution_{cid}.txt",
+        ]
+
+        # Public routes: invisible until published, except with the private key.
+        assert (await client.get(f"/v1/MagIC/data?id={cid}")).status_code == 204
+        assert (await client.get(f"/v1/MagIC/download?id={cid}")).status_code == 204
+        detail = await client.get(f"/v2/magic/private/contributions/{cid}", auth=creds)
+        key = detail.json()["private_key"]
+        assert (await client.get(f"/v1/MagIC/data?id={cid}&key={key}")).status_code == 200
+        published = await client.post(f"/v2/magic/private/contributions/{cid}/activate", auth=creds)
+        assert published.status_code == 200, published.text
+        assert (await drain(node))["failed"] == 0
+        assert (await client.get(f"/v1/MagIC/data?id={cid}")).text == text.text
+        found = await client.get(
+            "/v1/MagIC/search/contributions", params={"query": f"summary.contribution.id:{cid}"}
+        )
+        assert found.status_code == 200, found.text
+        assert [r["id"] for r in found.json()["results"]] == [cid]
+        sites = await client.get(
+            "/v1/MagIC/search/sites",
+            params={"query": f"summary.contribution.id:{cid}", "n_max_rows": 2},
+        )
+        assert sites.status_code == 200, sites.text
+        assert len(sites.json()["results"]) == 2 and "site" in sites.json()["results"][0]
+        assert names(await client.get(f"/v1/MagIC/download?id={cid}&only_latest=true")) == [
+            f"{cid}/magic_contribution_{cid}.txt"
+        ]
+
+        # Appending to a published contribution starts its next version.
+        more = "tab delimited\tsites\nsite\tlocation\nV1-APPENDED\tHawaii\n"
+        appended = await client.patch(
+            f"/v1/MagIC/private?id={cid}", auth=creds, files=[("file", ("more.txt", more))]
+        )
+        assert appended.status_code == 202, appended.text
+        new_id = appended.json()["id"]
+        assert new_id != cid and appended.json()["rows_added"] == 1
+        draft = (await client.get(f"/v2/magic/private/contributions/{new_id}", auth=creds)).json()
+        assert draft["previous_id"] == cid and draft["version"] == 2
+        assert (await drain(node))["failed"] == 0
+        new_tables = await client.get(
+            f"/v1/MagIC/private/data?id={new_id}",
+            auth=creds,
+            headers={"Accept": "application/json"},
+        )
+        assert len(new_tables.json()["sites"]) == len(tables.json()["sites"]) + 1
+        # The unpublished draft is part of the lineage but not of the public archive.
+        assert names(await client.get(f"/v1/MagIC/download?id={new_id}")) == [
+            f"{cid}/magic_contribution_{cid}.txt"
+        ]
+
+        refused = await client.delete(f"/v1/MagIC/private?id={cid}", auth=creds)
+        assert refused.status_code == 409 and refused.json()["errors"], refused.text
+        removed = await client.delete(f"/v1/MagIC/private?id={new_id}", auth=creds)
+        assert removed.json() == {"rowsDeleted": 1}, removed.text
+        again = await client.delete(f"/v1/MagIC/private?id={new_id}", auth=creds)
+        assert again.json() == {"rowsDeleted": 0}
+
     await get_opensearch().close()
     await get_engine().dispose()

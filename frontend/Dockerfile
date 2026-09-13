@@ -15,7 +15,7 @@ COPY . .
 ENV VITE_BASE_PATH=$BASE_PATH
 RUN npm run build
 
-# Serve with nginx (SPA history fallback + /v1 proxy to the API service).
+# Serve with nginx (SPA history fallback + /v2 proxy to the API service).
 # The nginx image's entrypoint runs envsubst over /etc/nginx/templates/, so
 # at runtime FIESTA_NODE picks the node this frontend is for (one image, any
 # node), API_URL optionally points the SPA at another API origin (empty =

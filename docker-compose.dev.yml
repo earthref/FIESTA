@@ -7,7 +7,7 @@
 #               install and uvicorn runs with --reload, so a `git pull` (or an
 #               edit) restarts the API in place. `fiesta init` still runs first.
 #   worker      `watchfiles` restarts `fiesta worker` when backend code changes.
-#   frontend-*  a plain node image runs the Vite dev server (HMR, /v1 proxied
+#   frontend-*  a plain node image runs the Vite dev server (HMR, /v2 proxied
 #               to the API) on the container's port 80, so the host port
 #               mapping from docker-compose.yml is unchanged. node_modules
 #               lives in a per-node named volume and `npm install` runs on start.

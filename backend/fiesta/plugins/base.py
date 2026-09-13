@@ -38,7 +38,7 @@ class FiestaPlugin:
         return []
 
     def build_router(self) -> APIRouter | None:
-        """Extra API routes, mounted at /v1/{repository}/plugins/{plugin.name} and
+        """Extra API routes, mounted at /v2/{repository}/plugins/{plugin.name} and
         served only for nodes that activate this plugin; handlers take NodeDep."""
         return None
 

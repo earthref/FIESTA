@@ -7,7 +7,7 @@ stack (or the equivalent services in your orchestrator).
 
 | Role | Config | Entrypoint |
 |---|---|---|
-| API (every node under `/v1/{node}/...`) | `config/fiesta.yaml` | `uvicorn fiesta.apps.api:create_app --factory` |
+| API (every node under `/v2/{node}/...`) | `config/fiesta.yaml` | `uvicorn fiesta.apps.api:create_app --factory` |
 | Worker | `config/fiesta.yaml` | `fiesta worker` |
 
 Both run from the same `backend/` image; the role is just the command. One API
@@ -24,7 +24,7 @@ contribution rows in Postgres; user accounts are shared (one EarthRef login
 works on every node). Concurrent start-up is safe — `fiesta init` serializes
 schema migrations behind a Postgres advisory lock. In front of it all, route
 each node's hostname (e.g. `karar.earthref.org`) to that node's frontend
-container, whose nginx proxies `<base>v1/` to the API (`BACKEND_HOST`, default
+container, whose nginx proxies `<base>v2/` to the API (`BACKEND_HOST`, default
 `api`); the node is named in the path, so one API serves them all.
 
 ## Several nodes on one hostname
@@ -102,7 +102,7 @@ runner — not in this repo) predates Phase A: it still starts a per-node uvicor
 process per node and proxies `/api`. It must change to run **one**
 `uvicorn fiesta.apps.api:create_app` with
 `FIESTA_CONFIG_FILE=config/fiesta.yaml` (optionally `FIESTA_NODE` to narrow the
-set), proxy `<base>v1/` to that single process instead of `/api`, and build each
+set), proxy `<base>v2/` to that single process instead of `/api`, and build each
 node's SPA with `VITE_NODE=<slug>` (or serve `fiesta-env.js` per node) so the
 frontend resolves its node and API origin. This is tracked in
 [OPERATOR_TODO](OPERATOR_TODO.md).
@@ -110,7 +110,7 @@ frontend resolves its node and API origin. This is tracked in
 ## Production notes
 
 - Put the frontend's nginx (or any reverse proxy) in front of the API and
-  route `<base>v1/*` to it — the SPA calls `/v1/{node}/...` on its own origin.
+  route `<base>v2/*` to it — the SPA calls `/v2/{node}/...` on its own origin.
 - Set a strong `FIESTA_SECRET_KEY`; tokens are HS256 JWTs.
 - OpenSearch: single index per node, created automatically with mappings from
   `fiesta/search/index.py`; re-run `fiesta rebuild` after mapping changes.

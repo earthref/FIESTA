@@ -3,7 +3,7 @@
 # defined env vars); nginx's own $uri/$host variables pass through untouched.
 #
 # BASE_PATH is "/" or a node prefix like "/MagIC/" (leading + trailing slash),
-# so the locations render as /v1/, /assets/, / -- or /MagIC/v1/,
+# so the locations render as /v2/, /assets/, / -- or /MagIC/v2/,
 # /MagIC/assets/, /MagIC/. The build is installed at <root><BASE_PATH>, which
 # is why the static locations need no alias. A request for the bare prefix
 # without its slash (/MagIC) hits no location and nginx's directory handling
@@ -28,10 +28,10 @@ server {
     }
 
     # Proxy API requests to the FIESTA API service. The URI part on proxy_pass
-    # replaces the matched prefix, so the API always sees /v1/ whatever
+    # replaces the matched prefix, so the API always sees /v2/ whatever
     # BASE_PATH is.
-    location ${BASE_PATH}v1/ {
-        proxy_pass http://${BACKEND_HOST}:8000/v1/;
+    location ${BASE_PATH}v2/ {
+        proxy_pass http://${BACKEND_HOST}:8000/v2/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

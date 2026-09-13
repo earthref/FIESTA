@@ -1,8 +1,9 @@
-"""The FIESTA API: one FastAPI process serving every node in the deployment
-under /v1/{repository}/... (api.earthref.org, and what the SPA talks to).
+"""The FIESTA API: one FastAPI process serving every node in the deployment.
 
-`{repository}` is a node key or slug in any case (MagIC, magic). Node-less
-routes: /v1/health-check, /v1/authenticate, /v1/auth/*. The session and
+/v2/{repository}/... is FIESTA's own API (what the SPA talks to); /v1 is the
+legacy api.earthref.org contract kept unchanged for existing clients
+(routers/v1.py). `{repository}` is a node key or slug in any case (MagIC,
+magic). Node-less v2 routes: /v2/health-check, /v2/auth/*. The session and
 NodeDep dependencies resolve the node from that path segment, so every
 node-scoped router below is mounted once for all nodes."""
 
@@ -12,9 +13,8 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from fiesta.apps.deps import BasicUser, NodeDep, SessionDep
-from fiesta.apps.routers import auth, config, legacy, private, search, workspaces
-from fiesta.apps.schemas import UserOut
+from fiesta.apps.deps import NodeDep, SessionDep
+from fiesta.apps.routers import auth, config, private, search, v1, workspaces
 from fiesta.nodeconfig import get_deployment
 from fiesta.search.client import get_opensearch
 from fiesta.settings import get_settings
@@ -52,8 +52,8 @@ def create_app() -> FastAPI:
         license_info={"name": "MIT License", "url": "https://opensource.org/licenses/MIT"},
         lifespan=lifespan,
         root_path=settings.fastapi_root_path,
-        docs_url="/v1/docs",
-        openapi_url="/v1/openapi.json",
+        docs_url="/v2/docs",
+        openapi_url="/v2/openapi.json",
     )
     app.add_middleware(
         CORSMiddleware,
@@ -63,7 +63,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    @app.get("/v1/health-check", tags=["health"])
+    @app.get("/v2/health-check", tags=["health"])
     async def health_check(session: SessionDep) -> dict:
         database = search = storage = False
         with suppress(Exception):
@@ -83,17 +83,17 @@ def create_app() -> FastAPI:
             "repositories": sorted(n.node.key for n in deployment.node_list),
         }
 
-    @app.get("/v1/authenticate", response_model=UserOut, tags=["auth"])
-    async def authenticate(user: BasicUser) -> UserOut:
-        """Legacy HTTP Basic check; the SPA uses POST /v1/auth/login instead."""
-        return UserOut.from_db(user)
+    # The frozen legacy contract: its own YAML at /v1/openapi.yaml, Koa-style
+    # error bodies, and nothing in the /v2 schema.
+    v1.install(app)
+    app.include_router(v1.router)
 
-    app.include_router(auth.router, prefix="/v1")
-    for router in (config.router, search.router, private.router, workspaces.router, legacy.router):
-        app.include_router(router, prefix="/v1/{repository}")
+    app.include_router(auth.router, prefix="/v2")
+    for router in (config.router, search.router, private.router, workspaces.router):
+        app.include_router(router, prefix="/v2/{repository}")
 
     # Plugin routes: one mount per plugin active on any enabled node, guarded
-    # per request so /v1/cdr/plugins/poles/... is a 404 while MagIC's works.
+    # per request so /v2/cdr/plugins/poles/... is a 404 while MagIC's works.
     # (Unknown plugin names in a node YAML fail here, at startup.)
     from fiesta.plugins import active_plugins
 
@@ -107,7 +107,7 @@ def create_app() -> FastAPI:
             if plugin_router is not None:
                 app.include_router(
                     plugin_router,
-                    prefix=f"/v1/{{repository}}/plugins/{plugin.name}",
+                    prefix=f"/v2/{{repository}}/plugins/{plugin.name}",
                     tags=[f"plugin:{plugin.name}"],
                     dependencies=[Depends(_require_plugin(plugin.name))],
                 )

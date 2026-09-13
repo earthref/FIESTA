@@ -90,8 +90,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173"]
 
     # Path prefix the API is published under when a reverse proxy strips one
-    # before the request reaches uvicorn (routes stay at /v1); this only tells
-    # FastAPI where to advertise /v1/docs and openapi.json. "" or "/" means the
+    # before the request reaches uvicorn (routes stay at /v2); this only tells
+    # FastAPI where to advertise /v2/docs and openapi.json. "" or "/" means the
     # API owns the hostname (api.earthref.org).
     root_path: str = ""
 

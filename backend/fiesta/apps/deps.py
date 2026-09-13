@@ -12,7 +12,7 @@ from fiesta.db.session import get_session
 from fiesta.nodeconfig import NodeConfig, get_deployment
 from fiesta.security import decode_access_token, verify_password
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v2/auth/login", auto_error=False)
 basic_scheme = HTTPBasic(auto_error=False)
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -20,7 +20,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 def request_node(request: Request) -> NodeConfig:
     """The node named by the `{repository}` path segment (key or slug, any
-    case). Every node-scoped route is mounted under /v1/{repository}."""
+    case). Every node-scoped route is mounted under /v2/{repository}."""
     repository = request.path_params.get("repository")
     if not repository:
         raise RuntimeError("NodeDep used on a route without a {repository} path segment")

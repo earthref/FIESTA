@@ -83,7 +83,7 @@ sheet's `▼ Status ▼` column has no enumerable value set in the source.
 
 Tabs: **Contributions, Cruises, Cores, Sections, Dives, Rocks, Files**.
 `section_halves`, `core_samples` and `dive_subsamples` are `extra_types` —
-searchable via `/v1/{node}/search/{table}` without a tab, matching the repository's
+searchable via `/v2/{node}/search/{table}` without a tab, matching the repository's
 own search, which exposes cores, cruises, dives and rocks as types.
 
 Facets: `file_type`, `method`, `material`, `texture`, `rv_name`,

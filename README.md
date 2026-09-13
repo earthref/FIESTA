@@ -19,9 +19,9 @@ serves; `FIESTA_NODE` narrows that list for a local stack.
 ## Architecture
 
 ```
-frontend    Vite + React + TanStack Router/Query SPA (branding fetched from /v1/{node}/config)
+frontend    Vite + React + TanStack Router/Query SPA (branding fetched from /v2/{node}/config)
 api         FastAPI + SQLAlchemy (async) + asyncpg + Pydantic v2 + Alembic — one process,
-            every node under /v1/{node}/... (api.earthref.org, and what the SPA talks to)
+            every node under /v2/{node}/... (api.earthref.org, and what the SPA talks to)
 worker      procrastinate (Postgres-native jobs): parse/validate/summarize/index, email
 postgres    Accounts + contribution workflow state (Postgres 16)
 opensearch  Denormalized search documents, one index per node
@@ -43,13 +43,14 @@ make up                       # infra + one API + one worker + a frontend per li
 Run `make` for all targets (tests, linting, e2e, rebuild, local dev servers).
 Multiple nodes run side by side sharing Postgres/OpenSearch/MinIO — each node
 has its own search index, bucket, job queue, and node-scoped contributions,
-all served by the single API under `/v1/{node}/...`.
+all served by the single API under `/v2/{node}/...`. The legacy
+`api.earthref.org` contract stays available unchanged at `/v1/...` for existing clients.
 
 Default ports (one API for every node; one frontend per node):
 
 | Service | Port |
 |---|---|
-| API (all nodes, docs at `/v1/docs`) | :8000 |
+| API (all nodes, docs at `/v2/docs`) | :8000 |
 | MagIC frontend | :8080 |
 | KdD frontend | :8081 |
 | CDR frontend | :8082 |
@@ -59,7 +60,7 @@ Default ports (one API for every node; one frontend per node):
 
 The API port is `API_PORT` in `.env` (default 8000); the frontends are
 `<NODE>_FRONTEND_PORT`. A frontend at `:8080` reaches the API for its node at
-`/v1/magic/...`.
+`/v2/magic/...`.
 
 - MinIO console: http://localhost:9001 · Mailpit (dev email): http://localhost:8025
 - Several nodes under one hostname (`dev.earthref.org/MagIC/`, `/CDR/`, ...): set

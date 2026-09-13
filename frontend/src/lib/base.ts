@@ -24,7 +24,7 @@ const runtime = window.__FIESTA__ ?? {};
 
 export const BASE_PATH: string = import.meta.env.BASE_URL;
 
-/** Node slug (magic, cdr, ...) whose /v1/{node} routes this SPA uses. */
+/** Node slug (magic, cdr, ...) whose /v2/{node} routes this SPA uses. */
 export const NODE: string = runtime.node || import.meta.env.VITE_NODE || "magic";
 
 /** API origin, e.g. "https://api.earthref.org"; "" for same-origin under the base path. */
@@ -38,12 +38,12 @@ export function siteUrl(path: string): string {
   return `${BASE_PATH.replace(/\/$/, "")}${path}`;
 }
 
-/** Absolute URL of an API route given relative to /v1 ("/auth/login", "/magic/config"). */
+/** Absolute URL of an API route given relative to /v2 ("/auth/login", "/magic/config"). */
 export function apiUrl(path: string): string {
-  return `${API_URL || siteUrl("")}/v1${path}`;
+  return `${API_URL || siteUrl("")}/v2${path}`;
 }
 
-/** Absolute URL of a route of this node ("/config" -> .../v1/magic/config). */
+/** Absolute URL of a route of this node ("/config" -> .../v2/magic/config). */
 export function nodeUrl(path: string): string {
   return apiUrl(`/${NODE}${path}`);
 }

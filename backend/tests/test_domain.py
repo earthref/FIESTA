@@ -423,7 +423,7 @@ def test_deployment_narrowed_by_fiesta_node():
         load_deployment(CONFIG_DIR / "fiesta.yaml", only=["nope"])
 
 
-def test_api_mounts_every_node_router_once_under_v1(monkeypatch):
+def test_api_mounts_every_node_router_once_under_v2(monkeypatch):
     from fiesta.nodeconfig import get_deployment
     from fiesta.settings import get_settings
 
@@ -438,15 +438,15 @@ def test_api_mounts_every_node_router_once_under_v1(monkeypatch):
     finally:
         get_settings.cache_clear()
         get_deployment.cache_clear()
-    assert "/v1/health-check" in paths and "/v1/auth/login" in paths
+    assert "/v2/health-check" in paths and "/v2/auth/login" in paths
     for route in (
-        "/v1/{repository}/config",
-        "/v1/{repository}/search/{table}",
-        "/v1/{repository}/private/contributions",
-        "/v1/{repository}/workspaces",
-        "/v1/{repository}/data/{contribution_id}",
-        "/v1/{repository}/plugins/poles/plate-boundaries",
-        "/v1/{repository}/plugins/depth-plot/contributions/{contribution_id}/measurements",
+        "/v2/{repository}/config",
+        "/v2/{repository}/search/{table}",
+        "/v2/{repository}/private/contributions",
+        "/v2/{repository}/workspaces",
+        "/v2/{repository}/contributions/{contribution_id}/download",
+        "/v2/{repository}/plugins/poles/plate-boundaries",
+        "/v2/{repository}/plugins/depth-plot/contributions/{contribution_id}/measurements",
     ):
         assert route in paths, route
     assert not [p for p in paths if p.startswith("/api")]

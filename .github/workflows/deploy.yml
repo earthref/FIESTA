@@ -1,11 +1,18 @@
 name: Deploy
 
-# Push only -- deliberately no pull_request trigger. This repo is public and
-# the runner is self-hosted on the deploy host, so a workflow from a fork PR
-# would execute untrusted code next to production credentials. Push events
-# only fire for accounts with write access.
+# Runs only after the CI workflow has succeeded on main -- a red e2e or
+# Phase M Docker job must never reach production (the deploy script itself
+# only re-runs the unit tests and the frontend build). Deliberately no
+# pull_request trigger: this repo is public and the runner is self-hosted on
+# the deploy host, so a workflow from a fork PR would execute untrusted code
+# next to production credentials. workflow_run fires in the base repo's
+# context, and the `branches` filter keeps it to CI runs whose head branch is
+# main, i.e. pushes by accounts with write access. workflow_dispatch stays
+# for manual rollouts.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -17,6 +24,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: [self-hosted, fiesta-deploy]
     timeout-minutes: 30
     steps:
@@ -25,4 +33,4 @@ jobs:
       # ruff + pytest + the frontend type-check/build before anything is
       # swapped, and rolls back if a node fails its health check.
       - name: Pull, test, build, swap
-        run: /srv/fiesta/bin/deploy-fiesta.sh "${{ github.ref_name }}"
+        run: /srv/fiesta/bin/deploy-fiesta.sh "${{ github.event.workflow_run.head_branch || github.ref_name }}"
