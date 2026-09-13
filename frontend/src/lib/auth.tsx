@@ -20,7 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["auth", "me"],
     queryFn: async () => {
       try {
-        return await api<UserOut>("/api/auth/me");
+        return await api<UserOut>("/v1/auth/me");
       } catch {
         // 401 already cleared the stored token in the api client.
         return null;

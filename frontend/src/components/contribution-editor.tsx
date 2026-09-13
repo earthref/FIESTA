@@ -23,7 +23,7 @@ export function ContributionEditor({
   contribution: ContributionOut;
   onClose: () => void;
 }) {
-  const base = `/api/private/contributions/${contribution.id}`;
+  const base = `/private/contributions/${contribution.id}`;
   const cache = useQueryClient();
   const [draft, setDraft] = useState<Content | null>(null);
   const [error, setError] = useState<unknown>(null);

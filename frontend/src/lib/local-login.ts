@@ -5,13 +5,13 @@ export async function initializeLocalLogin(): Promise<void> {
   try {
     if (getToken()) {
       try {
-        await api("/api/auth/me", { signal: AbortSignal.timeout(5000) });
+        await api("/v1/auth/me", { signal: AbortSignal.timeout(5000) });
         return; // Preserve an explicitly selected account, including the viewer.
       } catch (error) {
         if (!(error instanceof ApiError) || error.status !== 401) return;
       }
     }
-    const result = await api<{ access_token: string } | null>("/api/auth/local-login", {
+    const result = await api<{ access_token: string } | null>("/v1/auth/local-login", {
       method: "POST",
       signal: AbortSignal.timeout(5000),
     });

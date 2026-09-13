@@ -91,7 +91,7 @@ export function MethodCodesPage() {
 
   const query = useQuery({
     queryKey: ["method-codes"],
-    queryFn: () => api<MethodCodes>("/api/config/method-codes"),
+    queryFn: () => api<MethodCodes>("/config/method-codes"),
     staleTime: Number.POSITIVE_INFINITY,
   });
 

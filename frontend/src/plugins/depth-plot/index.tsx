@@ -233,7 +233,7 @@ function ContributionDepthPlots({
   const query = useQuery({
     queryKey: ["plugin", "depth-plot", id, privateKey],
     queryFn: () =>
-      api<unknown>(`/api/plugins/depth-plot/contributions/${id}/measurements`, {
+      api<unknown>(`/plugins/depth-plot/contributions/${id}/measurements`, {
         params: { private_key: privateKey },
       }),
     staleTime: 5 * 60 * 1000,

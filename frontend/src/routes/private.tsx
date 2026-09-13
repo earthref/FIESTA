@@ -29,7 +29,7 @@ function sleep(ms: number): Promise<void> {
 
 async function fetchValidation(id: number): Promise<ValidationResult | null> {
   try {
-    return await api<ValidationResult>(`/api/private/contributions/${id}/validation`);
+    return await api<ValidationResult>(`/private/contributions/${id}/validation`);
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) return null;
     throw err;
@@ -190,7 +190,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
 
   const doiMutation = useMutation({
     mutationFn: () =>
-      api<ContributionOut>(`/api/private/contributions/${contribution.id}/reference`, {
+      api<ContributionOut>(`/private/contributions/${contribution.id}/reference`, {
         method: "PUT",
         json: {
           doi: doi.trim(),
@@ -204,7 +204,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
 
   const activateMutation = useMutation({
     mutationFn: () =>
-      api<ContributionOut>(`/api/private/contributions/${contribution.id}/activate`, {
+      api<ContributionOut>(`/private/contributions/${contribution.id}/activate`, {
         method: "POST",
       }),
     onSuccess: () => {
@@ -219,7 +219,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
 
   const deactivateMutation = useMutation({
     mutationFn: () =>
-      api<ContributionOut>(`/api/private/contributions/${contribution.id}/deactivate`, {
+      api<ContributionOut>(`/private/contributions/${contribution.id}/deactivate`, {
         method: "POST",
       }),
     onSuccess: invalidate,
@@ -227,8 +227,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () =>
-      api<void>(`/api/private/contributions/${contribution.id}`, { method: "DELETE" }),
+    mutationFn: () => api<void>(`/private/contributions/${contribution.id}`, { method: "DELETE" }),
     onSuccess: () => {
       setDeleteOpen(false);
       invalidate();
@@ -244,7 +243,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
     setValidating(true);
     try {
       const before = (await fetchValidation(contribution.id))?.validated_at;
-      await api<JobOut>(`/api/private/contributions/${contribution.id}/validate`, {
+      await api<JobOut>(`/private/contributions/${contribution.id}/validate`, {
         method: "POST",
       });
       for (let attempt = 0; ; attempt++) {
@@ -490,7 +489,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
           <Button
             onClick={async () => {
               try {
-                await api(`/api/private/contributions/${contribution.id}/versions`, {
+                await api(`/private/contributions/${contribution.id}/versions`, {
                   method: "POST",
                 });
                 await invalidate();
@@ -610,7 +609,7 @@ export function PrivateWorkspacePage() {
 
   const list = useQuery({
     queryKey: ["private", "contributions"],
-    queryFn: () => api<ContributionOut[]>("/api/private/contributions"),
+    queryFn: () => api<ContributionOut[]>("/private/contributions"),
     enabled: !!user,
   });
 

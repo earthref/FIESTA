@@ -6,7 +6,7 @@ import { IconButton, type IconButtonProps } from "../components/icon-button";
 import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
-import { siteUrl } from "../lib/base";
+import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type { HomeCard, HomeNews, NodeConfig, SearchPage } from "../lib/types";
 import { pluginHomeCards } from "../plugins";
@@ -121,7 +121,7 @@ function cardProps(card: HomeCard): IconButtonProps {
 }
 
 function imageUrl(image: string): string {
-  return /^https?:\/\//.test(image) ? image : siteUrl(`/api/config/assets/${image}`);
+  return /^https?:\/\//.test(image) ? image : nodeUrl(`/config/assets/${image}`);
 }
 
 /** Legacy home_news.jsx: `h3` with a `ui mini image floated left` (35px), then
@@ -167,7 +167,7 @@ export function HomePage() {
 
   const recent = useQuery({
     queryKey: ["search", "contribution", "", "recent-7"],
-    queryFn: () => api<SearchPage>("/api/search/contribution", { params: { size: 7 } }),
+    queryFn: () => api<SearchPage>("/search/contribution", { params: { size: 7 } }),
     staleTime: 60_000,
   });
 

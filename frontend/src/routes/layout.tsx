@@ -36,7 +36,7 @@ export function RootLayout() {
     return (
       <div className="mx-auto max-w-lg px-4 py-16">
         <h1 className="mb-3 text-lg font-semibold">FIESTA</h1>
-        <ErrorMessage error={error ?? new Error("Could not load /api/config")} />
+        <ErrorMessage error={error ?? new Error("Could not load the node config")} />
         <p className="mt-3 text-sm text-gray-500">
           The repository configuration could not be loaded. Check that the backend is running and
           reachable at <code>/api</code>.

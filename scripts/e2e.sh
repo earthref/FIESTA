@@ -1,14 +1,15 @@
 #!/bin/bash
 # End-to-end FIESTA workflow test against a running compose stack
-# (`make up`). Exercises: register -> login -> create -> upload ->
-# async worker processing -> validation -> publish -> search/facets ->
-# download -> public /v1 API -> notification email.
+# (`make up FIESTA_NODE=magic`). Exercises, all on the one /v1 API:
+# register -> login -> create -> upload -> async worker processing ->
+# validation -> publish -> search/facets -> download -> the legacy
+# api.earthref.org routes (Basic auth, /data, /validate) -> notification email.
 #
-# Ports are overridable: BACKEND_PORT, PUBLIC_API_PORT, MAILPIT_PORT.
+# Ports are overridable: API_PORT, MAILPIT_PORT.
 set -euo pipefail
 
-API=http://localhost:${BACKEND_PORT:-8000}/api
-PUB=http://localhost:${PUBLIC_API_PORT:-8001}/v1
+V1=http://localhost:${API_PORT:-8000}/v1
+API=$V1/magic
 MAILPIT=http://localhost:${MAILPIT_PORT:-8025}
 EMAIL=${E2E_EMAIL:-test@earthref.org}
 PASSWORD=${E2E_PASSWORD:-testpassword}
@@ -32,15 +33,23 @@ EOF
 
 json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
 
+echo "== health =="
+curl -sf "$V1/health-check" | json '"status: %s | repositories: %s" % (d["status"], d["repositories"])'
+
 echo "== register =="
-curl -sf -X POST "$API/auth/register" -H 'Content-Type: application/json' \
+curl -sf -X POST "$V1/auth/register" -H 'Content-Type: application/json' \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"name\":\"Test User\"}" || echo "(already exists)"
 echo
 
 echo "== login =="
-TOKEN=$(curl -sf -X POST "$API/auth/login" -d "username=$EMAIL&password=$PASSWORD" | json 'd["access_token"]')
+TOKEN=$(curl -sf -X POST "$V1/auth/login" -d "username=$EMAIL&password=$PASSWORD" | json 'd["access_token"]')
 AUTH="Authorization: Bearer $TOKEN"
 echo "token ok"
+
+echo "== node config (same process, two nodes) =="
+curl -sf "$API/config" | json '"magic: " + d["title"]'
+curl -sf "$V1/MagIC/config" | json '"MagIC (key, any case): " + d["slug"]'
+curl -sf "$V1/kdd/config" | json '"kdd: " + d["title"]' || echo "(kdd not enabled in this stack)"
 
 echo "== create contribution =="
 CID=$(curl -sf -X POST "$API/private/contributions" -H "$AUTH" | json 'd["id"]')
@@ -77,11 +86,15 @@ echo "== detail + download =="
 curl -sf "$API/contributions/$CID" | json '"n sites: %d" % d["summary"]["sites"]["_n_results"]'
 curl -sf "$API/contributions/$CID/download" | head -1
 
-echo "== public API (/v1) =="
-curl -sf "$PUB/MagIC/search/contribution?query=Hawaii" | json '"v1 search total: %d" % d["total"]'
-curl -sf "$PUB/magic/data/$CID" | head -1
-curl -sf -X POST "$PUB/MagIC/validate" -F "file=@$FILE" | json '"v1 validate is_valid: %s" % d["is_valid"]'
-curl -sf -u "$EMAIL:$PASSWORD" "$PUB/authenticate" | json '"v1 basic auth: " + d["email"]'
+echo "== plugin route guard =="
+curl -sf "$API/plugins/poles/plate-boundaries" | json '"poles on magic: %s" % d["type"]'
+curl -s -o /dev/null -w "poles on kdd: HTTP %{http_code}\n" "$V1/kdd/plugins/poles/plate-boundaries"
+
+echo "== legacy api.earthref.org routes =="
+curl -sf "$V1/MagIC/search/contribution?query=Hawaii" | json '"v1 search total: %d" % d["total"]'
+curl -sf "$V1/magic/data/$CID" | head -1
+curl -sf -X POST "$V1/MagIC/validate" -F "file=@$FILE" | json '"v1 validate is_valid: %s" % d["is_valid"]'
+curl -sf -u "$EMAIL:$PASSWORD" "$V1/authenticate" | json '"v1 basic auth: " + d["email"]'
 
 echo "== notification email (mailpit) =="
 curl -sf "$MAILPIT/api/v1/messages" \

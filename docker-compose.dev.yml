@@ -3,31 +3,22 @@
 # what CI's e2e job and a deployment do).
 #
 # What changes versus the built images:
-#   backend-*   the package dirs are bind-mounted over the image's editable
+#   api         the package dirs are bind-mounted over the image's editable
 #               install and uvicorn runs with --reload, so a `git pull` (or an
 #               edit) restarts the API in place. `fiesta init` still runs first.
-#   worker-*    `watchfiles` restarts `fiesta worker` when backend code changes.
-#   frontend-*  a plain node image runs the Vite dev server (HMR, /api proxied
-#               to that node's backend) on the container's port 80, so the host
-#               port mapping from docker-compose.yml is unchanged. node_modules
+#   worker      `watchfiles` restarts `fiesta worker` when backend code changes.
+#   frontend-*  a plain node image runs the Vite dev server (HMR, /v1 proxied
+#               to the API) on the container's port 80, so the host port
+#               mapping from docker-compose.yml is unchanged. node_modules
 #               lives in a per-node named volume and `npm install` runs on start.
-#   public-api  uvicorn --reload like the node backends.
 #
-# Config YAML changes still need the backend restarted (`make up` does that);
+# Config YAML changes still need the API restarted (`make up` does that);
 # dependency changes need `make up` too (npm install / the backend image build).
 
 x-dev-backend-volumes: &dev-backend-volumes
   - ./config:/config:ro
   - ./backend/fiesta:/app/fiesta:ro
   - ./backend/alembic:/app/alembic:ro
-
-x-dev-backend-command: &dev-backend-command >-
-  sh -c "fiesta init &&
-         uvicorn fiesta.apps.node:create_app --factory --host 0.0.0.0 --port 8000
-         --reload --reload-dir /app/fiesta"
-
-x-dev-worker-command: &dev-worker-command >-
-  watchfiles --filter python "fiesta worker" /app/fiesta
 
 x-dev-frontend: &dev-frontend
   image: node:22-alpine
@@ -47,109 +38,75 @@ x-dev-frontend: &dev-frontend
     start_period: 10s
 
 services:
-  # ---- MagIC ---------------------------------------------------------------
-  backend-magic:
+  api:
     volumes: *dev-backend-volumes
-    command: *dev-backend-command
-  worker-magic:
+    command: >-
+      sh -c "fiesta init &&
+             uvicorn fiesta.apps.api:create_app --factory --host 0.0.0.0 --port 8000
+             --reload --reload-dir /app/fiesta"
+  worker:
     volumes: *dev-backend-volumes
-    command: *dev-worker-command
+    command: watchfiles --filter python "fiesta worker" /app/fiesta
+
   frontend-magic:
     <<: *dev-frontend
     environment:
-      VITE_API_TARGET: http://backend-magic:8000
+      VITE_NODE: magic
+      VITE_API_TARGET: http://api:8000
       VITE_BASE_PATH: ${MAGIC_BASE_PATH:-/}
     volumes:
       - ./frontend:/app
       - node-modules-magic:/app/node_modules
 
-  # ---- KdD -----------------------------------------------------------------
-  backend-kdd:
-    volumes: *dev-backend-volumes
-    command: *dev-backend-command
-  worker-kdd:
-    volumes: *dev-backend-volumes
-    command: *dev-worker-command
   frontend-kdd:
     <<: *dev-frontend
     environment:
-      VITE_API_TARGET: http://backend-kdd:8000
+      VITE_NODE: kdd
+      VITE_API_TARGET: http://api:8000
       VITE_BASE_PATH: ${KDD_BASE_PATH:-/}
     volumes:
       - ./frontend:/app
       - node-modules-kdd:/app/node_modules
 
-  # ---- CDR -----------------------------------------------------------------
-  backend-cdr:
-    volumes: *dev-backend-volumes
-    command: *dev-backend-command
-  worker-cdr:
-    volumes: *dev-backend-volumes
-    command: *dev-worker-command
   frontend-cdr:
     <<: *dev-frontend
     environment:
-      VITE_API_TARGET: http://backend-cdr:8000
+      VITE_NODE: cdr
+      VITE_API_TARGET: http://api:8000
       VITE_BASE_PATH: ${CDR_BASE_PATH:-/}
     volumes:
       - ./frontend:/app
       - node-modules-cdr:/app/node_modules
 
-  # ---- KArAr ---------------------------------------------------------------
-  backend-karar:
-    volumes: *dev-backend-volumes
-    command: *dev-backend-command
-  worker-karar:
-    volumes: *dev-backend-volumes
-    command: *dev-worker-command
   frontend-karar:
     <<: *dev-frontend
     environment:
-      VITE_API_TARGET: http://backend-karar:8000
+      VITE_NODE: karar
+      VITE_API_TARGET: http://api:8000
       VITE_BASE_PATH: ${KARAR_BASE_PATH:-/}
     volumes:
       - ./frontend:/app
       - node-modules-karar:/app/node_modules
 
-  # ---- ERDA ----------------------------------------------------------------
-  backend-erda:
-    volumes: *dev-backend-volumes
-    command: *dev-backend-command
-  worker-erda:
-    volumes: *dev-backend-volumes
-    command: *dev-worker-command
   frontend-erda:
     <<: *dev-frontend
     environment:
-      VITE_API_TARGET: http://backend-erda:8000
+      VITE_NODE: erda
+      VITE_API_TARGET: http://api:8000
       VITE_BASE_PATH: ${ERDA_BASE_PATH:-/}
     volumes:
       - ./frontend:/app
       - node-modules-erda:/app/node_modules
 
-  # ---- OSU-MGR -------------------------------------------------------------
-  backend-osu-mgr:
-    volumes: *dev-backend-volumes
-    command: *dev-backend-command
-  worker-osu-mgr:
-    volumes: *dev-backend-volumes
-    command: *dev-worker-command
   frontend-osu-mgr:
     <<: *dev-frontend
     environment:
-      VITE_API_TARGET: http://backend-osu-mgr:8000
+      VITE_NODE: osu-mgr
+      VITE_API_TARGET: http://api:8000
       VITE_BASE_PATH: ${OSU_MGR_BASE_PATH:-/}
     volumes:
       - ./frontend:/app
       - node-modules-osu-mgr:/app/node_modules
-
-  # ---- Public API ----------------------------------------------------------
-  public-api:
-    volumes: *dev-backend-volumes
-    command: >-
-      sh -c "fiesta init &&
-             uvicorn fiesta.apps.public:create_app --factory --host 0.0.0.0 --port 8000
-             --reload --reload-dir /app/fiesta"
 
 volumes:
   node-modules-magic:

@@ -96,7 +96,7 @@ export function VocabulariesPage() {
 
   const query = useQuery({
     queryKey: ["vocabularies", "controlled"],
-    queryFn: () => api<Vocabularies>("/api/config/vocabularies/controlled"),
+    queryFn: () => api<Vocabularies>("/config/vocabularies/controlled"),
     staleTime: Number.POSITIVE_INFINITY,
   });
 

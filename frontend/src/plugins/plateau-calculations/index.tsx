@@ -227,7 +227,7 @@ function PlateauCell({
     queryKey: ["plugin", "plateau", id, experiment, privateKey],
     queryFn: () =>
       api<PlateauResponse>(
-        `/api/plugins/plateau-calculations/contributions/${id}/experiments/${encodeURIComponent(experiment)}/plateau`,
+        `/plugins/plateau-calculations/contributions/${id}/experiments/${encodeURIComponent(experiment)}/plateau`,
         { params: { private_key: privateKey } },
       ),
     staleTime: 5 * 60 * 1000,

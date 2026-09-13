@@ -1,42 +1,34 @@
-# FIESTA local development stack — one or more nodes at once.
+# FIESTA local development stack.
 #
-# FIESTA_NODE in .env is a comma-separated list of nodes to run
-# (magic | kdd | cdr | karar | erda | osu-mgr), e.g.:
+# One API process (`api`, /v1/{node}/...) and one job worker serve every node
+# in FIESTA_NODE; each enabled node gets its own frontend (compose profile
+# named after the node). Postgres, OpenSearch, MinIO and Mailpit are shared.
+# Contributions are scoped per node in Postgres (one schema each), each node
+# has its own OpenSearch index, MinIO prefix and job queue.
 #
-#   FIESTA_NODE=magic,karar,cdr
-#
-# Each node gets its own backend + worker + frontend (compose profiles named
-# after the node); Postgres, OpenSearch, MinIO, and Mailpit are shared.
-# Contributions are scoped per node in Postgres, each node has its own
-# OpenSearch index + MinIO bucket, and each node's worker consumes only its
-# own job queue.
-#
-#   make up                                # runs the nodes in FIESTA_NODE
-#   make up FIESTA_NODE=magic,karar        # override on the command line
-#   docker compose up -d                   # honors COMPOSE_PROFILES from .env
+#   FIESTA_NODE=magic,karar,cdr     # in .env: which nodes the stack serves
+#   make up                         # runs the nodes in FIESTA_NODE
+#   make up FIESTA_NODE=magic,karar # override on the command line
+#   docker compose up -d            # honors COMPOSE_PROFILES from .env
 #
 # Default host ports (override in .env):
-#   node     backend   frontend
-#   magic    8000      8080
-#   kdd      8001      8081
-#   cdr      8002      8082
-#   karar    8003      8083
-#   erda     8004      8084
-#   public-api  8005 (profile: public-api)
-#   osu-mgr  8006      8086
+#   api        8000      (all nodes: http://localhost:8000/v1/magic/config)
+#   frontend   magic 8080 · kdd 8081 · cdr 8082 · karar 8083 · erda 8084 · osu-mgr 8086
 #
 # Postgres owns application state; MinIO holds revision files.
 # `make rebuild` regenerates only the OpenSearch projection.
 #
 # Several nodes on ONE hostname (dev.earthref.org/MagIC/, /CDR/, ...): set
 # <NODE>_BASE_PATH=/MagIC/ etc. in .env. It is baked into that node's frontend
-# image (asset URLs, router base, nginx locations) and passed to its backend
-# as FIESTA_ROOT_PATH. Default "/" keeps the one-hostname-per-node layout.
+# image (asset URLs, router base, nginx locations). Default "/" keeps the
+# one-hostname-per-node layout.
 
 name: fiesta
 
 x-backend-env: &backend-env
   FIESTA_ENVIRONMENT: development
+  FIESTA_CONFIG_FILE: /config/fiesta.yaml
+  FIESTA_NODE: ${FIESTA_NODE:-magic}
   FIESTA_S3_BUCKET: fiesta-local
   FIESTA_DATABASE_URL: postgresql+asyncpg://fiesta:${POSTGRES_PASSWORD:-fiesta}@postgres:5432/fiesta
   FIESTA_OPENSEARCH_URL: http://opensearch:9200
@@ -51,30 +43,12 @@ x-backend-env: &backend-env
   # computes this from the running node list + frontend ports; empty otherwise.
   FIESTA_PORTAL_URLS: ${FIESTA_PORTAL_URLS:-}
 
-x-backend: &backend
-  build: ./backend
-  volumes:
-    - ./config:/config:ro
+x-frontend: &frontend
+  build:
+    context: ./frontend
   depends_on:
-    postgres:
+    api:
       condition: service_healthy
-    opensearch:
-      condition: service_healthy
-    minio:
-      condition: service_healthy
-  healthcheck: &backend-healthcheck
-    test:
-      - CMD
-      - python
-      - -c
-      - "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"
-    interval: 10s
-    timeout: 5s
-    retries: 10
-
-x-backend-command: &backend-command >-
-  sh -c "fiesta init &&
-         uvicorn fiesta.apps.node:create_app --factory --host 0.0.0.0 --port 8000"
 
 services:
   postgres:
@@ -138,268 +112,24 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---- MagIC ---------------------------------------------------------------
-  backend-magic:
-    <<: *backend
-    profiles: [magic]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/magic.yaml
-      FIESTA_ROOT_PATH: ${MAGIC_BASE_PATH:-/}
-    command: *backend-command
-    ports:
-      - "${MAGIC_BACKEND_PORT:-8000}:8000"
-
-  worker-magic:
+  # ---- The FIESTA API + worker (every node in FIESTA_NODE) -------------------
+  api:
     build: ./backend
-    profiles: [magic]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/magic.yaml
-      FIESTA_ROOT_PATH: ${MAGIC_BASE_PATH:-/}
+    environment: *backend-env
     volumes:
       - ./config:/config:ro
-    command: fiesta worker
-    depends_on:
-      backend-magic:
-        condition: service_healthy
-      mailpit:
-        condition: service_healthy
-
-  frontend-magic:
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${MAGIC_BASE_PATH:-/}
-    profiles: [magic]
-    environment:
-      BACKEND_HOST: backend-magic
-    ports:
-      - "${MAGIC_FRONTEND_PORT:-8080}:80"
-    depends_on:
-      backend-magic:
-        condition: service_healthy
-
-  # ---- KdD -----------------------------------------------------------------
-  backend-kdd:
-    <<: *backend
-    profiles: [kdd]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/kdd.yaml
-      FIESTA_ROOT_PATH: ${KDD_BASE_PATH:-/}
-    command: *backend-command
-    ports:
-      - "${KDD_BACKEND_PORT:-8001}:8000"
-
-  worker-kdd:
-    build: ./backend
-    profiles: [kdd]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/kdd.yaml
-      FIESTA_ROOT_PATH: ${KDD_BASE_PATH:-/}
-    volumes:
-      - ./config:/config:ro
-    command: fiesta worker
-    depends_on:
-      backend-kdd:
-        condition: service_healthy
-      mailpit:
-        condition: service_healthy
-
-  frontend-kdd:
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${KDD_BASE_PATH:-/}
-    profiles: [kdd]
-    environment:
-      BACKEND_HOST: backend-kdd
-    ports:
-      - "${KDD_FRONTEND_PORT:-8081}:80"
-    depends_on:
-      backend-kdd:
-        condition: service_healthy
-
-  # ---- CDR -----------------------------------------------------------------
-  backend-cdr:
-    <<: *backend
-    profiles: [cdr]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/cdr.yaml
-      FIESTA_ROOT_PATH: ${CDR_BASE_PATH:-/}
-    command: *backend-command
-    ports:
-      - "${CDR_BACKEND_PORT:-8002}:8000"
-
-  worker-cdr:
-    build: ./backend
-    profiles: [cdr]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/cdr.yaml
-      FIESTA_ROOT_PATH: ${CDR_BASE_PATH:-/}
-    volumes:
-      - ./config:/config:ro
-    command: fiesta worker
-    depends_on:
-      backend-cdr:
-        condition: service_healthy
-      mailpit:
-        condition: service_healthy
-
-  frontend-cdr:
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${CDR_BASE_PATH:-/}
-    profiles: [cdr]
-    environment:
-      BACKEND_HOST: backend-cdr
-    ports:
-      - "${CDR_FRONTEND_PORT:-8082}:80"
-    depends_on:
-      backend-cdr:
-        condition: service_healthy
-
-  # ---- KArAr ---------------------------------------------------------------
-  backend-karar:
-    <<: *backend
-    profiles: [karar]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/karar.yaml
-      FIESTA_ROOT_PATH: ${KARAR_BASE_PATH:-/}
-    command: *backend-command
-    ports:
-      - "${KARAR_BACKEND_PORT:-8003}:8000"
-
-  worker-karar:
-    build: ./backend
-    profiles: [karar]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/karar.yaml
-      FIESTA_ROOT_PATH: ${KARAR_BASE_PATH:-/}
-    volumes:
-      - ./config:/config:ro
-    command: fiesta worker
-    depends_on:
-      backend-karar:
-        condition: service_healthy
-      mailpit:
-        condition: service_healthy
-
-  frontend-karar:
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${KARAR_BASE_PATH:-/}
-    profiles: [karar]
-    environment:
-      BACKEND_HOST: backend-karar
-    ports:
-      - "${KARAR_FRONTEND_PORT:-8083}:80"
-    depends_on:
-      backend-karar:
-        condition: service_healthy
-
-  # ---- ERDA ----------------------------------------------------------------
-  backend-erda:
-    <<: *backend
-    profiles: [erda]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/erda.yaml
-      FIESTA_ROOT_PATH: ${ERDA_BASE_PATH:-/}
-    command: *backend-command
-    ports:
-      - "${ERDA_BACKEND_PORT:-8004}:8000"
-
-  worker-erda:
-    build: ./backend
-    profiles: [erda]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/erda.yaml
-      FIESTA_ROOT_PATH: ${ERDA_BASE_PATH:-/}
-    volumes:
-      - ./config:/config:ro
-    command: fiesta worker
-    depends_on:
-      backend-erda:
-        condition: service_healthy
-      mailpit:
-        condition: service_healthy
-
-  frontend-erda:
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${ERDA_BASE_PATH:-/}
-    profiles: [erda]
-    environment:
-      BACKEND_HOST: backend-erda
-    ports:
-      - "${ERDA_FRONTEND_PORT:-8084}:80"
-    depends_on:
-      backend-erda:
-        condition: service_healthy
-
-  # ---- OSU-MGR -------------------------------------------------------------
-  backend-osu-mgr:
-    <<: *backend
-    profiles: [osu-mgr]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/osu-mgr.yaml
-      FIESTA_ROOT_PATH: ${OSU_MGR_BASE_PATH:-/}
-    command: *backend-command
-    ports:
-      - "${OSU_MGR_BACKEND_PORT:-8006}:8000"
-
-  worker-osu-mgr:
-    build: ./backend
-    profiles: [osu-mgr]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/osu-mgr.yaml
-      FIESTA_ROOT_PATH: ${OSU_MGR_BASE_PATH:-/}
-    volumes:
-      - ./config:/config:ro
-    command: fiesta worker
-    depends_on:
-      backend-osu-mgr:
-        condition: service_healthy
-      mailpit:
-        condition: service_healthy
-
-  frontend-osu-mgr:
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${OSU_MGR_BASE_PATH:-/}
-    profiles: [osu-mgr]
-    environment:
-      BACKEND_HOST: backend-osu-mgr
-    ports:
-      - "${OSU_MGR_FRONTEND_PORT:-8086}:80"
-    depends_on:
-      backend-osu-mgr:
-        condition: service_healthy
-
-  # ---- Public API (all nodes) ------------------------------------------------
-  public-api:
-    <<: *backend
-    profiles: [public-api]
-    environment:
-      <<: *backend-env
-      FIESTA_CONFIG_FILE: /config/public-api.yaml
     command: >-
       sh -c "fiesta init &&
-             uvicorn fiesta.apps.public:create_app --factory --host 0.0.0.0 --port 8000"
+             uvicorn fiesta.apps.api:create_app --factory --host 0.0.0.0 --port 8000"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -409,8 +139,91 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  worker:
+    build: ./backend
+    environment: *backend-env
+    volumes:
+      - ./config:/config:ro
+    command: fiesta worker
+    depends_on:
+      api:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+  # ---- One frontend per enabled node (profile = node slug) -------------------
+  frontend-magic:
+    <<: *frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${MAGIC_BASE_PATH:-/}
+    profiles: [magic]
+    environment:
+      FIESTA_NODE: magic
     ports:
-      - "${PUBLIC_API_PORT:-8005}:8000"
+      - "${MAGIC_FRONTEND_PORT:-8080}:80"
+
+  frontend-kdd:
+    <<: *frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${KDD_BASE_PATH:-/}
+    profiles: [kdd]
+    environment:
+      FIESTA_NODE: kdd
+    ports:
+      - "${KDD_FRONTEND_PORT:-8081}:80"
+
+  frontend-cdr:
+    <<: *frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${CDR_BASE_PATH:-/}
+    profiles: [cdr]
+    environment:
+      FIESTA_NODE: cdr
+    ports:
+      - "${CDR_FRONTEND_PORT:-8082}:80"
+
+  frontend-karar:
+    <<: *frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${KARAR_BASE_PATH:-/}
+    profiles: [karar]
+    environment:
+      FIESTA_NODE: karar
+    ports:
+      - "${KARAR_FRONTEND_PORT:-8083}:80"
+
+  frontend-erda:
+    <<: *frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${ERDA_BASE_PATH:-/}
+    profiles: [erda]
+    environment:
+      FIESTA_NODE: erda
+    ports:
+      - "${ERDA_FRONTEND_PORT:-8084}:80"
+
+  frontend-osu-mgr:
+    <<: *frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${OSU_MGR_BASE_PATH:-/}
+    profiles: [osu-mgr]
+    environment:
+      FIESTA_NODE: osu-mgr
+    ports:
+      - "${OSU_MGR_FRONTEND_PORT:-8086}:80"
 
 volumes:
   postgres-data:
