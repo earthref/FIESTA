@@ -135,16 +135,20 @@ async def fetch_tables(client, index: str, cid: int) -> dict | None:
     return hits[0]["_source"].get("contribution") if hits else None
 
 
-_FALLBACK_HANDLE = re.compile(r"^user(\d+)$")
+_FALLBACK_HANDLE = re.compile(r"^(?:user)?(\d+)$")
 
 
 async def lookup_owner(client, users_index: str, handle: str) -> dict | None:
-    """Resolve `@handle` through er_users. `user<N>` is the legacy apps' display
-    fallback for an account with no handle, so it resolves by account id."""
+    """Resolve `@handle` through er_users. `user<N>` (or a bare `<N>`) is the legacy
+    apps' display fallback for an account with no handle, so it resolves by account
+    id; a handle that is itself an email address resolves by email. Anything else
+    must match `handle.raw` exactly."""
     handle = handle.lower()
     queries = [{"term": {"handle.raw": handle}}]
     if m := _FALLBACK_HANDLE.match(handle):
         queries.append({"term": {"id": int(m.group(1))}})
+    if "@" in handle:
+        queries.append({"term": {"email.address.raw": handle}})
     return await _owner_from_query(client, users_index, handle, queries)
 
 

@@ -160,8 +160,10 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
         _doc(14, handle="", activated=True, history=[], _contributor="Bob Lee"),  # name map
         _doc(15, handle="", activated=True, history=[]),  # default owner (published)
         _doc(16, handle="", activated=False, history=[]),  # private + no handle: quarantined
+        _doc(17, handle="carol@example.org", activated=True, history=[]),  # email as handle
+        _doc(18, handle="42", activated=True, history=[]),  # bare account id as handle
     ]
-    for cid in (14, 15):
+    for cid in (14, 15, 17, 18):
         FakeS3.objects[("karar-activated-contributions", f"{cid}/karar_contribution_{cid}.txt")] = (
             f"tab delimited\tcontribution\nid\n{cid}\n".encode()
         )
@@ -176,14 +178,17 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
     report = await legacy_inventory.build_inventory(karar_node, tmp_path, client=client)
 
     assert client.cleared
-    assert (report["contributions"], report["public"], report["private"]) == (8, 5, 1)
-    assert (report["from_s3"], report["from_index"], report["owners"]) == (5, 1, 3)
+    assert (report["contributions"], report["public"], report["private"]) == (10, 7, 1)
+    assert (report["from_s3"], report["from_index"], report["owners"]) == (7, 1, 3)
     assert report["unresolved_handles"] == ["ghost"]
     assert [e["id"] for e in report["errors"]] == [11, 16]
 
     inventory = load_inventory(tmp_path / "inventory.json")
     by_id = {r.id: r for r in inventory.records}
-    assert set(by_id) == {7, 9, 12, 13, 14, 15}
+    assert set(by_id) == {7, 9, 12, 13, 14, 15, 17, 18}
+    assert (
+        by_id[17].owner_email == "carol@example.org" and by_id[18].owner_email == "bob@example.org"
+    )
     assert by_id[14].owner_email == "bob@example.org"  # display name mapped by the operator
     assert by_id[15].owner_email == "alice@example.org"  # published, default owner
     assert by_id[12].owner_email == "bob@example.org"  # @user42 resolved by account id
@@ -217,7 +222,7 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
     # A second run finds the same ETag+size in hashes.json and does not download again.
     downloads = FakeS3.downloads
     again = await legacy_inventory.build_inventory(karar_node, tmp_path, client=client)
-    assert again["cached_hashes"] == 5 and FakeS3.downloads == downloads
+    assert again["cached_hashes"] == 7 and FakeS3.downloads == downloads
 
     owners = json.loads((tmp_path / "owners.json").read_text())
     assert owners == [
@@ -233,13 +238,13 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
             "email": "bob@example.org",
             "name": "Bob Lee",
             "orcid": None,
-            "contributions": [12, 14],
+            "contributions": [12, 14, 18],
         },
         {
             "handle": "carol",
             "email": "carol@example.org",
             "name": "C. Diaz",
             "orcid": None,
-            "contributions": [13],
+            "contributions": [13, 17],
         },
     ]
