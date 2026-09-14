@@ -435,6 +435,14 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
             }
         )
 
+    # A parent that is in the index but was dropped above (no account, unreadable
+    # file, no timestamp) would leave a dangling link the importer refuses.
+    emitted = {r["id"] for r in records}
+    for r in records:
+        if r["previous_id"] is not None and r["previous_id"] not in emitted:
+            r["previous_id"] = None
+            report["orphaned_previous"] += 1
+
     inventory = Inventory.model_validate(
         {"format": 1, "node": node.node.slug, "source_id": cfg.source_id, "records": records}
     )
