@@ -34,8 +34,10 @@ Last updated: 2026-09-11
 
 ## C — Data
 
-- [ ] **Where do the existing contributions live** (files + metadata) and may Claude
-      read them to size the import (E2)? A read-only export is enough.
+- [x] **Where do the existing contributions live** (files + metadata) and may Claude
+      read them to size the import (E2)? — Answered 2026-09-14: legacy OpenSearch index
+      `<slug>` + `er_users` on the MARFIK cluster and `<slug>-activated-contributions` /
+      `<slug>-contributions` buckets; credentials in `.env.prod`, used via `make fiesta ENV_FILE=`.
 
 ## 2026-09-11 — MARFIK legacy app deploys
 
