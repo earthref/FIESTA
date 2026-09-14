@@ -44,6 +44,7 @@ class SourceRecord(BaseModel):
     created_at: datetime
     activated_at: datetime | None = None
     private_key: str | None = None
+    data_model_version: str | None = None  # must be one of the node's versions; else latest
     revisions: list[SourceRevision] = Field(min_length=1)
 
 
@@ -147,12 +148,17 @@ async def sync_inventory(node, path, *, apply=False):
                 report["planned"] += 1
                 if not apply:
                     continue
+                dmv = (
+                    record.data_model_version
+                    if record.data_model_version in node.data_model.versions
+                    else node.data_model.latest
+                )
                 if c is None:
                     c = Contribution(
                         id=record.id,
                         node=node.node.slug,
                         contributor_id=owner.id,
-                        data_model_version=node.data_model.latest,
+                        data_model_version=dmv,
                         created_at=record.created_at,
                     )
                     session.add(c)
@@ -192,6 +198,7 @@ async def sync_inventory(node, path, *, apply=False):
                     )
 
                 c.contributor_id = owner.id
+                c.data_model_version = dmv
                 c.version = record.version
                 c.previous_id = record.previous_id
                 c.is_activated = record.published and not record.deleted
