@@ -81,6 +81,9 @@ async def sync_inventory(node, path, *, apply=False):
         "bytes": 0,
     }
     source = Storage(inventory.source_bucket) if inventory.source_bucket else None
+    # Records apply in version order, so a dry run accepts a parent that this same
+    # inventory will import; an apply still requires the parent row to exist.
+    inventory_ids = {r.id for r in inventory.records}
     for record in sorted(inventory.records, key=lambda r: (r.version, r.id)):
         try:
             source_id = f"{inventory.source_id}:{record.id}"
@@ -120,6 +123,7 @@ async def sync_inventory(node, path, *, apply=False):
                     raise ValueError("owner mapping missing; contribution quarantined from import")
                 if (
                     record.previous_id
+                    and not (not apply and record.previous_id in inventory_ids)
                     and await session.get(Contribution, record.previous_id) is None
                 ):
                     raise ValueError("previous published version must be imported first")
