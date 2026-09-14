@@ -102,14 +102,15 @@ Two schemes are accepted; the private routes take either.
   "has_method_codes": true,
   "doi_prefix": "10.7288",
   "plugins": {"poles": { /* frontend_config per active plugin */ }},
-  "portal_urls": {"cdr": "http://localhost:8082", ...}
+  "portal_urls": {"magic": "http://localhost:8080/MagIC", "cdr": "http://localhost:8080/CDR"}
 }
 ```
 
 `search_levels` is extended with any plugin-contributed levels; `plugins` (a map
 of active plugin name → its `frontend_config`) and `portal_urls` (local-dev
-sibling-node links) are added by the config route on top of the node's own
-`public_config()`.
+links for every node this API serves on the one local frontend,
+`FIESTA_FRONTEND_URL` + `/<Key>`; empty in production) are added by the config
+route on top of the node's own `public_config()`.
 
 ### Search & retrieval
 

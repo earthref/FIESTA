@@ -7,10 +7,11 @@
 #               install and uvicorn runs with --reload, so a `git pull` (or an
 #               edit) restarts the API in place. `fiesta init` still runs first.
 #   worker      `watchfiles` restarts `fiesta worker` when backend code changes.
-#   frontend-*  a plain node image runs the Vite dev server (HMR, /v2 proxied
-#               to the API) on the container's port 80, so the host port
-#               mapping from docker-compose.yml is unchanged. node_modules
-#               lives in a per-node named volume and `npm install` runs on start.
+#   frontend    a plain node image runs the Vite dev server (HMR, /v2 proxied
+#               to the API, every node in FIESTA_NODE under /<node>/) on the
+#               container's port 80, so the host port mapping from
+#               docker-compose.yml is unchanged. node_modules lives in a
+#               named volume and `npm install` runs on start.
 #
 # Config YAML changes still need the API restarted (`make up` does that);
 # dependency changes need `make up` too (npm install / the backend image build).
@@ -19,23 +20,6 @@ x-dev-backend-volumes: &dev-backend-volumes
   - ./config:/config:ro
   - ./backend/fiesta:/app/fiesta:ro
   - ./backend/alembic:/app/alembic:ro
-
-x-dev-frontend: &dev-frontend
-  image: node:22-alpine
-  build: !reset null
-  working_dir: /app
-  command: >-
-    sh -c "npm install --no-audit --no-fund &&
-           exec npx vite --host 0.0.0.0 --port 80 --strictPort"
-  # Healthy once Vite answers; `make up` passes --wait so it returns only then.
-  # The first start includes `npm install` into the empty volume (~30 s), so
-  # allow several minutes. 127.0.0.1, not localhost: Vite binds IPv4 only.
-  healthcheck:
-    test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
-    interval: 5s
-    timeout: 5s
-    retries: 60
-    start_period: 10s
 
 services:
   api:
@@ -48,70 +32,28 @@ services:
     volumes: *dev-backend-volumes
     command: watchfiles --filter python "fiesta worker" /app/fiesta
 
-  frontend-magic:
-    <<: *dev-frontend
+  frontend:
+    image: node:22-alpine
+    build: !reset null
+    working_dir: /app
+    command: >-
+      sh -c "npm install --no-audit --no-fund &&
+             exec npx vite --host 0.0.0.0 --port 80 --strictPort"
     environment:
-      VITE_NODE: magic
+      FIESTA_NODES: ${FIESTA_NODE:-magic}
       VITE_API_TARGET: http://api:8000
-      VITE_BASE_PATH: ${MAGIC_BASE_PATH:-/}
     volumes:
       - ./frontend:/app
-      - node-modules-magic:/app/node_modules
-
-  frontend-kdd:
-    <<: *dev-frontend
-    environment:
-      VITE_NODE: kdd
-      VITE_API_TARGET: http://api:8000
-      VITE_BASE_PATH: ${KDD_BASE_PATH:-/}
-    volumes:
-      - ./frontend:/app
-      - node-modules-kdd:/app/node_modules
-
-  frontend-cdr:
-    <<: *dev-frontend
-    environment:
-      VITE_NODE: cdr
-      VITE_API_TARGET: http://api:8000
-      VITE_BASE_PATH: ${CDR_BASE_PATH:-/}
-    volumes:
-      - ./frontend:/app
-      - node-modules-cdr:/app/node_modules
-
-  frontend-karar:
-    <<: *dev-frontend
-    environment:
-      VITE_NODE: karar
-      VITE_API_TARGET: http://api:8000
-      VITE_BASE_PATH: ${KARAR_BASE_PATH:-/}
-    volumes:
-      - ./frontend:/app
-      - node-modules-karar:/app/node_modules
-
-  frontend-erda:
-    <<: *dev-frontend
-    environment:
-      VITE_NODE: erda
-      VITE_API_TARGET: http://api:8000
-      VITE_BASE_PATH: ${ERDA_BASE_PATH:-/}
-    volumes:
-      - ./frontend:/app
-      - node-modules-erda:/app/node_modules
-
-  frontend-osu-mgr:
-    <<: *dev-frontend
-    environment:
-      VITE_NODE: osu-mgr
-      VITE_API_TARGET: http://api:8000
-      VITE_BASE_PATH: ${OSU_MGR_BASE_PATH:-/}
-    volumes:
-      - ./frontend:/app
-      - node-modules-osu-mgr:/app/node_modules
+      - node-modules:/app/node_modules
+    # Healthy once Vite answers; `make up` passes --wait so it returns only then.
+    # The first start includes `npm install` into the empty volume (~30 s), so
+    # allow several minutes. 127.0.0.1, not localhost: Vite binds IPv4 only.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
 
 volumes:
-  node-modules-magic:
-  node-modules-kdd:
-  node-modules-cdr:
-  node-modules-karar:
-  node-modules-erda:
-  node-modules-osu-mgr:
+  node-modules:

@@ -21,15 +21,15 @@ make up PROD=1            # the built images, exactly as CI e2e and a deployment
 
 `make up` layers `docker-compose.dev.yml` over `docker-compose.yml`: the
 backend package is bind-mounted into the image and uvicorn reloads on change,
-the worker restarts via `watchfiles`, and each frontend container runs the
-Vite dev server (HMR, `<base>v2/` proxied to the API) on the same host
-port as the nginx image would. `make up` returns only once every service is
-healthy (`--wait`), so the first start blocks for the ~30 s `npm install` into
-the empty `node_modules` volume; later starts are ready in about a second.
+the worker restarts via `watchfiles`, and the frontend container runs the
+Vite dev server (HMR, `/v2/` proxied to the API) on the same host port as the
+nginx image would. `make up` returns only once every service is healthy
+(`--wait`), so the first start blocks for the ~30 s `npm install` into the
+empty `node_modules` volume; later starts are ready in about a second.
 A `git pull` is therefore live without a rebuild. Two things still need a `make up`: a change to a node YAML (config
 loads at startup) and a dependency change (`npm install` runs on container
 start; the backend image is rebuilt by `--build`). Frontend `node_modules`
-live in a per-node named volume (`node-modules-<node>`), removed by `make clean`.
+live in a named volume (`node-modules`), removed by `make clean`.
 
 `FIESTA_NODE` accepts a comma-separated list to run several nodes at once:
 
@@ -37,58 +37,57 @@ live in a per-node named volume (`node-modules-<node>`), removed by `make clean`
 make up FIESTA_NODE=magic,karar,cdr
 ```
 
-One API (`API_PORT`, default 8000) and one worker serve every listed node;
-each node additionally gets its own frontend (compose profiles named after the
-node) on its own port (magic 8080, kdd 8081, cdr 8082, karar 8083, erda 8084,
-osu-mgr 8086). Infrastructure is shared; isolation comes from a
-per-node OpenSearch index, MinIO bucket, procrastinate queue, and a Postgres
-schema per node (`magic`, `cdr`, ...) for the workflow tables. Accounts are
-shared across nodes (one EarthRef login, in the `public` schema). If your
-local database predates the per-node schemas, `make clean` once.
+One API (`API_PORT`, default 8000), one worker and one frontend
+(`FRONTEND_PORT`, default 8080) serve every listed node. The frontend
+publishes each node under its key — `http://localhost:8080/MagIC/`,
+`/KArAr/`, `/CDR/` (any case works) — the layout `earthref.org/MagIC/` uses,
+and sends `http://localhost:8080/` (or any path outside a node prefix) to the
+same path under the first listed node. Infrastructure is shared; isolation
+comes from a per-node OpenSearch index, MinIO bucket, procrastinate queue, and
+a Postgres schema per node (`magic`, `cdr`, ...) for the workflow tables.
+Accounts are shared across nodes (one EarthRef login, in the `public`
+schema). If your local database predates the per-node schemas, `make clean`
+once.
 
-When several nodes run together, `make` cross-links the top portal bar to the
-sibling nodes' localhost URLs (it computes `FIESTA_PORTAL_URLS` from the
-running node list + frontend ports). Nodes not in `FIESTA_NODE` keep their
-production `earthref.org` links. In production this is left empty and the real
-hostnames route instead. (Running `docker compose up` directly skips this
-computation — use `make up`, or set `FIESTA_PORTAL_URLS=slug=url,...`.)
+The top portal bar links every node in `FIESTA_NODE` to this frontend
+(`http://localhost:8080/CDR`) and every other node to its production
+`earthref.org` URL: compose passes the frontend's origin to the API as
+`FIESTA_FRONTEND_URL`, and the config route turns it into `portal_urls` for
+the nodes it serves. In production this is left empty and the real hostnames
+route instead.
 
-## Several nodes on one hostname (base paths)
+## Base paths and the multi-node layout
 
-By default each node owns its hostname (or localhost port) and is served at
-`/`. To publish several nodes under ONE hostname — `dev.earthref.org/MagIC/`,
-`/CDR/`, `/KArAr/`, `/KdD/`, and later `earthref.org/MagIC/` — give each node
-a base path in `.env`:
+The SPA is built for one **build base** — Vite's `base`, `/` by default —
+where its assets, `fiesta-env.js` and the `/v2/` proxy live, and runs its
+routes under a **base path**. Two layouts:
 
-```sh
-MAGIC_BASE_PATH=/MagIC/
-CDR_BASE_PATH=/CDR/
-KARAR_BASE_PATH=/KArAr/
-KDD_BASE_PATH=/KdD/
-```
+- **One node per build.** The base path is the build base. `BASE_PATH=/MagIC/`
+  (a build arg of the frontend image; `VITE_BASE_PATH` for a build outside
+  Docker) publishes a single node under a prefix, which is how
+  `deploy-fiesta.sh` builds one static bundle per node for
+  `earthref.org/MagIC/`, `/KdD/`, … The value must start and end with `/`,
+  and the nginx location blocks derive from it, so a change means a rebuild.
+- **Every node on one origin.** The build sits at `/` and `fiesta-env.js`
+  lists the served nodes (`FIESTA_NODES=magic,cdr` on the nginx image or the
+  Vite dev server; compose sets it from `FIESTA_NODE`). The first path segment
+  then picks the node and becomes the base path at load time, so one
+  container serves `/MagIC/`, `/CDR/`, … This is what `make up` runs, and a
+  reverse proxy that forwards a whole hostname to it (`location / {
+  proxy_pass http://10.10.10.115:8080; }`) gives the `dev.earthref.org/MagIC/`
+  shape without per-node images.
 
-The value must start and end with `/`. It is a **build arg** of the frontend
-image (asset URLs, the router `basepath`, and the nginx location blocks all
-derive from it), so `make up PROD=1` rebuilds the image after a change (the
-dev overlay passes it to Vite as `VITE_BASE_PATH`). The single API is not
-per-node and is unaffected by base paths: each frontend's nginx proxies
-`<base>v2/` to it, so the API's routes stay at `/v2/{node}/...`.
+The single API is unaffected by either: nginx or the Vite proxy forwards
+`<build base>v2/` to it, so its routes stay at `/v2/{node}/...`.
 
-The reverse proxy in front then needs one plain-prefix location per node,
-forwarding the full URI (no trailing slash on `proxy_pass`):
-
-```nginx
-location /MagIC/ { proxy_pass http://10.10.10.115:8080; }   # frontend-magic
-location /CDR/   { proxy_pass http://10.10.10.115:8082; }   # frontend-cdr
-```
-
-Everything inside the SPA goes through `siteUrl()` in
-`frontend/src/lib/base.ts` (the `api()` helper applies it for you); a new
-root-absolute `href` or `fetch("/v2/...")` that bypasses it will break under a
-prefix, so route API calls through `api()` / `nodeUrl()` and links through
-`siteUrl()`. For a local build outside
-Docker, `VITE_BASE_PATH=/MagIC/ npm run build` (or `npm run dev`, which then
-serves at `http://localhost:5173/MagIC/`).
+Everything inside the SPA goes through `frontend/src/lib/base.ts`: `siteUrl()`
+for links into this node (the `api()` helper and the router apply it for
+you), `assetUrl()` for files from `public/`, `apiUrl()` / `nodeUrl()` for the
+API. A new root-absolute `href` or `fetch("/v2/...")` that bypasses them will
+break under a prefix. For a build outside Docker, `VITE_BASE_PATH=/MagIC/
+npm run build` builds one node under a prefix; `make frontend-dev` (or
+`FIESTA_NODES=magic,cdr npm run dev`) serves the multi-node layout at
+`http://localhost:5173/MagIC/`.
 
 ## Backend only (against the compose infra)
 

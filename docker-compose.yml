@@ -1,27 +1,25 @@
 # FIESTA local development stack.
 #
-# One API process (`api`, /v2/{node}/...) and one job worker serve every node
-# in FIESTA_NODE; each enabled node gets its own frontend (compose profile
-# named after the node). Postgres, OpenSearch, MinIO and Mailpit are shared.
-# Contributions are scoped per node in Postgres (one schema each), each node
-# has its own OpenSearch index, MinIO prefix and job queue.
+# One API process (`api`, /v2/{node}/...), one job worker and one frontend
+# serve every node in FIESTA_NODE; the frontend publishes each node under its
+# key, http://localhost:8080/MagIC/, /CDR/, ... (the earthref.org layout).
+# Postgres, OpenSearch, MinIO and Mailpit are shared. Contributions are scoped
+# per node in Postgres (one schema each), each node has its own OpenSearch
+# index, MinIO prefix and job queue.
 #
 #   FIESTA_NODE=magic,karar,cdr     # in .env: which nodes the stack serves
 #   make up                         # runs the nodes in FIESTA_NODE
 #   make up FIESTA_NODE=magic,karar # override on the command line
-#   docker compose up -d            # honors COMPOSE_PROFILES from .env
 #
 # Default host ports (override in .env):
 #   api        8000      (all nodes: http://localhost:8000/v2/magic/config)
-#   frontend   magic 8080 · kdd 8081 · cdr 8082 · karar 8083 · erda 8084 · osu-mgr 8086
+#   frontend   8080      (all nodes: http://localhost:8080/MagIC/, /KArAr/, ...)
+#
+# The portal bar links the nodes in FIESTA_NODE to this frontend and every
+# other node to earthref.org (FIESTA_FRONTEND_URL, read by the API).
 #
 # Postgres owns application state; MinIO holds revision files.
 # `make rebuild` regenerates only the OpenSearch projection.
-#
-# Several nodes on ONE hostname (dev.earthref.org/MagIC/, /CDR/, ...): set
-# <NODE>_BASE_PATH=/MagIC/ etc. in .env. It is baked into that node's frontend
-# image (asset URLs, router base, nginx locations). Default "/" keeps the
-# one-hostname-per-node layout.
 
 name: fiesta
 
@@ -38,17 +36,10 @@ x-backend-env: &backend-env
   FIESTA_SECRET_KEY: ${FIESTA_SECRET_KEY:-dev-only-change-me}
   FIESTA_SMTP_HOST: mailpit
   FIESTA_SMTP_PORT: 1025
-  FIESTA_CORS_ORIGINS: '["http://localhost:5173","http://localhost:8080","http://localhost:8081","http://localhost:8082","http://localhost:8083","http://localhost:8084","http://localhost:8086"]'
-  # Local-dev portal-bar cross-links to sibling nodes on this host. `make`
-  # computes this from the running node list + frontend ports; empty otherwise.
-  FIESTA_PORTAL_URLS: ${FIESTA_PORTAL_URLS:-}
-
-x-frontend: &frontend
-  build:
-    context: ./frontend
-  depends_on:
-    api:
-      condition: service_healthy
+  FIESTA_CORS_ORIGINS: '["http://localhost:5173","http://localhost:${FRONTEND_PORT:-8080}"]'
+  # Local-dev portal-bar cross-links: the nodes this stack runs live on the
+  # one frontend below at /<Key>/; every other node keeps its earthref.org link.
+  FIESTA_FRONTEND_URL: http://localhost:${FRONTEND_PORT:-8080}
 
 services:
   postgres:
@@ -152,78 +143,18 @@ services:
       mailpit:
         condition: service_healthy
 
-  # ---- One frontend per enabled node (profile = node slug) -------------------
-  frontend-magic:
-    <<: *frontend
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${MAGIC_BASE_PATH:-/}
-    profiles: [magic]
+  # ---- The frontend (every node in FIESTA_NODE, each under /<Key>/) ---------
+  # One image, built at "/"; nginx serves the SPA for every listed node and
+  # proxies /v2/ to the API. The SPA reads its node from the first path segment.
+  frontend:
+    build: ./frontend
     environment:
-      FIESTA_NODE: magic
+      FIESTA_NODES: ${FIESTA_NODE:-magic}
     ports:
-      - "${MAGIC_FRONTEND_PORT:-8080}:80"
-
-  frontend-kdd:
-    <<: *frontend
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${KDD_BASE_PATH:-/}
-    profiles: [kdd]
-    environment:
-      FIESTA_NODE: kdd
-    ports:
-      - "${KDD_FRONTEND_PORT:-8081}:80"
-
-  frontend-cdr:
-    <<: *frontend
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${CDR_BASE_PATH:-/}
-    profiles: [cdr]
-    environment:
-      FIESTA_NODE: cdr
-    ports:
-      - "${CDR_FRONTEND_PORT:-8082}:80"
-
-  frontend-karar:
-    <<: *frontend
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${KARAR_BASE_PATH:-/}
-    profiles: [karar]
-    environment:
-      FIESTA_NODE: karar
-    ports:
-      - "${KARAR_FRONTEND_PORT:-8083}:80"
-
-  frontend-erda:
-    <<: *frontend
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${ERDA_BASE_PATH:-/}
-    profiles: [erda]
-    environment:
-      FIESTA_NODE: erda
-    ports:
-      - "${ERDA_FRONTEND_PORT:-8084}:80"
-
-  frontend-osu-mgr:
-    <<: *frontend
-    build:
-      context: ./frontend
-      args:
-        BASE_PATH: ${OSU_MGR_BASE_PATH:-/}
-    profiles: [osu-mgr]
-    environment:
-      FIESTA_NODE: osu-mgr
-    ports:
-      - "${OSU_MGR_FRONTEND_PORT:-8086}:80"
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   postgres-data:

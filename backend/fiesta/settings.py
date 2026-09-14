@@ -95,10 +95,11 @@ class Settings(BaseSettings):
     # API owns the hostname (api.earthref.org).
     root_path: str = ""
 
-    # Local-dev only: `slug=url,slug=url` overrides for sibling FIESTA nodes'
-    # portal-bar links so a multi-node stack cross-links to the running
-    # localhost instances. Empty in production (real hostnames route instead).
-    portal_urls: str = ""
+    # Local-dev only: origin of the one frontend that serves every node this
+    # API runs, each under /<Key>/ (http://localhost:8080/MagIC/, /CDR/, ...).
+    # The config route turns it into portal-bar links to the running sibling
+    # nodes; nodes not served keep their earthref.org links. Empty in production.
+    frontend_url: str = ""
 
     @field_validator("s3_endpoint", "s3_bucket", "opensearch_ca_certs", mode="before")
     @classmethod
@@ -156,14 +157,6 @@ class Settings(BaseSettings):
         """Procrastinate connects with psycopg (libpq), which understands the
         libpq params natively; only the SQLAlchemy driver suffix is dropped."""
         return self.database_url.replace("postgresql+asyncpg://", "postgresql://")
-
-    def portal_url_map(self) -> dict[str, str]:
-        result: dict[str, str] = {}
-        for pair in self.portal_urls.split(","):
-            slug, _, url = pair.partition("=")
-            if slug.strip() and url.strip():
-                result[slug.strip().lower()] = url.strip()
-        return result
 
 
 @lru_cache

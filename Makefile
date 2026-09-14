@@ -16,38 +16,11 @@ COMPOSE := docker compose $(COMPOSE_FILES)
 # Read the local .env so FIESTA_NODE / port overrides are visible to make.
 -include .env
 
-# FIESTA_NODE is a comma-separated node list (magic,karar,cdr). The one API
-# and worker serve every listed node; compose activates one frontend profile
-# per node, so mirror the list into COMPOSE_PROFILES.
+# FIESTA_NODE is a comma-separated node list (magic,karar,cdr). The one API,
+# worker and frontend serve every listed node (the frontend at
+# http://localhost:$(FRONTEND_PORT)/<Key>/).
 FIESTA_NODE ?= magic
 export FIESTA_NODE
-export COMPOSE_PROFILES = $(FIESTA_NODE)
-
-# Targets that must see every service regardless of the selected nodes.
-down clean ps logs build: export COMPOSE_PROFILES = *
-
-# Frontend port per node (defaults mirror docker-compose.yml).
-MAGIC_FRONTEND_PORT ?= 8080
-KDD_FRONTEND_PORT   ?= 8081
-CDR_FRONTEND_PORT   ?= 8082
-KARAR_FRONTEND_PORT ?= 8083
-ERDA_FRONTEND_PORT  ?= 8084
-OSU_MGR_FRONTEND_PORT ?= 8086
-port-magic := $(MAGIC_FRONTEND_PORT)
-port-kdd   := $(KDD_FRONTEND_PORT)
-port-cdr   := $(CDR_FRONTEND_PORT)
-port-karar := $(KARAR_FRONTEND_PORT)
-port-erda  := $(ERDA_FRONTEND_PORT)
-port-osu-mgr := $(OSU_MGR_FRONTEND_PORT)
-
-# Portal-bar cross-links: `slug=http://localhost:<port>` for every running
-# node, so a multi-node local stack links to the sibling instances.
-empty :=
-space := $(empty) $(empty)
-comma := ,
-_node_list := $(subst $(comma), ,$(FIESTA_NODE))
-_portal_pairs := $(foreach n,$(_node_list),$(n)=http://localhost:$(port-$(n)))
-export FIESTA_PORTAL_URLS := $(subst $(space),$(comma),$(_portal_pairs))
 
 .DEFAULT_GOAL := help
 
@@ -58,7 +31,7 @@ help: ## List available targets
 ## ---- Docker Compose stack -------------------------------------------------
 
 .PHONY: up
-up: ## Start infra + the API + worker + a frontend per node in FIESTA_NODE, hot reload (PROD=1 for the built images)
+up: ## Start infra + the API + worker + the frontend (every node in FIESTA_NODE at /<Key>/), hot reload (PROD=1 for the built images)
 	@mkdir -p frontend/node_modules
 	$(COMPOSE) up -d --build --remove-orphans --wait
 
@@ -107,8 +80,9 @@ infra: ## Start only the infrastructure (postgres, opensearch, minio, mailpit)
 	$(COMPOSE) up -d postgres opensearch minio mailpit
 
 .PHONY: backend-dev
-backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :8000)
+backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :8000; portal links to `make frontend-dev`)
 	cd backend && uv sync && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) \
+		FIESTA_FRONTEND_URL=http://localhost:5173 \
 		uv run sh -c "fiesta init && uvicorn fiesta.apps.api:create_app --factory --reload"
 
 .PHONY: fiesta
@@ -121,8 +95,8 @@ worker-dev: ## Run the job worker locally (every node in FIESTA_NODE)
 	cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) uv run fiesta worker
 
 .PHONY: frontend-dev
-frontend-dev: ## Run the Vite dev server for the first FIESTA_NODE (proxies /v2 to localhost:8000)
-	cd frontend && npm install && VITE_NODE=$(NODE1) npm run dev
+frontend-dev: ## Run the Vite dev server on :5173 for every node in FIESTA_NODE (/<Key>/; proxies /v2 to localhost:8000)
+	cd frontend && npm install && FIESTA_NODES=$(FIESTA_NODE) npm run dev
 
 ## ---- Tests & linting --------------------------------------------------------
 
