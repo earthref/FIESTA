@@ -1,4 +1,4 @@
-import { siteUrl } from "../lib/base";
+import { assetUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { PORTALS } from "../lib/portals";
 import { Icon } from "./ui/icon";
@@ -101,7 +101,7 @@ export function Footer() {
           >
             Powered by
             <img
-              src={siteUrl("/FIESTA.png")}
+              src={assetUrl("/FIESTA.png")}
               alt=""
               style={{
                 display: "inline",

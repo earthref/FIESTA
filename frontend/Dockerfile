@@ -18,14 +18,17 @@ RUN npm run build
 # Serve with nginx (SPA history fallback + /v2 proxy to the API service).
 # The nginx image's entrypoint runs envsubst over /etc/nginx/templates/, so
 # at runtime FIESTA_NODE picks the node this frontend is for (one image, any
-# node), API_URL optionally points the SPA at another API origin (empty =
-# proxy <base>v1/ to BACKEND_HOST), and BASE_PATH places the location blocks.
+# node) -- or FIESTA_NODES=magic,cdr serves every listed node under
+# <base><node>/ (the local stack; the SPA reads the node from the URL) --
+# API_URL optionally points the SPA at another API origin (empty = proxy
+# <base>v2/ to BACKEND_HOST), and BASE_PATH places the location blocks.
 # The build lands at <html root><BASE_PATH> so nginx serves it from the same
 # prefix the bundle was built for.
 FROM nginx:alpine
 ARG BASE_PATH=/
 ENV BACKEND_HOST=api
-ENV FIESTA_NODE=magic
+ENV FIESTA_NODE=
+ENV FIESTA_NODES=
 ENV API_URL=
 ENV BASE_PATH=$BASE_PATH
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template

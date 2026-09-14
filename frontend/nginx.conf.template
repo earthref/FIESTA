@@ -1,6 +1,7 @@
 # Rendered by the nginx image's envsubst entrypoint. Only ${BACKEND_HOST},
-# ${BASE_PATH}, ${FIESTA_NODE} and ${API_URL} are substituted (they are the
-# defined env vars); nginx's own $uri/$host variables pass through untouched.
+# ${BASE_PATH}, ${FIESTA_NODE}, ${FIESTA_NODES} and ${API_URL} are substituted
+# (they are the defined env vars); nginx's own $uri/$host variables pass
+# through untouched.
 #
 # BASE_PATH is "/" or a node prefix like "/MagIC/" (leading + trailing slash),
 # so the locations render as /v2/, /assets/, / -- or /MagIC/v2/,
@@ -18,13 +19,14 @@ server {
     gzip on;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml;
 
-    # Runtime SPA settings: which node this frontend is for and where the API
-    # is (empty = same origin, proxied below). Overrides the copy `vite build`
-    # put in dist, so one image serves any node.
+    # Runtime SPA settings: which node this frontend is for (or, with
+    # FIESTA_NODES, the list of nodes served under ${BASE_PATH}<node>/) and
+    # where the API is (empty = same origin, proxied below). Overrides the copy
+    # `vite build` put in dist, so one image serves any node or every node.
     location = ${BASE_PATH}fiesta-env.js {
         default_type application/javascript;
         add_header Cache-Control "no-cache";
-        return 200 'window.__FIESTA__={"node":"${FIESTA_NODE}","apiUrl":"${API_URL}"};';
+        return 200 'window.__FIESTA__={"node":"${FIESTA_NODE}","apiUrl":"${API_URL}","nodes":"${FIESTA_NODES}"};';
     }
 
     # Proxy API requests to the FIESTA API service. The URI part on proxy_pass

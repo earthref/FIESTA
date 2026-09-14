@@ -13,13 +13,17 @@ const base = `/${(process.env.VITE_BASE_PATH ?? "/").replace(/^\/+|\/+$/g, "")}/
 );
 
 // Which node this build/dev server is for (VITE_NODE, or the first entry of
-// the stack's FIESTA_NODE list) and, optionally, a fixed API origin. Both are
-// also served at runtime as <base>fiesta-env.js (see src/lib/base.ts): the
-// dev server renders it from these values, `vite build` emits it into dist,
-// and the nginx image overrides it from its own environment.
-const node = process.env.VITE_NODE || (process.env.FIESTA_NODE || "magic").split(",")[0].trim();
+// the FIESTA_NODES / FIESTA_NODE list), optionally a fixed API origin, and --
+// for the multi-node layout of the local stack, where every node in
+// FIESTA_NODES is served under <base><node>/ -- the node list. All are served
+// at runtime as <base>fiesta-env.js (see src/lib/base.ts): the dev server
+// renders it from these values, `vite build` emits it into dist, and the
+// nginx image overrides it from its own environment.
+const nodes = (process.env.FIESTA_NODES || "").trim();
+const node =
+  process.env.VITE_NODE || (nodes || process.env.FIESTA_NODE || "magic").split(",")[0].trim();
 const apiUrl = process.env.VITE_API_URL || "";
-const envScript = `window.__FIESTA__=${JSON.stringify({ node, apiUrl })};\n`;
+const envScript = `window.__FIESTA__=${JSON.stringify({ node, apiUrl, ...(nodes ? { nodes } : {}) })};\n`;
 
 function fiestaEnv(): Plugin {
   return {
@@ -37,7 +41,7 @@ function fiestaEnv(): Plugin {
   };
 }
 
-// Dev-only proxy: with no VITE_API_URL the SPA calls <base>v1/... on its own
+// Dev-only proxy: with no VITE_API_URL the SPA calls <base>v2/... on its own
 // origin, so forward that to the API (any reverse proxy does the same in
 // production: nginx in the Docker image, or whatever fronts a static build).
 export default defineConfig({
@@ -49,7 +53,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), fiestaEnv()],
   server: {
     proxy: {
-      [`${base}v1`]: {
+      [`${base}v2`]: {
         target: process.env.VITE_API_TARGET || "http://localhost:8000",
         changeOrigin: true,
         // Strip the base path: the API always serves /v2 at its root.

@@ -37,7 +37,7 @@ Postgres backups plus the bucket. See [Phase M operations](docs/phase-m.md).
 
 ```sh
 cp .env.example .env          # FIESTA_NODE=magic  or a list: magic,karar,erda
-make up                       # infra + one API + one worker + a frontend per listed node
+make up                       # infra + one API + one worker + one frontend for every listed node
 ```
 
 Run `make` for all targets (tests, linting, e2e, rebuild, local dev servers).
@@ -46,25 +46,20 @@ has its own search index, bucket, job queue, and node-scoped contributions,
 all served by the single API under `/v2/{node}/...`. The legacy
 `api.earthref.org` contract stays available unchanged at `/v1/...` for existing clients.
 
-Default ports (one API for every node; one frontend per node):
+Default ports (one API and one frontend for every node):
 
 | Service | Port |
 |---|---|
 | API (all nodes, docs at `/v2/docs`) | :8000 |
-| MagIC frontend | :8080 |
-| KdD frontend | :8081 |
-| CDR frontend | :8082 |
-| KArAr frontend | :8083 |
-| ERDA frontend | :8084 |
-| OSU-MGR frontend | :8086 |
+| Frontend (all nodes: `/MagIC/`, `/KdD/`, `/CDR/`, `/KArAr/`, `/ERDA/`, `/OSU-MGR/`) | :8080 |
 
-The API port is `API_PORT` in `.env` (default 8000); the frontends are
-`<NODE>_FRONTEND_PORT`. A frontend at `:8080` reaches the API for its node at
-`/v2/magic/...`.
+The ports are `API_PORT` and `FRONTEND_PORT` in `.env`. The frontend publishes
+each node in `FIESTA_NODE` under its key, the same layout as `earthref.org/MagIC/`;
+`http://localhost:8080/` goes to the first listed node. The portal bar links the
+running nodes to this frontend and every other node to earthref.org.
 
 - MinIO console: http://localhost:9001 · Mailpit (dev email): http://localhost:8025
-- Several nodes under one hostname (`dev.earthref.org/MagIC/`, `/CDR/`, ...): set
-  `<NODE>_BASE_PATH=/MagIC/` per node in `.env` — see [development.md](development.md).
+- Base paths and the multi-node layout in a deployment: see [development.md](development.md).
 
 Create an account in the UI (or `docker compose run --rm api fiesta
 create-user you@example.org "Your Name"`), upload a contribution text file in

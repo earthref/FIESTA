@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
 from fiesta.apps.deps import NodeDep
+from fiesta.nodeconfig import get_deployment
 from fiesta.plugins import active_plugins
 from fiesta.settings import get_settings
 
@@ -17,8 +18,14 @@ async def get_config(node: NodeDep) -> dict:
         lvl.model_dump() for plugin in plugins for lvl in plugin.search_levels(node)
     ]
     config["plugins"] = {plugin.name: plugin.frontend_config(node) for plugin in plugins}
-    # Local-dev portal-bar overrides for sibling nodes running on this host.
-    config["portal_urls"] = get_settings().portal_url_map()
+    # Local-dev portal-bar links: every node this API serves is reachable on
+    # the one local frontend at /<Key>/; the SPA keeps earthref.org for the rest.
+    frontend_url = get_settings().frontend_url.rstrip("/")
+    config["portal_urls"] = (
+        {n.node.key.lower(): f"{frontend_url}/{n.node.key}" for n in get_deployment().node_list}
+        if frontend_url
+        else {}
+    )
     return config
 
 

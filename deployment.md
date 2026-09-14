@@ -31,10 +31,17 @@ container, whose nginx proxies `<base>v2/` to the API (`BACKEND_HOST`, default
 
 The alternative to a hostname per node is a path prefix per node on one
 hostname (`dev.earthref.org/MagIC/`, `/CDR/`, ...; eventually
-`earthref.org/MagIC/`). Set `<NODE>_BASE_PATH=/MagIC/` per node in `.env` —
-see development.md, "Several nodes on one hostname". The frontend image is
-built for exactly one base path, so a node published at both shapes needs
-two images. Moving the FIESTA nodes from `dev.earthref.org/<Node>/` to
+`earthref.org/MagIC/`). Two ways to get there — see development.md, "Base
+paths and the multi-node layout":
+
+- one frontend container with `FIESTA_NODES=magic,cdr,...` serves every
+  listed node under `/<Key>/` from a build at `/` (what `make up` runs); the
+  reverse proxy forwards the whole hostname to it;
+- one build per node with `BASE_PATH=/MagIC/` (a build arg; what
+  `deploy-fiesta.sh` does for the static bundles), each behind its own
+  prefix location.
+
+Moving the FIESTA nodes from `dev.earthref.org/<Node>/` to
 `earthref.org/<Node>/` at cutover is then a reverse-proxy change only: the
 images, base paths, and containers stay the same.
 
