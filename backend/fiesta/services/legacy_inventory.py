@@ -79,14 +79,16 @@ def export_tables(tables: dict, model: dict) -> str:
 
 async def scan_contributions(client, index: str):
     """Yield every `type: contribution` source document in the legacy index."""
+    # Small pages and a long timeout: each hit carries every table of a contribution.
     resp = await client.search(
         index=index,
-        scroll="5m",
-        size=200,
+        scroll="10m",
+        size=5,
         body={
             "query": {"term": {"type": "contribution"}},
             "_source": ["summary.contribution", "contribution"],
         },
+        request_timeout=300,
     )
     scroll_id = resp.get("_scroll_id")
     try:
@@ -95,7 +97,7 @@ async def scan_contributions(client, index: str):
                 yield hit["_source"]
             if not scroll_id:
                 return
-            resp = await client.scroll(scroll_id=scroll_id, scroll="5m")
+            resp = await client.scroll(scroll_id=scroll_id, scroll="10m", request_timeout=300)
             scroll_id = resp.get("_scroll_id", scroll_id)
     finally:
         if scroll_id:  # best-effort release of the scroll context
@@ -108,6 +110,7 @@ async def lookup_owner(client, users_index: str, handle: str) -> dict | None:
         index=users_index,
         size=1,
         body={"query": {"term": {"handle.raw": handle.lower()}}},
+        request_timeout=60,
     )
     hits = resp["hits"]["hits"]
     if not hits:

@@ -40,7 +40,7 @@ class FakeSearch:
         assert body["query"] == {"term": {"type": "contribution"}}
         return {"_scroll_id": "s1", "hits": {"hits": [{"_source": d} for d in self.docs]}}
 
-    async def scroll(self, scroll_id, scroll):
+    async def scroll(self, scroll_id, scroll, **kwargs):
         return {"_scroll_id": scroll_id, "hits": {"hits": []}}
 
     async def clear_scroll(self, scroll_id):

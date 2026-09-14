@@ -113,7 +113,7 @@ backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE
 
 .PHONY: fiesta
 fiesta: ## Run the CLI on the host: make fiesta ARGS="legacy-inventory karar --out ../migration/karar" [ENV_FILE=.env.prod] [NODE=karar] [CMD=python]
-	cd backend && $(if $(ENV_FILE),set -a && . $(abspath $(ENV_FILE)) && set +a &&) \
+	cd backend && $(if $(ENV_FILE),FIESTA_ENV_FILE=$(abspath $(ENV_FILE))) \
 		FIESTA_CONFIG_FILE=../config/fiesta.yaml $(if $(NODE),FIESTA_NODE=$(NODE)) uv run $(or $(CMD),fiesta) $(ARGS)
 
 .PHONY: worker-dev

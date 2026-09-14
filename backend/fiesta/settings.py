@@ -168,4 +168,10 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    """FIESTA_ENV_FILE names an alternative dotenv file (e.g. `.env.prod` for a
+    host-run command against production). Real environment variables still win,
+    and the file is parsed by pydantic, so URLs with `&` need no shell quoting."""
+    import os
+
+    env_file = os.environ.get("FIESTA_ENV_FILE")
+    return Settings(_env_file=env_file) if env_file else Settings()
