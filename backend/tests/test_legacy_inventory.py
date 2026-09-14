@@ -127,6 +127,7 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
             "handle": "carol",
             "email": {"address": "carol@example.org"},
             "name": {"published": "C. Diaz"},
+            "orcid": {"id": ""},  # legacy stores "" for no ORCID; must become None
         },
     }
     monkeypatch.setattr(karar_node.legacy, "owner_overrides", {13: "Carol@example.org"})

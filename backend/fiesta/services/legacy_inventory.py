@@ -182,7 +182,7 @@ async def _owner_from_query(client, users_index: str, handle: str, queries: list
         "handle": user.get("handle") or None,  # None: the account never chose one
         "email": str(email).lower(),
         "name": full or handle,
-        "orcid": (user.get("orcid") or {}).get("id"),
+        "orcid": (user.get("orcid") or {}).get("id") or None,  # "" is not unique
     }
 
 
@@ -468,7 +468,7 @@ async def ensure_owners(node, owners: list[dict], *, apply=False) -> dict:
             report["planned"].append(email)
             if not apply:
                 continue
-            handle = owner.get("handle")
+            handle = owner.get("handle") or None
             if (
                 handle
                 and (
@@ -476,7 +476,7 @@ async def ensure_owners(node, owners: list[dict], *, apply=False) -> dict:
                 ).scalar_one_or_none()
             ):
                 handle = None
-            orcid = owner.get("orcid")
+            orcid = owner.get("orcid") or None  # "" is not unique; the column is
             if (
                 orcid
                 and (
