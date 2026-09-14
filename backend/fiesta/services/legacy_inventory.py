@@ -19,6 +19,7 @@ import contextlib
 import hashlib
 import json
 import re
+import sys
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -190,7 +191,7 @@ class HashCache:
         if path.is_file():
             with contextlib.suppress(ValueError):
                 self.entries = json.loads(path.read_text())
-        self.dirty = False
+        self.dirty = 0
 
     def get(self, bucket: str, key: str, etag: str, size: int) -> str | None:
         hit = self.entries.get(f"{bucket}/{key}")
@@ -200,12 +201,16 @@ class HashCache:
 
     def put(self, bucket: str, key: str, etag: str, size: int, sha256: str) -> None:
         self.entries[f"{bucket}/{key}"] = {"etag": etag, "size": size, "sha256": sha256}
-        self.dirty = True
+        self.dirty += 1
+        if self.dirty >= 50:  # an interrupted long run keeps most of its work
+            self.save()
 
     def save(self) -> None:
         if self.dirty:
-            self.path.write_text(json.dumps(self.entries, indent=0, sort_keys=True))
-            self.dirty = False
+            tmp = self.path.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(self.entries, indent=0, sort_keys=True))
+            tmp.replace(self.path)
+            self.dirty = 0
 
 
 async def _head(bucket: str, key: str) -> tuple[str, int] | None:
@@ -344,9 +349,19 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
                 return exc
 
     ids = sorted(summaries)
-    resolved = dict(
-        zip(ids, await asyncio.gather(*(resolve_file(cid) for cid in ids)), strict=True)
-    )
+    done = 0
+
+    async def tracked(cid: int):
+        nonlocal done
+        result = await resolve_file(cid)
+        done += 1
+        if done % 250 == 0 or done == len(ids):
+            print(
+                f"{node.node.slug}: {done}/{len(ids)} files resolved", file=sys.stderr, flush=True
+            )
+        return result
+
+    resolved = dict(zip(ids, await asyncio.gather(*(tracked(cid) for cid in ids)), strict=True))
     cache.save()
 
     # 3. Assemble records.
