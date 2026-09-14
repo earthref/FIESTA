@@ -301,7 +301,12 @@ the same API authorization checks.
       then switch the alias. Recheck visibility against Postgres before returning
       results, counts, facets, or downloads so indexing lag cannot expose withdrawn
       or private data.
-- [ ] **M5 Inventory and initial legacy import.** For each configured node, map
+- [ ] **M5 Inventory and initial legacy import.** *2026-09-14: `fiesta legacy-inventory` +
+      `ensure-owners` shipped (PR #32) and KArAr was imported into the MARFIK data layer
+      that `dev.earthref.org/KArAr/` serves: 21 contributions (12 public+latest, 2 superseded,
+      7 private), 3 owners. Remaining nodes need a `legacy:` block each; all KArAr validations
+      fail on model/vocabulary parity (`age_is_preferred` table, boolean `t/f` vs `True/False`).*
+      For each configured node, map
       source buckets/prefixes and metadata sources, count objects/bytes and versions,
       and identify canonical files, supplemental docs, images, ownership, private
       state, timestamps, DOIs, and version chains. Import available historical

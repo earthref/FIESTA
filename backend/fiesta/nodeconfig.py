@@ -106,6 +106,22 @@ class DevelopmentConfig(BaseModel):
     seed_manifest: str | None = None
 
 
+class LegacySourceConfig(BaseModel):
+    """Where this node's contributions live on the legacy Meteor platform.
+
+    Read only by `fiesta legacy-inventory`, never at application startup. The
+    index is addressed by its literal name (no FIESTA_INDEX_PREFIX); buckets are
+    tried in order for `<id>/<canonical>`; contributions with no object in any
+    bucket (private workspaces) are exported from the indexed tables instead.
+    """
+
+    source_id: str
+    index: str
+    buckets: list[str] = []
+    users_index: str = "er_users"
+    canonical: str = "{slug}_contribution_{id}.txt"
+
+
 class NodeConfig(BaseModel):
     """A single FIESTA node, fully described."""
 
@@ -118,6 +134,7 @@ class NodeConfig(BaseModel):
     doi: DoiConfig = DoiConfig()
     features: FeaturesConfig = FeaturesConfig()
     development: DevelopmentConfig = DevelopmentConfig()
+    legacy: LegacySourceConfig | None = None
 
     # Directory the YAML was loaded from; asset paths resolve against it.
     base_dir: Path

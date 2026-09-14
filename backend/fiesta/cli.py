@@ -238,6 +238,51 @@ def sync_legacy(inventory: str, apply: bool = False):
         raise typer.Exit(1)
 
 
+@app.command("legacy-inventory")
+def legacy_inventory(node: str, out: str = typer.Option(..., "--out", help="snapshot directory")):
+    """Snapshot NODE's legacy OpenSearch index + S3 buckets into OUT/inventory.json and owners.json.
+
+    Read-only against the legacy sources; review the output, then `ensure-owners`
+    and `sync-legacy`. Needs the node YAML's `legacy:` block.
+    """
+    import json
+    from pathlib import Path
+
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.services.legacy_inventory import build_inventory
+
+    target = get_deployment().node_for(node)
+    out_dir = Path(out).resolve()
+
+    async def run():
+        from fiesta.search.client import get_opensearch
+
+        try:
+            return await build_inventory(target, out_dir)
+        finally:
+            await get_opensearch().close()
+
+    result = asyncio.run(run())
+    typer.echo(json.dumps(result, indent=2))
+    if result["errors"]:
+        raise typer.Exit(1)
+
+
+@app.command("ensure-owners")
+def ensure_owners_command(node: str, owners: str, apply: bool = False):
+    """Create the accounts an inventory's owners.json needs (no passwords); --apply to write."""
+    import json
+    from pathlib import Path
+
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.services.legacy_inventory import ensure_owners
+
+    target = get_deployment().node_for(node)
+    wanted = json.loads(Path(owners).read_text())
+    result = asyncio.run(ensure_owners(target, wanted, apply=apply))
+    typer.echo(json.dumps(result, indent=2))
+
+
 @app.command("verify-storage")
 def verify_storage_command():
     """Verify revision pointers, immutable manifests, files and validation reports."""
