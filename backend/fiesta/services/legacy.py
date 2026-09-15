@@ -4,6 +4,7 @@ Each committed source record is its checkpoint. New snapshots may include change
 metadata and explicit tombstones. Absence alone is never interpreted as deletion.
 """
 
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -207,9 +208,24 @@ async def sync_inventory(node, path, *, apply=False):
                 if record.published:
                     c.published_revision = c.head_revision
                 if record.private_key:
-                    import uuid
-
-                    c.private_key = uuid.UUID(record.private_key)
+                    # Legacy MagIC shares one private key across a version chain, but
+                    # the column is unique: the key follows the newest version and any
+                    # other holder is issued a fresh one (a superseded version is public,
+                    # so nothing loses access).
+                    key = uuid.UUID(record.private_key)
+                    holder = (
+                        await session.execute(
+                            select(Contribution).where(
+                                Contribution.private_key == key, Contribution.id != c.id
+                            )
+                        )
+                    ).scalar_one_or_none()
+                    if holder is None:
+                        c.private_key = key
+                    elif (holder.version, holder.id) < (record.version, record.id):
+                        holder.private_key = uuid.uuid4()
+                        await session.flush()
+                        c.private_key = key
                 if record.deleted:
                     c.deleted_at = datetime.now(UTC)
                 now = datetime.now(UTC)
