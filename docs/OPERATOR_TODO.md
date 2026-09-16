@@ -17,6 +17,23 @@ Last updated: 2026-09-11
       run). Unblocks: ROADMAP E1, B2.
 - [ ] **Cutover shape**: `dev.earthref.org/<Node>/` first, then `earthref.org/<Node>/`
       as a proxy change (deployment.md) — confirm or change. Unblocks: E4.
+- [ ] **KdD legacy ownership.** 256 of 264 KdD contributions were bulk-loaded with only
+      the display name "Roger Nielsen" and no handle; the shared user index has one
+      matching account (`rnielsen`, nielsenr@geo.oregonstate.edu). Approve adding
+      `owner_names: {"Roger Nielsen": nielsenr@geo.oregonstate.edu}` to `config/kdd.yaml`
+      so all 264 import; otherwise only the 8 with handles do. Unblocks: KdD import (M5).
+- [ ] **Which CDR is real.** Legacy has `cdr` (alias of `cdr-2`: 58 contributions, data
+      model 1.0, what the private workspace writes to; matches FIESTA's CDR config) and
+      `cdr-3` (665 contributions, model 3.0, bulk-loaded 2025-09-16; the checked-out search
+      page defaults to it). Ids overlap with different content, and FIESTA has no CDR 3.0
+      data model. Choose one; `cdr-3` first needs the 3.0 model converted from the legacy
+      repo. CDR has no S3 buckets, so every record exports from the index. Unblocks: CDR import (M5).
+- [ ] **MagIC contributions with no owner account.** 40 legacy handles (66 contributions)
+      match no `er_users` account — deleted account ids such as `user8928` (11 records) and
+      `user10068` (4), plus two records with the literal handle `undefined`. Map them with
+      `owner_overrides` / `owner_names` / `default_owner` in `config/magic.yaml`, or leave
+      them out; a re-run of the sync picks them up incrementally. The list with ids is
+      produced by `legacy-inventory` (report `errors`). Unblocks: nothing; parity only.
 
 ## B — Credentials and access (names only)
 

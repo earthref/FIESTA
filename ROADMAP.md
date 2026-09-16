@@ -305,7 +305,12 @@ the same API authorization checks.
       `ensure-owners` shipped (PR #32) and KArAr was imported into the MARFIK data layer
       that `dev.earthref.org/KArAr/` serves: 21 contributions (12 public+latest, 2 superseded,
       7 private), 3 owners. Remaining nodes need a `legacy:` block each; all KArAr validations
-      fail on model/vocabulary parity (`age_is_preferred` table, boolean `t/f` vs `True/False`).*
+      fail on model/vocabulary parity (`age_is_preferred` table, boolean `t/f` vs `True/False`).
+      2026-09-16: MagIC imported (PR #35): 7,658 of 7,726 legacy contributions (6,994 public,
+      664 private), 318 owners; 68 skipped (66 with no matching account, 2 with no file and
+      no indexed tables). Legacy MagIC shares one private key per version chain and has
+      blank header cells — both handled. `.zip` companions (up to 17 GB each) are not copied
+      yet. KdD and CDR wait on decisions in OPERATOR_TODO §A.*
       For each configured node, map
       source buckets/prefixes and metadata sources, count objects/bytes and versions,
       and identify canonical files, supplemental docs, images, ownership, private
