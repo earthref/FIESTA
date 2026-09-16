@@ -43,12 +43,13 @@ def test_parse_rejects_garbage():
 
 
 def test_parse_empty_column_name():
-    # A trailing tab in the header (legacy MagIC 11881) is not a column; a value
-    # under it is an error, as in the legacy parser.
+    # A trailing tab in the header is not a column; a blank header cell over real
+    # values (legacy MagIC 11881) keeps them under a placeholder that validation
+    # reports as unrecognized, rather than losing the row or the contribution.
     parsed = parse_text("tab delimited\tsites\nsite\tlat\t\nHW01\t1.5\t\n")
     assert parsed.tables["sites"] == [{"site": "HW01", "lat": "1.5"}]
-    with pytest.raises(ParseError):
-        parse_text("tab delimited\tsites\nsite\tlat\t\nHW01\t1.5\tx\n")
+    parsed = parse_text("tab delimited\tsites\nsite\t\tlat\nHW01\tx\t1.5\n")
+    assert parsed.tables["sites"] == [{"site": "HW01", "_unnamed_2": "x", "lat": "1.5"}]
 
 
 def test_guess_version(magic_node):

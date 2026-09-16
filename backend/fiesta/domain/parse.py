@@ -73,10 +73,13 @@ def parse_text(text: str) -> ParsedContribution:
             raise ParseError(start + 1, f'unknown delimiter {header[0]!r}; expected "tab"')
         if len(block) < 2:
             raise ParseError(start + 1, f"table {table!r} has no column header row")
-        column_names = [c.strip() for c in block[1].split(delimiter)]
-        # A trailing tab leaves an empty column name; keep it for cell alignment but
-        # never as a key (the search mapping rejects ""). A value under it is data
-        # with no home, which the legacy parser also refused.
+        # Legacy files carry empty column names (a trailing tab, or a blank header
+        # cell over real values). "" is not a usable key (the search mapping rejects
+        # it), so an unnamed column becomes `_unnamed_<n>`: it only surfaces when a
+        # row has a value there, and validation then reports it as unrecognized.
+        column_names = [
+            c.strip() or f"_unnamed_{i + 1}" for i, c in enumerate(block[1].split(delimiter))
+        ]
         rows: list[dict[str, str]] = []
         for offset, line in enumerate(block[2:], start=start + 3):
             if not line.strip():
@@ -89,13 +92,8 @@ def parse_text(text: str) -> ParsedContribution:
             row = {
                 name: cells[i].strip()
                 for i, name in enumerate(column_names)
-                if name and i < len(cells) and cells[i].strip() != ""
+                if i < len(cells) and cells[i].strip() != ""
             }
-            if any(
-                not name and i < len(cells) and cells[i].strip() != ""
-                for i, name in enumerate(column_names)
-            ):
-                raise ParseError(offset, "value under an empty column name")
             if row:
                 rows.append(row)
         parsed.tables.setdefault(table, []).extend(rows)
