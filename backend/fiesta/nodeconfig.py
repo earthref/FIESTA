@@ -120,6 +120,17 @@ class LegacySourceConfig(BaseModel):
     buckets: list[str] = []
     users_index: str = "er_users"
     canonical: str = "{slug}_contribution_{id}.txt"
+    max_file_bytes: int = 2 * 1024**3  # larger objects are reported, not imported in memory
+    # Operator-supplied owner for contributions whose legacy record has no usable
+    # contributor handle (bulk loads). Keyed by contribution id; the email must still
+    # resolve to an er_users account so name/ORCID are verified, never typed in.
+    owner_overrides: dict[int, str] = {}
+    # Operator-approved mapping of a legacy display name (`_contributor`) to an
+    # account email, for bulk-loaded records that carry no handle at all.
+    owner_names: dict[str, str] = {}
+    # Operator-designated steward account for published records that still have no
+    # owner after the maps above (never applied to private contributions).
+    default_owner: str | None = None
 
 
 class NodeConfig(BaseModel):

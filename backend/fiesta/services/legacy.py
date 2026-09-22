@@ -4,6 +4,7 @@ Each committed source record is its checkpoint. New snapshots may include change
 metadata and explicit tombstones. Absence alone is never interpreted as deletion.
 """
 
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -44,6 +45,7 @@ class SourceRecord(BaseModel):
     created_at: datetime
     activated_at: datetime | None = None
     private_key: str | None = None
+    data_model_version: str | None = None  # must be one of the node's versions; else latest
     revisions: list[SourceRevision] = Field(min_length=1)
 
 
@@ -147,12 +149,17 @@ async def sync_inventory(node, path, *, apply=False):
                 report["planned"] += 1
                 if not apply:
                     continue
+                dmv = (
+                    record.data_model_version
+                    if record.data_model_version in node.data_model.versions
+                    else node.data_model.latest
+                )
                 if c is None:
                     c = Contribution(
                         id=record.id,
                         node=node.node.slug,
                         contributor_id=owner.id,
-                        data_model_version=node.data_model.latest,
+                        data_model_version=dmv,
                         created_at=record.created_at,
                     )
                     session.add(c)
@@ -192,6 +199,7 @@ async def sync_inventory(node, path, *, apply=False):
                     )
 
                 c.contributor_id = owner.id
+                c.data_model_version = dmv
                 c.version = record.version
                 c.previous_id = record.previous_id
                 c.is_activated = record.published and not record.deleted
@@ -200,9 +208,24 @@ async def sync_inventory(node, path, *, apply=False):
                 if record.published:
                     c.published_revision = c.head_revision
                 if record.private_key:
-                    import uuid
-
-                    c.private_key = uuid.UUID(record.private_key)
+                    # Legacy MagIC shares one private key across a version chain, but
+                    # the column is unique: the key follows the newest version and any
+                    # other holder is issued a fresh one (a superseded version is public,
+                    # so nothing loses access).
+                    key = uuid.UUID(record.private_key)
+                    holder = (
+                        await session.execute(
+                            select(Contribution).where(
+                                Contribution.private_key == key, Contribution.id != c.id
+                            )
+                        )
+                    ).scalar_one_or_none()
+                    if holder is None:
+                        c.private_key = key
+                    elif (holder.version, holder.id) < (record.version, record.id):
+                        holder.private_key = uuid.uuid4()
+                        await session.flush()
+                        c.private_key = key
                 if record.deleted:
                     c.deleted_at = datetime.now(UTC)
                 now = datetime.now(UTC)

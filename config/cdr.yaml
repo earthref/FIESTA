@@ -54,6 +54,17 @@ features:
   pages: []
   plugins: [depth-plot]
 
+# Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).
+# CDR never had S3 buckets; every contribution is exported from the indexed tables.
+# `cdr` is the alias the legacy private-workspace page writes to (data model 1.0);
+# the separate `cdr-3` index (data model 3.0) is not importable until that model
+# exists under config/cdr/data_models/.
+legacy:
+  source_id: legacy-cdr
+  index: cdr
+  buckets: []
+  users_index: er_users
+
 # Local fixtures only; never read during normal application startup.
 development:
   seed_manifest: cdr/seeds/manifest.yaml

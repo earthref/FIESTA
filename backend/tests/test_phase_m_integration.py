@@ -342,6 +342,42 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
         assert result["applied"] == 0 and result["errors"], result
         assert "FIESTA edits" in result["errors"][0]["error"]
 
+        # Legacy MagIC shares one private key across a version chain; the column is
+        # unique, so the key follows the newest version and the parent gets a fresh one.
+        shared_key = str(uuid.uuid4())
+        parent_id, child_id = legacy_id + 1, legacy_id + 2
+        chain = [
+            {
+                **record,
+                "id": parent_id,
+                "version": 1,
+                "published": True,
+                "latest": False,
+                "private_key": shared_key,
+                "revisions": [inventory["records"][0]["revisions"][0]],
+            },
+            {
+                **record,
+                "id": child_id,
+                "version": 2,
+                "previous_id": parent_id,
+                "published": True,
+                "latest": True,
+                "private_key": shared_key,
+                "revisions": [inventory["records"][0]["revisions"][0]],
+            },
+        ]
+        inventory["records"] = chain
+        manifest.write_text(json.dumps(inventory))
+        result = await sync_inventory(node, manifest, apply=True)
+        assert result["applied"] == 2 and not result["errors"], result
+        async with get_sessionmaker("magic")() as session:
+            parent = await session.get(Contribution, parent_id)
+            child = await session.get(Contribution, child_id)
+            assert str(child.private_key) == shared_key
+            assert parent.private_key != child.private_key
+        assert (await sync_inventory(node, manifest, apply=True))["unchanged"] == 2
+
         # Seeding preserves developer revisions and settings.
         from fiesta.services.seed import seed_node
 

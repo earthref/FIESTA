@@ -48,6 +48,15 @@ features:
   pages: []
   plugins: []
 
+# Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).
+# Only the append-only archive bucket exists for KdD; private contributions are
+# exported from the index.
+legacy:
+  source_id: legacy-kdd
+  index: kdd
+  buckets: [kdd-activated-contributions]
+  users_index: er_users
+
 # Local fixtures only; never read during normal application startup.
 development:
   seed_manifest: kdd/seeds/manifest.yaml

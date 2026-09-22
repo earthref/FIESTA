@@ -42,6 +42,16 @@ def test_parse_rejects_garbage():
         parse_text("not a valid header\nfoo\tbar\n")
 
 
+def test_parse_empty_column_name():
+    # A trailing tab in the header is not a column; a blank header cell over real
+    # values (legacy MagIC 11881) keeps them under a placeholder that validation
+    # reports as unrecognized, rather than losing the row or the contribution.
+    parsed = parse_text("tab delimited\tsites\nsite\tlat\t\nHW01\t1.5\t\n")
+    assert parsed.tables["sites"] == [{"site": "HW01", "lat": "1.5"}]
+    parsed = parse_text("tab delimited\tsites\nsite\t\tlat\nHW01\tx\t1.5\n")
+    assert parsed.tables["sites"] == [{"site": "HW01", "_unnamed_2": "x", "lat": "1.5"}]
+
+
 def test_guess_version(magic_node):
     assert guess_data_model_version(magic_node, parse_text(MAGIC_TEXT)) == "3.0"
 
@@ -52,7 +62,9 @@ def test_validate_accepts_good_contribution(magic_node):
 
 
 def test_validate_flags_bad_column_value_and_table(magic_node):
-    bad = MAGIC_TEXT + """>>>>>>>>>>
+    bad = (
+        MAGIC_TEXT
+        + """>>>>>>>>>>
 tab delimited\tsites
 site\tlocation\tlat\tnot_a_real_column
 HW03\tHawaii\tnot-a-number\tx
@@ -61,6 +73,7 @@ tab delimited\tnot_a_table
 foo
 bar
 """
+    )
     report = validate_contribution(magic_node, parse_text(bad))
     messages = " | ".join(e.message for e in report.errors)
     assert "not_a_real_column" in messages
@@ -120,15 +133,37 @@ ERDA_TEXT = "\n>>>>>>>>>>\n".join(
         _tab_block(
             "contribution",
             ["id", "version", "data_model_version", "reference"],
-            [{"id": 155, "version": 1, "data_model_version": "1.0",
-              "reference": "10.1029/2003GC000626"}],
+            [
+                {
+                    "id": 155,
+                    "version": 1,
+                    "data_model_version": "1.0",
+                    "reference": "10.1029/2003GC000626",
+                }
+            ],
         ),
         _tab_block(
             "objects",
-            ["object", "title", "data_types", "expert_level", "keywords",
-             "computer_program", "project", "project_group", "continents_oceans",
-             "countries", "locations", "lat", "lon", "age_high", "age_low",
-             "age_unit", "timescale_epoch", "license"],
+            [
+                "object",
+                "title",
+                "data_types",
+                "expert_level",
+                "keywords",
+                "computer_program",
+                "project",
+                "project_group",
+                "continents_oceans",
+                "countries",
+                "locations",
+                "lat",
+                "lon",
+                "age_high",
+                "age_low",
+                "age_unit",
+                "timescale_epoch",
+                "license",
+            ],
             [
                 {
                     "object": "df2000-hydrocast",
@@ -142,8 +177,11 @@ ERDA_TEXT = "\n>>>>>>>>>>\n".join(
                     "continents_oceans": "Pacific Ocean",
                     "countries": "American Samoa",
                     "locations": "Vailulu'u Volcano:Samoan Islands",
-                    "lat": -14.2122, "lon": -169.0573,
-                    "age_high": 1, "age_low": 0, "age_unit": "Ma",
+                    "lat": -14.2122,
+                    "lon": -169.0573,
+                    "age_high": 1,
+                    "age_low": 0,
+                    "age_unit": "Ma",
                     "timescale_epoch": "Holocene",
                     "license": "CC BY 4.0",
                 },
@@ -162,12 +200,20 @@ ERDA_TEXT = "\n>>>>>>>>>>\n".join(
             "files",
             ["file", "object", "format", "media_type", "size_bytes"],
             [
-                {"file": "df2000.cmb.zip", "object": "df2000-hydrocast",
-                 "format": "zip", "media_type": "application/zip",
-                 "size_bytes": 2306867},
-                {"file": "garnet.peridotite.xenoliths.xls",
-                 "object": "garnet-peridotite-xenoliths", "format": "xls",
-                 "media_type": "application/vnd.ms-excel", "size_bytes": 503808},
+                {
+                    "file": "df2000.cmb.zip",
+                    "object": "df2000-hydrocast",
+                    "format": "zip",
+                    "media_type": "application/zip",
+                    "size_bytes": 2306867,
+                },
+                {
+                    "file": "garnet.peridotite.xenoliths.xls",
+                    "object": "garnet-peridotite-xenoliths",
+                    "format": "xls",
+                    "media_type": "application/vnd.ms-excel",
+                    "size_bytes": 503808,
+                },
             ],
         ),
     ]
@@ -230,76 +276,168 @@ OSU_MGR_TEXT = "\n>>>>>>>>>>\n".join(
         ),
         _tab_block(
             "cruises",
-            ["cruise", "osu_id", "cruise_name", "collection", "rv_name", "pi",
-             "pi_institution", "accession_date", "moratorium", "methods", "materials"],
-            [{
-                "cruise": "SR2113", "osu_id": "OSU-SR2113",
-                "cruise_name": "2021 Cascadia Margin Coring",
-                "collection": "MGG Holdings", "rv_name": "R/V Sally Ride",
-                "pi": "@hstaudigel", "pi_institution": "Oregon State University",
-                "accession_date": "2022-03-14", "moratorium": "f",
-                "methods": "Gravity Core:Dredge", "materials": "Sediment:Rock",
-            }],
+            [
+                "cruise",
+                "osu_id",
+                "cruise_name",
+                "collection",
+                "rv_name",
+                "pi",
+                "pi_institution",
+                "accession_date",
+                "moratorium",
+                "methods",
+                "materials",
+            ],
+            [
+                {
+                    "cruise": "SR2113",
+                    "osu_id": "OSU-SR2113",
+                    "cruise_name": "2021 Cascadia Margin Coring",
+                    "collection": "MGG Holdings",
+                    "rv_name": "R/V Sally Ride",
+                    "pi": "@hstaudigel",
+                    "pi_institution": "Oregon State University",
+                    "accession_date": "2022-03-14",
+                    "moratorium": "f",
+                    "methods": "Gravity Core:Dredge",
+                    "materials": "Sediment:Rock",
+                }
+            ],
         ),
         _tab_block(
             "cores",
-            ["core", "cruise", "osu_id", "core_number", "core_type", "method",
-             "material", "length", "lat", "lon", "water_depth", "start_date"],
-            [{
-                "core": "SR2113-17GC", "cruise": "SR2113", "osu_id": "OSU-SR2113-17GC",
-                "core_number": 17, "core_type": "GC", "method": "Gravity Core",
-                "material": "Sediment", "length": 412, "lat": 44.6368,
-                "lon": -124.9012, "water_depth": 2840, "start_date": "2021-08-14",
-            }],
+            [
+                "core",
+                "cruise",
+                "osu_id",
+                "core_number",
+                "core_type",
+                "method",
+                "material",
+                "length",
+                "lat",
+                "lon",
+                "water_depth",
+                "start_date",
+            ],
+            [
+                {
+                    "core": "SR2113-17GC",
+                    "cruise": "SR2113",
+                    "osu_id": "OSU-SR2113-17GC",
+                    "core_number": 17,
+                    "core_type": "GC",
+                    "method": "Gravity Core",
+                    "material": "Sediment",
+                    "length": 412,
+                    "lat": 44.6368,
+                    "lon": -124.9012,
+                    "water_depth": 2840,
+                    "start_date": "2021-08-14",
+                }
+            ],
         ),
         _tab_block(
             "sections",
-            ["section", "core", "osu_id", "section_number", "depth_top",
-             "depth_bottom", "length"],
+            ["section", "core", "osu_id", "section_number", "depth_top", "depth_bottom", "length"],
             [
-                {"section": "SR2113-17GC-1", "core": "SR2113-17GC",
-                 "osu_id": "OSU-SR2113-17GC-1", "section_number": 1,
-                 "depth_top": 0, "depth_bottom": 150, "length": 150},
-                {"section": "SR2113-17GC-2", "core": "SR2113-17GC",
-                 "osu_id": "OSU-SR2113-17GC-2", "section_number": 2,
-                 "depth_top": 150, "depth_bottom": 300, "length": 150},
+                {
+                    "section": "SR2113-17GC-1",
+                    "core": "SR2113-17GC",
+                    "osu_id": "OSU-SR2113-17GC-1",
+                    "section_number": 1,
+                    "depth_top": 0,
+                    "depth_bottom": 150,
+                    "length": 150,
+                },
+                {
+                    "section": "SR2113-17GC-2",
+                    "core": "SR2113-17GC",
+                    "osu_id": "OSU-SR2113-17GC-2",
+                    "section_number": 2,
+                    "depth_top": 150,
+                    "depth_bottom": 300,
+                    "length": 150,
+                },
             ],
         ),
         _tab_block(
             "section_halves",
-            ["section_half", "section", "osu_id", "half_type", "igsn",
-             "sesar_resource_type"],
-            [{"section_half": "SR2113-17GC-1A", "section": "SR2113-17GC-1",
-              "osu_id": "OSU-SR2113-17GC-1A", "half_type": "Archive",
-              "igsn": "OSU-SR2113-17GC-1A", "sesar_resource_type": "Core Half Round"}],
+            ["section_half", "section", "osu_id", "half_type", "igsn", "sesar_resource_type"],
+            [
+                {
+                    "section_half": "SR2113-17GC-1A",
+                    "section": "SR2113-17GC-1",
+                    "osu_id": "OSU-SR2113-17GC-1A",
+                    "half_type": "Archive",
+                    "igsn": "OSU-SR2113-17GC-1A",
+                    "sesar_resource_type": "Core Half Round",
+                }
+            ],
         ),
         _tab_block(
             "dives",
-            ["dive", "cruise", "osu_id", "dive_number", "method", "material",
-             "lat", "lon", "water_depth"],
-            [{"dive": "SR2113-D1", "cruise": "SR2113", "osu_id": "OSU-SR2113-D1",
-              "dive_number": 1, "method": "Dredge", "material": "Rock",
-              "lat": 44.9, "lon": -130.2, "water_depth": 2200}],
+            [
+                "dive",
+                "cruise",
+                "osu_id",
+                "dive_number",
+                "method",
+                "material",
+                "lat",
+                "lon",
+                "water_depth",
+            ],
+            [
+                {
+                    "dive": "SR2113-D1",
+                    "cruise": "SR2113",
+                    "osu_id": "OSU-SR2113-D1",
+                    "dive_number": 1,
+                    "method": "Dredge",
+                    "material": "Rock",
+                    "lat": 44.9,
+                    "lon": -130.2,
+                    "water_depth": 2200,
+                }
+            ],
         ),
         _tab_block(
             "dive_samples",
             ["dive_sample", "dive", "osu_id", "igsn", "material", "texture", "weight"],
-            [{"dive_sample": "SR2113-D1-1", "dive": "SR2113-D1",
-              "osu_id": "OSU-SR2113-D1-1", "igsn": "OSU-SR2113-D1-1",
-              "material": "Rock", "texture": "Basalt", "weight": 3.4}],
+            [
+                {
+                    "dive_sample": "SR2113-D1-1",
+                    "dive": "SR2113-D1",
+                    "osu_id": "OSU-SR2113-D1-1",
+                    "igsn": "OSU-SR2113-D1-1",
+                    "material": "Rock",
+                    "texture": "Basalt",
+                    "weight": 3.4,
+                }
+            ],
         ),
         _tab_block(
             "files",
             ["file", "file_type", "osu_id", "level", "media_type", "size_bytes"],
             [
-                {"file": "Collection/Holdings/SR2113/mstdata/OSU-SR2113-17GC-1A-mstdata.csv",
-                 "file_type": "mst-data", "osu_id": "OSU-SR2113-17GC-1A",
-                 "level": "section_halves", "media_type": "text/csv",
-                 "size_bytes": 918273},
-                {"file": "Collection/Holdings/SR2113/cruisereport/OSU-SR2113-cruisereport.pdf",
-                 "file_type": "cruise-report", "osu_id": "OSU-SR2113",
-                 "level": "cruises", "media_type": "application/pdf",
-                 "size_bytes": 4021994},
+                {
+                    "file": "Collection/Holdings/SR2113/mstdata/OSU-SR2113-17GC-1A-mstdata.csv",
+                    "file_type": "mst-data",
+                    "osu_id": "OSU-SR2113-17GC-1A",
+                    "level": "section_halves",
+                    "media_type": "text/csv",
+                    "size_bytes": 918273,
+                },
+                {
+                    "file": "Collection/Holdings/SR2113/cruisereport/OSU-SR2113-cruisereport.pdf",
+                    "file_type": "cruise-report",
+                    "osu_id": "OSU-SR2113",
+                    "level": "cruises",
+                    "media_type": "application/pdf",
+                    "size_bytes": 4021994,
+                },
             ],
         ),
     ]
