@@ -88,16 +88,14 @@ async def scan_contributions(client, index: str):
     Tables are not fetched here (a MagIC contribution can be hundreds of MB);
     `fetch_tables` loads them per id only when no S3 object exists.
     """
-    resp = await client.search(
-        index=index,
-        scroll="10m",
-        size=200,
-        body={
-            "query": {"term": {"type": "contribution"}},
-            "_source": ["summary.contribution"],
-        },
-        request_timeout=300,
-    )
+    body = {"query": {"term": {"type": "contribution"}}, "_source": ["summary.contribution"]}
+    async for source in _scroll(client, index, body):
+        yield source
+
+
+async def _scroll(client, index: str, body: dict):
+    """Yield the `_source` of every document matching `body` in the index."""
+    resp = await client.search(index=index, scroll="10m", size=200, body=body, request_timeout=300)
     scroll_id = resp.get("_scroll_id")
     try:
         while hits := resp["hits"]["hits"]:
@@ -170,7 +168,11 @@ async def _owner_from_query(client, users_index: str, handle: str, queries: list
             break
     if not hits:
         return None
-    user = hits[0]["_source"]
+    return _account_fields(hits[0]["_source"], handle)
+
+
+def _account_fields(user: dict, fallback_name: str) -> dict | None:
+    """The shared-account fields of one er_users document; None without an email."""
     email = (user.get("email") or {}).get("address")
     if not email:
         return None
@@ -181,7 +183,7 @@ async def _owner_from_query(client, users_index: str, handle: str, queries: list
     return {
         "handle": user.get("handle") or None,  # None: the account never chose one
         "email": str(email).lower(),
-        "name": full or handle,
+        "name": full or fallback_name,
         "orcid": (user.get("orcid") or {}).get("id") or None,  # "" is not unique
     }
 
@@ -498,4 +500,95 @@ async def ensure_owners(node, owners: list[dict], *, apply=False) -> dict:
             report["created"] += 1
         if apply:
             await session.commit()
+    return report
+
+
+_ACCOUNT_SOURCE = ["id", "email", "handle", "name", "orcid", "_password"]
+
+
+async def legacy_accounts(client, users_index: str) -> tuple[dict[str, dict], dict]:
+    """Every er_users account with an email, keyed by lower-cased email, with its
+    bcrypt `password_hash` (the legacy apps hash with plain bcrypt, which
+    `fiesta.security.verify_password` checks as is).
+
+    An email held by several documents keeps the highest id that has a password,
+    the one a legacy login most likely matched.
+    """
+    report = {"documents": 0, "no_email": 0, "duplicate_emails": 0}
+    best: dict[str, tuple[tuple, dict]] = {}
+    body = {"query": {"match_all": {}}, "_source": _ACCOUNT_SOURCE}
+    async for user in _scroll(client, users_index, body):
+        report["documents"] += 1
+        account = _account_fields(user, "")
+        if account is None:
+            report["no_email"] += 1
+            continue
+        password = user.get("_password")
+        account["password_hash"] = (
+            password if isinstance(password, str) and password.startswith("$2") else None
+        )
+        account["name"] = account["name"] or account["email"]
+        rank = (account["password_hash"] is not None, int(user.get("id") or 0))
+        held = best.get(account["email"])
+        if held:
+            report["duplicate_emails"] += 1
+            if held[0] >= rank:
+                continue
+        best[account["email"]] = (rank, account)
+    accounts = {email: account for email, (_, account) in best.items()}
+    report["no_password"] = sum(1 for a in accounts.values() if a["password_hash"] is None)
+    return accounts, report
+
+
+async def sync_legacy_users(node, *, client=None, apply=False) -> dict:
+    """Copy every er_users account into the shared users table, with its password.
+
+    Until cutover the legacy apps own passwords, so a legacy hash replaces the one
+    stored here whenever they differ; re-run to pick up password changes. New
+    accounts keep their legacy handle and ORCID unless another account already
+    holds them; names, handles and ORCIDs of existing accounts are left untouched.
+    """
+    if client is None:
+        from fiesta.search.client import get_opensearch
+
+        client = get_opensearch()
+    accounts, report = await legacy_accounts(client, node.legacy.users_index)
+    report.update(created=0, passwords_updated=0, unchanged=0)
+    async with get_sessionmaker(node.node.slug)() as session:
+        users = (await session.execute(select(User))).scalars().all()
+        by_email = {u.email.lower(): u for u in users}
+        handles = {u.handle.lower() for u in users if u.handle}
+        orcids = {u.orcid for u in users if u.orcid}
+        for email, account in sorted(accounts.items()):
+            user = by_email.get(email)
+            if user is not None:
+                if account["password_hash"] and user.password_hash != account["password_hash"]:
+                    user.password_hash = account["password_hash"]
+                    report["passwords_updated"] += 1
+                else:
+                    report["unchanged"] += 1
+                continue
+            handle = account["handle"]
+            if handle and handle.lower() in handles:
+                handle = None
+            orcid = account["orcid"]
+            if orcid and orcid in orcids:
+                orcid = None
+            session.add(
+                User(
+                    email=email,
+                    name=account["name"][:255],
+                    handle=handle,
+                    orcid=orcid,
+                    password_hash=account["password_hash"],
+                )
+            )
+            if handle:
+                handles.add(handle.lower())
+            if orcid:
+                orcids.add(orcid)
+            report["created"] += 1
+        if apply:
+            await session.commit()
+    report["applied"] = apply
     return report

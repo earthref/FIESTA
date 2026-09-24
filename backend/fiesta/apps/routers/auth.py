@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from fiesta.apps.deps import CurrentUser, SessionDep
 from fiesta.apps.schemas import RegisterIn, TokenOut, UserOut
@@ -14,16 +14,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserOut, status_code=201)
 async def register(payload: RegisterIn, session: SessionDep) -> UserOut:
+    email = payload.email.strip().lower()
     existing = (
-        await session.execute(select(User).where(User.email == payload.email))
+        await session.execute(select(User).where(func.lower(User.email) == email))
     ).scalar_one_or_none()
     if existing:
         raise HTTPException(409, "an account with this email already exists")
     if len(payload.password) < 8:
         raise HTTPException(422, "password must be at least 8 characters")
-    user = User(
-        email=payload.email, name=payload.name, password_hash=hash_password(payload.password)
-    )
+    user = User(email=email, name=payload.name, password_hash=hash_password(payload.password))
     session.add(user)
     await session.commit()
     return UserOut.from_db(user)
@@ -33,8 +32,11 @@ async def register(payload: RegisterIn, session: SessionDep) -> UserOut:
 async def login(
     form: Annotated[OAuth2PasswordRequestForm, Depends()], session: SessionDep
 ) -> TokenOut:
+    username = form.username.strip().lower()
     result = await session.execute(
-        select(User).where((User.email == form.username) | (User.handle == form.username))
+        select(User).where(
+            (func.lower(User.email) == username) | (func.lower(User.handle) == username)
+        )
     )
     user = result.scalar_one_or_none()
     if user is None or not verify_password(form.password, user.password_hash):
