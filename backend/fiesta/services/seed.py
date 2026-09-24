@@ -16,12 +16,12 @@ from fiesta.settings import get_settings
 
 def require_local(settings=None):
     settings = settings or get_settings()
-    allowed = {"localhost", "127.0.0.1", "::1", "postgres", "opensearch", "minio"}
+    allowed = {"localhost", "127.0.0.1", "::1", "postgres", "opensearch", "rustfs"}
     urls = [settings.database_url, settings.opensearch_url, settings.s3_endpoint]
     if settings.environment != "development" or any(
         not url or urlparse(url).hostname not in allowed for url in urls
     ):
-        raise ValueError("seed/reset requires development mode and local PG/OS/MinIO endpoints")
+        raise ValueError("seed/reset requires development mode and local PG/OS/S3 endpoints")
     if settings.sqlalchemy_url.query:
         raise ValueError("development seed database URL must not override connection parameters")
 

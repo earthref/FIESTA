@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     # deletes and recreates the node's index, so the name must be FIESTA's own.
     index_prefix: str = ""
 
-    # S3. s3_endpoint is set for MinIO / other S3-compatible stores and left
+    # S3. s3_endpoint is set for RustFS / other S3-compatible stores and left
     # empty for AWS itself. With s3_bucket set, every node stores its objects
     # in that one bucket under a "<slug>/" key prefix instead of the per-node
     # bucket named in its YAML (AWS bucket names are global, so "magic" is not

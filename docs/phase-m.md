@@ -11,7 +11,7 @@ make up FIESTA_NODE=magic,cdr
 make seed FIESTA_NODE=magic,cdr
 ```
 
-Docker runs Postgres, OpenSearch, MinIO, Mailpit, APIs, workers and frontends.
+Docker runs Postgres, OpenSearch, RustFS, Mailpit, APIs, workers and frontends.
 The current per-node process layout remains until Phase A; the same management
 routers are also available on the multi-node API under `/v2/{repository}`.
 No MARFIK, AWS, production credentials or live account is needed. Seed commands

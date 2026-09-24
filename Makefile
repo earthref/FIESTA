@@ -76,8 +76,8 @@ rebuild: ## Rebuild search from Postgres + immutable revision files (all nodes)
 ## ---- Local development (outside docker) ------------------------------------
 
 .PHONY: infra
-infra: ## Start only the infrastructure (postgres, opensearch, minio, mailpit)
-	$(COMPOSE) up -d postgres opensearch minio mailpit
+infra: ## Start only the infrastructure (postgres, opensearch, rustfs, mailpit)
+	$(COMPOSE) up -d postgres opensearch rustfs mailpit
 
 .PHONY: backend-dev
 backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :8000; portal links to `make frontend-dev`)

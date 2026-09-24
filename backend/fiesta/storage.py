@@ -1,4 +1,4 @@
-"""S3-compatible object storage (MinIO in dev, AWS S3 in production).
+"""S3-compatible object storage (RustFS in dev, AWS S3 in production).
 
 The bucket stores immutable revision files, manifests and derived artifacts.
 Postgres is authoritative for accounts, permissions and workflow pointers; recovery
@@ -35,7 +35,7 @@ class Storage:
             "aws_access_key_id": settings.s3_access_key,
             "aws_secret_access_key": settings.s3_secret_key,
             "region_name": settings.s3_region,
-            # MinIO wants path-style; AWS (no endpoint) prefers virtual-hosted.
+            # Local S3 (RustFS) wants path-style; AWS (no endpoint) prefers virtual-hosted.
             "config": Config(
                 s3={"addressing_style": "path" if settings.s3_endpoint else "virtual"}
             ),

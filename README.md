@@ -25,7 +25,7 @@ api         FastAPI + SQLAlchemy (async) + asyncpg + Pydantic v2 + Alembic — o
 worker      procrastinate (Postgres-native jobs): parse/validate/summarize/index, email
 postgres    Accounts + contribution workflow state (Postgres 16)
 opensearch  Denormalized search documents, one index per node
-minio       S3-compatible storage: canonical contribution files + manifests
+rustfs      S3-compatible storage: canonical contribution files + manifests
 ```
 
 **Durability:** Postgres owns accounts, permissions, settings and contribution
@@ -41,7 +41,7 @@ make up                       # infra + one API + one worker + one frontend for 
 ```
 
 Run `make` for all targets (tests, linting, e2e, rebuild, local dev servers).
-Multiple nodes run side by side sharing Postgres/OpenSearch/MinIO — each node
+Multiple nodes run side by side sharing Postgres/OpenSearch/RustFS — each node
 has its own search index, bucket, job queue, and node-scoped contributions,
 all served by the single API under `/v2/{node}/...`. The legacy
 `api.earthref.org` contract stays available unchanged at `/v1/...` for existing clients.
@@ -58,7 +58,7 @@ each node in `FIESTA_NODE` under its key, the same layout as `earthref.org/MagIC
 `http://localhost:8080/` goes to the first listed node. The portal bar links the
 running nodes to this frontend and every other node to earthref.org.
 
-- MinIO console: http://localhost:9001 · Mailpit (dev email): http://localhost:8025
+- RustFS (S3) console: http://localhost:9001/rustfs/console/ · Mailpit (dev email): http://localhost:8025
 - Base paths and the multi-node layout in a deployment: see [development.md](development.md).
 
 Create an account in the UI (or `docker compose run --rm api fiesta
