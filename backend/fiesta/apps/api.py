@@ -14,9 +14,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from fiesta.apps.deps import NodeDep, SessionDep
-from fiesta.apps.routers import auth, config, private, search, v1, workspaces
+from fiesta.apps.routers import admin, auth, config, private, search, v1, workspaces
 from fiesta.nodeconfig import get_deployment
 from fiesta.search.client import get_opensearch
+from fiesta.services import node_config
 from fiesta.settings import get_settings
 from fiesta.storage import Storage
 
@@ -25,6 +26,7 @@ from fiesta.storage import Storage
 async def lifespan(app: FastAPI):
     from fiesta.jobs.app import get_job_app
 
+    await node_config.refresh_deployment(force=True)
     for node in get_deployment().node_list:
         await Storage.for_node(node).ensure_bucket()
     async with get_job_app().open_async():
@@ -63,8 +65,16 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.middleware("http")
+    async def current_node_config(request, call_next):
+        # Nodes published in the admin UI (by any API process) are served
+        # within node_config.REFRESH_SECONDS.
+        await node_config.maybe_refresh()
+        return await call_next(request)
+
     @app.get("/v2/health-check", tags=["health"])
     async def health_check(session: SessionDep) -> dict:
+        deployment = get_deployment()
         database = search = storage = False
         with suppress(Exception):
             await session.execute(text("SELECT 1"))
@@ -89,28 +99,29 @@ def create_app() -> FastAPI:
     app.include_router(v1.router)
 
     app.include_router(auth.router, prefix="/v2")
+    # Before the /v2/{repository} routers: "admin" is a reserved node slug.
+    app.include_router(admin.router, prefix="/v2/admin")
     for router in (config.router, search.router, private.router, workspaces.router):
         app.include_router(router, prefix="/v2/{repository}")
 
-    # Plugin routes: one mount per plugin active on any enabled node, guarded
-    # per request so /v2/cdr/plugins/poles/... is a 404 while MagIC's works.
-    # (Unknown plugin names in a node YAML fail here, at startup.)
-    from fiesta.plugins import active_plugins
+    # Plugin routes: every known plugin is mounted once, guarded per request
+    # so /v2/cdr/plugins/poles/... is a 404 while MagIC's works -- a node
+    # published in the admin UI can activate any of them without a restart.
+    # (Unknown plugin names in a node YAML fail here, at startup, and in the
+    # admin UI's validation.)
+    from fiesta.plugins import active_plugins, all_plugins
 
-    mounted: set[str] = set()
     for node in deployment.node_list:
-        for plugin in active_plugins(node):
-            if plugin.name in mounted:
-                continue
-            mounted.add(plugin.name)
-            plugin_router = plugin.build_router()
-            if plugin_router is not None:
-                app.include_router(
-                    plugin_router,
-                    prefix=f"/v2/{{repository}}/plugins/{plugin.name}",
-                    tags=[f"plugin:{plugin.name}"],
-                    dependencies=[Depends(_require_plugin(plugin.name))],
-                )
+        active_plugins(node)
+    for plugin in all_plugins().values():
+        plugin_router = plugin.build_router()
+        if plugin_router is not None:
+            app.include_router(
+                plugin_router,
+                prefix=f"/v2/{{repository}}/plugins/{plugin.name}",
+                tags=[f"plugin:{plugin.name}"],
+                dependencies=[Depends(_require_plugin(plugin.name))],
+            )
     return app
 
 

@@ -13,7 +13,8 @@ class UserOut(BaseModel):
     email: str
     name: str
     orcid: str | None = None
-    is_admin: bool = False
+    is_admin: bool = False  # super admin: every node, node creation, accounts
+    admin_nodes: list[str] = []  # slugs of the nodes this user administers
     settings: dict = {}
 
     @classmethod
@@ -24,6 +25,7 @@ class UserOut(BaseModel):
             name=user.name,
             orcid=user.orcid,
             is_admin=user.is_admin,
+            admin_nodes=user.admin_nodes,
             settings=user.settings,
         )
 

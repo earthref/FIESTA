@@ -36,7 +36,9 @@ async def _own_contribution(
 def _out(contribution: Contribution, user) -> ContributionOut:
     return ContributionOut.from_db(
         contribution,
-        include_private_key=(contribution.contributor_id == user.id or user.is_admin),
+        include_private_key=(
+            contribution.contributor_id == user.id or user.is_node_admin(contribution.node)
+        ),
         contributor_name=user.name if contribution.contributor_id == user.id else None,
     )
 
@@ -57,7 +59,7 @@ async def list_contributions(
             output.append(
                 ContributionOut.from_db(
                     c,
-                    include_private_key=(c.contributor_id == user.id or user.is_admin),
+                    include_private_key=(c.contributor_id == user.id or user.is_node_admin(c.node)),
                     contributor_name=owner.name,
                 )
             )

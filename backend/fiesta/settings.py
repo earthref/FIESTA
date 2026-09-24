@@ -8,6 +8,7 @@ between nodes.
 
 import re
 import ssl
+import tempfile
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
@@ -51,6 +52,28 @@ class Settings(BaseSettings):
     # for a local stack; empty means every node in the file.
     config_file: Path = Path("../config/fiesta.yaml")
     node: str = ""
+
+    # Where node configuration is read from. "db": each node's published
+    # revision in Postgres (`fiesta init` imports the YAML files; the admin UI
+    # drafts and publishes new revisions). "files": the YAML files only, and
+    # node editing in the admin UI is off (unit tests, a local stack that
+    # should run this checkout's YAML against another environment's database).
+    node_config_source: str = "db"
+    # Where published node revisions are unpacked for NodeConfig to load.
+    node_cache_dir: Path = Path(tempfile.gettempdir()) / "fiesta-node-config"
+    # Where a published node revision is written to git: "none"; "files" (the
+    # directory of config_file, i.e. this checkout -- local development); or
+    # "github" (a commit on the branch node-config/<slug> of github_repo and a
+    # pull request into github_base_branch, opened by the worker).
+    config_publish: str = "none"
+    github_repo: str = "earthref/FIESTA"
+    github_token: str = ""
+    github_base_branch: str = "main"
+    github_config_path: str = "config"
+    github_pr_label: str = "internal"
+    # Ask GitHub to merge the pull request once CI passes (the repository must
+    # allow auto-merge).
+    github_auto_merge: bool = False
 
     # Postgres. Either SQLAlchemy form (postgresql+asyncpg://...) or a plain
     # libpq URL as used by psql (postgresql://...?sslmode=verify-full&

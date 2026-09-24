@@ -8,7 +8,6 @@ YAML, resolved relative to the YAML file's directory.
 """
 
 import json
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -256,7 +255,7 @@ class Deployment(BaseModel):
     model_config = {"frozen": True}
 
 
-def _load_node_yaml(path: Path) -> NodeConfig:
+def load_node_yaml(path: Path) -> NodeConfig:
     raw = yaml.safe_load(path.read_text())
     if raw.get("deployment") != "node":
         raise ValueError(f"{path} is not a node config")
@@ -275,14 +274,14 @@ def load_deployment(path: Path | None = None, only: list[str] | None = None) -> 
         raise ValueError(f"{path}: unsupported or missing `fiesta` config version")
     mode = raw.get("deployment")
     if mode == "node":
-        node = _load_node_yaml(path)
+        node = load_node_yaml(path)
         return Deployment(title=f"FIESTA — {node.node.title}", nodes={node.node.key.lower(): node})
     if mode != "api":
         raise ValueError(f"{path}: unknown deployment mode {mode!r}")
     api = raw["api"]
     nodes: dict[str, NodeConfig] = {}
     for ref in api["nodes"]:
-        node = _load_node_yaml((path.parent / ref).resolve())
+        node = load_node_yaml((path.parent / ref).resolve())
         nodes[node.node.key.lower()] = node
     wanted = {name.strip().lower() for name in only or () if name.strip()}
     if wanted:
@@ -293,7 +292,24 @@ def load_deployment(path: Path | None = None, only: list[str] | None = None) -> 
     return Deployment(title=api.get("title", "EarthRef FIESTA API"), nodes=nodes)
 
 
-@lru_cache
+_current: Deployment | None = None
+
+
 def get_deployment() -> Deployment:
-    """The process-wide deployment: FIESTA_CONFIG_FILE filtered by FIESTA_NODE."""
-    return load_deployment(only=get_settings().node.split(","))
+    """The process-wide deployment: FIESTA_CONFIG_FILE filtered by FIESTA_NODE,
+    with each node's published revision from Postgres swapped in once
+    `fiesta.services.node_config.refresh_deployment` has run (API startup,
+    worker tasks). Until then, and without a database, the YAML files."""
+    global _current
+    if _current is None:
+        _current = load_deployment(only=get_settings().node.split(","))
+    return _current
+
+
+def set_deployment(deployment: Deployment | None) -> None:
+    """Replace the process-wide deployment (None: reload the YAML next time)."""
+    global _current
+    _current = deployment
+
+
+get_deployment.cache_clear = lambda: set_deployment(None)  # type: ignore[attr-defined]

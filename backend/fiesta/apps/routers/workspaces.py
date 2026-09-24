@@ -28,7 +28,7 @@ async def list_workspaces(session: SessionDep, user: CurrentUser, node: NodeDep)
     result = []
     for w in rows:
         member = await session.get(WorkspaceMember, (w.id, user.id))
-        if user.is_admin or w.owner_id == user.id or member:
+        if user.is_node_admin(node.node.slug) or w.owner_id == user.id or member:
             result.append(
                 {
                     "id": w.id,
@@ -55,8 +55,10 @@ async def create_workspace(
 
 
 @router.put("/{workspace_id}/members")
-async def member_put(workspace_id: int, payload: MemberIn, session: SessionDep, user: CurrentUser):
-    await workspace_owner(session, workspace_id, user)
+async def member_put(
+    workspace_id: int, payload: MemberIn, session: SessionDep, user: CurrentUser, node: NodeDep
+):
+    await workspace_owner(session, workspace_id, user, node.node.slug)
     if await session.get(User, payload.user_id) is None:
         raise HTTPException(404, "user not found")
     member = await session.get(WorkspaceMember, (workspace_id, payload.user_id))
@@ -82,8 +84,10 @@ async def member_put(workspace_id: int, payload: MemberIn, session: SessionDep, 
 
 
 @router.delete("/{workspace_id}/members/{user_id}", status_code=204)
-async def member_delete(workspace_id: int, user_id: int, session: SessionDep, user: CurrentUser):
-    await workspace_owner(session, workspace_id, user)
+async def member_delete(
+    workspace_id: int, user_id: int, session: SessionDep, user: CurrentUser, node: NodeDep
+):
+    await workspace_owner(session, workspace_id, user, node.node.slug)
     member = await session.get(WorkspaceMember, (workspace_id, user_id))
     if member:
         await session.delete(member)
@@ -98,10 +102,16 @@ async def member_delete(workspace_id: int, user_id: int, session: SessionDep, us
 
 
 @router.put("/{workspace_id}/contributions/{contribution_id}")
-async def assign(workspace_id: int, contribution_id: int, session: SessionDep, user: CurrentUser):
-    await workspace_owner(session, workspace_id, user)
+async def assign(
+    workspace_id: int, contribution_id: int, session: SessionDep, user: CurrentUser, node: NodeDep
+):
+    await workspace_owner(session, workspace_id, user, node.node.slug)
     c = await session.get(Contribution, contribution_id)
-    if c is None or c.deleted_at or (c.contributor_id != user.id and not user.is_admin):
+    if (
+        c is None
+        or c.deleted_at
+        or (c.contributor_id != user.id and not user.is_node_admin(c.node))
+    ):
         raise HTTPException(404, "contribution not found")
     c.workspace_id = workspace_id
     session.add(

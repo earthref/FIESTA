@@ -23,6 +23,7 @@ dependencies = [
     "python-multipart>=0.0.9",
     "typer>=0.12",
     "aiosmtplib>=3.0",
+    "ruamel-yaml>=0.18",
 ]
 
 [project.scripts]

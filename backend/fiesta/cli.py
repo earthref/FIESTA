@@ -9,20 +9,11 @@ fiesta worker        run the procrastinate job worker
 import asyncio
 
 import typer
-from alembic.config import Config as AlembicConfig
 
-from alembic import command as alembic_command
+from fiesta.db.migrate import ADVISORY_LOCK, migrate_node, migrate_node_locked
 from fiesta.settings import get_settings
 
 app = typer.Typer(help="FIESTA operations")
-
-
-def _migrate(node_slug: str) -> None:
-    """Apply migrations for one node: its schema, its alembic_version, and
-    (first time only) the shared users table. See alembic/env.py."""
-    config = AlembicConfig("alembic.ini")
-    config.attributes["node_slug"] = node_slug
-    alembic_command.upgrade(config, "head")
 
 
 def _apply_procrastinate_schema() -> None:
@@ -38,18 +29,23 @@ def init(with_admin: bool = typer.Option(False, help="create an initial admin ac
     """Apply migrations, job-queue schema, and ensure search index + bucket.
 
     Safe to run concurrently (the API and worker containers both run it on
-    start): a Postgres advisory lock serializes the schema work."""
+    start): a Postgres advisory lock serializes the schema work.
+
+    With FIESTA_NODE_CONFIG_SOURCE=db (the default) it then records every
+    YAML node in config/ as a published revision unless Postgres has already
+    published that exact tree, and also brings up nodes that so far exist only
+    in Postgres (published in the admin UI, not yet merged into git)."""
     import psycopg
 
-    from fiesta.nodeconfig import get_deployment
+    from fiesta.nodeconfig import get_deployment, load_deployment
 
     deployment = get_deployment()
     nodes = deployment.node_list
 
     with psycopg.connect(get_settings().procrastinate_dsn) as lock_conn:
-        lock_conn.execute("SELECT pg_advisory_lock(715517)")
+        lock_conn.execute(f"SELECT pg_advisory_lock({ADVISORY_LOCK})")
         for node in nodes:
-            _migrate(node.node.slug)
+            migrate_node(node.node.slug)
             typer.echo(f"migrated schema {node.node.slug!r}")
         try:
             _apply_procrastinate_schema()
@@ -58,12 +54,27 @@ def init(with_admin: bool = typer.Option(False, help="create an initial admin ac
             typer.echo(f"procrastinate schema: {exc}")
 
     async def ensure() -> None:
+        from fiesta.db.session import get_sessionmaker
         from fiesta.search.client import get_opensearch
         from fiesta.search.index import ensure_index
+        from fiesta.services import node_config
         from fiesta.storage import Storage
 
+        served = nodes
+        if node_config.enabled():
+            async with get_sessionmaker(None)() as session:
+                imported = await node_config.import_repo_nodes(session, load_deployment(only=None))
+                await session.commit()
+            typer.echo(f"node configuration imported from config/: {imported or 'none changed'}")
+            served = (await node_config.refresh_deployment(force=True)).node_list
+            migrated = {n.node.slug for n in nodes}
+            for node in served:
+                if node.node.slug not in migrated:
+                    await asyncio.to_thread(migrate_node_locked, node.node.slug)
+                    typer.echo(f"migrated schema {node.node.slug!r} (published in the admin UI)")
+
         client = get_opensearch()
-        for node in nodes:
+        for node in served:
             await Storage.for_node(node).ensure_bucket()
             try:
                 await ensure_index(client, node.search_index)
@@ -147,15 +158,17 @@ def worker(concurrency: int = 4) -> None:
     """Run the procrastinate worker for every enabled node.
 
     Listens to each node's own queue (contribution processing) plus the shared
-    "default" queue (emails)."""
+    "default" queue (emails, node configuration publication). Without
+    FIESTA_NODE it listens on every queue, so a node published in the admin
+    UI is processed without a restart."""
     import fiesta.jobs.tasks  # noqa: F401 — register tasks
     from fiesta.jobs.app import get_job_app
     from fiesta.nodeconfig import get_deployment
 
     deployment = get_deployment()
     nodes = deployment.node_list
-    queues = [n.node.slug for n in nodes] + ["default"]
-    typer.echo(f"worker listening on queues: {queues}")
+    queues = [n.node.slug for n in nodes] + ["default"] if get_settings().node.strip() else None
+    typer.echo(f"worker listening on queues: {queues or 'all'}")
     import subprocess
     import sys
 
@@ -191,12 +204,9 @@ def drain_outbox():
 
 @app.command("outbox-worker")
 def outbox_worker():
-    from fiesta.nodeconfig import get_deployment
     from fiesta.services.outbox import serve
 
-    deployment = get_deployment()
-    nodes = deployment.node_list
-    asyncio.run(serve(nodes))
+    asyncio.run(serve())
 
 
 @app.command()

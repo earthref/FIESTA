@@ -64,7 +64,10 @@ export interface UserOut {
   email: string;
   name: string;
   orcid: string | null;
+  /** Super admin: every node, node creation, accounts. */
   is_admin: boolean;
+  /** Slugs of the nodes this user administers. */
+  admin_nodes: string[];
 }
 
 export interface TokenResponse {

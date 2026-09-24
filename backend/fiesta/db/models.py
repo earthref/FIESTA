@@ -19,11 +19,14 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
+    inspect,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm.base import NO_VALUE
 
 from fiesta.db.base import NODE_SCHEMA, SHARED_SCHEMA, Base
 
@@ -48,6 +51,26 @@ class User(Base):
     settings: Mapped[dict] = mapped_column(JSON, default=dict)
 
     contributions: Mapped[list["Contribution"]] = relationship(back_populates="contributor")
+    # `is_admin` is the super admin flag (every node, node creation, accounts);
+    # node_roles make a user an admin of individual nodes.
+    node_roles: Mapped[list["NodeAdmin"]] = relationship(
+        foreign_keys="NodeAdmin.user_id", lazy="selectin", cascade="all, delete-orphan"
+    )
+
+    def _loaded_roles(self) -> list["NodeAdmin"]:
+        # Queried users arrive with node_roles (selectin); a user created in
+        # this request has none, and must not trigger a lazy load under asyncio.
+        value = inspect(self).attrs.node_roles.loaded_value
+        return [] if value is NO_VALUE else value
+
+    @property
+    def admin_nodes(self) -> list[str]:
+        """Slugs of the nodes this user administers as a node admin."""
+        return sorted(role.node for role in self._loaded_roles())
+
+    def is_node_admin(self, node_slug: str) -> bool:
+        """Super admin, or an admin of the node with this slug."""
+        return self.is_admin or any(role.node == node_slug for role in self._loaded_roles())
 
 
 class ContributionStatus(enum.StrEnum):
@@ -196,3 +219,73 @@ class LegacyImport(Base):
     fingerprint: Mapped[str] = mapped_column(String(64))
     revision_id: Mapped[str | None] = mapped_column(String(36))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class NodeAdmin(Base):
+    """A user's admin role on one node (by slug). Shared schema, like the
+    accounts: nodes come and go through the admin UI."""
+
+    __tablename__ = "node_admins"
+    __table_args__ = {"schema": SHARED_SCHEMA}
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{SHARED_SCHEMA}.users.id", ondelete="CASCADE"), primary_key=True
+    )
+    node: Mapped[str] = mapped_column(String(32), primary_key=True, index=True)
+    granted_by: Mapped[int | None] = mapped_column(ForeignKey(f"{SHARED_SCHEMA}.users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ConfigBlob(Base):
+    """A content-addressed file of a node configuration tree (sha256 of content)."""
+
+    __tablename__ = "config_blobs"
+    __table_args__ = {"schema": SHARED_SCHEMA}
+    sha256: Mapped[str] = mapped_column(String(64), primary_key=True)
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+
+
+class NodeRecord(Base):
+    """A node known to Postgres: its published revision (what the API serves)
+    and its one open draft (what admins are editing)."""
+
+    __tablename__ = "nodes"
+    __table_args__ = {"schema": SHARED_SCHEMA}
+    slug: Mapped[str] = mapped_column(String(32), primary_key=True)
+    key: Mapped[str] = mapped_column(String(32), unique=True)
+    published_revision_id: Mapped[int | None] = mapped_column(Integer)
+    draft_revision_id: Mapped[int | None] = mapped_column(Integer)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey(f"{SHARED_SCHEMA}.users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class NodeRevision(Base):
+    """One version of a node's configuration tree -- `config/<slug>.yaml` plus
+    everything under `config/<slug>/` -- as {path: sha256} over config_blobs.
+
+    state: draft (editable, at most one per node) -> published (served) ->
+    superseded, or draft -> discarded. A published tree is never edited.
+    repo_* track the copy written to the repository on publication."""
+
+    __tablename__ = "node_revisions"
+    __table_args__ = (UniqueConstraint("node", "number"), {"schema": SHARED_SCHEMA})
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    node: Mapped[str] = mapped_column(String(32), index=True)
+    number: Mapped[int] = mapped_column(Integer)
+    parent_id: Mapped[int | None] = mapped_column(Integer)
+    files: Mapped[dict] = mapped_column(JSON)
+    tree_hash: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(16), default="draft")
+    source: Mapped[str] = mapped_column(String(8), default="ui")  # ui | repo
+    message: Mapped[str | None] = mapped_column(Text)
+    lock_version: Mapped[int] = mapped_column(Integer, default=1)
+    author_id: Mapped[int | None] = mapped_column(ForeignKey(f"{SHARED_SCHEMA}.users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+    published_by: Mapped[int | None] = mapped_column(ForeignKey(f"{SHARED_SCHEMA}.users.id"))
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # pending | written | failed | skipped; repo_ref is the PR URL or the path written
+    repo_status: Mapped[str | None] = mapped_column(String(16))
+    repo_ref: Mapped[str | None] = mapped_column(Text)
+    repo_error: Mapped[str | None] = mapped_column(Text)

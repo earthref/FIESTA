@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -5,6 +6,10 @@ import pytest
 from fiesta.nodeconfig import Deployment, load_deployment
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
+
+# Tests read node configuration from config/ (and fake their sessions); the
+# Postgres-backed node configuration has its own tests that switch it on.
+os.environ.setdefault("FIESTA_NODE_CONFIG_SOURCE", "files")
 
 
 @pytest.fixture(scope="session")

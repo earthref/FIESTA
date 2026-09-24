@@ -59,6 +59,10 @@ processes at existing services instead; nothing else about the app changes.
 | `FIESTA_S3_ENDPOINT` | Leave empty for AWS S3; set for RustFS or other S3-compatible stores. |
 | `FIESTA_S3_BUCKET` | One shared bucket for all nodes, each under a `<slug>/` key prefix (AWS bucket names are global, so the YAML's `magic` is not available there). Unset = one bucket per node as named in the YAML. |
 | `FIESTA_S3_ACCESS_KEY` / `FIESTA_S3_SECRET_KEY` / `FIESTA_S3_REGION` | An IAM user scoped to that bucket only. |
+| `FIESTA_NODE_CONFIG_SOURCE` | `db` (default): serve each node's published revision from Postgres (`fiesta init` imports `config/`; the admin UI drafts and publishes). `files`: the YAML only, admin node editing off — for a local stack running this checkout's YAML against another environment's database. |
+| `FIESTA_NODE_CACHE_DIR` | Where published node trees are unpacked (default: a `fiesta-node-config` dir under the system temp dir). |
+| `FIESTA_CONFIG_PUBLISH` | Where a publication is written in the repository: `none` (default), `files` (this checkout's `config/`; local dev) or `github` (production). |
+| `FIESTA_GITHUB_TOKEN` / `FIESTA_GITHUB_REPO` / `FIESTA_GITHUB_BASE_BRANCH` / `FIESTA_GITHUB_PR_LABEL` / `FIESTA_GITHUB_AUTO_MERGE` | For `github`: a fine-grained token with Contents + Pull requests write on `earthref/FIESTA` (default repo), base `main`, PR label `internal`; auto-merge needs "Allow auto-merge" on the repository. The worker commits to `node-config/<slug>` and opens or updates one PR per node. |
 
 ### Schema per node
 
