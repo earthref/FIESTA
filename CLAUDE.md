@@ -41,6 +41,7 @@ scripts/               e2e.sh (full workflow against a running stack), pg-node-r
 ```bash
 make up                         # compose: infra + one API (/v2/{node}/…, API_PORT) + one worker + one frontend (FRONTEND_PORT, every node in FIESTA_NODE at /<Key>/, e.g. :8080/MagIC/); hot reload (Vite dev server, uvicorn --reload) — a git pull is live; returns once healthy
 make up FIESTA_NODE=magic       # one node; PROD=1 runs the built images (what CI e2e and a deployment use)
+make up ENV_FILE=.env.prod FIESTA_NODE=magic   # local API/SPA on that file's Postgres/OpenSearch/S3 (real logins); no `fiesta init`, no worker
 make down / make clean          # stop (keep volumes) / stop and DELETE volumes
 make infra                      # only postgres+opensearch+rustfs+mailpit, for host-run app processes
 make backend-dev                # uv sync + fiesta init + uvicorn fiesta.apps.api --reload for every node in FIESTA_NODE (:8000)

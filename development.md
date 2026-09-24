@@ -17,7 +17,18 @@ each wraps.
 cp .env.example .env      # FIESTA_NODE selects the node(s); ports overridable
 make up                   # hot reload: Vite dev server + uvicorn --reload + watchfiles worker
 make up PROD=1            # the built images, exactly as CI e2e and a deployment run them
+make up ENV_FILE=.env.prod FIESTA_NODE=magic   # local code against that file's Postgres/OpenSearch/S3
 ```
+
+Without `ENV_FILE` the stack needs no credentials: accounts and data live in the
+local containers. With `ENV_FILE`, `docker-compose.remote.yml` points the API at
+the Postgres, OpenSearch and S3 named in that file, so login uses the real
+EarthRef accounts and the pages show the deployment's contributions. That mode
+skips `fiesta init` (this branch's migrations must not run against a shared
+database) and starts no worker (it would take the deployment's jobs); uploads
+and edits write to the remote. Values in the file are compose-interpolated, so
+single-quote a secret containing `$`. `FIESTA_NODE` on the command line beats
+the file's.
 
 `make up` layers `docker-compose.dev.yml` over `docker-compose.yml`: the
 backend package is bind-mounted into the image and uvicorn reloads on change,
