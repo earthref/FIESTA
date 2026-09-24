@@ -10,8 +10,11 @@
 # PROD=1 runs the built images exactly as deployed (CI's e2e job does this).
 # (The dev overlay mounts a named volume at frontend/node_modules; `up` creates
 # that directory first so Docker does not leave a root-owned one behind.)
-COMPOSE_FILES := -f docker-compose.yml$(if $(PROD),, -f docker-compose.dev.yml)
-COMPOSE := docker compose $(COMPOSE_FILES)
+# ENV_FILE=.env.prod adds docker-compose.remote.yml: the API uses that file's
+# Postgres/OpenSearch/S3 (no `fiesta init`, no worker) instead of the local
+# containers, so login and data are the remote deployment's.
+COMPOSE_FILES := -f docker-compose.yml$(if $(PROD),, -f docker-compose.dev.yml)$(if $(ENV_FILE), -f docker-compose.remote.yml)
+COMPOSE := docker compose $(COMPOSE_FILES)$(if $(ENV_FILE),$(if $(wildcard .env), --env-file .env) --env-file $(ENV_FILE))
 
 # Read the local .env so FIESTA_NODE / port overrides are visible to make.
 -include .env
@@ -31,7 +34,7 @@ help: ## List available targets
 ## ---- Docker Compose stack -------------------------------------------------
 
 .PHONY: up
-up: ## Start infra + the API + worker + the frontend (every node in FIESTA_NODE at /<Key>/), hot reload (PROD=1 for the built images)
+up: ## Start infra + the API + worker + the frontend (every node in FIESTA_NODE at /<Key>/), hot reload (PROD=1 for the built images, ENV_FILE=.env.prod for remote data)
 	@mkdir -p frontend/node_modules
 	$(COMPOSE) up -d --build --remove-orphans --wait
 
