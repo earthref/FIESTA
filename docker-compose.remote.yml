@@ -12,7 +12,7 @@
 # makes the api skip `fiesta init` (this branch's migrations would run against
 # the shared database), and the worker is not started (it would consume the
 # deployment's queues with this branch's code). The local postgres/opensearch/
-# minio containers still start but are unused.
+# rustfs containers still start but are unused.
 
 x-remote-env: &remote-env
   FIESTA_REMOTE: "1"
