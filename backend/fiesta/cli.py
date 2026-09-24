@@ -89,8 +89,10 @@ def create_user(
 ) -> None:
     """Create an account."""
 
+    email = email.strip().lower()
+
     async def run() -> None:
-        from sqlalchemy import select
+        from sqlalchemy import func, select
 
         from fiesta.db.models import User
         from fiesta.db.session import get_sessionmaker
@@ -98,7 +100,7 @@ def create_user(
 
         async with get_sessionmaker(None)() as session:
             existing = (
-                await session.execute(select(User).where(User.email == email))
+                await session.execute(select(User).where(func.lower(User.email) == email))
             ).scalar_one_or_none()
             if existing:
                 typer.echo(f"user {email} already exists (id {existing.id})")
@@ -281,6 +283,32 @@ def ensure_owners_command(node: str, owners: str, apply: bool = False):
     wanted = json.loads(Path(owners).read_text())
     result = asyncio.run(ensure_owners(target, wanted, apply=apply))
     typer.echo(json.dumps(result, indent=2))
+
+
+@app.command("sync-legacy-users")
+def sync_legacy_users_command(node: str, apply: bool = False):
+    """Copy every legacy er_users account, with its bcrypt password, into the shared
+    users table; --apply to write. Re-run until cutover to pick up password changes.
+
+    Accounts are shared, so any node whose YAML has a `legacy:` block will do (it
+    names the users index).
+    """
+    import json
+
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.services.legacy_inventory import sync_legacy_users
+
+    target = get_deployment().node_for(node)
+
+    async def run():
+        from fiesta.search.client import get_opensearch
+
+        try:
+            return await sync_legacy_users(target, apply=apply)
+        finally:
+            await get_opensearch().close()
+
+    typer.echo(json.dumps(asyncio.run(run()), indent=2))
 
 
 @app.command("verify-storage")

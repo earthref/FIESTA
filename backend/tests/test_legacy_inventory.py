@@ -261,3 +261,63 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
             "contributions": [13, 17],
         },
     ]
+
+
+class FakeUsersScroll:
+    """er_users in two scroll pages."""
+
+    def __init__(self, users):
+        self.pages = [users[:2], users[2:], []]
+
+    async def search(self, index, body, scroll, **kwargs):
+        assert index == "er_users" and "_password" in body["_source"]
+        return {"_scroll_id": "u1", "hits": {"hits": [{"_source": u} for u in self.pages[0]]}}
+
+    async def scroll(self, scroll_id, scroll, **kwargs):
+        self.pages.pop(0)
+        return {"_scroll_id": scroll_id, "hits": {"hits": [{"_source": u} for u in self.pages[0]]}}
+
+    async def clear_scroll(self, scroll_id):
+        pass
+
+
+async def test_legacy_accounts_carry_bcrypt_passwords():
+    from fiesta.security import hash_password, verify_password
+
+    # bcryptjs writes $2a$; the same hash must verify here.
+    legacy_hash = "$2a$" + hash_password("correct horse")[4:]
+    users = [
+        {
+            "id": 3,
+            "email": {"address": "Alice@Example.org"},
+            "handle": "alice",
+            "name": {"given": "Alice", "family": "Ng"},
+            "_password": legacy_hash,
+        },
+        {"id": 4, "handle": "ghost"},  # no email: skipped
+        {
+            "id": 9,
+            "email": {"address": "alice@example.org"},
+            "handle": "alice2",
+            "_password": "",
+        },  # newer duplicate without a password loses
+        {
+            "id": 5,
+            "email": {"address": "bob@example.org"},
+            "orcid": {"id": ""},
+            "name": {"published": "B. Lee"},
+        },
+    ]
+    accounts, report = await legacy_inventory.legacy_accounts(FakeUsersScroll(users), "er_users")
+    assert report == {"documents": 4, "no_email": 1, "duplicate_emails": 1, "no_password": 1}
+    alice = accounts["alice@example.org"]
+    assert (alice["handle"], alice["name"]) == ("alice", "Alice Ng")
+    assert verify_password("correct horse", alice["password_hash"])
+    assert not verify_password("wrong", alice["password_hash"])
+    assert accounts["bob@example.org"] == {
+        "handle": None,
+        "email": "bob@example.org",
+        "name": "B. Lee",
+        "orcid": None,
+        "password_hash": None,
+    }

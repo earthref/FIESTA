@@ -127,11 +127,11 @@ async def legacy_user(
     when missing or wrong so each route can answer with its legacy body."""
     if credentials is None:
         return None
-    username = credentials.username.strip()
+    username = credentials.username.strip().lower()
     user = (
         await session.execute(
             select(User).where(
-                (User.email == username) | (func.lower(User.handle) == username.lower())
+                (func.lower(User.email) == username) | (func.lower(User.handle) == username)
             )
         )
     ).scalar_one_or_none()

@@ -55,6 +55,10 @@ Last updated: 2026-09-11
       read them to size the import (E2)? — Answered 2026-09-14: legacy OpenSearch index
       `<slug>` + `er_users` on the MARFIK cluster and `<slug>-activated-contributions` /
       `<slug>-contributions` buckets; credentials in `.env.prod`, used via `make fiesta ENV_FILE=`.
+- [ ] **Copy EarthRef logins into FIESTA** (2026-09-24): legacy accounts were imported
+      without passwords, so every EarthRef login fails. Dry run, then apply:
+      `make fiesta ENV_FILE=.env.prod ARGS="sync-legacy-users magic"` and again with
+      `--apply`. Re-run until cutover to pick up legacy password changes (legacy wins).
 
 ## 2026-09-11 — MARFIK legacy app deploys
 

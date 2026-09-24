@@ -202,7 +202,11 @@ activated file from the first bucket that has `<id>/<slug>_contribution_<id>.txt
 and exports private contributions (index-only) from their indexed tables into
 `<dir>/files/`. It writes `inventory.json` and `owners.json`; unresolved handles are
 errors and their contributions are left out. `fiesta ensure-owners <node> <dir>/owners.json
---apply` creates the missing accounts without passwords. Run it with the production
+--apply` creates the missing accounts without passwords. `fiesta sync-legacy-users
+<node> --apply` copies every `er_users` account (not only owners) with its `_password`:
+the legacy apps hash with plain bcrypt, so the hash is stored as `password_hash` and
+EarthRef logins work unchanged. Legacy owns passwords until cutover, so a differing
+legacy hash overwrites the local one; re-run it to pick up password changes. Run it with the production
 environment file only through `make fiesta ENV_FILE=.env.prod ARGS="..."`; the
 snapshot directory (`migration/`) is gitignored because it may hold private data.
 The legacy index keeps one document per contribution updated in place, so history
