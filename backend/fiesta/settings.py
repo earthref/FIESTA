@@ -6,9 +6,11 @@ lives and credentials — the parts that differ between environments, not
 between nodes.
 """
 
+import re
 import ssl
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import quote
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -155,8 +157,21 @@ class Settings(BaseSettings):
     @property
     def procrastinate_dsn(self) -> str:
         """Procrastinate connects with psycopg (libpq), which understands the
-        libpq params natively; only the SQLAlchemy driver suffix is dropped."""
-        return self.database_url.replace("postgresql+asyncpg://", "postgresql://")
+        libpq params natively; only the SQLAlchemy driver suffix is dropped.
+
+        psycopg[binary] bundles its own OpenSSL, whose default CA location is
+        not the OS bundle, so `sslrootcert=system` fails verification against a
+        public certificate. It becomes the CA file Python's ssl uses (the one
+        asyncpg verifies with in sqlalchemy_connect_args)."""
+        dsn = self.database_url.replace("postgresql+asyncpg://", "postgresql://")
+        cafile = ssl.get_default_verify_paths().cafile
+        if cafile:
+            dsn = re.sub(
+                r"(?<=[?&])sslrootcert=system(?=&|$)",
+                "sslrootcert=" + quote(cafile, safe="/"),
+                dsn,
+            )
+        return dsn
 
 
 @lru_cache

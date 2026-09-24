@@ -26,8 +26,7 @@ services:
     volumes: *dev-backend-volumes
     command: >-
       sh -c "{ [ $${FIESTA_REMOTE:-0} = 1 ] || fiesta init; } &&
-             uvicorn fiesta.apps.api:create_app --factory --host 0.0.0.0 --port 8000
-             --reload --reload-dir /app/fiesta"
+             uvicorn fiesta.apps.api:create_app --factory --host 0.0.0.0 --port 8000 --reload --reload-dir /app/fiesta"
   worker:
     volumes: *dev-backend-volumes
     command: watchfiles --filter python "fiesta worker" /app/fiesta
