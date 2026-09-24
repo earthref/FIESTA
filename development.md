@@ -31,6 +31,14 @@ loads at startup) and a dependency change (`npm install` runs on container
 start; the backend image is rebuilt by `--build`). Frontend `node_modules`
 live in a named volume (`node-modules`), removed by `make clean`.
 
+Local S3 is RustFS (console at `http://localhost:9001/rustfs/console/`, login
+`fiesta` / `fiesta-secret`). It replaced MinIO in Sept 2026, when MinIO stopped
+publishing public images. A stack created before the switch has contribution
+files in the old `fiesta_minio-data` volume that RustFS does not read, so run
+`make clean && make up` once, then `docker volume rm fiesta_minio-data`, and
+rename any `MINIO_*` overrides in `.env` to `RUSTFS_ACCESS_KEY`,
+`RUSTFS_SECRET_KEY`, `RUSTFS_API_PORT`, `RUSTFS_CONSOLE_PORT`.
+
 `FIESTA_NODE` accepts a comma-separated list to run several nodes at once:
 
 ```sh
@@ -43,7 +51,7 @@ publishes each node under its key — `http://localhost:8080/MagIC/`,
 `/KArAr/`, `/CDR/` (any case works) — the layout `earthref.org/MagIC/` uses,
 and sends `http://localhost:8080/` (or any path outside a node prefix) to the
 same path under the first listed node. Infrastructure is shared; isolation
-comes from a per-node OpenSearch index, MinIO bucket, procrastinate queue, and
+comes from a per-node OpenSearch index, S3 prefix, procrastinate queue, and
 a Postgres schema per node (`magic`, `cdr`, ...) for the workflow tables.
 Accounts are shared across nodes (one EarthRef login, in the `public`
 schema). If your local database predates the per-node schemas, `make clean`
@@ -92,7 +100,7 @@ npm run build` builds one node under a prefix; `make frontend-dev` (or
 ## Backend only (against the compose infra)
 
 ```sh
-docker compose up -d postgres opensearch minio mailpit
+docker compose up -d postgres opensearch rustfs mailpit
 cd backend
 uv sync
 export FIESTA_CONFIG_FILE=../config/fiesta.yaml

@@ -11,16 +11,14 @@ services:
       test: ['CMD-SHELL', 'pg_isready -U fiesta -d fiesta']
       interval: 2s
       retries: 30
-  minio:
-    # Docker Hub stopped serving minio/minio in Sept 2026; Quay hosts the same digest.
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-    command: server /data
+  rustfs:
+    image: rustfs/rustfs:1.0.0
     environment:
-      MINIO_ROOT_USER: fiesta
-      MINIO_ROOT_PASSWORD: fiesta-secret
+      RUSTFS_ACCESS_KEY: fiesta
+      RUSTFS_SECRET_KEY: fiesta-secret
     ports: ['127.0.0.1:29000:9000']
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/health']
       interval: 2s
       retries: 30
   opensearch:
@@ -52,14 +50,14 @@ services:
       FIESTA_CONFIG_FILE: /config/fiesta.yaml
       FIESTA_DATABASE_URL: postgresql+asyncpg://fiesta:fiesta@postgres:5432/fiesta
       FIESTA_OPENSEARCH_URL: http://opensearch:9200
-      FIESTA_S3_ENDPOINT: http://minio:9000
+      FIESTA_S3_ENDPOINT: http://rustfs:9000
       FIESTA_S3_BUCKET: fiesta-test
       FIESTA_SMTP_HOST: mailpit
       FIESTA_SECRET_KEY: local-integration-test-key-at-least-32-characters
     depends_on:
       postgres: {condition: service_healthy}
       opensearch: {condition: service_healthy}
-      minio: {condition: service_healthy}
+      rustfs: {condition: service_healthy}
       mailpit: {condition: service_started}
     command: >-
       sh -c "fiesta init && fiesta seed && pytest -q && fiesta verify-storage"

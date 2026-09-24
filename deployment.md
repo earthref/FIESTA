@@ -19,7 +19,7 @@ process serves every node listed in `config/fiesta.yaml`; `FIESTA_NODE`
 Set `FIESTA_NODE` to a comma-separated list (e.g. `magic,karar,cdr`) and the
 compose stack runs one API + one worker for every listed node plus one frontend
 per node, all against shared infrastructure. Isolation per node: its own
-OpenSearch index, MinIO bucket, procrastinate job queue, and node-scoped
+OpenSearch index, S3 prefix, procrastinate job queue, and node-scoped
 contribution rows in Postgres; user accounts are shared (one EarthRef login
 works on every node). Concurrent start-up is safe — `fiesta init` serializes
 schema migrations behind a Postgres advisory lock. In front of it all, route
@@ -56,7 +56,7 @@ processes at existing services instead; nothing else about the app changes.
 | `FIESTA_DB_SHARED_SCHEMA` | Schema for the shared `users` table (default `public`). Each node's tables live in a schema named after its slug. |
 | `FIESTA_OPENSEARCH_URL` | `https://user:pass@host:9400` — scheme and credentials come from the URL. `FIESTA_OPENSEARCH_VERIFY_CERTS` / `FIESTA_OPENSEARCH_CA_CERTS` for TLS. |
 | `FIESTA_INDEX_PREFIX` | Prepended to every node's `search.index`. **Set it whenever the cluster is shared** (e.g. `fiesta-`): `fiesta rebuild` deletes and recreates the node's index, and the legacy Meteor apps use indices named plainly `magic`, `cdr`, `karar`, `kdd`. |
-| `FIESTA_S3_ENDPOINT` | Leave empty for AWS S3; set for MinIO or other S3-compatible stores. |
+| `FIESTA_S3_ENDPOINT` | Leave empty for AWS S3; set for RustFS or other S3-compatible stores. |
 | `FIESTA_S3_BUCKET` | One shared bucket for all nodes, each under a `<slug>/` key prefix (AWS bucket names are global, so the YAML's `magic` is not available there). Unset = one bucket per node as named in the YAML. |
 | `FIESTA_S3_ACCESS_KEY` / `FIESTA_S3_SECRET_KEY` / `FIESTA_S3_REGION` | An IAM user scoped to that bucket only. |
 

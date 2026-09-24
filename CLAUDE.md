@@ -13,7 +13,7 @@ Jobs:       procrastinate (Postgres-native LISTEN/NOTIFY) — parse / validate /
 Frontend:   Vite + React + TanStack Router/Query SPA, Tailwind; one build serves any node (branding from the API)
 Database:   Postgres 16 — shared `users` schema + one schema per node (magic, cdr, …), Alembic per schema
 Search:     OpenSearch, one index per node (FIESTA_INDEX_PREFIX when the cluster is shared)
-Storage:    S3-compatible (prod: AWS S3, one bucket + `<slug>/` prefix; local: MinIO) — canonical files + manifest.json
+Storage:    S3-compatible (prod: AWS S3, one bucket + `<slug>/` prefix; local: RustFS) — canonical files + manifest.json
 Email:      SMTP (local: Mailpit :8025)
 Infra:      Docker Compose locally (`make up` = hot-reload overlay, `PROD=1` = built images); deploy.yml runs /srv/fiesta/bin/deploy-fiesta.sh on the self-hosted runner `fiesta-ct` (label fiesta-deploy) on push to main — it is a release-dir swap (uv sync + ruff/pytest, npm ci + per-node vite build with base paths, `fiesta init` per node, symlink /srv/fiesta/current, health checks), no docker compose, so compose changes never reach production
 Linting:    ruff (Python), biome (TypeScript)
@@ -42,7 +42,7 @@ scripts/               e2e.sh (full workflow against a running stack), pg-node-r
 make up                         # compose: infra + one API (/v2/{node}/…, API_PORT) + one worker + one frontend (FRONTEND_PORT, every node in FIESTA_NODE at /<Key>/, e.g. :8080/MagIC/); hot reload (Vite dev server, uvicorn --reload) — a git pull is live; returns once healthy
 make up FIESTA_NODE=magic       # one node; PROD=1 runs the built images (what CI e2e and a deployment use)
 make down / make clean          # stop (keep volumes) / stop and DELETE volumes
-make infra                      # only postgres+opensearch+minio+mailpit, for host-run app processes
+make infra                      # only postgres+opensearch+rustfs+mailpit, for host-run app processes
 make backend-dev                # uv sync + fiesta init + uvicorn fiesta.apps.api --reload for every node in FIESTA_NODE (:8000)
 make worker-dev                 # procrastinate worker for every node in FIESTA_NODE
 make frontend-dev               # Vite on :5173 for every node in FIESTA_NODE (:5173/MagIC/; nvm use first — Node 22); VITE_API_TARGET=http://localhost:18000 to re-point

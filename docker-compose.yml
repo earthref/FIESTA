@@ -3,9 +3,9 @@
 # One API process (`api`, /v2/{node}/...), one job worker and one frontend
 # serve every node in FIESTA_NODE; the frontend publishes each node under its
 # key, http://localhost:8080/MagIC/, /CDR/, ... (the earthref.org layout).
-# Postgres, OpenSearch, MinIO and Mailpit are shared. Contributions are scoped
-# per node in Postgres (one schema each), each node has its own OpenSearch
-# index, MinIO prefix and job queue.
+# Postgres, OpenSearch, RustFS (S3) and Mailpit are shared. Contributions are
+# scoped per node in Postgres (one schema each), each node has its own
+# OpenSearch index, S3 prefix and job queue.
 #
 #   FIESTA_NODE=magic,karar,cdr     # in .env: which nodes the stack serves
 #   make up                         # runs the nodes in FIESTA_NODE
@@ -18,7 +18,7 @@
 # The portal bar links the nodes in FIESTA_NODE to this frontend and every
 # other node to earthref.org (FIESTA_FRONTEND_URL, read by the API).
 #
-# Postgres owns application state; MinIO holds revision files.
+# Postgres owns application state; RustFS holds revision files.
 # `make rebuild` regenerates only the OpenSearch projection.
 
 name: fiesta
@@ -30,9 +30,9 @@ x-backend-env: &backend-env
   FIESTA_S3_BUCKET: fiesta-local
   FIESTA_DATABASE_URL: postgresql+asyncpg://fiesta:${POSTGRES_PASSWORD:-fiesta}@postgres:5432/fiesta
   FIESTA_OPENSEARCH_URL: http://opensearch:9200
-  FIESTA_S3_ENDPOINT: http://minio:9000
-  FIESTA_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-fiesta}
-  FIESTA_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-fiesta-secret}
+  FIESTA_S3_ENDPOINT: http://rustfs:9000
+  FIESTA_S3_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-fiesta}
+  FIESTA_S3_SECRET_KEY: ${RUSTFS_SECRET_KEY:-fiesta-secret}
   FIESTA_SECRET_KEY: ${FIESTA_SECRET_KEY:-dev-only-change-me}
   FIESTA_SMTP_HOST: mailpit
   FIESTA_SMTP_PORT: 1025
@@ -75,20 +75,23 @@ services:
       timeout: 5s
       retries: 20
 
-  minio:
-    # Docker Hub stopped serving minio/minio in Sept 2026; Quay hosts the same digest.
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-    command: server /data --console-address ":9001"
+  # S3-compatible store. RustFS replaced MinIO in Sept 2026, when MinIO stopped
+  # publishing public images (Docker Hub, then Quay). Console:
+  # http://localhost:9001/rustfs/console/
+  rustfs:
+    image: rustfs/rustfs:1.0.0
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-fiesta}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-fiesta-secret}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-fiesta}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-fiesta-secret}
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
     volumes:
-      - minio-data:/data
+      - rustfs-data:/data
     ports:
-      - "${MINIO_API_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "${RUSTFS_API_PORT:-9000}:9000"
+      - "${RUSTFS_CONSOLE_PORT:-9001}:9001"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/health || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -119,7 +122,7 @@ services:
         condition: service_healthy
       opensearch:
         condition: service_healthy
-      minio:
+      rustfs:
         condition: service_healthy
     healthcheck:
       test:
@@ -159,4 +162,4 @@ services:
 volumes:
   postgres-data:
   opensearch-data:
-  minio-data:
+  rustfs-data:
