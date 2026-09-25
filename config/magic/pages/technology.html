@@ -1,3 +1,53 @@
-<p>This MagIC page is coming soon. In the meantime, please see
-<a href="https://earthref.org/MagIC">the MagIC website</a> or
-<a href="mailto:magic@earthref.org">email us</a> with any questions.</p>
+<p class="er-justify">
+  The introduction of the <a href="/data-models/3.0">MagIC Data Model 3.0</a> reduces the time needed
+  to understand its structure and simplifies the process of using it to contribute data to MagIC.
+  The number of tables has decreased from 31 to 9 and is now organized in 6 hierarchical levels from
+  the raw measurements up to the publication metadata. This data model, along with method codes and
+  vocabulary lists, can be browsed via the MagIC website, downloaded as JSON files for reuse, and
+  easily updated by the MagIC team by request from the community via either email or reporting an
+  issue at the MagIC GitHub repository.
+</p>
+
+<p><img src="technology/ecosystem.png" alt="The MagIC ecosystem" style="display: block; max-width: 800px; margin: 2em auto" /></p>
+
+<h2>Technologies and Surrounding Ecosystem</h2>
+<p class="er-justify">
+  MagIC has completed the transition from an Oracle backed, Perl based, server-oriented website to an
+  Elasticsearch and MongoDB backed, Meteor and React based, thick client website technology stack.
+  This thick client system has enabled the creation of a more responsive interface including
+  uploading templates with column name suggestions and table/column exclusion toggles. Active data
+  validation and online spreadsheet editing are additional features being developed using these new
+  technologies. Uploading data into the archive with comprehensive indexing and completing
+  complicated search queries to obtain unique datasets are an order of magnitude quicker than the old
+  system. Searches return row level data over all contributions and the user can choose to download
+  the rows meeting the search criteria from only a subset of tables, if desired. The selected data
+  are available for download as either a single text file of various formats or an Excel
+  spreadsheet. The MagIC Website Application is deployed to Docker containers that are orchestrated
+  with Kubernetes and integrate with Amazon Web Services.
+</p>
+<div class="er-logos">
+  <figure><img src="technology/react.svg" alt="" /><figcaption>React</figcaption></figure>
+  <figure><img src="technology/semantic-ui.svg" alt="" /><figcaption>Semantic UI</figcaption></figure>
+  <figure><img src="technology/meteor.svg" alt="" /><figcaption>Meteor</figcaption></figure>
+  <figure><img src="technology/mongodb.svg" alt="" /><figcaption>MongoDB</figcaption></figure>
+  <figure><img src="technology/elasticsearch.svg" alt="" /><figcaption>Elasticsearch</figcaption></figure>
+  <figure><img src="technology/aws.svg" alt="" /><figcaption>AWS</figcaption></figure>
+  <figure><img src="technology/docker.svg" alt="" /><figcaption>Docker</figcaption></figure>
+  <figure><img src="technology/kubernetes.svg" alt="" /><figcaption>Kubernetes</figcaption></figure>
+</div>
+
+<h2>Integrations and Discovery</h2>
+<p class="er-justify">
+  For effective inclusion in online data aggregators and search engines, an XML sitemap has been
+  added to the website and contributions are served with schema.org and JSON-LD compliant data
+  descriptions for indexing by Google Search, EarthCube’s Project 418/419, the European Plate
+  Observing System, and any other entities that wish to query MagIC.
+</p>
+<div class="er-logos">
+  <figure><img src="technology/crossref.png" alt="Crossref" /><figcaption>Reference Metadata</figcaption></figure>
+  <figure><img src="technology/ezid.png" alt="EZID" /><figcaption>DOI Minting</figcaption></figure>
+  <figure><img src="technology/json-ld.png" alt="JSON-LD" /><figcaption>Structured Data</figcaption></figure>
+  <figure><img src="technology/scientific-data.png" alt="Scientific Data" /><figcaption>Nature Repository</figcaption></figure>
+  <figure><img src="technology/datacite.png" alt="DataCite" /><figcaption>Data DOI Metadata</figcaption></figure>
+  <figure><img src="technology/orcid.png" alt="ORCID" /><figcaption>ORCiD Member</figcaption></figure>
+</div>

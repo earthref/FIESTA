@@ -89,6 +89,9 @@ pages:
   - { slug: links, title: Links }
   - { slug: help, title: Help, menu: right, icon: question-circle }
   - { slug: jupyter-notebooks, title: Jupyter Notebooks, menu: hidden }
+  - { slug: help-text-file-format, title: The MagIC Text File Format, menu: hidden }
+  - { slug: help-uploading-data, title: Uploading Data to MagIC, menu: hidden }
+  - { slug: help-create-account, title: Creating a MagIC Account, menu: hidden }
 
 # Plugin options (one map per plugin, validated against its Options model;
 # edited in the admin UI's Plugins tab).

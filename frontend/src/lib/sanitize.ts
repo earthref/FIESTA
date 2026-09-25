@@ -4,16 +4,28 @@
 // reach the DOM.
 
 import DOMPurify from "dompurify";
+import { nodeUrl, siteUrl } from "./base";
 
 const purifier = DOMPurify();
 
-// External links open in a new tab without a referrer or an opener handle.
+// Paths are written node-relative so one file works under any base path:
+// href="/search" is an SPA route of this node, and a relative
+// src="people/x.jpg" is a file in config/<node>/assets/. External links open
+// in a new tab without a referrer or an opener handle.
 purifier.addHook("afterSanitizeAttributes", (node) => {
   if (node.tagName === "A" && node.hasAttribute("href")) {
     const href = node.getAttribute("href") ?? "";
     if (/^https?:\/\//i.test(href)) {
       node.setAttribute("target", "_blank");
       node.setAttribute("rel", "noopener noreferrer");
+    } else if (/^\/(?!\/)/.test(href)) {
+      node.setAttribute("href", siteUrl(href));
+    }
+  }
+  if (node.tagName === "IMG" && node.hasAttribute("src")) {
+    const src = node.getAttribute("src") ?? "";
+    if (!/^([a-z][a-z0-9+.-]*:|\/)/i.test(src)) {
+      node.setAttribute("src", nodeUrl(`/config/assets/${src}`));
     }
   }
 });

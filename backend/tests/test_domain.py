@@ -675,7 +675,7 @@ def test_pages_and_filters_are_node_configuration(magic_node):
     # scoped to the Locations level's Poles view.
     assert [p.slug for p in magic_node.pages][:2] == ["about", "technology"]
     assert magic_node.page("help").menu == "right"
-    assert "coming soon" in magic_node.load_page_html("about")
+    assert "Mission Statement" in magic_node.load_page_html("about")
     with pytest.raises(KeyError):
         magic_node.load_page_html("nope")
     public = magic_node.public_config()
