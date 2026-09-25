@@ -83,9 +83,8 @@ infra: ## Start only the infrastructure (postgres, opensearch, rustfs, mailpit)
 	$(COMPOSE) up -d postgres opensearch rustfs mailpit
 
 .PHONY: backend-dev
-backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :8000; portal links to `make frontend-dev`)
+backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :8000)
 	cd backend && uv sync && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) \
-		FIESTA_FRONTEND_URL=http://localhost:5173 \
 		uv run sh -c "fiesta init && uvicorn fiesta.apps.api:create_app --factory --reload"
 
 .PHONY: fiesta

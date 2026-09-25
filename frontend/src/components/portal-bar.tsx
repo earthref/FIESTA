@@ -3,7 +3,7 @@ import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { isAnyAdmin } from "../lib/admin";
 import { useAuth } from "../lib/auth";
 import { useNodeConfig } from "../lib/config";
-import { PORTALS } from "../lib/portals";
+import { PORTALS, portalUrl } from "../lib/portals";
 import { useLoginModal } from "./login-modal";
 import { MobileDrawer } from "./mobile-drawer";
 import { Icon } from "./ui/icon";
@@ -80,9 +80,6 @@ export function PortalBar() {
               ...(index === 0 ? { paddingLeft: 0 } : {}),
               ...(active ? { color: portal.color, borderBottomColor: portal.color } : {}),
             };
-            // In a multi-node local stack, cross-link to sibling nodes running
-            // on this host instead of the production URLs.
-            const localUrl = config?.portal_urls?.[portal.label.toLowerCase()];
             return active ? (
               <Link key={portal.label} to="/" className={itemClass} style={style}>
                 {portal.label}
@@ -90,7 +87,7 @@ export function PortalBar() {
             ) : (
               <a
                 key={portal.label}
-                href={localUrl ?? portal.url}
+                href={portalUrl(portal, config?.deployment_nodes)}
                 className={itemClass}
                 style={style}
               >

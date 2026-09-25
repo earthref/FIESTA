@@ -16,7 +16,7 @@
 #   frontend   8080      (all nodes: http://localhost:8080/MagIC/, /KArAr/, ...)
 #
 # The portal bar links the nodes in FIESTA_NODE to this frontend and every
-# other node to earthref.org (FIESTA_FRONTEND_URL, read by the API).
+# other node to earthref.org (frontend/src/lib/portals.ts).
 #
 # Postgres owns application state; RustFS holds revision files.
 # `make rebuild` regenerates only the OpenSearch projection.
@@ -37,9 +37,6 @@ x-backend-env: &backend-env
   FIESTA_SMTP_HOST: mailpit
   FIESTA_SMTP_PORT: 1025
   FIESTA_CORS_ORIGINS: '["http://localhost:5173","http://localhost:${FRONTEND_PORT:-8080}"]'
-  # Local-dev portal-bar cross-links: the nodes this stack runs live on the
-  # one frontend below at /<Key>/; every other node keeps its earthref.org link.
-  FIESTA_FRONTEND_URL: http://localhost:${FRONTEND_PORT:-8080}
 
 services:
   postgres:

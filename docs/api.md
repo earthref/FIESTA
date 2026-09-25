@@ -162,7 +162,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "has_method_codes": true,
   "doi_prefix": "10.7288",
   "plugins": {"poles": { /* frontend_config per active plugin */ }},
-  "portal_urls": {"magic": "http://localhost:8080/MagIC", "cdr": "http://localhost:8080/CDR"}
+  "deployment_nodes": ["MagIC", "KdD", "CDR", "KArAr", "ERDA", "OSU-MGR"]
 }
 ```
 
@@ -173,10 +173,9 @@ tab) it names, empty meaning all. `facets` lists the facet filters' fields (what
 facet filters). `pages` are the content pages in menu order.
 
 `search_levels` is extended with any plugin-contributed levels; `plugins` (a map
-of active plugin name → its `frontend_config`) and `portal_urls` (local-dev
-links for every node this API serves on the one local frontend,
-`FIESTA_FRONTEND_URL` + `/<Key>`; empty in production) are added by the config
-route on top of the node's own `public_config()`.
+of active plugin name → its `frontend_config`) and `deployment_nodes` (the
+keys of every node this API serves, which the portal bar links next to itself
+off the production hosts) are added by the config route on top of the node's own `public_config()`.
 
 ### Search & retrieval
 

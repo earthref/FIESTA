@@ -1,3 +1,5 @@
+import { BASE_PATH, BUILD_BASE, NODES } from "./base";
+
 /** EarthRef portal registry rendered in the fixed top portal bar. */
 export interface Portal {
   label: string;
@@ -21,3 +23,30 @@ export const PORTALS: Portal[] = [
   { label: "References", url: "https://earthref.org/ERR/", color: "#006600" },
   { label: "Users", url: "https://earthref.org/ERML/", color: "#006600" },
 ];
+
+// Hosts the production URLs above live on: a page served from one of them
+// links every portal to production.
+const productionHosts = new Set(PORTALS.map((portal) => new URL(portal.url).hostname));
+
+// Where this deployment serves its nodes, each under /<Key>/: the build base
+// in the multi-node layout (http://localhost:8080/MagIC/), the parent of the
+// node's own prefix with one build per node (dev.earthref.org/MagIC/). A
+// build at "/" on a hostname of its own has no siblings on this origin.
+const siblingBase: string | null = NODES.length
+  ? BUILD_BASE
+  : BASE_PATH === "/"
+    ? null
+    : BASE_PATH.replace(/[^/]+\/$/, "");
+
+/**
+ * The URL a portal links to. Off the production hosts (a local stack, the dev
+ * server), a node this deployment also serves -- listed in fiesta-env.js for
+ * the multi-node layout, else the API's `deployment_nodes` -- links to its
+ * instance next to this one; everything else keeps its production URL.
+ */
+export function portalUrl(portal: Portal, deploymentNodes: string[] = []): string {
+  if (siblingBase === null || productionHosts.has(location.hostname)) return portal.url;
+  const slug = portal.label.toLowerCase();
+  const served = NODES.length ? NODES : deploymentNodes.map((key) => key.toLowerCase());
+  return served.includes(slug) ? `${siblingBase}${portal.label}/` : portal.url;
+}
