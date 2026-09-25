@@ -71,7 +71,7 @@ export function ContributionPage() {
     .filter((entry) => typeof entry.count === "number");
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Contribution {id}</h1>

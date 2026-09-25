@@ -1,4 +1,4 @@
-import { Outlet, useRouterState } from "@tanstack/react-router";
+import { Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { Footer } from "../components/footer";
@@ -8,17 +8,9 @@ import { NodeMenu } from "../components/node-menu";
 import { PortalBar } from "../components/portal-bar";
 import { PageSpinner } from "../components/ui/spinner";
 import { applyNodeTheme, useNodeConfig } from "../lib/config";
-import { cx } from "../lib/utils";
-
-/** Routes that use the legacy `.full-width` layout variant (padding 0 2em). */
-const FULL_WIDTH_ROUTES = ["/search", "/data-models", "/admin"];
 
 export function RootLayout() {
   const { data: config, isLoading, error } = useNodeConfig();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const fullWidth = FULL_WIDTH_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
 
   useEffect(() => {
     if (config) applyNodeTheme(config);
@@ -51,14 +43,10 @@ export function RootLayout() {
         <PortalBar />
         {/* layout-content: padding-top/bottom 4em clears the fixed bars (layout.less:41-44) */}
         <div className="pt-[4em] sm:pb-[4em]">
-          <NodeHeader fullWidth={fullWidth} />
-          <NodeMenu fullWidth={fullWidth} />
-          <main
-            className={cx(
-              "clear-both pt-[1.25em] lg:pt-0",
-              fullWidth ? "w-full px-[2em]" : "er-container",
-            )}
-          >
+          {/* Every page uses the legacy `.full-width` layout variant (padding 0 2em). */}
+          <NodeHeader />
+          <NodeMenu />
+          <main className="clear-both w-full px-[2em] pt-[1.25em] lg:pt-0">
             <Outlet />
           </main>
         </div>

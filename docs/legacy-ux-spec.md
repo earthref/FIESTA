@@ -40,7 +40,7 @@ I now have everything needed. Here is the exhaustive pixel-level layout specific
 ```
 
 CSS facts:
-- **Container width**: content wrapper is `ui main layout-content container` (`layout.jsx:49`). `container` = standard Semantic `.ui.container` max-width (grid-driven, ~933–1127px stepped by breakpoint). If `fullWidth`, class becomes `full-width` with `padding-left/right: 2em` instead (`layout.less:46-49`).
+- **Container width**: content wrapper is `ui main layout-content container` (`layout.jsx:49`). `container` = standard Semantic `.ui.container` max-width (grid-driven, ~933–1127px stepped by breakpoint). If `fullWidth`, class becomes `full-width` with `padding-left/right: 2em` instead (`layout.less:46-49`). **FIESTA deviation (2026-09-25):** every page uses the `full-width` variant (header, node menu and content at `padding: 0 2em`); the fixed-width container is retired.
 - **layout-content**: `padding-top: 4em !important; padding-bottom: 4em !important` (`layout.less:41-44`).
 - **Top bar**: `ui top fixed secondary pointing menu top-menu`; `.top-menu, .footer { background:#F8F8F8 !important }` (`layout.less:19-21`). Secondary-pointing menu = borderless, no segment look, active item gets a pointing underline. Right menu: `width:auto; left:auto; right:0; border-bottom-color:transparent` (`layout.less:23-28`).
 - **Footer**: `ui bottom fixed small menu footer`; inner `ui container` forced `width: calc(100% - 4em)` (`layout.jsx:117`). `#react-root > .layout.pushable > .footer { margin-top:-47px }` and its `.segment { padding-top:0.25em; padding-bottom:0.25em }` (`layout.less:63-71`). Footer buttons `ui button compact basic <color>` with `margin:0.5em 1em`. FIESTA logo img `height:1.75em; margin:-1.25em 0.5em -.5em` (`layout.jsx:142`).
@@ -362,8 +362,8 @@ ui grid divided → Grid.Row
 ### Measured metrics (home page, 2026-09-11, 1400×900 vs magic.earthref.org/magic)
 
 - **Container**: `ui container` = 1127px at ≥1200px (933px ≥992, 723px ≥768,
-  else 1em side margins) — `.er-container` in `index.css`; the header and node
-  menu share it. `ui grid divided`: margin −1rem, row padding 1rem 0, twelve/four
+  else 1em side margins); FIESTA renders the home page full width instead (see
+  Container width above). `ui grid divided`: margin −1rem, row padding 1rem 0, twelve/four
   wide columns (75%/25%) with 1rem side padding; the news column's divider is a
   `−1px 0 0 0` box-shadow, and it opens with a `ui divider` (margin 1rem 0).
 - **Primary cards** (`ui three cards`): wrapper margin −.875em −1em, cards

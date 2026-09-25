@@ -25,7 +25,7 @@ export function ContentPage() {
   if (!config) return <PageSpinner />;
   if (!page) return <NotFoundPage />;
   return (
-    <div className="mx-auto max-w-3xl py-6">
+    <div className="py-6">
       <h1 className="mb-3 text-xl font-semibold text-gray-900">{page.title}</h1>
       {content.error ? (
         <ErrorMessage error={content.error} />

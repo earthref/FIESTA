@@ -9,7 +9,7 @@ export function UploadPage() {
   const { openLogin } = useLoginModal();
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <h1 className="mb-1 text-xl font-semibold text-gray-900">Upload a contribution</h1>
       <p className="mb-5 text-sm text-gray-600">
         Upload a {config?.key} text file to your private workspace. It will be parsed, validated,
