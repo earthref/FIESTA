@@ -14,6 +14,7 @@ import { Modal } from "../components/ui/modal";
 import { Spinner } from "../components/ui/spinner";
 import { Table, TBody, Td, THead, Th, Tr } from "../components/ui/table";
 import {
+  type AdminConfig,
   type AdminNode,
   type AdminUser,
   adminKeys,
@@ -176,7 +177,10 @@ function NewNodeModal({ nodes, onClose }: { nodes: AdminNode[]; onClose: () => v
 
 const PAGE = 50;
 
-function UsersPanel({ superAdmin }: { superAdmin: boolean }) {
+type GrantableNode = Pick<AdminNode, "slug" | "key" | "color">;
+
+function UsersPanel({ config }: { config: AdminConfig }) {
+  const superAdmin = config.is_super_admin;
   const [q, setQ] = useState("");
   const [role, setRole] = useState<"" | "super" | "node">("");
   const [offset, setOffset] = useState(0);
@@ -192,8 +196,10 @@ function UsersPanel({ superAdmin }: { superAdmin: boolean }) {
   const nodes = useQuery({
     queryKey: adminKeys.nodes,
     queryFn: () => api<AdminNode[]>("/v2/admin/nodes"),
-    enabled: superAdmin,
+    enabled: superAdmin && config.editing,
   });
+  // Every node Postgres knows, or (node editing off) the nodes this API serves.
+  const grantable: GrantableNode[] = config.editing ? (nodes.data ?? []) : (config.nodes ?? []);
   const total = users.data?.total ?? 0;
   return (
     <div>
@@ -293,7 +299,7 @@ function UsersPanel({ superAdmin }: { superAdmin: boolean }) {
       {editing && (
         <UserModal
           user={editing === "new" ? null : editing}
-          nodes={nodes.data ?? []}
+          nodes={grantable}
           onClose={() => setEditing(null)}
         />
       )}
@@ -307,7 +313,7 @@ function UserModal({
   onClose,
 }: {
   user: AdminUser | null;
-  nodes: AdminNode[];
+  nodes: GrantableNode[];
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -443,6 +449,30 @@ function UserModal({
 
 // --- Page -----------------------------------------------------------------------
 
+/** The Nodes tab on an API that serves node configuration from config/ files
+ * (FIESTA_NODE_CONFIG_SOURCE=files), e.g. a local stack on another
+ * environment's database: node editing is off there. */
+function NodeEditingOff() {
+  return (
+    <div className="max-w-2xl rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-gray-800">
+      <p className="mb-2 font-semibold">Node editing is off on this API.</p>
+      <p className="mb-2">
+        It serves node configuration from the <code>config/</code> files in its checkout (
+        <code>FIESTA_NODE_CONFIG_SOURCE=files</code>), not from Postgres, so there are no drafts to
+        edit or publish here. A local stack started with <code>make up ENV_FILE=…</code> runs this
+        way by default, so it cannot publish into a shared database by accident.
+      </p>
+      <p>
+        To edit nodes from this stack anyway, restart it with{" "}
+        <code>FIESTA_NODE_CONFIG_SOURCE=db</code> (e.g.{" "}
+        <code>make up ENV_FILE=.env.prod FIESTA_NODE_CONFIG_SOURCE=db</code>). Publications then go
+        live on that database's deployment and are not written to git from here. The Accounts tab
+        works either way.
+      </p>
+    </div>
+  );
+}
+
 export function AdminPage() {
   const search = useSearch({ from: "/admin" }) as AdminParams;
   const navigate = useNavigate();
@@ -456,12 +486,6 @@ export function AdminPage() {
           {config.data?.is_super_admin
             ? "You are a super admin: every FIESTA node and every EarthRef account."
             : `You administer ${config.data?.admin_nodes.join(", ") ?? "…"}.`}
-          {config.data && !config.data.editing && (
-            <span className="ml-1 text-amber-700">
-              This deployment reads node configuration from files; edit config/ in the repository
-              instead.
-            </span>
-          )}
         </p>
         <Tabs
           tabs={[
@@ -473,12 +497,16 @@ export function AdminPage() {
         />
         {config.isLoading ? (
           <Spinner />
+        ) : config.error ? (
+          <ErrorMessage error={config.error} />
         ) : tab === "nodes" ? (
           config.data?.editing ? (
             <NodesPanel superAdmin={!!config.data?.is_super_admin} />
-          ) : null
+          ) : (
+            <NodeEditingOff />
+          )
         ) : (
-          <UsersPanel superAdmin={!!config.data?.is_super_admin} />
+          config.data && <UsersPanel config={config.data} />
         )}
       </div>
     </AdminGate>

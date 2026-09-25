@@ -27,9 +27,12 @@ x-remote-env: &remote-env
   FIESTA_S3_SECRET_KEY: ${FIESTA_S3_SECRET_KEY:?ENV_FILE must set FIESTA_S3_SECRET_KEY}
   FIESTA_S3_REGION: ${FIESTA_S3_REGION:-us-east-1}
   FIESTA_S3_BUCKET: ${FIESTA_S3_BUCKET:?ENV_FILE must set FIESTA_S3_BUCKET}
-  # This checkout's config/ YAML, not the deployment's published node revisions,
-  # and no node editing from here (it would publish to the shared database).
-  FIESTA_NODE_CONFIG_SOURCE: files
+  # By default this checkout's config/ YAML, not the deployment's published node
+  # revisions, and no node editing from here. FIESTA_NODE_CONFIG_SOURCE=db (on the
+  # make command line or in the env file) serves and edits the deployment's
+  # published revisions instead; publications then go live on that deployment
+  # and are not written to git from this stack.
+  FIESTA_NODE_CONFIG_SOURCE: ${FIESTA_NODE_CONFIG_SOURCE:-files}
 
 services:
   api:

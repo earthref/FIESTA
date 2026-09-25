@@ -339,6 +339,11 @@ async def admin_config(user: AnyAdmin) -> dict:
         "repository": settings.github_repo if settings.config_publish == "github" else None,
         "is_super_admin": user.is_admin,
         "admin_nodes": user.admin_nodes,
+        # The nodes this API serves (for role grants when node editing is off).
+        "nodes": [
+            {"slug": n.node.slug, "key": n.node.key, "color": n.node.color}
+            for n in get_deployment().node_list
+        ],
     }
 
 

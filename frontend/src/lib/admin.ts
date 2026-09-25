@@ -4,6 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
+import { useAuth } from "./auth";
 import type { UserOut } from "./types";
 
 export function isAnyAdmin(user: UserOut | null): boolean {
@@ -16,6 +17,8 @@ export interface AdminConfig {
   repository: string | null;
   is_super_admin: boolean;
   admin_nodes: string[];
+  /** The nodes this API serves. */
+  nodes: { slug: string; key: string; color: string }[];
 }
 
 export interface AdminUser {
@@ -131,9 +134,11 @@ export const adminKeys = {
 };
 
 export function useAdminConfig() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: adminKeys.config,
+    queryKey: [...adminKeys.config, user?.id],
     queryFn: () => api<AdminConfig>("/v2/admin/config"),
+    enabled: isAnyAdmin(user),
   });
 }
 
