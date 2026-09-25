@@ -325,7 +325,13 @@ async def _node_out(session, record: NodeRecord, detail: bool = False) -> dict:
     }
     if detail:
         out["revisions"] = [_revision_out(r, users) for r in revisions]
-        out["plugins"] = sorted(all_plugins())
+        # Every plugin in the code, for the Plugins tab: switched on per node
+        # by `features.plugins`, its options (JSON schema of its Options
+        # model, defaults included) edited under `plugins.<name>`.
+        out["plugins"] = [
+            {"name": name, "description": plugin.description, "schema": plugin.options_schema()}
+            for name, plugin in sorted(all_plugins().items())
+        ]
     return out
 
 

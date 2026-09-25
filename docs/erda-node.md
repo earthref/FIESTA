@@ -79,8 +79,10 @@ Levels: **Contributions**, **Digital Objects**, **Files**. Facets:
 Search dropdowns plus the geographic and timescale terms its `term_type`
 selector scoped queries to.
 
-Result cards come from the `record-cards` plugin (see plugins.md); without
-it the default MagIC-shaped card would render nothing but "No … Data".
+Result cards come from the `record-cards` plugin (see plugins.md), laid out
+by `plugins.record-cards.cards` in erda.yaml (one card per search table,
+editable in the admin UI's Plugins tab); without it the default MagIC-shaped
+card would render nothing but "No … Data".
 
 ## Known gaps
 

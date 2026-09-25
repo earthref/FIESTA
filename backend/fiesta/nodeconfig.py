@@ -243,6 +243,9 @@ class NodeConfig(BaseModel):
     doi: DoiConfig = DoiConfig()
     pages: list[PageConfig] = []
     features: FeaturesConfig = FeaturesConfig()
+    # Per-plugin options, keyed by plugin name, validated against each
+    # plugin's Options model by fiesta.plugins.active_plugins.
+    plugins: dict[str, dict[str, Any]] = {}
     development: DevelopmentConfig = DevelopmentConfig()
     legacy: LegacySourceConfig | None = None
 

@@ -1,3 +1,5 @@
+import pytest
+
 from fiesta.domain.parse import parse_text
 from fiesta.plugins import active_plugins, all_plugins
 from fiesta.plugins.plateau import identify_plateau, process_plateau_data
@@ -95,3 +97,39 @@ def test_registry_names():
         "plateau-calculations",
         "record-cards",
     }
+    for plugin in all_plugins().values():
+        assert plugin.description
+        assert plugin.options_schema()["type"] == "object"
+
+
+def test_plugin_options_come_from_the_node_yaml(magic_node, erda_node, karar_node):
+    plugins = all_plugins()
+    # magic.yaml sets the poles options explicitly; they match the defaults.
+    assert plugins["poles"].options(magic_node).base_level == "Locations"
+    assert plugins["poles"].options(magic_node) == plugins["poles"].Options()
+    assert plugins["poles"].frontend_config(magic_node)["age_color"]["selected"] == "#800080"
+    # record cards are erda.yaml, not a dict keyed by node name in Python.
+    cards = plugins["record-cards"].options(erda_node).cards
+    assert set(cards) == {"objects", "files"} and cards["files"].cells[2].format == "bytes"
+    assert plugins["plateau-calculations"].options(karar_node).max_mswd == 2.5
+
+    # Options are validated: unknown keys, out-of-range values, and (via
+    # check) tables, columns or levels the node does not have.
+    def with_options(node, name, options):
+        return node.model_copy(update={"plugins": {**node.plugins, name: options}})
+
+    with pytest.raises(ValueError, match="poles.*Extra inputs"):
+        plugins["poles"].options(with_options(magic_node, "poles", {"colour": "red"}))
+    with pytest.raises(ValueError, match="max_mswd"):
+        active_plugins(with_options(karar_node, "plateau-calculations", {"max_mswd": -1}))
+    with pytest.raises(ValueError, match="no tables \\['ships'\\]"):
+        active_plugins(
+            with_options(erda_node, "record-cards", {"cards": {"ships": {"title_column": "x"}}})
+        )
+    with pytest.raises(ValueError, match="not a search level"):
+        active_plugins(with_options(magic_node, "poles", {"base_level": "Moons"}))
+    with pytest.raises(ValueError, match="unknown plugins \\['nope'\\]"):
+        active_plugins(with_options(magic_node, "nope", {}))
+    # Options of a plugin that is not switched on are still checked.
+    with pytest.raises(ValueError, match="not search levels"):
+        active_plugins(with_options(magic_node, "depth-plot", {"levels": ["Cores"]}))

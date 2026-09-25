@@ -72,7 +72,7 @@ routes are 409 on a deployment with `FIESTA_NODE_CONFIG_SOURCE=files`.
 | PATCH | `/v2/admin/users/{id}` | super | any of those fields plus `admin_nodes: [slug]` (replaces the roles); the last super admin cannot be demoted |
 | GET | `/v2/admin/nodes` | any admin | nodes the caller administers: `{slug, key, title, color, served, published, draft, draft_is_stale, admins}` |
 | POST | `/v2/admin/nodes` | super | new node as a draft only: `{slug, key, title, template}` copies the template node's data models and vocabularies |
-| GET | `/v2/admin/nodes/{slug}` | node | the above plus `revisions` (history) and the known `plugins` |
+| GET | `/v2/admin/nodes/{slug}` | node | the above plus `revisions` (history) and `plugins`: every plugin in the code as `{name, description, schema}` (the JSON schema of its options, defaults included; the Plugins tab switches a plugin on in `features.plugins` and edits its options under `plugins.<name>` through the settings PATCH) |
 | PUT / DELETE | `/v2/admin/nodes/{slug}/admins/{user_id}` | node | grant / revoke a node admin |
 | GET | `/v2/admin/nodes/{slug}/files?rev=` | node | the tree `{files: [{path, sha256}], changes: [{path, change}]}` (changes vs published) |
 | GET | `/v2/admin/nodes/{slug}/file?path=&rev=` | node | `{path, revision, state, lock_version, size, encoding: utf-8\|base64, content}` |
@@ -171,6 +171,9 @@ restricted to the search `levels` and result `views` (Summaries, Rows, a plugin
 tab) it names, empty meaning all. `facets` lists the facet filters' fields (what
 `facets=true` aggregates; the pre-2026-09 YAML key `search.facets` still loads as
 facet filters). `pages` are the content pages in menu order.
+
+Each active plugin's `frontend_config` is built from its options: the node
+YAML's `plugins.<name>` map over the plugin's declared defaults.
 
 `search_levels` is extended with any plugin-contributed levels; `plugins` (a map
 of active plugin name → its `frontend_config`) and `portal_urls` (local-dev

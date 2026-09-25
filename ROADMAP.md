@@ -142,6 +142,15 @@ Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend
       the plugin into magic.yaml. CDR and KArAr facets pointed at columns their
       data models do not have (never any buckets): CDR now lists the legacy
       sidebar's eight, KArAr four of its own columns.
+- [x] **G4 Plugins tab (2026-09-24).** Every plugin declares an `Options` pydantic
+      model (defaults, descriptions, constraints); per-node options live in the
+      YAML's `plugins.<name>` map and are validated at startup and before every
+      publication. The poles display columns / base level / colors, the depth-plot
+      series / levels / depth columns, the plateau constants and the record cards
+      (formerly `CARDS_BY_NODE`, keyed by node name in Python) moved into the five
+      YAMLs; `frontend_config` output is unchanged for every node. The Plugins tab
+      lists every plugin with its description, switches it on or off per node and
+      edits its options through a form generated from the schema.
 - [ ] **G2 Follow-ups.** Disable/delete accounts and invitation emails; structured
       editors for search levels, hierarchy, home cards/news and method codes (today:
       the YAML/JSON file editor); the deploy script builds a frontend for every
