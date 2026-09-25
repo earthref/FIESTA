@@ -149,15 +149,33 @@ proxies it to the API; re-point that proxy with
 
 ## Adding or changing a node
 
-1. Copy an existing YAML in `config/` and adjust identity, colors, index,
-   bucket, hierarchy, levels, facets.
-2. Drop the data model JSON(s) in `config/<node>/data_models/{version}.json`
-   and vocabularies alongside (the legacy Meteor JS configs convert directly —
-   they are plain `export const` objects).
-3. Set `FIESTA_NODE=<node>` in `.env` and `docker compose up`.
+A node is configuration: `config/<slug>.yaml` plus `config/<slug>/**`. There
+are two ways to change it, and both end up in both places:
 
-The config loader validates the YAML on startup (e.g. every `hierarchy` table
-must exist in the latest data model).
+- **Admin UI** (`/<Key>/admin`, super admins and node admins). Edits go into
+  a draft in Postgres. Publishing validates the draft, serves it at once and
+  writes the files to the repository: in production a PR from
+  `node-config/<slug>`; locally, with `FIESTA_CONFIG_PUBLISH=files` (the
+  compose dev overlay sets it), straight into your checkout's `config/`, to
+  commit like any other change. A new node is created there too, copied from
+  a template node. Its first publication creates its schema, index and prefix.
+- **Git**, as before:
+  1. Copy an existing YAML in `config/` and adjust identity, colors, index,
+     bucket, hierarchy, levels, facets.
+  2. Drop the data model JSON(s) in `config/<node>/data_models/{version}.json`
+     and vocabularies alongside (the legacy Meteor JS configs convert directly —
+     they are plain `export const` objects).
+  3. Set `FIESTA_NODE=<node>` in `.env` and `docker compose up`. `fiesta init`
+     imports any tree Postgres has not published before, so the change goes
+     live on the next deploy.
+
+The config loader validates the YAML on startup and before any publication
+(e.g. every `hierarchy` table must exist in the latest data model). To run
+this checkout's YAML against a database whose published config differs, set
+`FIESTA_NODE_CONFIG_SOURCE=files`.
+
+Grant yourself admin rights locally with `fiesta create-user EMAIL NAME --admin`
+(super admin); super admins grant node admins in the UI.
 
 Home page content is YAML too: `features.home.resources` lists the resource
 cards (title, Semantic icon name, optional corner icon, `to` for an SPA route

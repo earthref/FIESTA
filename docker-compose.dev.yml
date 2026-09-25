@@ -23,7 +23,14 @@ x-dev-backend-volumes: &dev-backend-volumes
 
 services:
   api:
-    volumes: *dev-backend-volumes
+    # config/ is writable here: publishing a node in the admin UI writes its
+    # files into this checkout (FIESTA_CONFIG_PUBLISH=files) to commit.
+    volumes:
+      - ./config:/config
+      - ./backend/fiesta:/app/fiesta:ro
+      - ./backend/alembic:/app/alembic:ro
+    environment:
+      FIESTA_CONFIG_PUBLISH: files
     command: >-
       sh -c "{ [ $${FIESTA_REMOTE:-0} = 1 ] || fiesta init; } &&
              uvicorn fiesta.apps.api:create_app --factory --host 0.0.0.0 --port 8000 --reload --reload-dir /app/fiesta"

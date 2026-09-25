@@ -585,6 +585,113 @@ def test_api_mounts_every_node_router_once_under_v2(monkeypatch):
         "/v2/{repository}/contributions/{contribution_id}/download",
         "/v2/{repository}/plugins/poles/plate-boundaries",
         "/v2/{repository}/plugins/depth-plot/contributions/{contribution_id}/measurements",
+        "/v2/admin/users",
+        "/v2/admin/nodes/{slug}/publish",
     ):
         assert route in paths, route
     assert not [p for p in paths if p.startswith("/api")]
+
+
+# ---- node configuration revisions (fiesta.services.node_config) -------------
+
+
+def test_node_tree_round_trips_and_validates():
+    from fiesta.services import node_config as svc
+
+    files = svc.read_tree(CONFIG_DIR, "karar")
+    assert "karar.yaml" in files and "karar/data_models/1.0.json" in files
+    manifest = {p: svc.sha256(c) for p, c in files.items()}
+    assert svc.tree_hash(manifest) == svc.tree_hash(dict(reversed(manifest.items())))
+    node = svc.validate_files("karar", files, key="KArAr")
+    assert node.node.key == "KArAr"
+
+    with pytest.raises(svc.ConfigError) as err:
+        svc.validate_files("karar", files, key="KARAR")
+    assert "node.key" in err.value.errors[0]
+    broken = {**files, "karar/data_models/1.0.json": b"{not json"}
+    with pytest.raises(svc.ConfigError, match="1.0.json"):
+        svc.validate_files("karar", broken)
+    missing_table = files["karar.yaml"].replace(b"  - measurements\n", b"  - nope\n", 1)
+    with pytest.raises(svc.ConfigError, match="nope"):
+        svc.validate_files("karar", {**files, "karar.yaml": missing_table})
+
+
+def test_node_paths_stay_inside_the_node():
+    from fiesta.services import node_config as svc
+
+    assert svc.check_path("cdr", "cdr/data_models/1.0.json") == "cdr/data_models/1.0.json"
+    assert svc.check_path("cdr", "cdr.yaml") == "cdr.yaml"
+    for bad in ("magic.yaml", "cdr/../magic.yaml", "/etc/passwd", "cdr/", "cdr", "fiesta.yaml"):
+        with pytest.raises(svc.ConfigError):
+            svc.check_path("cdr", bad)
+    with pytest.raises(svc.ConfigError):
+        svc.check_identity("admin", "Admin")
+    svc.check_identity("new-node", "NewNode")
+
+
+def test_settings_patch_keeps_yaml_comments():
+    import yaml
+
+    from fiesta.services import node_config as svc
+
+    original = (CONFIG_DIR / "karar.yaml").read_bytes()
+    patched = svc.patch_yaml(
+        original,
+        [
+            {"path": ["node", "title"], "value": "KArAr, renamed"},
+            {"path": ["features", "pages"], "value": ["about"]},
+            {"path": ["doi"], "value": None},
+        ],
+    )
+    text = patched.decode()
+    assert '"#3030bb" # Semantic UI "blue" in the legacy app' in text
+    assert "# Legacy Meteor sources" in text
+    loaded = yaml.safe_load(patched)
+    assert loaded["node"]["title"] == "KArAr, renamed"
+    assert loaded["features"]["pages"] == ["about"] and "doi" not in loaded
+    assert svc.protected_changes(original, patched) == []
+    moved = svc.patch_yaml(original, [{"path": ["search", "index"], "value": "other"}])
+    assert svc.protected_changes(original, moved) == ["search.index"]
+
+
+def test_new_node_from_a_template_is_valid():
+    from fiesta.services import node_config as svc
+
+    files = svc.read_tree(CONFIG_DIR, "magic")
+    template = svc.validate_files("magic", files)
+    new = svc.template_files(template, files, "paleo", "Paleo", "Paleo Data")
+    node = svc.validate_files("paleo", new, key="Paleo")
+    assert node.search.index == "paleo" and node.legacy is None
+    assert node.data_model.versions == template.data_model.versions
+    assert all(p == "paleo.yaml" or p.startswith("paleo/") for p in new)
+    assert not [p for p in new if "/seeds/" in p or "/assets/" in p]
+
+
+def test_published_tree_is_written_back_to_config(tmp_path, monkeypatch):
+    import shutil
+
+    from fiesta.services import node_config as svc
+    from fiesta.services.node_publish import add_to_deployment_yaml, blob_sha, write_files
+    from fiesta.settings import get_settings
+
+    deployment_yaml = (CONFIG_DIR / "fiesta.yaml").read_text()
+    assert add_to_deployment_yaml(deployment_yaml, "magic.yaml") is None
+    added = add_to_deployment_yaml(deployment_yaml, "paleo.yaml")
+    assert "    - osu-mgr.yaml\n    - paleo.yaml" in added and added.startswith("# FIESTA")
+    assert blob_sha(b"hello\n") == "ce013625030ba8dba906f756967f9e9ca394464a"
+
+    shutil.copy(CONFIG_DIR / "fiesta.yaml", tmp_path / "fiesta.yaml")
+    shutil.copytree(CONFIG_DIR / "kdd", tmp_path / "kdd")
+    shutil.copy(CONFIG_DIR / "kdd.yaml", tmp_path / "kdd.yaml")
+    monkeypatch.setenv("FIESTA_CONFIG_FILE", str(tmp_path / "fiesta.yaml"))
+    get_settings.cache_clear()
+    try:
+        files = svc.read_tree(tmp_path, "kdd")
+        files["kdd/notes.md"] = b"new\n"
+        dropped = next(p for p in files if p.startswith("kdd/seeds/"))
+        del files[dropped]
+        assert write_files(tmp_path, "kdd", files) == f"-{dropped}, kdd/notes.md"
+        assert svc.read_tree(tmp_path, "kdd") == files
+        assert write_files(tmp_path, "kdd", files) == "no changes"
+    finally:
+        get_settings.cache_clear()

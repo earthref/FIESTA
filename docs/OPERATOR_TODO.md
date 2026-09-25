@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-09-11
+Last updated: 2026-09-24
 
 ## A — Decisions
 
@@ -91,6 +91,28 @@ Last updated: 2026-09-11
       each node's SPA with `VITE_NODE=<slug>` (or serve `fiesta-env.js` per node)
       so each frontend resolves its node and API origin. See deployment.md,
       "The production deploy script". Unblocks: E1 rollout on the current host.
+
+## 2026-09-24 — Admin settings (super admins, node admins, node editing)
+
+- [ ] **GitHub token for node publications.** Create a fine-grained token with
+      Contents + Pull requests write on `earthref/FIESTA`, and set
+      `FIESTA_GITHUB_TOKEN` and `FIESTA_CONFIG_PUBLISH=github` in the production
+      API **and** worker env (the worker opens the PR). Optionally turn on "Allow
+      auto-merge" in the repository settings and set `FIESTA_GITHUB_AUTO_MERGE=true`.
+      Until this is done, publications still go live, but their revisions show
+      "not written to git" and `config/` falls behind the live nodes. After: Claude
+      publishes a no-op settings change on one node and checks that the
+      `node-config/<slug>` PR opens with the `internal` label.
+- [ ] **Name the first super admin(s) on production.** Either `fiesta create-user
+      EMAIL NAME --admin` on the API host, or set `users.is_admin = true` for an
+      existing EarthRef account. Super admins then grant node admins in `/<Key>/admin`.
+      Product call: who gets super admin and who administers each node.
+- [ ] **Deploy script, in addition to the 2026-09-12 item:** keep running `fiesta init`
+      on every deploy (it imports `config/` into Postgres and brings up nodes created
+      in the UI), and run the worker **without** `FIESTA_NODE` so it listens on every
+      queue, including queues of nodes published later. The script still builds one
+      SPA per node listed in `config/fiesta.yaml`, so a node created in the UI appears
+      on the website only after its PR is merged and deployed.
 
 ## Done
 

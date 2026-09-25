@@ -85,9 +85,15 @@ async def drain(node, limit=100):
     return {"completed": completed, "failed": failed}
 
 
-async def serve(nodes):
+async def serve():
+    """Drain every served node's outbox, forever; nodes published in the
+    admin UI join (and changed configs apply) within a refresh interval."""
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.services.node_config import maybe_refresh
+
     while True:
-        for node in nodes:
+        await maybe_refresh()
+        for node in get_deployment().node_list:
             try:
                 await drain(node)
             except Exception as exc:

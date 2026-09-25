@@ -33,6 +33,10 @@ export class ApiError extends Error {
 
 function detailToMessage(detail: unknown): string {
   if (typeof detail === "string") return detail;
+  // Admin API: an invalid node configuration lists every problem.
+  if (detail && typeof detail === "object" && "errors" in detail) {
+    return detailToMessage((detail as { errors: unknown }).errors);
+  }
   if (Array.isArray(detail)) {
     return detail
       .map((d) => {

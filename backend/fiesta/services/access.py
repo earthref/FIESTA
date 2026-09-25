@@ -7,7 +7,7 @@ from fiesta.db.models import Contribution, Workspace, WorkspaceMember
 
 
 async def can_access(session, contribution, user, write=False):
-    if user.is_admin or contribution.contributor_id == user.id:
+    if user.is_node_admin(contribution.node) or contribution.contributor_id == user.id:
         return True
     if not contribution.workspace_id:
         return False
@@ -55,8 +55,8 @@ async def constrain_search(session, node, body, user=None, query=None):
     )
 
 
-async def workspace_owner(session, workspace_id, user):
+async def workspace_owner(session, workspace_id, user, node_slug):
     workspace = await session.get(Workspace, workspace_id)
-    if workspace is None or (workspace.owner_id != user.id and not user.is_admin):
+    if workspace is None or (workspace.owner_id != user.id and not user.is_node_admin(node_slug)):
         raise HTTPException(404, "workspace not found")
     return workspace

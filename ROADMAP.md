@@ -121,6 +121,22 @@ Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend
 - [ ] **B4 Port conflicts.** `.env.example` documents the override pattern; consider
       defaulting the compose stack to high ports so a fresh clone never collides.
 
+## Phase G — Admin settings — **G1 DONE 2026-09-24**
+
+- [x] **G1 Super admins, node admins, and node configuration in the admin UI.**
+      `users.is_admin` = super admin, `node_admins` = per-node admins. `/admin`
+      manages accounts and nodes: settings, data models, vocabularies, files,
+      admins, history and rollback. Drafts live in Postgres. Publishing
+      serves the draft and writes it to git (PR from `node-config/<slug>`), and
+      `fiesta init` imports trees merged in git. New nodes start from a template
+      node. Decided 2026-09-24: Postgres is the source while a node is edited, and
+      git receives every publication. Not in the legacy Meteor UI, so there is no
+      parity spec.
+- [ ] **G2 Follow-ups.** Disable/delete accounts and invitation emails; structured
+      editors for search levels, hierarchy, home cards/news and method codes (today:
+      the YAML/JSON file editor); the deploy script builds a frontend for every
+      published node, including nodes whose PR is not merged yet.
+
 ## Phase C — Port the remaining legacy features
 
 Reference: `old-backend/` (Koa) and the sibling `../FIESTA-API`, `../MagIC` repos.

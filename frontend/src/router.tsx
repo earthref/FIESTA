@@ -1,5 +1,7 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { BASE_PATH } from "./lib/base";
+import { AdminPage } from "./routes/admin";
+import { AdminNodePage } from "./routes/admin-node";
 import { ContactPage } from "./routes/contact";
 import { ContributionPage } from "./routes/contribution";
 import { DataModelPage, DataModelsIndex } from "./routes/data-models";
@@ -47,6 +49,14 @@ export interface PrivateKeyParams {
 
 export interface FilterParams {
   q?: string;
+}
+
+export interface AdminParams {
+  tab?: string;
+}
+
+export interface AdminNodeParams {
+  section?: string;
 }
 
 function str(value: unknown): string | undefined {
@@ -149,6 +159,23 @@ const contactRoute = createRoute({
   component: ContactPage,
 });
 
+// Admin settings (super admins and node admins; the API enforces who sees what).
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin",
+  validateSearch: (search: Record<string, unknown>): AdminParams => ({ tab: str(search.tab) }),
+  component: AdminPage,
+});
+
+const adminNodeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin/nodes/$slug",
+  validateSearch: (search: Record<string, unknown>): AdminNodeParams => ({
+    section: str(search.section),
+  }),
+  component: AdminNodePage,
+});
+
 // Stub pages gated by config.features.pages (menu items appear only when enabled).
 const aboutRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -194,6 +221,8 @@ const routeTree = rootRoute.addChildren([
   methodCodesRoute,
   loginRoute,
   contactRoute,
+  adminRoute,
+  adminNodeRoute,
   aboutRoute,
   technologyRoute,
   grandChallengesRoute,

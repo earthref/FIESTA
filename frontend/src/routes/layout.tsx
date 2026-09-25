@@ -11,7 +11,7 @@ import { applyNodeTheme, useNodeConfig } from "../lib/config";
 import { cx } from "../lib/utils";
 
 /** Routes that use the legacy `.full-width` layout variant (padding 0 2em). */
-const FULL_WIDTH_ROUTES = ["/search", "/data-models"];
+const FULL_WIDTH_ROUTES = ["/search", "/data-models", "/admin"];
 
 export function RootLayout() {
   const { data: config, isLoading, error } = useNodeConfig();

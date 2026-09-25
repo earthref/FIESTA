@@ -20,7 +20,9 @@ from fiesta.db.models import *  # noqa: F401,F403 — register models on Base.me
 from fiesta.settings import get_settings
 
 config = context.config
-if config.config_file_name is not None:
+# The API migrates a node created in the admin UI in-process; it keeps its own
+# logging configuration (fileConfig would disable uvicorn's loggers).
+if config.config_file_name is not None and not config.attributes.get("keep_logging"):
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata

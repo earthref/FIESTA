@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { isAnyAdmin } from "../lib/admin";
 import { useAuth } from "../lib/auth";
 import { useNodeConfig } from "../lib/config";
 import { PORTALS } from "../lib/portals";
@@ -115,6 +116,12 @@ export function PortalBar() {
                 <Icon name="close" style={{ marginRight: "0.35714286em" }} />
                 Log Out
               </button>
+              {isAnyAdmin(user) && (
+                <Link to="/admin" className={itemClass} style={itemStyle}>
+                  <Icon name="edit" style={{ marginRight: "0.35714286em" }} />
+                  Admin
+                </Link>
+              )}
               <Link
                 to="/private"
                 className={itemClass}

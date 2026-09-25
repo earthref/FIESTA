@@ -53,7 +53,60 @@ Two schemes are accepted; the private routes take either.
 | PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in the seeded `developer@example.test` only against local dev infrastructure |
 
-`UserOut = {id, email, name, orcid: string|null, is_admin: bool}`
+`UserOut = {id, email, name, orcid: string|null, is_admin: bool, admin_nodes: string[]}` —
+`is_admin` is a **super admin** (every node, node creation, accounts); `admin_nodes`
+lists the slugs of the nodes the user administers (**node admin**). A node admin
+sees that node's private contributions and private keys like a super admin does.
+
+## Admin (`/v2/admin/...`, Bearer or Basic)
+
+Super admins may call everything; a node admin may call the node routes for
+their nodes (any other slug is a 404) and list accounts. Node configuration
+routes are 409 on a deployment with `FIESTA_NODE_CONFIG_SOURCE=files`.
+
+| Method | Path | Who | Does |
+|---|---|---|---|
+| GET | `/v2/admin/config` | any admin | `{editing, publish_to: none\|files\|github, repository, is_super_admin, admin_nodes}` |
+| GET | `/v2/admin/users?q=&role=super\|node&offset=&limit=` | any admin | `{total, users: AdminUser[]}` |
+| POST | `/v2/admin/users` | super | create `{email, name, handle?, orcid?, password?, is_admin}` |
+| PATCH | `/v2/admin/users/{id}` | super | any of those fields plus `admin_nodes: [slug]` (replaces the roles); the last super admin cannot be demoted |
+| GET | `/v2/admin/nodes` | any admin | nodes the caller administers: `{slug, key, title, color, served, published, draft, draft_is_stale, admins}` |
+| POST | `/v2/admin/nodes` | super | new node as a draft only: `{slug, key, title, template}` copies the template node's data models and vocabularies |
+| GET | `/v2/admin/nodes/{slug}` | node | the above plus `revisions` (history) and the known `plugins` |
+| PUT / DELETE | `/v2/admin/nodes/{slug}/admins/{user_id}` | node | grant / revoke a node admin |
+| GET | `/v2/admin/nodes/{slug}/files?rev=` | node | the tree `{files: [{path, sha256}], changes: [{path, change}]}` (changes vs published) |
+| GET | `/v2/admin/nodes/{slug}/file?path=&rev=` | node | `{path, revision, state, lock_version, size, encoding: utf-8\|base64, content}` |
+| GET | `/v2/admin/nodes/{slug}/settings?rev=` | node | the node YAML parsed to JSON |
+| PUT | `/v2/admin/nodes/{slug}/draft/file` | node | `{path, content, encoding?, lock_version?}` — write a file into the draft (JSON/YAML syntax checked) |
+| DELETE | `/v2/admin/nodes/{slug}/draft/file?path=&lock_version=` | node | remove a file from the draft |
+| PATCH | `/v2/admin/nodes/{slug}/draft/settings` | node | `{ops: [{path: [...], value}], lock_version?}` — edit the YAML keeping its comments; `value: null` deletes |
+| POST | `/v2/admin/nodes/{slug}/draft` | node | open the draft, optionally `{from_revision: n}` to roll back |
+| DELETE | `/v2/admin/nodes/{slug}/draft` | node | discard the draft |
+| GET | `/v2/admin/nodes/{slug}/validate?rev=` | node | `{ok, errors, protected_changes, can_publish, changes}` |
+| POST | `/v2/admin/nodes/{slug}/publish` | node | `{message, lock_version?}` — validate, go live, write to the repository |
+| POST | `/v2/admin/nodes/{slug}/revisions/{n}/write` | node | retry the repository write of the published revision |
+
+`rev` is `current` (draft if open, else published; the default), `draft`,
+`published` or a revision number. `lock_version` is optimistic concurrency on
+the draft: an edit made from content loaded from the draft sends that
+draft's `lock_version` and gets a 409 if someone saved in between. Invalid
+configuration is a 422 with `{"detail": {"errors": [...]}}`. A draft that
+changes a protected setting (`node.key`, `node.slug`, `search.index`,
+`storage`, `legacy`) can only be published by a super admin.
+
+**Node configuration lifecycle.** Each node is a file tree, `config/<slug>.yaml`
+plus `config/<slug>/**`. Postgres keeps every version of it (shared schema:
+`nodes`, `node_revisions`, content-addressed `config_blobs`). Admins edit one
+draft per node. Publishing it makes it the revision every API process and
+worker serves (within 5 s), and writes the same bytes to the repository
+(`FIESTA_CONFIG_PUBLISH`: `github` opens or updates a PR from the
+`node-config/<slug>` branch, `files` writes this checkout's `config/`). `fiesta init`
+imports a repository tree Postgres has never published, as a revision with
+source `repo`, so changes merged in git reach the live node too. A tree that
+matches any earlier publication is not imported, so a deploy never rolls back
+a UI publication that is waiting for its PR to merge. A new node's first
+publication creates its schema, index and storage prefix. Its SPA pages appear
+after its YAML is merged and deployed, because the frontend is built per node.
 
 `GET /v2/health-check` reports each dependency and the nodes this process serves:
 
