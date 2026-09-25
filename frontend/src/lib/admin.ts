@@ -11,6 +11,11 @@ export function isAnyAdmin(user: UserOut | null): boolean {
   return !!user && (user.is_admin || user.admin_nodes.length > 0);
 }
 
+/** Mirrors the backend's `user.is_node_admin(slug)`. */
+export function isNodeAdmin(user: UserOut | null, slug: string | undefined): boolean {
+  return !!user && !!slug && (user.is_admin || user.admin_nodes.includes(slug));
+}
+
 export interface AdminConfig {
   editing: boolean;
   publish_to: "none" | "files" | "github";
