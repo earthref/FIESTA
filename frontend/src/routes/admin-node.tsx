@@ -7,6 +7,8 @@ import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router"
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { AdminGate, Field, NodeChip, RepoStatus, Tabs } from "../components/admin/admin-ui";
 import { DataModelEditor } from "../components/admin/data-model-editor";
+import { FiltersEditor } from "../components/admin/filters-editor";
+import { PagesEditor } from "../components/admin/pages-editor";
 import { VocabularyEditor } from "../components/admin/vocabulary-editor";
 import { ErrorMessage } from "../components/error-message";
 import { Badge } from "../components/ui/badge";
@@ -38,10 +40,20 @@ import { api } from "../lib/api";
 import { cx } from "../lib/utils";
 import type { AdminNodeParams } from "../router";
 
-type Section = "settings" | "data-models" | "vocabularies" | "files" | "admins" | "history";
+type Section =
+  | "settings"
+  | "pages"
+  | "filters"
+  | "data-models"
+  | "vocabularies"
+  | "files"
+  | "admins"
+  | "history";
 
 const SECTIONS: { key: Section; label: string }[] = [
   { key: "settings", label: "Settings" },
+  { key: "pages", label: "Pages" },
+  { key: "filters", label: "Search Filters" },
   { key: "data-models", label: "Data Models" },
   { key: "vocabularies", label: "Vocabularies" },
   { key: "files", label: "Files" },
@@ -232,8 +244,6 @@ function PublishModal({
 
 // --- Settings -----------------------------------------------------------------
 
-const PAGES = ["about", "technology", "grand-challenges", "workshops", "links", "help"];
-
 interface SettingsForm {
   title: string;
   subtitle: string;
@@ -242,9 +252,7 @@ interface SettingsForm {
   website: string;
   github_issues: string;
   doi_prefix: string;
-  pages: string[];
   plugins: string[];
-  facets: string;
   index: string;
   bucket: string;
 }
@@ -258,9 +266,7 @@ function formOf(s: NodeSettings): SettingsForm {
     website: s.node.links?.website ?? "",
     github_issues: s.node.links?.github_issues ?? "",
     doi_prefix: s.doi?.prefix ?? "",
-    pages: s.features?.pages ?? [],
     plugins: s.features?.plugins ?? [],
-    facets: (s.search.facets ?? []).join(", "),
     index: s.search.index,
     bucket: s.storage.bucket,
   };
@@ -269,11 +275,6 @@ function formOf(s: NodeSettings): SettingsForm {
 /** The YAML edits that turn `before` into `after` (only changed fields). */
 function opsFor(before: SettingsForm, after: SettingsForm): SettingsOp[] {
   const orNull = (value: string) => value.trim() || null;
-  const list = (value: string) =>
-    value
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean);
   const fields: [keyof SettingsForm, (string | number)[], unknown][] = [
     ["title", ["node", "title"], after.title.trim()],
     ["subtitle", ["node", "subtitle"], after.subtitle.trim()],
@@ -282,9 +283,7 @@ function opsFor(before: SettingsForm, after: SettingsForm): SettingsOp[] {
     ["website", ["node", "links", "website"], orNull(after.website)],
     ["github_issues", ["node", "links", "github_issues"], orNull(after.github_issues)],
     ["doi_prefix", ["doi", "prefix"], orNull(after.doi_prefix)],
-    ["pages", ["features", "pages"], after.pages],
     ["plugins", ["features", "plugins"], after.plugins],
-    ["facets", ["search", "facets"], list(after.facets)],
     ["index", ["search", "index"], after.index.trim()],
     ["bucket", ["storage", "bucket"], after.bucket.trim()],
   ];
@@ -404,13 +403,7 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
         <Field label="DOI prefix">
           <Input {...input("doi_prefix")} />
         </Field>
-        <Field label="Search facets" hint="Comma-separated column names">
-          <Input {...input("facets")} />
-        </Field>
       </div>
-      <Field label="Pages">
-        <Checkboxes options={PAGES} value={form.pages} onChange={(v) => set("pages", v)} />
-      </Field>
       <Field label="Plugins">
         <Checkboxes
           options={node.plugins ?? []}
@@ -432,8 +425,9 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
         </div>
       </fieldset>
       <p className="text-xs text-gray-500">
-        Search levels, hierarchy, home page cards and news are edited in the node YAML under Files.
-        Edits keep the YAML's comments and layout.
+        Content pages and the search filter sidebar have their own tabs. Search levels, hierarchy,
+        home page cards and news are edited in the node YAML under Files. Edits keep the YAML's
+        comments and layout.
       </p>
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={!changed || save.isPending}>
@@ -848,9 +842,21 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
         }
       />
       {section === "settings" && <SettingsSection node={n} superAdmin={superAdmin} />}
-      {(section === "data-models" || section === "vocabularies") &&
+      {["pages", "filters", "data-models", "vocabularies"].includes(section) &&
         (settings.data ? (
-          section === "data-models" ? (
+          section === "pages" ? (
+            <PagesEditor
+              slug={slug}
+              settings={settings.data.settings}
+              settingsLock={lockOf(settings.data)}
+            />
+          ) : section === "filters" ? (
+            <FiltersEditor
+              slug={slug}
+              settings={settings.data.settings}
+              settingsLock={lockOf(settings.data)}
+            />
+          ) : section === "data-models" ? (
             <DataModelEditor
               slug={slug}
               settings={settings.data.settings}

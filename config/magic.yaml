@@ -33,15 +33,22 @@ search:
     - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
   # (The Poles search level is contributed by the `poles` plugin below.)
   extra_types: []
-  # Facets rendered as filter buckets, aggregated on summary._all.<field>.raw
-  facets:
-    - method_codes
-    - geologic_classes
-    - geologic_types
-    - lithologies
-    - location_type
-    - plate_blocks
-    - tectonic_settings
+  # Filter sidebar controls (facet / range / bbox), edited in the admin UI's
+  # Search Filters tab. Facets aggregate on summary._all.<field>.raw and show on
+  # every level's Summaries and Rows views; the poles range/bbox filters show
+  # on the Locations level's Poles view (the `poles` plugin indexes
+  # summary.poles.age in years, hence the Ma scale).
+  filters:
+    - { type: facet, field: method_codes, views: [Summaries, Rows] }
+    - { type: facet, field: geologic_classes, views: [Summaries, Rows] }
+    - { type: facet, field: geologic_types, views: [Summaries, Rows] }
+    - { type: facet, field: lithologies, views: [Summaries, Rows] }
+    - { type: facet, field: location_type, views: [Summaries, Rows] }
+    - { type: facet, field: plate_blocks, views: [Summaries, Rows] }
+    - { type: facet, field: tectonic_settings, views: [Summaries, Rows] }
+    - { type: range, label: Age, field: summary.poles.age, unit: Ma, scale: 1.0e6, levels: [Locations], views: [Poles] }
+    - { type: range, label: Pole A95, field: summary.poles.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
+    - { type: bbox, label: Geospatial, levels: [Locations], views: [Poles] }
 
 storage:
   bucket: magic
@@ -72,8 +79,18 @@ hierarchy:
 doi:
   prefix: 10.7288/V4/MAGIC
 
+# Content pages, in menu order: /<slug> renders magic/pages/<slug>.html (edited
+# in the admin UI's Pages tab). `menu` is left, right (with an icon) or hidden.
+pages:
+  - { slug: about, title: About }
+  - { slug: technology, title: Technology }
+  - { slug: grand-challenges, title: Grand Challenges }
+  - { slug: workshops, title: Workshops }
+  - { slug: links, title: Links }
+  - { slug: help, title: Help, menu: right, icon: question-circle }
+  - { slug: jupyter-notebooks, title: Jupyter Notebooks, menu: hidden }
+
 features:
-  pages: [about, technology, help, method-codes, upgrade, links, workshops, jupyter-notebooks, grand-challenges]
   plugins: [poles]
   # Home page content (legacy client/modules/magic/components/home.jsx + home_news.jsx).
   home:

@@ -93,7 +93,7 @@ Edit files surgically; never rewrite a file to change a few lines. Scratch check
 
 ## Domain Model (one line each; details in docs/api.md and backend/fiesta/db/models.py)
 
-`users` (shared schema; email/handle, `orcid`, `is_admin`) → `contributions` (per-node schema; `node`, `version`/`previous_id`, `private_key`, `is_activated`/`is_latest`, `data_model_version`, `reference_doi`, `filename`, `status` ∈ created|uploaded|parsing|validating|summarizing|ready|failed) → bucket objects `<prefix><id>/<filename>` + `manifest.json`; search docs per node index (`type` = contribution | hierarchy level | plugin-derived type); procrastinate queues = node slug + `default` (email). Node config: `NodeConfig` in `backend/fiesta/nodeconfig.py` (identity, search levels/facets, storage, data_model versions, vocabularies, hierarchy, doi prefix, features.pages/plugins).
+`users` (shared schema; email/handle, `orcid`, `is_admin`) → `contributions` (per-node schema; `node`, `version`/`previous_id`, `private_key`, `is_activated`/`is_latest`, `data_model_version`, `reference_doi`, `filename`, `status` ∈ created|uploaded|parsing|validating|summarizing|ready|failed) → bucket objects `<prefix><id>/<filename>` + `manifest.json`; search docs per node index (`type` = contribution | hierarchy level | plugin-derived type); procrastinate queues = node slug + `default` (email). Node config: `NodeConfig` in `backend/fiesta/nodeconfig.py` (identity, search levels/filters, storage, data_model versions, vocabularies, hierarchy, doi prefix, pages, features.plugins).
 
 ## What NOT to Add
 

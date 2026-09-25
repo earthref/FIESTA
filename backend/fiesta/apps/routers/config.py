@@ -38,6 +38,16 @@ async def get_asset(node: NodeDep, path: str) -> FileResponse:
     return FileResponse(file, headers={"Cache-Control": "public, max-age=3600"})
 
 
+@router.get("/pages/{slug}")
+async def get_page(node: NodeDep, slug: str) -> dict:
+    """A content page (`pages:` in the node YAML): its HTML from
+    config/<node>/pages/<slug>.html. The SPA sanitizes it before rendering."""
+    page = node.page(slug)
+    if page is None:
+        raise HTTPException(404, f"no page {slug!r}")
+    return {**page.model_dump(), "html": node.load_page_html(slug)}
+
+
 @router.get("/data-models/{version}")
 async def get_data_model(node: NodeDep, version: str) -> dict:
     try:

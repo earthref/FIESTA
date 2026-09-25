@@ -23,6 +23,30 @@ export interface HomeNews {
   link: string | null;
 }
 
+/** One filter sidebar control (backend `SearchFilter`). `levels` / `views`
+ * empty = shown on every search level / result view. */
+export interface SearchFilter {
+  type: "facet" | "range" | "bbox";
+  /** facet: a column name; range: a `summary.*` document path; bbox: null. */
+  field: string | null;
+  label: string | null;
+  levels: string[];
+  views: string[];
+  unit: string | null;
+  /** range: typed value × scale is what the API receives (Ma → years). */
+  scale: number;
+  min: number | null;
+  max: number | null;
+}
+
+/** A content page (backend `PageConfig`); its HTML comes from /config/pages/{slug}. */
+export interface NodePage {
+  slug: string;
+  title: string;
+  menu: "left" | "right" | "hidden";
+  icon: string | null;
+}
+
 export interface NodeConfig {
   key: string;
   slug: string;
@@ -35,9 +59,13 @@ export interface NodeConfig {
   data_model_latest: string;
   doi_prefix: string | null;
   search_levels: SearchLevel[];
+  /** Columns aggregated as term buckets (the facet filters' fields). */
   facets: string[];
+  /** The filter sidebar's controls (node YAML `search.filters`). */
+  filters: SearchFilter[];
+  /** Content pages (node YAML `pages`), in menu order. */
+  pages: NodePage[];
   features: {
-    pages: string[];
     plugins: string[];
     home?: { resources: HomeCard[]; news: HomeNews[] };
   };

@@ -25,10 +25,13 @@ search:
     - { name: Experiments, table: experiments, count_field: summary.experiments._n_results }
     - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
   extra_types: []
-  facets:
-    - geologic_classes
-    - geologic_types
-    - lithologies
+  # (The MagIC-style geologic_classes/geologic_types/lithologies facets the
+  # legacy app listed are not KArAr columns and never had buckets.)
+  filters:
+    - { type: facet, field: location_type }
+    - { type: facet, field: lithology }
+    - { type: facet, field: material }
+    - { type: facet, field: method_codes }
 
 storage:
   bucket: karar
@@ -52,8 +55,10 @@ hierarchy:
 doi:
   prefix: 10.7288/V4/KARAR
 
+# Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
+pages: []
+
 features:
-  pages: []
   plugins: [plateau-calculations]
 
 # Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).

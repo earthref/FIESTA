@@ -132,31 +132,13 @@ class PolesPlugin(FiestaPlugin):
             "base_level": self.BASE_LEVEL,
             "after_sub_tab": "Rows",
             "display_columns": self.DISPLAY_COLUMNS,
-            # Structured filter definitions: the UI renders these controls and
-            # maps them onto the search API's `range`/`bbox` params.
-            "filters": [
-                {
-                    "name": "Age",
-                    "type": "range",
-                    "field": "summary.poles.age",
-                    "unit": "Ma",
-                    # Field is stored in years; multiply the Ma input by this.
-                    "scale": 1e6,
-                },
-                {
-                    "name": "Pole A95",
-                    "type": "range",
-                    "field": "summary.poles.pole_alpha95",
-                    "unit": "°",
-                },
-                {"name": "Geospatial", "type": "bbox"},
-            ],
+            # The Age / Pole A95 / Geospatial controls on the Poles view are
+            # `search.filters` entries in the node YAML (range on
+            # summary.poles.age and summary.poles.pole_alpha95, bbox).
             "has_plate_boundaries": (
                 node.base_dir / node.node.slug / "plate_boundaries.json"
             ).exists(),
-            "has_base_texture": (
-                node.base_dir / node.node.slug / "global_relief_map.jpg"
-            ).exists(),
+            "has_base_texture": (node.base_dir / node.node.slug / "global_relief_map.jpg").exists(),
             # Poles are colored by an age gradient (young→old): yellow→red,
             # black for unknown age, purple for the selected pole.
             "age_color": {

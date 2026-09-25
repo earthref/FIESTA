@@ -44,14 +44,14 @@ search:
   extra_types: [section_halves, core_samples, dive_subsamples]
   # The repository search's filter groups: file types, collection methods,
   # materials, research vessels, institutions, plus the collection itself.
-  facets:
-    - file_type
-    - method
-    - material
-    - texture
-    - rv_name
-    - pi_institution
-    - collection
+  filters:
+    - { type: facet, field: file_type }
+    - { type: facet, field: method }
+    - { type: facet, field: material }
+    - { type: facet, field: texture }
+    - { type: facet, field: rv_name }
+    - { type: facet, field: pi_institution }
+    - { type: facet, field: collection }
 
 storage:
   bucket: osu-mgr
@@ -82,8 +82,10 @@ hierarchy:
 doi:
   prefix: 10.7288/V4/OSU-MGR
 
+# Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
+pages: []
+
 features:
-  pages: []
   plugins: [record-cards]
 
 # Local fixtures only; never read during normal application startup.

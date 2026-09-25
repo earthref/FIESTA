@@ -10,16 +10,9 @@ import { RootLayout } from "./routes/layout";
 import { LoginPage } from "./routes/login";
 import { MethodCodesPage } from "./routes/method-codes";
 import { NotFoundPage } from "./routes/not-found";
+import { ContentPage } from "./routes/page";
 import { PrivateWorkspacePage } from "./routes/private";
 import { SearchPage } from "./routes/search";
-import {
-  AboutPage,
-  GrandChallengesPage,
-  HelpPage,
-  LinksPage,
-  TechnologyPage,
-  WorkshopsPage,
-} from "./routes/stubs";
 import { UploadPage } from "./routes/upload";
 import { ValidatePage } from "./routes/validate";
 import { VocabulariesPage } from "./routes/vocabularies";
@@ -176,36 +169,12 @@ const adminNodeRoute = createRoute({
   component: AdminNodePage,
 });
 
-// Stub pages gated by config.features.pages (menu items appear only when enabled).
-const aboutRoute = createRoute({
+// Content pages from the node YAML (`pages`): /about, /help, ... Static routes
+// above win over this one; unknown slugs render the not-found page.
+const contentPageRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/about",
-  component: AboutPage,
-});
-const technologyRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/technology",
-  component: TechnologyPage,
-});
-const grandChallengesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/grand-challenges",
-  component: GrandChallengesPage,
-});
-const workshopsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/workshops",
-  component: WorkshopsPage,
-});
-const linksRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/links",
-  component: LinksPage,
-});
-const helpRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/help",
-  component: HelpPage,
+  path: "/$page",
+  component: ContentPage,
 });
 
 const routeTree = rootRoute.addChildren([
@@ -223,12 +192,7 @@ const routeTree = rootRoute.addChildren([
   contactRoute,
   adminRoute,
   adminNodeRoute,
-  aboutRoute,
-  technologyRoute,
-  grandChallengesRoute,
-  workshopsRoute,
-  linksRoute,
-  helpRoute,
+  contentPageRoute,
 ]);
 
 export const router = createRouter({

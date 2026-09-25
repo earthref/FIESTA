@@ -11,6 +11,13 @@ import {
 } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
+import {
+  applicableFilters,
+  BboxFilter,
+  filterLabel,
+  RangeFilter,
+  rangesFor,
+} from "../components/search-filters";
 import { buttonIconStyle, SemanticIcon } from "../components/ui/fa-icon";
 import { Icon } from "../components/ui/icon";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
@@ -21,6 +28,7 @@ import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import type {
   FacetBucket,
+  SearchFilter,
   SearchLevel,
   SearchPage as SearchPageData,
   SearchResult,
@@ -220,12 +228,14 @@ function FilterRow({
 
 function FacetSection({
   facet,
+  label,
   buckets,
   loading,
   q,
   onToggle,
 }: {
   facet: string;
+  label?: string;
   buckets: FacetBucket[];
   loading: boolean;
   q: string;
@@ -233,7 +243,7 @@ function FacetSection({
 }) {
   const [open, setOpen] = useState(false);
   const [find, setFind] = useState("");
-  const title = facetTitle(facet);
+  const title = label ?? facetTitle(facet);
   const itemsName = titleCase(facet);
 
   // Active values may come from another level and no longer be in the
@@ -459,8 +469,6 @@ export function SearchPage() {
     levels.find((entry) => entry.name === search.level) ?? levels[0];
   const privateKey = getQueryToken(q, "private_key");
   const hasFreeText = parseQueryTokens(q).freeText.length > 0;
-  const hasFacetFilters =
-    parseQueryTokens(q).tokens.filter(([field]) => config?.facets.includes(field)).length > 0;
   // Legacy `sortDefault`: relevance whenever there is free text and the user
   // has not picked a sort, otherwise newest first.
   const sort = search.sort ?? (hasFreeText ? RELEVANCE_OPTION.value : SORT_OPTIONS[0].value);
@@ -527,9 +535,11 @@ export function SearchPage() {
   }, [config, level]);
   const activeTab = subTabs.find((tab) => tab.name === view) ?? subTabs[0];
 
-  // Plugin filters panel (e.g. poles ranges/bbox) — shown when a plugin claims
-  // the active level + sub-tab. Its ranges/bbox filter that plugin's own fetch,
-  // not the main level query.
+  // The sidebar's controls for this level + sub-tab (node YAML `search.filters`).
+  // A plugin may still replace the whole panel. Range/bbox values apply to the
+  // main query only when their filter is visible here; a plugin view (Poles)
+  // reads them from its sub-tab context for its own fetch.
+  const filters: SearchFilter[] = applicableFilters(config, level?.name, activeTab?.name);
   const filtersPanel = level
     ? pluginFiltersPanel(config, {
         levelName: level.name,
@@ -540,13 +550,20 @@ export function SearchPage() {
         setBbox: (next) => setSearch({ bbox: next }),
       })
     : null;
-  const pluginFiltersActive = ranges.length > 0 || !!bbox;
+  const facetFields = filters.filter((f) => f.type === "facet").map((f) => f.field ?? "");
+  const activeRanges = rangesFor(ranges, filters);
+  const activeBbox = filters.some((f) => f.type === "bbox") ? bbox : undefined;
+  const hasFacetFilters =
+    parseQueryTokens(q).tokens.filter(([field]) => facetFields.includes(field)).length > 0;
+  // A plugin view renders from its own fetch; keep its ranges out of the level query.
+  const queryRanges = activeTab?.render ? undefined : activeRanges;
+  const queryBbox = activeTab?.render ? undefined : activeBbox;
 
   const results = useInfiniteQuery({
-    queryKey: ["search", level?.table, q, sort],
+    queryKey: ["search", level?.table, q, sort, queryRanges, queryBbox],
     queryFn: ({ pageParam }) =>
       api<SearchPageData>(`/search/${level?.table}`, {
-        params: searchRequestParams(q, PAGE_SIZE, pageParam, true, undefined, undefined, sort),
+        params: searchRequestParams(q, PAGE_SIZE, pageParam, true, queryRanges, queryBbox, sort),
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
@@ -589,18 +606,18 @@ export function SearchPage() {
     return () => observer.disconnect();
   }, [autoLoad, hasNextPage, isFetchingNextPage, fetchNextPage, hits.length]);
 
+  // Clear every visible control: facet tokens, ranges and the bbox it shows.
   const clearFilters = () => {
-    if (filtersPanel) {
-      setSearch({ ranges: [], bbox: undefined });
-      return;
-    }
     const { tokens, freeText } = parseQueryTokens(q);
-    const kept = tokens.filter(([field]) => !config?.facets.includes(field));
+    const kept = tokens.filter(([field]) => !facetFields.includes(field));
+    const keptRanges = ranges.filter((entry) => !activeRanges.includes(entry));
     setSearch({
       q: [freeText, ...kept.map(([f, v]) => `${f}:"${v}"`)].filter(Boolean).join(" "),
+      ranges: keptRanges,
+      bbox: activeBbox ? undefined : bbox,
     });
   };
-  const clearActive = filtersPanel ? pluginFiltersActive : hasFacetFilters;
+  const clearActive = hasFacetFilters || activeRanges.length > 0 || !!activeBbox;
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -823,19 +840,38 @@ export function SearchPage() {
             >
               {filtersPanel ?? (
                 <>
-                  {config.facets.map((facet) => (
-                    <FacetSection
-                      key={facet}
-                      facet={facet}
-                      buckets={aggregations?.[facet] ?? []}
-                      loading={results.isPending}
-                      q={q}
-                      onToggle={(name, value) => setSearch({ q: toggleQueryToken(q, name, value) })}
-                    />
-                  ))}
-                  {config.facets.length === 0 && (
+                  {filters.map((filter) =>
+                    filter.type === "facet" ? (
+                      <FacetSection
+                        key={filter.field}
+                        facet={filter.field ?? ""}
+                        label={filter.label ?? undefined}
+                        buckets={aggregations?.[filter.field ?? ""] ?? []}
+                        loading={results.isPending}
+                        q={q}
+                        onToggle={(name, value) =>
+                          setSearch({ q: toggleQueryToken(q, name, value) })
+                        }
+                      />
+                    ) : filter.type === "range" ? (
+                      <RangeFilter
+                        key={filter.field}
+                        filter={filter}
+                        ranges={ranges}
+                        setRanges={(next) => setSearch({ ranges: next })}
+                      />
+                    ) : (
+                      <BboxFilter
+                        key={`bbox-${filterLabel(filter)}`}
+                        filter={filter}
+                        bbox={bbox}
+                        setBbox={(next) => setSearch({ bbox: next })}
+                      />
+                    ),
+                  )}
+                  {filters.length === 0 && (
                     <p className="px-[1em] py-3 text-[12px] text-[#AAAAAA]">
-                      No filters for this repository.
+                      No filters for this view.
                     </p>
                   )}
                 </>

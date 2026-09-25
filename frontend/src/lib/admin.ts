@@ -111,14 +111,54 @@ export interface NodeSettings {
     links?: { website?: string | null; github_issues?: string | null };
     contact_email?: string | null;
   };
-  search: { index: string; levels: { name: string; table: string }[]; facets?: string[] };
+  search: {
+    index: string;
+    levels: { name: string; table: string }[];
+    /** Pre-2026-09 shape, still loaded by the API as facet filters. */
+    facets?: string[];
+    filters?: SettingsFilter[];
+  };
   storage: { bucket: string };
   data_model: { versions: string[]; latest: string; dir: string };
   vocabularies: { controlled: string; suggested?: string | null; method_codes?: string | null };
   hierarchy: string[];
   doi?: { prefix?: string | null };
-  features?: { pages?: string[]; plugins?: string[] };
+  pages?: SettingsPage[];
+  features?: { plugins?: string[] };
   [key: string]: unknown;
+}
+
+/** A `search.filters` entry as written in the YAML (unset fields absent). */
+export interface SettingsFilter {
+  type: "facet" | "range" | "bbox";
+  field?: string;
+  label?: string;
+  levels?: string[];
+  views?: string[];
+  unit?: string;
+  scale?: number;
+  min?: number;
+  max?: number;
+}
+
+/** A `pages` entry as written in the YAML. */
+export interface SettingsPage {
+  slug: string;
+  title: string;
+  menu?: "left" | "right" | "hidden";
+  icon?: string;
+}
+
+/** The filters a node YAML defines, whichever shape it uses. */
+export function settingsFilters(search: NodeSettings["search"]): SettingsFilter[] {
+  const filters = search.filters ?? [];
+  const have = new Set(filters.filter((f) => f.type === "facet").map((f) => f.field));
+  return [
+    ...filters,
+    ...(search.facets ?? [])
+      .filter((field) => !have.has(field))
+      .map((field): SettingsFilter => ({ type: "facet", field })),
+  ];
 }
 
 export interface SettingsOp {

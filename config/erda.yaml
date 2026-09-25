@@ -31,15 +31,15 @@ search:
   # Aggregated on summary._all.<field>.raw — the legacy Advanced Search
   # dropdowns (data type, expert level, project) plus the geographic and
   # timescale terms its term_type selector scoped queries to.
-  facets:
-    - data_types
-    - expert_level
-    - education_topics
-    - project
-    - project_group
-    - continents_oceans
-    - countries
-    - timescale_period
+  filters:
+    - { type: facet, field: data_types }
+    - { type: facet, field: expert_level }
+    - { type: facet, field: education_topics }
+    - { type: facet, field: project }
+    - { type: facet, field: project_group }
+    - { type: facet, field: continents_oceans }
+    - { type: facet, field: countries }
+    - { type: facet, field: timescale_period }
 
 storage:
   bucket: erda
@@ -61,8 +61,10 @@ hierarchy:
 doi:
   prefix: 10.7288/V4/ERDA
 
+# Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
+pages: []
+
 features:
-  pages: []
   plugins: [record-cards]
 
 # Local fixtures only; never read during normal application startup.
