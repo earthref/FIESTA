@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import type { CSSProperties } from "react";
 import { useNodeConfig } from "../lib/config";
 import type { NodeConfig, NodePage } from "../lib/types";
-import { cx } from "../lib/utils";
 import { Icon, type IconName } from "./ui/icon";
 
 /**
@@ -70,7 +69,7 @@ export function nodeMenuItems(config: NodeConfig | undefined): {
 const iconStyle: CSSProperties = { width: "1.18em", height: "1em", margin: "0 0.35714286em 0 0" };
 
 /** Node-colored secondary pointing menu directly under the node header (≥1024px only). */
-export function NodeMenu({ fullWidth = false }: { fullWidth?: boolean }) {
+export function NodeMenu() {
   const { data: config } = useNodeConfig();
   const { left, right } = nodeMenuItems(config);
 
@@ -102,7 +101,7 @@ export function NodeMenu({ fullWidth = false }: { fullWidth?: boolean }) {
 
   return (
     <nav aria-label="Node" className="hidden lg:block">
-      <div className={cx("block", fullWidth ? "px-[2em]" : "er-container")}>
+      <div className="block px-[2em]">
         <div
           className="flex w-full"
           style={{

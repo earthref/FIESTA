@@ -7,12 +7,12 @@ import { useNodeConfig } from "../lib/config";
  * 1.5em square (57.75px), 1px segment border + 1px inset node-colored shadow,
  * floated left with margin-right .25em; h1 28px/36px; h4 15px bold/19.3px.
  */
-export function NodeHeader({ fullWidth = false }: { fullWidth?: boolean }) {
+export function NodeHeader() {
   const { data: config } = useNodeConfig();
 
   return (
     // Legacy `.full-width` layout variant (padding 0 2em) frames the header too.
-    <div className={fullWidth ? "w-full px-[2em]" : "er-container"}>
+    <div className="w-full px-[2em]">
       <div>
         <Link
           to="/"

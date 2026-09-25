@@ -6,7 +6,7 @@ export function ValidatePage() {
   const { data: config } = useNodeConfig();
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <h1 className="mb-1 text-xl font-semibold text-gray-900">Validate a file</h1>
       <p className="mb-5 text-sm text-gray-600">
         Validation runs inside your{" "}

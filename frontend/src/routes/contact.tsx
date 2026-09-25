@@ -5,7 +5,7 @@ export function ContactPage() {
   const { data: config } = useNodeConfig();
 
   return (
-    <div className="mx-auto max-w-lg py-6">
+    <div className="py-6">
       <h1 className="mb-5 text-xl font-semibold text-gray-900">Contact</h1>
       <div className="space-y-4">
         <Card>

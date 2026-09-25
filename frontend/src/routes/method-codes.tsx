@@ -112,7 +112,7 @@ export function MethodCodesPage() {
     .sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div>
       <h1 className="mb-1 text-xl font-semibold text-gray-900">Method codes</h1>
       <p className="mb-4 text-sm text-gray-600">
         Standardized codes describing how measurements and interpretations were made.

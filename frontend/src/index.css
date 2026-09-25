@@ -41,30 +41,6 @@
   }
 }
 
-/* Semantic `.ui.container` (legacy `layout-content container`): fixed widths
-   per breakpoint, 1em side margins on phones. */
-.er-container {
-  margin: 0 auto;
-  width: auto;
-  padding: 0 1em;
-}
-@media (min-width: 768px) {
-  .er-container {
-    width: 723px;
-    padding: 0;
-  }
-}
-@media (min-width: 992px) {
-  .er-container {
-    width: 933px;
-  }
-}
-@media (min-width: 1200px) {
-  .er-container {
-    width: 1127px;
-  }
-}
-
 /* Admin-authored HTML (content pages): the browser defaults Tailwind's
    preflight removes, so headings, lists and links read as written. */
 .er-content :is(h1, h2, h3, h4) {
