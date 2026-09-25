@@ -172,7 +172,10 @@ are two ways to change it, and both end up in both places:
 The config loader validates the YAML on startup and before any publication
 (e.g. every `hierarchy` table must exist in the latest data model). To run
 this checkout's YAML against a database whose published config differs, set
-`FIESTA_NODE_CONFIG_SOURCE=files`.
+`FIESTA_NODE_CONFIG_SOURCE=files`. `make up ENV_FILE=…` does that by default,
+so the admin UI's Nodes tab is read-only there. `make up ENV_FILE=.env.prod
+FIESTA_NODE_CONFIG_SOURCE=db` edits that deployment's nodes instead:
+publications go live there, and are not written to git from your stack.
 
 Grant yourself admin rights locally with `fiesta create-user EMAIL NAME --admin`
 (super admin); super admins grant node admins in the UI.
