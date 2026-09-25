@@ -2,7 +2,7 @@
 name: roadmap-next
 context: fork
 agent: general-purpose
-model: claude-opus-4-8
+model: claude-opus-5-5
 description: Reconcile ROADMAP.md with what actually shipped and propose the next 1–3 items, separating code work Claude can start from items blocked on the operator. Use when asked "what next", "update the roadmap", or at the start of a build session.
 ---
 
