@@ -53,6 +53,8 @@
 }
 .er-content h2 {
   font-size: 1.125rem;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid rgba(34, 36, 38, 0.15);
 }
 .er-content h3 {
   font-size: 1rem;
@@ -84,6 +86,101 @@
 .er-content :is(th, td) {
   padding: 0.25em 0.5em;
   border: 1px solid #e5e7eb;
+}
+.er-content hr {
+  margin: 1.5em 0;
+  border-top: 1px solid rgba(34, 36, 38, 0.15);
+}
+.er-content pre {
+  margin: 0 0 1em;
+  padding: 0.75em;
+  overflow-x: auto;
+  font-size: 0.85em;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+}
+/* Layout classes page HTML may use (Tailwind does not scan config/). */
+.er-content .er-justify {
+  text-align: justify;
+}
+/* People: a wrapping row of portrait cards (<figure><img><figcaption>). */
+.er-content .er-people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 1.5rem 1rem;
+  margin: 1em 0 2em;
+  text-align: center;
+}
+.er-content .er-people img {
+  width: 7rem;
+  height: 7rem;
+  margin: 0 auto 0.5em;
+  object-fit: cover;
+  border: 1px solid rgba(34, 36, 38, 0.1);
+  border-radius: 0.3125rem;
+}
+.er-content .er-people strong {
+  display: block;
+  color: rgba(0, 0, 0, 0.87);
+}
+.er-content .er-people small {
+  display: block;
+  font-size: 0.9em;
+  color: rgba(0, 0, 0, 0.6);
+}
+/* Logos: a centered wrapping row of bordered tiles, an optional caption below. */
+.er-content .er-logos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1em 0 2em;
+}
+.er-content .er-logos figure {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 8rem;
+  padding: 0.75rem 0.75rem 0;
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  border-radius: 0.3125rem;
+  box-shadow: 0 1px 2px 0 rgba(34, 36, 38, 0.15);
+  overflow: hidden;
+}
+.er-content .er-logos img {
+  margin: auto;
+  padding-bottom: 0.75rem;
+}
+.er-content .er-logos figcaption {
+  margin: 0 -0.75rem;
+  padding: 0.3em 0.5em;
+  overflow: hidden;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #e8e8e8;
+}
+/* Media: an image beside its text, one row per <section>. */
+.er-content .er-media section {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin: 0 0 1.5em;
+  text-align: justify;
+}
+.er-content .er-media img {
+  flex: none;
+  width: 9rem;
+  border: 1px solid rgba(34, 36, 38, 0.1);
+  border-radius: 0.3125rem;
+}
+@media (max-width: 640px) {
+  .er-content .er-media section {
+    flex-direction: column;
+  }
 }
 
 :root {

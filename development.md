@@ -193,7 +193,13 @@ Content pages are YAML plus HTML: the top-level `pages` list (`slug`, `title`,
 HTML in `config/<slug>/pages/<page>.html`, served at `/<page>` by one SPA route
 (`/about`, `/help`, ...). The Pages tab of the node admin page creates, reorders
 and edits them with a live preview; the HTML is sanitized on render (DOMPurify),
-so scripts and event handlers never reach visitors. The search filter sidebar
+so scripts and event handlers never reach visitors. Page HTML writes paths
+node-relative so it works under any base path: `href="/search"` is this node's
+SPA route, and a relative `src="people/x.jpg"` is a file in
+`config/<slug>/assets/`. Tailwind does not scan `config/`, so layout uses the
+plain classes `.er-content` defines in `frontend/src/index.css` (`er-justify`,
+`er-people` portrait cards, `er-logos` tiles, `er-media` image-beside-text
+rows). The search filter sidebar
 is `search.filters` (facet / range / bbox, each with the search `levels` and
 result `views` it applies to), edited in the Search Filters tab with a column
 picker from the data model; a range needs a field a plugin indexes as a
