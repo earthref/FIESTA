@@ -68,12 +68,13 @@ Accounts are shared across nodes (one EarthRef login, in the `public`
 schema). If your local database predates the per-node schemas, `make clean`
 once.
 
-The top portal bar links every node in `FIESTA_NODE` to this frontend
-(`http://localhost:8080/CDR`) and every other node to its production
-`earthref.org` URL: compose passes the frontend's origin to the API as
-`FIESTA_FRONTEND_URL`, and the config route turns it into `portal_urls` for
-the nodes it serves. In production this is left empty and the real hostnames
-route instead.
+The top portal bar links every node this deployment serves to its instance
+next to the current one (`http://localhost:8080/CDR/`, `dev.earthref.org/CDR/`)
+and every other node to its production `earthref.org` URL. The SPA works this
+out from where it is loaded (`portalUrl` in `frontend/src/lib/portals.ts`): the
+served nodes are `fiesta-env.js`'s list in the multi-node layout, else the
+config route's `deployment_nodes`; on a production host (any host in the
+portal list) every link stays on production.
 
 ## Base paths and the multi-node layout
 

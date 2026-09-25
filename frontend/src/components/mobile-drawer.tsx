@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { useNodeConfig } from "../lib/config";
-import { PORTALS } from "../lib/portals";
+import { PORTALS, portalUrl } from "../lib/portals";
 import { type NodeMenuItem, nodeMenuItems } from "./node-menu";
 import { Icon } from "./ui/icon";
 
@@ -101,7 +101,6 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
         <nav aria-label="EarthRef portals" className="flex flex-col p-2">
           {PORTALS.map((portal) => {
             const active = portal.label === config?.key;
-            const localUrl = config?.portal_urls?.[portal.label.toLowerCase()];
             const className =
               "rounded-sm px-3 py-1.5 text-sm hover:bg-gray-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node";
             const style = { color: portal.color, fontWeight: active ? 700 : 500 };
@@ -112,7 +111,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
             ) : (
               <a
                 key={portal.label}
-                href={localUrl ?? portal.url}
+                href={portalUrl(portal, config?.deployment_nodes)}
                 className={className}
                 style={style}
               >

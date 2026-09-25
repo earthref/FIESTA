@@ -120,12 +120,6 @@ class Settings(BaseSettings):
     # API owns the hostname (api.earthref.org).
     root_path: str = ""
 
-    # Local-dev only: origin of the one frontend that serves every node this
-    # API runs, each under /<Key>/ (http://localhost:8080/MagIC/, /CDR/, ...).
-    # The config route turns it into portal-bar links to the running sibling
-    # nodes; nodes not served keep their earthref.org links. Empty in production.
-    frontend_url: str = ""
-
     @field_validator("s3_endpoint", "s3_bucket", "opensearch_ca_certs", mode="before")
     @classmethod
     def _empty_is_none(cls, value):
