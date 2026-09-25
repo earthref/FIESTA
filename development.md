@@ -201,7 +201,10 @@ YAML refers to live in `config/<slug>/assets/` and are served at
 (data model, vocabularies, method codes, API, help).
 
 Node-specific features (MagIC poles, CDR depth plots, KArAr age plateaus)
-are **plugins** activated per node via `features.plugins` — see
+are **plugins** activated per node via `features.plugins`, with per-node
+options under `plugins.<name>` (validated against the plugin's `Options`
+model; the Plugins tab of the node admin page switches plugins on and edits
+their options through a form generated from that model's schema) — see
 [docs/plugins.md](docs/plugins.md) for the authoring guide.
 
 ## CLI

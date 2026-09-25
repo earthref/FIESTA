@@ -90,6 +90,18 @@ pages:
   - { slug: help, title: Help, menu: right, icon: question-circle }
   - { slug: jupyter-notebooks, title: Jupyter Notebooks, menu: hidden }
 
+# Plugin options (one map per plugin, validated against its Options model;
+# edited in the admin UI's Plugins tab).
+plugins:
+  poles:
+    display_columns: [pole_lat, pole_lon, pole_alpha95, age, age_unit]
+    base_level: Locations # the Poles view is a sub-tab of this level, after `after_sub_tab`
+    after_sub_tab: Rows
+    # Poles are colored by an age gradient (young -> old): yellow -> red,
+    # black for unknown age, purple for the selected pole.
+    age_color: { young: "#ffff00", old: "#ff0000", unknown: "#000000", selected: "#800080" }
+    plate_boundary_color: "#990000"
+
 features:
   plugins: [poles]
   # Home page content (legacy client/modules/magic/components/home.jsx + home_news.jsx).

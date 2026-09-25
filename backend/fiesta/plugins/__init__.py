@@ -38,13 +38,20 @@ def all_plugins() -> dict[str, FiestaPlugin]:
 
 
 def active_plugins(node) -> list[FiestaPlugin]:
-    """The plugins a node's YAML activates, in YAML order. Unknown names are
-    a config error — fail loudly at startup, not silently at request time."""
+    """The plugins a node's YAML activates, in YAML order, with their options
+    validated. Unknown names (in `features.plugins` or `plugins`) and options
+    that do not fit a plugin's schema are a config error — fail loudly at
+    startup and in the admin UI's validation, not silently at request time.
+    Options of a plugin that is configured but switched off are checked too,
+    so switching it back on cannot fail."""
     plugins = all_plugins()
-    missing = [name for name in node.features.plugins if name not in plugins]
+    missing = [name for name in [*node.features.plugins, *node.plugins] if name not in plugins]
     if missing:
         raise ValueError(
-            f"node {node.node.key!r} activates unknown plugins {missing}; "
+            f"node {node.node.key!r} names unknown plugins {sorted(set(missing))}; "
             f"known: {sorted(plugins)}"
         )
+    for name in {*node.features.plugins, *node.plugins}:
+        plugin = plugins[name]
+        plugin.check(node, plugin.options(node))
     return [plugins[name] for name in node.features.plugins]

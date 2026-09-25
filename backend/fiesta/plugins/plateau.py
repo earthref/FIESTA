@@ -15,10 +15,11 @@ import math
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from pydantic import Field
 
 from fiesta.apps.deps import NodeDep, SessionDep
 from fiesta.nodeconfig import NodeConfig
-from fiesta.plugins.base import FiestaPlugin
+from fiesta.plugins.base import FiestaPlugin, PluginOptions
 from fiesta.plugins.util import load_visible_parsed, to_float
 
 ATM_AR40_AR36 = 295.5
@@ -28,6 +29,30 @@ DEFAULT_J = 1e-3
 MIN_PLATEAU_STEPS = 3
 MAX_MSWD = 2.5
 MIN_AR39_PERCENT = 50.0
+
+
+class PlateauOptions(PluginOptions):
+    """The legacy constants, per node."""
+
+    levels: list[str] = Field(
+        default=["Experiments"],
+        description="Search levels whose result items get the age-spectrum thumbnail",
+    )
+    default_lambda: float = Field(
+        default=DEFAULT_LAMBDA, description="Total ⁴⁰K decay constant λ (1/year)"
+    )
+    default_j: float = Field(default=DEFAULT_J, description="Default irradiation J value")
+    min_plateau_steps: int = Field(
+        default=MIN_PLATEAU_STEPS, ge=2, description="Fewest consecutive steps in a plateau"
+    )
+    max_mswd: float = Field(default=MAX_MSWD, gt=0, description="Highest MSWD a plateau may have")
+    min_ar39_percent: float = Field(
+        default=MIN_AR39_PERCENT,
+        ge=0,
+        le=100,
+        description="Least cumulative ³⁹Ar release (%) a plateau must span",
+    )
+
 
 TEMP_COLUMNS = ["measurement_step_heat_temperature", "temperature", "temp", "step_temperature"]
 AR39_COLUMNS = [
@@ -70,9 +95,7 @@ def calculate_age(
         }
 
     ar36_ar39 = _get(row, "total_36ar_39ar_ratio", "measurement_36ar_39ar_ratio")
-    ar36_ar39_sigma = _get(
-        row, "total_36ar_39ar_ratio_sigma", "measurement_36ar_39ar_ratio_sigma"
-    )
+    ar36_ar39_sigma = _get(row, "total_36ar_39ar_ratio_sigma", "measurement_36ar_39ar_ratio_sigma")
     ar40_ar39 = to_float(row.get("measurement_40ar_39ar_ratio"))
     ar40_ar39_sigma = to_float(row.get("measurement_40ar_39ar_ratio_sigma"))
 
@@ -108,9 +131,7 @@ def calculate_age(
 
     # Age equation: t = (1/λ) ln(1 + J * 40Ar*/39ArK), reported in Ma.
     age = (1.0 / lam) * math.log(1.0 + j_value * ar40rad_ar39) / 1e6
-    age_sigma = (
-        age * ar40rad_ar39_sigma / ar40rad_ar39 if ar40rad_ar39_sigma is not None else 0.0
-    )
+    age_sigma = age * ar40rad_ar39_sigma / ar40rad_ar39 if ar40rad_ar39_sigma is not None else 0.0
     return {
         "age": age,
         "age_sigma": age_sigma,
@@ -154,19 +175,24 @@ def weighted_mean(steps: list[dict]) -> dict | None:
     }
 
 
-def identify_plateau(age_data: list[dict]) -> dict | None:
-    """Lowest-MSWD run of >= MIN_PLATEAU_STEPS consecutive steps spanning
-    >= MIN_AR39_PERCENT of cumulative 39Ar with MSWD <= MAX_MSWD."""
+def identify_plateau(
+    age_data: list[dict],
+    min_steps: int = MIN_PLATEAU_STEPS,
+    min_ar39_percent: float = MIN_AR39_PERCENT,
+    max_mswd: float = MAX_MSWD,
+) -> dict | None:
+    """Lowest-MSWD run of >= min_steps consecutive steps spanning
+    >= min_ar39_percent of cumulative 39Ar with MSWD <= max_mswd."""
     n = len(age_data)
     best: dict | None = None
     for start in range(n):
-        for end in range(start + MIN_PLATEAU_STEPS - 1, n):
+        for end in range(start + min_steps - 1, n):
             span_start = age_data[start - 1]["cum_ar39"] if start > 0 else 0.0
             ar39_span = age_data[end]["cum_ar39"] - span_start
-            if ar39_span < MIN_AR39_PERCENT:
+            if ar39_span < min_ar39_percent:
                 continue
             stats = weighted_mean(age_data[start : end + 1])
-            if stats is None or stats["mswd"] > MAX_MSWD:
+            if stats is None or stats["mswd"] > max_mswd:
                 continue
             if best is None or stats["mswd"] < best["mswd"]:
                 best = {
@@ -201,9 +227,14 @@ def deduplicate(rows: list[dict]) -> list[dict]:
 
 
 def process_plateau_data(
-    rows: list[dict], j_value: float = DEFAULT_J, lam: float = DEFAULT_LAMBDA
+    rows: list[dict],
+    j_value: float = DEFAULT_J,
+    lam: float = DEFAULT_LAMBDA,
+    options: PlateauOptions | None = None,
 ) -> dict:
-    """Main entry point: raw measurement rows -> age spectrum + plateau."""
+    """Main entry point: raw measurement rows -> age spectrum + plateau
+    (plateau criteria from `options`, the legacy constants by default)."""
+    options = options or PlateauOptions()
     total_steps = len(rows)
     rows = deduplicate(rows)
     rows.sort(key=lambda r: _get(r, *TEMP_COLUMNS) or 0.0)
@@ -229,7 +260,9 @@ def process_plateau_data(
 
     return {
         "age_data": age_data,
-        "plateau": identify_plateau(age_data),
+        "plateau": identify_plateau(
+            age_data, options.min_plateau_steps, options.min_ar39_percent, options.max_mswd
+        ),
         "total_steps": total_steps,
         "unique_steps": len(rows),
         "duplicates_removed": total_steps - len(rows),
@@ -238,6 +271,19 @@ def process_plateau_data(
 
 class PlateauPlugin(FiestaPlugin):
     name = "plateau-calculations"
+    description = (
+        "⁴⁰Ar/³⁹Ar age spectra and plateaus computed from step-heating measurements, "
+        "shown on experiment result items."
+    )
+    Options = PlateauOptions
+
+    def check(self, node: NodeConfig, options: PluginOptions) -> None:
+        assert isinstance(options, PlateauOptions)
+        levels = {lvl.name for lvl in node.search.levels}
+        if unknown := [lvl for lvl in options.levels if lvl not in levels]:
+            raise ValueError(
+                f"plugin 'plateau-calculations': levels {unknown} are not search levels"
+            )
 
     def build_router(self) -> APIRouter:
         router = APIRouter()
@@ -249,9 +295,12 @@ class PlateauPlugin(FiestaPlugin):
             contribution_id: int,
             experiment: str,
             private_key: str | None = None,
-            j_value: float = DEFAULT_J,
-            decay_constant: float = DEFAULT_LAMBDA,
+            j_value: float | None = None,
+            decay_constant: float | None = None,
         ) -> dict:
+            """The age spectrum and plateau; J and λ default to the node's options."""
+            options = self.options(node)
+            assert isinstance(options, PlateauOptions)
             _, parsed = await load_visible_parsed(session, node, contribution_id, private_key)
             rows = [
                 row
@@ -262,22 +311,25 @@ class PlateauPlugin(FiestaPlugin):
                 raise HTTPException(
                     404, f"no measurements for experiment {experiment!r} in {contribution_id}"
                 )
-            return process_plateau_data(rows, j_value, decay_constant)
+            return process_plateau_data(
+                rows,
+                options.default_j if j_value is None else j_value,
+                options.default_lambda if decay_constant is None else decay_constant,
+                options,
+            )
 
         return router
 
     def frontend_config(self, node: NodeConfig) -> dict:
+        options = self.options(node)
+        assert isinstance(options, PlateauOptions)
         return {
             "view": "age-spectrum",
             # The age-spectrum thumbnail/modal attaches to these levels'
             # result items, keyed by the row's experiment name.
-            "levels": ["Experiments"],
+            "levels": options.levels,
             "constants": {
                 "atm_ar40_ar36": ATM_AR40_AR36,
-                "default_lambda": DEFAULT_LAMBDA,
-                "default_j": DEFAULT_J,
-                "min_plateau_steps": MIN_PLATEAU_STEPS,
-                "max_mswd": MAX_MSWD,
-                "min_ar39_percent": MIN_AR39_PERCENT,
+                **options.model_dump(exclude={"levels"}),
             },
         }

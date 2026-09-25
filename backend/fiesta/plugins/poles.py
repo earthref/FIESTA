@@ -12,12 +12,13 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 
 from fiesta.apps.deps import NodeDep
 from fiesta.domain.parse import ParsedContribution
 from fiesta.domain.summarize import FACETABLE_COLUMNS
 from fiesta.nodeconfig import NodeConfig
-from fiesta.plugins.base import FiestaPlugin
+from fiesta.plugins.base import FiestaPlugin, PluginOptions
 from fiesta.plugins.util import to_float
 
 # MagIC age_unit controlled vocabulary → years-before-present multiplier.
@@ -34,16 +35,53 @@ AGE_UNIT_YEARS = {
 }
 
 
+class AgeColors(BaseModel):
+    """The age gradient poles are colored by (young -> old), plus the colors
+    for an unknown age and for the selected pole."""
+
+    young: str = "#ffff00"
+    old: str = "#ff0000"
+    unknown: str = "#000000"
+    selected: str = "#800080"
+
+
+class PolesOptions(PluginOptions):
+    display_columns: list[str] = Field(
+        default=["pole_lat", "pole_lon", "pole_alpha95", "age", "age_unit"],
+        description="Location columns shown on a pole result item, in order",
+    )
+    base_level: str = Field(
+        default="Locations",
+        description="Search level the Poles view attaches to as a sub-tab",
+    )
+    after_sub_tab: str = Field(
+        default="Rows", description="Result sub-tab the Poles tab is placed after"
+    )
+    age_color: AgeColors = Field(default=AgeColors(), description="Pole colors by age")
+    plate_boundary_color: str = Field(
+        default="#990000", description="Color of the plate boundary lines on the globes"
+    )
+
+
 class PolesPlugin(FiestaPlugin):
     name = "poles"
+    description = (
+        "Derives a searchable `poles` document from every location row with a pole "
+        "latitude and longitude, and shows them as a sub-tab with globe maps."
+    )
+    Options = PolesOptions
 
-    #: Columns surfaced on the pole list item, in render order (MagIC 3.0
-    #: names the a95 column `pole_alpha95`).
-    DISPLAY_COLUMNS = ["pole_lat", "pole_lon", "pole_alpha95", "age", "age_unit"]
-
-    #: Poles attach as a sub-tab of this level (after its "Rows" view),
-    #: matching the legacy MagIC layout — not a top-level tab.
-    BASE_LEVEL = "Locations"
+    def check(self, node: NodeConfig, options: PluginOptions) -> None:
+        assert isinstance(options, PolesOptions)
+        levels = {lvl.name for lvl in node.search.levels}
+        if options.base_level not in levels:
+            raise ValueError(
+                f"plugin 'poles': base_level {options.base_level!r} is not a search level"
+            )
+        columns = node.load_data_model(node.data_model.latest)["tables"]["locations"]["columns"]
+        unknown = [c for c in options.display_columns if c not in columns]
+        if unknown:
+            raise ValueError(f"plugin 'poles': display_columns {unknown} are not locations columns")
 
     def search_tables(self, node: NodeConfig) -> list[str]:
         return ["poles"]
@@ -125,27 +163,15 @@ class PolesPlugin(FiestaPlugin):
         return router
 
     def frontend_config(self, node: NodeConfig) -> dict:
+        # The Age / Pole A95 / Geospatial controls on the Poles view are
+        # `search.filters` entries in the node YAML (range on
+        # summary.poles.age and summary.poles.pole_alpha95, bbox).
         return {
             "view": "poles",
             "table": "poles",
-            # Rendered as a sub-tab of this level, placed after its "Rows" view.
-            "base_level": self.BASE_LEVEL,
-            "after_sub_tab": "Rows",
-            "display_columns": self.DISPLAY_COLUMNS,
-            # The Age / Pole A95 / Geospatial controls on the Poles view are
-            # `search.filters` entries in the node YAML (range on
-            # summary.poles.age and summary.poles.pole_alpha95, bbox).
+            **self.options(node).model_dump(),
             "has_plate_boundaries": (
                 node.base_dir / node.node.slug / "plate_boundaries.json"
             ).exists(),
             "has_base_texture": (node.base_dir / node.node.slug / "global_relief_map.jpg").exists(),
-            # Poles are colored by an age gradient (young→old): yellow→red,
-            # black for unknown age, purple for the selected pole.
-            "age_color": {
-                "young": "#ffff00",
-                "old": "#ff0000",
-                "unknown": "#000000",
-                "selected": "#800080",
-            },
-            "plate_boundary_color": "#990000",
         }

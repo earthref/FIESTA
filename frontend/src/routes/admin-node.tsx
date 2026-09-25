@@ -9,6 +9,7 @@ import { AdminGate, Field, NodeChip, RepoStatus, Tabs } from "../components/admi
 import { DataModelEditor } from "../components/admin/data-model-editor";
 import { FiltersEditor } from "../components/admin/filters-editor";
 import { PagesEditor } from "../components/admin/pages-editor";
+import { PluginsEditor } from "../components/admin/plugins-editor";
 import { VocabularyEditor } from "../components/admin/vocabulary-editor";
 import { ErrorMessage } from "../components/error-message";
 import { Badge } from "../components/ui/badge";
@@ -44,6 +45,7 @@ type Section =
   | "settings"
   | "pages"
   | "filters"
+  | "plugins"
   | "data-models"
   | "vocabularies"
   | "files"
@@ -54,6 +56,7 @@ const SECTIONS: { key: Section; label: string }[] = [
   { key: "settings", label: "Settings" },
   { key: "pages", label: "Pages" },
   { key: "filters", label: "Search Filters" },
+  { key: "plugins", label: "Plugins" },
   { key: "data-models", label: "Data Models" },
   { key: "vocabularies", label: "Vocabularies" },
   { key: "files", label: "Files" },
@@ -252,7 +255,6 @@ interface SettingsForm {
   website: string;
   github_issues: string;
   doi_prefix: string;
-  plugins: string[];
   index: string;
   bucket: string;
 }
@@ -266,7 +268,6 @@ function formOf(s: NodeSettings): SettingsForm {
     website: s.node.links?.website ?? "",
     github_issues: s.node.links?.github_issues ?? "",
     doi_prefix: s.doi?.prefix ?? "",
-    plugins: s.features?.plugins ?? [],
     index: s.search.index,
     bucket: s.storage.bucket,
   };
@@ -283,44 +284,12 @@ function opsFor(before: SettingsForm, after: SettingsForm): SettingsOp[] {
     ["website", ["node", "links", "website"], orNull(after.website)],
     ["github_issues", ["node", "links", "github_issues"], orNull(after.github_issues)],
     ["doi_prefix", ["doi", "prefix"], orNull(after.doi_prefix)],
-    ["plugins", ["features", "plugins"], after.plugins],
     ["index", ["search", "index"], after.index.trim()],
     ["bucket", ["storage", "bucket"], after.bucket.trim()],
   ];
   return fields
     .filter(([key]) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
     .map(([, path, value]) => ({ path, value }));
-}
-
-function Checkboxes({
-  options,
-  value,
-  onChange,
-}: {
-  options: string[];
-  value: string[];
-  onChange: (next: string[]) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      {options.map((option) => (
-        <label key={option} className="flex items-center gap-1.5 text-sm">
-          <input
-            type="checkbox"
-            checked={value.includes(option)}
-            onChange={() =>
-              onChange(
-                value.includes(option)
-                  ? value.filter((entry) => entry !== option)
-                  : [...value, option],
-              )
-            }
-          />
-          {option}
-        </label>
-      ))}
-    </div>
-  );
 }
 
 function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: boolean }) {
@@ -404,13 +373,6 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
           <Input {...input("doi_prefix")} />
         </Field>
       </div>
-      <Field label="Plugins">
-        <Checkboxes
-          options={node.plugins ?? []}
-          value={form.plugins}
-          onChange={(v) => set("plugins", v)}
-        />
-      </Field>
       <fieldset className="rounded-md border border-gray-200 p-3">
         <legend className="px-1 text-xs font-semibold text-gray-700">
           Data location {superAdmin ? "" : "(super admins only)"}
@@ -425,9 +387,9 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
         </div>
       </fieldset>
       <p className="text-xs text-gray-500">
-        Content pages and the search filter sidebar have their own tabs. Search levels, hierarchy,
-        home page cards and news are edited in the node YAML under Files. Edits keep the YAML's
-        comments and layout.
+        Content pages, the search filter sidebar and plugins have their own tabs. Search levels,
+        hierarchy, home page cards and news are edited in the node YAML under Files. Edits keep the
+        YAML's comments and layout.
       </p>
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={!changed || save.isPending}>
@@ -842,7 +804,7 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
         }
       />
       {section === "settings" && <SettingsSection node={n} superAdmin={superAdmin} />}
-      {["pages", "filters", "data-models", "vocabularies"].includes(section) &&
+      {["pages", "filters", "plugins", "data-models", "vocabularies"].includes(section) &&
         (settings.data ? (
           section === "pages" ? (
             <PagesEditor
@@ -855,6 +817,13 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
               slug={slug}
               settings={settings.data.settings}
               settingsLock={lockOf(settings.data)}
+            />
+          ) : section === "plugins" ? (
+            <PluginsEditor
+              slug={slug}
+              settings={settings.data.settings}
+              settingsLock={lockOf(settings.data)}
+              plugins={n.plugins ?? []}
             />
           ) : section === "data-models" ? (
             <DataModelEditor

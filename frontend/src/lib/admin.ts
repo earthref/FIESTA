@@ -61,7 +61,38 @@ export interface AdminNode {
   draft_is_stale: boolean;
   admins: { id: number; name: string; email: string }[];
   revisions?: NodeRevision[];
-  plugins?: string[];
+  /** Every plugin in the code (detail only), for the Plugins tab. */
+  plugins?: PluginInfo[];
+}
+
+/** A plugin as the code declares it: switched on per node by
+ * `features.plugins`, its options (a JSON schema with defaults, from the
+ * backend's pydantic Options model) edited under `plugins.<name>`. */
+export interface PluginInfo {
+  name: string;
+  description: string;
+  schema: JsonSchema;
+}
+
+/** The subset of JSON Schema pydantic v2 emits for an Options model. */
+export interface JsonSchema {
+  type?: "object" | "array" | "string" | "number" | "integer" | "boolean" | "null";
+  title?: string;
+  description?: string;
+  default?: unknown;
+  enum?: unknown[];
+  const?: unknown;
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+  additionalProperties?: JsonSchema | boolean;
+  items?: JsonSchema;
+  anyOf?: JsonSchema[];
+  $ref?: string;
+  $defs?: Record<string, JsonSchema>;
+  minimum?: number;
+  maximum?: number;
+  exclusiveMinimum?: number;
+  exclusiveMaximum?: number;
 }
 
 export interface FileChange {
@@ -125,6 +156,8 @@ export interface NodeSettings {
   doi?: { prefix?: string | null };
   pages?: SettingsPage[];
   features?: { plugins?: string[] };
+  /** Per-plugin options, keyed by plugin name. */
+  plugins?: Record<string, Record<string, unknown>>;
   [key: string]: unknown;
 }
 

@@ -85,6 +85,76 @@ doi:
 # Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
 pages: []
 
+# Plugin options (one map per plugin, validated against its Options model;
+# edited in the admin UI's Plugins tab).
+plugins:
+  record-cards:
+    # Result card per search table: title column, optional subtitle column, cells
+    # (`width` is the legacy fixed-width cell in px; `format: bytes` renders sizes).
+    cards:
+      cruises:
+        title_column: cruise
+        subtitle_column: place
+        cells:
+          - { column: cruise_name, label: Cruise Name, width: 220 }
+          - { column: rv_name, label: Research Vessel, width: 160 }
+          - { column: pi, label: PI, width: 150 }
+          - { column: pi_institution, label: Institution, width: 180 }
+          - { column: collection, label: Collection, width: 150 }
+          - { column: accession_date, label: Accessioned, width: 110 }
+      cores:
+        title_column: core
+        subtitle_column: notes
+        cells:
+          - { column: method, label: Method, width: 150 }
+          - { column: material, label: Material, width: 110 }
+          - { column: length, label: Length (cm), width: 110 }
+          - { column: lat, label: Latitude, width: 100 }
+          - { column: lon, label: Longitude, width: 100 }
+          - { column: water_depth, label: Water Depth, width: 110 }
+          - { column: start_date, label: Collected, width: 110 }
+          - { column: area, label: Area, width: 160 }
+      sections:
+        title_column: section
+        cells:
+          - { column: section_number, label: Section, width: 90 }
+          - { column: depth_top, label: Depth Top (cm), width: 120 }
+          - { column: depth_bottom, label: Depth Bottom (cm), width: 140 }
+          - { column: length, label: Length (cm), width: 110 }
+          - { column: igsn, label: IGSN, width: 180 }
+          - { column: storage_location, label: Storage, width: 180 }
+      dives:
+        title_column: dive
+        subtitle_column: notes
+        cells:
+          - { column: method, label: Method, width: 130 }
+          - { column: rov_name, label: ROV, width: 150 }
+          - { column: weight, label: Recovery (kg), width: 120 }
+          - { column: lat, label: Latitude, width: 100 }
+          - { column: lon, label: Longitude, width: 100 }
+          - { column: water_depth, label: Water Depth, width: 110 }
+          - { column: start_date, label: Collected, width: 110 }
+          - { column: area, label: Area, width: 160 }
+      dive_samples:
+        title_column: dive_sample
+        subtitle_column: notes
+        cells:
+          - { column: texture, label: Principal Texture, width: 200 }
+          - { column: material, label: Material, width: 110 }
+          - { column: weight, label: Weight (kg), width: 110 }
+          - { column: igsn, label: IGSN, width: 180 }
+          - { column: sesar_resource_type, label: SESAR Type, width: 150 }
+          - { column: storage_location, label: Storage, width: 180 }
+      files:
+        title_column: file
+        subtitle_column: description
+        cells:
+          - { column: file_type, label: File Type, width: 170 }
+          - { column: osu_id, label: OSU-ID, width: 200 }
+          - { column: media_type, label: Media Type, width: 160 }
+          - { column: size_bytes, label: File Size, width: 110, format: bytes }
+          - { column: moratorium, label: Moratorium, width: 110 }
+
 features:
   plugins: [record-cards]
 

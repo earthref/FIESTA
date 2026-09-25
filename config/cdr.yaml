@@ -59,6 +59,25 @@ doi:
 # Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
 pages: []
 
+# Plugin options (one map per plugin, validated against its Options model;
+# edited in the admin UI's Plugins tab).
+plugins:
+  depth-plot:
+    levels: [Cores]
+    depth_columns: [mbs_corrected, depth]
+    # Measurement tracks, matching the legacy seriesDefs (key, label, color).
+    series:
+      - { key: gamma_density, label: Gamma Density, color: "#1f77b4" }
+      - { key: mag_susc_chi_mass, label: Mag Susc χmass, color: "#ff7f0e" }
+      - { key: res, label: Resistivity (ohm-m), color: "#2ca02c" }
+      - { key: pwave_v, label: P-wave Velocity (m/s), color: "#d62728" }
+      - { key: fp, label: Porosity (frac), color: "#9467bd" }
+      - { key: k, label: K (cps), color: "#8c564b" }
+      - { key: ca, label: Ca (cps), color: "#e377c2" }
+      - { key: ti, label: Ti (cps), color: "#7f7f7f" }
+      - { key: fe, label: Fe (cps), color: "#bcbd22" }
+      - { key: zr, label: Zr (cps), color: "#17becf" }
+
 features:
   plugins: [depth-plot]
 

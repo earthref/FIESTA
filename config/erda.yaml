@@ -64,6 +64,31 @@ doi:
 # Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
 pages: []
 
+# Plugin options (one map per plugin, validated against its Options model;
+# edited in the admin UI's Plugins tab).
+plugins:
+  record-cards:
+    # Result card per search table: title column, optional subtitle column, cells
+    # (`width` is the legacy fixed-width cell in px; `format: bytes` renders sizes).
+    cards:
+      objects:
+        title_column: title
+        subtitle_column: description
+        cells:
+          - { column: data_types, label: Data Types, width: 150 }
+          - { column: expert_level, label: Expert Level, width: 170 }
+          - { column: keywords, label: Keywords, width: 200 }
+          - { column: computer_program, label: Computer Program, width: 150 }
+          - { column: project, label: Project, width: 180 }
+          - { column: locations, label: Locations, width: 180 }
+      files:
+        title_column: file
+        subtitle_column: description
+        cells:
+          - { column: format, label: Format, width: 90 }
+          - { column: media_type, label: Media Type, width: 180 }
+          - { column: size_bytes, label: File Size, width: 110, format: bytes }
+
 features:
   plugins: [record-cards]
 
