@@ -65,6 +65,51 @@
   }
 }
 
+/* Admin-authored HTML (content pages): the browser defaults Tailwind's
+   preflight removes, so headings, lists and links read as written. */
+.er-content :is(h1, h2, h3, h4) {
+  margin: 1em 0 0.5em;
+  font-weight: 600;
+  color: #111827;
+}
+.er-content h1 {
+  font-size: 1.25rem;
+}
+.er-content h2 {
+  font-size: 1.125rem;
+}
+.er-content h3 {
+  font-size: 1rem;
+}
+.er-content p,
+.er-content ul,
+.er-content ol,
+.er-content table,
+.er-content blockquote {
+  margin: 0 0 1em;
+}
+.er-content ul {
+  list-style: disc;
+  padding-left: 1.5em;
+}
+.er-content ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
+.er-content a {
+  color: var(--node-color);
+}
+.er-content a:hover {
+  text-decoration: underline;
+}
+.er-content img {
+  max-width: 100%;
+}
+.er-content :is(th, td) {
+  padding: 0.25em 0.5em;
+  border: 1px solid #e5e7eb;
+}
+
 :root {
   /* Overridden at bootstrap from GET /api/config (config.color). */
   --node-color: #4b5563;

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { CSSProperties } from "react";
 import { useNodeConfig } from "../lib/config";
-import type { NodeConfig } from "../lib/types";
+import type { NodeConfig, NodePage } from "../lib/types";
 import { cx } from "../lib/utils";
 import { Icon, type IconName } from "./ui/icon";
 
@@ -33,25 +33,24 @@ export interface NodeMenuItem {
   exact?: boolean;
 }
 
-const featurePages: { page: string; label: string; to: string }[] = [
-  { page: "about", label: "About", to: "/about" },
-  { page: "technology", label: "Technology", to: "/technology" },
-  { page: "grand-challenges", label: "Grand Challenges", to: "/grand-challenges" },
-  { page: "workshops", label: "Workshops", to: "/workshops" },
-  { page: "links", label: "Links", to: "/links" },
-];
-
-/** Node menu items, split into the left (nav) and right (help/contact) groups. */
+/** Node menu items, split into the left (nav) and right (help/contact) groups:
+ * Home, the YAML `pages` with `menu: left` in list order; then the issues link,
+ * the `menu: right` pages (with their icons) and Contact. */
 export function nodeMenuItems(config: NodeConfig | undefined): {
   left: NodeMenuItem[];
   right: NodeMenuItem[];
 } {
-  const pages = config?.features.pages ?? [];
-  const left: NodeMenuItem[] = [{ key: "home", label: "Home", to: "/", exact: true }];
-  for (const entry of featurePages) {
-    if (pages.includes(entry.page))
-      left.push({ key: entry.page, label: entry.label, to: entry.to });
-  }
+  const pages = config?.pages ?? [];
+  const item = (page: NodePage): NodeMenuItem => ({
+    key: page.slug,
+    label: page.title,
+    to: `/${page.slug}`,
+    icon: page.icon ? (page.icon as IconName) : undefined,
+  });
+  const left: NodeMenuItem[] = [
+    { key: "home", label: "Home", to: "/", exact: true },
+    ...pages.filter((page) => page.menu === "left").map(item),
+  ];
 
   const right: NodeMenuItem[] = [];
   if (config?.links.github_issues) {
@@ -62,9 +61,7 @@ export function nodeMenuItems(config: NodeConfig | undefined): {
       icon: "warning",
     });
   }
-  if (pages.includes("help")) {
-    right.push({ key: "help", label: "Help", to: "/help", icon: "question-circle" });
-  }
+  right.push(...pages.filter((page) => page.menu === "right").map(item));
   right.push({ key: "contact", label: "Contact", to: "/contact", icon: "mail" });
 
   return { left, right };

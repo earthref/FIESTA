@@ -247,6 +247,7 @@ def validate_files(slug: str, files: dict[str, bytes], key: str | None = None) -
             active_plugins(node)
         except (ValueError, KeyError, OSError) as exc:
             errors.append(str(exc))
+        errors += check_pages_and_filters(node, files)
     if node.node.slug != slug:
         errors.append(f"node.slug is {node.node.slug!r}; this node's slug is {slug!r}")
     if key is not None and node.node.key != key:
@@ -264,6 +265,42 @@ def validate_files(slug: str, files: dict[str, bytes], key: str | None = None) -
     if errors:
         raise ConfigError(errors)
     return node
+
+
+def data_model_columns(node: NodeConfig) -> dict[str, set[str]]:
+    """{table: {column}} of the latest data model."""
+    model = node.load_data_model(node.data_model.latest)
+    return {t: set((spec or {}).get("columns", {})) for t, spec in model["tables"].items()}
+
+
+def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[str]:
+    """Every page has its HTML file; every facet is a data-model column; every
+    filter's levels and views name search levels / result views."""
+    errors = []
+    for page in node.pages:
+        if node.page_path(page.slug) not in files:
+            errors.append(f"page {page.slug!r}: {node.page_path(page.slug)} is missing")
+    try:
+        columns = {c for cols in data_model_columns(node).values() for c in cols}
+    except (KeyError, TypeError, AttributeError):
+        return errors  # reported by the data model checks
+    from fiesta.plugins import active_plugins
+
+    levels = {lvl.name for lvl in node.search.levels}
+    try:
+        for plugin in active_plugins(node):
+            levels |= {lvl.name for lvl in plugin.search_levels(node)}
+    except ValueError:
+        pass  # unknown plugin names are reported by the plugin check
+    for f in node.search.filters:
+        if f.type == "facet" and f.field not in columns and not f.field.startswith("_"):
+            errors.append(
+                f"facet {f.field!r} is not a column of data model {node.data_model.latest}"
+            )
+        for level in f.levels:
+            if level not in levels:
+                errors.append(f"filter {f.key!r}: no search level {level!r}")
+    return errors
 
 
 def check_identity(slug: str, key: str) -> None:
@@ -298,11 +335,26 @@ def patch_yaml(content: bytes, ops: list[dict]) -> bytes:
     """Apply [{path: [...], value}] to a YAML document, keeping its comments
     and layout (ruamel round-trip). value None deletes the key."""
     from ruamel.yaml import YAML
+    from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
     ry = YAML()
     ry.preserve_quotes = True
     ry.width = 4096
+    ry.indent(mapping=2, sequence=4, offset=2)  # `  - item` under its key, as written by hand
     doc = ry.load(content)
+
+    def node(value, in_list=False):
+        """A value as ruamel nodes; a mapping inside a list is written on one
+        line (`- { slug: about, title: About }`) like the hand-written lists."""
+        if isinstance(value, dict):
+            out = CommentedMap((k, node(v)) for k, v in value.items())
+            if in_list:
+                out.fa.set_flow_style()
+            return out
+        if isinstance(value, list):
+            return CommentedSeq(node(v, in_list=True) for v in value)
+        return value
+
     for op in ops:
         path = list(op["path"])
         if not path:
@@ -317,7 +369,7 @@ def patch_yaml(content: bytes, ops: list[dict]) -> bytes:
         if op.get("value") is None:
             parent.pop(path[-1], None)
         else:
-            parent[path[-1]] = op["value"]
+            parent[path[-1]] = node(op["value"])
     out = io.BytesIO()
     ry.dump(doc, out)
     return out.getvalue()
@@ -511,7 +563,7 @@ def template_files(
             raw["vocabularies"][field] = moved(raw["vocabularies"][field])
     raw["doi"] = {}
     raw.setdefault("features", {})["home"] = {}
-    raw["features"]["pages"] = []
+    raw["pages"] = []  # page HTML lives under <slug>/pages/, which is not copied
     raw.pop("legacy", None)
     raw.pop("development", None)
     header = f"# FIESTA deployment configuration — {key} node (created in the admin UI)\n\n"

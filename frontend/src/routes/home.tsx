@@ -8,6 +8,7 @@ import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
+import { sanitizeHtml } from "../lib/sanitize";
 import type { HomeCard, HomeNews, NodeConfig, SearchPage } from "../lib/types";
 import { pluginHomeCards } from "../plugins";
 
@@ -98,7 +99,7 @@ function defaultResources(config: NodeConfig): HomeCard[] {
     to: null,
     href: "https://api.earthref.org/",
   });
-  if (config.features.pages.includes("help")) {
+  if (config.pages.some((page) => page.slug === "help")) {
     cards.push({
       title: "Help\nPages",
       icon: "question",
@@ -125,8 +126,8 @@ function imageUrl(image: string): string {
 }
 
 /** Legacy home_news.jsx: `h3` with a `ui mini image floated left` (35px), then
- * a justified paragraph; items separated by `ui divider`s. The HTML comes from
- * this repo's node YAML, so it is trusted. */
+ * a justified paragraph; items separated by `ui divider`s. The HTML is
+ * admin-authored (node YAML), so it is sanitized on render. */
 function NewsItem({ item, first }: { item: HomeNews; first?: boolean }) {
   const heading = item.link ? (
     <a href={item.link} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>
@@ -156,8 +157,11 @@ function NewsItem({ item, first }: { item: HomeNews; first?: boolean }) {
         )}
         <span>{heading}</span>
       </h3>
-      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: markup authored in config/<node>.yaml, part of this repo */}
-      <p style={{ margin: "0 0 1em" }} dangerouslySetInnerHTML={{ __html: item.html }} />
+      <p
+        style={{ margin: "0 0 1em" }}
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: admin-authored HTML, sanitized by DOMPurify
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.html) }}
+      />
     </>
   );
 }

@@ -8,13 +8,31 @@ YAML, resolved relative to the YAML file's directory.
 """
 
 import json
+import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, PrivateAttr, model_validator
+from pydantic import BaseModel, PrivateAttr, field_validator, model_validator
 
 from fiesta.settings import get_settings
+
+PAGE_SLUG_RE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
+# SPA routes a content page can never shadow (frontend/src/router.tsx).
+RESERVED_PAGE_SLUGS = {
+    "search",
+    "contribution",
+    "contributions",
+    "upload",
+    "private",
+    "validate",
+    "data-models",
+    "vocabularies",
+    "method-codes",
+    "login",
+    "contact",
+    "admin",
+}
 
 
 class NodeLinks(BaseModel):
@@ -38,11 +56,93 @@ class SearchLevel(BaseModel):
     count_field: str | None = None
 
 
+class SearchFilter(BaseModel):
+    """One control in the search page's filter sidebar.
+
+    `facet`: term buckets of a data-model column, aggregated on
+    `summary._all.<field>.raw` and toggled as `field:"value"` query tokens.
+    `range`: a numeric min/max on a full document path (e.g. `summary.poles.age`,
+    a field a plugin indexes as a number; plain row values are text). `scale`
+    multiplies the typed value before it is sent (Ma -> years). `bbox`: the
+    lat/lon box on `summary._all._geo_point`.
+    `levels` / `views` restrict where the control shows: search level names and
+    result sub-tab names (Summaries, Rows, a plugin tab); empty means everywhere.
+    """
+
+    type: Literal["facet", "range", "bbox"]
+    field: str | None = None
+    label: str | None = None  # facets default to the column's title in the UI
+    levels: list[str] = []
+    views: list[str] = []
+    unit: str | None = None
+    scale: float = 1.0
+    min: float | None = None
+    max: float | None = None
+
+    @model_validator(mode="after")
+    def _check_field(self) -> "SearchFilter":
+        if self.type == "bbox":
+            if self.field:
+                raise ValueError("a bbox filter has no field (it uses summary._all._geo_point)")
+            return self
+        if not self.field:
+            raise ValueError(f"a {self.type} filter needs a field")
+        if self.type == "range" and not self.field.startswith("summary."):
+            raise ValueError(f"range filter field {self.field!r} must be a summary.* path")
+        if self.type == "facet" and "." in self.field:
+            raise ValueError(f"facet filter field {self.field!r} must be a bare column name")
+        return self
+
+    @property
+    def key(self) -> str:
+        return self.field or self.type
+
+
 class SearchConfig(BaseModel):
     index: str
     levels: list[SearchLevel]
     extra_types: list[str] = []
-    facets: list[str] = []
+    filters: list[SearchFilter] = []
+
+    @model_validator(mode="before")
+    @classmethod
+    def _facets_to_filters(cls, raw: Any) -> Any:
+        """`facets: [column, ...]` (the pre-2026-09 shape) is a list of facet
+        filters; keep loading it."""
+        if isinstance(raw, dict) and raw.get("facets"):
+            raw = dict(raw)
+            filters = list(raw.get("filters") or [])
+            have = {
+                f.get("field") for f in filters if isinstance(f, dict) and f.get("type") == "facet"
+            }
+            filters += [{"type": "facet", "field": c} for c in raw.pop("facets") if c not in have]
+            raw["filters"] = filters
+        return raw
+
+    @property
+    def facets(self) -> list[str]:
+        """Columns aggregated as term buckets on every search."""
+        return [f.field for f in self.filters if f.type == "facet" and f.field]
+
+
+class PageConfig(BaseModel):
+    """A content page at /<slug>, its HTML in `config/<node>/pages/<slug>.html`.
+    The list order is the menu order."""
+
+    slug: str
+    title: str
+    menu: Literal["left", "right", "hidden"] = "left"
+    icon: str | None = None  # frontend icon name, shown before right-menu items
+
+    @field_validator("slug")
+    @classmethod
+    def _slug(cls, value: str) -> str:
+        if not PAGE_SLUG_RE.match(value) or value in RESERVED_PAGE_SLUGS:
+            raise ValueError(
+                f"page slug {value!r}: lowercase letters, digits and hyphens, starting with "
+                f"a letter, and not one of {sorted(RESERVED_PAGE_SLUGS)}"
+            )
+        return value
 
 
 class StorageConfig(BaseModel):
@@ -96,7 +196,6 @@ class HomeConfig(BaseModel):
 
 
 class FeaturesConfig(BaseModel):
-    pages: list[str] = []
     plugins: list[str] = []
     home: HomeConfig = HomeConfig()
 
@@ -142,6 +241,7 @@ class NodeConfig(BaseModel):
     vocabularies: VocabulariesConfig
     hierarchy: list[str]
     doi: DoiConfig = DoiConfig()
+    pages: list[PageConfig] = []
     features: FeaturesConfig = FeaturesConfig()
     development: DevelopmentConfig = DevelopmentConfig()
     legacy: LegacySourceConfig | None = None
@@ -160,12 +260,31 @@ class NodeConfig(BaseModel):
         missing = [t for t in self.hierarchy if t not in tables]
         if missing:
             raise ValueError(f"hierarchy tables missing from data model: {missing}")
+        slugs = [p.slug for p in self.pages]
+        if len(set(slugs)) != len(slugs):
+            raise ValueError(
+                f"duplicate page slugs: {sorted({s for s in slugs if slugs.count(s) > 1})}"
+            )
         return self
 
     def _load_json(self, rel: str) -> Any:
         if rel not in self._asset_cache:
             self._asset_cache[rel] = json.loads((self.base_dir / rel).read_text())
         return self._asset_cache[rel]
+
+    def page(self, slug: str) -> PageConfig | None:
+        return next((p for p in self.pages if p.slug == slug), None)
+
+    def page_path(self, slug: str) -> str:
+        """Tree path of a page's HTML, relative to the config directory."""
+        return f"{self.node.slug}/pages/{slug}.html"
+
+    def load_page_html(self, slug: str) -> str:
+        """The page's HTML as authored (sanitized by the SPA on render)."""
+        if self.page(slug) is None:
+            raise KeyError(slug)
+        path = self.base_dir / self.page_path(slug)
+        return path.read_text() if path.is_file() else ""
 
     def asset_path(self, rel: str) -> Path | None:
         """Resolve `config/<slug>/assets/<rel>`; None if outside that dir or missing."""
@@ -225,6 +344,8 @@ class NodeConfig(BaseModel):
             "data_model_latest": self.data_model.latest,
             "search_levels": [lvl.model_dump() for lvl in self.search.levels],
             "facets": self.search.facets,
+            "filters": [f.model_dump() for f in self.search.filters],
+            "pages": [p.model_dump() for p in self.pages],
             "features": self.features.model_dump(),
             "has_method_codes": self.vocabularies.method_codes is not None,
             "doi_prefix": self.doi.prefix,

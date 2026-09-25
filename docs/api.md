@@ -76,7 +76,7 @@ routes are 409 on a deployment with `FIESTA_NODE_CONFIG_SOURCE=files`.
 | PUT / DELETE | `/v2/admin/nodes/{slug}/admins/{user_id}` | node | grant / revoke a node admin |
 | GET | `/v2/admin/nodes/{slug}/files?rev=` | node | the tree `{files: [{path, sha256}], changes: [{path, change}]}` (changes vs published) |
 | GET | `/v2/admin/nodes/{slug}/file?path=&rev=` | node | `{path, revision, state, lock_version, size, encoding: utf-8\|base64, content}` |
-| GET | `/v2/admin/nodes/{slug}/settings?rev=` | node | the node YAML parsed to JSON |
+| GET | `/v2/admin/nodes/{slug}/settings?rev=` | node | the node YAML parsed to JSON (the Pages and Search Filters tabs edit its `pages` and `search.filters` lists through the settings PATCH; page HTML is a file PUT to `<slug>/pages/<page>.html`) |
 | PUT | `/v2/admin/nodes/{slug}/draft/file` | node | `{path, content, encoding?, lock_version?}` — write a file into the draft (JSON/YAML syntax checked) |
 | DELETE | `/v2/admin/nodes/{slug}/draft/file?path=&lock_version=` | node | remove a file from the draft |
 | PATCH | `/v2/admin/nodes/{slug}/draft/settings` | node | `{ops: [{path: [...], value}], lock_version?}` — edit the YAML keeping its comments; `value: null` deletes |
@@ -128,6 +128,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
 |---|---|---|
 | GET | `/v2/{repository}/config` | Public node config (below) |
 | GET | `/v2/{repository}/config/assets/{path}` | static file from `config/<slug>/assets/` (news images, …) |
+| GET | `/v2/{repository}/config/pages/{slug}` | a content page `{slug, title, menu, icon, html}` from `config/<slug>/pages/<page>.html` (404 if the YAML does not list it); the SPA sanitizes `html` (DOMPurify) before rendering |
 | GET | `/v2/{repository}/config/data-models/{version}` | Full data model JSON for a version (404 if unknown) |
 | GET | `/v2/{repository}/config/vocabularies/controlled` | `{<name>: {label, database_column, items: [{item, label?}]}}` |
 | GET | `/v2/{repository}/config/vocabularies/suggested` | same shape |
@@ -151,13 +152,25 @@ after its YAML is merged and deployed, because the frontend is built per node.
     {"name": "Locations", "table": "locations", "count_field": "summary.locations._n_results"}
   ],
   "facets": ["method_codes", "geologic_classes"],
-  "features": {"pages": ["about", "help"], "plugins": ["poles"]},
+  "filters": [
+    {"type": "facet", "field": "method_codes", "label": null, "levels": [], "views": ["Summaries", "Rows"], "unit": null, "scale": 1.0, "min": null, "max": null},
+    {"type": "range", "field": "summary.poles.age", "label": "Age", "levels": ["Locations"], "views": ["Poles"], "unit": "Ma", "scale": 1000000.0, "min": null, "max": null},
+    {"type": "bbox", "field": null, "label": "Geospatial", "levels": ["Locations"], "views": ["Poles"], "unit": null, "scale": 1.0, "min": null, "max": null}
+  ],
+  "pages": [{"slug": "about", "title": "About", "menu": "left", "icon": null}],
+  "features": {"plugins": ["poles"]},
   "has_method_codes": true,
   "doi_prefix": "10.7288",
   "plugins": {"poles": { /* frontend_config per active plugin */ }},
   "portal_urls": {"magic": "http://localhost:8080/MagIC", "cdr": "http://localhost:8080/CDR"}
 }
 ```
+
+`filters` are the node YAML's `search.filters`: the sidebar controls, each
+restricted to the search `levels` and result `views` (Summaries, Rows, a plugin
+tab) it names, empty meaning all. `facets` lists the facet filters' fields (what
+`facets=true` aggregates; the pre-2026-09 YAML key `search.facets` still loads as
+facet filters). `pages` are the content pages in menu order.
 
 `search_levels` is extended with any plugin-contributed levels; `plugins` (a map
 of active plugin name → its `frontend_config`) and `portal_urls` (local-dev

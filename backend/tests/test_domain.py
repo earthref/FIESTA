@@ -667,6 +667,51 @@ def test_new_node_from_a_template_is_valid():
     assert not [p for p in new if "/seeds/" in p or "/assets/" in p]
 
 
+def test_pages_and_filters_are_node_configuration(magic_node):
+    from fiesta.nodeconfig import SearchConfig
+    from fiesta.services import node_config as svc
+
+    # magic.yaml: pages in menu order, HTML files beside them, poles filters
+    # scoped to the Locations level's Poles view.
+    assert [p.slug for p in magic_node.pages][:2] == ["about", "technology"]
+    assert magic_node.page("help").menu == "right"
+    assert "coming soon" in magic_node.load_page_html("about")
+    with pytest.raises(KeyError):
+        magic_node.load_page_html("nope")
+    public = magic_node.public_config()
+    assert "pages" not in public["features"] and public["pages"][0]["slug"] == "about"
+    assert public["facets"][0] == "method_codes"
+    age = next(f for f in magic_node.search.filters if f.field == "summary.poles.age")
+    assert (age.type, age.levels, age.views, age.scale) == ("range", ["Locations"], ["Poles"], 1e6)
+
+    # The pre-2026-09 `facets:` list still loads, as facet filters.
+    legacy = SearchConfig(index="x", levels=[], facets=["lithologies", "method_codes"])
+    assert [f.type for f in legacy.filters] == ["facet", "facet"]
+    assert legacy.facets == ["lithologies", "method_codes"]
+    with pytest.raises(ValueError, match="summary"):
+        SearchConfig(index="x", levels=[], filters=[{"type": "range", "field": "age"}])
+
+    # validate_files: a page needs its HTML, a facet its column, a filter its level.
+    files = svc.read_tree(CONFIG_DIR, "magic")
+    yaml_text = files["magic.yaml"].decode()
+    with_page = yaml_text.replace("pages:\n", "pages:\n  - { slug: news, title: News }\n", 1)
+    with pytest.raises(svc.ConfigError, match="magic/pages/news.html is missing"):
+        svc.validate_files("magic", {**files, "magic.yaml": with_page.encode()})
+    ok = svc.validate_files(
+        "magic", {**files, "magic.yaml": with_page.encode(), "magic/pages/news.html": b"<p>hi</p>"}
+    )
+    assert ok.page("news") is not None
+    bad_facet = yaml_text.replace("field: method_codes", "field: no_such_column", 1)
+    with pytest.raises(svc.ConfigError, match="no_such_column"):
+        svc.validate_files("magic", {**files, "magic.yaml": bad_facet.encode()})
+    bad_level = yaml_text.replace("levels: [Locations], views: [Poles] }", "levels: [Moons] }", 1)
+    with pytest.raises(svc.ConfigError, match="Moons"):
+        svc.validate_files("magic", {**files, "magic.yaml": bad_level.encode()})
+    reserved = with_page.replace("slug: news", "slug: admin")
+    with pytest.raises(svc.ConfigError, match="admin"):
+        svc.validate_files("magic", {**files, "magic.yaml": reserved.encode()})
+
+
 def test_published_tree_is_written_back_to_config(tmp_path, monkeypatch):
     import shutil
 

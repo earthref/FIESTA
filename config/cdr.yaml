@@ -24,10 +24,16 @@ search:
     - { name: Sections, table: sections, count_field: summary.sections._n_results }
     - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
   extra_types: []
-  facets:
-    - geologic_classes
-    - geologic_types
-    - lithologies
+  # The legacy CDR sidebar's bucket filters (search.jsx), on CDR columns.
+  filters:
+    - { type: facet, field: cruise, label: Cruise/Expedition }
+    - { type: facet, field: method, label: Coring Method }
+    - { type: facet, field: material, label: Core Material }
+    - { type: facet, field: research_vessel, label: Research Vessel }
+    - { type: facet, field: pis, label: Principal Investigator }
+    - { type: facet, field: lab_names, label: Lab }
+    - { type: facet, field: method_codes, label: Method Codes }
+    - { type: facet, field: instrument_codes, label: Instrument Codes }
 
 storage:
   bucket: cdr
@@ -50,8 +56,10 @@ hierarchy:
 doi:
   prefix: 10.7288/V4/CDR
 
+# Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
+pages: []
+
 features:
-  pages: []
   plugins: [depth-plot]
 
 # Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).

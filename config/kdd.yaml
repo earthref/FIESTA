@@ -24,7 +24,7 @@ search:
     - { name: Contributions, table: contribution }
     - { name: Partition Coefficients, table: kds, count_field: summary.kds._n_results }
   extra_types: []
-  facets: []
+  filters: []
 
 storage:
   bucket: kdd
@@ -44,8 +44,10 @@ hierarchy:
 doi:
   prefix: 10.7288/V4/KDD
 
+# Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
+pages: []
+
 features:
-  pages: []
   plugins: []
 
 # Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).

@@ -175,7 +175,7 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 - **Card header fallback** is "Contribution {id}" instead of legacy "Unknown" when a hit has no `_reference.citation` (no Crossref enrichment yet).
 - **Download Results** downloads the top contribution file (no bulk-zip endpoint yet, ROADMAP); legacy zipped every matching contribution.
 - **Level tabs** omit legacy "Experiments" until the derived experiment docs exist (ROADMAP C4).
-- **Filter sidebar** shows only the YAML `facets` (bucket filters); the legacy range filters (Publication Year, Geospatial, Age, Intensity) and with/without-data toggles are not ported yet. Facet titles are the singular of the facet name ("Method Code"), matching legacy titles.
+- **Filter sidebar** renders the YAML `search.filters` (facet buckets, numeric ranges, a lat/lon box), each limited to the levels and result views it names; MagIC shows the buckets on Summaries/Rows and Age / Pole A95 / Geospatial on the Locations level's Poles view. The legacy Publication Year / Intensity ranges and with/without-data toggles are not ported yet. Facet titles default to the singular of the column name ("Method Code"), matching legacy titles, or the filter's `label`.
 - **Collapsed result cards wrap their blocks** (`flex-wrap`) and show only
   the first row (105px cap) while collapsed, so a block that does not fit the
   pane is hidden rather than cut mid-block; expanding shows every row plus the

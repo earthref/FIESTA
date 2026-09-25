@@ -12,7 +12,7 @@ import type {
   SearchResult,
 } from "../../lib/types";
 import { cx } from "../../lib/utils";
-import type { PluginFiltersProps, PluginModule, PluginSubTabContext } from "../index";
+import type { PluginModule, PluginSubTabContext } from "../index";
 import {
   formatAge,
   formatLat,
@@ -36,7 +36,6 @@ interface PolesPluginConfig {
   has_base_texture?: boolean;
   has_plate_boundaries?: boolean;
   plate_boundary_color?: string;
-  filters?: unknown[];
 }
 
 function polesConfig(config: NodeConfig): PolesPluginConfig {
@@ -362,170 +361,6 @@ function PolesMapView({ query, ranges, bbox, config }: PluginSubTabContext) {
   );
 }
 
-// --- Structured plugin filters (range + bbox) ---------------------------------------
-
-interface StructuredFilter {
-  name: string;
-  type: "range" | "bbox";
-  field?: string;
-  unit?: string;
-  /** Multiply the displayed (unit) value by this to get the stored field value
-   * (e.g. Age is entered in Ma but stored in years, scale = 1e6). */
-  scale?: number;
-}
-
-function structuredFilters(config: NodeConfig): StructuredFilter[] {
-  const filters = polesConfig(config).filters;
-  if (!Array.isArray(filters)) return [];
-  return filters
-    .filter((entry) => entry && typeof entry === "object" && "type" in entry)
-    .map((entry) => entry as unknown as StructuredFilter)
-    .filter((entry) => entry.type === "range" || entry.type === "bbox");
-}
-
-/** Split "field:gte:lte" from the right (field may contain dots, never colons). */
-function parseRange(entry: string): { field: string; gte: string; lte: string } {
-  const parts = entry.split(":");
-  const lte = parts.pop() ?? "";
-  const gte = parts.pop() ?? "";
-  return { field: parts.join(":"), gte, lte };
-}
-
-const rangeInputClass =
-  "w-20 min-w-0 rounded-sm border border-gray-300 px-1.5 py-1 text-[12px] " +
-  "placeholder:text-[#AAAAAA] focus:border-node focus:outline-hidden";
-
-function RangeFilter({
-  filter,
-  ranges,
-  setRanges,
-}: {
-  filter: StructuredFilter;
-  ranges: string[];
-  setRanges: (ranges: string[]) => void;
-}) {
-  const field = filter.field ?? "";
-  const scale = filter.scale ?? 1;
-  const stored = ranges.map(parseRange).find((entry) => entry.field === field);
-  // Convert stored (field units) <-> displayed (filter units).
-  const toDisplay = (v: string) => (v === "" || scale === 1 ? v : String(Number(v) / scale));
-  const toStore = (v: string) => (v === "" || scale === 1 ? v : String(Number(v) * scale));
-  const current = { gte: toDisplay(stored?.gte ?? ""), lte: toDisplay(stored?.lte ?? "") };
-
-  const update = (gte: string, lte: string) => {
-    const others = ranges.filter((entry) => parseRange(entry).field !== field);
-    if (gte === "" && lte === "") setRanges(others);
-    else setRanges([...others, `${field}:${toStore(gte)}:${toStore(lte)}`]);
-  };
-
-  return (
-    <div style={{ padding: "0.25em 1em 0.5em", borderBottom: "1px solid #D4D4D5" }}>
-      <div className="mb-1 text-[13px] font-bold">{filter.name}</div>
-      <div className="flex items-center gap-1">
-        <label className="sr-only" htmlFor={`range-${field}-gte`}>
-          {filter.name} minimum
-        </label>
-        <input
-          id={`range-${field}-gte`}
-          type="number"
-          placeholder="min"
-          value={current?.gte ?? ""}
-          onChange={(event) => update(event.target.value, current?.lte ?? "")}
-          className={rangeInputClass}
-        />
-        <span className="text-[12px] text-gray-500">to</span>
-        <label className="sr-only" htmlFor={`range-${field}-lte`}>
-          {filter.name} maximum
-        </label>
-        <input
-          id={`range-${field}-lte`}
-          type="number"
-          placeholder="max"
-          value={current?.lte ?? ""}
-          onChange={(event) => update(current?.gte ?? "", event.target.value)}
-          className={rangeInputClass}
-        />
-        {filter.unit && <span className="text-[12px] text-gray-500">{filter.unit}</span>}
-      </div>
-    </div>
-  );
-}
-
-function BboxFilter({
-  filter,
-  bbox,
-  setBbox,
-}: {
-  filter: StructuredFilter;
-  bbox?: string;
-  setBbox: (bbox: string | undefined) => void;
-}) {
-  // bbox = "minLon,minLat,maxLon,maxLat"
-  const parts = (bbox ?? ",,,").split(",");
-  const [minLon, minLat, maxLon, maxLat] = [
-    parts[0] ?? "",
-    parts[1] ?? "",
-    parts[2] ?? "",
-    parts[3] ?? "",
-  ];
-
-  const update = (next: [string, string, string, string]) => {
-    if (next.every((value) => value === "")) setBbox(undefined);
-    else setBbox(next.join(","));
-  };
-
-  const field = (
-    label: string,
-    value: string,
-    onChange: (value: string) => void,
-    placeholder: string,
-  ) => (
-    <label className="flex items-center gap-1 text-[12px] text-gray-600">
-      <span className="w-14">{label}</span>
-      <input
-        type="number"
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
-        className={rangeInputClass}
-      />
-    </label>
-  );
-
-  return (
-    <div style={{ padding: "0.25em 1em 0.5em", borderBottom: "1px solid #D4D4D5" }}>
-      <div className="mb-1 text-[13px] font-bold">{filter.name}</div>
-      <div className="grid gap-1">
-        {field("Min Lat", minLat, (v) => update([minLon, v, maxLon, maxLat]), "-90")}
-        {field("Max Lat", maxLat, (v) => update([minLon, minLat, maxLon, v]), "90")}
-        {field("Min Lon", minLon, (v) => update([v, minLat, maxLon, maxLat]), "-180")}
-        {field("Max Lon", maxLon, (v) => update([minLon, minLat, v, maxLat]), "180")}
-      </div>
-    </div>
-  );
-}
-
-function PolesFiltersPanel(props: PluginFiltersProps) {
-  const filters = structuredFilters(props.config);
-  if (filters.length === 0) return null;
-  return (
-    <div>
-      {filters.map((filter) =>
-        filter.type === "range" ? (
-          <RangeFilter
-            key={filter.name}
-            filter={filter}
-            ranges={props.ranges}
-            setRanges={props.setRanges}
-          />
-        ) : (
-          <BboxFilter key={filter.name} filter={filter} bbox={props.bbox} setBbox={props.setBbox} />
-        ),
-      )}
-    </div>
-  );
-}
-
 // --- Plugin module -------------------------------------------------------------------
 
 export const polesPlugin: PluginModule = {
@@ -547,10 +382,5 @@ export const polesPlugin: PluginModule = {
     const pconfig = polesConfig(config);
     if (!pconfig.base_level || pconfig.base_level !== level.name) return [];
     return [{ name: "Poles", render: (ctx) => <PolesMapView {...ctx} /> }];
-  },
-  filtersPanel(props) {
-    const pconfig = polesConfig(props.config);
-    if (pconfig.base_level !== props.levelName || props.subTabName !== "Poles") return null;
-    return <PolesFiltersPanel {...props} />;
   },
 };

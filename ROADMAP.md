@@ -132,6 +132,16 @@ Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend
       node. Decided 2026-09-24: Postgres is the source while a node is edited, and
       git receives every publication. Not in the legacy Meteor UI, so there is no
       parity spec.
+- [x] **G3 Pages and Search Filters tabs (2026-09-24).** Content pages are
+      configuration: YAML `pages` (slug, title, menu placement, icon; list order =
+      menu order) with HTML in `config/<node>/pages/`, one SPA route for all of
+      them, DOMPurify on render (pages and home news). `features.pages` is gone;
+      the six stub pages became MagIC pages with the stub text (D1 is now content
+      work in the admin UI). The filter sidebar is YAML `search.filters` (facet /
+      range / bbox with levels and views); the poles range/bbox filters moved from
+      the plugin into magic.yaml. CDR and KArAr facets pointed at columns their
+      data models do not have (never any buckets): CDR now lists the legacy
+      sidebar's eight, KArAr four of its own columns.
 - [ ] **G2 Follow-ups.** Disable/delete accounts and invitation emails; structured
       editors for search levels, hierarchy, home cards/news and method codes (today:
       the YAML/JSON file editor); the deploy script builds a frontend for every
@@ -165,7 +175,9 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
 ## Phase D — UI parity and the stub pages
 
 - [ ] **D1 Stub pages** — About, Technology, Grand Challenges, Workshops, Links, Help
-      get per-node content (YAML `features.pages` already lists which a node shows).
+      get per-node content: since G3 they are `pages` entries with HTML under
+      `config/<node>/pages/`, written in the admin UI's Pages tab; the legacy
+      text still needs porting.
 - [ ] **D2 Parity pass per route** against `docs/legacy-ux-spec.md`; record every
       deliberate deviation in that file. Search page pass shipped 2026-09-10
       (legacy tabs/filters/sort/infinite scroll, result card cells, globe map

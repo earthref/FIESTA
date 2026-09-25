@@ -180,6 +180,17 @@ publications go live there, and are not written to git from your stack.
 Grant yourself admin rights locally with `fiesta create-user EMAIL NAME --admin`
 (super admin); super admins grant node admins in the UI.
 
+Content pages are YAML plus HTML: the top-level `pages` list (`slug`, `title`,
+`menu`: left / right / hidden, optional `icon`), in menu order, and each page's
+HTML in `config/<slug>/pages/<page>.html`, served at `/<page>` by one SPA route
+(`/about`, `/help`, ...). The Pages tab of the node admin page creates, reorders
+and edits them with a live preview; the HTML is sanitized on render (DOMPurify),
+so scripts and event handlers never reach visitors. The search filter sidebar
+is `search.filters` (facet / range / bbox, each with the search `levels` and
+result `views` it applies to), edited in the Search Filters tab with a column
+picker from the data model; a range needs a field a plugin indexes as a
+number (row values are text), e.g. `summary.poles.age`.
+
 Home page content is YAML too: `features.home.resources` lists the resource
 cards (title, Semantic icon name, optional corner icon, `to` for an SPA route
 or `href` for an external URL) and `features.home.news` the news items
