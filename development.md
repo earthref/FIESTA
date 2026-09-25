@@ -30,6 +30,13 @@ and edits write to the remote. Values in the file are compose-interpolated, so
 single-quote a secret containing `$`. `FIESTA_NODE` on the command line beats
 the file's.
 
+`ENV_FILE=.env.prod` in `.env` makes that the default for the stack targets
+(`up`, `down`, `ps`, `logs`, `build`, `infra`), so a plain `make up` runs
+against the remote; `make up ENV_FILE=` runs a local stack for once. The
+targets that write (`init`, `user`, `rebuild`, `seed`, `fiesta`) ignore an
+`ENV_FILE` from `.env` and reach the remote only when it is given on the
+command line.
+
 `make up` layers `docker-compose.dev.yml` over `docker-compose.yml`: the
 backend package is bind-mounted into the image and uvicorn reloads on change,
 the worker restarts via `watchfiles`, and the frontend container runs the

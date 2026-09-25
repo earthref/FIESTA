@@ -13,11 +13,18 @@
 # ENV_FILE=.env.prod adds docker-compose.remote.yml: the API uses that file's
 # Postgres/OpenSearch/S3 (no `fiesta init`, no worker) instead of the local
 # containers, so login and data are the remote deployment's.
-COMPOSE_FILES := -f docker-compose.yml$(if $(PROD),, -f docker-compose.dev.yml)$(if $(ENV_FILE), -f docker-compose.remote.yml)
-COMPOSE := docker compose $(COMPOSE_FILES)$(if $(ENV_FILE),$(if $(wildcard .env), --env-file .env) --env-file $(ENV_FILE))
 
-# Read the local .env so FIESTA_NODE / port overrides are visible to make.
+# Read the local .env so FIESTA_NODE / port / ENV_FILE overrides are visible to make.
 -include .env
+
+# ENV_FILE set in .env makes it the default for the stack targets (up, down,
+# ps, logs, build, infra); `make up ENV_FILE=` runs a local stack for once.
+# init, user, rebuild and fiesta write to whatever they point at, so they take
+# ENV_FILE only from the command line or the shell, never from .env.
+OPS_ENV_FILE := $(if $(filter command line environment,$(origin ENV_FILE)),$(ENV_FILE))
+compose = docker compose -f docker-compose.yml$(if $(PROD),, -f docker-compose.dev.yml)$(if $1, -f docker-compose.remote.yml$(if $(wildcard .env), --env-file .env) --env-file $1)
+COMPOSE := $(call compose,$(ENV_FILE))
+COMPOSE_OPS := $(call compose,$(OPS_ENV_FILE))
 
 # FIESTA_NODE is a comma-separated node list (magic,karar,cdr). The one API,
 # worker and frontend serve every listed node (the frontend at
@@ -66,15 +73,15 @@ NODE1 := $(word 1,$(NODES))
 
 .PHONY: init
 init: ## Apply migrations + job schema, ensure bucket + index (all nodes)
-	$(COMPOSE) run --rm api fiesta init
+	$(COMPOSE_OPS) run --rm api fiesta init
 
 .PHONY: user
 user: ## Create an account: make user EMAIL=you@example.org NAME="Your Name"
-	$(COMPOSE) run --rm api fiesta create-user $(EMAIL) "$(NAME)"
+	$(COMPOSE_OPS) run --rm api fiesta create-user $(EMAIL) "$(NAME)"
 
 .PHONY: rebuild
 rebuild: ## Rebuild search from Postgres + immutable revision files (all nodes)
-	$(COMPOSE) run --rm api fiesta rebuild --yes
+	$(COMPOSE_OPS) run --rm api fiesta rebuild --yes
 
 ## ---- Local development (outside docker) ------------------------------------
 
@@ -89,7 +96,7 @@ backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE
 
 .PHONY: fiesta
 fiesta: ## Run the CLI on the host: make fiesta ARGS="legacy-inventory karar --out ../migration/karar" [ENV_FILE=.env.prod] [NODE=karar] [CMD=python]
-	cd backend && $(if $(ENV_FILE),FIESTA_ENV_FILE=$(abspath $(ENV_FILE))) \
+	cd backend && $(if $(OPS_ENV_FILE),FIESTA_ENV_FILE=$(abspath $(OPS_ENV_FILE))) \
 		FIESTA_CONFIG_FILE=../config/fiesta.yaml $(if $(NODE),FIESTA_NODE=$(NODE)) uv run $(or $(CMD),fiesta) $(ARGS)
 
 .PHONY: worker-dev
@@ -130,7 +137,7 @@ fix: ## Auto-fix lint issues (ruff --fix + biome --write)
 
 .PHONY: seed
 seed: ## Seed the enabled nodes with config-defined local fixtures (preserves edits)
-	$(COMPOSE) run --rm api fiesta seed
+	$(COMPOSE_OPS) run --rm api fiesta seed
 
 .PHONY: test-phase-m
 test-phase-m: ## Run all-node seeds and migration/revision integration tests without external services
