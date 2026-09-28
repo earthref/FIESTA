@@ -217,7 +217,7 @@ SearchPage = {
 ```json
 MapPoints = {
   "total": 410,
-  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "bounds": [west, south, east, north]?}],
+  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "bounds": [west, south, east, north]?, "count": 12?}],
   "truncated": false
 }
 ```
@@ -229,6 +229,13 @@ contribution level), `bounds` the row's `lon_w`/`lat_s`/`lon_e`/`lat_n` when it
 has all four. A contribution doc gives a point per position it carries (only
 those inside `bbox`, when one is given). `{table}` must be a level whose `geo`
 is true, otherwise 404.
+
+Past 10,000 matches at a level of single points (not the contribution level,
+not a level with boxes, not scoped to one `contribution`), `points` are the
+matches' unique locations instead: a composite aggregation of ~2.4 m geotiles
+(zoom 24) by contribution, each point at its records' centroid (to 5 decimals)
+with their `count` and no `name`; `total` is still the matching records and
+`truncated` means more than 50,000 locations.
 
 Positions (`summary._all._geo_point`): a row's own `lat`/`lon`, or the middle
 of its `lat_s`/`lat_n`/`lon_w`/`lon_e` box; a row with neither takes its

@@ -150,6 +150,13 @@ async def search(
 # The map plots every match up to this many; past it `truncated` is set.
 MAX_MAP_POINTS = 50_000
 MAP_PAGE_SIZE = 10_000
+# Past this many matches, a level's map is its unique locations instead of its
+# records: a composite aggregation of ~2.4 m geotiles (zoom 24) by
+# contribution, each at its records' centroid with their count (on 300k sites
+# at 30k locations, 3 s against 9 s to scroll the docs, and a tenth the size).
+MAP_DOCS_LIMIT = 10_000
+MAP_PRECISION = 24
+GEO_FIELD = "summary._all._geo_point"
 
 
 def _to_float(value: Any) -> float | None:
@@ -196,6 +203,65 @@ def _map_points(
     return points
 
 
+def _has_boxes(node, table: str) -> bool:
+    """Whether a table's rows can be boxes (lat_s/lat_n/lon_w/lon_e), which
+    the map draws per record."""
+    columns = node.load_data_model(node.data_model.latest)["tables"].get(table, {})
+    return all(c in columns.get("columns", {}) for c in BOX_COLUMNS)
+
+
+def _location_point(bucket: dict) -> dict | None:
+    """One composite bucket (a location and a contribution) as a map point."""
+    at = (bucket.get("at") or {}).get("location")
+    if not at:
+        return None
+    return {
+        "id": bucket["key"]["contribution"],
+        # ~1 m, which is all the map shows and a third of the payload.
+        "lat": round(at["lat"], 5),
+        "lon": round(at["lon"], 5),
+        "count": bucket["doc_count"],
+    }
+
+
+async def _location_points(client, index: str, query: dict) -> tuple[list[dict], bool]:
+    """The unique locations of a search's records, per contribution, paged
+    through a composite aggregation; and whether MAX_MAP_POINTS cut it short."""
+    points: list[dict] = []
+    after = None
+    while len(points) < MAX_MAP_POINTS:
+        composite: dict[str, Any] = {
+            "size": MAP_PAGE_SIZE,
+            "sources": [
+                {"tile": {"geotile_grid": {"field": GEO_FIELD, "precision": MAP_PRECISION}}},
+                {"contribution": {"terms": {"field": "summary.contribution.id"}}},
+            ],
+        }
+        if after:
+            composite["after"] = after
+        response = await client.search(
+            index=index,
+            body={
+                "size": 0,
+                "query": query,
+                "aggs": {
+                    "locations": {
+                        "composite": composite,
+                        # Exact, unlike the tile's centre (and not clamped to Web
+                        # Mercator's ±85.05°).
+                        "aggs": {"at": {"geo_centroid": {"field": GEO_FIELD}}},
+                    }
+                },
+            },
+        )
+        locations = response["aggregations"]["locations"]
+        points += [p for b in locations["buckets"] if (p := _location_point(b))]
+        after = locations.get("after_key")
+        if len(locations["buckets"]) < MAP_PAGE_SIZE or not after:
+            return points, False
+    return points[:MAX_MAP_POINTS], True
+
+
 @router.get("/search/{table}/points", response_model=MapPoints, response_model_exclude_none=True)
 async def search_points(
     session: SessionDep,
@@ -207,7 +273,10 @@ async def search_points(
     contribution: int | None = None,
     private_key: str | None = None,
 ) -> MapPoints:
-    """Every positioned doc matching a search, for the search page's map."""
+    """Every positioned doc matching a search, for the search page's map; past
+    MAP_DOCS_LIMIT matches at a level of single points (not the contribution
+    level, not boxes, not one contribution's modal), their unique locations
+    with a `count` each instead."""
     if table not in node.geo_tables:
         raise HTTPException(404, f"search table {table!r} has no positions")
     area = _parse_bbox(bbox)
@@ -229,6 +298,14 @@ async def search_points(
         *(f"summary.{table}.{c}" for c in BOX_COLUMNS),
     ]
     client = get_opensearch()
+    if contribution is None and table != "contribution" and not _has_boxes(node, table):
+        try:
+            count = await client.count(index=node.search_index, body={"query": body["query"]})
+        except NotFoundError:
+            return MapPoints(total=0, points=[])
+        if count["count"] > MAP_DOCS_LIMIT:
+            points, truncated = await _location_points(client, node.search_index, body["query"])
+            return MapPoints(total=count["count"], points=points, truncated=truncated)
     try:
         response = await client.search(index=node.search_index, body=body, scroll="1m")
     except NotFoundError:
