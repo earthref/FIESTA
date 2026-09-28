@@ -19,7 +19,6 @@ node:
   links:
     website: https://earthref.org/ERDA
     github_issues: https://github.com/earthref/ERDA/issues
-  contact_email: erda@earthref.org
 
 search:
   index: erda

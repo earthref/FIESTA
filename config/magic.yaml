@@ -18,7 +18,6 @@ node:
   links:
     website: https://earthref.org/MagIC
     github_issues: https://github.com/earthref/MagIC/issues
-  contact_email: magic@earthref.org
 
 search:
   index: magic

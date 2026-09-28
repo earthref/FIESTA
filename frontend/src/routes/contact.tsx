@@ -17,10 +17,10 @@ export function ContactPage() {
               Questions about {config?.key}, your contributions, or your account:
             </p>
             <a
-              href={`mailto:${config?.contact_email}`}
+              href="mailto:webmaster@earthref.org"
               className="mt-1 inline-block text-sm font-medium text-node hover:underline"
             >
-              {config?.contact_email}
+              webmaster@earthref.org
             </a>
           </CardContent>
         </Card>

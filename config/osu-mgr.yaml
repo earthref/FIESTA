@@ -23,7 +23,6 @@ node:
   links:
     website: https://osu-mgr.org
     github_issues: https://github.com/earthref/OSU-MGR/issues
-  contact_email: osu-mgr@oregonstate.edu
 
 search:
   # NOT `osu-mgr`: the repository's own pipeline owns an OpenSearch alias by

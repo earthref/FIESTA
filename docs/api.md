@@ -146,7 +146,6 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "subtitle": "...",
   "color": "#800080",
   "links": {"website": "...", "github_issues": "..."},
-  "contact_email": "magic@earthref.org",
   "data_model_versions": ["2.2", "2.3", "2.4", "2.5", "3.0"],
   "data_model_latest": "3.0",
   "search_levels": [

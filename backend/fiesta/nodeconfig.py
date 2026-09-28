@@ -53,7 +53,6 @@ class NodeIdentity(BaseModel):
     subtitle: str = ""
     color: str = "#666666"
     links: NodeLinks = NodeLinks()
-    contact_email: str | None = None
 
 
 class SearchLevel(BaseModel):
@@ -364,7 +363,6 @@ class NodeConfig(BaseModel):
             "subtitle": self.node.subtitle,
             "color": self.node.color,
             "links": self.node.links.model_dump(),
-            "contact_email": self.node.contact_email,
             "data_model_versions": self.data_model.versions,
             "data_model_latest": self.data_model.latest,
             "search_levels": [
