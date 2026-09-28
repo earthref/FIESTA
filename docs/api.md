@@ -208,7 +208,7 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `contribution` + `private_key?` (see below) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
@@ -218,9 +218,16 @@ needs `publish.api`.
 SearchPage = {
   "total": 1234,
   "results": [ { ...OpenSearch _source... } ],
-  "aggregations": {"<facet>": [{"key": "...", "doc_count": 1}]} | null
+  "aggregations": {"<facet>": [{"key": "...", "doc_count": 1}]} | null,
+  "rows_total": 5678 | null,
+  "mapped_total": 1200 | null
 }
 ```
+
+With `totals=true`, `rows_total` is the matches' rows (the level's `count_field`
+summed, a doc without it counting as one) and `mapped_total` the matches with a
+position (levels whose `geo` is true): the search page's Rows and Map sub-tab
+counts. Otherwise both are null.
 
 ```json
 MapPoints = {
@@ -398,6 +405,13 @@ free-text search; the workflow flags `_is_activated` / `_is_latest` /
 `_private_key` live in `summary.contribution`. Public reads are always
 `_is_latest` and `_is_activated` unless a matching private key is supplied.
 
+A level's doc is one named record, as in the legacy index: a contribution's
+rows of that level sharing a name (its key column, `site` for sites) are one
+doc, `rows` holding them all, `summary.<level>` their merge (each column's first
+value) plus `_n_results`, how many rows (the level's `count_field`). A row
+without a name is a doc of its own. So a level's matches count records (the
+Summaries tab), and their summed `_n_results` its rows (the Rows tab).
+
 ## Phase M revision management
 
 All content mutations go through the revision service with optimistic
@@ -411,8 +425,6 @@ a successor draft. `JobOut.job_id` for validation identifies a Postgres outbox
 event. Processing and indexing are separate: `status=ready` does not imply
 search is current. Publishing validates the exact current revision. See
 [Phase M API contract and examples](phase-m.md#revisions-and-apis) for details.
-</content>
-</invoke>
 
 ## Legacy v1 (api.earthref.org contract)
 

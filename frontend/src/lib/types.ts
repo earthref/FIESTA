@@ -138,6 +138,9 @@ export interface SearchPage {
   total: number;
   results: SearchResult[];
   aggregations: Record<string, FacetBucket[]> | null;
+  /** With `totals`: the matches' rows, and those with a position. */
+  rows_total?: number | null;
+  mapped_total?: number | null;
 }
 
 // --- Private workspace ---

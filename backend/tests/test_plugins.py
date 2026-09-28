@@ -80,6 +80,23 @@ def test_rock_mag_derive_docs(magic_node):
     assert docs[0]["summary"]["_all"]["lithologies"] == ["Basalt"]
 
 
+def test_rock_mag_results_of_a_specimen(magic_node):
+    # A specimen's hysteresis and anisotropy rows are one point on every
+    # plot; a second hysteresis result (another temperature) is its own.
+    text = """tab delimited\tspecimens
+specimen\tsample\thyst_mr_ms\taniso_v1\taniso_v2\taniso_v3
+S1\tA\t0.3\t\t\t
+S1\tA\t\t0.36:10:5\t0.33:100:0\t0.31:190:85
+S1\tA\t0.2\t\t\t
+S2\tA\t\t\t\t
+"""
+    docs = RockMagPlugin().derive_docs(magic_node, parse_text(text), {"id": 1})
+    assert [d["summary"]["specimens"]["_n_results"] for d in docs] == [2, 1]
+    first, second = (d["summary"]["rock_mag"] for d in docs)
+    assert first["mr_ms"] == pytest.approx(0.3) and first["v1_dec"] == 10.0
+    assert second == {"mr_ms": pytest.approx(0.2)}
+
+
 def test_rock_mag_fields_recorded_in_millitesla():
     # A contribution whose coercivities' median is above 1 T recorded them in
     # mT; one in tesla (the data model's unit) is scaled to mT.

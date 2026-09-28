@@ -1,7 +1,8 @@
 """MagIC: rock magnetism — derived, filterable rock-magnetic parameters.
 
-Every specimens row with hysteresis, remanence, susceptibility, critical
-temperature or anisotropy data becomes a `rock_mag` search doc whose
+Every rock-magnetic result of a specimen (its rows with hysteresis, remanence,
+susceptibility, critical temperature or anisotropy data, complementary rows
+together; see `results`) becomes a `rock_mag` search doc whose
 `summary.rock_mag` block holds numeric copies of the parameters rock
 magnetists plot and filter on, in consistent units (fields in mT, temperatures
 in °C) and with the ratios and anisotropy shape parameters derived when the
@@ -25,7 +26,7 @@ from typing import Any
 from pydantic import Field
 
 from fiesta.domain.parse import ParsedContribution
-from fiesta.domain.summarize import FACETABLE_COLUMNS, _geo_point
+from fiesta.domain.summarize import FACETABLE_COLUMNS, _geo_point, group_rows, merge_rows
 from fiesta.nodeconfig import NodeConfig
 from fiesta.plugins.base import FiestaPlugin, PluginOptions
 from fiesta.plugins.util import to_float
@@ -245,6 +246,31 @@ def rock_mag_values(row: dict, units: dict[str, float] | None = None) -> dict[st
     return {key: float(value) for key, value in values.items()}
 
 
+def results(
+    specimens: list[list[dict]], units: dict[str, float]
+) -> list[tuple[dict[str, float], list[dict]]]:
+    """A specimen's rows as rock-magnetic results: rows with complementary
+    parameters (a hysteresis row, an anisotropy row, a Curie temperature row)
+    are one result, one point on every plot; a row repeating parameters
+    another already gave (hysteresis at another temperature) starts a
+    result of its own. Rows with none are left out."""
+    found: list[tuple[dict[str, float], list[dict]]] = []
+    for group in specimens:
+        own: list[tuple[dict[str, float], list[dict]]] = []
+        for row in group:
+            values = rock_mag_values(row, units)
+            if not values:
+                continue
+            into = next((r for r in own if not r[0].keys() & values.keys()), None)
+            if into is None:
+                own.append((values, [row]))
+            else:
+                into[0].update(values)
+                into[1].append(row)
+        found += own
+    return found
+
+
 class RockMagPlugin(FiestaPlugin):
     name = "rock-mag"
     description = (
@@ -282,10 +308,8 @@ class RockMagPlugin(FiestaPlugin):
         docs: list[dict] = []
         rows = parsed.tables.get(source, [])
         units = field_units(rows)
-        for row in rows:
-            values = rock_mag_values(row, units)
-            if not values:
-                continue
+        for values, group in results(group_rows(rows, source.removesuffix("s")), units):
+            row = merge_rows(group)
             sample = samples.get(str(row.get("sample") or ""), {})
             site = sites.get(str(row.get("site") or sample.get("site") or ""), {})
             lineage = [row, sample, site]
@@ -302,11 +326,11 @@ class RockMagPlugin(FiestaPlugin):
                     "type": "rock_mag",
                     "summary": {
                         "contribution": contribution_meta,
-                        source: dict(row),
+                        source: {**row, "_n_results": len(group)},
                         "rock_mag": values,
                         "_all": all_block,
                     },
-                    "rows": [row],
+                    "rows": group,
                 }
             )
         return docs

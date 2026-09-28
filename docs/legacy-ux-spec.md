@@ -109,6 +109,7 @@ CSS facts:
 ### Results sub-tab bar + sort (`renderTabs`, `search.jsx:3121-3221`)
 
 - `ui top attached tabular small menu search-tab-menu` (`:3128`). Each view = `item`; active none-styled, inactive `styles.a` (purple, pointer). Count badge same `ui circular small basic label` + `countLabel` inline.
+- **Each view's count** (`search_levels.js`): Summaries counts the matching docs (records), Rows sums their `summary.<level>._n_results` (rows), Poles counts the locations with a pole. The rebuild matches: Summaries = records, Rows = `rows_total`, Map = records with a position, and a plugin view its own docs (`countTable`: poles, rock-magnetic results). Switching views never changes the level tabs' counts; only the area filter does.
 - **Sort dropdown** in a `right aligned item` `padding:0 1em` (`:3181`): `<color> ui dropdown label` (purple pill) inline `padding:0.5em`, text = current sort, `i.dropdown icon`, menu of `sortOptions`. (A hidden "Custom View" item exists with `display:none`, `:3169-3180`.)
 - **View container** (`renderView`, `:3223-3230`): inline `borderLeft:1px solid #d4d4d5`; height = `state.height − tabs.outerHeight()`; width = `state.width`.
 - **Scroller** (`search_summaries_view.jsx:12`): `{overflowY:scroll; background:white; padding:0 1em; borderRadius:0; boxShadow:none}`. Default pageSize 5.

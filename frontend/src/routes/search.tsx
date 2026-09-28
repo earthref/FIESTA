@@ -513,7 +513,11 @@ export function SearchPage() {
   // positions), then plugin tabs. The
   // chosen view persists across levels and falls back to the first tab when a
   // level lacks it (legacy `state.view`).
-  type SubTab = { name: string; render?: (ctx: PluginSubTabContext) => ReactNode };
+  type SubTab = {
+    name: string;
+    render?: (ctx: PluginSubTabContext) => ReactNode;
+    countTable?: string;
+  };
   const subTabs = useMemo<SubTab[]>(() => {
     if (!config || !level) return [];
     const tabs: SubTab[] = [{ name: "Summaries" }];
@@ -522,6 +526,25 @@ export function SearchPage() {
     return [...tabs, ...pluginSubTabs(config, level)];
   }, [config, level]);
   const activeTab = subTabs.find((tab) => tab.name === view) ?? subTabs[0];
+
+  // A plugin view's count: its own docs matching the search and its filters
+  // (ranges on its summary block, the bbox), as it fetches them. Switching
+  // sub-tabs never changes the level tabs' counts.
+  const countedTabs = subTabs.filter((tab) => tab.countTable);
+  const pluginCounts = useQueries({
+    queries: countedTabs.map(({ countTable }) => {
+      const tableRanges = ranges.filter((r) => r.startsWith(`summary.${countTable}.`));
+      return {
+        queryKey: ["search-count", countTable, q, tableRanges, bbox],
+        queryFn: () =>
+          api<SearchPageData>(`/search/${countTable}`, {
+            params: searchRequestParams(q, 1, 0, false, tableRanges, bbox),
+          }),
+        staleTime: 60_000,
+        placeholderData: keepPreviousData,
+      };
+    }),
+  });
 
   // The sidebar's controls for this level + sub-tab (node YAML `search.filters`).
   // A plugin may still replace the whole panel. Range/bbox values apply to the
@@ -551,7 +574,11 @@ export function SearchPage() {
     queryKey: ["search", level?.table, q, sort, queryRanges, queryBbox],
     queryFn: ({ pageParam }) =>
       api<SearchPageData>(`/search/${level?.table}`, {
-        params: searchRequestParams(q, PAGE_SIZE, pageParam, true, queryRanges, queryBbox, sort),
+        params: {
+          ...searchRequestParams(q, PAGE_SIZE, pageParam, true, queryRanges, queryBbox, sort),
+          // The Rows and Map sub-tabs' counts, with the first page.
+          totals: pageParam === 0 || undefined,
+        },
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
@@ -567,6 +594,16 @@ export function SearchPage() {
     [results.data],
   );
   const total = results.data?.pages[0]?.total ?? 0;
+  // Each sub-tab's count (undefined while loading, null for none): the
+  // records (Summaries), their rows, those on the map, a plugin view's docs.
+  const subTabCount = (tab: SubTab): number | null | undefined => {
+    const first = results.isPending ? undefined : results.data?.pages[0];
+    if (tab.name === "Summaries") return first?.total;
+    if (tab.name === "Rows") return first && (first.rows_total ?? first.total);
+    if (tab.name === "Map") return first && (first.mapped_total ?? null);
+    const index = countedTabs.indexOf(tab);
+    return index < 0 ? null : pluginCounts[index]?.data?.total;
+  };
   const aggregations = results.data?.pages[0]?.aggregations ?? null;
   const topContributionId =
     level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
@@ -908,9 +945,12 @@ export function SearchPage() {
                     style={tabItemStyle(active, true)}
                   >
                     {tab.name}
-                    {tab.name === "Summaries" && (
-                      <CountLabel>{results.isPending ? "…" : formatNumber(total)}</CountLabel>
-                    )}
+                    {(() => {
+                      const count = subTabCount(tab);
+                      return count === null ? null : (
+                        <CountLabel>{count === undefined ? "…" : formatNumber(count)}</CountLabel>
+                      );
+                    })()}
                   </button>
                 );
               })}

@@ -113,6 +113,7 @@ async def search(
     sort: str | None = None,
     contribution: int | None = None,
     private_key: str | None = None,
+    totals: bool = False,
 ) -> SearchPage:
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
@@ -131,20 +132,36 @@ async def search(
         sort=sort,
     )
     await _constrain(session, node, body, query, contribution, private_key)
+    if totals:
+        # The result sub-tabs' counts: the matches' rows (a doc without a
+        # count_field is one row) and those with a position.
+        aggs = body.setdefault("aggs", {})
+        if level and level.count_field:
+            aggs["_n_rows"] = {"sum": {"field": level.count_field, "missing": 1}}
+        if table in node.geo_tables:
+            aggs["_n_mapped"] = {"filter": {"exists": {"field": "summary._all._geo_point"}}}
     try:
         response = await get_opensearch().search(index=node.search_index, body=body)
     except NotFoundError:
         return SearchPage(total=0, results=[], aggregations={} if facets else None)
     hits = response["hits"]
+    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+    found = dict(response.get("aggregations") or {})
+    rows = found.pop("_n_rows", None)
+    mapped = found.pop("_n_mapped", None)
     aggregations = None
-    if facets and "aggregations" in response:
+    if facets:
         aggregations = {
             name: [{"key": b["key"], "doc_count": b["doc_count"]} for b in agg.get("buckets", [])]
-            for name, agg in response["aggregations"].items()
+            for name, agg in found.items()
         }
-    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
     return SearchPage(
-        total=total, results=[h["_source"] for h in hits["hits"]], aggregations=aggregations
+        total=total,
+        results=[h["_source"] for h in hits["hits"]],
+        aggregations=aggregations,
+        # An index that has never held the count field sums to 0: one row each.
+        rows_total=(int(rows["value"] or 0) or total) if rows else None,
+        mapped_total=mapped["doc_count"] if mapped else None,
     )
 
 

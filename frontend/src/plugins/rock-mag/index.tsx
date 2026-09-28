@@ -67,6 +67,12 @@ export const rockMagPlugin: PluginModule = {
   levelSubTabs(level, config) {
     const rconfig = rockMagConfig(config);
     if (!rconfig.base_level || rconfig.base_level !== level.name) return [];
-    return [{ name: VIEW_NAME, render: (ctx) => <RockMagSubTab {...ctx} /> }];
+    return [
+      {
+        name: VIEW_NAME,
+        countTable: rconfig.table ?? "rock_mag",
+        render: (ctx) => <RockMagSubTab {...ctx} />,
+      },
+    ];
   },
 };

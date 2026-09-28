@@ -113,22 +113,31 @@ export default function RockMagView({
   if (values.isPending) return <PageSpinner label="Loading rock magnetic data…" />;
   if (values.error) return <ErrorMessage error={values.error} className="my-3" />;
   if (specimens.length === 0) {
+    // With nothing to narrow it, an empty result means the index has none:
+    // rock_mag docs are derived when contributions are indexed.
+    const unfiltered = !query.trim() && ownRanges.length === 0 && !bbox && !contribution;
     return (
       <p className="py-8 text-center text-[13px] text-gray-500">
-        No specimens with rock magnetic data match this search.
+        {unfiltered
+          ? "No rock magnetic data has been indexed yet: the search index needs rebuilding (fiesta rebuild) since the Rock Magnetism view was added."
+          : "No specimens with rock magnetic data match this search."}
       </p>
     );
   }
 
   const panelProps = { groups, specimens, selected, select, open };
   const count = (key: ParamKey) => specimens.filter((s) => s[key] !== undefined).length;
+  // Each point is a result; a specimen can have several (hysteresis at
+  // several temperatures).
+  const distinct = new Set(specimens.map((s) => `${s.contribution}|${s.specimen}`)).size;
 
   return (
     <div className="space-y-3 py-2 text-[13px]">
       {/* Summary + controls: one row above the plots */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="text-gray-700">
-          <b>{specimens.length.toLocaleString()}</b> specimens
+          <b>{specimens.length.toLocaleString()}</b> {specimens.length === 1 ? "result" : "results"}{" "}
+          from <b>{distinct.toLocaleString()}</b> {distinct === 1 ? "specimen" : "specimens"}
           {values.data?.truncated && ` (the first of ${values.data.total.toLocaleString()})`}:{" "}
           {count("mr_ms").toLocaleString()} hysteresis · {count("tc").toLocaleString()} critical
           temperatures · {count("chi_mass").toLocaleString()} susceptibilities ·{" "}
@@ -825,7 +834,7 @@ function Histogram({
         tooltip: { trigger: "item", confine: true, textStyle: { fontSize: 12 } },
         xAxis: axis(axisName(param), log, range),
         // Counts up to a round number echarts picks.
-        yAxis: axis("Specimens", false, [0, undefined], { nameGap: 40, minInterval: 1 }),
+        yAxis: axis("Results", false, [0, undefined], { nameGap: 40, minInterval: 1 }),
         series: [...(markLines ? [references(markLines)] : []), ...series],
       }) as EChartsOption,
     [series, param, log, range, markLines],

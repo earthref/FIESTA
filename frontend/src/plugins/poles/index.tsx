@@ -433,6 +433,12 @@ export const polesPlugin: PluginModule = {
   levelSubTabs(level, config) {
     const pconfig = polesConfig(config);
     if (!pconfig.base_level || pconfig.base_level !== level.name) return [];
-    return [{ name: "Poles", render: (ctx) => <PolesMapView {...ctx} /> }];
+    return [
+      {
+        name: "Poles",
+        countTable: pconfig.table ?? "poles",
+        render: (ctx) => <PolesMapView {...ctx} />,
+      },
+    ];
   },
 };
