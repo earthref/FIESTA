@@ -11,8 +11,9 @@
 //    "/" and `fiesta-env.js` lists the served nodes; the first path segment
 //    names the node (http://localhost:8080/MagIC/, /cdr/ -- any case) and
 //    becomes the router base, so NODE and BASE_PATH come from the URL at load.
-//    A URL outside every node prefix is sent to the same path under the
-//    default node (REDIRECT).
+//    The build base itself is the FIESTA portal home over every node (PORTAL);
+//    any other URL outside every node prefix is sent to the same path under
+//    the default node (REDIRECT).
 //
 // `fiesta-env.js` is a tiny script index.html loads before the bundle:
 //   window.__FIESTA__ = { node, apiUrl, nodes }
@@ -56,11 +57,22 @@ export const NODE: string = inNodePrefix ? segment.toLowerCase() : defaultNode;
 /** Path the SPA's routes live under (router basepath); ends with "/". */
 export const BASE_PATH: string = inNodePrefix ? `${BUILD_BASE}${segment}/` : BUILD_BASE;
 
+/** Multi-node layout, the build base itself (http://localhost:8080/): the
+ * FIESTA portal home, which aggregates every node in NODES. NODE is still the
+ * default node, for the node-less account routes the portal bar uses. */
+export const PORTAL: boolean =
+  !inNodePrefix && NODES.length > 0 && location.pathname === BUILD_BASE;
+
+/** URL of a path ("/", "/contributions/1") on another node of this origin. */
+export function nodeSiteUrl(key: string, path = "/"): string {
+  return `${BUILD_BASE}${key}${path}`;
+}
+
 /** Multi-node layout only: the URL to load instead of this one, or null.
- * "/" and "/search" become "/magic/" and "/magic/search" (the default node);
+ * "/search" becomes "/magic/search" (the default node; "/" is the PORTAL);
  * a bare "/MagIC" gains its trailing slash so the router base matches. */
 export const REDIRECT: string | null = (() => {
-  if (!NODES.length) return null;
+  if (!NODES.length || PORTAL) return null;
   const rest = location.search + location.hash;
   if (!inNodePrefix) {
     return `${BUILD_BASE}${defaultNode}${location.pathname.slice(BUILD_BASE.length - 1)}${rest}`;

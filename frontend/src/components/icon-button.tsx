@@ -28,6 +28,8 @@ export interface IconButtonProps {
   to?: string;
   search?: Record<string, unknown>;
   href?: string;
+  /** Open `href` in this tab (another node of this origin) instead of a new one. */
+  sameTab?: boolean;
   variant?: "card" | "small" | "wide";
   /** Card font size in px (legacy: 14 for cards, 10 for nine-cards, 15 for the small wide card). */
   fontSize?: number;
@@ -55,6 +57,7 @@ export function IconButton({
   to,
   search,
   href,
+  sameTab,
   variant = "card",
   fontSize,
   titleEm,
@@ -126,7 +129,12 @@ export function IconButton({
 
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noreferrer" className={className} style={style}>
+      <a
+        href={href}
+        {...(sameTab ? {} : { target: "_blank", rel: "noreferrer" })}
+        className={className}
+        style={style}
+      >
         {content}
       </a>
     );

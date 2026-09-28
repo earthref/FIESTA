@@ -4,12 +4,13 @@ import {
   lazy,
   type ReactNode,
   Suspense,
+  useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { nodeUrl } from "../lib/base";
-import { useNodeConfig } from "../lib/config";
+import { apiUrl, nodeSiteUrl, nodeUrl } from "../lib/base";
+import { NodeConfigScope, useNodeConfig } from "../lib/config";
 import type { SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath, singularize } from "../lib/utils";
 import { type MapMarker, MapThumbnail, markersFromGeoPoint } from "./map-thumbnail";
@@ -43,7 +44,47 @@ function keyColumnOf(table: string): string {
   return table.endsWith("s") ? table.slice(0, -1) : table;
 }
 
-function firstString(value: unknown): string | undefined {
+/** The API URL of a route of the node a result belongs to: this SPA's node,
+ * or the scoped one on the portal home (NodeConfigScope). */
+function useNodeApiUrl(): (path: string) => string {
+  const scoped = useContext(NodeConfigScope);
+  return scoped ? (path) => apiUrl(`/${scoped.slug}${path}`) : nodeUrl;
+}
+
+/** Link to a contribution page: a router link on this node, a page load of
+ * the scoped node's page on the portal home. */
+function ContributionLink({
+  id,
+  privateKey,
+  children,
+}: {
+  id: string;
+  privateKey?: string;
+  children: ReactNode;
+}) {
+  const scoped = useContext(NodeConfigScope);
+  const className = "text-node hover:underline";
+  if (scoped) {
+    const query = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
+    return (
+      <a href={nodeSiteUrl(scoped.key, `/contributions/${id}${query}`)} className={className}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link
+      to="/contributions/$id"
+      params={{ id }}
+      search={{ private_key: privateKey }}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
+}
+
+export function firstString(value: unknown): string | undefined {
   if (typeof value === "string" && value) return value;
   if (Array.isArray(value) && value.length > 0) return String(value[0]);
   return undefined;
@@ -56,7 +97,7 @@ function listOf(value: unknown): string[] {
 }
 
 /** moment "LL" format: July 7, 2026 */
-function formatDateLL(value: unknown): string {
+export function formatDateLL(value: unknown): string {
   if (typeof value !== "string" && typeof value !== "number") return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
@@ -68,7 +109,7 @@ export function contributionId(doc: SearchResult): string | undefined {
   return id === undefined || id === null ? undefined : String(id);
 }
 
-function citationOf(doc: SearchResult): string | undefined {
+export function citationOf(doc: SearchResult): string | undefined {
   const reference = getPath(doc, "summary.contribution._reference");
   if (reference && typeof reference === "object") {
     const ref = reference as Record<string, unknown>;
@@ -445,6 +486,7 @@ export function ResultItem({
   extraCell?: ReactNode;
 }) {
   const { data: config } = useNodeConfig();
+  const nodeApiUrl = useNodeApiUrl();
   const [mapOpen, setMapOpen] = useState(false);
   if (!config) return null;
 
@@ -454,7 +496,7 @@ export function ResultItem({
   // reuse it for the map modal when that plugin is active on this node.
   const polesConfig = config.plugins?.poles as { has_base_texture?: boolean } | undefined;
   const baseTexture = polesConfig?.has_base_texture
-    ? nodeUrl("/plugins/poles/base-texture")
+    ? nodeApiUrl("/plugins/poles/base-texture")
     : undefined;
   const keyParam = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
   const publicationDoi = firstString(getPath(doc, "summary.contribution._reference.doi"));
@@ -516,7 +558,7 @@ export function ResultItem({
       {!isContribution ? null : id ? (
         <Cell width={100} style={{ fontSize: 14, height: 104 }}>
           <a
-            href={nodeUrl(`/contributions/${id}/download${keyParam}`)}
+            href={nodeApiUrl(`/contributions/${id}/download${keyParam}`)}
             download
             className="inline-block w-full bg-white text-center font-bold text-node hover:bg-node-soft"
             style={{
@@ -543,14 +585,9 @@ export function ResultItem({
         <Cell width={200}>
           <b>{config.key} Contribution Link:</b>
           <p className="m-0 overflow-hidden text-ellipsis leading-[1.4285em]">
-            <Link
-              to="/contributions/$id"
-              params={{ id }}
-              search={{ private_key: privateKey }}
-              className="text-node hover:underline"
-            >
+            <ContributionLink id={id} privateKey={privateKey}>
               earthref.org/{config.key}/{id}
-            </Link>
+            </ContributionLink>
           </p>
           {config.doi_prefix && (
             <>
@@ -904,6 +941,7 @@ function VersionsTable({
   config: { key: string; doi_prefix: string | null };
   summary: Record<string, unknown>;
 }) {
+  const nodeApiUrl = useNodeApiUrl();
   const rows = versionRows(summary, currentId, isActivated);
   return (
     <div>
@@ -926,7 +964,7 @@ function VersionsTable({
               <tr key={`${row.id}-${row.version}`}>
                 <td className="py-1 pr-3">
                   <a
-                    href={nodeUrl(`/contributions/${row.id}/download${keyParam}`)}
+                    href={nodeApiUrl(`/contributions/${row.id}/download${keyParam}`)}
                     download
                     className="inline-flex items-center gap-1 text-node hover:underline"
                   >
@@ -934,14 +972,9 @@ function VersionsTable({
                   </a>
                 </td>
                 <td className="py-1 pr-3">
-                  <Link
-                    to="/contributions/$id"
-                    params={{ id: row.id }}
-                    search={{ private_key: privateKey }}
-                    className="text-node hover:underline"
-                  >
+                  <ContributionLink id={row.id} privateKey={privateKey}>
                     /contributions/{row.id}
-                  </Link>
+                  </ContributionLink>
                 </td>
                 <td className="py-1 pr-3">
                   {config.doi_prefix ? (

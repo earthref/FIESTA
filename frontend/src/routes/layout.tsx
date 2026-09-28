@@ -1,4 +1,4 @@
-import { Outlet } from "@tanstack/react-router";
+import { Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { Footer } from "../components/footer";
@@ -7,14 +7,28 @@ import { NodeHeader } from "../components/node-header";
 import { NodeMenu } from "../components/node-menu";
 import { PortalBar } from "../components/portal-bar";
 import { PageSpinner } from "../components/ui/spinner";
+import { BUILD_BASE, NODE, nodeSiteUrl, PORTAL } from "../lib/base";
 import { applyNodeTheme, useNodeConfig } from "../lib/config";
+import { FIESTA_PORTAL } from "../lib/portals";
 
 export function RootLayout() {
   const { data: config, isLoading, error } = useNodeConfig();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   useEffect(() => {
-    if (config) applyNodeTheme(config);
+    if (config) applyNodeTheme(PORTAL ? FIESTA_PORTAL : config);
   }, [config]);
+
+  // The portal home is the only page outside a node: any other route it links
+  // to (Admin, the user's workspace) loads under the default node.
+  useEffect(() => {
+    if (PORTAL && pathname !== "/") {
+      const { pathname: path, search, hash } = window.location;
+      window.location.replace(
+        nodeSiteUrl(NODE, `${path.slice(BUILD_BASE.length - 1)}${search}${hash}`),
+      );
+    }
+  }, [pathname]);
 
   if (isLoading) {
     return (
@@ -45,7 +59,7 @@ export function RootLayout() {
         <div className="pt-[4em] sm:pb-[4em]">
           {/* Every page uses the legacy `.full-width` layout variant (padding 0 2em). */}
           <NodeHeader />
-          <NodeMenu />
+          {!PORTAL && <NodeMenu />}
           <main className="clear-both w-full px-[2em] pt-[1.25em] lg:pt-0">
             <Outlet />
           </main>

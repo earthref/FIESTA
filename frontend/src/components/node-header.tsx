@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
+import { PORTAL } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
+import { FIESTA_PORTAL } from "../lib/portals";
 
 /**
  * Node letter-logo, title, and subtitle (legacy page.jsx/page.less, measured):
@@ -8,7 +10,8 @@ import { useNodeConfig } from "../lib/config";
  * floated left with margin-right .25em; h1 28px/36px; h4 15px bold/19.3px.
  */
 export function NodeHeader() {
-  const { data: config } = useNodeConfig();
+  const { data: nodeConfig } = useNodeConfig();
+  const config = PORTAL ? FIESTA_PORTAL : nodeConfig;
 
   return (
     // Legacy `.full-width` layout variant (padding 0 2em) frames the header too.

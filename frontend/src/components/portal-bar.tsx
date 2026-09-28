@@ -2,8 +2,9 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { isAnyAdmin, isNodeAdmin } from "../lib/admin";
 import { useAuth } from "../lib/auth";
+import { PORTAL } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
-import { PORTALS, portalUrl } from "../lib/portals";
+import { FIESTA_PORTAL, PORTALS, portalUrl } from "../lib/portals";
 import { useLoginModal } from "./login-modal";
 import { MobileDrawer } from "./mobile-drawer";
 import { Icon } from "./ui/icon";
@@ -13,7 +14,8 @@ import { Icon } from "./ui/icon";
  * measured): 40px tall, bg #F8F8F8, 2px bottom border; every item 14px/400,
  * padding .857em 1.143em, line-height 1em, rgba(0,0,0,.87), aligned to the
  * bottom edge with a 2px transparent border. The active portal is node-colored
- * with a node-colored border. A sidebar (hamburger) item always comes first.
+ * with a node-colored border. A sidebar (hamburger) item comes first below
+ * 1024px; wide screens show the full portal bar instead, so it is hidden there.
  */
 const itemClass =
   "flex items-center self-end whitespace-nowrap text-[rgba(0,0,0,0.87)] " +
@@ -29,7 +31,9 @@ const itemStyle: CSSProperties = {
 
 /** Fixed thin EarthRef portal bar across the very top of every page. */
 export function PortalBar() {
-  const { data: config } = useNodeConfig();
+  const { data: nodeConfig } = useNodeConfig();
+  // The portal home is no node's page: the bar highlights none of them.
+  const config = PORTAL ? undefined : nodeConfig;
   const { user, logout } = useAuth();
   const { openLogin } = useLoginModal();
   const navigate = useNavigate();
@@ -50,14 +54,14 @@ export function PortalBar() {
       style={{ borderBottom: "2px solid rgba(34,36,38,.15)", minHeight: 40 }}
     >
       <div className="flex items-stretch" style={{ minHeight: 38 }}>
-        {/* Sidebar button (legacy `a.item.sidebar-button` with `i.sidebar.icon`) */}
+        {/* Sidebar button (legacy `a.item.sidebar-button` with `i.sidebar.icon`), narrow only */}
         <button
           ref={hamburgerRef}
           type="button"
           aria-label="Open menu"
           aria-expanded={drawerOpen}
           onClick={() => setDrawerOpen(true)}
-          className={itemClass}
+          className={`${itemClass} lg:hidden`}
           style={itemStyle}
         >
           <Icon name="sidebar" style={{ width: "1.18em", height: "1em", marginRight: 5 }} />
@@ -66,18 +70,17 @@ export function PortalBar() {
         <Link
           to="/"
           className={`${itemClass} font-bold lg:hidden`}
-          style={{ ...itemStyle, color: config?.color ?? "inherit" }}
+          style={{ ...itemStyle, color: (config ?? FIESTA_PORTAL).color }}
         >
-          {config?.key}
+          {(config ?? FIESTA_PORTAL).key}
         </Link>
 
         {/* Wide (≥1024px): full portal bar */}
         <nav aria-label="EarthRef portals" className="hidden items-stretch lg:flex">
-          {PORTALS.map((portal, index) => {
+          {PORTALS.map((portal) => {
             const active = portal.label === config?.key;
             const style = {
               ...itemStyle,
-              ...(index === 0 ? { paddingLeft: 0 } : {}),
               ...(active ? { color: portal.color, borderBottomColor: portal.color } : {}),
             };
             return active ? (
@@ -87,7 +90,7 @@ export function PortalBar() {
             ) : (
               <a
                 key={portal.label}
-                href={portalUrl(portal, config?.deployment_nodes)}
+                href={portalUrl(portal, nodeConfig?.deployment_nodes)}
                 className={itemClass}
                 style={style}
               >

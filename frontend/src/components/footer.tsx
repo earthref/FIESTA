@@ -1,4 +1,4 @@
-import { assetUrl } from "../lib/base";
+import { assetUrl, PORTAL } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { PORTALS } from "../lib/portals";
 import { Icon } from "./ui/icon";
@@ -81,7 +81,7 @@ export function Footer() {
         </div>
         <div className="flex min-w-0 shrink flex-col items-center sm:min-w-fit sm:shrink-0 xl:flex-row">
           <a
-            href={`mailto:webmaster@earthref.org?subject=[${config?.key ?? "FIESTA"} Help]`}
+            href={`mailto:webmaster@earthref.org?subject=[${(!PORTAL && config?.key) || "FIESTA"} Help]`}
             className="inline-block self-center text-center sm:whitespace-nowrap"
             style={basicButtonStyle("var(--node-color)")}
           >
