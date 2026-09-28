@@ -51,6 +51,23 @@ export function RootLayout() {
     );
   }
 
+  // A node whose web app is not published (node YAML `publish.web`) is not
+  // opened outside a local stack; its API may still be served.
+  if (!PORTAL && config.web_published === false) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <h1 className="mb-3 text-lg font-semibold">{config.key}</h1>
+        <p className="text-sm text-gray-600">
+          {config.key} is not published on the web yet. Visit{" "}
+          <a href="https://earthref.org/" className="font-medium text-node hover:underline">
+            EarthRef.org
+          </a>{" "}
+          for the published repositories.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <LoginModalProvider>
       <div className="min-h-screen bg-white">

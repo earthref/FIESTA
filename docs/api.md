@@ -94,7 +94,7 @@ the draft: an edit made from content loaded from the draft sends that
 draft's `lock_version` and gets a 409 if someone saved in between. Invalid
 configuration is a 422 with `{"detail": {"errors": [...]}}`. A draft that
 changes a protected setting (`node.key`, `node.slug`, `search.index`,
-`storage`, `legacy`) can only be published by a super admin.
+`storage`, `legacy`, `publish`) can only be published by a super admin.
 
 **Node configuration lifecycle.** Each node is a file tree, `config/<slug>.yaml`
 plus `config/<slug>/**`. Postgres keeps every version of it (shared schema:
@@ -160,10 +160,13 @@ after its YAML is merged and deployed, because the frontend is built per node.
   ],
   "pages": [{"slug": "about", "title": "About", "menu": "left", "icon": null}],
   "features": {"plugins": ["poles"]},
+  "publish": {"api": true, "web": true},
+  "web_published": true,
   "has_method_codes": true,
   "doi_prefix": "10.7288",
   "plugins": {"poles": { /* frontend_config per active plugin */ }},
-  "deployment_nodes": ["MagIC", "KdD", "CDR", "KArAr", "ERDA", "OSU-MGR"]
+  "deployment_nodes": ["MagIC", "KdD", "CDR", "KArAr", "ERDA", "OSU-MGR"],
+  "hidden_nodes": ["OSU-MGR"]
 }
 ```
 
@@ -182,7 +185,17 @@ for the contribution level when any level does: the SPA gives those levels a
 Map tab. `search_levels` is extended with any plugin-contributed levels (no `geo`); `plugins` (a map
 of active plugin name → its `frontend_config`) and `deployment_nodes` (the
 keys of every node this API serves, which the portal bar links next to itself
-off the production hosts) are added by the config route on top of the node's own `public_config()`.
+off the production hosts) and `hidden_nodes` (the keys of the nodes whose web
+app is not published, which the portal bar leaves out) are added by the config
+route on top of the node's own `public_config()`.
+
+`publish` is the node YAML's `publish` block (both default `true`; a super admin
+toggles them under Settings). Outside a local stack (`FIESTA_ENVIRONMENT=development`
+serves every node either way), `publish.api: false` makes every
+`/v2/{repository}/...` route of the node a 404, and `publish.web: false` makes
+`web_published` false: the SPA shows a "not published" notice instead of the
+node, and the portal bar and the FIESTA portal home leave it out. `publish.web`
+needs `publish.api`.
 
 ### Search & retrieval
 

@@ -256,6 +256,8 @@ interface SettingsForm {
   doi_prefix: string;
   index: string;
   bucket: string;
+  publish_api: boolean;
+  publish_web: boolean;
 }
 
 function formOf(s: NodeSettings): SettingsForm {
@@ -268,6 +270,8 @@ function formOf(s: NodeSettings): SettingsForm {
     doi_prefix: s.doi?.prefix ?? "",
     index: s.search.index,
     bucket: s.storage.bucket,
+    publish_api: s.publish?.api ?? true,
+    publish_web: s.publish?.web ?? true,
   };
 }
 
@@ -283,6 +287,8 @@ function opsFor(before: SettingsForm, after: SettingsForm): SettingsOp[] {
     ["doi_prefix", ["doi", "prefix"], orNull(after.doi_prefix)],
     ["index", ["search", "index"], after.index.trim()],
     ["bucket", ["storage", "bucket"], after.bucket.trim()],
+    ["publish_api", ["publish", "api"], after.publish_api],
+    ["publish_web", ["publish", "web"], after.publish_web],
   ];
   return fields
     .filter(([key]) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
@@ -310,7 +316,7 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
   const s = settings.data.settings;
   const set = <K extends keyof SettingsForm>(key: K, value: SettingsForm[K]) =>
     setForm({ ...form, [key]: value });
-  const input = (key: keyof SettingsForm) => ({
+  const input = (key: Exclude<keyof SettingsForm, "publish_api" | "publish_web">) => ({
     value: form[key] as string,
     onChange: (e: ChangeEvent<HTMLInputElement>) => set(key, e.target.value),
   });
@@ -378,6 +384,47 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
           <Field label="Bucket" hint="Unused when FIESTA_S3_BUCKET is set">
             <Input {...input("bucket")} disabled={!superAdmin} />
           </Field>
+        </div>
+      </fieldset>
+      <fieldset className="rounded-md border border-gray-200 p-3">
+        <legend className="px-1 text-xs font-semibold text-gray-700">
+          Publish to FIESTA {superAdmin ? "" : "(super admins only)"}
+        </legend>
+        <div className="space-y-2 text-sm">
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={form.publish_api}
+              disabled={!superAdmin}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  publish_api: e.target.checked,
+                  publish_web: e.target.checked && form.publish_web,
+                })
+              }
+              className="mt-0.5 h-4 w-4 rounded-sm border-gray-300"
+            />
+            <span>
+              <strong>API</strong> — /v2/{s.node.slug}/… is served
+            </span>
+          </label>
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={form.publish_web}
+              disabled={!superAdmin || !form.publish_api}
+              onChange={(e) => set("publish_web", e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded-sm border-gray-300"
+            />
+            <span>
+              <strong>Web</strong> — the site at /{s.node.key}/ opens and the portal bar lists{" "}
+              {s.node.key}; needs the API
+            </span>
+          </label>
+          <p className="text-xs text-gray-500">
+            A local stack (FIESTA_ENVIRONMENT=development) serves every node either way.
+          </p>
         </div>
       </fieldset>
       <p className="text-xs text-gray-500">

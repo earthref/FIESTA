@@ -25,9 +25,12 @@ def request_node(request: Request) -> NodeConfig:
     if not repository:
         raise RuntimeError("NodeDep used on a route without a {repository} path segment")
     try:
-        return get_deployment().node_for(repository)
+        node = get_deployment().node_for(repository)
     except KeyError:
         raise HTTPException(404, f"unknown repository {repository!r}") from None
+    if not node.serves_api:
+        raise HTTPException(404, f"unknown repository {repository!r}")
+    return node
 
 
 NodeDep = Annotated[NodeConfig, Depends(request_node)]

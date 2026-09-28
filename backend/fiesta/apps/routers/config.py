@@ -20,6 +20,8 @@ async def get_config(node: NodeDep) -> dict:
     # Every node this API serves (keys): the SPA links its portal bar to their
     # instances next to itself when it is not on a production host.
     config["deployment_nodes"] = [n.node.key for n in get_deployment().node_list]
+    # Nodes production does not serve a web app for: the portal bar leaves them out.
+    config["hidden_nodes"] = [n.node.key for n in get_deployment().node_list if not n.serves_web]
     return config
 
 

@@ -76,6 +76,10 @@ export interface NodeConfig {
   /** Keys of every node the API serves; the portal bar links them to their
    * instances next to this one off the production hosts (lib/portals.ts). */
   deployment_nodes?: string[];
+  /** Keys of the nodes whose web app production does not serve: the portal bar leaves them out. */
+  hidden_nodes?: string[];
+  /** False when production does not serve this node's web app (node YAML `publish.web`). */
+  web_published?: boolean;
 }
 
 export interface HealthStatus {
