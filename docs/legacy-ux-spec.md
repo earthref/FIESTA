@@ -183,6 +183,8 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 - **Map thumbnail click** opens a 3D globe modal (echarts-gl, the poles
   plugin's relief texture when available) instead of the legacy Google Map.
 - **Map thumbnail** uses one representative `_geo_point` per level (the summarizer's) rather than every distinct point/envelope of the legacy summary.
+- **Map thumbnail** is drawn from the Esri Ocean basemap (the Map tab's, as on osu-mgr.org) instead of the legacy SVG globe of 110m countries coloured by a climate lookup (2026-09-27).
+- **Map tab** (new, 2026-09-27): levels whose data-model table has lat/lon columns get a Map sub-tab after Rows, ported from osu-mgr.org's search map — MapLibre over Esri Ocean in four views (Globe, Mercator, North Pole, South Pole), every matching record plotted, and an area filter (the `area` search param) that also narrows Summaries and Rows. Legacy had no equivalent.
 
 ### RESULT ITEM CARD (`search_summaries_list_item.jsx`) — most detailed
 

@@ -1,14 +1,15 @@
 """Public search + contribution retrieval for the node frontend."""
 
 import uuid as uuid_mod
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, Response
 from opensearchpy.exceptions import NotFoundError
 
 from fiesta.apps.deps import NodeDep, SessionDep
-from fiesta.apps.schemas import SearchPage
+from fiesta.apps.schemas import MapPoints, SearchPage
 from fiesta.db.models import Contribution
+from fiesta.nodeconfig import BOX_COLUMNS
 from fiesta.search.client import get_opensearch
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services.access import constrain_search
@@ -113,6 +114,98 @@ async def search(
     total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
     return SearchPage(
         total=total, results=[h["_source"] for h in hits["hits"]], aggregations=aggregations
+    )
+
+
+# The map plots every match up to this many; past it `truncated` is set.
+MAX_MAP_POINTS = 50_000
+MAP_PAGE_SIZE = 10_000
+
+
+def _to_float(value: Any) -> float | None:
+    if isinstance(value, list):
+        value = value[0] if value else None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _map_point(source: dict, table: str) -> dict | None:
+    """One doc's position for the map: its `_geo_point`, the row's box when it
+    has one, and what to call it."""
+    summary = source.get("summary") or {}
+    geo = (summary.get("_all") or {}).get("_geo_point") or {}
+    lat, lon = _to_float(geo.get("lat")), _to_float(geo.get("lon"))
+    if lat is None or lon is None:
+        return None
+    row = summary.get(table) or {}
+    point: dict[str, Any] = {
+        "id": (summary.get("contribution") or {}).get("id"),
+        "lat": lat,
+        "lon": lon,
+    }
+    # A level row is named by its own key column ("sites" -> "site").
+    name = row.get(table.removesuffix("s")) if table != "contribution" else None
+    if name not in (None, ""):
+        point["name"] = str(name[0] if isinstance(name, list) else name)
+    box = [_to_float(row.get(c)) for c in BOX_COLUMNS]
+    if all(v is not None for v in box):
+        point["bounds"] = box
+    return point
+
+
+@router.get("/search/{table}/points", response_model=MapPoints, response_model_exclude_none=True)
+async def search_points(
+    session: SessionDep,
+    node: NodeDep,
+    table: str,
+    query: str | None = None,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    bbox: str | None = None,
+) -> MapPoints:
+    """Every positioned doc matching a search, for the search page's map."""
+    if table not in node.geo_tables:
+        raise HTTPException(404, f"search table {table!r} has no positions")
+    body = build_search_body(
+        table=table,
+        query=query,
+        size=MAP_PAGE_SIZE,
+        ranges=_parse_ranges(range_),
+        bbox=_parse_bbox(bbox),
+    )
+    await constrain_search(session, node, body, query=query)
+    body["query"]["bool"]["filter"].append({"exists": {"field": "summary._all._geo_point"}})
+    body["sort"] = ["_doc"]
+    body.pop("from", None)
+    body["_source"] = [
+        "summary._all._geo_point",
+        "summary.contribution.id",
+        f"summary.{table}.{table.removesuffix('s')}",
+        *(f"summary.{table}.{c}" for c in BOX_COLUMNS),
+    ]
+    client = get_opensearch()
+    try:
+        response = await client.search(index=node.search_index, body=body, scroll="1m")
+    except NotFoundError:
+        return MapPoints(total=0, points=[])
+    hits = response["hits"]
+    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+    points: list[dict] = []
+    scroll_id = response.get("_scroll_id")
+    try:
+        while hits["hits"] and len(points) < MAX_MAP_POINTS:
+            points += [p for h in hits["hits"] if (p := _map_point(h["_source"], table))]
+            if len(hits["hits"]) < MAP_PAGE_SIZE:
+                break
+            response = await client.scroll(scroll_id=scroll_id, scroll="1m")
+            scroll_id = response.get("_scroll_id", scroll_id)
+            hits = response["hits"]
+    finally:
+        if scroll_id:
+            await client.clear_scroll(scroll_id=scroll_id, ignore=(404,))
+    return MapPoints(
+        total=total, points=points[:MAX_MAP_POINTS], truncated=total > MAX_MAP_POINTS
     )
 
 

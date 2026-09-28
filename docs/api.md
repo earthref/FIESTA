@@ -52,6 +52,7 @@ Two schemes are accepted; the private routes take either.
 | GET | `/v2/auth/settings` | Bearer/Basic | the account's settings JSON object |
 | PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in the seeded `developer@example.test` only against local dev infrastructure |
+| GET | `/v2/basemap/{world\|arctic}` | — | JPEG: Esri Ocean as a 1024×512 plate carrée world image (blank past ±85.05°) and its Arctic band; fetched from Esri once a day and cached in the API process, for the result thumbnails |
 
 `UserOut = {id, email, name, orcid: string|null, is_admin: bool, admin_nodes: string[]}` —
 `is_admin` is a **super admin** (every node, node creation, accounts); `admin_nodes`
@@ -148,8 +149,8 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "data_model_versions": ["2.2", "2.3", "2.4", "2.5", "3.0"],
   "data_model_latest": "3.0",
   "search_levels": [
-    {"name": "Contributions", "table": "contribution", "count_field": null},
-    {"name": "Locations", "table": "locations", "count_field": "summary.locations._n_results"}
+    {"name": "Contributions", "table": "contribution", "count_field": null, "geo": true},
+    {"name": "Locations", "table": "locations", "count_field": "summary.locations._n_results", "geo": true}
   ],
   "facets": ["method_codes", "geologic_classes"],
   "filters": [
@@ -175,7 +176,10 @@ facet filters). `pages` are the content pages in menu order.
 Each active plugin's `frontend_config` is built from its options: the node
 YAML's `plugins.<name>` map over the plugin's declared defaults.
 
-`search_levels` is extended with any plugin-contributed levels; `plugins` (a map
+A level's `geo` is true when its table has a latitude and a longitude column
+(`lat`/`lat_s`/`lat_n` and `lon`/`lon_w`/`lon_e`) in the latest data model, and
+for the contribution level when any level does: the SPA gives those levels a
+Map tab. `search_levels` is extended with any plugin-contributed levels (no `geo`); `plugins` (a map
 of active plugin name → its `frontend_config`) and `deployment_nodes` (the
 keys of every node this API serves, which the portal bar links next to itself
 off the production hosts) are added by the config route on top of the node's own `public_config()`.
@@ -185,6 +189,7 @@ off the production hosts) are added by the config route on top of the node's own
 | Method | Path | Query params | Returns |
 |---|---|---|---|
 | GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox` (as above) | `MapPoints` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 
@@ -195,6 +200,23 @@ SearchPage = {
   "aggregations": {"<facet>": [{"key": "...", "doc_count": 1}]} | null
 }
 ```
+
+```json
+MapPoints = {
+  "total": 410,
+  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "bounds": [west, south, east, north]?}],
+  "truncated": false
+}
+```
+
+`points` is every match with a `summary._all._geo_point`, up to 50,000
+(`truncated` past that), for the search page's Map tab: `id` is the
+contribution, `name` the row's own key column (`sites` → `site`; absent at the
+contribution level), `bounds` the row's `lon_w`/`lat_s`/`lon_e`/`lat_n` when it
+has all four. `{table}` must be a level whose `geo` is true, otherwise 404.
+Visibility is the same as the search's. The SPA sends the Map tab's area
+filter as `bbox` here and to `/search/{table}`, with a `minLon` east of `maxLon`
+when it crosses the antimeridian.
 
 `{table}` must be one of the node's search levels, its `extra_types`, or a
 plugin-contributed table — otherwise 404. An unknown `sort`, a malformed `range`

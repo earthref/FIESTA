@@ -17,6 +17,12 @@ from pydantic import BaseModel, PrivateAttr, field_validator, model_validator
 
 from fiesta.settings import get_settings
 
+# Data-model columns that place a row: the first of each present is its
+# position (summary._all._geo_point); lat_s/lat_n/lon_w/lon_e are a box.
+LAT_COLUMNS = ("lat", "lat_s", "lat_n")
+LON_COLUMNS = ("lon", "lon_w", "lon_e")
+BOX_COLUMNS = ("lon_w", "lat_s", "lon_e", "lat_n")
+
 PAGE_SLUG_RE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
 # SPA routes a content page can never shadow (frontend/src/router.tsx).
 RESERVED_PAGE_SLUGS = {
@@ -66,7 +72,8 @@ class SearchFilter(BaseModel):
     multiplies the typed value before it is sent (Ma -> years). `bbox`: the
     lat/lon box on `summary._all._geo_point`.
     `levels` / `views` restrict where the control shows: search level names and
-    result sub-tab names (Summaries, Rows, a plugin tab); empty means everywhere.
+    result sub-tab names (Summaries, Rows, Map on levels with positions, a plugin
+    tab); empty means everywhere.
     """
 
     type: Literal["facet", "range", "bbox"]
@@ -315,6 +322,21 @@ class NodeConfig(BaseModel):
             return None
         return self._load_json(self.vocabularies.method_codes)
 
+    @property
+    def geo_tables(self) -> set[str]:
+        """Hierarchy tables whose rows can carry a position (a latitude and a
+        longitude column in the latest data model); the contribution too when
+        any does, as its search doc takes a representative point."""
+        tables = self.load_data_model(self.data_model.latest)["tables"]
+        geo = {
+            table
+            for table in self.hierarchy
+            if (columns := tables.get(table, {}).get("columns", {}))
+            and any(c in columns for c in LAT_COLUMNS)
+            and any(c in columns for c in LON_COLUMNS)
+        }
+        return geo | {"contribution"} if geo else geo
+
     # --- names resolved against the environment (fiesta.settings) ---------
 
     @property
@@ -345,7 +367,10 @@ class NodeConfig(BaseModel):
             "contact_email": self.node.contact_email,
             "data_model_versions": self.data_model.versions,
             "data_model_latest": self.data_model.latest,
-            "search_levels": [lvl.model_dump() for lvl in self.search.levels],
+            "search_levels": [
+                {**lvl.model_dump(), "geo": lvl.table in self.geo_tables}
+                for lvl in self.search.levels
+            ],
             "facets": self.search.facets,
             "filters": [f.model_dump() for f in self.search.filters],
             "pages": [p.model_dump() for p in self.pages],

@@ -4,6 +4,8 @@ export interface SearchLevel {
   name: string;
   table: string;
   count_field: string | null;
+  /** Its rows can carry a position (lat/lon columns), so it has a Map tab. */
+  geo?: boolean;
 }
 
 /** features.home.resources entry: a resource card (title lines split on "\n"). */

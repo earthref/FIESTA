@@ -112,6 +112,20 @@ class SearchPage(BaseModel):
     aggregations: dict[str, list[dict[str, Any]]] | None = None
 
 
+class MapPoint(BaseModel):
+    id: Any = None  # the contribution
+    name: str | None = None  # the level row's key column
+    lat: float
+    lon: float
+    bounds: list[float] | None = None  # [west, south, east, north]
+
+
+class MapPoints(BaseModel):
+    total: int
+    points: list[MapPoint]
+    truncated: bool = False
+
+
 class HealthOut(BaseModel):
     status: str
     database: bool
