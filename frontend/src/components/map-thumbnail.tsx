@@ -1,13 +1,17 @@
-import { geoGraticule, geoOrthographic, geoPath } from "d3-geo";
-import { useEffect, useMemo, useState } from "react";
-import { feature } from "topojson-client";
-import type { GeometryCollection, Topology } from "topojson-specification";
+import { geoOrthographic } from "d3-geo";
+import { useEffect, useRef, useState } from "react";
+import { apiUrl } from "../lib/base";
+import {
+  THUMBNAIL_HEIGHT as HEIGHT,
+  THUMBNAIL_POLAR_ROWS as POLAR_ROWS,
+  THUMBNAIL_WIDTH as WIDTH,
+} from "./map/basemap";
 
 /**
- * Orthographic globe thumbnail centred on the result's markers (legacy
- * `common/components/svg_map_thumbnail.jsx`): blue sphere, faint graticule,
- * land coloured by a coarse climate lookup on country name, purple markers.
- * The 110m world atlas (~100 KB) is loaded once, lazily, in its own chunk.
+ * Orthographic globe thumbnail centred on the result's markers, drawn from
+ * the Esri Ocean basemap that the search page's Map tab uses (as
+ * osu-mgr.org's result thumbnails are). Replaces the legacy
+ * `svg_map_thumbnail.jsx` globe of 110m countries coloured by climate.
  */
 
 export interface MapMarker {
@@ -15,61 +19,139 @@ export interface MapMarker {
   lon: number;
 }
 
-type CountriesTopology = Topology<{ countries: GeometryCollection<{ name?: string }> }>;
+// The basemap as one low-resolution world image, shared by every thumbnail
+// on the page, from the API's cache (/v2/basemap). It stops at Web
+// Mercator's limit, so past that the north comes from Esri's Arctic version
+// of it and the south is its plain Antarctic ice (as on the maps).
+const ANTARCTIC_COLOR = "#f1f0eb";
+// Without the image (Esri unreachable), the globe is plain ocean.
+const OCEAN_COLOR = "#8db3e2";
+const MARKER_COLOR = "#8B5A8E";
 
-let worldPromise: Promise<CountriesTopology> | undefined;
+const loadImage = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
 
-function loadWorld(): Promise<CountriesTopology> {
-  worldPromise ??= import("world-atlas/countries-110m.json").then(
-    (module) => module.default as unknown as CountriesTopology,
-  );
-  return worldPromise;
+let basemap: Promise<ImageData | null> | undefined;
+function loadBasemap(): Promise<ImageData | null> {
+  basemap ??= Promise.all([
+    loadImage(apiUrl("/basemap/world")),
+    loadImage(apiUrl("/basemap/arctic")).catch(() => null),
+  ])
+    .then(([world, arctic]) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
+      const context = canvas.getContext("2d");
+      if (!context) return null;
+      context.drawImage(world, 0, 0);
+      if (arctic) context.drawImage(arctic, 0, 0);
+      context.fillStyle = ANTARCTIC_COLOR;
+      context.fillRect(0, HEIGHT - POLAR_ROWS, WIDTH, POLAR_ROWS);
+      return context.getImageData(0, 0, WIDTH, HEIGHT);
+    })
+    .catch(() => null);
+  return basemap;
 }
 
-const ICE = ["Antarctica", "Greenland", "Iceland"];
-const DESERT = [
-  "Algeria",
-  "Libya",
-  "Egypt",
-  "Saudi Arabia",
-  "Chad",
-  "Niger",
-  "Mali",
-  "Mauritania",
-  "Sudan",
-  "Mongolia",
-  "Kazakhstan",
-];
-const FOREST = [
-  "Brazil",
-  "Congo",
-  "Indonesia",
-  "Malaysia",
-  "Colombia",
-  "Venezuela",
-  "Peru",
-  "Ecuador",
-  "Gabon",
-  "Cameroon",
-];
+const RAD = Math.PI / 180;
 
-function countryColor(name = ""): string {
-  if (ICE.some((entry) => name.includes(entry))) return "#f0f8ff";
-  if (DESERT.some((entry) => name.includes(entry))) return "#deb887";
-  if (FOREST.some((entry) => name.includes(entry))) return "#228B22";
-  return "#6B8E23";
+/** Spherical mean of the markers (average of their unit vectors), so markers
+ * straddling the antimeridian centre on themselves. Returns [lon, lat]. */
+function sphericalCentroid(markers: MapMarker[]): [number, number] {
+  if (markers.length === 0) return [0, 0];
+  if (markers.length === 1) return [markers[0].lon, markers[0].lat];
+  let [x, y, z] = [0, 0, 0];
+  for (const { lat, lon } of markers) {
+    x += Math.cos(lat * RAD) * Math.cos(lon * RAD);
+    y += Math.cos(lat * RAD) * Math.sin(lon * RAD);
+    z += Math.sin(lat * RAD);
+  }
+  return [Math.atan2(y, x) / RAD, Math.atan2(z, Math.hypot(x, y)) / RAD];
 }
 
-const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+// The globe centred on the markers, drawn pixel by pixel from the basemap,
+// with the markers on top.
+function drawThumbnail(
+  canvas: HTMLCanvasElement,
+  markers: MapMarker[],
+  width: number,
+  height: number,
+  image: ImageData | null,
+) {
+  const scale = Math.min(window.devicePixelRatio || 1, 2);
+  const [w, h] = [Math.round(width * scale), Math.round(height * scale)];
+  const radius = (Math.min(width, height) / 2 - 2) * scale;
+  canvas.width = w;
+  canvas.height = h;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  const [centerLon, centerLat] = sphericalCentroid(markers);
+  const projection = geoOrthographic()
+    .scale(radius)
+    .translate([w / 2, h / 2])
+    .rotate([-centerLon, -centerLat]);
 
-/** True when the point is on the hemisphere facing the viewer. */
-function onFrontHemisphere(center: MapMarker, point: MapMarker): boolean {
-  const lat1 = toRadians(center.lat);
-  const lat2 = toRadians(point.lat);
-  const dLon = toRadians(point.lon - center.lon);
-  const cosAngle =
-    Math.sin(lat1) * Math.sin(lat2) + Math.cos(lat1) * Math.cos(lat2) * Math.cos(dLon);
-  return cosAngle >= 0;
+  if (image) {
+    const out = context.createImageData(w, h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const [dx, dy] = [x + 0.5 - w / 2, y + 0.5 - h / 2];
+        if (dx * dx + dy * dy > radius * radius) continue;
+        const lonLat = projection.invert?.([x + 0.5, y + 0.5]);
+        if (!lonLat) continue;
+        const column = ((Math.floor(((lonLat[0] + 180) / 360) * WIDTH) % WIDTH) + WIDTH) % WIDTH;
+        const row = Math.min(
+          Math.max(Math.floor(((90 - lonLat[1]) / 180) * HEIGHT), 0),
+          HEIGHT - 1,
+        );
+        const from = (row * WIDTH + column) * 4;
+        const to = (y * w + x) * 4;
+        out.data[to] = image.data[from];
+        out.data[to + 1] = image.data[from + 1];
+        out.data[to + 2] = image.data[from + 2];
+        out.data[to + 3] = 255;
+      }
+    }
+    context.putImageData(out, 0, 0);
+  } else {
+    context.beginPath();
+    context.arc(w / 2, h / 2, radius, 0, 2 * Math.PI);
+    context.fillStyle = OCEAN_COLOR;
+    context.fill();
+  }
+
+  // Slightly smaller markers when there are many, so they don't merge into
+  // a single blob at thumbnail scale.
+  const markerRadius = (markers.length > 20 ? 2 : 3) * scale;
+  context.fillStyle = MARKER_COLOR;
+  context.strokeStyle = "#ffffff";
+  context.lineWidth = scale;
+  for (const { lat, lon } of markers) {
+    // Skip markers on the far hemisphere rather than drawing them through the globe.
+    const cosAngle =
+      Math.sin(lat * RAD) * Math.sin(centerLat * RAD) +
+      Math.cos(lat * RAD) * Math.cos(centerLat * RAD) * Math.cos((lon - centerLon) * RAD);
+    if (cosAngle < 0) continue;
+    const at = projection([lon, lat]);
+    if (!at) continue;
+    context.beginPath();
+    context.arc(at[0], at[1], markerRadius, 0, 2 * Math.PI);
+    context.fill();
+    context.stroke();
+  }
+
+  // Softens the globe's pixel edge.
+  context.beginPath();
+  context.arc(w / 2, h / 2, radius, 0, 2 * Math.PI);
+  context.strokeStyle = "rgba(255,255,255,0.3)";
+  context.lineWidth = scale;
+  context.stroke();
 }
 
 export function MapThumbnail({
@@ -81,87 +163,33 @@ export function MapThumbnail({
   width?: number;
   height?: number;
 }) {
-  const [world, setWorld] = useState<CountriesTopology | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // undefined while the basemap loads; null when it failed.
+  const [image, setImage] = useState<ImageData | null | undefined>(undefined);
 
   useEffect(() => {
     let alive = true;
-    loadWorld()
-      .then((data) => {
-        if (alive) setWorld(data);
-      })
-      .catch(() => {
-        // Without the atlas the sphere and markers still render.
-      });
+    loadBasemap().then((data) => {
+      if (alive) setImage(data);
+    });
     return () => {
       alive = false;
     };
   }, []);
 
-  const center = useMemo<MapMarker>(() => {
-    if (markers.length === 0) return { lat: 0, lon: 0 };
-    return {
-      lat: markers.reduce((sum, marker) => sum + marker.lat, 0) / markers.length,
-      lon: markers.reduce((sum, marker) => sum + marker.lon, 0) / markers.length,
-    };
-  }, [markers]);
-
-  const radius = Math.min(width, height) / 2 - 2;
-  const projection = useMemo(
-    () =>
-      geoOrthographic()
-        .scale(radius)
-        .translate([width / 2, height / 2])
-        .rotate([-center.lon, -center.lat]),
-    [radius, width, height, center],
-  );
-  const path = useMemo(() => geoPath(projection), [projection]);
-  const countries = useMemo(
-    () => (world ? feature(world, world.objects.countries).features : []),
-    [world],
-  );
-
-  const sphere = path({ type: "Sphere" }) ?? undefined;
-  const graticule = path(geoGraticule()()) ?? undefined;
+  useEffect(() => {
+    if (canvasRef.current && image !== undefined) {
+      drawThumbnail(canvasRef.current, markers, width, height, image);
+    }
+  }, [markers, width, height, image]);
 
   return (
-    <svg
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
+    <canvas
+      ref={canvasRef}
       role="img"
       aria-label="Map of the result locations"
-      style={{ display: "block" }}
-    >
-      <path d={sphere} fill="#4a90e2" />
-      <path d={graticule} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={0.5} />
-      {countries.map((country, index) => (
-        <path
-          // biome-ignore lint/suspicious/noArrayIndexKey: static atlas features, never reordered
-          key={index}
-          d={path(country) ?? undefined}
-          fill={countryColor(country.properties?.name)}
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth={0.2}
-        />
-      ))}
-      {markers.map((marker) => {
-        if (!onFrontHemisphere(center, marker)) return null;
-        const point = projection([marker.lon, marker.lat]);
-        if (!point || !Number.isFinite(point[0]) || !Number.isFinite(point[1])) return null;
-        return (
-          <circle
-            key={`${marker.lat},${marker.lon}`}
-            cx={point[0]}
-            cy={point[1]}
-            r={3}
-            fill="#8B5A8E"
-            stroke="white"
-            strokeWidth={1}
-          />
-        );
-      })}
-      <path d={sphere} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
-    </svg>
+      style={{ display: "block", width, height }}
+    />
   );
 }
 

@@ -740,3 +740,39 @@ def test_published_tree_is_written_back_to_config(tmp_path, monkeypatch):
         assert write_files(tmp_path, "kdd", files) == "no changes"
     finally:
         get_settings.cache_clear()
+
+
+def test_geo_tables_follow_the_data_model(magic_node, osu_mgr_node, karar_node):
+    assert magic_node.geo_tables == {"contribution", "locations", "sites", "samples"}
+    assert osu_mgr_node.geo_tables == {"contribution", "cruises", "cores", "dives"}
+    assert karar_node.geo_tables == {"contribution", "samples"}
+    levels = {lvl["table"]: lvl["geo"] for lvl in magic_node.public_config()["search_levels"]}
+    assert levels["sites"] and not levels["specimens"]
+
+
+def test_map_point_from_a_search_doc():
+    from fiesta.apps.routers.search import _map_point
+
+    site = {
+        "summary": {
+            "contribution": {"id": 7},
+            "sites": {"site": "S1"},
+            "_all": {"_geo_point": {"lat": 10.5, "lon": -20}},
+        }
+    }
+    assert _map_point(site, "sites") == {"id": 7, "lat": 10.5, "lon": -20.0, "name": "S1"}
+    location = {
+        "summary": {
+            "contribution": {"id": 8},
+            "locations": {
+                "location": "L",
+                "lat_s": "1",
+                "lat_n": "2",
+                "lon_w": "350",
+                "lon_e": "10",
+            },
+            "_all": {"_geo_point": {"lat": 1, "lon": -10}},
+        }
+    }
+    assert _map_point(location, "locations")["bounds"] == [350.0, 1.0, 10.0, 2.0]
+    assert _map_point({"summary": {"_all": {}}}, "sites") is None

@@ -20,7 +20,7 @@ from typing import Any
 
 from fiesta.domain.data_model import LIST_TYPES, column_values, split_list
 from fiesta.domain.parse import ParsedContribution
-from fiesta.nodeconfig import NodeConfig
+from fiesta.nodeconfig import LAT_COLUMNS, LON_COLUMNS, NodeConfig
 
 # Columns whose (colon-delimited) values feed summary._all facets when present.
 FACETABLE_COLUMNS = {
@@ -33,9 +33,6 @@ FACETABLE_COLUMNS = {
     "tectonic_settings",
     "citations",
 }
-
-LAT_COLUMNS = ("lat", "lat_s", "lat_n")
-LON_COLUMNS = ("lon", "lon_w", "lon_e")
 
 
 def _to_float(value: Any) -> float | None:

@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useQueries } from "@tanstack/react-query";
-import { getRouteApi, Link } from "@tanstack/react-router";
+import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
 import {
   type CSSProperties,
   type FormEvent,
@@ -10,6 +10,8 @@ import {
   useState,
 } from "react";
 import { ErrorMessage } from "../components/error-message";
+import { type Area, areaToBbox, parseArea } from "../components/map/map-points";
+import { SearchMap } from "../components/map/search-map";
 import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
 import {
   applicableFilters,
@@ -498,6 +500,7 @@ export function SearchPage() {
     sort?: string;
     ranges?: string[];
     bbox?: string | undefined;
+    area?: string | undefined;
   }) => {
     navigate({
       search: {
@@ -506,9 +509,14 @@ export function SearchPage() {
         sort: next.sort ?? search.sort,
         ranges: (next.ranges ?? ranges).length > 0 ? (next.ranges ?? ranges) : undefined,
         bbox: "bbox" in next ? next.bbox || undefined : bbox,
+        area: "area" in next ? next.area || undefined : search.area,
       },
     });
   };
+  const navigateTo = useNavigate();
+  // The Map tab's area filter narrows every view of a level with positions.
+  const area = level?.geo ? parseArea(search.area) : null;
+  const setArea = (next: Area | null) => setSearch({ area: next?.join(",") });
 
   // Live totals for every level tab (size=1: the API requires size >= 1).
   const countQueries = useQueries({
@@ -523,7 +531,8 @@ export function SearchPage() {
     })),
   });
 
-  // Result sub-tabs: Summaries, Rows (non-contribution), then plugin tabs. The
+  // Result sub-tabs: Summaries, Rows (non-contribution), Map (levels with
+  // positions), then plugin tabs. The
   // chosen view persists across levels and falls back to the first tab when a
   // level lacks it (legacy `state.view`).
   type SubTab = { name: string; render?: (ctx: PluginSubTabContext) => ReactNode };
@@ -531,6 +540,7 @@ export function SearchPage() {
     if (!config || !level) return [];
     const tabs: SubTab[] = [{ name: "Summaries" }];
     if (level.table !== "contribution") tabs.push({ name: "Rows" });
+    if (level.geo) tabs.push({ name: "Map" });
     return [...tabs, ...pluginSubTabs(config, level)];
   }, [config, level]);
   const activeTab = subTabs.find((tab) => tab.name === view) ?? subTabs[0];
@@ -557,7 +567,7 @@ export function SearchPage() {
     parseQueryTokens(q).tokens.filter(([field]) => facetFields.includes(field)).length > 0;
   // A plugin view renders from its own fetch; keep its ranges out of the level query.
   const queryRanges = activeTab?.render ? undefined : activeRanges;
-  const queryBbox = activeTab?.render ? undefined : activeBbox;
+  const queryBbox = activeTab?.render ? undefined : area ? areaToBbox(area) : activeBbox;
 
   const results = useInfiniteQuery({
     queryKey: ["search", level?.table, q, sort, queryRanges, queryBbox],
@@ -615,9 +625,10 @@ export function SearchPage() {
       q: [freeText, ...kept.map(([f, v]) => `${f}:"${v}"`)].filter(Boolean).join(" "),
       ranges: keptRanges,
       bbox: activeBbox ? undefined : bbox,
+      area: undefined,
     });
   };
-  const clearActive = hasFacetFilters || activeRanges.length > 0 || !!activeBbox;
+  const clearActive = hasFacetFilters || activeRanges.length > 0 || !!activeBbox || !!area;
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -644,7 +655,9 @@ export function SearchPage() {
             <button
               key={entry.name}
               type="button"
-              onClick={() => setSearch({ level: entry.name, ranges: [], bbox: undefined })}
+              onClick={() =>
+                setSearch({ level: entry.name, ranges: [], bbox: undefined, area: undefined })
+              }
               className={cx(
                 "flex items-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
                 !active && "cursor-pointer hover:text-node-dark",
@@ -937,70 +950,105 @@ export function SearchPage() {
               </span>
             </div>
 
-            {/* View container: border-left 1px #d4d4d5, white, independent scroll */}
-            <div
-              ref={scrollerRef}
-              className="flex-1 overflow-y-scroll bg-white"
-              style={{ borderLeft: `1px solid ${TAB_BORDER}`, padding: "0 1em" }}
-            >
-              {results.error && <ErrorMessage error={results.error} className="my-3" />}
+            {activeTab?.name === "Map" ? (
+              <div
+                className="min-h-0 flex-1 bg-white"
+                style={{ borderLeft: `1px solid ${TAB_BORDER}`, padding: "0 1em" }}
+              >
+                <SearchMap
+                  level={level}
+                  query={q}
+                  ranges={queryRanges}
+                  area={area}
+                  onAreaChange={setArea}
+                  color={config.color}
+                  onSelect={(id) =>
+                    navigateTo({
+                      to: "/contributions/$id",
+                      params: { id },
+                      search: { private_key: privateKey },
+                    })
+                  }
+                />
+              </div>
+            ) : (
+              /* View container: border-left 1px #d4d4d5, white, independent scroll */
+              <div
+                ref={scrollerRef}
+                className="flex-1 overflow-y-scroll bg-white"
+                style={{ borderLeft: `1px solid ${TAB_BORDER}`, padding: "0 1em" }}
+              >
+                {area && (
+                  <p className="my-2 text-[13px] text-gray-600">
+                    Only {level.name.toLowerCase()} inside the area drawn on the Map tab.{" "}
+                    <button
+                      type="button"
+                      onClick={() => setArea(null)}
+                      className="cursor-pointer text-node hover:underline"
+                    >
+                      Remove the area
+                    </button>
+                  </p>
+                )}
+                {results.error && <ErrorMessage error={results.error} className="my-3" />}
 
-              {results.isPending && !results.error && (
-                <div style={{ margin: "1em 0" }}>
-                  {Array.from({ length: 5 }, (_, index) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count placeholders
-                    <LoadingItem key={index} divider />
-                  ))}
-                </div>
-              )}
+                {results.isPending && !results.error && (
+                  <div style={{ margin: "1em 0" }}>
+                    {Array.from({ length: 5 }, (_, index) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count placeholders
+                      <LoadingItem key={index} divider />
+                    ))}
+                  </div>
+                )}
 
-              {results.data && (
-                <>
-                  {activeTab?.name === "Summaries" && (
-                    <div style={{ margin: "1em 0" }}>
-                      {hits.map((doc, index) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: sub-contribution hits can share a contribution id; pages are append-only
-                        <div key={`${contributionId(doc) ?? "hit"}-${index}`}>
-                          {renderHit(doc)}
-                          {hits.length > 1 && <ResultDivider />}
-                        </div>
-                      ))}
-                      {isFetchingNextPage && <LoadingItem divider={false} />}
-                    </div>
-                  )}
-                  {activeTab?.name === "Rows" && <RowsView results={hits} />}
-                  {activeTab?.render && (
-                    <div>
-                      {activeTab.render({
-                        hits,
-                        level,
-                        config,
-                        privateKey,
-                        query: q,
-                        ranges,
-                        bbox,
-                      })}
-                    </div>
-                  )}
+                {results.data && (
+                  <>
+                    {activeTab?.name === "Summaries" && (
+                      <div style={{ margin: "1em 0" }}>
+                        {hits.map((doc, index) => (
+                          // biome-ignore lint/suspicious/noArrayIndexKey: sub-contribution hits can share a contribution id; pages are append-only
+                          <div key={`${contributionId(doc) ?? "hit"}-${index}`}>
+                            {renderHit(doc)}
+                            {hits.length > 1 && <ResultDivider />}
+                          </div>
+                        ))}
+                        {isFetchingNextPage && <LoadingItem divider={false} />}
+                      </div>
+                    )}
+                    {activeTab?.name === "Rows" && <RowsView results={hits} />}
+                    {activeTab?.render && (
+                      <div>
+                        {activeTab.render({
+                          hits,
+                          level,
+                          config,
+                          privateKey,
+                          query: q,
+                          ranges,
+                          bbox,
+                        })}
+                      </div>
+                    )}
 
-                  {hits.length === 0 && <NoItemsMessage />}
+                    {hits.length === 0 && <NoItemsMessage />}
 
-                  {/* Infinite-scroll sentinel; the button is the no-observer fallback */}
-                  <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
-                  {autoLoad && hasNextPage && !isFetchingNextPage && (
-                    <div className="flex justify-center pb-4">
-                      <button
-                        type="button"
-                        onClick={() => fetchNextPage()}
-                        className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
-                      >
-                        Load More (showing {hits.length} of {formatNumber(total)})
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                    {/* Infinite-scroll sentinel; the button is the no-observer fallback */}
+                    <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
+                    {autoLoad && hasNextPage && !isFetchingNextPage && (
+                      <div className="flex justify-center pb-4">
+                        <button
+                          type="button"
+                          onClick={() => fetchNextPage()}
+                          className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
+                        >
+                          Load More (showing {hits.length} of {formatNumber(total)})
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

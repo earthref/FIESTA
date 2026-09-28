@@ -26,7 +26,7 @@ import { Table, TBody, Td, THead, Th, Tr } from "../ui/table";
 import { Field } from "./admin-ui";
 
 const TYPES: SettingsFilter["type"][] = ["facet", "range", "bbox"];
-const VIEWS = ["Summaries", "Rows"];
+const VIEWS = ["Summaries", "Rows", "Map"];
 
 // Stable keys so the list survives reordering without index-based keys.
 let counter = 0;

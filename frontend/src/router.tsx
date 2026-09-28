@@ -25,6 +25,8 @@ export interface SearchParams {
   ranges?: string[];
   /** Plugin bounding-box filter: "minLon,minLat,maxLon,maxLat". */
   bbox?: string;
+  /** The Map tab's area filter: "west,south,east,north", east past 180 across the antimeridian. */
+  area?: string;
 }
 
 function strArray(value: unknown): string[] | undefined {
@@ -76,6 +78,7 @@ const searchRoute = createRoute({
     sort: str(search.sort),
     ranges: strArray(search.ranges),
     bbox: str(search.bbox),
+    area: str(search.area),
   }),
   component: SearchPage,
 });
