@@ -3,11 +3,15 @@
 For a node with hierarchy [contribution, A, B, ...] this produces:
 
 - one `contribution` doc: the contribution row, per-level `_n_results`
-  counts, and a cross-level `summary._all` union of facetable values and a
-  representative `_geo_point`;
+  counts, and a cross-level `summary._all` union of facetable values and
+  every distinct `_geo_point` of its rows (capped), so a geospatial filter
+  matches it when any part of it is inside;
 - one doc per row of each hierarchy level below `contribution`, carrying the
   shared `summary.contribution` block, its own row under
-  `summary.<level>`, its raw row in `rows`, and per-doc `_all` values.
+  `summary.<level>`, its raw row in `rows`, and per-doc `_all` values,
+  including its `_geo_point`: its own coordinates or, without any, its
+  nearest ancestor's (a specimen's sample's, found by the `sample` column), so
+  every level narrows under the same filter.
 
 This is a deliberate simplification of the legacy
 `summarize_contribution.js` adopt/inherit/aggregate pipeline: enough for
@@ -20,7 +24,7 @@ from typing import Any
 
 from fiesta.domain.data_model import LIST_TYPES, column_values, split_list
 from fiesta.domain.parse import ParsedContribution
-from fiesta.nodeconfig import LAT_COLUMNS, LON_COLUMNS, NodeConfig
+from fiesta.nodeconfig import BOX_COLUMNS, LAT_COLUMNS, LON_COLUMNS, NodeConfig
 
 # Columns whose (colon-delimited) values feed summary._all facets when present.
 FACETABLE_COLUMNS = {
@@ -42,13 +46,31 @@ def _to_float(value: Any) -> float | None:
         return None
 
 
+def _wrap(lon: float) -> float:
+    return ((lon + 180) % 360) - 180
+
+
 def _geo_point(row: dict) -> dict | None:
-    lat = next((v for c in LAT_COLUMNS if (v := _to_float(row.get(c))) is not None), None)
-    lon = next((v for c in LON_COLUMNS if (v := _to_float(row.get(c))) is not None), None)
+    """A row's position: its lat/lon, or the middle of its box (lat_s/lat_n,
+    lon_w/lon_e, which may cross the antimeridian)."""
+    box = [_to_float(row.get(c)) for c in BOX_COLUMNS]
+    if row.get("lat") in (None, "") and all(v is not None for v in box):
+        west, south, east, north = box
+        west, east = _wrap(west), _wrap(east)
+        if west > east:
+            east += 360
+        lat, lon = (south + north) / 2, (west + east) / 2
+    else:
+        lat = next((v for c in LAT_COLUMNS if (v := _to_float(row.get(c))) is not None), None)
+        lon = next((v for c in LON_COLUMNS if (v := _to_float(row.get(c))) is not None), None)
     if lat is None or lon is None or not (-90 <= lat <= 90):
         return None
-    lon = ((lon + 180) % 360) - 180
-    return {"lat": lat, "lon": lon}
+    return {"lat": lat, "lon": _wrap(lon)}
+
+
+# Distinct positions on the contribution doc (enough to match an area anywhere
+# in a large study while keeping the doc bounded).
+MAX_GEO_POINTS = 500
 
 
 # Distinct-values cap per column in summary._all (keeps huge contributions'
@@ -73,7 +95,7 @@ def _collect_all(columns_def: dict, rows: list[dict], into: dict[str, set]) -> N
                 bucket.update(values)
 
 
-def _finalize_all(collected: dict[str, set], geo_point: dict | None) -> dict:
+def _finalize_all(collected: dict[str, set], geo_point: dict | list | None) -> dict:
     result: dict[str, Any] = {k: sorted(v) for k, v in collected.items() if v}
     if geo_point:
         result["_geo_point"] = geo_point
@@ -100,21 +122,39 @@ def summarize(
 
     docs: list[dict] = []
     all_values: dict[str, set] = {}
-    first_geo: dict | None = None
     level_counts: dict[str, dict] = {}
+    # Every level's positions by row name ({"samples": {"S1-a": point}}), for
+    # the rows below it that have none of their own; and the contribution's.
+    positions: dict[str, dict[str, dict]] = {}
+    points: dict[tuple[float, float], dict] = {}
+    levels = hierarchy[1:]
 
-    for level in hierarchy[1:]:
+    for index, level in enumerate(levels):
         rows = parsed.tables.get(level, [])
         level_counts[level] = {"_n_results": len(rows)}
         columns_def = model["tables"].get(level, {}).get("columns", {})
         _collect_all(columns_def, rows, all_values)
+        # A row names its ancestors by their key columns ("sites" -> "site").
+        ancestors = [(a, a.removesuffix("s")) for a in reversed(levels[:index])]
 
         for row in rows:
             row_all: dict[str, set] = {}
             _collect_all(columns_def, [row], row_all)
             geo = _geo_point(row)
-            if geo and first_geo is None:
-                first_geo = geo
+            if geo is not None and len(points) < MAX_GEO_POINTS:
+                points.setdefault((round(geo["lat"], 4), round(geo["lon"], 4)), geo)
+            if geo is None:
+                geo = next(
+                    (
+                        found
+                        for ancestor, key in ancestors
+                        if (found := positions.get(ancestor, {}).get(str(row.get(key) or "")))
+                    ),
+                    None,
+                )
+            name = row.get(level.removesuffix("s"))
+            if geo is not None and name not in (None, ""):
+                positions.setdefault(level, {}).setdefault(str(name), geo)
             docs.append(
                 {
                     "type": level,
@@ -131,7 +171,7 @@ def summarize(
         "type": "contribution",
         "summary": {
             "contribution": contribution_summary,
-            "_all": _finalize_all(all_values, first_geo),
+            "_all": _finalize_all(all_values, list(points.values()) or None),
             **level_counts,
         },
     }

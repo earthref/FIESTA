@@ -8,6 +8,7 @@
 
 import type { NodeConfig, SearchFilter } from "../lib/types";
 import { facetTitle } from "../lib/utils";
+import { type Area, formatArea } from "./map/map-points";
 
 /** The filters shown for a level + result view. */
 export function applicableFilters(
@@ -159,6 +160,53 @@ export function BboxFilter({
         {field("Min Lon", minLon, (v) => update([v, minLat, maxLon, maxLat]), "-180")}
         {field("Max Lon", maxLon, (v) => update([minLon, minLat, v, maxLat]), "180")}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The Geospatial filter (every level with positions): the Map tab's area.
+ * Checking it opens the Map at this level with an area around the search's
+ * records (or over the view when unfiltered), as on osu-mgr.org; unchecking
+ * removes it. With an area, its extent and a link back to the map.
+ */
+export function GeospatialFilter({
+  area,
+  onRequest,
+  onShow,
+  onRemove,
+}: {
+  area: Area | null;
+  onRequest: () => void;
+  onShow: () => void;
+  onRemove: () => void;
+}) {
+  const extent = area ? formatArea(area) : null;
+  return (
+    <div style={blockStyle} className="text-[13px]">
+      <div className="mb-1 pt-[0.5em] font-bold">Geospatial</div>
+      <label className="flex cursor-pointer items-center gap-1.5">
+        <input
+          type="checkbox"
+          checked={!!area}
+          onChange={() => (area ? onRemove() : onRequest())}
+          className="h-[17px] w-[17px] cursor-pointer rounded-sm border-gray-300 accent-node"
+        />
+        <span className={area ? "font-bold" : undefined}>Filter by area on the map</span>
+      </label>
+      {extent && (
+        <div className="mt-1 whitespace-normal pl-[22px] text-[12px] text-gray-600">
+          <div>Latitude: {extent.latitude}</div>
+          <div>Longitude: {extent.longitude}</div>
+          <button
+            type="button"
+            onClick={onShow}
+            className="mt-0.5 cursor-pointer text-node hover:underline"
+          >
+            Show on the map
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -122,6 +122,20 @@ export const markerTooltip = (members: MapPoint[]) => {
 // past 180 when it crosses the antimeridian (as MapPoint bounds).
 export type Area = [number, number, number, number];
 
+const formatLat = (lat: number) => `${Math.abs(lat).toFixed(2)}°${lat < 0 ? "S" : "N"}`;
+const formatLon = (lon: number) => {
+  const wrapped = ((lon + 540) % 360) - 180;
+  return Math.abs(wrapped) === 180
+    ? "180.00°"
+    : `${Math.abs(wrapped).toFixed(2)}°${wrapped < 0 ? "W" : "E"}`;
+};
+/** An Area's extent as text: "10.00°S to 5.00°N" and "170.00°E to 170.00°W". */
+export const formatArea = ([west, south, east, north]: Area) => ({
+  latitude: `${formatLat(south)} to ${formatLat(north)}`,
+  // As added over a pole view, an area can go all the way round.
+  longitude: east - west >= 360 ? "All longitudes" : `${formatLon(west)} to ${formatLon(east)}`,
+});
+
 /** The `area` search param ("w,s,e,n") as an Area, or null. */
 export const parseArea = (value: string | undefined): Area | null => {
   const parts = (value ?? "").split(",").map(Number);
