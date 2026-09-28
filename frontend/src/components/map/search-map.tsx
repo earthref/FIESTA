@@ -13,6 +13,8 @@ import {
   type MapPoint,
   MODES,
   type Mode,
+  pointKey,
+  recordsOf,
   toMapPoint,
   WHOLE_GLOBE,
 } from "./map-points";
@@ -53,7 +55,11 @@ function usePoints(
       }),
     select: (page) => ({
       ...page,
-      points: page.points.flatMap((p) => toMapPoint(p, singularize(level.name), color) ?? []),
+      points: page.points.flatMap(
+        (p) =>
+          toMapPoint(p, singularize(level.name).toLowerCase(), color, level.name.toLowerCase()) ??
+          [],
+      ),
     }),
     enabled,
     staleTime: 60_000,
@@ -118,8 +124,11 @@ export function SearchMap({
   const points = inArea.data?.points ?? [];
   const context = useMemo<MapPoint[]>(() => {
     if (!area || !all.data) return [];
-    const plotted = new Set(points.map((p) => `${p.id}|${p.name}|${p.lat}|${p.lon}`));
-    return all.data.points.filter((p) => !plotted.has(`${p.id}|${p.name}|${p.lat}|${p.lon}`));
+    // A record, or a location's records in a contribution (whose name is their
+    // number, which differs between the two searches).
+    const key = (p: MapPoint) => `${p.id}|${p.count === undefined ? p.name : ""}|${pointKey(p)}`;
+    const plotted = new Set(points.map(key));
+    return all.data.points.filter((p) => !plotted.has(key(p)));
   }, [area, all.data, points]);
 
   // An area asked for, in the view asked for, once the search's records have
@@ -144,9 +153,15 @@ export function SearchMap({
   }, [areaPending, unfiltered]);
   const requestViewArea = areaPending && !area && unfiltered;
 
-  // Records mapped: a contribution is drawn at each of its positions.
+  // Records mapped: a contribution is drawn at each of its positions, and a
+  // large search's points are locations with a count of records each.
   const mapped =
-    level.table === "contribution" ? new Set(points.map((p) => p.id)).size : points.length;
+    level.table === "contribution"
+      ? new Set(points.map((p) => p.id)).size
+      : points.reduce((sum, p) => sum + recordsOf(p), 0);
+  const locations = points.some((p) => p.count !== undefined)
+    ? new Set(points.map((p) => pointKey(p))).size
+    : undefined;
 
   // The view re-centres on the points for a new search, not for an area edit.
   const focusKey = JSON.stringify([level.table, query, ranges]);
@@ -205,6 +220,7 @@ export function SearchMap({
         {inArea.data && (
           <span className="text-gray-600">
             {mapped.toLocaleString()} mapped {mapped === 1 ? singularize(level.name) : level.name}
+            {locations !== undefined && ` at ${locations.toLocaleString()} locations`}
             {inArea.data.truncated && ` (the first of ${inArea.data.total.toLocaleString()})`}
           </span>
         )}

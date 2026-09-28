@@ -14,7 +14,8 @@ export const MODES: [Mode, string][] = [
 // id: what clicking it opens (its contribution); name and label (its search
 // level, singular) head its tooltip. bounds: [west, south, east, north] of a
 // row's box, with east past 180 when the box crosses the antimeridian;
-// lat/lon is then the box's centre.
+// lat/lon is then the box's centre. count: on a large search's map, a point
+// is one location's records in one contribution, not a record.
 export type MapPoint = {
   id: string;
   name: string;
@@ -23,6 +24,7 @@ export type MapPoint = {
   lat: number;
   lon: number;
   bounds?: [number, number, number, number];
+  count?: number;
 };
 
 /** A point as GET /search/{table}/points returns it. */
@@ -32,6 +34,7 @@ export type ApiMapPoint = {
   lat: number;
   lon: number;
   bounds?: [number, number, number, number];
+  count?: number;
 };
 
 const toLat = (lat: number) => (Math.abs(lat) <= 90 ? lat : Number.NaN);
@@ -40,10 +43,22 @@ const toLon = (value: number) => {
   return Math.abs(lon) <= 180 ? lon : Number.NaN;
 };
 
-/** A search doc's position: its box's centre when the row has a box. */
-export const toMapPoint = (point: ApiMapPoint, label: string, color: string): MapPoint | null => {
+/** A search doc's position: its box's centre when the row has a box. A
+ * location's records are named by their number ("12 sites"; `plural`). */
+export const toMapPoint = (
+  point: ApiMapPoint,
+  label: string,
+  color: string,
+  plural = `${label}s`,
+): MapPoint | null => {
   const id = point.id == null ? "" : String(point.id);
-  const base = { id, name: point.name ?? `Contribution ${id}`, label, color };
+  const count = point.count;
+  const name =
+    point.name ??
+    (count !== undefined
+      ? `${count.toLocaleString()} ${count === 1 ? label : plural}`
+      : `Contribution ${id}`);
+  const base = { id, name, label, color, ...(count !== undefined && { count }) };
   if (point.bounds) {
     const [lonW, latS, lonE, latN] = point.bounds;
     const [south, north] = [toLat(latS), toLat(latN)];
@@ -101,21 +116,27 @@ const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.char
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 const contributionOf = (p: MapPoint) =>
   p.name === `Contribution ${p.id}` ? "" : ` in contribution ${escapeHtml(p.id)}`;
+/** Records a point stands for: one, or a location's count. */
+export const recordsOf = (p: MapPoint) => p.count ?? 1;
 
 // Tooltip HTML for the records at one spot. With several, their names are
-// links (data-id) that the map opens on click.
+// links (data-id) that the map opens on click; a location's records name
+// their number and contribution.
 export const markerTooltip = (members: MapPoint[]) => {
   const [first] = members;
   if (members.length === 1) {
-    return `<b>${escapeHtml(first.name)}</b><br/>${escapeHtml(capitalize(first.label))}${contributionOf(first)}`;
+    return first.count !== undefined
+      ? `<b>${escapeHtml(first.name)}</b><br/>At one location${contributionOf(first)}`
+      : `<b>${escapeHtml(first.name)}</b><br/>${escapeHtml(capitalize(first.label))}${contributionOf(first)}`;
   }
   const link = (m: MapPoint) =>
-    `<a data-id="${escapeHtml(m.id)}" style="cursor:pointer;color:${m.color};text-decoration:underline">${escapeHtml(m.name)}</a>`;
+    `<a data-id="${escapeHtml(m.id)}" style="cursor:pointer;color:${m.color};text-decoration:underline">${escapeHtml(m.name)}</a>${m.count !== undefined ? contributionOf(m) : ""}`;
   const more =
     members.length > MAX_TOOLTIP_IDS
       ? `<br/>and ${(members.length - MAX_TOOLTIP_IDS).toLocaleString()} more`
       : "";
-  return `<b>${members.length.toLocaleString()} records</b><br/>At one location:<br/>${members.slice(0, MAX_TOOLTIP_IDS).map(link).join("<br/>")}${more}`;
+  const records = members.reduce((sum, m) => sum + recordsOf(m), 0);
+  return `<b>${records.toLocaleString()} records</b><br/>At one location:<br/>${members.slice(0, MAX_TOOLTIP_IDS).map(link).join("<br/>")}${more}`;
 };
 
 // Geospatial filter area: [west, south, east, north] in degrees, with east

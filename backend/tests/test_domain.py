@@ -952,3 +952,40 @@ def test_search_scoped_to_one_contribution(monkeypatch):
     assert {"term": {"summary.contribution.id": 16901}} in filters
     assert not any("_is_latest" in str(f) or "_is_activated" in str(f) for f in filters)
     assert {"term": {"type": "sites"}} in filters
+
+
+def test_large_maps_are_unique_locations(magic_node, monkeypatch):
+    """Past MAP_DOCS_LIMIT records, a level of points maps as its unique
+    locations per contribution (a composite aggregation), paged to the cap."""
+    import asyncio
+
+    from fiesta.apps.routers import search as router
+
+    assert router._has_boxes(magic_node, "locations")
+    assert not router._has_boxes(magic_node, "sites")
+
+    pages = [
+        [
+            {
+                "key": {"tile": "24/1/1", "contribution": 7},
+                "doc_count": 40,
+                "at": {"location": {"lat": 88.5, "lon": 10.0}},
+            },
+            {"key": {"tile": "24/1/2", "contribution": 8}, "doc_count": 1, "at": {}},
+        ],
+        [],
+    ]
+    requests = []
+
+    class Client:
+        async def search(self, index, body):
+            requests.append(body["aggs"]["locations"]["composite"].get("after"))
+            buckets = pages[len(requests) - 1]
+            return {"aggregations": {"locations": {"buckets": buckets, "after_key": {"x": 1}}}}
+
+    monkeypatch.setattr(router, "MAP_PAGE_SIZE", 2)
+    points, truncated = asyncio.run(router._location_points(Client(), "i", {"match_all": {}}))
+    # The centroid is exact, even past Web Mercator's limit; no centroid, no point.
+    assert points == [{"id": 7, "lat": 88.5, "lon": 10.0, "count": 40}]
+    assert not truncated
+    assert requests == [None, {"x": 1}]
