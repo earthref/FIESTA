@@ -11,6 +11,7 @@ from fiesta.db.models import Contribution, User
 from fiesta.domain.parse import ParseError, parse_text
 from fiesta.search.client import get_opensearch
 from fiesta.search.index import ensure_index
+from fiesta.services import references
 from fiesta.services.contributions import index_parsed, load_file
 from fiesta.services.revisions import revision_file
 from fiesta.settings import get_settings
@@ -53,7 +54,8 @@ async def rebuild_node(session, node):
                 parsed = parse_text(raw.decode("utf-8"))
             except (ParseError, UnicodeDecodeError):
                 continue
-            await index_parsed(target_node, c, contributor, parsed)
+            reference = await references.lookup(session, c.reference_doi)
+            await index_parsed(target_node, c, contributor, parsed, reference)
             indexed += 1
         actions = []
         if await client.indices.exists_alias(name=alias):

@@ -1046,3 +1046,107 @@ def test_large_maps_are_unique_locations(magic_node, monkeypatch):
     assert points == [{"id": 7, "lat": 88.5, "lon": 10.0, "count": 40}]
     assert not truncated
     assert requests == [None, {"x": 1}]
+
+
+def test_reference_metadata_in_the_legacy_shape():
+    """A reference DOI's Crossref (or DataCite) record becomes the legacy
+    `_reference`; a fetch's outcome decides when the DOI is fetched again."""
+    import asyncio
+    from datetime import UTC, datetime
+
+    import httpx
+
+    from fiesta.db.models import DoiReference
+    from fiesta.services import references as refs
+    from fiesta.services.contributions import contribution_meta
+
+    assert refs.normalize("https://doi.org/10.1029/2019gc008479.") == "10.1029/2019GC008479"
+    assert refs.normalize("doi:10.7288/V4/MAGIC/16757") == "10.7288/V4/MAGIC/16757"
+    assert refs.normalize("This Study") is None
+
+    crossref = {
+        "DOI": "10.1029/2019gc008479",
+        "title": ["Paleomagnetism of the Golan Heights"],
+        "container-title": ["Geochemistry, Geophysics, Geosystems"],
+        "published-online": {"date-parts": [[2019, 9]]},
+        "issued": {"date-parts": [[2018]]},
+        "volume": "20",
+        "issue": "11",
+        "page": "4948-4960",
+        "is-referenced-by-count": 29,
+        "author": [
+            {"given": "Nicole", "family": "BEHAR", "ORCID": "https://orcid.org/0000-0002-6374-2277"},
+            {"given": "Ron", "family": "Shaar", "affiliation": [{"name": "Hebrew University"}]},
+            {"given": "Lisa", "family": "Tauxe"},
+        ],
+    }
+    ref = refs.from_crossref(crossref)
+    assert (ref["source"], ref["doi"], ref["year"]) == ("crossref", "10.1029/2019GC008479", 2019)
+    assert ref["citation"] == "Behar et al. (2019)"
+    assert ref["authors"][0] == {
+        "family": "Behar",
+        "_name": "N. Behar",
+        "given": "Nicole",
+        "_orcid": "0000-0002-6374-2277",
+    }
+    assert ref["authors"][1]["affiliation"] == ["Hebrew University"]
+    assert ref["long_authors"] == "Nicole Behar, Ron Shaar, Lisa Tauxe"
+    assert ref["n_citations"] == 29
+    assert ref["long_citation"] == (
+        "Nicole Behar, Ron Shaar, Lisa Tauxe (2019). Paleomagnetism of the Golan Heights. "
+        "Geochemistry, Geophysics, Geosystems 20 (11):4948-4960. doi:10.1029/2019GC008479."
+    )
+    assert "<b>" in ref["html"] and '"' not in ref["html"]
+
+    datacite = {
+        "doi": "10.7288/v4/magic/16757",
+        "titles": [{"title": "A MagIC dataset"}],
+        "publisher": {"name": "Magnetics Information Consortium (MagIC)"},
+        "publicationYear": 2020,
+        "creators": [
+            {
+                "name": "Tauxe, Lisa",
+                "nameIdentifiers": [
+                    {"nameIdentifier": "0000-0002-4837-8200", "nameIdentifierScheme": "ORCID"}
+                ],
+            },
+            {"name": "EarthRef.org", "nameType": "Organizational"},
+        ],
+    }
+    ref = refs.from_datacite(datacite)
+    assert (ref["journal"], ref["year"], ref["citation"]) == (
+        "Magnetics Information Consortium (MagIC)",
+        2020,
+        "Tauxe & EarthRef.org (2020)",
+    )
+    assert ref["authors"][0]["_orcid"] == "0000-0002-4837-8200"
+
+    # A fetch's outcome: fetched again in a month; an error retries sooner,
+    # and a failed refresh keeps the metadata it had.
+    row = DoiReference(doi="10.1029/2019GC008479", status="pending", attempts=0)
+    assert asyncio.run(refs._apply(row, ("ok", "crossref", crossref)))
+    assert row.status == "ok" and row.reference["year"] == 2019
+    assert row.due_at - row.fetched_at == refs.REFRESH
+    assert not asyncio.run(refs._apply(row, ("ok", "crossref", crossref)))  # unchanged
+    assert not asyncio.run(refs._apply(row, httpx.ConnectError("down")))
+    assert row.status == "ok" and "ConnectError" in row.error
+    assert row.due_at - datetime.now(UTC) <= refs.RETRY
+    missing = DoiReference(doi="10.9999/X", status="pending", attempts=0)
+    assert not asyncio.run(refs._apply(missing, ("not_found", None, None)))
+    assert missing.status == "not_found"
+
+    # Indexing: the cached metadata, or just the DOI before it is fetched.
+    class Row:
+        id = version = contributor_id = 1
+        activated_at = updated_at = datetime.now(UTC)
+        data_model_version = "3.0"
+        private_key = "k"
+        is_activated = is_latest = True
+        reference_doi = "10.1029/2019gc008479"
+        previous_id = None
+
+    class Person:
+        id, name = 1, "L. Tauxe"
+
+    assert contribution_meta(Row(), Person())["_reference"] == {"doi": "10.1029/2019gc008479"}
+    assert contribution_meta(Row(), Person(), row.reference)["_reference"]["year"] == 2019

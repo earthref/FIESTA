@@ -297,6 +297,18 @@ is in the query.
 newest), `recent` / `recent_asc` (contribution timestamp), `published` /
 `published_asc` (`_reference.year`), `cited` (`_reference.n_citations`),
 `citation_az` / `citation_za` (`_reference.citation`), `id_desc` / `id_asc`.
+
+**Reference metadata.** `summary.contribution._reference` is the publication
+behind a contribution's reference DOI (the `reference` column of its
+contribution row, or set with `POST .../reference`), from Crossref or, for DOIs
+Crossref doesn't know, DataCite, in the legacy shape: `source`, `doi` (upper
+case), `title`, `journal`, `year`, `keywords`, `citation` ("Behar et al.
+(2019)"), `authors` (`family`, `given`, `_name`, `affiliation`, `_orcid`),
+`long_authors`, `n_citations`, `long_citation` (the full reference as text) and
+`html`. Until its DOI is fetched (or when neither registry has it) it is just
+`{doi}`. The worker fetches a DOI when a revision first names it and again every
+30 days (so `n_citations` stays current), into the shared `doi_references`
+table; indexing and `fiesta rebuild` read that table and never call out.
 When omitted the API sorts by relevance if the query has free text and by
 `recent` otherwise.
 
@@ -481,5 +493,5 @@ FIESTA's invariants:
   the text file again.
 - Creating a draft no longer requires an account handle.
 - `contributor_name` matches the contributor's display name and
-  `reference_title` matches `summary.contribution._reference.title`, which
-  FIESTA does not populate until reference enrichment (ROADMAP C6) lands.
+  `reference_title` matches `summary.contribution._reference.title`, the
+  reference DOI's publication metadata (see "Reference metadata").

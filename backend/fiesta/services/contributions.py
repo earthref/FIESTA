@@ -59,8 +59,11 @@ def manifest_for(contribution: Contribution, contributor: User) -> dict:
     }
 
 
-def contribution_meta(contribution: Contribution, contributor: User) -> dict:
-    """Workflow fields merged into summary.contribution on every search doc."""
+def contribution_meta(
+    contribution: Contribution, contributor: User, reference: dict | None = None
+) -> dict:
+    """Workflow fields merged into summary.contribution on every search doc;
+    `reference` is the DOI's cached publication metadata (services.references)."""
     return {
         "id": contribution.id,
         "version": contribution.version,
@@ -71,7 +74,8 @@ def contribution_meta(contribution: Contribution, contributor: User) -> dict:
         "_private_key": str(contribution.private_key),
         "_is_activated": contribution.is_activated,
         "_is_latest": contribution.is_latest,
-        "_reference": {"doi": contribution.reference_doi} if contribution.reference_doi else {},
+        "_reference": reference
+        or ({"doi": contribution.reference_doi} if contribution.reference_doi else {}),
         "_history": {"previous_id": contribution.previous_id},
     }
 
@@ -197,12 +201,13 @@ async def process_contribution(session: AsyncSession, node: NodeConfig, contribu
     await session.commit()
 
 
-async def index_parsed(node, contribution, contributor, parsed):
+async def index_parsed(node, contribution, contributor, parsed, reference=None):
     from fiesta.plugins import active_plugins
 
-    docs = summarize(node, parsed, contribution_meta(contribution, contributor))
+    meta = contribution_meta(contribution, contributor, reference)
+    docs = summarize(node, parsed, meta)
     for plugin in active_plugins(node):
-        docs.extend(plugin.derive_docs(node, parsed, contribution_meta(contribution, contributor)))
+        docs.extend(plugin.derive_docs(node, parsed, meta))
     await ensure_index(get_opensearch(), node.search_index)
     await index_contribution_docs(get_opensearch(), node.search_index, contribution.id, docs)
 

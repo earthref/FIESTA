@@ -171,15 +171,17 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
       from measurements, not a table; port `summarize_contribution.js`'s experiment
       grouping as a plugin `derive_docs` hook or core summarizer step.
 - [ ] **C5 Excel upload** (`.xlsx` → contribution text) in the upload wizard.
-- [ ] **C6 Reference enrichment** — Crossref/DataCite lookup on `reference_doi` to
-      fill `summary.contribution._reference` (authors, year, journal) as the legacy
-      search docs have it.
+- [x] **C6 Reference enrichment** (2026-09-28) — Crossref, then DataCite, for
+      each `reference_doi`, cached in the shared `doi_references` table and set on
+      the search docs as the legacy `_reference` (title, journal, year, citation,
+      authors with ORCIDs, n_citations, html). Fetched by the outbox worker when a
+      revision names a DOI and monthly after; `fiesta enrich-references` backfills.
 - [x] **C7 Legacy `/v1` contract** (2026-09-13). FIESTA's own API moved to `/v2`;
       `/v1` is a port of `old-backend`'s api.earthref.org surface (`routers/v1.py`,
       its published YAML at `/v1/openapi.yaml`, Koa error bodies, HTTP Basic),
       unit-tested without infra (`tests/test_v1.py`) and round-tripped in the
-      Phase M integration suite. `reference_title` matches nothing until C6 fills
-      `_reference.title`.
+      Phase M integration suite. `reference_title` matches `_reference.title`
+      (filled by C6).
 
 ## Phase D — UI parity and the stub pages
 
