@@ -8,11 +8,13 @@ import { Spinner } from "../ui/spinner";
 import {
   type ApiMapPoint,
   type Area,
+  areaAround,
   areaToBbox,
   type MapPoint,
   MODES,
   type Mode,
   toMapPoint,
+  WHOLE_GLOBE,
 } from "./map-points";
 
 // MapLibre (~800 KB) loads with the first map.
@@ -107,6 +109,17 @@ export function SearchMap({
     return all.data.points.filter((p) => !plotted.has(`${p.id}|${p.name}|${p.lat}|${p.lon}`));
   }, [area, all.data, points]);
 
+  // An area asked for, once the search's records have loaded: around them,
+  // or, for an unfiltered search, over the middle of the view
+  // (requestViewArea), which leaves the map where it is.
+  const unfiltered = !query.trim() && !ranges?.length;
+  const areaPending = areaRequested && !area && !inArea.isFetching;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the request can be answered
+  useEffect(() => {
+    if (areaPending && !unfiltered) onAreaChange(areaAround(points) ?? WHOLE_GLOBE);
+  }, [areaPending, unfiltered]);
+  const requestViewArea = areaPending && unfiltered;
+
   // The view re-centres on the points for a new search, not for an area edit.
   const focusKey = JSON.stringify([level.table, query, ranges]);
   // Only show the loading overlay when a refresh is slow.
@@ -177,7 +190,7 @@ export function SearchMap({
             onSelect={onSelect}
             area={area}
             onAreaChange={onAreaChange}
-            requestArea={areaRequested}
+            requestViewArea={requestViewArea}
             focusKey={focusKey}
             context={context}
           />

@@ -5,11 +5,11 @@ import {
   BASEMAP_ATTRIBUTION,
   BASEMAP_MAXZOOM,
   BASEMAP_TILES,
-  LABEL_MAXZOOM,
-  LABEL_TILES,
   MERCATOR_LAT,
+  PLACE_LABEL_STYLE,
   POLAR_CAPS,
-  POLAR_LABELS,
+  UNDERSEA_ATTRIBUTION,
+  UNDERSEA_FEATURES,
 } from "./basemap";
 import {
   type Area,
@@ -20,7 +20,7 @@ import {
   pointKey,
   sphericalCentroid,
 } from "./map-points";
-import { createPolarCapsLayer, type PolarCapsLayer } from "./polar-caps";
+import { createPolarCapsLayer } from "./polar-caps";
 
 // MapLibre has only Web Mercator and globe projections, so the flat view is
 // Mercator (to ±85°). On the globe, the polar caps past ±85° are drawn by a
@@ -155,14 +155,28 @@ const focusOrientation = (sign: number, points: MapPoint[]): number | null => {
 };
 
 // The geospatial filter area: drawn in the node's colour, with handles at
-// its corners to resize it and in its middle to move it.
+// its corners to resize it; dragging its outline moves it.
 const areaColor = () =>
   getComputedStyle(document.documentElement).getPropertyValue("--node-color").trim() || "#800080";
-// Records outside the filters, shown for context.
-const CONTEXT_COLOR = "#9ca3af";
+// Records outside the filters, shown for context: dark grey, which stands out
+// on both the ocean and the land.
+const CONTEXT_COLOR = "#374151";
 const areaHandleStyle = () =>
   `width:12px;height:12px;background:#ffffff;border:2px solid ${areaColor()};box-sizing:border-box`;
 const AREA_MIN_DEGREES = 0.01;
+// How near the outline (in pixels, either side) a drag moves the area: about
+// a corner handle's width. Each edge is sampled this many times to find it,
+// as it curves on the globe.
+const AREA_GRAB_PX = 8;
+const OUTLINE_SAMPLES = 24;
+const distanceToSegment = (x: number, y: number, a: maplibregl.Point, b: maplibregl.Point) => {
+  const [dx, dy] = [b.x - a.x, b.y - a.y];
+  const t =
+    dx || dy
+      ? Math.min(Math.max(((x - a.x) * dx + (y - a.y) * dy) / (dx * dx + dy * dy), 0), 1)
+      : 0;
+  return Math.hypot(x - (a.x + t * dx), y - (a.y + t * dy));
+};
 // Corner handles: the area's [longitude, latitude] indexes (west 0, south 1,
 // east 2, north 3) at the north-west, north-east, south-east and south-west.
 const AREA_CORNERS: [number, number][] = [
@@ -171,25 +185,22 @@ const AREA_CORNERS: [number, number][] = [
   [2, 1],
   [0, 1],
 ];
-const areaFeature = ([west, south, east, north]: Area): GeoJSON.Feature => {
+// The area as a polygon to fill and a line to outline it: MapLibre cuts
+// polygons into tiles, and outlining one would also outline the cuts.
+const areaFeatures = ([west, south, east, north]: Area): GeoJSON.Feature[] => {
   // MapLibre can't draw past Web Mercator's limit.
   const [s, n] = [Math.max(south, -MERCATOR_LAT), Math.min(north, MERCATOR_LAT)];
-  return {
-    type: "Feature",
-    properties: {},
-    geometry: {
-      type: "Polygon",
-      coordinates: [
-        [
-          [west, s],
-          [east, s],
-          [east, n],
-          [west, n],
-          [west, s],
-        ],
-      ],
-    },
-  };
+  const ring = [
+    [west, s],
+    [east, s],
+    [east, n],
+    [west, n],
+    [west, s],
+  ];
+  return [
+    { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [ring] } },
+    { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: ring } },
+  ];
 };
 // A longitude as the copy of it nearest another.
 const unwrapLon = (lon: number, near: number) => lon + 360 * Math.round((near - lon) / 360);
@@ -277,6 +288,143 @@ const labelsOn = () => {
     return true;
   }
 };
+// The labels (see PLACE_LABEL_STYLE), loaded once per page: Positron's layers
+// for places, water bodies and boundaries (roads and airports left out), with
+// its fonts, and the undersea features.
+type Labels = {
+  glyphs: string;
+  source: maplibregl.SourceSpecification;
+  layers: maplibregl.LayerSpecification[];
+  undersea: GeoJSON.Feature[];
+};
+const PLACE_SOURCE_LAYERS = ["place", "water_name", "boundary"];
+let labels: Promise<Labels | null> | null = null;
+const loadLabels = () =>
+  (labels ||= Promise.all([
+    fetch(PLACE_LABEL_STYLE)
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null),
+    fetch(UNDERSEA_FEATURES)
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null),
+  ]).then(
+    ([style, undersea]) =>
+      style && {
+        glyphs: style.glyphs,
+        source: style.sources.openmaptiles,
+        layers: style.layers.filter(
+          (layer: any) =>
+            layer.source === "openmaptiles" && PLACE_SOURCE_LAYERS.includes(layer["source-layer"]),
+        ),
+        undersea: undersea?.features || [],
+      },
+  ));
+// Names in English where the tiles have it, else in the local script.
+const ENGLISH_NAME = ["coalesce", ["get", "name:en"], ["get", "name:latin"], ["get", "name"]];
+// Positron's water names are small and pale. Oceans are left to OCEAN_NAMES,
+// as the tiles only name some.
+const WATER_NAME = {
+  filter: ["==", ["index-of", "Ocean", ENGLISH_NAME], -1],
+  layout: {
+    "text-field": ENGLISH_NAME,
+    "text-size": ["match", ["get", "class"], "sea", 12, 11],
+    "text-letter-spacing": 0.15,
+    "text-max-width": 6,
+  },
+  paint: {
+    "text-color": "#2c5282",
+    "text-halo-color": "rgba(255,255,255,0.7)",
+    "text-halo-width": 1,
+  },
+};
+// Place names are quieter than the water's: grey, partly transparent, and in
+// English only (Positron adds the local script on a second line).
+const PLACE_NAME = {
+  filter: null,
+  layout: { "text-field": ENGLISH_NAME },
+  paint: {
+    "text-color": "#6b7280",
+    "text-opacity": 0.85,
+    "text-halo-color": "rgba(255,255,255,0.6)",
+    "text-halo-width": 1,
+  },
+};
+// OpenFreeMap's tiles name seas, bays and straits but not the oceans, which are
+// labelled here until zoomed in past them.
+const OCEAN_NAMES: [string, number, number][] = [
+  ["North Pacific Ocean", -160, 28],
+  ["South Pacific Ocean", -125, -30],
+  ["North Atlantic Ocean", -40, 32],
+  ["South Atlantic Ocean", -15, -25],
+  ["Indian Ocean", 80, -20],
+  ["Arctic Ocean", -150, 82],
+  ["Southern Ocean", 60, -62],
+  ["Southern Ocean", -120, -64],
+];
+const OCEAN_MAXZOOM = 5;
+const oceanLabels = (visibility: "visible" | "none"): maplibregl.SymbolLayerSpecification => ({
+  id: "labels:oceans",
+  type: "symbol",
+  source: "labels:oceans",
+  maxzoom: OCEAN_MAXZOOM,
+  layout: {
+    "text-field": ["get", "name"],
+    "text-font": ["Noto Sans Italic"],
+    "text-size": 15,
+    "text-letter-spacing": 0.2,
+    "text-max-width": 6,
+    visibility,
+  },
+  paint: WATER_NAME.paint,
+});
+// Undersea feature names, from these zooms by kind (areas are the largest
+// features): ~11, 16 and 45 pixels per degree of latitude, which is how the
+// ones past Web Mercator's limit are shown (see polarLabel).
+const UNDERSEA_MINZOOM: Record<string, number> = { area: 3, line: 3.5, point: 5 };
+const UNDERSEA_COLOR = "#1f3f66";
+type SymbolLayer = maplibregl.SymbolLayerSpecification;
+const UNDERSEA_LAYOUT: NonNullable<SymbolLayer["layout"]> = {
+  "text-field": ["get", "name"],
+  "text-font": ["Noto Sans Italic"],
+  "text-size": 11,
+  "text-max-width": 8,
+};
+const UNDERSEA_PAINT: NonNullable<SymbolLayer["paint"]> = {
+  "text-color": UNDERSEA_COLOR,
+  "text-halo-color": "rgba(255,255,255,0.75)",
+  "text-halo-width": 1,
+};
+const underseaLayers = (visibility: "visible" | "none") =>
+  Object.entries(UNDERSEA_MINZOOM).map(
+    ([kind, minzoom]): SymbolLayer => ({
+      id: `labels:undersea-${kind}`,
+      type: "symbol",
+      source: "labels:undersea",
+      minzoom,
+      filter: ["==", ["get", "kind"], kind],
+      layout: {
+        ...UNDERSEA_LAYOUT,
+        ...(kind === "line" && { "symbol-placement": "line", "text-max-angle": 30 }),
+        visibility,
+      },
+      paint: UNDERSEA_PAINT,
+    }),
+  );
+// Where a feature's label goes: a line's middle vertex, or its point.
+const labelPoint = ({ geometry }: GeoJSON.Feature): [number, number] | null => {
+  if (geometry.type === "Point") return geometry.coordinates as [number, number];
+  if (geometry.type === "MultiPoint") return geometry.coordinates[0] as [number, number];
+  const line =
+    geometry.type === "LineString"
+      ? geometry.coordinates
+      : geometry.type === "MultiLineString"
+        ? geometry.coordinates[0]
+        : null;
+  return line?.length ? (line[Math.floor(line.length / 2)] as [number, number]) : null;
+};
+const POLAR_LABEL_STYLE =
+  `font:italic 11px 'Noto Sans',sans-serif;color:${UNDERSEA_COLOR};white-space:nowrap;pointer-events:none;` +
+  "text-shadow:0 0 2px rgba(255,255,255,0.9),0 0 2px rgba(255,255,255,0.9)";
 const labelsControl = (initial: boolean, onChange: (on: boolean) => void): maplibregl.IControl => {
   const container = document.createElement("div");
   return {
@@ -354,11 +502,14 @@ const MapLibreMap: FC<{
   // centring it on them at a fixed zoom.
   fit?: boolean;
   // The geospatial filter area, which can be moved and resized on the map;
-  // onAreaChange gets it when a drag ends.
+  // onAreaChange gets it when a drag ends, or, without one, when asked for
+  // (requestViewArea) over the middle of the view.
   area?: Area | null;
   onAreaChange?: (area: Area) => void;
-  // Asks for an area over the middle of the view, when there is none.
-  requestArea?: boolean;
+  requestViewArea?: boolean;
+  // Zooms (when it changes) so this area fills about the middle quarter of the
+  // view, outside the pole views.
+  zoomTo?: Area | null;
   // The view re-centres on the points when they next change after this does,
   // so that editing the area doesn't move it. By default it re-centres
   // whenever the points change.
@@ -374,7 +525,8 @@ const MapLibreMap: FC<{
   fit,
   area,
   onAreaChange,
-  requestArea,
+  requestViewArea,
+  zoomTo,
   focusKey,
   context,
 }) => {
@@ -387,10 +539,14 @@ const MapLibreMap: FC<{
   const setPointsRef = useRef<(() => void) | null>(null);
   const focusKeyRef = useRef<unknown>(focusKey ?? points);
   focusKeyRef.current = focusKey ?? points;
-  const areaRef = useRef({ area: area ?? null, onAreaChange, requestArea });
-  areaRef.current = { area: area ?? null, onAreaChange, requestArea };
-  // Shows the latest area (or makes the one asked for) once the style has loaded.
+  const areaRef = useRef({ area: area ?? null, onAreaChange, requestViewArea });
+  areaRef.current = { area: area ?? null, onAreaChange, requestViewArea };
+  // Shows the latest area (or adds the one asked for) once the style has loaded.
   const syncAreaRef = useRef<(() => void) | null>(null);
+  // The latest area to zoom to, and zooms to it once the style has loaded.
+  const zoomToRef = useRef(zoomTo ?? null);
+  zoomToRef.current = zoomTo ?? null;
+  const zoomToAreaRef = useRef<(() => void) | null>(null);
   const contextRef = useRef(context || []);
   contextRef.current = context || [];
   // Plots the latest context points once the style has loaded.
@@ -451,7 +607,6 @@ const MapLibreMap: FC<{
             maxzoom: BASEMAP_MAXZOOM,
             attribution: BASEMAP_ATTRIBUTION,
           },
-          labels: { type: "raster", tiles: [LABEL_TILES], tileSize: 256, maxzoom: LABEL_MAXZOOM },
           points: { type: "geojson", data: collection([]) },
           boxes: { type: "geojson", data: collection([]) },
           area: { type: "geojson", data: collection([]) },
@@ -461,12 +616,6 @@ const MapLibreMap: FC<{
           { id: "background", type: "background", paint: { "background-color": "#000000" } },
           { id: "basemap", type: "raster", source: "basemap" },
           {
-            id: "labels",
-            type: "raster",
-            source: "labels",
-            layout: { visibility: labelsOn() ? "visible" : "none" },
-          },
-          {
             id: "context-points",
             type: "circle",
             source: "context",
@@ -474,20 +623,22 @@ const MapLibreMap: FC<{
               "circle-radius": 2.5,
               "circle-color": CONTEXT_COLOR,
               "circle-stroke-color": "#ffffff",
-              "circle-stroke-width": 0.5,
-              "circle-opacity": 0.8,
+              "circle-stroke-width": 0.75,
+              "circle-opacity": 0.85,
             },
           },
           {
             id: "area-fill",
             type: "fill",
             source: "area",
+            filter: ["==", ["geometry-type"], "Polygon"],
             paint: { "fill-color": areaColor(), "fill-opacity": 0.08 },
           },
           {
             id: "area-edge",
             type: "line",
             source: "area",
+            filter: ["==", ["geometry-type"], "LineString"],
             paint: { "line-color": areaColor(), "line-width": 2, "line-dasharray": [3, 2] },
           },
           {
@@ -524,20 +675,112 @@ const MapLibreMap: FC<{
       },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    // The Arctic labels past the cap's edge, over the caps (added on load).
-    let polarLabels: PolarCapsLayer | null = null;
+    // The attribution starts as just its (i) button. MapLibre opens it the
+    // first time it collapses it to the button (once sources have credits);
+    // after that only clicks, and map drags, change it.
+    const attribution = map.getContainer().querySelector(".maplibregl-ctrl-attrib");
+    const attributionObserver = new MutationObserver(() => {
+      if (!attribution?.classList.contains("maplibregl-compact")) return;
+      attribution.classList.remove("maplibregl-compact-show");
+      attributionObserver.disconnect();
+    });
+    if (attribution)
+      attributionObserver.observe(attribution, { attributes: true, attributeFilter: ["class"] });
+    // The labels' layers (added once they load). Undersea features past Web
+    // Mercator's limit would be drawn at its edge, so on the globe they're HTML
+    // labels instead, shown from the same scale as the others of their kind.
+    let labelLayers: string[] = [];
+    let showLabels = labelsOn();
+    let polarLabels: {
+      element: HTMLElement;
+      lngLat: [number, number];
+      minPixelsPerDegree: number;
+      marker: maplibregl.Marker;
+    }[] = [];
+    let removed = false;
+    const showPolarLabels = () =>
+      polarLabels.forEach(({ element, lngLat: [lon, lat], minPixelsPerDegree }) => {
+        const pixelsPerDegree = map
+          .project([lon, lat])
+          .dist(map.project([lon, lat - Math.sign(lat)]));
+        element.style.display = showLabels && pixelsPerDegree >= minPixelsPerDegree ? "" : "none";
+      });
+    map.on("move", showPolarLabels);
     map.addControl(
-      labelsControl(labelsOn(), (on) => {
+      labelsControl(showLabels, (on) => {
         try {
           localStorage.setItem(LABELS_KEY, on ? "on" : "off");
         } catch {
           /* not remembered */
         }
-        map.setLayoutProperty("labels", "visibility", on ? "visible" : "none");
-        polarLabels?.setVisible(on);
+        showLabels = on;
+        for (const id of labelLayers) {
+          map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+        }
+        showPolarLabels();
       }),
       "top-right",
     );
+    const addLabels = (loaded: Labels | null) => {
+      if (!loaded || removed) return;
+      map.setGlyphs(loaded.glyphs);
+      map.addSource("labels:places", loaded.source);
+      const visibility = showLabels ? "visible" : "none";
+      const isPolar = (feature: GeoJSON.Feature) =>
+        Math.abs(labelPoint(feature)?.[1] ?? 0) > MERCATOR_LAT;
+      map.addSource("labels:undersea", {
+        type: "geojson",
+        data: collection(loaded.undersea.filter((feature) => !isPolar(feature))),
+        attribution: UNDERSEA_ATTRIBUTION,
+      });
+      map.addSource("labels:oceans", {
+        type: "geojson",
+        data: collection(
+          OCEAN_NAMES.map(([name, lon, lat]) => ({
+            type: "Feature",
+            properties: { name },
+            geometry: { type: "Point", coordinates: [lon, lat] },
+          })),
+        ),
+      });
+      // Undersea names under the places'.
+      const layers = [
+        oceanLabels(visibility),
+        ...underseaLayers(visibility),
+        ...loaded.layers.map((layer) => {
+          const restyle = { water_name: WATER_NAME, place: PLACE_NAME }[
+            (layer as any)["source-layer"] as string
+          ];
+          return {
+            ...layer,
+            id: `labels:${layer.id}`,
+            source: "labels:places",
+            ...(restyle?.filter && {
+              filter: ["all", (layer as any).filter ?? true, restyle.filter],
+            }),
+            layout: { ...(layer as any).layout, ...restyle?.layout, visibility },
+            paint: { ...(layer as any).paint, ...restyle?.paint },
+          } as maplibregl.LayerSpecification;
+        }),
+      ];
+      for (const layer of layers) map.addLayer(layer, "context-points");
+      labelLayers = layers.map((layer) => layer.id);
+      if (globe) {
+        polarLabels = loaded.undersea.filter(isPolar).flatMap((feature) => {
+          const lngLat = labelPoint(feature);
+          if (!lngLat) return [];
+          const element = document.createElement("div");
+          element.style.cssText = POLAR_LABEL_STYLE;
+          element.textContent = feature.properties?.name;
+          const marker = new maplibregl.Marker({ element, opacityWhenCovered: "0" })
+            .setLngLat(lngLat)
+            .addTo(map);
+          const minPixelsPerDegree = (512 * 2 ** UNDERSEA_MINZOOM[feature.properties?.kind]) / 360;
+          return [{ element, lngLat, minPixelsPerDegree, marker }];
+        });
+        showPolarLabels();
+      }
+    };
     if (sign) map.setVerticalFieldOfView(POLE_FOV);
     // The camera that fits the points, if asked for.
     const fitCamera = (points: MapPoint[]) => {
@@ -659,106 +902,234 @@ const MapLibreMap: FC<{
     // (isStyleLoaded() is also false while tiles load, so it can't gate these.)
     map.on("load", () => {
       if (globe) {
-        map.addLayer(createPolarCapsLayer("polar-caps", POLAR_CAPS), "labels");
-        polarLabels = createPolarCapsLayer("polar-labels", POLAR_LABELS);
-        polarLabels.setVisible(labelsOn());
-        map.addLayer(polarLabels, "context-points");
+        map.addLayer(createPolarCapsLayer("polar-caps", POLAR_CAPS), "context-points");
       }
+      loadLabels().then(addLabels);
       setPointsRef.current = setPoints;
       setPoints();
       syncAreaRef.current = syncArea;
+      zoomToAreaRef.current = zoomToArea;
+      zoomToArea();
       syncArea();
       setContextRef.current = setContext;
       setContext();
     });
 
-    // Geospatial filter area. Dragging a handle reshapes it on the map, and
-    // onAreaChange gets the result when the drag ends.
+    // Geospatial filter area. Dragging a corner handle resizes it, and dragging
+    // its outline moves it; onAreaChange gets the result when the drag ends.
     let shown: Area | null = null;
     let dragging = false;
+    // In the Mercator view, handles sit within its limit: the poles project
+    // off the map (to NaN at the south pole).
+    const handleLat = (lat: number) =>
+      globe ? lat : Math.min(Math.max(lat, -MERCATOR_LAT), MERCATOR_LAT);
     const drawArea = (skip?: maplibregl.Marker) => {
       (map.getSource("area") as maplibregl.GeoJSONSource).setData(
-        collection(shown ? [areaFeature(shown)] : []),
+        collection(shown ? areaFeatures(shown) : []),
       );
-      handles.forEach((handle) => {
+      handles.forEach((handle, corner) => {
         if (!shown) {
           handle.remove();
           return;
         }
         if (handle === skip) return;
-        const [west, south, east, north] = shown;
-        const corner = handles.indexOf(handle);
-        handle.setLngLat(
-          corner < 4
-            ? [shown[AREA_CORNERS[corner][0]], shown[AREA_CORNERS[corner][1]]]
-            : [(west + east) / 2, (south + north) / 2],
-        );
+        handle.setLngLat([
+          shown[AREA_CORNERS[corner][0]],
+          handleLat(shown[AREA_CORNERS[corner][1]]),
+        ]);
         if (!handle.getElement().isConnected) handle.addTo(map);
       });
     };
-    const reshape = (handle: maplibregl.Marker) => {
+    const commitArea = () => {
+      dragging = false;
+      drawArea();
+      if (!shown) return;
+      // Stored with its west edge within ±180.
+      const shift = shown[0] >= 180 ? -360 : shown[0] < -180 ? 360 : 0;
+      shown = [shown[0] + shift, shown[1], shown[2] + shift, shown[3]];
+      areaRef.current.onAreaChange?.(shown);
+    };
+    const resize = (handle: maplibregl.Marker) => {
       if (!shown) return;
       const { lng, lat } = handle.getLngLat();
       const [west, south, east, north] = shown;
-      const corner = handles.indexOf(handle);
-      if (corner < 4) {
-        const [lonIndex, latIndex] = AREA_CORNERS[corner];
-        const next = [...shown] as Area;
-        const lon = unwrapLon(lng, shown[lonIndex]);
-        // Edges stop short of crossing the opposite ones.
-        next[lonIndex] =
-          lonIndex === 0
-            ? Math.min(lon, east - AREA_MIN_DEGREES)
-            : Math.max(lon, west + AREA_MIN_DEGREES);
-        next[latIndex] =
-          latIndex === 1
-            ? Math.min(Math.max(lat, -90), north - AREA_MIN_DEGREES)
-            : Math.max(Math.min(lat, 90), south + AREA_MIN_DEGREES);
-        if (next[2] - next[0] > 360)
-          next[lonIndex] = lonIndex === 0 ? next[2] - 360 : next[0] + 360;
-        shown = next;
-      } else {
-        const dLon = unwrapLon(lng, (west + east) / 2) - (west + east) / 2;
-        const dLat = Math.min(Math.max(lat - (south + north) / 2, -90 - south), 90 - north);
-        shown = [west + dLon, south + dLat, east + dLon, north + dLat];
-      }
+      const [lonIndex, latIndex] = AREA_CORNERS[handles.indexOf(handle)];
+      const next = [...shown] as Area;
+      const lon = unwrapLon(lng, shown[lonIndex]);
+      // A Mercator handle still at the limit leaves an edge beyond it where it is.
+      const edgeLat =
+        !globe &&
+        Math.abs(lat) > MERCATOR_LAT - 1e-3 &&
+        lat * shown[latIndex] > 0 &&
+        Math.abs(shown[latIndex]) > MERCATOR_LAT
+          ? shown[latIndex]
+          : lat;
+      // Edges stop short of crossing the opposite ones.
+      next[lonIndex] =
+        lonIndex === 0
+          ? Math.min(lon, east - AREA_MIN_DEGREES)
+          : Math.max(lon, west + AREA_MIN_DEGREES);
+      next[latIndex] =
+        latIndex === 1
+          ? Math.min(Math.max(edgeLat, -90), north - AREA_MIN_DEGREES)
+          : Math.max(Math.min(edgeLat, 90), south + AREA_MIN_DEGREES);
+      if (next[2] - next[0] > 360) next[lonIndex] = lonIndex === 0 ? next[2] - 360 : next[0] + 360;
+      shown = next;
       drawArea(handle);
     };
-    const handles = [...AREA_CORNERS.map(() => "nwse-resize"), "move"].map((cursor) => {
+    const handles = AREA_CORNERS.map(() => {
       const element = document.createElement("div");
       element.dataset.areaHandle = "";
-      element.style.cssText = `${areaHandleStyle()};cursor:${cursor}${cursor === "move" ? ";border-radius:50%" : ""}`;
+      element.style.cssText = `${areaHandleStyle()};cursor:nwse-resize`;
       const handle = new maplibregl.Marker({ element, draggable: true, opacityWhenCovered: "0" });
       handle.on("dragstart", () => {
         dragging = true;
       });
-      handle.on("drag", () => reshape(handle));
+      handle.on("drag", () => resize(handle));
       handle.on("dragend", () => {
-        dragging = false;
-        reshape(handle);
-        drawArea();
-        if (!shown) return;
-        // Stored with its west edge within ±180.
-        const shift = shown[0] >= 180 ? -360 : shown[0] < -180 ? 360 : 0;
-        shown = [shown[0] + shift, shown[1], shown[2] + shift, shown[3]];
-        areaRef.current.onAreaChange?.(shown);
+        resize(handle);
+        commitArea();
       });
       return handle;
     });
-    // An area about half the view across, around the ground in the middle of it.
+    // Whether a point on the canvas is within AREA_GRAB_PX of the outline as
+    // drawn (clipped at Web Mercator's limit), where it's in view.
+    const onOutline = (x: number, y: number) => {
+      if (!shown) return false;
+      const [west, south, east, north] = shown;
+      const [s, n] = [Math.max(south, -MERCATOR_LAT), Math.min(north, MERCATOR_LAT)];
+      const edges = [
+        [west, n, east, n],
+        [east, n, east, s],
+        [east, s, west, s],
+        [west, s, west, n],
+      ];
+      return edges.some(([lon0, lat0, lon1, lat1]) => {
+        let previous: maplibregl.Point | null = null;
+        for (let i = 0; i <= OUTLINE_SAMPLES; i++) {
+          const [lon, lat] = [
+            lon0 + ((lon1 - lon0) * i) / OUTLINE_SAMPLES,
+            lat0 + ((lat1 - lat0) * i) / OUTLINE_SAMPLES,
+          ];
+          const point =
+            globe && map.transform.isLocationOccluded(new maplibregl.LngLat(lon, lat))
+              ? null
+              : map.project([lon, lat]);
+          if (point && previous && distanceToSegment(x, y, previous, point) <= AREA_GRAB_PX)
+            return true;
+          previous = point;
+        }
+        return false;
+      });
+    };
+    // Dragging the outline: caught before MapLibre's handlers and the pole
+    // views' (preventDefault stops the mouse events that would follow).
+    const container = map.getContainer();
+    let moving: { pointerId: number; start: maplibregl.LngLat; area: Area } | null = null;
+    const canvasPoint = (e: PointerEvent): [number, number] => {
+      const rect = map.getCanvas().getBoundingClientRect();
+      return [e.clientX - rect.left, e.clientY - rect.top];
+    };
+    const onMoveStart = (e: PointerEvent) => {
+      if (!shown || (e.pointerType === "mouse" && e.button !== 0)) return;
+      if ((e.target as HTMLElement).closest(".maplibregl-control-container, [data-area-handle]"))
+        return;
+      const point = canvasPoint(e);
+      if (!onOutline(...point)) return;
+      e.stopPropagation();
+      e.preventDefault();
+      moving = { pointerId: e.pointerId, start: map.unproject(point), area: shown };
+      dragging = true;
+      container.setPointerCapture(e.pointerId);
+    };
+    const onMove = (e: PointerEvent) => {
+      if (moving?.pointerId !== e.pointerId) return;
+      e.stopPropagation();
+      const { lng, lat } = map.unproject(canvasPoint(e));
+      const [west, south, east, north] = moving.area;
+      const dLon = unwrapLon(lng, moving.start.lng) - moving.start.lng;
+      const dLat = Math.min(Math.max(lat - moving.start.lat, -90 - south), 90 - north);
+      shown = [west + dLon, south + dLat, east + dLon, north + dLat];
+      drawArea();
+    };
+    const onMoveEnd = (e: PointerEvent) => {
+      if (moving?.pointerId !== e.pointerId) return;
+      e.stopPropagation();
+      moving = null;
+      commitArea();
+    };
+    // Touches start MapLibre's gestures with their own events.
+    const onTouchStart = (e: TouchEvent) => {
+      if (moving) e.stopPropagation();
+    };
+    container.addEventListener("pointerdown", onMoveStart, true);
+    container.addEventListener("pointermove", onMove, true);
+    container.addEventListener("pointerup", onMoveEnd, true);
+    container.addEventListener("pointercancel", onMoveEnd, true);
+    container.addEventListener("touchstart", onTouchStart, true);
+
+    // The middle quarter of the view (half its width and height), for an
+    // unfiltered search's area: over what's in view, with its handles easy to
+    // reach. Its outline is sampled, as it curves on the globe, and a pole
+    // within it takes in every longitude.
     const viewArea = (): Area => {
       const { width, height } = map.transform;
+      const [x0, y0, x1, y1] = [width / 4, height / 4, (width * 3) / 4, (height * 3) / 4];
       const middle = map.unproject([width / 2, height / 2]);
-      const metresPerPixel = middle.distanceTo(map.unproject([width / 2, height / 2 + 50])) / 50;
-      const half = Math.min((metresPerPixel * Math.min(width, height)) / 4 / 111195, 45);
-      const [south, north] = [Math.max(middle.lat - half, -90), Math.min(middle.lat + half, 90)];
-      const halfLon = Math.min(half / Math.max(Math.cos((middle.lat * Math.PI) / 180), 1e-6), 180);
-      return [middle.lng - halfLon, south, middle.lng + halfLon, north];
+      const samples = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        .flatMap((i) => {
+          const t = i / 8;
+          return [
+            [x0 + (x1 - x0) * t, y0],
+            [x0 + (x1 - x0) * t, y1],
+            [x0, y0 + (y1 - y0) * t],
+            [x1, y0 + (y1 - y0) * t],
+          ];
+        })
+        .map((point) => map.unproject(point as [number, number]));
+      const lons = samples.map(({ lng }) => unwrapLon(lng, middle.lng));
+      const lats = samples.map(({ lat }) => lat);
+      let [west, south, east, north] = [
+        Math.min(...lons),
+        Math.min(...lats),
+        Math.max(...lons),
+        Math.max(...lats),
+      ];
+      const poleInView = (lat: number) => {
+        if (!globe || map.transform.isLocationOccluded(new maplibregl.LngLat(0, lat))) return false;
+        const { x, y } = map.project([0, lat]);
+        return x >= x0 && x <= x1 && y >= y0 && y <= y1;
+      };
+      if (poleInView(90)) north = 90;
+      if (poleInView(-90)) south = -90;
+      if (east - west >= 360 || poleInView(90) || poleInView(-90)) [west, east] = [-180, 180];
+      return [west, Math.max(south, -90), east, Math.min(north, 90)];
+    };
+    // Zooms so zoomTo fills the middle quarter of the view: padded by a quarter
+    // of the view on each side (and within Web Mercator's limit, which
+    // cameraForBounds works in). Each area once.
+    let zoomedTo: Area | null = null;
+    const zoomToArea = () => {
+      const target = zoomToRef.current;
+      if (!target || target === zoomedTo || sign) return;
+      zoomedTo = target;
+      const [west, south, east, north] = target;
+      const { width, height } = map.transform;
+      const camera = map.cameraForBounds(
+        [
+          [west, Math.max(south, -MERCATOR_LAT)],
+          [east, Math.min(north, MERCATOR_LAT)],
+        ],
+        { padding: { top: height / 4, bottom: height / 4, left: width / 4, right: width / 4 } },
+      );
+      if (camera) map.easeTo({ ...camera, duration: 800 });
     };
     const syncArea = () => {
       if (dragging) return;
-      const { area, requestArea } = areaRef.current;
-      if (!area && requestArea) {
+      const { area, requestViewArea } = areaRef.current;
+      if (!area && requestViewArea) {
+        // Once the view has settled (it may be moving to the points).
+        if (map.isMoving()) return void map.once("moveend", syncArea);
         shown = viewArea();
         drawArea();
         areaRef.current.onAreaChange?.(shown);
@@ -887,7 +1258,7 @@ const MapLibreMap: FC<{
     map.on("mousemove", (e) => {
       if (overMarker) return;
       const members = hitTest(e);
-      canvas.style.cursor = members ? "pointer" : "";
+      canvas.style.cursor = members ? "pointer" : onOutline(e.point.x, e.point.y) ? "move" : "";
       if (members) tooltip.show(markerTooltip(members), e.point.x, e.point.y);
       else tooltip.scheduleHide();
     });
@@ -915,8 +1286,16 @@ const MapLibreMap: FC<{
       setPointsRef.current = null;
       syncAreaRef.current = null;
       setContextRef.current = null;
+      removed = true;
+      attributionObserver.disconnect();
+      for (const { marker } of polarLabels) marker.remove();
       for (const marker of markers) marker.remove();
       for (const handle of handles) handle.remove();
+      container.removeEventListener("pointerdown", onMoveStart, true);
+      container.removeEventListener("pointermove", onMove, true);
+      container.removeEventListener("pointerup", onMoveEnd, true);
+      container.removeEventListener("pointercancel", onMoveEnd, true);
+      container.removeEventListener("touchstart", onTouchStart, true);
       map.remove();
     };
   }, [mode]);
@@ -929,7 +1308,12 @@ const MapLibreMap: FC<{
   // biome-ignore lint/correctness/useExhaustiveDependencies: the area by value; the sync reads it from areaRef
   useEffect(() => {
     syncAreaRef.current?.();
-  }, [area?.join(), requestArea]);
+  }, [area?.join(), requestViewArea]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the area by value; the zoom reads it from zoomToRef
+  useEffect(() => {
+    zoomToAreaRef.current?.();
+  }, [zoomTo?.join()]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: context reaches the map through contextRef
   useEffect(() => {

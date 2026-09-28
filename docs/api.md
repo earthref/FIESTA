@@ -53,6 +53,7 @@ Two schemes are accepted; the private routes take either.
 | PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in the seeded `developer@example.test` only against local dev infrastructure |
 | GET | `/v2/basemap/{world\|arctic}` | — | JPEG: Esri Ocean as a 1024×512 plate carrée world image (blank past ±85.05°) and its Arctic band; fetched from Esri once a day and cached in the API process, for the result thumbnails |
+| GET | `/v2/basemap/undersea-features` | — | GeoJSON `FeatureCollection` of the IHO-IOC GEBCO Gazetteer of Undersea Feature Names (NOAA NCEI's feature service), each `{name, kind: point\|line\|area}` with areas reduced to their middle point; fetched once a day and cached, for the Map tab's labels |
 
 `UserOut = {id, email, name, orcid: string|null, is_admin: bool, admin_nodes: string[]}` —
 `is_admin` is a **super admin** (every node, node creation, accounts); `admin_nodes`

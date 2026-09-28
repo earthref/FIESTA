@@ -188,6 +188,7 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 - **Map thumbnail** uses one representative `_geo_point` per level (the summarizer's) rather than every distinct point/envelope of the legacy summary.
 - **Map thumbnail** is drawn from the Esri Ocean basemap (the Map tab's, as on osu-mgr.org) instead of the legacy SVG globe of 110m countries coloured by a climate lookup (2026-09-27).
 - **Map tab** (new, 2026-09-27): levels whose data-model table has lat/lon columns get a Map sub-tab after Rows, ported from osu-mgr.org's search map — MapLibre over Esri Ocean in four views (Globe, Mercator, North Pole, South Pole), every matching record plotted, and an area filter (the `area` search param) that also narrows Summaries and Rows. Legacy had no equivalent.
+  Synced with osu-mgr.org's map again on 2026-09-27: labels are vector (OpenStreetMap place, water and boundary names from OpenFreeMap's Positron layers, plus GEBCO undersea feature names from `/v2/basemap/undersea-features`) instead of Esri's raster reference tiles; "Filter by area" on a filtered search starts as the smallest area around its records (across the antimeridian when that is smaller), on an unfiltered one over the middle of the view; the area is moved by dragging its outline (corner handles resize); records outside it are dark grey.
 
 ### RESULT ITEM CARD (`search_summaries_list_item.jsx`) — most detailed
 
