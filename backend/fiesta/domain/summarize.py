@@ -6,12 +6,15 @@ For a node with hierarchy [contribution, A, B, ...] this produces:
   counts, and a cross-level `summary._all` union of facetable values and
   every distinct `_geo_point` of its rows (capped), so a geospatial filter
   matches it when any part of it is inside;
-- one doc per row of each hierarchy level below `contribution`, carrying the
-  shared `summary.contribution` block, its own row under
-  `summary.<level>`, its raw row in `rows`, and per-doc `_all` values,
-  including its `_geo_point`: its own coordinates or, without any, its
-  nearest ancestor's (a specimen's sample's, found by the `sample` column), so
-  every level narrows under the same filter.
+- one doc per named record of each hierarchy level below `contribution` (as
+  the legacy docs): a level's rows sharing a name (its key column, "site" for
+  sites) are one doc, with the shared `summary.contribution` block, the rows
+  merged under `summary.<level>` (each column's first value) plus
+  `_n_results` (how many rows, the level's `count_field`), the raw rows in
+  `rows`, and per-doc `_all` values, including its `_geo_point`: its rows'
+  own coordinates or, without any, its nearest ancestor's (a specimen's
+  sample's, found by the `sample` column), so every level narrows under the
+  same filter. A row without a name is a doc of its own.
 
 This is a deliberate simplification of the legacy
 `summarize_contribution.js` adopt/inherit/aggregate pipeline: enough for
@@ -102,6 +105,36 @@ def _finalize_all(collected: dict[str, set], geo_point: dict | list | None) -> d
     return result
 
 
+def group_rows(rows: list[dict], key: str) -> list[list[dict]]:
+    """A level's rows as records: those sharing a `key` value together, in the
+    order each name first appears; a row without one on its own."""
+    groups: dict[str, list[dict]] = {}
+    ordered: list[list[dict]] = []
+    for row in rows:
+        name = row.get(key)
+        if name in (None, ""):
+            ordered.append([row])
+            continue
+        group = groups.get(str(name))
+        if group is None:
+            group = groups[str(name)] = []
+            ordered.append(group)
+        group.append(row)
+    return ordered
+
+
+def merge_rows(rows: list[dict]) -> dict:
+    """A record's rows as one: each column's first value."""
+    merged: dict[str, Any] = {}
+    for row in rows:
+        for column, value in row.items():
+            if value not in (None, "") and merged.get(column) in (None, ""):
+                merged[column] = value
+            else:
+                merged.setdefault(column, value)
+    return merged
+
+
 def summarize(
     node: NodeConfig,
     parsed: ParsedContribution,
@@ -137,22 +170,26 @@ def summarize(
         # A row names its ancestors by their key columns ("sites" -> "site").
         ancestors = [(a, a.removesuffix("s")) for a in reversed(levels[:index])]
 
-        for row in rows:
+        for group in group_rows(rows, level.removesuffix("s")):
+            merged = merge_rows(group)
             row_all: dict[str, set] = {}
-            _collect_all(columns_def, [row], row_all)
-            geo = _geo_point(row)
-            if geo is not None and len(points) < MAX_GEO_POINTS:
-                points.setdefault((round(geo["lat"], 4), round(geo["lon"], 4)), geo)
+            _collect_all(columns_def, group, row_all)
+            geo = None
+            for row in group:
+                own = _geo_point(row)
+                if own is not None and len(points) < MAX_GEO_POINTS:
+                    points.setdefault((round(own["lat"], 4), round(own["lon"], 4)), own)
+                geo = geo or own
             if geo is None:
                 geo = next(
                     (
                         found
                         for ancestor, key in ancestors
-                        if (found := positions.get(ancestor, {}).get(str(row.get(key) or "")))
+                        if (found := positions.get(ancestor, {}).get(str(merged.get(key) or "")))
                     ),
                     None,
                 )
-            name = row.get(level.removesuffix("s"))
+            name = merged.get(level.removesuffix("s"))
             if geo is not None and name not in (None, ""):
                 positions.setdefault(level, {}).setdefault(str(name), geo)
             docs.append(
@@ -160,10 +197,10 @@ def summarize(
                     "type": level,
                     "summary": {
                         "contribution": contribution_summary,
-                        level: dict(row),
+                        level: {**merged, "_n_results": len(group)},
                         "_all": _finalize_all(row_all, geo),
                     },
-                    "rows": [row],
+                    "rows": group,
                 }
             )
 

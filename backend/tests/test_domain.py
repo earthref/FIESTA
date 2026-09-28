@@ -115,6 +115,44 @@ def test_summarize_docs(magic_node):
     assert site_doc["summary"]["_all"]["_geo_point"] == {"lat": 19.5, "lon": -155.5}
 
 
+def test_summarize_groups_a_records_rows(magic_node):
+    # A specimen's rows (e.g. a hysteresis and an anisotropy result) are one
+    # doc, as in the legacy index: Summaries count records, Rows their rows.
+    text = "\n>>>>>>>>>>\n".join(
+        [
+            _tab_block(
+                "contribution",
+                ["id", "data_model_version"],
+                [{"id": 1, "data_model_version": "3.0"}],
+            ),
+            _tab_block(
+                "specimens",
+                ["specimen", "sample", "method_codes", "hyst_bc", "aniso_type"],
+                [
+                    {"specimen": "S1", "sample": "A", "method_codes": "LP-HYS", "hyst_bc": "0.01"},
+                    {
+                        "specimen": "S1",
+                        "sample": "A",
+                        "method_codes": "LP-AN-MS",
+                        "aniso_type": "AMS",
+                    },
+                    {"specimen": "S2", "sample": "A", "method_codes": "LP-HYS"},
+                    {"specimen": "", "sample": "A"},
+                ],
+            ),
+        ]
+    )
+    docs = [
+        d for d in summarize(magic_node, parse_text(text), {"id": 1}) if d["type"] == "specimens"
+    ]
+    assert [len(d["rows"]) for d in docs] == [2, 1, 1]
+    s1 = docs[0]["summary"]
+    assert s1["specimens"]["_n_results"] == 2
+    # Each column's first value, from whichever row has it.
+    assert (s1["specimens"]["hyst_bc"], s1["specimens"]["aniso_type"]) == ("0.01", "AMS")
+    assert s1["_all"]["method_codes"] == ["LP-AN-MS", "LP-HYS"]
+
+
 def test_karar_config_loads(karar_node):
     assert karar_node.hierarchy[-1] == "measurements"
     assert karar_node.search.index == "karar"

@@ -83,7 +83,11 @@ live under `src/plugins/<name>/` and activate only when the name appears in
   `display_columns`, `base_level`, `after_sub_tab`, `age_color`,
   `plate_boundary_color`.
 - **`rock-mag` (MagIC)** — derives a `rock_mag` search doc from every
-  `source_table` (specimens) row with rock-magnetic data; `summary.rock_mag`
+  rock-magnetic result of a `source_table` (specimens) record: a specimen's
+  rows with complementary parameters (hysteresis, anisotropy, a Curie
+  temperature) are one result, and a row repeating parameters (hysteresis at
+  another temperature) is another, so each is one point on the plots and the
+  view counts results and their specimens; `summary.rock_mag`
   holds numbers in consistent units: Mr/Ms, Bcr/Bc, Bc, Bcr and MDF (mT),
   Ms, Mr, χ, κ, χfd, S-ratio, critical temperature (°C), anisotropy P, P′,
   T, L, F (Jelinek 1981, from the eigenparameters or the `aniso_s` tensor)

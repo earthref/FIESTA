@@ -110,6 +110,9 @@ class SearchPage(BaseModel):
     total: int
     results: list[dict[str, Any]]
     aggregations: dict[str, list[dict[str, Any]]] | None = None
+    # With `totals`: the matches' rows (summed count_field) and positioned docs.
+    rows_total: int | None = None
+    mapped_total: int | None = None
 
 
 class MapPoint(BaseModel):

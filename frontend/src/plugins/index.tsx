@@ -31,6 +31,9 @@ export interface PluginSubTabContext {
 export interface PluginSubTab {
   name: string;
   render: (ctx: PluginSubTabContext) => ReactNode;
+  /** A search table whose matches (with the ranges on its summary block and
+   * the bbox) are the tab's count. */
+  countTable?: string;
 }
 
 export interface PluginFiltersProps {

@@ -151,6 +151,11 @@ Last updated: 2026-09-24
   above). The `rock-mag` plugin's `rock_mag` docs exist only for contributions
   processed after deploy until then, so the home page's Rock Magnetism card
   opens an empty view.
+- [ ] **Rebuild every node's search index after the records-and-rows change**
+  (`fiesta rebuild --yes` per node, dev and production; covers the two rebuild
+  items above). A level's rows sharing a name are now one doc, so Summaries
+  counts records and Rows their rows. Until the rebuild, old one-row docs
+  show Summaries = Rows, and the Rock Magnetism view says nothing is indexed.
 - [ ] **Check the Rock Magnetism view against real use** with a rock magnetist
   (e.g. on dev after the rebuild): the panel set, and the rule that reads a
   contribution's coercivities/MDFs as mT when their median is above 1 T.
