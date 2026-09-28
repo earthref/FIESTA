@@ -16,6 +16,15 @@
    contribution attachments, or objects in a read-only **external source
    bucket** such as `osu-corelab-storage`. Node config declares which table and
    column hold them.
+   **External files are referenced in place, never copied.** An OSU-MGR
+   contribution holds only the metadata row: `(source, key)`, type, size and
+   embargo. The raw files stay where they are, in the collection's S3 bucket,
+   as the one copy. They are not uploaded as supplemental files, and FIESTA
+   neither replicates nor versions them. The only new bytes FIESTA stores are
+   the renditions: about 15 GB, roughly 1% of the 1.6 TB of sources. The
+   renderer reads each source in place. A source file that disappears or
+   changes just yields a new ETag or a 404; FIESTA's revision history covers
+   the metadata rows, not the external bytes.
 2. **Embargo.** A row-level "withheld until" state, which is a core concept and
    not OSU-MGR's moratorium special case. It sits beside the existing
    contribution visibility (`is_activated`, `private_key`, owner, admin).
@@ -123,7 +132,7 @@ storage:
 files:
   - table: files
     path: file                      # column holding the object key
-    source: collection              # omit to mean this contribution's attachments
+    source: collection              # referenced in place; omit only for files uploaded into FIESTA as attachments
     type: file_type                 # column holding the type (a cv("file_type") term)
     size: size_bytes
     embargo: { flag: moratorium, until: moratorium_expiration, hide_rows: false }
