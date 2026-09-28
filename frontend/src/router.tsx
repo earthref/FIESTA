@@ -1,5 +1,5 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
-import { BASE_PATH } from "./lib/base";
+import { BASE_PATH, PORTAL } from "./lib/base";
 import { AdminPage } from "./routes/admin";
 import { AdminNodePage } from "./routes/admin-node";
 import { ContactPage } from "./routes/contact";
@@ -11,6 +11,7 @@ import { LoginPage } from "./routes/login";
 import { MethodCodesPage } from "./routes/method-codes";
 import { NotFoundPage } from "./routes/not-found";
 import { ContentPage } from "./routes/page";
+import { PortalHomePage } from "./routes/portal-home";
 import { PrivateWorkspacePage } from "./routes/private";
 import { SearchPage } from "./routes/search";
 import { UploadPage } from "./routes/upload";
@@ -66,7 +67,7 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: HomePage,
+  component: PORTAL ? PortalHomePage : HomePage,
 });
 
 const searchRoute = createRoute({

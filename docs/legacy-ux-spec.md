@@ -125,7 +125,10 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 - **Top bar**: 40px, `#F8F8F8`, 2px bottom border `rgba(34,36,38,.15)`; items
   14px/400, padding `.857em 1.143em`, line-height 1em, sidebar (hamburger) item
   first (53.5px), the first portal item has no left padding; active portal =
-  node color + 2px node-colored bottom border (not bold).
+  node color + 2px node-colored bottom border (not bold). **FIESTA deviation
+  (2026-09-27):** the hamburger shows only below 1024px, where the portal list
+  collapses into the drawer; wide screens start with EarthRef.org at the normal
+  item padding.
 - **Header**: logo 57.75px square (1px segment border + 1px inset node shadow),
   h1 28px/36px, h4 15px **bold**/19.29px. The node menu is a flex BFC placed
   after the subtitle (top = subtitle bottom + .25em = 114.5px), *not* cleared
@@ -386,6 +389,16 @@ ui grid divided → Grid.Row
   title line, 44px tall, 1em below the list.
 - **News**: h3 18px/700 (margin calc(2rem − .1428em) 0 1rem), p 14px with
   1em bottom margin.
+- **FIESTA deviations (2026-09-27):** news titles are left-aligned (legacy
+  inherited the column's `text-align: justify`; the body stays justified); the
+  nine resource cards are centred when a row is not full (legacy left-aligned).
+- **Portal home (FIESTA only, 2026-09-27):** where one origin serves every node
+  (`fiesta-env.js` lists `nodes`), the build base (`http://localhost:8080/`) is a
+  FIESTA home in the same grid: a node card (key, title, contribution count) in
+  place of Search / Upload / Private, no Resources, the latest 7 contributions
+  across all nodes as each node's own result item, and every node's news, each
+  item under its node's key. Other paths outside a node still redirect to the
+  default node.
 
 ---
 

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
+import { PORTAL } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { PORTALS, portalUrl } from "../lib/portals";
 import { type NodeMenuItem, nodeMenuItems } from "./node-menu";
@@ -14,9 +15,11 @@ interface MobileDrawerProps {
 
 /** Left slide-in navigation drawer for narrow (<1024px) viewports. */
 export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProps) {
-  const { data: config } = useNodeConfig();
+  const { data: nodeConfig } = useNodeConfig();
   const panelRef = useRef<HTMLDivElement>(null);
-  const { left, right } = nodeMenuItems(config);
+  // The portal home has no node menu and highlights no portal.
+  const config = PORTAL ? undefined : nodeConfig;
+  const { left, right } = config ? nodeMenuItems(config) : { left: [], right: [] };
   const menuItems = [...left, ...right];
 
   useEffect(() => {
@@ -111,7 +114,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
             ) : (
               <a
                 key={portal.label}
-                href={portalUrl(portal, config?.deployment_nodes)}
+                href={portalUrl(portal, nodeConfig?.deployment_nodes)}
                 className={className}
                 style={style}
               >
@@ -121,12 +124,16 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
           })}
         </nav>
 
-        <div className="mx-2 border-t border-gray-200" />
+        {menuItems.length > 0 && (
+          <>
+            <div className="mx-2 border-t border-gray-200" />
 
-        {/* Node menu items */}
-        <nav aria-label="Node" className="flex flex-col p-2">
-          {menuItems.map(menuLink)}
-        </nav>
+            {/* Node menu items */}
+            <nav aria-label="Node" className="flex flex-col p-2">
+              {menuItems.map(menuLink)}
+            </nav>
+          </>
+        )}
       </div>
     </div>
   );

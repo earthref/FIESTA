@@ -17,7 +17,7 @@ const RULE = "rgba(34,36,38,.15)";
 /** `h2.ui.horizontal.divider.header` (measured): 24px/700 on a 24px line,
  * margin calc(2rem − .14em) 0 1rem (the first one has no bottom margin),
  * centred between two 1px rules. */
-function DividerHeader({ children, first }: { children: ReactNode; first?: boolean }) {
+export function DividerHeader({ children, first }: { children: ReactNode; first?: boolean }) {
   return (
     <h2
       className="flex items-center whitespace-nowrap font-bold"
@@ -38,10 +38,10 @@ function DividerHeader({ children, first }: { children: ReactNode; first?: boole
 
 /** `ui three cards`: wrapper margin −.875em −1em, each card margin .875em 1em
  * and width calc(33.33% − 2em). */
-const threeCards: CSSProperties = { margin: "-0.875em -1em" };
-const threeCard: CSSProperties = { margin: "0.875em 1em" };
+export const threeCards: CSSProperties = { margin: "-0.875em -1em" };
+export const threeCard: CSSProperties = { margin: "0.875em 1em" };
 /** Full-width on phones, a third of the row from sm up. */
-const threeCardClass = "w-full sm:w-[calc(33.3333%-2em)]";
+export const threeCardClass = "w-full sm:w-[calc(33.3333%-2em)]";
 /** `ui nine cards` (10px cards): wrapper margin 0 −.5em −.875em, cards margin
  * .875em .5em and width calc(11.11% − 1em). */
 const nineCards: CSSProperties = { margin: "0 -5px -8.75px" };
@@ -52,7 +52,7 @@ const nineCard: CSSProperties = {
 };
 
 /** `ui divider` (margin 1rem 0). */
-function Rule() {
+export function Rule() {
   return (
     <hr
       style={{
@@ -121,14 +121,26 @@ function cardProps(card: HomeCard): IconButtonProps {
   };
 }
 
-function imageUrl(image: string): string {
-  return /^https?:\/\//.test(image) ? image : nodeUrl(`/config/assets/${image}`);
+function imageUrl(image: string, base: string): string {
+  return /^https?:\/\//.test(image) ? image : `${base}${image}`;
 }
 
 /** Legacy home_news.jsx: `h3` with a `ui mini image floated left` (35px), then
- * a justified paragraph; items separated by `ui divider`s. The HTML is
+ * a justified paragraph (the title stays left-aligned); items separated by `ui divider`s. The HTML is
  * admin-authored (node YAML), so it is sanitized on render. */
-function NewsItem({ item, first }: { item: HomeNews; first?: boolean }) {
+export function NewsItem({
+  item,
+  first,
+  imageBase = nodeUrl("/config/assets/"),
+  source,
+}: {
+  item: HomeNews;
+  first?: boolean;
+  /** Where a relative `image` resolves: this node's config assets by default. */
+  imageBase?: string;
+  /** The portal home names the node an item comes from above its title. */
+  source?: ReactNode;
+}) {
   const heading = item.link ? (
     <a href={item.link} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>
       {item.title}
@@ -138,18 +150,20 @@ function NewsItem({ item, first }: { item: HomeNews; first?: boolean }) {
   );
   return (
     <>
+      {source}
       <h3
         className="flex items-center font-bold"
         style={{
           fontSize: "1.28571429em",
           lineHeight: "1.28571429em",
-          margin: first ? "0 0 1rem" : "calc(2rem - 0.14285714em) 0 1rem",
+          margin: first || source ? "0 0 1rem" : "calc(2rem - 0.14285714em) 0 1rem",
           color: "rgba(0,0,0,.87)",
+          textAlign: "left",
         }}
       >
         {item.image && (
           <img
-            src={imageUrl(item.image)}
+            src={imageUrl(item.image, imageBase)}
             alt=""
             className="shrink-0"
             style={{ width: 35, marginRight: "1em" }}
@@ -232,7 +246,7 @@ export function HomePage() {
           ))}
 
           <DividerHeader first>{config.key} Resources</DividerHeader>
-          <div className="flex flex-wrap" style={nineCards}>
+          <div className="flex flex-wrap justify-center" style={nineCards}>
             {resources.map((card) => (
               <div key={card.title} style={nineCard}>
                 <IconButton variant="small" {...cardProps(card)} />

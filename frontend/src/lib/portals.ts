@@ -24,6 +24,14 @@ export const PORTALS: Portal[] = [
   { label: "Users", url: "https://earthref.org/ERML/", color: "#006600" },
 ];
 
+/** Identity of the FIESTA portal home (base.ts PORTAL), in EarthRef.org green. */
+export const FIESTA_PORTAL = {
+  key: "FIESTA",
+  title: "FIESTA",
+  subtitle: "The EarthRef.org data repositories",
+  color: PORTALS[0]?.color ?? "#006600",
+};
+
 // Hosts the production URLs above live on: a page served from one of them
 // links every portal to production.
 const productionHosts = new Set(PORTALS.map((portal) => new URL(portal.url).hostname));
