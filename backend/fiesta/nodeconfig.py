@@ -171,6 +171,21 @@ class DoiConfig(BaseModel):
     prefix: str | None = None
 
 
+class PublishConfig(BaseModel):
+    """Whether production serves the node. `api`: its /v2/{node}/... routes;
+    `web`: its SPA at /<Key>/ and its entry in the portal bar. A local stack
+    (FIESTA_ENVIRONMENT=development) serves every node either way."""
+
+    api: bool = True
+    web: bool = True
+
+    @model_validator(mode="after")
+    def _web_needs_api(self) -> "PublishConfig":
+        if self.web and not self.api:
+            raise ValueError("publish.web needs publish.api: the web app reads the node's API")
+        return self
+
+
 class HomeCardConfig(BaseModel):
     """A resource card on the home page (legacy `ui nine cards` IconButton)."""
 
@@ -249,6 +264,7 @@ class NodeConfig(BaseModel):
     doi: DoiConfig = DoiConfig()
     pages: list[PageConfig] = []
     features: FeaturesConfig = FeaturesConfig()
+    publish: PublishConfig = PublishConfig()
     # Per-plugin options, keyed by plugin name, validated against each
     # plugin's Options model by fiesta.plugins.active_plugins.
     plugins: dict[str, dict[str, Any]] = {}
@@ -350,6 +366,16 @@ class NodeConfig(BaseModel):
         return get_settings().s3_bucket or self.storage.bucket
 
     @property
+    def serves_api(self) -> bool:
+        """/v2/{node}/... is served: published, or on a local stack."""
+        return self.publish.api or get_settings().environment == "development"
+
+    @property
+    def serves_web(self) -> bool:
+        """The SPA opens and the portal bar lists the node: published, or on a local stack."""
+        return self.publish.web or get_settings().environment == "development"
+
+    @property
     def storage_prefix(self) -> str:
         """Key prefix inside the bucket: "<slug>/" in a shared bucket, else ""."""
         return f"{self.node.slug}/" if get_settings().s3_bucket else ""
@@ -373,6 +399,8 @@ class NodeConfig(BaseModel):
             "filters": [f.model_dump() for f in self.search.filters],
             "pages": [p.model_dump() for p in self.pages],
             "features": self.features.model_dump(),
+            "publish": self.publish.model_dump(),
+            "web_published": self.serves_web,
             "has_method_codes": self.vocabularies.method_codes is not None,
             "doi_prefix": self.doi.prefix,
         }

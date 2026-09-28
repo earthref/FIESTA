@@ -160,6 +160,8 @@ export interface NodeSettings {
   doi?: { prefix?: string | null };
   pages?: SettingsPage[];
   features?: { plugins?: string[] };
+  /** Whether production serves the node's API and web app (both default on). */
+  publish?: { api?: boolean; web?: boolean };
   /** Per-plugin options, keyed by plugin name. */
   plugins?: Record<string, Record<string, unknown>>;
   [key: string]: unknown;

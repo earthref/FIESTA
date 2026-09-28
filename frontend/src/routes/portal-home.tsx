@@ -86,9 +86,12 @@ export function PortalHomePage() {
 
   if (configs.some((query) => query.isPending)) return <PageSpinner />;
 
-  // A node whose config fails to load is left out rather than failing the page.
+  // A node whose config fails to load is left out rather than failing the
+  // page, and so is one whose web app is not published.
   const nodes = configs.flatMap((query, index) =>
-    query.data ? [{ config: query.data, recent: recents[index] }] : [],
+    query.data && query.data.web_published !== false
+      ? [{ config: query.data, recent: recents[index] }]
+      : [],
   );
   const configError = configs.find((query) => query.error)?.error;
 

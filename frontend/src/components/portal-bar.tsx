@@ -34,6 +34,8 @@ export function PortalBar() {
   const { data: nodeConfig } = useNodeConfig();
   // The portal home is no node's page: the bar highlights EarthRef.org instead.
   const config = PORTAL ? undefined : nodeConfig;
+  // Nodes whose web app production does not serve are left out (node YAML `publish.web`).
+  const portals = PORTALS.filter((portal) => !nodeConfig?.hidden_nodes?.includes(portal.label));
   const { user, logout } = useAuth();
   const { openLogin } = useLoginModal();
   const navigate = useNavigate();
@@ -77,7 +79,7 @@ export function PortalBar() {
 
         {/* Wide (≥1024px): full portal bar */}
         <nav aria-label="EarthRef portals" className="hidden items-stretch lg:flex">
-          {PORTALS.map((portal) => {
+          {portals.map((portal) => {
             const active = PORTAL ? portal === EARTHREF : portal.label === config?.key;
             const style = {
               ...itemStyle,

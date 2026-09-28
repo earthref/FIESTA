@@ -654,6 +654,58 @@ def test_settings_patch_keeps_yaml_comments():
     assert svc.protected_changes(original, patched) == []
     moved = svc.patch_yaml(original, [{"path": ["search", "index"], "value": "other"}])
     assert svc.protected_changes(original, moved) == ["search.index"]
+    hidden = svc.patch_yaml(original, [{"path": ["publish", "web"], "value": False}])
+    assert svc.protected_changes(original, hidden) == ["publish"]
+
+
+def test_publish_flags_gate_production_only(monkeypatch, magic_node, osu_mgr_node):
+    from fastapi import HTTPException
+    from starlette.requests import Request
+
+    from fiesta.apps.deps import request_node
+    from fiesta.nodeconfig import PublishConfig
+    from fiesta.settings import get_settings
+
+    assert magic_node.publish == PublishConfig()
+    assert osu_mgr_node.publish == PublishConfig(api=True, web=False)
+    with pytest.raises(ValueError, match="publish.web needs publish.api"):
+        PublishConfig(api=False, web=True)
+
+    def serves(environment, node):
+        monkeypatch.setenv("FIESTA_ENVIRONMENT", environment)
+        get_settings.cache_clear()
+        try:
+            return node.serves_api, node.serves_web, node.public_config()["web_published"]
+        finally:
+            get_settings.cache_clear()
+
+    assert serves("production", osu_mgr_node) == (True, False, False)
+    assert serves("development", osu_mgr_node) == (True, True, True)
+    assert serves("production", magic_node) == (True, True, True)
+
+    # An unpublished API is an unknown repository outside a local stack.
+    closed = osu_mgr_node.model_copy(update={"publish": PublishConfig(api=False, web=False)})
+    monkeypatch.setattr("fiesta.apps.deps.get_deployment", lambda: _OneNode(closed))
+    request = Request({"type": "http", "path_params": {"repository": "osu-mgr"}})
+    monkeypatch.setenv("FIESTA_ENVIRONMENT", "production")
+    get_settings.cache_clear()
+    try:
+        with pytest.raises(HTTPException) as err:
+            request_node(request)
+        assert err.value.status_code == 404
+        monkeypatch.setenv("FIESTA_ENVIRONMENT", "development")
+        get_settings.cache_clear()
+        assert request_node(request) is closed
+    finally:
+        get_settings.cache_clear()
+
+
+class _OneNode:
+    def __init__(self, node):
+        self.node = node
+
+    def node_for(self, _repository):
+        return self.node
 
 
 def test_new_node_from_a_template_is_valid():

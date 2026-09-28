@@ -19,6 +19,8 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
   const panelRef = useRef<HTMLDivElement>(null);
   // The portal home has no node menu and highlights EarthRef.org.
   const config = PORTAL ? undefined : nodeConfig;
+  // Nodes whose web app production does not serve are left out (node YAML `publish.web`).
+  const portals = PORTALS.filter((portal) => !nodeConfig?.hidden_nodes?.includes(portal.label));
   const { left, right } = config ? nodeMenuItems(config) : { left: [], right: [] };
   const menuItems = [...left, ...right];
 
@@ -102,7 +104,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
 
         {/* All EarthRef portal links (brand colors, active bold) */}
         <nav aria-label="EarthRef portals" className="flex flex-col p-2">
-          {PORTALS.map((portal) => {
+          {portals.map((portal) => {
             const active = PORTAL ? portal === EARTHREF : portal.label === config?.key;
             const className =
               "rounded-sm px-3 py-1.5 text-sm hover:bg-gray-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node";

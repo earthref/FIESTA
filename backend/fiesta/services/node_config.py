@@ -63,13 +63,15 @@ RESERVED_SLUGS = {
     "default",
 }
 # Settings only a super admin may change on a published node: renaming a node
-# or pointing it at another index / bucket / legacy source moves its data.
+# or pointing it at another index / bucket / legacy source moves its data, and
+# `publish` decides whether production serves its API and web app at all.
 PROTECTED_SETTINGS = [
     ("node", "key"),
     ("node", "slug"),
     ("search", "index"),
     ("storage",),
     ("legacy",),
+    ("publish",),
 ]
 
 
