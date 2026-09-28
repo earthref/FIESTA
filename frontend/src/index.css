@@ -29,6 +29,9 @@
   html {
     font-size: 14px;
     font-family: "Open Sans", "Helvetica Neue", Arial, Helvetica, sans-serif;
+    /* Always show the vertical scrollbar so the layout never shifts
+       sideways between short and long pages. */
+    overflow-y: scroll;
   }
   body {
     line-height: 1.4285em;
