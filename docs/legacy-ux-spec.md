@@ -407,6 +407,8 @@ ui grid divided → Grid.Row
 - **FIESTA deviations (2026-09-27):** news titles are left-aligned (legacy
   inherited the column's `text-align: justify`; the body stays justified); the
   nine resource cards are centred when a row is not full (legacy left-aligned).
+  From 2026-09-28 the News divider header has no top margin at ≥1024px, where it
+  opens its own column level with the main column; stacked below, it keeps it.
 - **Portal home (FIESTA only, 2026-09-27):** where one origin serves every node
   (`fiesta-env.js` lists `nodes`), the build base (`http://localhost:8080/`) is a
   FIESTA home in the same grid: a node card (key, title, contribution count) in
