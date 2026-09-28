@@ -397,8 +397,10 @@ availability: the contribution is visible, the row is not embargoed, and the
 type is not hidden. The API returns short-lived CloudFront signed URLs, and only
 for files that pass. Renditions (a 400 px thumbnail and a 2048 px preview, for
 images and PDF page 1) are rendered for every file by an outbox job, recorded in
-Postgres, and stored in the node's bucket. The worker invokes a stateless Lambda
-in us-west-2, so source bytes never leave AWS. The target: OSU-MGR as a FIESTA
+Postgres, and stored in the node's bucket. OSU-MGR's raw files are never copied
+into FIESTA: rows reference the S3 backup (`osu-corelab-storage`), and the worker
+renders from the primary copy on HAVISIDE over the rack LAN, at $0 of AWS
+transfer. The target: OSU-MGR as a FIESTA
 node whose own search UI reads FIESTA's index and API. Design, cost and open
 decisions: [docs/thumbnails.md](docs/thumbnails.md).
 
@@ -408,13 +410,14 @@ decisions: [docs/thumbnails.md](docs/thumbnails.md).
 - [ ] **T2 Embargo + file gate**: `can_read_file`, the `files:` config,
       `storage.sources`, signed URLs, the redirect routes, URLs in search and
       record responses, the existing download routes moved to redirects.
-- [ ] **T3 `lambda` runner** + OPERATOR_TODO entries (CloudFront + OAC + key
-      group, Lambda, IAM) — the AWS part is **BLOCKED (operator)**.
+- [ ] **T3 Mirror reads** (HAVISIDE mount, check against the S3 ETag, S3 fallback
+      budget) + OPERATOR_TODO entries (HAVISIDE read-only share, CloudFront + OAC
+      + key group, IAM) — the infrastructure part is **BLOCKED (operator)**.
 - [ ] **T4 OSU-MGR importer** (cruise contributions, moratorium turned into
       columns); closes the "No importer" gap in docs/osu-mgr-node.md.
 - [ ] **T5 OSU-MGR site on `/v2/osu-mgr`** (edited outside FIESTA; notes in the
       design doc).
-- [ ] **T6 Backfill** (about $7, about an hour), then steady state through the outbox.
+- [ ] **T6 Backfill** (overnight on fiesta-ct, $0 transfer), then steady state through the outbox.
 
 ## Phase E — Deployment and cutover
 
