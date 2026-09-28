@@ -274,6 +274,25 @@ function DepthPlotsView({ hits, config, privateKey }: PluginSubTabContext) {
 }
 
 export const depthPlotPlugin: PluginModule = {
+  // A contribution's depth plots, in its modal, when it has rows at a plotted level.
+  contributionTabs(config) {
+    const levels = config.plugins["depth-plot"]?.levels;
+    const names = Array.isArray(levels) ? levels.map(String) : [];
+    const table = config.search_levels.find((level) => names.includes(level.name))?.table;
+    if (!table) return [];
+    return [
+      {
+        key: "depth-plots",
+        label: "Depth Plots",
+        countTable: table,
+        render: ({ id, privateKey, config: node }) => (
+          <div className="p-4 sm:p-6">
+            <ContributionDepthPlots id={id} privateKey={privateKey} config={node} />
+          </div>
+        ),
+      },
+    ];
+  },
   levelSubTabs(level, config) {
     const levels = config.plugins["depth-plot"]?.levels;
     const enabled = Array.isArray(levels) ? levels.map(String) : [];

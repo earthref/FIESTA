@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { ErrorMessage } from "../../components/error-message";
 import { Cell, contributionId, NoDataCell, ResultItem } from "../../components/result-item";
-import { Modal } from "../../components/ui/modal";
-import { Spinner } from "../../components/ui/spinner";
+import { PageSpinner, Spinner } from "../../components/ui/spinner";
 import { api } from "../../lib/api";
+import { useOpenContribution } from "../../lib/contribution-modal";
+import type { NodeConfig, SearchPage, SearchResult } from "../../lib/types";
 import { getPath } from "../../lib/utils";
 import type { PluginModule, PluginResultItemProps } from "../index";
 
@@ -28,7 +29,7 @@ interface PlateauResponse {
   plateau: PlateauInfo | null;
 }
 
-function experimentNameOf(hit: PluginResultItemProps["hit"]): string | undefined {
+function experimentNameOf(hit: SearchResult): string | undefined {
   const fromSummary = getPath(hit, "summary.experiments.experiment");
   if (typeof fromSummary === "string" && fromSummary) return fromSummary;
   if (Array.isArray(fromSummary) && fromSummary.length > 0) return String(fromSummary[0]);
@@ -212,18 +213,8 @@ function plateauCaption(data: PlateauResponse): string {
   return `Plateau age: ${plateau.plateau_age.toFixed(2)} ± ${plateau.plateau_age_sigma.toFixed(2)} Ma (MSWD ${plateau.mswd.toFixed(2)}, ${steps} steps, ${plateau.ar39_percent.toFixed(1)}% ³⁹Ar)`;
 }
 
-function PlateauCell({
-  id,
-  experiment,
-  privateKey,
-}: {
-  id: string;
-  experiment: string;
-  privateKey?: string;
-}) {
-  const [open, setOpen] = useState(false);
-
-  const query = useQuery({
+function usePlateau(id: string, experiment: string, privateKey?: string) {
+  return useQuery({
     queryKey: ["plugin", "plateau", id, experiment, privateKey],
     queryFn: () =>
       api<PlateauResponse>(
@@ -233,6 +224,19 @@ function PlateauCell({
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
+}
+
+function PlateauCell({
+  id,
+  experiment,
+  privateKey,
+}: {
+  id: string;
+  experiment: string;
+  privateKey?: string;
+}) {
+  const openContribution = useOpenContribution();
+  const query = usePlateau(id, experiment, privateKey);
 
   if (query.isPending) {
     return (
@@ -252,25 +256,100 @@ function PlateauCell({
     <Cell width={125}>
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        aria-label={`Open age spectrum for ${experiment}`}
+        onClick={() => openContribution(id, "age-spectra")}
+        aria-label={`Open the age spectra, including ${experiment}`}
         className="block cursor-pointer border border-gray-300 hover:border-node focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
       >
         <AgeSpectrum data={query.data} width={121} height={80} />
       </button>
-      {open && (
-        <Modal open onClose={() => setOpen(false)} title={`Age spectrum — ${experiment}`} wide>
-          <div className="overflow-x-auto">
-            <AgeSpectrum data={query.data} width={640} height={420} detailed />
-          </div>
-          <p className="mt-2 text-[13px] text-gray-700">{plateauCaption(query.data)}</p>
-        </Modal>
-      )}
     </Cell>
   );
 }
 
+/** One experiment's detailed age spectrum and plateau, in the modal's tab. */
+function PlateauPanel({
+  id,
+  experiment,
+  privateKey,
+}: {
+  id: string;
+  experiment: string;
+  privateKey?: string;
+}) {
+  const query = usePlateau(id, experiment, privateKey);
+  return (
+    <section className="mb-6 border-b border-gray-200 pb-4">
+      <h3 className="mb-2 text-[13px] font-bold">{experiment}</h3>
+      {query.isPending ? (
+        <Spinner />
+      ) : query.error || !query.data || query.data.age_data.length === 0 ? (
+        <p className="text-[13px] text-[#AAAAAA]">No age data for this experiment.</p>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <AgeSpectrum data={query.data} width={640} height={420} detailed />
+          </div>
+          <p className="mt-2 text-[13px] text-gray-700">{plateauCaption(query.data)}</p>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** The contribution modal's Age Spectra tab: every experiment's spectrum. */
+function AgeSpectraTab({
+  id,
+  privateKey,
+  table,
+}: {
+  id: string;
+  privateKey?: string;
+  table: string;
+}) {
+  const experiments = useQuery({
+    queryKey: ["plugin", "plateau", "experiments", id, table, privateKey],
+    queryFn: () =>
+      api<SearchPage>(`/search/${table}`, {
+        params: { contribution: id, private_key: privateKey || undefined, size: 1000 },
+      }),
+    staleTime: 5 * 60 * 1000,
+  });
+  if (experiments.isPending) return <PageSpinner label="Loading experiments…" />;
+  if (experiments.error) return <ErrorMessage error={experiments.error} className="m-4" />;
+  const names = [
+    ...new Set(experiments.data.results.flatMap((hit) => experimentNameOf(hit) ?? [])),
+  ];
+  return (
+    <div className="p-4 sm:p-6">
+      {names.map((experiment) => (
+        <PlateauPanel key={experiment} id={id} experiment={experiment} privateKey={privateKey} />
+      ))}
+    </div>
+  );
+}
+
+/** The search table of the first level the plugin is enabled on. */
+function plateauTable(config: NodeConfig): string | undefined {
+  const levels = config.plugins["plateau-calculations"]?.levels;
+  const names = Array.isArray(levels) ? levels.map(String) : [];
+  return config.search_levels.find((level) => names.includes(level.name))?.table;
+}
+
 export const plateauPlugin: PluginModule = {
+  contributionTabs(config) {
+    const table = plateauTable(config);
+    if (!table) return [];
+    return [
+      {
+        key: "age-spectra",
+        label: "Age Spectra",
+        countTable: table,
+        render: ({ id, privateKey }) => (
+          <AgeSpectraTab id={id} privateKey={privateKey} table={table} />
+        ),
+      },
+    ];
+  },
   resultItem(props: PluginResultItemProps) {
     const levels = props.config.plugins["plateau-calculations"]?.levels;
     const enabled = Array.isArray(levels) ? levels.map(String) : [];

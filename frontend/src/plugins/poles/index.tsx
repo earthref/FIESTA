@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { ErrorMessage } from "../../components/error-message";
-import { Cell, DefinitionTable, NoDataCell, ResultCardFrame } from "../../components/result-item";
+import { Cell, NoDataCell, ResultCardFrame } from "../../components/result-item";
 import { Icon } from "../../components/ui/icon";
 import { PageSpinner } from "../../components/ui/spinner";
 import { api } from "../../lib/api";
@@ -105,9 +105,7 @@ function PolesResultItem({ hit, level }: { hit: SearchResult; level: SearchLevel
     </>
   );
 
-  const expanded = block ? <DefinitionTable data={block} /> : undefined;
-
-  return <ResultCardFrame doc={hit} level={level} cells={cells} expanded={expanded} />;
+  return <ResultCardFrame doc={hit} level={level} cells={cells} />;
 }
 
 // --- Side panel (max poles, ellipse toggle, color legend) -------------------------
@@ -236,7 +234,14 @@ function SidePanel({
 
 // --- Poles map sub-tab: detail bar + dual globes + side panel ----------------------
 
-function PolesMapView({ query, ranges, bbox, config }: PluginSubTabContext) {
+function PolesMapView({
+  query,
+  ranges,
+  bbox,
+  config,
+  contribution,
+  privateKey,
+}: PluginSubTabContext) {
   const [selected, setSelected] = useState<number | null>(null);
   const [maxPoles, setMaxPoles] = useState(DEFAULT_MAX_POLES);
   const [showEllipses, setShowEllipses] = useState(true);
@@ -244,7 +249,7 @@ function PolesMapView({ query, ranges, bbox, config }: PluginSubTabContext) {
   const pconfig = polesConfig(config);
 
   const polesQuery = useQuery({
-    queryKey: ["plugin", "poles", "search", query, ranges, bbox, maxPoles],
+    queryKey: ["plugin", "poles", "search", query, ranges, bbox, maxPoles, contribution],
     queryFn: () =>
       api<SearchPageData>("/search/poles", {
         params: {
@@ -252,6 +257,8 @@ function PolesMapView({ query, ranges, bbox, config }: PluginSubTabContext) {
           size: maxPoles,
           range: ranges.length > 0 ? ranges : undefined,
           bbox: bbox || undefined,
+          contribution,
+          private_key: contribution ? privateKey : undefined,
         },
       }),
     staleTime: 60_000,
@@ -374,6 +381,29 @@ export const polesPlugin: PluginModule = {
         title: "Poles\nView",
         to: "/search",
         search: { level: pconfig.base_level },
+      },
+    ];
+  },
+  // A contribution's poles on the same globes, in its modal.
+  contributionTabs(config) {
+    const pconfig = polesConfig(config);
+    if (!pconfig.base_level) return [];
+    return [
+      {
+        key: "poles",
+        label: "Poles",
+        countTable: pconfig.table ?? "poles",
+        render: ({ id, privateKey, config: node }) => (
+          <PolesMapView
+            hits={[]}
+            level={POLES_LEVEL}
+            config={node}
+            privateKey={privateKey}
+            query=""
+            ranges={[]}
+            contribution={id}
+          />
+        ),
       },
     ];
   },

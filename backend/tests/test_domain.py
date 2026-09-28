@@ -829,3 +829,27 @@ def test_undersea_features_for_the_map_labels():
     # An area across the antimeridian is labelled on it, not on the far side.
     lon, lat = collection["features"][2]["geometry"]["coordinates"]
     assert abs(abs(lon) - 179.4) < 0.5 and lat == 10.8
+
+
+def test_search_scoped_to_one_contribution(monkeypatch):
+    """`?contribution=` (the contribution modal): any version of that one
+    contribution once its visibility is checked, not the latest-and-public
+    filters of a search."""
+    import asyncio
+
+    from fiesta.apps.routers import search as router
+    from fiesta.search.queries import build_search_body
+
+    checked = []
+
+    async def visible(session, node, contribution_id, private_key):
+        checked.append((contribution_id, private_key))
+
+    monkeypatch.setattr(router, "_get_visible_contribution", visible)
+    body = build_search_body(table="sites", query="basalt")
+    asyncio.run(router._constrain(None, None, body, "basalt", 16901, "key"))
+    filters = body["query"]["bool"]["filter"]
+    assert checked == [(16901, "key")]
+    assert {"term": {"summary.contribution.id": 16901}} in filters
+    assert not any("_is_latest" in str(f) or "_is_activated" in str(f) for f in filters)
+    assert {"term": {"type": "sites"}} in filters

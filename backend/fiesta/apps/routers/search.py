@@ -73,6 +73,31 @@ def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
     return (min_lon, min_lat, max_lon, max_lat)
 
 
+def _drop_workflow_filters(body: dict) -> None:
+    """Remove the `_is_activated` / `_is_latest` filters build_search_body adds,
+    for a contribution whose visibility was already checked."""
+    body["query"]["bool"]["filter"] = [
+        f
+        for f in body["query"]["bool"]["filter"]
+        if "summary.contribution._is_activated" not in str(f)
+        and "summary.contribution._is_latest" not in str(f)
+    ]
+
+
+async def _constrain(
+    session, node, body: dict, query: str | None, contribution: int | None, private_key: str | None
+) -> None:
+    """Scope a search to what the caller may see or, with `contribution`, to
+    that one contribution: any version, public or opened by its private key
+    (the contribution modal's level tabs and map)."""
+    if contribution is None:
+        await constrain_search(session, node, body, query=query)
+        return
+    await _get_visible_contribution(session, node, contribution, private_key)
+    _drop_workflow_filters(body)
+    body["query"]["bool"]["filter"].append({"term": {"summary.contribution.id": contribution}})
+
+
 @router.get("/search/{table}", response_model=SearchPage)
 async def search(
     session: SessionDep,
@@ -85,6 +110,8 @@ async def search(
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
     sort: str | None = None,
+    contribution: int | None = None,
+    private_key: str | None = None,
 ) -> SearchPage:
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
@@ -102,7 +129,7 @@ async def search(
         bbox=_parse_bbox(bbox),
         sort=sort,
     )
-    await constrain_search(session, node, body, query=query)
+    await _constrain(session, node, body, query, contribution, private_key)
     try:
         response = await get_opensearch().search(index=node.search_index, body=body)
     except NotFoundError:
@@ -166,6 +193,8 @@ async def search_points(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    contribution: int | None = None,
+    private_key: str | None = None,
 ) -> MapPoints:
     """Every positioned doc matching a search, for the search page's map."""
     if table not in node.geo_tables:
@@ -177,7 +206,7 @@ async def search_points(
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
     )
-    await constrain_search(session, node, body, query=query)
+    await _constrain(session, node, body, query, contribution, private_key)
     body["query"]["bool"]["filter"].append({"exists": {"field": "summary._all._geo_point"}})
     body["sort"] = ["_doc"]
     body.pop("from", None)
@@ -244,12 +273,7 @@ async def get_contribution(
     contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
     body = build_search_body(table="contribution", query=f'id:"{contribution.id}"', size=1)
     # Bypass the activation filter — visibility was already checked above.
-    body["query"]["bool"]["filter"] = [
-        f
-        for f in body["query"]["bool"]["filter"]
-        if "summary.contribution._is_activated" not in str(f)
-        and "summary.contribution._is_latest" not in str(f)
-    ]
+    _drop_workflow_filters(body)
     try:
         response = await get_opensearch().search(index=node.search_index, body=body)
         hits = response["hits"]["hits"]

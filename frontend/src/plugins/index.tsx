@@ -23,6 +23,8 @@ export interface PluginSubTabContext {
   ranges: string[];
   /** Active bounding box: "minLon,minLat,maxLon,maxLat". */
   bbox?: string;
+  /** Only this contribution (any version; the contribution modal's tabs). */
+  contribution?: string;
 }
 
 export interface PluginSubTab {
@@ -51,6 +53,27 @@ export interface PluginHomeCard {
   search?: Record<string, unknown>;
 }
 
+export interface ContributionTabContext {
+  /** The contribution's id and, for a private one, its key. */
+  id: string;
+  privateKey?: string;
+  config: NodeConfig;
+  /** The contribution's own search doc. */
+  doc: SearchResult;
+}
+
+/** An asset tab in the contribution modal (plots, maps, images, ...). */
+export interface ContributionTab {
+  /** The `tab` search param that opens it; unique within the modal. */
+  key: string;
+  label: string;
+  /** A search table whose matches in this contribution are the tab's count;
+   * a tab counted this way is hidden when there are none. Without one the
+   * tab always shows, with no count. */
+  countTable?: string;
+  render: (ctx: ContributionTabContext) => ReactNode;
+}
+
 export interface PluginModule {
   /** Full-width cards under the home page's primary cards (legacy "Poles / View"). */
   homeCards?: (config: NodeConfig) => PluginHomeCard[];
@@ -60,6 +83,8 @@ export interface PluginModule {
   levelSubTabs?: (level: SearchLevel, config: NodeConfig) => PluginSubTab[];
   /** Replace the facet sidebar for a level; return null to keep the facet sidebar. */
   filtersPanel?: (props: PluginFiltersProps) => ReactNode | null;
+  /** Asset tabs for the contribution modal, after its Map tab. */
+  contributionTabs?: (config: NodeConfig) => ContributionTab[];
 }
 
 /** All known plugin modules; activation is strictly by key presence in config.plugins. */
@@ -97,6 +122,11 @@ export function pluginResultItem(
 export function pluginSubTabs(config: NodeConfig | undefined, level: SearchLevel): PluginSubTab[] {
   if (!config) return [];
   return activePlugins(config).flatMap((plugin) => plugin.levelSubTabs?.(level, config) ?? []);
+}
+
+export function pluginContributionTabs(config: NodeConfig | undefined): ContributionTab[] {
+  if (!config) return [];
+  return activePlugins(config).flatMap((plugin) => plugin.contributionTabs?.(config) ?? []);
 }
 
 /** First plugin-provided filters panel for a level, or null (keep facet sidebar). */

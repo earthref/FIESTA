@@ -454,7 +454,39 @@ const labelsControl = (initial: boolean, onChange: (on: boolean) => void): mapli
   };
 };
 
-type Feature = GeoJSON.Feature<GeoJSON.Geometry, { key: string; color: string }>;
+// The box behind the records' labels (labelPoints), like the tooltip: white,
+// with a grey border, rounded corners and a slight shadow. Drawn at twice the
+// size it shows at; MapLibre stretches its middle to fit each label.
+const labelBox = (): [ImageData, Parameters<maplibregl.Map["addImage"]>[2]] => {
+  const size = 24;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext("2d") as CanvasRenderingContext2D;
+  const rounded = (x: number, y: number, width: number, height: number, radius: number) => {
+    context.beginPath();
+    context.moveTo(x + radius, y);
+    context.arcTo(x + width, y, x + width, y + height, radius);
+    context.arcTo(x + width, y + height, x, y + height, radius);
+    context.arcTo(x, y + height, x, y, radius);
+    context.arcTo(x, y, x + width, y, radius);
+    context.closePath();
+  };
+  rounded(1, 2, 22, 21, 5);
+  context.fillStyle = "rgba(0,0,0,0.12)";
+  context.fill();
+  rounded(1, 1, 22, 21, 5);
+  context.fillStyle = "#ffffff";
+  context.fill();
+  context.strokeStyle = "#d1d5db";
+  context.lineWidth = 2;
+  context.stroke();
+  return [
+    context.getImageData(0, 0, size, size),
+    { pixelRatio: 2, stretchX: [[8, 16]], stretchY: [[8, 16]], content: [6, 5, 18, 18] },
+  ];
+};
+
+type Feature = GeoJSON.Feature<GeoJSON.Geometry, { key: string; color: string; name?: string }>;
 const collection = (features: GeoJSON.Feature[]): GeoJSON.FeatureCollection => ({
   type: "FeatureCollection",
   features,
@@ -463,7 +495,7 @@ const collection = (features: GeoJSON.Feature[]): GeoJSON.FeatureCollection => (
 const pointFeature = (p: MapPoint, id: number): Feature => ({
   type: "Feature",
   id,
-  properties: { key: pointKey(p), color: p.color },
+  properties: { key: pointKey(p), color: p.color, name: p.name },
   geometry: { type: "Point", coordinates: [p.lon, p.lat] },
 });
 const boxFeature = (p: MapPoint): Feature => {
@@ -501,6 +533,9 @@ const MapLibreMap: FC<{
   // In the globe and Mercator views, fit the view to the points instead of
   // centring it on them at a fixed zoom.
   fit?: boolean;
+  // Labels each record with its name, beside its marker (where they don't
+  // collide), rather than only in its tooltip.
+  labelPoints?: boolean;
   // The geospatial filter area, which can be moved and resized on the map;
   // onAreaChange gets it when a drag ends, or, without one, when asked for
   // (requestViewArea) over the middle of the view.
@@ -523,6 +558,7 @@ const MapLibreMap: FC<{
   onSelect,
   zoom,
   fit,
+  labelPoints,
   area,
   onAreaChange,
   requestViewArea,
@@ -765,6 +801,27 @@ const MapLibreMap: FC<{
       ];
       for (const layer of layers) map.addLayer(layer, "context-points");
       labelLayers = layers.map((layer) => layer.id);
+      // The records' names, over everything (and not turned off with the
+      // basemap's labels), on a white box like the tooltip's.
+      if (labelPoints) {
+        map.addImage("point-label-box", ...labelBox());
+        map.addLayer({
+          id: "point-labels",
+          type: "symbol",
+          source: "points",
+          layout: {
+            "text-field": ["get", "name"],
+            "text-font": ["Noto Sans Regular"],
+            "text-size": 11,
+            "text-anchor": "left",
+            "text-offset": [0.9, 0],
+            "icon-image": "point-label-box",
+            "icon-text-fit": "both",
+            "icon-text-fit-padding": [2, 5, 2, 5],
+          },
+          paint: { "text-color": "#374151" },
+        });
+      }
       if (globe) {
         polarLabels = loaded.undersea.filter(isPolar).flatMap((feature) => {
           const lngLat = labelPoint(feature);

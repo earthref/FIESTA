@@ -1,9 +1,8 @@
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
 import { BASE_PATH, PORTAL } from "./lib/base";
 import { AdminPage } from "./routes/admin";
 import { AdminNodePage } from "./routes/admin-node";
 import { ContactPage } from "./routes/contact";
-import { ContributionPage } from "./routes/contribution";
 import { DataModelPage, DataModelsIndex } from "./routes/data-models";
 import { HomePage } from "./routes/home";
 import { RootLayout } from "./routes/layout";
@@ -28,6 +27,10 @@ export interface SearchParams {
   bbox?: string;
   /** The Map tab's area filter: "west,south,east,north", east past 180 across the antimeridian. */
   area?: string;
+  /** The contribution whose modal is open, its tab, and a private one's key. */
+  contribution?: number;
+  tab?: string;
+  private_key?: string;
 }
 
 function strArray(value: unknown): string[] | undefined {
@@ -59,6 +62,12 @@ function str(value: unknown): string | undefined {
   return typeof value === "string" && value !== "" ? value : undefined;
 }
 
+/** An id param (a number, so the URL reads `?contribution=16901`). */
+function id(value: unknown): number | undefined {
+  const n = typeof value === "string" && /^\d+$/.test(value) ? Number(value) : value;
+  return typeof n === "number" && Number.isInteger(n) ? n : undefined;
+}
+
 const rootRoute = createRootRoute({
   component: RootLayout,
   notFoundComponent: NotFoundPage,
@@ -80,17 +89,28 @@ const searchRoute = createRoute({
     ranges: strArray(search.ranges),
     bbox: str(search.bbox),
     area: str(search.area),
+    contribution: id(search.contribution),
+    tab: str(search.tab),
+    private_key: str(search.private_key),
   }),
   component: SearchPage,
 });
 
+// A contribution opens as a modal over the search page: /contributions/<id>
+// (and /<id>, below) land there.
 const contributionRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/contributions/$id",
   validateSearch: (search: Record<string, unknown>): PrivateKeyParams => ({
     private_key: str(search.private_key),
   }),
-  component: ContributionPage,
+  beforeLoad: ({ params, search }) => {
+    throw redirect({
+      to: "/search",
+      search: { contribution: id(params.id), private_key: search.private_key },
+      replace: true,
+    });
+  },
 });
 
 const uploadRoute = createRoute({
@@ -174,10 +194,23 @@ const adminNodeRoute = createRoute({
 });
 
 // Content pages from the node YAML (`pages`): /about, /help, ... Static routes
-// above win over this one; unknown slugs render the not-found page.
+// above win over this one; unknown slugs render the not-found page. A number
+// is a contribution (earthref.org/MagIC/16901): its modal on the search page.
 const contentPageRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/$page",
+  validateSearch: (search: Record<string, unknown>): PrivateKeyParams => ({
+    private_key: str(search.private_key),
+  }),
+  beforeLoad: ({ params, search }) => {
+    if (/^\d+$/.test(params.page)) {
+      throw redirect({
+        to: "/search",
+        search: { contribution: Number(params.page), private_key: search.private_key },
+        replace: true,
+      });
+    }
+  },
   component: ContentPage,
 });
 
