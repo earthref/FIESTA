@@ -48,6 +48,28 @@ search:
     - { type: range, label: Age, field: summary.poles.age, unit: Ma, scale: 1.0e6, levels: [Locations], views: [Poles] }
     - { type: range, label: Pole A95, field: summary.poles.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
     - { type: bbox, label: Geospatial, levels: [Locations], views: [Poles] }
+  # The Map view's "Color by" menu: a column (offered on the levels whose table
+  # has it) or a summary.* path, parsed as a number; `scale` as a range
+  # filter's. Ages are put in years BP by their age_unit (AD: 1950 - year),
+  # and a unit not listed leaves the record uncolored.
+  map_colors:
+    - { label: Publication Year, field: summary.contribution._reference.year }
+    - label: Age
+      field: age
+      unit: Ma
+      scale: 1.0e6
+      log: true
+      unit_column: age_unit
+      unit_factors:
+        { Ga: 1.0e9, Ma: 1.0e6, ka: 1.0e3, Ka: 1.0e3, Years BP: 1, Years Cal BP: 1,
+          "Years AD (+/-)": -1, "Years Cal AD (+/-)": -1 }
+      unit_offsets: { "Years AD (+/-)": 1950, "Years Cal AD (+/-)": 1950 }
+    - { label: Paleointensity, field: int_abs, unit: μT, scale: 1.0e-6 }
+    - { label: VADM, field: vadm, unit: ZAm², scale: 1.0e21 }
+    - { label: Inclination, field: dir_inc, unit: "°" }
+    - { label: VGP Latitude, field: vgp_lat, unit: "°" }
+    - { label: Magnetic Moment, field: magn_moment, unit: Am², log: true }
+    - { label: Mass Susceptibility, field: susc_chi_mass, unit: m³/kg, log: true }
 
 storage:
   bucket: magic

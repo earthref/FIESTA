@@ -1,6 +1,7 @@
 """Public search + contribution retrieval for the node frontend."""
 
 import logging
+import math
 import uuid as uuid_mod
 from typing import Annotated, Any
 
@@ -10,7 +11,7 @@ from opensearchpy.exceptions import NotFoundError, TransportError
 from fiesta.apps.deps import NodeDep, SessionDep
 from fiesta.apps.schemas import MapPoints, SearchPage
 from fiesta.db.models import Contribution
-from fiesta.nodeconfig import BOX_COLUMNS
+from fiesta.nodeconfig import BOX_COLUMNS, MapColor
 from fiesta.search.client import get_opensearch
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services.access import constrain_search
@@ -168,6 +169,92 @@ def _to_float(value: Any) -> float | None:
         return None
 
 
+def _get_path(source: dict, path: str) -> Any:
+    for key in path.split("."):
+        source = source.get(key) if isinstance(source, dict) else None
+    return source
+
+
+def _color_value(source: dict, table: str, color: MapColor) -> float | None:
+    """A doc's number to color its marker by (see MapColor), or None."""
+    value = _to_float(_get_path(source, color.path(table)))
+    if value is None or not math.isfinite(value):
+        return None
+    if color.unit_column:
+        unit = _get_path(source, f"summary.{table}.{color.unit_column}")
+        unit = str(unit[0] if isinstance(unit, list) else unit).strip()
+        factor = color.unit_factors.get(unit)
+        return None if factor is None else value * factor + color.unit_offsets.get(unit, 0.0)
+    return value
+
+
+# A MapColor's value from a doc's doc values, for the aggregated map: the
+# first of `params.fields` the doc has (a keyword `.raw` or a numeric field),
+# parsed as a number, in the base unit by the factor and offset of its unit
+# (`params.unit`), if any.
+VALUE_SCRIPT = """
+def v = null;
+for (String f : params.fields) {
+  if (doc.containsKey(f) && doc[f].size() > 0) { v = doc[f].value; break; }
+}
+if (v == null) return null;
+double x;
+if (v instanceof Number) { x = ((Number) v).doubleValue(); }
+else {
+  try { x = Double.parseDouble(v.toString().trim()); }
+  catch (NumberFormatException e) { return null; }
+}
+if (Double.isNaN(x) || Double.isInfinite(x)) return null;
+if (params.unit != null) {
+  if (!doc.containsKey(params.unit) || doc[params.unit].size() == 0) return null;
+  String unit = doc[params.unit].value.trim();
+  def factor = params.factors.get(unit);
+  if (factor == null) return null;
+  x = x * factor + params.offsets.getOrDefault(unit, 0.0);
+}
+return x;
+"""
+
+
+async def _value_script(client, index: str, table: str, color: MapColor) -> dict:
+    """The avg aggregation of a MapColor's values, reading each path's doc
+    values: its `.raw` keyword when it is text, else the field itself."""
+    paths = [color.path(table)]
+    if color.unit_column:
+        paths.append(f"summary.{table}.{color.unit_column}")
+    try:
+        found = await client.indices.get_field_mapping(
+            index=index, fields=[f for p in paths for f in (p, f"{p}.raw")]
+        )
+    except NotFoundError:
+        found = {}
+    mapped: dict[str, str] = {}
+    for mappings in found.values():
+        for name, spec in (mappings.get("mappings") or {}).items():
+            leaf = next(iter((spec.get("mapping") or {}).values()), {})
+            mapped.setdefault(name, leaf.get("type", ""))
+
+    def doc_field(path: str) -> str | None:
+        if f"{path}.raw" in mapped:
+            return f"{path}.raw"
+        return path if mapped.get(path, "text") != "text" else None
+
+    field = doc_field(paths[0])
+    return {
+        "avg": {
+            "script": {
+                "source": VALUE_SCRIPT,
+                "params": {
+                    "fields": [field] if field else [],
+                    "unit": doc_field(paths[1]) if color.unit_column else None,
+                    "factors": color.unit_factors,
+                    "offsets": color.unit_offsets,
+                },
+            }
+        }
+    }
+
+
 def _inside(lat: float, lon: float, bbox: tuple[float, float, float, float] | None) -> bool:
     """Whether a point is in a `bbox` (whose min longitude is east of its max
     when it crosses the antimeridian)."""
@@ -179,11 +266,14 @@ def _inside(lat: float, lon: float, bbox: tuple[float, float, float, float] | No
 
 
 def _map_points(
-    source: dict, table: str, bbox: tuple[float, float, float, float] | None = None
+    source: dict,
+    table: str,
+    bbox: tuple[float, float, float, float] | None = None,
+    color: MapColor | None = None,
 ) -> list[dict]:
     """A doc's positions for the map: its `_geo_point` (a contribution's are
     all of its rows', and only those inside `bbox` are drawn), the row's box
-    when it has one, and what to call it."""
+    when it has one, what to call it, and its `color` value."""
     summary = source.get("summary") or {}
     geo = (summary.get("_all") or {}).get("_geo_point") or []
     row = summary.get(table) or {}
@@ -195,6 +285,8 @@ def _map_points(
     box = [_to_float(row.get(c)) for c in BOX_COLUMNS]
     if all(v is not None for v in box):
         base["bounds"] = box
+    if color is not None and (value := _color_value(source, table, color)) is not None:
+        base["value"] = value
     points = []
     for entry in geo if isinstance(geo, list) else [geo]:
         lat, lon = _to_float(entry.get("lat")), _to_float(entry.get("lon"))
@@ -215,18 +307,25 @@ def _location_point(bucket: dict) -> dict | None:
     at = (bucket.get("at") or {}).get("location")
     if not at:
         return None
-    return {
+    point = {
         "id": bucket["key"]["contribution"],
         # ~1 m, which is all the map shows and a third of the payload.
         "lat": round(at["lat"], 5),
         "lon": round(at["lon"], 5),
         "count": bucket["doc_count"],
     }
+    # The mean of its records' color values.
+    if (value := (bucket.get("value") or {}).get("value")) is not None:
+        point["value"] = value
+    return point
 
 
-async def _location_points(client, index: str, query: dict) -> tuple[list[dict], bool]:
+async def _location_points(
+    client, index: str, query: dict, value: dict | None = None
+) -> tuple[list[dict], bool]:
     """The unique locations of a search's records, per contribution, paged
-    through a composite aggregation; and whether MAX_MAP_POINTS cut it short."""
+    through a composite aggregation (with the `value` aggregation of their
+    color values); and whether MAX_MAP_POINTS cut it short."""
     points: list[dict] = []
     after = None
     while len(points) < MAX_MAP_POINTS:
@@ -249,7 +348,10 @@ async def _location_points(client, index: str, query: dict) -> tuple[list[dict],
                         "composite": composite,
                         # Exact, unlike the tile's centre (and not clamped to Web
                         # Mercator's ±85.05°).
-                        "aggs": {"at": {"geo_centroid": {"field": GEO_FIELD}}},
+                        "aggs": {
+                            "at": {"geo_centroid": {"field": GEO_FIELD}},
+                            **({"value": value} if value else {}),
+                        },
                     }
                 },
             },
@@ -272,13 +374,18 @@ async def search_points(
     bbox: str | None = None,
     contribution: int | None = None,
     private_key: str | None = None,
+    color_by: str | None = None,
 ) -> MapPoints:
     """Every positioned doc matching a search, for the search page's map; past
     MAP_DOCS_LIMIT matches at a level of single points (not the contribution
     level, not boxes, not one contribution's modal), their unique locations
-    with a `count` each instead."""
+    with a `count` each instead. `color_by` (a node `map_colors` field) adds
+    each point's `value`: the doc's number, or a location's records' mean."""
     if table not in node.geo_tables:
         raise HTTPException(404, f"search table {table!r} has no positions")
+    color = node.map_color(table, color_by) if color_by else None
+    if color_by and color is None:
+        raise HTTPException(400, f"{color_by!r} is not a map color of {table!r}")
     area = _parse_bbox(bbox)
     body = build_search_body(
         table=table,
@@ -297,6 +404,10 @@ async def search_points(
         f"summary.{table}.{table.removesuffix('s')}",
         *(f"summary.{table}.{c}" for c in BOX_COLUMNS),
     ]
+    if color is not None:
+        body["_source"].append(color.path(table))
+        if color.unit_column:
+            body["_source"].append(f"summary.{table}.{color.unit_column}")
     client = get_opensearch()
     if contribution is None and table != "contribution" and not _has_boxes(node, table):
         try:
@@ -304,7 +415,10 @@ async def search_points(
         except NotFoundError:
             return MapPoints(total=0, points=[])
         if count["count"] > MAP_DOCS_LIMIT:
-            points, truncated = await _location_points(client, node.search_index, body["query"])
+            value = color and await _value_script(client, node.search_index, table, color)
+            points, truncated = await _location_points(
+                client, node.search_index, body["query"], value
+            )
             return MapPoints(total=count["count"], points=points, truncated=truncated)
     try:
         response = await client.search(index=node.search_index, body=body, scroll="1m")
@@ -317,7 +431,7 @@ async def search_points(
     try:
         while hits["hits"] and len(points) < MAX_MAP_POINTS:
             for hit in hits["hits"]:
-                points += _map_points(hit["_source"], table, area)
+                points += _map_points(hit["_source"], table, area, color)
             if len(hits["hits"]) < MAP_PAGE_SIZE:
                 break
             response = await client.scroll(scroll_id=scroll_id, scroll="1m")

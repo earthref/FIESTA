@@ -276,8 +276,8 @@ def data_model_columns(node: NodeConfig) -> dict[str, set[str]]:
 
 
 def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[str]:
-    """Every page has its HTML file; every facet is a data-model column; every
-    filter's levels and views name search levels / result views."""
+    """Every page has its HTML file; every facet and map color column is a
+    data-model column; every filter's and map color's levels name search levels."""
     errors = []
     for page in node.pages:
         if node.page_path(page.slug) not in files:
@@ -302,6 +302,16 @@ def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[s
         for level in f.levels:
             if level not in levels:
                 errors.append(f"filter {f.key!r}: no search level {level!r}")
+    for c in node.search.map_colors:
+        for column in (c.field, c.unit_column):
+            if column and "." not in column and column not in columns:
+                errors.append(
+                    f"map color {c.field!r}: {column!r} is not a column of data model "
+                    f"{node.data_model.latest}"
+                )
+        for level in c.levels:
+            if level not in levels:
+                errors.append(f"map color {c.field!r}: no search level {level!r}")
     return errors
 
 

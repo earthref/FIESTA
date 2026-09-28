@@ -879,6 +879,63 @@ def test_map_points_from_a_search_doc():
     assert [p["lon"] for p in inside] == [179.0]
 
 
+def test_map_colors_are_node_configuration(magic_node):
+    """magic.yaml's map colors: a column is offered on the levels whose table
+    has it, a summary.* path on every level with positions; a record's value
+    is its text parsed, an age in years BP by its unit."""
+    from fiesta.apps.routers.search import _location_point, _map_points
+    from fiesta.nodeconfig import MapColor
+
+    public = {c["field"]: c for c in magic_node.public_config()["map_colors"]}
+    assert public["vadm"]["tables"] == ["sites"]
+    assert "contribution" in public["summary.contribution._reference.year"]["tables"]
+    assert "unit_factors" not in public["age"]
+    assert magic_node.map_color("sites", "age") is not None
+    assert magic_node.map_color("samples", "age") is None
+    with pytest.raises(ValueError, match="summary"):
+        MapColor(label="x", field="sites.age")
+    with pytest.raises(ValueError, match="unit_factors"):
+        MapColor(label="x", field="age", unit_column="age_unit")
+    from fiesta.services import node_config as svc
+
+    files = svc.read_tree(CONFIG_DIR, "magic")
+    bad = files["magic.yaml"].decode().replace("field: vadm,", "field: no_such_column,", 1)
+    with pytest.raises(svc.ConfigError, match="no_such_column"):
+        svc.validate_files("magic", {**files, "magic.yaml": bad.encode()})
+
+    age = magic_node.map_color("sites", "age")
+
+    def site(value, unit):
+        return {
+            "summary": {
+                "contribution": {"id": 7},
+                "sites": {"site": "S1", "age": value, "age_unit": unit},
+                "_all": {"_geo_point": {"lat": 1, "lon": 2}},
+            }
+        }
+
+    def value(doc):
+        return _map_points(doc, "sites", None, age)[0].get("value")
+
+    assert value(site("1.5", "Ma")) == 1.5e6
+    assert value(site("1900", "Years AD (+/-)")) == 50
+    assert value(site("1.5", "Eons")) is None
+    assert value(site("n/a", "Ma")) is None
+    year = magic_node.map_color("sites", "summary.contribution._reference.year")
+    doc = site("1", "Ma")
+    doc["summary"]["contribution"]["_reference"] = {"year": 2014}
+    assert _map_points(doc, "sites", None, year)[0]["value"] == 2014
+    # A location's records' mean, from the composite bucket's avg.
+    bucket = {
+        "key": {"contribution": 7},
+        "doc_count": 3,
+        "at": {"location": {"lat": 1, "lon": 2}},
+        "value": {"value": 12.5},
+    }
+    assert _location_point(bucket)["value"] == 12.5
+    assert "value" not in _location_point({**bucket, "value": {"value": None}})
+
+
 def test_undersea_features_for_the_map_labels():
     from fiesta.apps.routers.basemap import undersea_features
 

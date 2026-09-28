@@ -1,10 +1,20 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/api";
-import type { SearchLevel } from "../../lib/types";
+import { useNodeConfig } from "../../lib/config";
+import type { MapColorOption, SearchLevel } from "../../lib/types";
 import { singularize } from "../../lib/utils";
 import { Icon } from "../ui/icon";
 import { Spinner } from "../ui/spinner";
+import {
+  type ColorScale,
+  colorPoints,
+  colorScale,
+  formatValue,
+  NO_VALUE_COLOR,
+  RAMP,
+  valueAt,
+} from "./map-colors";
 import {
   type ApiMapPoint,
   type Area,
@@ -39,6 +49,17 @@ function savedMode(): Mode {
   }
 }
 
+// The field the markers are colored by (a node `map_colors` field, or "" for
+// the node's color), remembered in this browser for every search map.
+const COLOR_KEY = "search-map-color";
+function savedColorBy(): string {
+  try {
+    return localStorage.getItem(COLOR_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function usePoints(
   level: SearchLevel,
   query: string,
@@ -46,12 +67,13 @@ function usePoints(
   bbox: string | undefined,
   color: string,
   enabled = true,
+  colorBy?: string,
 ) {
   return useQuery({
-    queryKey: ["search-points", level.table, query, ranges, bbox],
+    queryKey: ["search-points", level.table, query, ranges, bbox, colorBy],
     queryFn: () =>
       api<MapPointsPage>(`/search/${level.table}/points`, {
-        params: { query: query || undefined, range: ranges, bbox },
+        params: { query: query || undefined, range: ranges, bbox, color_by: colorBy },
       }),
     select: (page) => ({
       ...page,
@@ -65,6 +87,40 @@ function usePoints(
     staleTime: 60_000,
     placeholderData: keepPreviousData,
   });
+}
+
+/** The colors' key: the ramp from the scale's low to high value, and the
+ * color of records without one. */
+function ColorLegend({ scale, option }: { scale: ColorScale | null; option: MapColorOption }) {
+  return (
+    <div className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-white/90 px-2 py-1.5 text-xs text-gray-700 shadow">
+      <div className="font-bold">
+        {option.label}
+        {option.log && <span className="font-normal text-gray-500"> (log scale)</span>}
+      </div>
+      {scale ? (
+        <>
+          <div
+            className="mt-1 h-2.5 w-44 rounded-sm"
+            style={{ background: `linear-gradient(to right, ${RAMP.join(", ")})` }}
+          />
+          <div className="mt-0.5 flex w-44 justify-between">
+            <span>{formatValue(option, valueAt(scale, 0))}</span>
+            {scale.high > scale.low && <span>{formatValue(option, valueAt(scale, 1))}</span>}
+          </div>
+        </>
+      ) : (
+        <div className="mt-0.5 text-gray-500">No values in this search</div>
+      )}
+      <div className="mt-1 flex items-center gap-1.5">
+        <span
+          className="inline-block h-2.5 w-2.5 rounded-full border border-white"
+          style={{ background: NO_VALUE_COLOR }}
+        />
+        No value
+      </div>
+    </div>
+  );
 }
 
 /** An area filter asked for (the sidebar's Geospatial filter or the map's
@@ -118,10 +174,42 @@ export function SearchMap({
     if (areaRequest?.mode && areaRequest.mode !== mode) setMode(areaRequest.mode);
   }, [areaRequest]);
 
-  const inArea = usePoints(level, query, ranges, area ? areaToBbox(area) : undefined, color);
+  // The level's "Color by" options; one saved for another level is kept for
+  // when it is offered again.
+  const { data: config } = useNodeConfig();
+  const colorOptions = (config?.map_colors ?? []).filter((o) => o.tables.includes(level.table));
+  const [colorBy, setColorByState] = useState(savedColorBy);
+  const setColorBy = (next: string) => {
+    setColorByState(next);
+    try {
+      localStorage.setItem(COLOR_KEY, next);
+    } catch {
+      // private window: the choice just isn't remembered
+    }
+  };
+  const colorOption = colorOptions.find((o) => o.field === colorBy) ?? null;
+
+  const inArea = usePoints(
+    level,
+    query,
+    ranges,
+    area ? areaToBbox(area) : undefined,
+    color,
+    true,
+    colorOption?.field,
+  );
   // With an area, the same search without it, for the grey context points.
   const all = usePoints(level, query, ranges, undefined, color, Boolean(area));
-  const points = inArea.data?.points ?? [];
+  const fetched = inArea.data?.points;
+  // Scaled to the values of the search's points (in the area, if any).
+  const scale = useMemo(
+    () => (colorOption && fetched ? colorScale(colorOption, fetched) : null),
+    [colorOption, fetched],
+  );
+  const points = useMemo(
+    () => (fetched && colorOption ? colorPoints(fetched, scale) : (fetched ?? [])),
+    [fetched, colorOption, scale],
+  );
   const context = useMemo<MapPoint[]>(() => {
     if (!area || !all.data) return [];
     // A record, or a location's records in a contribution (whose name is their
@@ -217,6 +305,23 @@ export function SearchMap({
             Filter by area
           </button>
         )}
+        {colorOptions.length > 0 && (
+          <label className="inline-flex items-center gap-1.5 font-bold text-gray-700">
+            Color by
+            <select
+              value={colorOption?.field ?? ""}
+              onChange={(event) => setColorBy(event.target.value)}
+              className="rounded-sm border border-gray-300 bg-white px-1.5 py-1 font-normal"
+            >
+              <option value="">None</option>
+              {colorOptions.map((o) => (
+                <option key={o.field} value={o.field}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {inArea.data && (
           <span className="text-gray-600">
             {mapped.toLocaleString()} mapped {mapped === 1 ? singularize(level.name) : level.name}
@@ -239,6 +344,9 @@ export function SearchMap({
             context={context}
           />
         </Suspense>
+        {colorOption && inArea.data && points.length > 0 && (
+          <ColorLegend scale={scale} option={colorOption} />
+        )}
         {showLoading ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/40">
             <span className="flex items-center gap-2 rounded-sm bg-white/90 px-3 py-1.5 text-sm shadow">
