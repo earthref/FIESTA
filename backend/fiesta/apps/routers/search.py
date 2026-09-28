@@ -1,10 +1,11 @@
 """Public search + contribution retrieval for the node frontend."""
 
+import logging
 import uuid as uuid_mod
 from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, Response
-from opensearchpy.exceptions import NotFoundError
+from opensearchpy.exceptions import NotFoundError, TransportError
 
 from fiesta.apps.deps import NodeDep, SessionDep
 from fiesta.apps.schemas import MapPoints, SearchPage
@@ -14,6 +15,8 @@ from fiesta.search.client import get_opensearch
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services.access import constrain_search
 from fiesta.services.contributions import load_file
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["search"])
 
@@ -202,8 +205,13 @@ async def search_points(
             scroll_id = response.get("_scroll_id", scroll_id)
             hits = response["hits"]
     finally:
+        # Best effort: the production `fiesta` role may not clear scrolls
+        # (indices:data/read/scroll/clear), and the context expires in 1m anyway.
         if scroll_id:
-            await client.clear_scroll(scroll_id=scroll_id, ignore=(404,))
+            try:
+                await client.clear_scroll(scroll_id=scroll_id, ignore=(404,))
+            except TransportError as exc:
+                logger.warning("could not clear the map scroll: %s", exc)
     return MapPoints(
         total=total, points=points[:MAX_MAP_POINTS], truncated=total > MAX_MAP_POINTS
     )

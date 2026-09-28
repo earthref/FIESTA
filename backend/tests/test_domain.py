@@ -502,6 +502,8 @@ def test_search_body_sort_options():
     # Default: newest first without free text, relevance with it.
     body = build_search_body(table="contribution", query=None)
     assert body["sort"] == SORT_OPTIONS[DEFAULT_SORT]
+    # Totals are exact, not capped at OpenSearch's default 10,000.
+    assert body["track_total_hits"] is True
     body = build_search_body(table="contribution", query="basalt")
     assert body["sort"] == SORT_OPTIONS["relevance"]
     # A token-only query has no free text, so it still sorts newest first.
