@@ -24,12 +24,15 @@ export const PORTALS: Portal[] = [
   { label: "Users", url: "https://earthref.org/ERML/", color: "#006600" },
 ];
 
+/** The EarthRef.org entry: the FIESTA portal home stands in for it. */
+export const EARTHREF: Portal = PORTALS[0] as Portal;
+
 /** Identity of the FIESTA portal home (base.ts PORTAL), in EarthRef.org green. */
 export const FIESTA_PORTAL = {
   key: "FIESTA",
   title: "FIESTA",
   subtitle: "The EarthRef.org data repositories",
-  color: PORTALS[0]?.color ?? "#006600",
+  color: EARTHREF.color,
 };
 
 // Hosts the production URLs above live on: a page served from one of them
@@ -47,12 +50,16 @@ const siblingBase: string | null = NODES.length
     : BASE_PATH.replace(/[^/]+\/$/, "");
 
 /**
- * The URL a portal links to. Off the production hosts (a local stack, the dev
+ * The URL a portal links to. EarthRef.org is the FIESTA portal home in the
+ * multi-node layout. Off the production hosts (a local stack, the dev
  * server), a node this deployment also serves -- listed in fiesta-env.js for
  * the multi-node layout, else the API's `deployment_nodes` -- links to its
  * instance next to this one; everything else keeps its production URL.
  */
 export function portalUrl(portal: Portal, deploymentNodes: string[] = []): string {
+  // Where this origin serves every node, EarthRef.org is the FIESTA portal home
+  // at the build base (base.ts PORTAL).
+  if (portal === EARTHREF && NODES.length) return BUILD_BASE;
   if (siblingBase === null || productionHosts.has(location.hostname)) return portal.url;
   const slug = portal.label.toLowerCase();
   const served = NODES.length ? NODES : deploymentNodes.map((key) => key.toLowerCase());

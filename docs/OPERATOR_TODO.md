@@ -48,6 +48,10 @@ Last updated: 2026-09-24
 - [ ] **EZID account** for DOI minting (username/password names TBD when C1 is built).
       Unblocks: C1 live path.
 - [ ] **ORCID API client** (client id/secret, redirect URI per host). Unblocks: C2.
+- [ ] (Optional, 2026-09-27) Grant the OpenSearch `fiesta` role
+      `indices:data/read/scroll/clear`. The search map scrolls its points and the role
+      may not clear a scroll (403). The API now ignores that, and each context expires
+      after 1 minute, so the map works without it; the grant only frees contexts sooner.
 
 ## C — Data
 

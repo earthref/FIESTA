@@ -152,6 +152,8 @@ def build_search_body(
     body: dict[str, Any] = {
         "size": size,
         "from": from_,
+        # Exact totals: the level tabs count past OpenSearch's default 10,000.
+        "track_total_hits": True,
         "query": {"bool": {"filter": filters, "must": must}},
         "sort": SORT_OPTIONS[sort or ("relevance" if text else DEFAULT_SORT)],
     }

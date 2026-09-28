@@ -4,7 +4,7 @@ import { isAnyAdmin, isNodeAdmin } from "../lib/admin";
 import { useAuth } from "../lib/auth";
 import { PORTAL } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
-import { FIESTA_PORTAL, PORTALS, portalUrl } from "../lib/portals";
+import { EARTHREF, FIESTA_PORTAL, PORTALS, portalUrl } from "../lib/portals";
 import { useLoginModal } from "./login-modal";
 import { MobileDrawer } from "./mobile-drawer";
 import { Icon } from "./ui/icon";
@@ -32,7 +32,7 @@ const itemStyle: CSSProperties = {
 /** Fixed thin EarthRef portal bar across the very top of every page. */
 export function PortalBar() {
   const { data: nodeConfig } = useNodeConfig();
-  // The portal home is no node's page: the bar highlights none of them.
+  // The portal home is no node's page: the bar highlights EarthRef.org instead.
   const config = PORTAL ? undefined : nodeConfig;
   const { user, logout } = useAuth();
   const { openLogin } = useLoginModal();
@@ -78,7 +78,7 @@ export function PortalBar() {
         {/* Wide (≥1024px): full portal bar */}
         <nav aria-label="EarthRef portals" className="hidden items-stretch lg:flex">
           {PORTALS.map((portal) => {
-            const active = portal.label === config?.key;
+            const active = PORTAL ? portal === EARTHREF : portal.label === config?.key;
             const style = {
               ...itemStyle,
               ...(active ? { color: portal.color, borderBottomColor: portal.color } : {}),

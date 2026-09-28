@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { PORTAL } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
-import { PORTALS, portalUrl } from "../lib/portals";
+import { EARTHREF, PORTALS, portalUrl } from "../lib/portals";
 import { type NodeMenuItem, nodeMenuItems } from "./node-menu";
 import { Icon } from "./ui/icon";
 
@@ -17,7 +17,7 @@ interface MobileDrawerProps {
 export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProps) {
   const { data: nodeConfig } = useNodeConfig();
   const panelRef = useRef<HTMLDivElement>(null);
-  // The portal home has no node menu and highlights no portal.
+  // The portal home has no node menu and highlights EarthRef.org.
   const config = PORTAL ? undefined : nodeConfig;
   const { left, right } = config ? nodeMenuItems(config) : { left: [], right: [] };
   const menuItems = [...left, ...right];
@@ -103,7 +103,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
         {/* All EarthRef portal links (brand colors, active bold) */}
         <nav aria-label="EarthRef portals" className="flex flex-col p-2">
           {PORTALS.map((portal) => {
-            const active = portal.label === config?.key;
+            const active = PORTAL ? portal === EARTHREF : portal.label === config?.key;
             const className =
               "rounded-sm px-3 py-1.5 text-sm hover:bg-gray-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node";
             const style = { color: portal.color, fontWeight: active ? 700 : 500 };
