@@ -238,12 +238,17 @@ export function HomePage() {
             </div>
           </div>
 
-          {/* Plugin cards (legacy: the full-width "Poles / View" tiny card) */}
-          {pluginHomeCards(config).map(({ key, ...card }) => (
-            <div key={key} style={{ marginTop: "0.875em" }}>
-              <IconButton variant="wide" {...card} />
+          {/* Plugin cards (legacy: the full-width "Poles / View" tiny card),
+              side by side when a node has several */}
+          {pluginHomeCards(config).length > 0 && (
+            <div className="flex gap-[0.875em]" style={{ marginTop: "0.875em" }}>
+              {pluginHomeCards(config).map(({ key, ...card }) => (
+                <div key={key} className="min-w-0 flex-1">
+                  <IconButton variant="wide" {...card} />
+                </div>
+              ))}
             </div>
-          ))}
+          )}
 
           <DividerHeader first>{config.key} Resources</DividerHeader>
           <div className="flex flex-wrap justify-center" style={nineCards}>

@@ -11,7 +11,6 @@ tab); the frontend surfaces it as a sub-tab of Locations, after "Rows".
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from fiesta.apps.deps import NodeDep
@@ -59,7 +58,7 @@ class PolesOptions(PluginOptions):
     )
     age_color: AgeColors = Field(default=AgeColors(), description="Pole colors by age")
     plate_boundary_color: str = Field(
-        default="#990000", description="Color of the plate boundary lines on the globes"
+        default="#990000", description="Color of the plate boundary lines on the map"
     )
 
 
@@ -67,7 +66,8 @@ class PolesPlugin(FiestaPlugin):
     name = "poles"
     description = (
         "Derives a searchable `poles` document from every location row with a pole "
-        "latitude and longitude, and shows them as a sub-tab with globe maps."
+        "latitude and longitude, and shows them as a sub-tab on a map with plate "
+        "boundaries and uncertainty ellipses."
     )
     Options = PolesOptions
 
@@ -144,21 +144,13 @@ class PolesPlugin(FiestaPlugin):
 
         @router.get("/plate-boundaries")
         async def plate_boundaries(node: NodeDep) -> dict:
-            """Tectonic plate boundary polygons (GeoJSON) for the globes."""
+            """Tectonic plate boundary polygons (GeoJSON) for the map."""
             path = node.base_dir / node.node.slug / "plate_boundaries.json"
             if not path.exists():
                 raise HTTPException(404, "this node has no plate boundary data")
             import json
 
             return json.loads(path.read_text())
-
-        @router.get("/base-texture")
-        async def base_texture(node: NodeDep) -> FileResponse:
-            """Earth relief image used as the globe surface texture."""
-            path = node.base_dir / node.node.slug / "global_relief_map.jpg"
-            if not path.exists():
-                raise HTTPException(404, "this node has no globe texture")
-            return FileResponse(path, media_type="image/jpeg")
 
         return router
 
@@ -173,5 +165,4 @@ class PolesPlugin(FiestaPlugin):
             "has_plate_boundaries": (
                 node.base_dir / node.node.slug / "plate_boundaries.json"
             ).exists(),
-            "has_base_texture": (node.base_dir / node.node.slug / "global_relief_map.jpg").exists(),
         }

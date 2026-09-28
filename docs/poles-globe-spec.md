@@ -1,5 +1,16 @@
 # Legacy MagIC poles globe view — implementation spec
 
+> **Superseded 2026-09-28 (deliberate deviation).** The pair of echarts-gl
+> globes (view + antipode) was replaced by the search map's MapLibre views
+> (globe, Mercator, north and south pole; `plugins/poles/poles-map.tsx`): the
+> pole views show normal and reversed poles without an antipodal globe. Kept
+> from this spec: the detail bar, the side panel (displayed poles, ellipse
+> toggle, age legend), the age colouring (now the YAML's `age_color`), the
+> plate boundaries and the a95 ellipse math. Added: dp/dm ovals for poles
+> without an a95. Dropped: the earth-relief texture (the basemap replaces
+> it; `/plugins/poles/base-texture` is gone) and centring the globe on the
+> selected pole. The rest of this file records the legacy view.
+
 Source: `MagIC/client/modules/magic/components/search_poles_view.jsx`. The
 rebuild's poles view should match this. Backend already provides everything:
 `GET /v2/{node}/plugins/poles/base-texture` (earth relief JPEG),

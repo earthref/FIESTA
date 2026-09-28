@@ -5,6 +5,12 @@ export interface Pole {
   lat: number;
   lon: number;
   alpha95?: number;
+  /** The confidence oval's semi-axes (degrees): dp along the great circle
+   * from the site to the pole, dm across it. */
+  dp?: number;
+  dm?: number;
+  /** The site the pole was calculated from ([lat, lon]), for the oval's orientation. */
+  site?: [number, number];
   age?: number;
   ageUnit?: string;
   name: string;
@@ -62,10 +68,24 @@ export function poleBlockOf(hit: SearchResult): Record<string, unknown> | undefi
   return undefined;
 }
 
+/** A location row's position: its lat/lon, or the middle of its box. */
+function siteOf(row: Record<string, unknown> | undefined): [number, number] | undefined {
+  if (!row) return undefined;
+  const [lat, lon] = [firstNumber(row.lat), firstNumber(row.lon)];
+  if (lat !== undefined && lon !== undefined) return [lat, normalizeLon(lon)];
+  const [s, n, w, e] = ["lat_s", "lat_n", "lon_w", "lon_e"].map((k) => firstNumber(row[k]));
+  if (s === undefined || n === undefined || w === undefined || e === undefined) return undefined;
+  const west = normalizeLon(w);
+  let east = normalizeLon(e);
+  if (east < west) east += 360;
+  return [(s + n) / 2, normalizeLon((west + east) / 2)];
+}
+
 export function polesFromHits(hits: SearchResult[]): Pole[] {
   const poles: Pole[] = [];
   for (const hit of hits) {
     const block = poleBlockOf(hit);
+    const row = getPath(hit, "summary.locations") as Record<string, unknown> | undefined;
     const lat = firstNumber(block?.pole_lat);
     const lonRaw = firstNumber(block?.pole_lon);
     if (lat === undefined || lonRaw === undefined) continue;
@@ -88,7 +108,10 @@ export function polesFromHits(hits: SearchResult[]): Pole[] {
     poles.push({
       lat,
       lon: normalizeLon(lonRaw),
-      alpha95: firstNumber(block?.pole_alpha95),
+      alpha95: firstNumber(block?.pole_alpha95 ?? row?.pole_alpha95),
+      dp: firstNumber(row?.pole_dp),
+      dm: firstNumber(row?.pole_dm),
+      site: siteOf(row),
       age: firstNumber(block?.age ?? block?.pole_age),
       ageUnit: firstString(block?.age_unit),
       name,
@@ -105,12 +128,34 @@ export interface AgeScale {
   minAge: number;
   maxAge: number;
   hasAges: boolean;
-  /** young→yellow, old→red; unknown→black. */
+  /** young → old along the gradient; unknown → its own color. */
   color: (age: number | undefined) => string;
 }
 
+/** The poles plugin's `age_color` option (node YAML). */
+export interface AgeColors {
+  young: string;
+  old: string;
+  unknown: string;
+  selected: string;
+}
+
+export const DEFAULT_AGE_COLORS: AgeColors = {
+  young: "#ffff00",
+  old: "#ff0000",
+  unknown: "#000000",
+  selected: "#800080",
+};
+
+const hexRgb = (hex: string): [number, number, number] => {
+  const h = hex.replace(/^#/, "");
+  const full = h.length === 3 ? [...h].map((c) => c + c).join("") : h;
+  const n = Number.parseInt(full.slice(0, 6), 16);
+  return Number.isFinite(n) ? [(n >> 16) & 255, (n >> 8) & 255, n & 255] : [0, 0, 0];
+};
+
 /** Build the age → color mapping over the displayed poles (spec §Age coloring). */
-export function makeAgeScale(poles: Pole[]): AgeScale {
+export function makeAgeScale(poles: Pole[], colors: AgeColors = DEFAULT_AGE_COLORS): AgeScale {
   const ages = poles
     .map((pole) => pole.age)
     .filter((age): age is number => age !== undefined && Number.isFinite(age));
@@ -122,9 +167,14 @@ export function makeAgeScale(poles: Pole[]): AgeScale {
     maxAge,
     hasAges: ages.length > 0,
     color: (age) => {
-      if (age === undefined || !Number.isFinite(age)) return "#000";
+      if (age === undefined || !Number.isFinite(age)) return colors.unknown;
       const t = range > 0 ? (age - minAge) / range : 0.5;
-      return `rgb(255, ${Math.round(255 * (1 - t))}, 0)`;
+      const [young, old] = [hexRgb(colors.young), hexRgb(colors.old)];
+      const channel = (i: number) =>
+        Math.round(young[i] + (old[i] - young[i]) * t)
+          .toString(16)
+          .padStart(2, "0");
+      return `#${channel(0)}${channel(1)}${channel(2)}`;
     },
   };
 }
@@ -158,6 +208,59 @@ export function ellipsePoints(
   }
   if (pts.length > 0) pts.push(pts[0]);
   return pts;
+}
+
+/**
+ * A dp/dm confidence oval around a pole: semi-axis dp (degrees) along the
+ * great circle from the pole toward its site, dm across it. Each point is
+ * the ellipse's radius in that direction, walked out from the pole along
+ * the great circle at that bearing. Closed ring of [lon, lat] pairs.
+ */
+export function ovalPoints(
+  [poleLat, poleLon]: [number, number],
+  [siteLat, siteLon]: [number, number],
+  dp: number,
+  dm: number,
+): [number, number][] {
+  const rad = Math.PI / 180;
+  const phi = poleLat * rad;
+  const lambda = poleLon * rad;
+  const phiS = siteLat * rad;
+  const dLon = (siteLon - poleLon) * rad;
+  // Initial bearing from the pole to the site.
+  const bearing = Math.atan2(
+    Math.sin(dLon) * Math.cos(phiS),
+    Math.cos(phi) * Math.sin(phiS) - Math.sin(phi) * Math.cos(phiS) * Math.cos(dLon),
+  );
+  const n = Math.max(24, Math.round(10 + 50 * Math.max(dp, dm)));
+  const pts: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const t = (2 * Math.PI * i) / n;
+    const [a, b] = [dp * Math.cos(t), dm * Math.sin(t)];
+    const r = Math.hypot(a, b) * rad;
+    const theta = bearing + Math.atan2(b, a);
+    const lat = Math.asin(
+      Math.sin(phi) * Math.cos(r) + Math.cos(phi) * Math.sin(r) * Math.cos(theta),
+    );
+    const lon =
+      lambda +
+      Math.atan2(
+        Math.sin(theta) * Math.sin(r) * Math.cos(phi),
+        Math.cos(r) - Math.sin(phi) * Math.sin(lat),
+      );
+    pts.push([normalizeLon(lon / rad), lat / rad]);
+  }
+  if (pts.length > 0) pts.push(pts[0]);
+  return pts;
+}
+
+/** A pole's uncertainty outline: its a95 circle, else its dp/dm oval. */
+export function uncertaintyRing(pole: Pole): [number, number][] | null {
+  if (pole.alpha95 !== undefined && pole.alpha95 > 0)
+    return ellipsePoints(pole.lat, pole.lon, pole.alpha95);
+  if (pole.dp && pole.dm && pole.dp > 0 && pole.dm > 0 && pole.site)
+    return ovalPoints([pole.lat, pole.lon], pole.site, pole.dp, pole.dm);
+  return null;
 }
 
 /** Split a lon/lat ring wherever an adjacent-vertex jump exceeds 180° (date line). */

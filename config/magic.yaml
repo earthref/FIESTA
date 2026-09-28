@@ -38,16 +38,26 @@ search:
   # on the Locations level's Poles view (the `poles` plugin indexes
   # summary.poles.age in years, hence the Ma scale).
   filters:
-    - { type: facet, field: method_codes, views: [Summaries, Rows, Map] }
-    - { type: facet, field: geologic_classes, views: [Summaries, Rows, Map] }
-    - { type: facet, field: geologic_types, views: [Summaries, Rows, Map] }
-    - { type: facet, field: lithologies, views: [Summaries, Rows, Map] }
-    - { type: facet, field: location_type, views: [Summaries, Rows, Map] }
-    - { type: facet, field: plate_blocks, views: [Summaries, Rows, Map] }
-    - { type: facet, field: tectonic_settings, views: [Summaries, Rows, Map] }
+    - { type: facet, field: method_codes, views: [Summaries, Rows, Map, Rock Magnetism] }
+    - { type: facet, field: geologic_classes, views: [Summaries, Rows, Map, Rock Magnetism] }
+    - { type: facet, field: geologic_types, views: [Summaries, Rows, Map, Rock Magnetism] }
+    - { type: facet, field: lithologies, views: [Summaries, Rows, Map, Rock Magnetism] }
+    - { type: facet, field: location_type, views: [Summaries, Rows, Map, Rock Magnetism] }
+    - { type: facet, field: plate_blocks, views: [Summaries, Rows, Map, Rock Magnetism] }
+    - { type: facet, field: tectonic_settings, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: range, label: Age, field: summary.poles.age, unit: Ma, scale: 1.0e6, levels: [Locations], views: [Poles] }
     - { type: range, label: Pole A95, field: summary.poles.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
     - { type: bbox, label: Geospatial, levels: [Locations], views: [Poles] }
+    # The `rock-mag` plugin's parameters (summary.rock_mag.<field>: fields in mT,
+    # temperatures in °C) on the Specimens level's Rock Magnetism view.
+    - { type: range, label: Mr/Ms, field: summary.rock_mag.mr_ms, levels: [Specimens], views: [Rock Magnetism] }
+    - { type: range, label: Bcr/Bc, field: summary.rock_mag.bcr_bc, levels: [Specimens], views: [Rock Magnetism] }
+    - { type: range, label: Bc, field: summary.rock_mag.bc, unit: mT, levels: [Specimens], views: [Rock Magnetism] }
+    - { type: range, label: Bcr, field: summary.rock_mag.bcr, unit: mT, levels: [Specimens], views: [Rock Magnetism] }
+    - { type: range, label: Critical Temperature, field: summary.rock_mag.tc, unit: "°C", levels: [Specimens], views: [Rock Magnetism] }
+    - { type: range, label: "Anisotropy P′", field: summary.rock_mag.pj, levels: [Specimens], views: [Rock Magnetism] }
+    - { type: range, label: Anisotropy Shape T, field: summary.rock_mag.t, levels: [Specimens], views: [Rock Magnetism] }
+    - { type: bbox, label: Geospatial, levels: [Specimens], views: [Rock Magnetism] }
   # The Map view's "Color by" menu: a column (offered on the levels whose table
   # has it) or a summary.* path, parsed as a number; `scale` as a range
   # filter's. Ages are put in years BP by their age_unit (AD: 1950 - year),
@@ -125,9 +135,12 @@ plugins:
     # black for unknown age, purple for the selected pole.
     age_color: { young: "#ffff00", old: "#ff0000", unknown: "#000000", selected: "#800080" }
     plate_boundary_color: "#990000"
+  rock-mag:
+    base_level: Specimens # the Rock Magnetism view is a sub-tab of this level
+    source_table: specimens
 
 features:
-  plugins: [poles]
+  plugins: [poles, rock-mag]
   # Home page content (legacy client/modules/magic/components/home.jsx + home_news.jsx).
   home:
     # `ui nine cards` resource row: Semantic icon names; `to` = SPA route, `href` = external.

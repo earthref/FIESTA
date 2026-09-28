@@ -11,6 +11,7 @@ import {
   UNDERSEA_ATTRIBUTION,
   UNDERSEA_FEATURES,
 } from "./basemap";
+import { createLinesLayer, type LinesLayer, type MapLine } from "./lines-layer";
 import {
   type Area,
   colocatedIndex,
@@ -552,6 +553,11 @@ const MapLibreMap: FC<{
   // Records drawn in grey under the others, for context: those a filter
   // leaves out. They can't be hovered or clicked.
   context?: MapPoint[];
+  // Lines under the points (plate boundaries, uncertainty ellipses), drawn
+  // past Web Mercator's limit too (see lines-layer.ts).
+  lines?: MapLine[];
+  // The points' circle radius in pixels, instead of 3.
+  pointRadius?: number;
 }> = ({
   mode,
   points,
@@ -565,6 +571,8 @@ const MapLibreMap: FC<{
   zoomTo,
   focusKey,
   context,
+  lines,
+  pointRadius = 3,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -587,6 +595,10 @@ const MapLibreMap: FC<{
   contextRef.current = context || [];
   // Plots the latest context points once the style has loaded.
   const setContextRef = useRef<(() => void) | null>(null);
+  const linesRef = useRef(lines || []);
+  linesRef.current = lines || [];
+  // The lines' layer, once the style has loaded.
+  const linesLayerRef = useRef<LinesLayer | null>(null);
 
   // The map is rebuilt per mode; everything else reaches it through refs.
   // biome-ignore lint/correctness/useExhaustiveDependencies: rebuilt only when the mode changes
@@ -694,7 +706,7 @@ const MapLibreMap: FC<{
             type: "circle",
             source: "points",
             paint: {
-              "circle-radius": 3,
+              "circle-radius": pointRadius,
               "circle-color": ["get", "color"],
               "circle-stroke-color": "#ffffff",
               "circle-stroke-width": 1,
@@ -908,7 +920,8 @@ const MapLibreMap: FC<{
           const { lat, lon, color, id } = members[0];
           if (!isPolar(members[0])) return;
           const element = document.createElement("div");
-          element.style.cssText = `${MARKER_STYLE};background:${color}`;
+          const size = 2 * pointRadius + 2;
+          element.style.cssText = `${MARKER_STYLE};width:${size}px;height:${size}px;background:${color}`;
           // Hidden behind the globe, but still under the pointer there.
           const hidden = () => map.transform.isLocationOccluded(new maplibregl.LngLat(lon, lat));
           element.addEventListener("mouseenter", () => {
@@ -970,6 +983,10 @@ const MapLibreMap: FC<{
       syncArea();
       setContextRef.current = setContext;
       setContext();
+      const linesLayer = createLinesLayer("lines", !globe);
+      linesLayer.setLines(linesRef.current);
+      map.addLayer(linesLayer, "context-points");
+      linesLayerRef.current = linesLayer;
     });
 
     // Geospatial filter area. Dragging a corner handle resizes it, and dragging
@@ -1343,6 +1360,7 @@ const MapLibreMap: FC<{
       setPointsRef.current = null;
       syncAreaRef.current = null;
       setContextRef.current = null;
+      linesLayerRef.current = null;
       removed = true;
       attributionObserver.disconnect();
       for (const { marker } of polarLabels) marker.remove();
@@ -1376,6 +1394,10 @@ const MapLibreMap: FC<{
   useEffect(() => {
     setContextRef.current?.();
   }, [context]);
+
+  useEffect(() => {
+    linesLayerRef.current?.setLines(lines || []);
+  }, [lines]);
 
   return (
     <div className="relative w-full h-full bg-black">

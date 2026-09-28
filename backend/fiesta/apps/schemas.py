@@ -128,6 +128,13 @@ class MapPoints(BaseModel):
     truncated: bool = False
 
 
+class SearchValues(BaseModel):
+    total: int
+    fields: list[str]
+    rows: list[list[int | float | str | None]]
+    truncated: bool = False
+
+
 class HealthOut(BaseModel):
     status: str
     database: bool
