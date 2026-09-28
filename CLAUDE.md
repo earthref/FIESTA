@@ -75,15 +75,15 @@ On this machine host ports 5432/8000/8001 are taken: `.env` publishes Postgres o
 
 ## Models and Delegation
 
-Global session-hygiene and delegation rules live in `~/.claude/CLAUDE.md` (one task per session, `/compact` at boundaries, short tool output, loops in a fresh session). The main session runs Claude Fable 5.1. Subagents default to Opus 4.8 via `CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-4-8` under `env` — set at user level in `~/.claude/settings.json`, and mirrored in this clone's gitignored `.claude/settings.json` (`settings.proposed.json` is the template). Verify the `env` block exists before relying on it: the 2026-09-12 audit found every subagent here had run on the main model. Override per call:
+Global session-hygiene and delegation rules live in `~/.claude/CLAUDE.md` (one task per session, `/compact` at boundaries, short tool output, loops in a fresh session). The main session runs Claude Fable 5.1. Subagents default to Opus 5.5 via `CLAUDE_CODE_SUBAGENT_MODEL=claude-opus-5-5` under `env` — set at user level in `~/.claude/settings.json`, and mirrored in this clone's gitignored `.claude/settings.json` (`settings.proposed.json` is the template). Verify the `env` block exists before relying on it: the 2026-09-12 audit found every subagent here had run on the main model. Override per call:
 
 - `sonnet` (Sonnet 5) for read-only fan-out: Explore searches, file inventories, comparing a legacy repo's module against ours, sifting compose logs, capturing screenshots.
-- default (Opus 4.8) for judgement workers: code review, porting one legacy feature in a worktree, a bounded refactor of one router or one plugin, reviewing a node YAML against its data model. Same tier as Opus 5 and the same tokenizer as Fable, without the classifiers that make Fable and Opus 5 decline some security-shaped requests, and it rarely delegates further.
-- `fable` for the orchestrator's own work and for a subtask that is itself open-ended and hours long (e.g. the Phase A API unification). Not `opus` (Opus 5) for workers: nothing over 4.8 on a bounded task.
+- default (Opus 5.5) for judgement workers: code review, porting one legacy feature in a worktree, a bounded refactor of one router or one plugin, reviewing a node YAML against its data model.
+- `fable` for the orchestrator's own work and for a subtask that is itself open-ended and hours long (e.g. the Phase A API unification). Never `opus` (Opus 5) for a bounded worker: the default Opus 5.5 is the worker tier.
 
 Delegate when work fans out across independent items (six node YAMLs, the per-node plugins, every route in a router, per-page UI parity checks against `docs/legacy-ux-spec.md`); launch in the background and keep working. A single-file read or a sequential check is done directly. Give a subagent the goal, the constraints, and where the answer goes, not the steps. Editing subagents use `isolation: "worktree"`.
 
-`/roadmap-next` runs forked (`context: fork`, Opus 4.8) so its `git log` and ROADMAP reads stay out of this transcript; `/operator-todo` stays inline because it collects from the session and therefore sets no `model:`.
+`/roadmap-next` runs forked (`context: fork`, Opus 5.5) so its `git log` and ROADMAP reads stay out of this transcript; `/operator-todo` stays inline because it collects from the session and therefore sets no `model:`.
 
 Edit files surgically; never rewrite a file to change a few lines. Scratch checks live in the scratchpad; commit a test only where the task asks for one or the neighbouring module already keeps tests for that kind of change (`backend/tests/test_domain.py`, `test_plugins.py`).
 
