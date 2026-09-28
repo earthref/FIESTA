@@ -158,6 +158,9 @@ after its YAML is merged and deployed, because the frontend is built per node.
     {"type": "range", "field": "summary.poles.age", "label": "Age", "levels": ["Locations"], "views": ["Poles"], "unit": "Ma", "scale": 1000000.0, "min": null, "max": null},
     {"type": "bbox", "field": null, "label": "Geospatial", "levels": ["Locations"], "views": ["Poles"], "unit": null, "scale": 1.0, "min": null, "max": null}
   ],
+  "map_colors": [
+    {"label": "Age", "field": "age", "unit": "Ma", "scale": 1000000.0, "log": true, "tables": ["locations", "sites"]}
+  ],
   "pages": [{"slug": "about", "title": "About", "menu": "left", "icon": null}],
   "features": {"plugins": ["poles"]},
   "publish": {"api": true, "web": true},
@@ -174,7 +177,11 @@ after its YAML is merged and deployed, because the frontend is built per node.
 restricted to the search `levels` and result `views` (Summaries, Rows, a plugin
 tab) it names, empty meaning all. `facets` lists the facet filters' fields (what
 `facets=true` aggregates; the pre-2026-09 YAML key `search.facets` still loads as
-facet filters). `pages` are the content pages in menu order.
+facet filters). `map_colors` are the node YAML's `search.map_colors`, what the
+Map tab's "Color by" menu offers (as `color_by` on `/search/{table}/points`) on
+the levels whose table is in `tables`; `field` is a column or a `summary.*`
+path, and a value / `scale` is what the legend shows. `pages` are the content
+pages in menu order.
 
 Each active plugin's `frontend_config` is built from its options: the node
 YAML's `plugins.<name>` map over the plugin's declared defaults.
@@ -202,7 +209,7 @@ needs `publish.api`.
 | Method | Path | Query params | Returns |
 |---|---|---|---|
 | GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `contribution` + `private_key?` (see below) | `SearchPage` |
-| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `contribution`, `private_key?` (as above) | `MapPoints` |
+| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 
@@ -217,7 +224,7 @@ SearchPage = {
 ```json
 MapPoints = {
   "total": 410,
-  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "bounds": [west, south, east, north]?, "count": 12?}],
+  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "bounds": [west, south, east, north]?, "count": 12?, "value": 1.5e6?}],
   "truncated": false
 }
 ```
@@ -236,6 +243,13 @@ matches' unique locations instead: a composite aggregation of ~2.4 m geotiles
 (zoom 24) by contribution, each point at its records' centroid (to 5 decimals)
 with their `count` and no `name`; `total` is still the matching records and
 `truncated` means more than 50,000 locations.
+
+`color_by` is the `field` of one of the node's `search.map_colors` offered at
+this level (`GET /config`'s `map_colors[].tables`; otherwise 400) and adds each
+point's `value`: the record's value parsed as a number, in the field's base
+unit by its `unit_column` (an age in years BP by its `age_unit`), or for a
+location the mean of its records' values (a Painless `avg` in the
+aggregation). A record without a usable value has no `value`.
 
 Positions (`summary._all._geo_point`): a row's own `lat`/`lon`, or the middle
 of its `lat_s`/`lat_n`/`lon_w`/`lon_e` box; a row with neither takes its

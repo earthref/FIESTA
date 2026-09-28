@@ -41,6 +41,18 @@ export interface SearchFilter {
   max: number | null;
 }
 
+/** A number the search map can color its markers by (backend `MapColor`),
+ * sent as `color_by=<field>`; offered on the levels whose table is in `tables`. */
+export interface MapColorOption {
+  label: string;
+  field: string;
+  unit: string | null;
+  /** A value / scale is what the legend shows (T → μT with 1e-6). */
+  scale: number;
+  log: boolean;
+  tables: string[];
+}
+
 /** A content page (backend `PageConfig`); its HTML comes from /config/pages/{slug}. */
 export interface NodePage {
   slug: string;
@@ -64,6 +76,8 @@ export interface NodeConfig {
   facets: string[];
   /** The filter sidebar's controls (node YAML `search.filters`). */
   filters: SearchFilter[];
+  /** The search map's "Color by" menu (node YAML `search.map_colors`). */
+  map_colors?: MapColorOption[];
   /** Content pages (node YAML `pages`), in menu order. */
   pages: NodePage[];
   features: {

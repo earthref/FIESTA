@@ -119,6 +119,7 @@ class MapPoint(BaseModel):
     lon: float
     bounds: list[float] | None = None  # [west, south, east, north]
     count: int | None = None  # records at this location (the aggregated map)
+    value: float | None = None  # its `color_by` number (a location's records' mean)
 
 
 class MapPoints(BaseModel):

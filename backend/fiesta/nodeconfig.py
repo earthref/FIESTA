@@ -104,11 +104,56 @@ class SearchFilter(BaseModel):
         return self.field or self.type
 
 
+class MapColor(BaseModel):
+    """A number the search map can color its markers by.
+
+    `field`: a column of the level's rows (`int_abs`, read from
+    `summary.<table>.<column>`, offered on the levels whose table has it) or a
+    full `summary.*` path (`summary.contribution._reference.year`, offered on
+    every level with positions). Row values are text and are parsed as numbers.
+    `scale` as a range filter's: a stored value / scale is what the legend
+    shows (T -> μT with 1e-6). `unit_column` names a row column giving each
+    value's unit (`age_unit`): `unit_factors` multiplies a value into the
+    field's base unit by it, then `unit_offsets` adds to it (years AD to
+    years BP: factor -1, offset 1950); a unit without a factor leaves the
+    record uncolored. `log` spaces the colors by order of magnitude. `levels`, when
+    set, restricts it to those search levels.
+    """
+
+    label: str
+    field: str
+    unit: str | None = None
+    scale: float = 1.0
+    log: bool = False
+    unit_column: str | None = None
+    unit_factors: dict[str, float] = {}
+    unit_offsets: dict[str, float] = {}
+    levels: list[str] = []
+
+    @model_validator(mode="after")
+    def _check_field(self) -> "MapColor":
+        if "." in self.field and not self.field.startswith("summary."):
+            raise ValueError(
+                f"map color field {self.field!r} must be a column or a summary.* path"
+            )
+        if self.unit_column and ("." in self.field or not self.unit_factors):
+            raise ValueError(
+                f"map color {self.field!r}: unit_column needs a column field and unit_factors"
+            )
+        return self
+
+    def path(self, table: str) -> str:
+        """Its document path at a search level."""
+        return self.field if "." in self.field else f"summary.{table}.{self.field}"
+
+
 class SearchConfig(BaseModel):
     index: str
     levels: list[SearchLevel]
     extra_types: list[str] = []
     filters: list[SearchFilter] = []
+    # What the search map can color its markers by, in menu order.
+    map_colors: list[MapColor] = []
 
     @model_validator(mode="before")
     @classmethod
@@ -354,6 +399,31 @@ class NodeConfig(BaseModel):
                 geo.add(table)
         return geo | {"contribution"} if geo else geo
 
+    def map_color_tables(self, color: MapColor) -> list[str]:
+        """The search levels' tables whose map `color` can color: levels with
+        positions, those it names, and for a column those whose table has it."""
+        geo, tables = self.geo_tables, None
+        if "." not in color.field:
+            tables = self.load_data_model(self.data_model.latest)["tables"]
+        return [
+            level.table
+            for level in self.search.levels
+            if level.table in geo
+            and (not color.levels or level.name in color.levels)
+            and (tables is None or color.field in tables.get(level.table, {}).get("columns", {}))
+        ]
+
+    def map_color(self, table: str, field: str) -> MapColor | None:
+        """The map color `field` at a level, if it is offered there."""
+        return next(
+            (
+                c
+                for c in self.search.map_colors
+                if c.field == field and table in self.map_color_tables(c)
+            ),
+            None,
+        )
+
     # --- names resolved against the environment (fiesta.settings) ---------
 
     @property
@@ -399,6 +469,14 @@ class NodeConfig(BaseModel):
             ],
             "facets": self.search.facets,
             "filters": [f.model_dump() for f in self.search.filters],
+            # `tables`: the levels (by table) each is offered on.
+            "map_colors": [
+                {
+                    **c.model_dump(include={"label", "field", "unit", "scale", "log"}),
+                    "tables": self.map_color_tables(c),
+                }
+                for c in self.search.map_colors
+            ],
             "pages": [p.model_dump() for p in self.pages],
             "features": self.features.model_dump(),
             "publish": self.publish.model_dump(),

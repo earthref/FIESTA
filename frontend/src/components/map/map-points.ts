@@ -15,7 +15,9 @@ export const MODES: [Mode, string][] = [
 // level, singular) head its tooltip. bounds: [west, south, east, north] of a
 // row's box, with east past 180 when the box crosses the antimeridian;
 // lat/lon is then the box's centre. count: on a large search's map, a point
-// is one location's records in one contribution, not a record.
+// is one location's records in one contribution, not a record. value: the
+// number it is colored by (a location's records' mean), and its text for the
+// tooltip (`valueText`).
 export type MapPoint = {
   id: string;
   name: string;
@@ -25,6 +27,8 @@ export type MapPoint = {
   lon: number;
   bounds?: [number, number, number, number];
   count?: number;
+  value?: number;
+  valueText?: string;
 };
 
 /** A point as GET /search/{table}/points returns it. */
@@ -35,6 +39,7 @@ export type ApiMapPoint = {
   lon: number;
   bounds?: [number, number, number, number];
   count?: number;
+  value?: number;
 };
 
 const toLat = (lat: number) => (Math.abs(lat) <= 90 ? lat : Number.NaN);
@@ -58,7 +63,14 @@ export const toMapPoint = (
     (count !== undefined
       ? `${count.toLocaleString()} ${count === 1 ? label : plural}`
       : `Contribution ${id}`);
-  const base = { id, name, label, color, ...(count !== undefined && { count }) };
+  const base = {
+    id,
+    name,
+    label,
+    color,
+    ...(count !== undefined && { count }),
+    ...(point.value != null && { value: point.value }),
+  };
   if (point.bounds) {
     const [lonW, latS, lonE, latN] = point.bounds;
     const [south, north] = [toLat(latS), toLat(latN)];
@@ -119,18 +131,21 @@ const contributionOf = (p: MapPoint) =>
 /** Records a point stands for: one, or a location's count. */
 export const recordsOf = (p: MapPoint) => p.count ?? 1;
 
+const valueLine = (p: MapPoint, separator: string) =>
+  p.valueText ? `${separator}${escapeHtml(p.valueText)}` : "";
+
 // Tooltip HTML for the records at one spot. With several, their names are
 // links (data-id) that the map opens on click; a location's records name
-// their number and contribution.
+// their number and contribution. A colored point gives its value.
 export const markerTooltip = (members: MapPoint[]) => {
   const [first] = members;
   if (members.length === 1) {
     return first.count !== undefined
-      ? `<b>${escapeHtml(first.name)}</b><br/>At one location${contributionOf(first)}`
-      : `<b>${escapeHtml(first.name)}</b><br/>${escapeHtml(capitalize(first.label))}${contributionOf(first)}`;
+      ? `<b>${escapeHtml(first.name)}</b><br/>At one location${contributionOf(first)}${valueLine(first, "<br/>")}`
+      : `<b>${escapeHtml(first.name)}</b><br/>${escapeHtml(capitalize(first.label))}${contributionOf(first)}${valueLine(first, "<br/>")}`;
   }
   const link = (m: MapPoint) =>
-    `<a data-id="${escapeHtml(m.id)}" style="cursor:pointer;color:${m.color};text-decoration:underline">${escapeHtml(m.name)}</a>${m.count !== undefined ? contributionOf(m) : ""}`;
+    `<a data-id="${escapeHtml(m.id)}" style="cursor:pointer;color:${m.color};text-decoration:underline">${escapeHtml(m.name)}</a>${m.count !== undefined ? contributionOf(m) : ""}${valueLine(m, ": ")}`;
   const more =
     members.length > MAX_TOOLTIP_IDS
       ? `<br/>and ${(members.length - MAX_TOOLTIP_IDS).toLocaleString()} more`
