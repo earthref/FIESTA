@@ -255,7 +255,7 @@ def test_erda_summarize_docs(erda_node):
     assert "spreadsheet" in contribution["summary"]["_all"]["data_types"]
     assert "graphs" in contribution["summary"]["_all"]["data_types"]
     # ERDA longitudes are -180/180, unlike MagIC's 0-360.
-    assert contribution["summary"]["_all"]["_geo_point"] == {"lat": -14.2122, "lon": -169.0573}
+    assert contribution["summary"]["_all"]["_geo_point"] == [{"lat": -14.2122, "lon": -169.0573}]
 
 
 def test_erda_facets_are_summarized_columns(erda_node):
@@ -481,8 +481,8 @@ def test_osu_mgr_summarize_both_branches(osu_mgr_node):
     assert "Gravity Core" in all_values["method"]
     assert "Dredge" in all_values["method"]
     assert "mst-data" in all_values["file_type"]
-    # The first geo point comes from the core; longitudes stay -180/180.
-    assert all_values["_geo_point"] == {"lat": 44.6368, "lon": -124.9012}
+    # Every row's position is on it, the core's among them; longitudes stay -180/180.
+    assert {"lat": 44.6368, "lon": -124.9012} in all_values["_geo_point"]
 
 
 def test_osu_mgr_facets_are_summarized_columns(osu_mgr_node):
@@ -797,15 +797,52 @@ def test_published_tree_is_written_back_to_config(tmp_path, monkeypatch):
 
 
 def test_geo_tables_follow_the_data_model(magic_node, osu_mgr_node, karar_node):
-    assert magic_node.geo_tables == {"contribution", "locations", "sites", "samples"}
-    assert osu_mgr_node.geo_tables == {"contribution", "cruises", "cores", "dives"}
-    assert karar_node.geo_tables == {"contribution", "samples"}
+    # Coordinates, or the key column of a table above with them (inherited).
+    assert magic_node.geo_tables == set(magic_node.hierarchy)
+    assert karar_node.geo_tables == set(karar_node.hierarchy)
+    assert {"cruises", "cores", "sections", "dives"} <= osu_mgr_node.geo_tables
+    assert "files" not in osu_mgr_node.geo_tables
     levels = {lvl["table"]: lvl["geo"] for lvl in magic_node.public_config()["search_levels"]}
-    assert levels["sites"] and not levels["specimens"]
+    assert levels["sites"] and levels["specimens"]
 
 
-def test_map_point_from_a_search_doc():
-    from fiesta.apps.routers.search import _map_point
+def test_rows_without_coordinates_take_their_ancestors_position(magic_node):
+    from fiesta.domain.parse import ParsedContribution
+
+    parsed = ParsedContribution(
+        tables={
+            "locations": [
+                {"location": "L", "lat_s": "10", "lat_n": "12", "lon_w": "359", "lon_e": "1"}
+            ],
+            "sites": [{"site": "S", "location": "L", "lat": "11", "lon": "0.5"}],
+            "samples": [{"sample": "A", "site": "S"}, {"sample": "B", "site": "unknown"}],
+            "specimens": [{"specimen": "a1", "sample": "A"}],
+        }
+    )
+    docs = summarize(magic_node, parsed, {"id": 1})
+    geo = {
+        (d["type"], next(iter(d["summary"][d["type"]].values()))): d["summary"]["_all"].get(
+            "_geo_point"
+        )
+        for d in docs
+        if d["type"] != "contribution"
+    }
+    # A box's position is its middle, across the antimeridian.
+    assert geo[("locations", "L")] == {"lat": 11.0, "lon": 0.0}
+    assert geo[("samples", "A")] == {"lat": 11.0, "lon": 0.5}
+    assert geo[("specimens", "a1")] == {"lat": 11.0, "lon": 0.5}
+    # An unknown parent inherits nothing.
+    assert geo[("samples", "B")] is None
+    contribution = next(d for d in docs if d["type"] == "contribution")
+    # The contribution carries each distinct own position once.
+    assert contribution["summary"]["_all"]["_geo_point"] == [
+        {"lat": 11.0, "lon": 0.0},
+        {"lat": 11.0, "lon": 0.5},
+    ]
+
+
+def test_map_points_from_a_search_doc():
+    from fiesta.apps.routers.search import _map_points
 
     site = {
         "summary": {
@@ -814,7 +851,7 @@ def test_map_point_from_a_search_doc():
             "_all": {"_geo_point": {"lat": 10.5, "lon": -20}},
         }
     }
-    assert _map_point(site, "sites") == {"id": 7, "lat": 10.5, "lon": -20.0, "name": "S1"}
+    assert _map_points(site, "sites") == [{"id": 7, "lat": 10.5, "lon": -20.0, "name": "S1"}]
     location = {
         "summary": {
             "contribution": {"id": 8},
@@ -828,8 +865,18 @@ def test_map_point_from_a_search_doc():
             "_all": {"_geo_point": {"lat": 1, "lon": -10}},
         }
     }
-    assert _map_point(location, "locations")["bounds"] == [350.0, 1.0, 10.0, 2.0]
-    assert _map_point({"summary": {"_all": {}}}, "sites") is None
+    assert _map_points(location, "locations")[0]["bounds"] == [350.0, 1.0, 10.0, 2.0]
+    assert _map_points({"summary": {"_all": {}}}, "sites") == []
+    # A contribution's points; with an area, only those inside it (across 180°).
+    contribution = {
+        "summary": {
+            "contribution": {"id": 9},
+            "_all": {"_geo_point": [{"lat": 0, "lon": 179}, {"lat": 0, "lon": 10}]},
+        }
+    }
+    assert len(_map_points(contribution, "contribution")) == 2
+    inside = _map_points(contribution, "contribution", (170, -5, -170, 5))
+    assert [p["lon"] for p in inside] == [179.0]
 
 
 def test_undersea_features_for_the_map_labels():

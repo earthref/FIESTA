@@ -226,7 +226,17 @@ MapPoints = {
 (`truncated` past that), for the search page's Map tab: `id` is the
 contribution, `name` the row's own key column (`sites` → `site`; absent at the
 contribution level), `bounds` the row's `lon_w`/`lat_s`/`lon_e`/`lat_n` when it
-has all four. `{table}` must be a level whose `geo` is true, otherwise 404.
+has all four. A contribution doc gives a point per position it carries (only
+those inside `bbox`, when one is given). `{table}` must be a level whose `geo`
+is true, otherwise 404.
+
+Positions (`summary._all._geo_point`): a row's own `lat`/`lon`, or the middle
+of its `lat_s`/`lat_n`/`lon_w`/`lon_e` box; a row with neither takes its
+nearest ancestor's, found by that level's key column (a specimen's `sample`),
+so a geospatial filter narrows every level. A level is `geo` when its table has
+coordinate columns or such a key column. The contribution doc carries every
+distinct own position of its rows (up to 500), so it matches an area that holds
+any of them.
 Visibility is the same as the search's. The SPA sends the Map tab's area
 filter as `bbox` here and to `/search/{table}`, with a `minLon` east of `maxLon`
 when it crosses the antimeridian.

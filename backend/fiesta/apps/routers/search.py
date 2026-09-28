@@ -161,28 +161,39 @@ def _to_float(value: Any) -> float | None:
         return None
 
 
-def _map_point(source: dict, table: str) -> dict | None:
-    """One doc's position for the map: its `_geo_point`, the row's box when it
-    has one, and what to call it."""
+def _inside(lat: float, lon: float, bbox: tuple[float, float, float, float] | None) -> bool:
+    """Whether a point is in a `bbox` (whose min longitude is east of its max
+    when it crosses the antimeridian)."""
+    if bbox is None:
+        return True
+    min_lon, min_lat, max_lon, max_lat = bbox
+    in_lon = min_lon <= lon <= max_lon if min_lon <= max_lon else lon >= min_lon or lon <= max_lon
+    return min_lat <= lat <= max_lat and in_lon
+
+
+def _map_points(
+    source: dict, table: str, bbox: tuple[float, float, float, float] | None = None
+) -> list[dict]:
+    """A doc's positions for the map: its `_geo_point` (a contribution's are
+    all of its rows', and only those inside `bbox` are drawn), the row's box
+    when it has one, and what to call it."""
     summary = source.get("summary") or {}
-    geo = (summary.get("_all") or {}).get("_geo_point") or {}
-    lat, lon = _to_float(geo.get("lat")), _to_float(geo.get("lon"))
-    if lat is None or lon is None:
-        return None
+    geo = (summary.get("_all") or {}).get("_geo_point") or []
     row = summary.get(table) or {}
-    point: dict[str, Any] = {
-        "id": (summary.get("contribution") or {}).get("id"),
-        "lat": lat,
-        "lon": lon,
-    }
+    base: dict[str, Any] = {"id": (summary.get("contribution") or {}).get("id")}
     # A level row is named by its own key column ("sites" -> "site").
     name = row.get(table.removesuffix("s")) if table != "contribution" else None
     if name not in (None, ""):
-        point["name"] = str(name[0] if isinstance(name, list) else name)
+        base["name"] = str(name[0] if isinstance(name, list) else name)
     box = [_to_float(row.get(c)) for c in BOX_COLUMNS]
     if all(v is not None for v in box):
-        point["bounds"] = box
-    return point
+        base["bounds"] = box
+    points = []
+    for entry in geo if isinstance(geo, list) else [geo]:
+        lat, lon = _to_float(entry.get("lat")), _to_float(entry.get("lon"))
+        if lat is not None and lon is not None and (len(geo) < 2 or _inside(lat, lon, bbox)):
+            points.append({**base, "lat": lat, "lon": lon})
+    return points
 
 
 @router.get("/search/{table}/points", response_model=MapPoints, response_model_exclude_none=True)
@@ -199,12 +210,13 @@ async def search_points(
     """Every positioned doc matching a search, for the search page's map."""
     if table not in node.geo_tables:
         raise HTTPException(404, f"search table {table!r} has no positions")
+    area = _parse_bbox(bbox)
     body = build_search_body(
         table=table,
         query=query,
         size=MAP_PAGE_SIZE,
         ranges=_parse_ranges(range_),
-        bbox=_parse_bbox(bbox),
+        bbox=area,
     )
     await _constrain(session, node, body, query, contribution, private_key)
     body["query"]["bool"]["filter"].append({"exists": {"field": "summary._all._geo_point"}})
@@ -227,7 +239,8 @@ async def search_points(
     scroll_id = response.get("_scroll_id")
     try:
         while hits["hits"] and len(points) < MAX_MAP_POINTS:
-            points += [p for h in hits["hits"] if (p := _map_point(h["_source"], table))]
+            for hit in hits["hits"]:
+                points += _map_points(hit["_source"], table, area)
             if len(hits["hits"]) < MAP_PAGE_SIZE:
                 break
             response = await client.scroll(scroll_id=scroll_id, scroll="1m")

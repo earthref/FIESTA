@@ -118,6 +118,15 @@ Last updated: 2026-09-24
       SPA per node listed in `config/fiesta.yaml`, so a node created in the UI appears
       on the website only after its PR is merged and deployed.
 
+## 2026-09-28 — Geospatial filter across levels
+
+- [ ] **Rebuild each node's search index once this is deployed** (`fiesta rebuild
+  --yes` per node, on dev and production). Search docs now get a position on
+  every level (a specimen takes its sample's) and contribution docs carry all
+  of their rows' positions. Until the rebuild, the area filter drops the
+  levels without coordinates (specimens, measurements, ...) and matches a
+  contribution by its first position only.
+
 ## Done
 
 _(none yet)_

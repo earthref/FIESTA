@@ -61,6 +61,10 @@ function usePoints(
   });
 }
 
+/** An area filter asked for (the sidebar's Geospatial filter or the map's
+ * button), in a given view (`mode`), and zooming the map to it (`zoomTo`). */
+export type AreaRequest = { mode?: Mode; zoomTo?: boolean };
+
 /**
  * The Map tab (ported from osu-mgr.org's search map): every positioned
  * record at this level matching the search, on a globe, a Mercator map or a
@@ -74,6 +78,9 @@ export function SearchMap({
   ranges,
   area,
   onAreaChange,
+  areaRequest,
+  onRequestArea,
+  onAreaRequestDone,
   onSelect,
   color,
 }: {
@@ -82,6 +89,10 @@ export function SearchMap({
   ranges?: string[];
   area: Area | null;
   onAreaChange: (area: Area | null) => void;
+  areaRequest: AreaRequest | null;
+  onRequestArea: () => void;
+  // Called when a request needs no new area (there is one already).
+  onAreaRequestDone: () => void;
   onSelect: (contributionId: string) => void;
   color: string;
 }) {
@@ -94,10 +105,12 @@ export function SearchMap({
       // private window: the mode just isn't remembered
     }
   };
-  const [areaRequested, setAreaRequested] = useState(false);
+  // An area the map zooms to (see AreaRequest).
+  const [zoomTo, setZoomTo] = useState<Area | null>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: switches once per request
   useEffect(() => {
-    if (area) setAreaRequested(false);
-  }, [area]);
+    if (areaRequest?.mode && areaRequest.mode !== mode) setMode(areaRequest.mode);
+  }, [areaRequest]);
 
   const inArea = usePoints(level, query, ranges, area ? areaToBbox(area) : undefined, color);
   // With an area, the same search without it, for the grey context points.
@@ -109,16 +122,31 @@ export function SearchMap({
     return all.data.points.filter((p) => !plotted.has(`${p.id}|${p.name}|${p.lat}|${p.lon}`));
   }, [area, all.data, points]);
 
-  // An area asked for, once the search's records have loaded: around them,
-  // or, for an unfiltered search, over the middle of the view
-  // (requestViewArea), which leaves the map where it is.
+  // An area asked for, in the view asked for, once the search's records have
+  // loaded (as on osu-mgr.org): around them, or, for an unfiltered search,
+  // over the middle of the view (requestViewArea), which leaves the map where
+  // it is. With an area already, the request only zooms to it.
   const unfiltered = !query.trim() && !ranges?.length;
-  const areaPending = areaRequested && !area && !inArea.isFetching;
+  const areaPending =
+    Boolean(areaRequest) && (!areaRequest?.mode || areaRequest.mode === mode) && !inArea.isFetching;
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the request can be answered
   useEffect(() => {
-    if (areaPending && !unfiltered) onAreaChange(areaAround(points) ?? WHOLE_GLOBE);
+    if (!areaPending) return;
+    if (area) {
+      if (areaRequest?.zoomTo) setZoomTo(area);
+      onAreaRequestDone();
+      return;
+    }
+    if (unfiltered) return;
+    const next = areaAround(points) ?? WHOLE_GLOBE;
+    if (areaRequest?.zoomTo) setZoomTo(next);
+    onAreaChange(next);
   }, [areaPending, unfiltered]);
-  const requestViewArea = areaPending && unfiltered;
+  const requestViewArea = areaPending && !area && unfiltered;
+
+  // Records mapped: a contribution is drawn at each of its positions.
+  const mapped =
+    level.table === "contribution" ? new Set(points.map((p) => p.id)).size : points.length;
 
   // The view re-centres on the points for a new search, not for an area edit.
   const focusKey = JSON.stringify([level.table, query, ranges]);
@@ -166,7 +194,7 @@ export function SearchMap({
         ) : (
           <button
             type="button"
-            onClick={() => setAreaRequested(true)}
+            onClick={onRequestArea}
             title="Filter to an area you can move and resize on the map"
             className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 font-bold ${buttonClass(false)}`}
           >
@@ -176,8 +204,7 @@ export function SearchMap({
         )}
         {inArea.data && (
           <span className="text-gray-600">
-            {inArea.data.points.length.toLocaleString()} mapped{" "}
-            {inArea.data.points.length === 1 ? singularize(level.name) : level.name}
+            {mapped.toLocaleString()} mapped {mapped === 1 ? singularize(level.name) : level.name}
             {inArea.data.truncated && ` (the first of ${inArea.data.total.toLocaleString()})`}
           </span>
         )}
@@ -191,6 +218,7 @@ export function SearchMap({
             area={area}
             onAreaChange={onAreaChange}
             requestViewArea={requestViewArea}
+            zoomTo={zoomTo}
             focusKey={focusKey}
             context={context}
           />

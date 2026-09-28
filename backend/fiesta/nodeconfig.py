@@ -339,17 +339,19 @@ class NodeConfig(BaseModel):
 
     @property
     def geo_tables(self) -> set[str]:
-        """Hierarchy tables whose rows can carry a position (a latitude and a
-        longitude column in the latest data model); the contribution too when
-        any does, as its search doc takes a representative point."""
+        """Hierarchy tables whose rows can carry a position: a latitude and a
+        longitude column in the latest data model, or the key column of a
+        table above that has one (a specimen's `sample`: the summarizer gives
+        it its sample's position); the contribution too when any does, as its
+        search doc takes their points."""
         tables = self.load_data_model(self.data_model.latest)["tables"]
-        geo = {
-            table
-            for table in self.hierarchy
-            if (columns := tables.get(table, {}).get("columns", {}))
-            and any(c in columns for c in LAT_COLUMNS)
-            and any(c in columns for c in LON_COLUMNS)
-        }
+        geo: set[str] = set()
+        for table in self.hierarchy:
+            columns = tables.get(table, {}).get("columns", {})
+            if (
+                any(c in columns for c in LAT_COLUMNS) and any(c in columns for c in LON_COLUMNS)
+            ) or any(parent.removesuffix("s") in columns for parent in geo):
+                geo.add(table)
         return geo | {"contribution"} if geo else geo
 
     # --- names resolved against the environment (fiesta.settings) ---------

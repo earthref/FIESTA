@@ -13,13 +13,14 @@ import {
 import { ContributionModal } from "../components/contribution-modal";
 import { ErrorMessage } from "../components/error-message";
 import { type Area, areaToBbox, parseArea } from "../components/map/map-points";
-import { SearchMap } from "../components/map/search-map";
+import { type AreaRequest, SearchMap } from "../components/map/search-map";
 import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
 import { RowsTable } from "../components/rows-table";
 import {
   applicableFilters,
   BboxFilter,
   filterLabel,
+  GeospatialFilter,
   RangeFilter,
   rangesFor,
 } from "../components/search-filters";
@@ -481,17 +482,25 @@ export function SearchPage() {
       }),
     [navigate],
   );
-  // The Map tab's area filter narrows every view of a level with positions.
-  const area = level?.geo ? parseArea(search.area) : null;
-  const setArea = (next: Area | null) => setSearch({ area: next?.join(",") });
+  // The geospatial filter (the Map tab's area, the sidebar's Geospatial
+  // checkbox) narrows every level with positions, and each level tab's count;
+  // it stays across level tabs. An area asked for is made by the Map tab.
+  const area = parseArea(search.area);
+  const areaBbox = (entry: SearchLevel | undefined) =>
+    area && entry?.geo ? areaToBbox(area) : undefined;
+  const [areaRequest, setAreaRequest] = useState<AreaRequest | null>(null);
+  const setArea = (next: Area | null) => {
+    setAreaRequest(null);
+    setSearch({ area: next?.join(",") });
+  };
 
   // Live totals for every level tab (size=1: the API requires size >= 1).
   const countQueries = useQueries({
     queries: levels.map((entry) => ({
-      queryKey: ["search-count", entry.table, q],
+      queryKey: ["search-count", entry.table, q, areaBbox(entry)],
       queryFn: () =>
         api<SearchPageData>(`/search/${entry.table}`, {
-          params: searchRequestParams(q, 1),
+          params: searchRequestParams(q, 1, 0, false, undefined, areaBbox(entry)),
         }),
       staleTime: 60_000,
       placeholderData: keepPreviousData,
@@ -534,7 +543,7 @@ export function SearchPage() {
     parseQueryTokens(q).tokens.filter(([field]) => facetFields.includes(field)).length > 0;
   // A plugin view renders from its own fetch; keep its ranges out of the level query.
   const queryRanges = activeTab?.render ? undefined : activeRanges;
-  const queryBbox = activeTab?.render ? undefined : area ? areaToBbox(area) : activeBbox;
+  const queryBbox = activeTab?.render ? undefined : (areaBbox(level) ?? activeBbox);
 
   const results = useInfiniteQuery({
     queryKey: ["search", level?.table, q, sort, queryRanges, queryBbox],
@@ -597,6 +606,17 @@ export function SearchPage() {
   };
   const clearActive = hasFacetFilters || activeRanges.length > 0 || !!activeBbox || !!area;
 
+  // The sidebar's Geospatial filter opens the Map, in the Mercator view and
+  // zoomed to the new area when coming from a list (as on osu-mgr.org).
+  const requestArea = () => {
+    setAreaRequest(activeTab?.name === "Map" ? {} : { mode: "flat", zoomTo: true });
+    setView("Map");
+  };
+  const showArea = () => {
+    if (activeTab?.name !== "Map") setAreaRequest({ zoomTo: true });
+    setView("Map");
+  };
+
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     setSearch({ q: input.trim() });
@@ -622,9 +642,7 @@ export function SearchPage() {
             <button
               key={entry.name}
               type="button"
-              onClick={() =>
-                setSearch({ level: entry.name, ranges: [], bbox: undefined, area: undefined })
-              }
+              onClick={() => setSearch({ level: entry.name, ranges: [], bbox: undefined })}
               className={cx(
                 "flex items-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
                 !active && "cursor-pointer hover:text-node-dark",
@@ -820,6 +838,14 @@ export function SearchPage() {
             >
               {filtersPanel ?? (
                 <>
+                  {level.geo && (
+                    <GeospatialFilter
+                      area={area}
+                      onRequest={requestArea}
+                      onShow={showArea}
+                      onRemove={() => setArea(null)}
+                    />
+                  )}
                   {filters.map((filter) =>
                     filter.type === "facet" ? (
                       <FacetSection
@@ -849,7 +875,7 @@ export function SearchPage() {
                       />
                     ),
                   )}
-                  {filters.length === 0 && (
+                  {filters.length === 0 && !level.geo && (
                     <p className="px-[1em] py-3 text-[12px] text-[#AAAAAA]">
                       No filters for this view.
                     </p>
@@ -928,6 +954,9 @@ export function SearchPage() {
                   ranges={queryRanges}
                   area={area}
                   onAreaChange={setArea}
+                  areaRequest={areaRequest}
+                  onRequestArea={() => setAreaRequest({})}
+                  onAreaRequestDone={() => setAreaRequest(null)}
                   color={config.color}
                   onSelect={(id) => openContribution(id, level.table)}
                 />
@@ -939,18 +968,6 @@ export function SearchPage() {
                 className="flex-1 overflow-y-scroll bg-white"
                 style={{ borderLeft: `1px solid ${TAB_BORDER}`, padding: "0 1em" }}
               >
-                {area && (
-                  <p className="my-2 text-[13px] text-gray-600">
-                    Only {level.name.toLowerCase()} inside the area drawn on the Map tab.{" "}
-                    <button
-                      type="button"
-                      onClick={() => setArea(null)}
-                      className="cursor-pointer text-node hover:underline"
-                    >
-                      Remove the area
-                    </button>
-                  </p>
-                )}
                 {results.error && <ErrorMessage error={results.error} className="my-3" />}
 
                 {results.isPending && !results.error && (
