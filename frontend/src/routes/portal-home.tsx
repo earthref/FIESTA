@@ -164,7 +164,7 @@ export function PortalHomePage() {
           style={{ padding: "0 1rem", textAlign: "justify" }}
           aria-label="News"
         >
-          <DividerHeader>News</DividerHeader>
+          <DividerHeader columnTop>News</DividerHeader>
           {news.length === 0 && <p style={{ margin: "1em 0" }}>No news yet.</p>}
           {news.map(({ config, item }, index) => (
             <div key={`${config.slug}-${item.title}`}>

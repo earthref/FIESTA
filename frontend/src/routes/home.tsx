@@ -10,22 +10,35 @@ import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { sanitizeHtml } from "../lib/sanitize";
 import type { HomeCard, HomeNews, NodeConfig, SearchPage } from "../lib/types";
+import { cx } from "../lib/utils";
 import { pluginHomeCards } from "../plugins";
 
 const RULE = "rgba(34,36,38,.15)";
 
 /** `h2.ui.horizontal.divider.header` (measured): 24px/700 on a 24px line,
  * margin calc(2rem − .14em) 0 1rem (the first one has no bottom margin),
- * centred between two 1px rules. */
-export function DividerHeader({ children, first }: { children: ReactNode; first?: boolean }) {
+ * centred between two 1px rules. `columnTop` drops the top margin from lg up,
+ * where the header opens its own column (News) instead of following content. */
+export function DividerHeader({
+  children,
+  first,
+  columnTop,
+}: {
+  children: ReactNode;
+  first?: boolean;
+  columnTop?: boolean;
+}) {
   return (
     <h2
-      className="flex items-center whitespace-nowrap font-bold"
+      className={cx(
+        "flex items-center whitespace-nowrap font-bold mt-[calc(2rem-0.14285714em)]",
+        columnTop && "lg:mt-0",
+      )}
       style={{
         fontSize: "1.71428571rem",
         lineHeight: "1em",
         color: "rgba(0,0,0,.87)",
-        margin: `calc(2rem - 0.14285714em) 0 ${first ? 0 : "1rem"}`,
+        marginBottom: first ? 0 : "1rem",
         gap: "1em",
       }}
     >
@@ -292,7 +305,7 @@ export function HomePage() {
           style={{ padding: "0 1rem", textAlign: "justify" }}
           aria-label="News"
         >
-          <DividerHeader>News</DividerHeader>
+          <DividerHeader columnTop>News</DividerHeader>
           {home.news.length === 0 && (
             <>
               <p style={{ margin: "1em 0" }}>No news yet.</p>
