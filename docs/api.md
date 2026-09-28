@@ -188,8 +188,8 @@ off the production hosts) are added by the config route on top of the node's own
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below) | `SearchPage` |
-| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox` (as above) | `MapPoints` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `contribution` + `private_key?` (see below) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `contribution`, `private_key?` (as above) | `MapPoints` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 
@@ -217,6 +217,11 @@ has all four. `{table}` must be a level whose `geo` is true, otherwise 404.
 Visibility is the same as the search's. The SPA sends the Map tab's area
 filter as `bbox` here and to `/search/{table}`, with a `minLon` east of `maxLon`
 when it crosses the antimeridian.
+
+`contribution=<id>` scopes either search to that one contribution, as the
+contribution modal's level tabs, counts and map do: its docs of any version,
+public or opened by `private_key` (the same check as `GET /contributions/{id}`,
+a 404 otherwise), in place of the `_is_latest` / `_is_activated` filters.
 
 `{table}` must be one of the node's search levels, its `extra_types`, or a
 plugin-contributed table — otherwise 404. An unknown `sort`, a malformed `range`

@@ -1,25 +1,11 @@
-import { Link } from "@tanstack/react-router";
-import {
-  type CSSProperties,
-  lazy,
-  type ReactNode,
-  Suspense,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { apiUrl, nodeSiteUrl, nodeUrl } from "../lib/base";
+import { type CSSProperties, type ReactNode, useContext } from "react";
+import { apiUrl, nodeSiteUrl, nodeUrl, siteUrl } from "../lib/base";
 import { NodeConfigScope, useNodeConfig } from "../lib/config";
+import { useOpenContribution } from "../lib/contribution-modal";
 import type { SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath, singularize } from "../lib/utils";
 import { type MapMarker, MapThumbnail, markersFromGeoPoint } from "./map-thumbnail";
 import { Icon } from "./ui/icon";
-import { Modal } from "./ui/modal";
-import { PageSpinner } from "./ui/spinner";
-
-// echarts + echarts-gl live in a lazily loaded chunk (shared with the poles plugin).
-const GlobeView = lazy(() => import("./globe-view"));
 
 /** Fallback name columns, tried in order when a level's own key column is absent. */
 const NAME_COLUMNS = [
@@ -51,8 +37,8 @@ function useNodeApiUrl(): (path: string) => string {
   return scoped ? (path) => apiUrl(`/${scoped.slug}${path}`) : nodeUrl;
 }
 
-/** Link to a contribution page: a router link on this node, a page load of
- * the scoped node's page on the portal home. */
+/** Link to a contribution: opens its modal on the search page (a page load
+ * of the scoped node's on the portal home); the href is its /<id> link. */
 function ContributionLink({
   id,
   privateKey,
@@ -63,24 +49,21 @@ function ContributionLink({
   children: ReactNode;
 }) {
   const scoped = useContext(NodeConfigScope);
-  const className = "text-node hover:underline";
-  if (scoped) {
-    const query = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
-    return (
-      <a href={nodeSiteUrl(scoped.key, `/contributions/${id}${query}`)} className={className}>
-        {children}
-      </a>
-    );
-  }
+  const open = useOpenContribution();
+  const query = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
+  const href = scoped ? nodeSiteUrl(scoped.key, `/${id}${query}`) : siteUrl(`/${id}${query}`);
   return (
-    <Link
-      to="/contributions/$id"
-      params={{ id }}
-      search={{ private_key: privateKey }}
-      className={className}
+    <a
+      href={href}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+        event.preventDefault();
+        open(id, "contribution");
+      }}
+      className="text-node hover:underline"
     >
       {children}
-    </Link>
+    </a>
   );
 }
 
@@ -260,40 +243,27 @@ export function ResultDivider() {
   );
 }
 
-// --- Card frame (header row + collapsible data row + hover caret) ----------------
+// --- Card frame (header row + one row of blocks) --------------------------------
 
 export interface ResultCardFrameProps {
   doc: SearchResult;
   level: SearchLevel;
   cells: ReactNode;
-  expanded?: ReactNode;
-  /** Collapsed row height cap (one row of blocks); 105px default. */
+  /** Row height cap (one row of blocks); 105px default. */
   collapsedMaxHeight?: number;
 }
 
+/** A result card: the header opens the contribution's modal at this card's
+ * level (which replaced the legacy expand caret: everything it showed, and
+ * more, is in the modal's tabs). */
 export function ResultCardFrame({
   doc,
   level,
   cells,
-  expanded,
   collapsedMaxHeight = 105,
 }: ResultCardFrameProps) {
   const { data: config } = useNodeConfig();
-  const [open, setOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  // The caret tab hangs 1em below the card box (negative margin), so leaving
-  // the card fires before the pointer reaches it; hide on a delay like legacy.
-  const hideTimer = useRef<number | undefined>(undefined);
-  const showCaret = () => {
-    window.clearTimeout(hideTimer.current);
-    setHovered(true);
-  };
-  const hideCaret = () => {
-    window.clearTimeout(hideTimer.current);
-    hideTimer.current = window.setTimeout(() => setHovered(false), 500);
-  };
-  useEffect(() => () => window.clearTimeout(hideTimer.current), []);
-
+  const openContribution = useOpenContribution();
   const id = contributionId(doc);
   const citation = citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown");
   const version = getPath(doc, "summary.contribution.version");
@@ -306,19 +276,16 @@ export function ResultCardFrame({
   const contributor = firstString(getPath(doc, "summary.contribution._contributor"));
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: hover only toggles the caret button's visibility; expansion is keyboard-accessible via the header button
     <div
       className="relative flow-root text-left"
       style={{ lineHeight: "16px", color: "rgba(0,0,0,.87)" }}
-      onMouseEnter={showCaret}
-      onMouseLeave={hideCaret}
     >
-      {/* Header/citation row (accordion trigger) */}
+      {/* Header/citation row: opens the contribution modal */}
       <button
         type="button"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        className="relative flex w-full cursor-pointer items-stretch text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+        onClick={() => id && openContribution(id, level.table)}
+        title="Open this contribution"
+        className="group relative flex w-full cursor-pointer items-stretch text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
         style={{ padding: "0 1em 0.5em", margin: "-3.5px -1em 0 0" }}
       >
         <span
@@ -328,11 +295,11 @@ export function ResultCardFrame({
         >
           <Icon
             name="caret-right"
-            className={cx("transition-transform", open && "rotate-90")}
+            className="group-hover:text-node"
             style={{ width: "1.15em", height: "1.15em" }}
           />
         </span>
-        <span className="whitespace-nowrap text-[13px] font-bold">
+        <span className="whitespace-nowrap text-[13px] font-bold group-hover:text-node">
           {citation}
           {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
         </span>
@@ -360,41 +327,15 @@ export function ResultCardFrame({
         </span>
       </button>
 
-      {/* Flex data row. Legacy clipped the collapsed row at 105px mid-block;
-          FIESTA wraps the blocks and shows only the first row while collapsed,
-          every row when expanded (docs/legacy-ux-spec.md deviations). */}
+      {/* Flex data row. Legacy clipped the row at 105px mid-block; FIESTA
+          wraps the blocks and shows only the first row (docs/legacy-ux-spec.md
+          deviations); the rest is in the contribution modal. */}
       <div
         className="flex flex-wrap font-normal"
-        style={
-          open
-            ? { marginRight: "-1em" }
-            : { marginRight: "-1em", maxHeight: collapsedMaxHeight, overflow: "hidden" }
-        }
+        style={{ marginRight: "-1em", maxHeight: collapsedMaxHeight, overflow: "hidden" }}
       >
         {cells}
       </div>
-
-      {open && expanded && (
-        <div className="text-[13px]" style={{ padding: "0.5em 0 0" }}>
-          {expanded}
-        </div>
-      )}
-
-      {/* Grey caret tab straddling the card bottom edge, shown on hover */}
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-hidden="true"
-        onMouseEnter={showCaret}
-        onClick={() => setOpen(!open)}
-        className={cx(
-          "relative z-10 block h-[1.5em] w-[10em] rounded-b-sm border border-gray-300 bg-[#e0e1e2] p-[0.25em] text-center text-[10px] leading-none text-gray-600 hover:bg-[#cacbcd]",
-          hovered ? "visible" : "invisible",
-        )}
-        style={{ margin: "1em auto -2.5em", borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
-      >
-        <Icon name={open ? "caret-up" : "caret-down"} size="small" />
-      </button>
     </div>
   );
 }
@@ -487,17 +428,11 @@ export function ResultItem({
 }) {
   const { data: config } = useNodeConfig();
   const nodeApiUrl = useNodeApiUrl();
-  const [mapOpen, setMapOpen] = useState(false);
+  const openContribution = useOpenContribution();
   if (!config) return null;
 
   const id = contributionId(doc);
   const isActivated = doc._is_activated !== false;
-  // The poles plugin ships an equirectangular relief texture for its globes;
-  // reuse it for the map modal when that plugin is active on this node.
-  const polesConfig = config.plugins?.poles as { has_base_texture?: boolean } | undefined;
-  const baseTexture = polesConfig?.has_base_texture
-    ? nodeApiUrl("/plugins/poles/base-texture")
-    : undefined;
   const keyParam = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
   const publicationDoi = firstString(getPath(doc, "summary.contribution._reference.doi"));
 
@@ -545,9 +480,6 @@ export function ResultItem({
     .map(Number)
     .filter((n) => Number.isFinite(n));
   const markers = markersOf(doc, level);
-
-  const contributionSummary = getPath(doc, "summary.contribution");
-  const levelBlock = level.table !== "contribution" ? getPath(doc, `summary.${level.table}`) : null;
 
   // Legacy renderDownloadButton/renderLinks only exist on contribution cards.
   const isContribution = level.table === "contribution";
@@ -651,31 +583,17 @@ export function ResultItem({
         <Cell width={135}>{null}</Cell>
       )}
 
-      {/* 4. Map thumbnail (100px globe); click opens the 3D globe modal */}
+      {/* 4. Map thumbnail (100px globe); click opens the contribution's Map tab */}
       {markers.length > 0 ? (
         <Cell width={100} style={{ fontSize: 14, height: 104 }}>
           <button
             type="button"
-            onClick={() => setMapOpen(true)}
-            aria-label="Show the locations on a globe"
+            onClick={() => id && openContribution(id, "map")}
+            aria-label="Show the locations on a map"
             className="block cursor-pointer rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
           >
             <MapThumbnail markers={markers} width={100} height={100} />
           </button>
-          {mapOpen && (
-            <Modal
-              open
-              onClose={() => setMapOpen(false)}
-              title={`${citationOf(doc) ?? (id ? `Contribution ${id}` : "Unnamed")} - Map`}
-              wide
-            >
-              <div style={{ height: "60vh", minHeight: 320 }}>
-                <Suspense fallback={<PageSpinner label="Loading globe…" />}>
-                  <GlobeView markers={markers} baseTexture={baseTexture} color={config.color} />
-                </Suspense>
-              </div>
-            </Modal>
-          )}
         </Cell>
       ) : (
         <NoDataCell label="Geospatial" width={100} />
@@ -834,175 +752,5 @@ export function ResultItem({
     </>
   );
 
-  const summary = (
-    typeof contributionSummary === "object" && contributionSummary !== null
-      ? contributionSummary
-      : {}
-  ) as Record<string, unknown>;
-  const citation = citationOf(doc);
-
-  const expanded = (
-    <div className="space-y-3 py-2">
-      {/* Reference block: citation + Publication DOI */}
-      {(citation || publicationDoi) && (
-        <div className="text-[13px]">
-          {citation && <p className="m-0 text-gray-800">{citation}</p>}
-          {publicationDoi && (
-            <p className="m-0 mt-0.5">
-              <b>Publication DOI: </b>
-              <a
-                href={`https://dx.doi.org/${publicationDoi}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-node hover:underline"
-              >
-                {publicationDoi}
-              </a>
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Versions table (contribution-level card only) */}
-      {level.table === "contribution" && id && (
-        <VersionsTable
-          doc={doc}
-          currentId={id}
-          isActivated={isActivated}
-          keyParam={keyParam}
-          privateKey={privateKey}
-          config={config}
-          summary={summary}
-        />
-      )}
-
-      {/* Per-level definition table for non-contribution cards */}
-      {typeof levelBlock === "object" && levelBlock !== null && (
-        <div>
-          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            {level.name} values
-          </h4>
-          <DefinitionTable data={levelBlock as Record<string, unknown>} />
-        </div>
-      )}
-    </div>
-  );
-
-  return <ResultCardFrame doc={doc} level={level} cells={cells} expanded={expanded} />;
-}
-
-// --- Versions table (legacy "history table") ------------------------------------
-
-interface VersionRow {
-  id: string;
-  version: string;
-  dataModel: string;
-  date: unknown;
-  contributor: string;
-  isActivated: boolean;
-}
-
-function versionRows(
-  summary: Record<string, unknown>,
-  currentId: string,
-  currentIsActivated: boolean,
-): VersionRow[] {
-  const toRow = (entry: Record<string, unknown>, fallbackId: string): VersionRow => ({
-    id: String(entry.id ?? fallbackId),
-    version: String(entry.version ?? summary.version ?? "1"),
-    dataModel: String(entry.data_model_version ?? summary.data_model_version ?? ""),
-    date: entry.timestamp ?? summary.timestamp,
-    contributor: firstString(entry._contributor ?? entry.contributor) ?? "",
-    isActivated: typeof entry.is_activated === "boolean" ? entry.is_activated : currentIsActivated,
-  });
-
-  const history = summary._history;
-  if (Array.isArray(history) && history.length > 0) {
-    return history
-      .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === "object")
-      .map((entry) => toRow(entry, currentId));
-  }
-  return [toRow(summary, currentId)];
-}
-
-function VersionsTable({
-  currentId,
-  isActivated,
-  keyParam,
-  privateKey,
-  config,
-  summary,
-}: {
-  doc: SearchResult;
-  currentId: string;
-  isActivated: boolean;
-  keyParam: string;
-  privateKey?: string;
-  config: { key: string; doi_prefix: string | null };
-  summary: Record<string, unknown>;
-}) {
-  const nodeApiUrl = useNodeApiUrl();
-  const rows = versionRows(summary, currentId, isActivated);
-  return (
-    <div>
-      <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Versions</h4>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-[13px]">
-          <thead>
-            <tr className="text-gray-500">
-              <th className="py-1 pr-3 font-medium">Download</th>
-              <th className="py-1 pr-3 font-medium">Contribution Link</th>
-              <th className="py-1 pr-3 font-medium">EarthRef Data DOI</th>
-              <th className="py-1 pr-3 font-medium">Version</th>
-              <th className="py-1 pr-3 font-medium">Data Model</th>
-              <th className="py-1 pr-3 font-medium">Date</th>
-              <th className="py-1 font-medium">Contributor</th>
-            </tr>
-          </thead>
-          <tbody className="align-top">
-            {rows.map((row) => (
-              <tr key={`${row.id}-${row.version}`}>
-                <td className="py-1 pr-3">
-                  <a
-                    href={nodeApiUrl(`/contributions/${row.id}/download${keyParam}`)}
-                    download
-                    className="inline-flex items-center gap-1 text-node hover:underline"
-                  >
-                    <Icon name="download" size="small" /> txt
-                  </a>
-                </td>
-                <td className="py-1 pr-3">
-                  <ContributionLink id={row.id} privateKey={privateKey}>
-                    /contributions/{row.id}
-                  </ContributionLink>
-                </td>
-                <td className="py-1 pr-3">
-                  {config.doi_prefix ? (
-                    row.isActivated ? (
-                      <a
-                        href={`https://dx.doi.org/${config.doi_prefix}/${row.id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-node hover:underline"
-                      >
-                        {config.doi_prefix}/{row.id}
-                      </a>
-                    ) : (
-                      <span className="text-[#AAAAAA]">Queued For Creation</span>
-                    )
-                  ) : (
-                    <span className="text-[#AAAAAA]">—</span>
-                  )}
-                </td>
-                <td className="py-1 pr-3">{row.version}</td>
-                <td className="py-1 pr-3">{row.dataModel || "—"}</td>
-                <td className="py-1 pr-3 whitespace-nowrap">{formatDateLL(row.date) || "—"}</td>
-                <td className="py-1">{row.contributor || "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  return <ResultCardFrame doc={doc} level={level} cells={cells} />;
 }

@@ -179,12 +179,22 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 - **Download Results** downloads the top contribution file (no bulk-zip endpoint yet, ROADMAP); legacy zipped every matching contribution.
 - **Level tabs** omit legacy "Experiments" until the derived experiment docs exist (ROADMAP C4).
 - **Filter sidebar** renders the YAML `search.filters` (facet buckets, numeric ranges, a lat/lon box), each limited to the levels and result views it names; MagIC shows the buckets on Summaries/Rows and Age / Pole A95 / Geospatial on the Locations level's Poles view. The legacy Publication Year / Intensity ranges and with/without-data toggles are not ported yet. Facet titles default to the singular of the column name ("Method Code"), matching legacy titles, or the filter's `label`.
-- **Collapsed result cards wrap their blocks** (`flex-wrap`) and show only
-  the first row (105px cap) while collapsed, so a block that does not fit the
-  pane is hidden rather than cut mid-block; expanding shows every row plus the
-  reference/versions content.
-- **Map thumbnail click** opens a 3D globe modal (echarts-gl, the poles
-  plugin's relief texture when available) instead of the legacy Google Map.
+- **Result cards wrap their blocks** (`flex-wrap`) and show only the first
+  row (105px cap), so a block that does not fit the pane is hidden rather than
+  cut mid-block.
+- **Contribution modal** (2026-09-27) replaces the legacy expand caret, the
+  map and plot modals and the contribution page, after osu-mgr.org's record
+  modal: clicking a card's header, its map thumbnail or a plot (the plateau
+  age spectrum) opens one modal on the search page (`?contribution=<id>&tab=`;
+  `/<id>` and `/contributions/<id>` redirect there, keeping `private_key`).
+  Header: node key + id + version, citation and title, Copy Link (the `/<id>`
+  link), Download, close (Esc, backdrop). Tabs down the left (a select on
+  narrow screens) with counts, empty ones hidden: **Records** — Contribution
+  (reference, links and DOIs, revision history, the contribution row's values),
+  then each search level's rows in it (100 at a time); **Assets** — Map (a
+  MapLibre globe of one level's records, labelled with their names, levels
+  switchable; opens on the level with the most records), then plugin tabs
+  (Poles, Depth Plots, Age Spectra).
 - **Map thumbnail** uses one representative `_geo_point` per level (the summarizer's) rather than every distinct point/envelope of the legacy summary.
 - **Map thumbnail** is drawn from the Esri Ocean basemap (the Map tab's, as on osu-mgr.org) instead of the legacy SVG globe of 110m countries coloured by a climate lookup (2026-09-27).
 - **Map tab** (new, 2026-09-27): levels whose data-model table has lat/lon columns get a Map sub-tab after Rows, ported from osu-mgr.org's search map — MapLibre over Esri Ocean in four views (Globe, Mercator, North Pole, South Pole), every matching record plotted, and an area filter (the `area` search param) that also narrows Summaries and Rows. Legacy had no equivalent.

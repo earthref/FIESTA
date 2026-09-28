@@ -61,7 +61,10 @@ parses the canonical file from the bucket.
 ## Frontend half (`frontend/src/plugins/`)
 
 `src/plugins/index.tsx` maps plugin names to UI hooks (custom result items,
-extra sub-tabs on a search level, filter overrides). A plugin's components
+extra sub-tabs on a search level, filter overrides, and `contributionTabs`:
+asset tabs in the contribution modal, each counted by the matches of an
+optional `countTable` in that contribution and hidden when there are none).
+A plugin's components
 live under `src/plugins/<name>/` and activate only when the name appears in
 `config.plugins` — nothing node-specific leaks into core components.
 
@@ -70,7 +73,8 @@ live under `src/plugins/<name>/` and activate only when the name appears in
 - **`poles` (MagIC)** — derives a server-backed `poles` search level from
   location rows carrying `pole_lat`/`pole_lon` (the legacy app's Poles tab
   queried `type: "poles"` docs that nothing actually indexed; the plugin
-  makes them real). UI: pole result items + an SVG pole map with α95 circles;
+  makes them real). UI: pole result items + an SVG pole map with α95 circles,
+  also as the contribution modal's Poles tab;
   the Age / A95 / Geospatial filters are `search.filters` entries. Options:
   `display_columns`, `base_level`, `after_sub_tab`, `age_color`,
   `plate_boundary_color`.
@@ -78,7 +82,8 @@ live under `src/plugins/<name>/` and activate only when the name appears in
   returns depth-sorted measurement rows grouped by core (depth =
   the first of `depth_columns` present; the `series` tracks, matching the
   legacy view, are options in cdr.yaml). UI: multi-track SVG depth plots as a
-  "Plots" sub-tab on the `levels` option's levels.
+  "Plots" sub-tab on the `levels` option's levels, and the contribution modal's
+  Depth Plots tab.
 - **`plateau-calculations` (KArAr)** — Python port of the legacy
   `PlateauCalculations` class: per-step ages from ⁴⁰Ar*/³⁹ArK via
   `t = (1/λ)·ln(1 + J·R)` (λ = 5.543e-10/yr, atmospheric ⁴⁰Ar/³⁶Ar = 295.5),
@@ -87,8 +92,9 @@ live under `src/plugins/<name>/` and activate only when the name appears in
   are options (`default_lambda`, `default_j`, `min_plateau_steps`,
   `max_mswd`, `min_ar39_percent`), set in karar.yaml.
   `GET /v2/{node}/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau`
-  returns the full age spectrum + plateau. UI: age-spectrum thumbnail/modal
-  on Experiments result items.
+  returns the full age spectrum + plateau. UI: an age-spectrum thumbnail on
+  Experiments result items, opening the contribution modal's Age Spectra tab
+  (every experiment's spectrum and plateau).
 - **`record-cards` (ERDA, OSU-MGR)** — some nodes publish *records* rather than
   measurements: an ERDA digital object, an OSU-MGR core or dredged rock. The
   default result card (geologic classes, lithologies, method codes,

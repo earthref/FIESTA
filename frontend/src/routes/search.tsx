@@ -1,18 +1,21 @@
 import { keepPreviousData, useInfiniteQuery, useQueries } from "@tanstack/react-query";
-import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
+import { getRouteApi, Link } from "@tanstack/react-router";
 import {
   type CSSProperties,
   type FormEvent,
   type ReactNode,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { ContributionModal } from "../components/contribution-modal";
 import { ErrorMessage } from "../components/error-message";
 import { type Area, areaToBbox, parseArea } from "../components/map/map-points";
 import { SearchMap } from "../components/map/search-map";
 import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
+import { RowsTable } from "../components/rows-table";
 import {
   applicableFilters,
   BboxFilter,
@@ -23,11 +26,11 @@ import {
 import { buttonIconStyle, SemanticIcon } from "../components/ui/fa-icon";
 import { Icon } from "../components/ui/icon";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
-import { Table, TBody, Td, THead, Th, Tr } from "../components/ui/table";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
+import { useOpenContribution } from "../lib/contribution-modal";
 import type {
   FacetBucket,
   SearchFilter,
@@ -369,59 +372,6 @@ function FacetSection({
 
 // --- Rows view ----------------------------------------------------------------
 
-function RowsView({ results }: { results: SearchResult[] }) {
-  const rows = useMemo(
-    () => results.flatMap((hit) => (Array.isArray(hit.rows) ? (hit.rows as unknown[]) : [])),
-    [results],
-  );
-  const columns = useMemo(() => {
-    const keys = new Set<string>();
-    for (const row of rows.slice(0, 50)) {
-      if (row && typeof row === "object") {
-        for (const key of Object.keys(row as object)) keys.add(key);
-      }
-    }
-    return [...keys];
-  }, [rows]);
-
-  if (rows.length === 0) {
-    return (
-      <p className="py-8 text-center text-[13px] text-gray-500">No row data for these results.</p>
-    );
-  }
-
-  return (
-    <Table>
-      <THead>
-        <Tr>
-          {columns.map((column) => (
-            <Th key={column}>{column}</Th>
-          ))}
-        </Tr>
-      </THead>
-      <TBody>
-        {rows.map((row, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: raw OpenSearch rows have no stable id; the list is replaced wholesale per query
-          <Tr key={`row-${index}-${columns.length}`}>
-            {columns.map((column) => {
-              const value = (row as Record<string, unknown>)[column];
-              return (
-                <Td key={column} className="whitespace-nowrap">
-                  {value === undefined || value === null
-                    ? ""
-                    : typeof value === "object"
-                      ? JSON.stringify(value)
-                      : String(value)}
-                </Td>
-              );
-            })}
-          </Tr>
-        ))}
-      </TBody>
-    </Table>
-  );
-}
-
 /** Legacy SearchDividedList placeholder: a 100px item with a "Loading" dimmer. */
 function LoadingItem({ divider }: { divider: boolean }) {
   return (
@@ -513,7 +463,24 @@ export function SearchPage() {
       },
     });
   };
-  const navigateTo = useNavigate();
+  // A contribution's modal, over the search (?contribution=<id>&tab=...).
+  const openContribution = useOpenContribution();
+  const setModalTab = useCallback(
+    (tab: string) => navigate({ search: (prev) => ({ ...prev, tab }), replace: true }),
+    [navigate],
+  );
+  const closeModal = useCallback(
+    () =>
+      navigate({
+        search: (prev) => ({
+          ...prev,
+          contribution: undefined,
+          tab: undefined,
+          private_key: undefined,
+        }),
+      }),
+    [navigate],
+  );
   // The Map tab's area filter narrows every view of a level with positions.
   const area = level?.geo ? parseArea(search.area) : null;
   const setArea = (next: Area | null) => setSearch({ area: next?.join(",") });
@@ -962,13 +929,7 @@ export function SearchPage() {
                   area={area}
                   onAreaChange={setArea}
                   color={config.color}
-                  onSelect={(id) =>
-                    navigateTo({
-                      to: "/contributions/$id",
-                      params: { id },
-                      search: { private_key: privateKey },
-                    })
-                  }
+                  onSelect={(id) => openContribution(id, level.table)}
                 />
               </div>
             ) : (
@@ -1015,7 +976,7 @@ export function SearchPage() {
                         {isFetchingNextPage && <LoadingItem divider={false} />}
                       </div>
                     )}
-                    {activeTab?.name === "Rows" && <RowsView results={hits} />}
+                    {activeTab?.name === "Rows" && <RowsTable results={hits} />}
                     {activeTab?.render && (
                       <div>
                         {activeTab.render({
@@ -1052,6 +1013,15 @@ export function SearchPage() {
           </div>
         </div>
       </div>
+      {search.contribution !== undefined && (
+        <ContributionModal
+          id={String(search.contribution)}
+          tab={search.tab}
+          privateKey={search.private_key ?? privateKey}
+          onTab={setModalTab}
+          onClose={closeModal}
+        />
+      )}
     </div>
   );
 }

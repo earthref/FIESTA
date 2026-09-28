@@ -1,4 +1,4 @@
-import { Cell, DefinitionTable, NoDataCell, ResultCardFrame } from "../../components/result-item";
+import { Cell, NoDataCell, ResultCardFrame } from "../../components/result-item";
 import type { NodeConfig, SearchLevel, SearchResult } from "../../lib/types";
 import { getPath } from "../../lib/utils";
 import type { PluginModule, PluginResultItemProps } from "../index";
@@ -91,7 +91,6 @@ function RecordCard({
           })}
         </>
       }
-      expanded={<DefinitionTable data={block} />}
     />
   );
 }
