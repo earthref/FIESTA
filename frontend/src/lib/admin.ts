@@ -145,7 +145,6 @@ export interface NodeSettings {
     subtitle?: string;
     color?: string;
     links?: { website?: string | null; github_issues?: string | null };
-    contact_email?: string | null;
   };
   search: {
     index: string;

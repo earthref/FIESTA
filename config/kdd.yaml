@@ -16,7 +16,6 @@ node:
   links:
     website: https://earthref.org/KdD
     github_issues: https://github.com/earthref/KdD/issues
-  contact_email: kdd@earthref.org
 
 search:
   index: kdd

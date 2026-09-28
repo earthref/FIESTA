@@ -251,7 +251,6 @@ interface SettingsForm {
   title: string;
   subtitle: string;
   color: string;
-  contact_email: string;
   website: string;
   github_issues: string;
   doi_prefix: string;
@@ -264,7 +263,6 @@ function formOf(s: NodeSettings): SettingsForm {
     title: s.node.title ?? "",
     subtitle: s.node.subtitle ?? "",
     color: s.node.color ?? "#666666",
-    contact_email: s.node.contact_email ?? "",
     website: s.node.links?.website ?? "",
     github_issues: s.node.links?.github_issues ?? "",
     doi_prefix: s.doi?.prefix ?? "",
@@ -280,7 +278,6 @@ function opsFor(before: SettingsForm, after: SettingsForm): SettingsOp[] {
     ["title", ["node", "title"], after.title.trim()],
     ["subtitle", ["node", "subtitle"], after.subtitle.trim()],
     ["color", ["node", "color"], after.color],
-    ["contact_email", ["node", "contact_email"], orNull(after.contact_email)],
     ["website", ["node", "links", "website"], orNull(after.website)],
     ["github_issues", ["node", "links", "github_issues"], orNull(after.github_issues)],
     ["doi_prefix", ["doi", "prefix"], orNull(after.doi_prefix)],
@@ -359,9 +356,6 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
             />
             <Input {...input("color")} />
           </div>
-        </Field>
-        <Field label="Contact email">
-          <Input type="email" {...input("contact_email")} />
         </Field>
         <Field label="Website">
           <Input {...input("website")} />

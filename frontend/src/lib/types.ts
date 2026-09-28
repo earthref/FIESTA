@@ -56,7 +56,6 @@ export interface NodeConfig {
   subtitle: string;
   color: string;
   links: Record<string, string>;
-  contact_email: string;
   data_model_versions: string[];
   data_model_latest: string;
   doi_prefix: string | null;
