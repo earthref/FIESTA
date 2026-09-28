@@ -20,6 +20,8 @@ import { VocabulariesPage } from "./routes/vocabularies";
 export interface SearchParams {
   q?: string;
   level?: string;
+  /** The result sub-tab to open with (Summaries, Rows, Map, a plugin view). */
+  view?: string;
   sort?: string;
   /** Plugin range filters, each "field:gte:lte" (blank = open end). */
   ranges?: string[];
@@ -85,6 +87,7 @@ const searchRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
     q: str(search.q),
     level: str(search.level),
+    view: str(search.view),
     sort: str(search.sort),
     ranges: strArray(search.ranges),
     bbox: str(search.bbox),

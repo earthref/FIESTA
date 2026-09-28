@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, Response
 from opensearchpy.exceptions import NotFoundError, TransportError
 
 from fiesta.apps.deps import NodeDep, SessionDep
-from fiesta.apps.schemas import MapPoints, SearchPage
+from fiesta.apps.schemas import MapPoints, SearchPage, SearchValues
 from fiesta.db.models import Contribution
 from fiesta.nodeconfig import BOX_COLUMNS, MapColor
 from fiesta.search.client import get_opensearch
@@ -396,8 +396,6 @@ async def search_points(
     )
     await _constrain(session, node, body, query, contribution, private_key)
     body["query"]["bool"]["filter"].append({"exists": {"field": "summary._all._geo_point"}})
-    body["sort"] = ["_doc"]
-    body.pop("from", None)
     body["_source"] = [
         "summary._all._geo_point",
         "summary.contribution.id",
@@ -408,8 +406,8 @@ async def search_points(
         body["_source"].append(color.path(table))
         if color.unit_column:
             body["_source"].append(f"summary.{table}.{color.unit_column}")
-    client = get_opensearch()
     if contribution is None and table != "contribution" and not _has_boxes(node, table):
+        client = get_opensearch()
         try:
             count = await client.count(index=node.search_index, body={"query": body["query"]})
         except NotFoundError:
@@ -420,18 +418,35 @@ async def search_points(
                 client, node.search_index, body["query"], value
             )
             return MapPoints(total=count["count"], points=points, truncated=truncated)
+    points: list[dict] = []
+    total = await _scroll(
+        node,
+        body,
+        lambda source: points.extend(_map_points(source, table, area, color)),
+        lambda: len(points) >= MAX_MAP_POINTS,
+    )
+    return MapPoints(total=total, points=points[:MAX_MAP_POINTS], truncated=total > MAX_MAP_POINTS)
+
+
+async def _scroll(node, body: dict, collect, full) -> int:
+    """Pass every hit's `_source` of a search to `collect`, a page of
+    MAP_PAGE_SIZE at a time, until there are none left or `full()`; returns
+    the search's total."""
+    body["size"] = MAP_PAGE_SIZE
+    body["sort"] = ["_doc"]
+    body.pop("from", None)
+    client = get_opensearch()
     try:
         response = await client.search(index=node.search_index, body=body, scroll="1m")
     except NotFoundError:
-        return MapPoints(total=0, points=[])
+        return 0
     hits = response["hits"]
     total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
-    points: list[dict] = []
     scroll_id = response.get("_scroll_id")
     try:
-        while hits["hits"] and len(points) < MAX_MAP_POINTS:
+        while hits["hits"] and not full():
             for hit in hits["hits"]:
-                points += _map_points(hit["_source"], table, area, color)
+                collect(hit["_source"])
             if len(hits["hits"]) < MAP_PAGE_SIZE:
                 break
             response = await client.scroll(scroll_id=scroll_id, scroll="1m")
@@ -444,9 +459,68 @@ async def search_points(
             try:
                 await client.clear_scroll(scroll_id=scroll_id, ignore=(404,))
             except TransportError as exc:
-                logger.warning("could not clear the map scroll: %s", exc)
-    return MapPoints(
-        total=total, points=points[:MAX_MAP_POINTS], truncated=total > MAX_MAP_POINTS
+                logger.warning("could not clear the search scroll: %s", exc)
+    return total
+
+
+# Rows of values a plot fetches at most; past it `truncated` is set.
+MAX_VALUE_ROWS = 50_000
+
+
+def _value_field(field: str) -> str:
+    """A `values` field: a path in a doc's summary, never a private one."""
+    parts = field.split(".")
+    if len(parts) < 3 or parts[0] != "summary" or any(p.startswith("_private") for p in parts):
+        raise HTTPException(422, f"field must be summary.<block>.<name>, got {field!r}")
+    return field
+
+
+def _get_path(source: dict, field: str) -> Any:
+    value: Any = source
+    for part in field.split("."):
+        if not isinstance(value, dict):
+            return None
+        value = value.get(part)
+    if isinstance(value, list):
+        value = value[0] if value else None
+    return value if isinstance(value, (int, float, str)) else None
+
+
+@router.get("/search/{table}/values", response_model=SearchValues)
+async def search_values(
+    session: SessionDep,
+    node: NodeDep,
+    table: str,
+    field: Annotated[list[str], Query(min_length=1, max_length=50)],
+    query: str | None = None,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    bbox: str | None = None,
+    contribution: int | None = None,
+    private_key: str | None = None,
+) -> SearchValues:
+    """Some summary fields of every doc matching a search, as rows of values
+    (one per doc, in `field` order), for plots of many docs."""
+    if table not in _level_tables(node):
+        raise HTTPException(404, f"unknown search table {table!r}")
+    fields = [_value_field(f) for f in field]
+    body = build_search_body(
+        table=table,
+        query=query,
+        size=MAP_PAGE_SIZE,
+        ranges=_parse_ranges(range_),
+        bbox=_parse_bbox(bbox),
+    )
+    await _constrain(session, node, body, query, contribution, private_key)
+    body["_source"] = fields
+    rows: list[list] = []
+    total = await _scroll(
+        node,
+        body,
+        lambda source: rows.append([_get_path(source, f) for f in fields]),
+        lambda: len(rows) >= MAX_VALUE_ROWS,
+    )
+    return SearchValues(
+        total=total, fields=fields, rows=rows[:MAX_VALUE_ROWS], truncated=total > MAX_VALUE_ROWS
     )
 
 

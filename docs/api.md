@@ -210,6 +210,7 @@ needs `publish.api`.
 |---|---|---|---|
 | GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `contribution` + `private_key?` (see below) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
+| GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 
@@ -250,6 +251,22 @@ point's `value`: the record's value parsed as a number, in the field's base
 unit by its `unit_column` (an age in years BP by its `age_unit`), or for a
 location the mean of its records' values (a Painless `avg` in the
 aggregation). A record without a usable value has no `value`.
+
+```json
+SearchValues = {
+  "total": 3111,
+  "fields": ["summary.specimens.specimen", "summary.rock_mag.mr_ms"],
+  "rows": [["S1a1", 0.21], ["S1a2", null]],
+  "truncated": false
+}
+```
+
+`values` is the given summary fields of every match, one row per doc in
+`field` order (a list value gives its first element; a missing or non-scalar
+one is `null`), up to 50,000 rows (`truncated` past that), for plots of many
+docs (the `rock-mag` plugin's Rock Magnetism view). A field must be a path
+under `summary` at least three deep, and no part of it may start with
+`_private` (422 otherwise). Visibility is the same as the search's.
 
 Positions (`summary._all._geo_point`): a row's own `lat`/`lon`, or the middle
 of its `lat_s`/`lat_n`/`lon_w`/`lon_e` box; a row with neither takes its
@@ -357,7 +374,6 @@ enforces the same visibility rules as the core API.
 
 | Method | Path | Plugin (node) |
 |---|---|---|
-| GET | `/v2/{repository}/plugins/poles/base-texture` | `poles` (MagIC) — earth-relief JPEG |
 | GET | `/v2/{repository}/plugins/poles/plate-boundaries` | `poles` (MagIC) — GeoJSON |
 | GET | `/v2/{repository}/plugins/depth-plot/contributions/{id}/measurements` | `depth-plot` (CDR) |
 | GET | `/v2/{repository}/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau` | `plateau-calculations` (KArAr) |

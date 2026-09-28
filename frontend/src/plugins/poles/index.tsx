@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ErrorMessage } from "../../components/error-message";
 import { Cell, NoDataCell, ResultCardFrame } from "../../components/result-item";
 import { Icon } from "../../components/ui/icon";
@@ -11,9 +11,11 @@ import type {
   SearchPage as SearchPageData,
   SearchResult,
 } from "../../lib/types";
-import { cx } from "../../lib/utils";
+import { cx, getPath } from "../../lib/utils";
 import type { PluginModule, PluginSubTabContext } from "../index";
 import {
+  type AgeColors,
+  DEFAULT_AGE_COLORS,
   formatAge,
   formatLat,
   formatLon,
@@ -22,9 +24,7 @@ import {
   poleBlockOf,
   polesFromHits,
 } from "./poles-data";
-
-// echarts + echarts-gl live in a lazily loaded chunk so other nodes never pay for them.
-const PolesGlobes = lazy(() => import("./globes"));
+import PolesMap from "./poles-map";
 
 const POLES_LEVEL: SearchLevel = { name: "Poles", table: "poles", count_field: null };
 const DEFAULT_MAX_POLES = 100;
@@ -33,9 +33,9 @@ interface PolesPluginConfig {
   base_level?: string;
   after_sub_tab?: string;
   table?: string;
-  has_base_texture?: boolean;
   has_plate_boundaries?: boolean;
   plate_boundary_color?: string;
+  age_color?: Partial<AgeColors>;
 }
 
 function polesConfig(config: NodeConfig): PolesPluginConfig {
@@ -55,6 +55,9 @@ function PolesResultItem({ hit, level }: { hit: SearchResult; level: SearchLevel
   const lat = firstNumber(block?.pole_lat);
   const lon = firstNumber(block?.pole_lon);
   const alpha95 = firstNumber(block?.pole_alpha95);
+  const row = getPath(hit, "summary.locations") as Record<string, unknown> | undefined;
+  const dp = firstNumber(row?.pole_dp);
+  const dm = firstNumber(row?.pole_dm);
   const age = firstNumber(block?.age ?? block?.pole_age);
   const ageUnit =
     typeof block?.age_unit === "string"
@@ -89,6 +92,12 @@ function PolesResultItem({ hit, level }: { hit: SearchResult; level: SearchLevel
           <br />
           {alpha95}°
         </Cell>
+      ) : dp !== undefined && dm !== undefined ? (
+        <Cell width={100} wrap>
+          <b>dp / dm:</b>
+          <br />
+          {dp}° / {dm}°
+        </Cell>
       ) : (
         <NoDataCell label="Alpha95" width={100} />
       )}
@@ -114,10 +123,12 @@ function ColorLegend({
   minAge,
   maxAge,
   hasAges,
+  colors,
 }: {
   minAge: number;
   maxAge: number;
   hasAges: boolean;
+  colors: AgeColors;
 }) {
   const labels = hasAges
     ? [1, 0.75, 0.5, 0.25, 0].map((f) => formatAge(minAge + f * (maxAge - minAge)))
@@ -130,7 +141,7 @@ function ColorLegend({
           style={{
             width: 14,
             height: 150,
-            background: "linear-gradient(to bottom, #ff0000, #ffff00)",
+            background: `linear-gradient(to bottom, ${colors.old}, ${colors.young})`,
             border: "1px solid #D4D4D5",
           }}
           aria-hidden="true"
@@ -147,11 +158,17 @@ function ColorLegend({
       </div>
       <div className="mt-2 space-y-1 text-[11px] text-gray-600">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-full" style={{ background: "#000" }} />
+          <span
+            className="inline-block h-3 w-3 rounded-full"
+            style={{ background: colors.unknown }}
+          />
           Unknown Age
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-full" style={{ background: "#800080" }} />
+          <span
+            className="inline-block h-3 w-3 rounded-full"
+            style={{ background: colors.selected }}
+          />
           Selected Pole
         </span>
       </div>
@@ -167,6 +184,7 @@ function SidePanel({
   minAge,
   maxAge,
   hasAges,
+  colors,
 }: {
   maxPoles: number;
   setMaxPoles: (n: number) => void;
@@ -175,6 +193,7 @@ function SidePanel({
   minAge: number;
   maxAge: number;
   hasAges: boolean;
+  colors: AgeColors;
 }) {
   const section = "border-b border-[#D4D4D5]";
   const heading = "mb-1 text-[13px] font-bold text-[rgba(0,0,0,0.87)]";
@@ -226,13 +245,13 @@ function SidePanel({
       </div>
       <div style={{ padding: "0.25em 1em 0.5em" }}>
         <h5 className={heading}>Color Legend</h5>
-        <ColorLegend minAge={minAge} maxAge={maxAge} hasAges={hasAges} />
+        <ColorLegend minAge={minAge} maxAge={maxAge} hasAges={hasAges} colors={colors} />
       </div>
     </aside>
   );
 }
 
-// --- Poles map sub-tab: detail bar + dual globes + side panel ----------------------
+// --- Poles map sub-tab: detail bar + map + side panel -------------------------------
 
 function PolesMapView({
   query,
@@ -247,6 +266,7 @@ function PolesMapView({
   const [showEllipses, setShowEllipses] = useState(true);
 
   const pconfig = polesConfig(config);
+  const colors: AgeColors = { ...DEFAULT_AGE_COLORS, ...pconfig.age_color };
 
   const polesQuery = useQuery({
     queryKey: ["plugin", "poles", "search", query, ranges, bbox, maxPoles, contribution],
@@ -275,7 +295,8 @@ function PolesMapView({
     () => polesFromHits(polesQuery.data?.results ?? []),
     [polesQuery.data],
   );
-  const ageScale = useMemo(() => makeAgeScale(poles), [poles]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the colors by value
+  const ageScale = useMemo(() => makeAgeScale(poles, colors), [poles, JSON.stringify(colors)]);
 
   // Reset selection when the pole set changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset only when the list identity changes
@@ -328,7 +349,7 @@ function PolesMapView({
             <PolesResultItem hit={selectedPole.hit} level={POLES_LEVEL} />
           ) : (
             <p className="text-[13px] text-gray-500">
-              Select a pole on a globe, or use the arrows to browse {poles.length} poles.
+              Select a pole on the map, or use the arrows to browse {poles.length} poles.
             </p>
           )}
         </div>
@@ -337,22 +358,22 @@ function PolesMapView({
         )}
       </div>
 
-      {/* Row 2 — globes + side panel */}
+      {/* Row 2 — map + side panel */}
       <div className="flex min-h-0 flex-1">
-        <div className="min-h-0 min-w-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {boundaries.error && <ErrorMessage error={boundaries.error} className="m-2" />}
-          <Suspense fallback={<PageSpinner label="Loading globes…" />}>
-            <PolesGlobes
+          <div className="min-h-0 flex-1">
+            <PolesMap
               poles={poles}
               ageScale={ageScale}
               boundaries={boundaries.data ?? null}
               plateColor={pconfig.plate_boundary_color ?? "#990000"}
-              hasBaseTexture={pconfig.has_base_texture === true}
+              selectedColor={colors.selected}
               showEllipses={showEllipses}
               selected={selected}
               onSelect={setSelected}
             />
-          </Suspense>
+          </div>
         </div>
         <SidePanel
           maxPoles={maxPoles}
@@ -362,6 +383,7 @@ function PolesMapView({
           minAge={ageScale.minAge}
           maxAge={ageScale.maxAge}
           hasAges={ageScale.hasAges}
+          colors={colors}
         />
       </div>
     </div>
@@ -380,11 +402,11 @@ export const polesPlugin: PluginModule = {
         key: "poles",
         title: "Poles\nView",
         to: "/search",
-        search: { level: pconfig.base_level },
+        search: { level: pconfig.base_level, view: "Poles" },
       },
     ];
   },
-  // A contribution's poles on the same globes, in its modal.
+  // A contribution's poles on the same map, in its modal.
   contributionTabs(config) {
     const pconfig = polesConfig(config);
     if (!pconfig.base_level) return [];

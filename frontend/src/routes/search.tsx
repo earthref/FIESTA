@@ -427,7 +427,9 @@ export function SearchPage() {
   const sort = search.sort ?? (hasFreeText ? RELEVANCE_OPTION.value : SORT_OPTIONS[0].value);
 
   const [input, setInput] = useState(q);
-  const [view, setView] = useState("Summaries");
+  // A link may open a sub-tab (the home page's plugin cards); it is kept in
+  // the page's state from then on.
+  const [view, setView] = useState(search.view ?? "Summaries");
   useEffect(() => setInput(q), [q]);
 
   // Independent scroll regions: compute the available height so the page body

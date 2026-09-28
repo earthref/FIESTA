@@ -4,6 +4,7 @@ import { depthPlotPlugin } from "./depth-plot";
 import { plateauPlugin } from "./plateau-calculations";
 import { polesPlugin } from "./poles";
 import { recordCardsPlugin } from "./record-cards";
+import { rockMagPlugin } from "./rock-mag";
 
 export interface PluginResultItemProps {
   hit: SearchResult;
@@ -90,6 +91,7 @@ export interface PluginModule {
 /** All known plugin modules; activation is strictly by key presence in config.plugins. */
 export const PLUGINS: Record<string, PluginModule> = {
   poles: polesPlugin,
+  "rock-mag": rockMagPlugin,
   "depth-plot": depthPlotPlugin,
   "record-cards": recordCardsPlugin,
   "plateau-calculations": plateauPlugin,

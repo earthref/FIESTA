@@ -15,13 +15,13 @@ import {
   RAMP,
   valueAt,
 } from "./map-colors";
+import { ModeButtons, mapButtonClass, useSavedMode } from "./map-mode";
 import {
   type ApiMapPoint,
   type Area,
   areaAround,
   areaToBbox,
   type MapPoint,
-  MODES,
   type Mode,
   pointKey,
   recordsOf,
@@ -36,17 +36,6 @@ interface MapPointsPage {
   total: number;
   points: ApiMapPoint[];
   truncated?: boolean;
-}
-
-// The view mode, remembered in this browser for every search map.
-const MODE_KEY = "search-map-mode";
-function savedMode(): Mode {
-  try {
-    const mode = localStorage.getItem(MODE_KEY);
-    return MODES.some(([value]) => value === mode) ? (mode as Mode) : "globe";
-  } catch {
-    return "globe";
-  }
 }
 
 // The field the markers are colored by (a node `map_colors` field, or "" for
@@ -158,15 +147,8 @@ export function SearchMap({
   onSelect: (contributionId: string) => void;
   color: string;
 }) {
-  const [mode, setModeState] = useState<Mode>(savedMode);
-  const setMode = (next: Mode) => {
-    setModeState(next);
-    try {
-      localStorage.setItem(MODE_KEY, next);
-    } catch {
-      // private window: the mode just isn't remembered
-    }
-  };
+  // The view mode, remembered in this browser for every search map.
+  const [mode, setMode] = useSavedMode("search-map-mode");
   // An area the map zooms to (see AreaRequest).
   const [zoomTo, setZoomTo] = useState<Area | null>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: switches once per request
@@ -261,29 +243,12 @@ export function SearchMap({
     return () => clearTimeout(timer);
   }, [inArea.isFetching]);
 
-  const buttonClass = (active: boolean) =>
-    active
-      ? "border-node bg-node text-white"
-      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50";
+  const buttonClass = mapButtonClass;
 
   return (
     <div className="flex h-full flex-col gap-2 py-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
-        <div className="inline-flex">
-          {MODES.map(([value, label], index) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={mode === value}
-              onClick={() => setMode(value)}
-              className={`border px-2 py-1 font-bold ${buttonClass(mode === value)} ${
-                index === 0 ? "rounded-l-sm" : "-ml-px"
-              } ${index === MODES.length - 1 ? "rounded-r-sm" : ""}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <ModeButtons mode={mode} setMode={setMode} />
         {area ? (
           <button
             type="button"

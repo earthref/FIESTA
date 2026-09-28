@@ -17,7 +17,7 @@ Counted from the tree, not estimated:
 | | |
 |---|---|
 | Nodes configured (`config/*.yaml`) | 6 — MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR |
-| Plugins | poles (MagIC), depth-plot (CDR), plateau-calculations (KArAr), record-cards, digital-objects (ERDA) |
+| Plugins | poles, rock-mag (MagIC), depth-plot (CDR), plateau-calculations (KArAr), record-cards, digital-objects (ERDA) |
 | Backend apps | 1 — `fiesta.apps.api`: `/v2/{node}/...` for every node plus the frozen legacy `/v1` api.earthref.org contract (`routers/v1.py`) |
 | Backend tests | 84 (domain, plugins, deployment, the `/v1` contract against a fake session; no infra) + the Phase M integration suite in Docker; `scripts/e2e.sh` drives the compose stack |
 | Frontend routes | home, search, contribution, private workspace, upload, validate, data-models, vocabularies, method-codes, contact, login; **6 stubs** (about, technology, grand challenges, workshops, links, help) |
@@ -193,7 +193,10 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
       thumbnail, `sort` API param); deviations listed in the spec's search section.
 - [ ] **D3 Mobile** — the drawer shipped 2026-08-26; the search and contribution pages
       still need a pass at phone width.
-- [ ] **D4 Poles globe** per `docs/poles-globe-spec.md` — check what remains.
+- [x] **D4 Poles globe** — replaced 2026-09-28 by the MapLibre views with plate
+      boundaries and a95 / dp-dm outlines (deviations at the top of
+      `docs/poles-globe-spec.md`). A Rock Magnetism view (`rock-mag` plugin) shipped
+      alongside it on the Specimens level.
 
 ## Phase M — Data migration and redesign — **IN PROGRESS**
 

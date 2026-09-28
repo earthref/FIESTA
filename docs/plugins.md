@@ -7,7 +7,7 @@ with FIESTA; a node activates a plugin by listing it in its YAML:
 
 ```yaml
 features:
-  plugins: [poles]          # magic.yaml
+  plugins: [poles, rock-mag] # magic.yaml
   plugins: [depth-plot]     # cdr.yaml
   plugins: [plateau-calculations]  # karar.yaml
 ```
@@ -73,11 +73,35 @@ live under `src/plugins/<name>/` and activate only when the name appears in
 - **`poles` (MagIC)** — derives a server-backed `poles` search level from
   location rows carrying `pole_lat`/`pole_lon` (the legacy app's Poles tab
   queried `type: "poles"` docs that nothing actually indexed; the plugin
-  makes them real). UI: pole result items + an SVG pole map with α95 circles,
-  also as the contribution modal's Poles tab;
-  the Age / A95 / Geospatial filters are `search.filters` entries. Options:
+  makes them real). UI: pole result items + the search map's MapLibre views
+  (globe, Mercator, north and south pole) with the plate boundaries and each
+  pole's uncertainty outline in its age colour — its α95 circle, else its
+  dp/dm oval oriented along the site–pole great circle — drawn by a custom
+  WebGL line layer that, unlike MapLibre's GeoJSON lines, reaches past ±85°
+  (`components/map/lines-layer.ts`); also the contribution modal's Poles tab.
+  The Age / A95 / Geospatial filters are `search.filters` entries. Options:
   `display_columns`, `base_level`, `after_sub_tab`, `age_color`,
   `plate_boundary_color`.
+- **`rock-mag` (MagIC)** — derives a `rock_mag` search doc from every
+  `source_table` (specimens) row with rock-magnetic data; `summary.rock_mag`
+  holds numbers in consistent units: Mr/Ms, Bcr/Bc, Bc, Bcr and MDF (mT),
+  Ms, Mr, χ, κ, χfd, S-ratio, critical temperature (°C), anisotropy P, P′,
+  T, L, F (Jelinek 1981, from the eigenparameters or the `aniso_s` tensor)
+  and the V1/V3 axes (only outside specimen coordinates). Ratios are derived
+  from their parts when a row lacks them, non-physical values are left out,
+  and a contribution whose field column's median is above 1 T is read as mT
+  (common in legacy data). A specimen takes its position and facet values
+  from its sample or site. UI: a Rock Magnetism sub-tab of `base_level`
+  (Specimens), a home-page card, and the contribution modal's Rock
+  Magnetism tab — linked echarts panels (Day plot with the Day et al. 1977
+  domain fields, squareness–coercivity with the uniaxial/cubic SD limits,
+  critical temperatures against those of common minerals, Jelinek plot,
+  equal-area stereonet of V1/V3, a distribution of any parameter, and an X–Y
+  explorer), colour by lithology / geologic class / type / transition type,
+  brushing any panel selects those specimens on all of them and lists them,
+  CSV download. The plots read `GET /search/rock_mag/values`; the range
+  filters are `search.filters` entries on `summary.rock_mag.<field>`.
+  Options: `base_level`, `source_table`.
 - **`depth-plot` (CDR)** — `GET /v2/{node}/plugins/depth-plot/contributions/{id}/measurements`
   returns depth-sorted measurement rows grouped by core (depth =
   the first of `depth_columns` present; the `series` tracks, matching the

@@ -127,6 +127,17 @@ Last updated: 2026-09-24
   levels without coordinates (specimens, measurements, ...) and matches a
   contribution by its first position only.
 
+## 2026-09-28 — MapLibre poles view and Rock Magnetism view
+
+- [ ] **Rebuild MagIC's search index once this is deployed** (`fiesta rebuild
+  --yes` for magic, on dev and production; one rebuild also covers the item
+  above). The `rock-mag` plugin's `rock_mag` docs exist only for contributions
+  processed after deploy until then, so the home page's Rock Magnetism card
+  opens an empty view.
+- [ ] **Check the Rock Magnetism view against real use** with a rock magnetist
+  (e.g. on dev after the rebuild): the panel set, and the rule that reads a
+  contribution's coercivities/MDFs as mT when their median is above 1 T.
+
 ## Done
 
 _(none yet)_

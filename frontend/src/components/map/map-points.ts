@@ -17,9 +17,11 @@ export const MODES: [Mode, string][] = [
 // lat/lon is then the box's centre. count: on a large search's map, a point
 // is one location's records in one contribution, not a record. value: the
 // number it is colored by (a location's records' mean), and its text for the
-// tooltip (`valueText`).
+// tooltip (`valueText`). contribution: the record's contribution, when id
+// is something else.
 export type MapPoint = {
   id: string;
+  contribution?: string;
   name: string;
   label: string;
   color: string;
@@ -126,8 +128,8 @@ export const colocatedIndex = (points: MapPoint[]) => {
 const MAX_TOOLTIP_IDS = 12;
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
-const contributionOf = (p: MapPoint) =>
-  p.name === `Contribution ${p.id}` ? "" : ` in contribution ${escapeHtml(p.id)}`;
+const contributionOf = ({ name, id, contribution = id }: MapPoint) =>
+  name === `Contribution ${contribution}` ? "" : ` in contribution ${escapeHtml(contribution)}`;
 /** Records a point stands for: one, or a location's count. */
 export const recordsOf = (p: MapPoint) => p.count ?? 1;
 
