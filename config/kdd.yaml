@@ -8,11 +8,10 @@ deployment: node
 node:
   key: KdD
   slug: kdd
-  title: Partition Coefficient (Kd) Database (KdD)
+  title: GERM - Partition Coefficients Database (KdD)
   subtitle: >-
-    Partition coefficients describing the distribution of trace elements
-    between minerals, rocks, and melts.
-  color: "#217e5c" # Semantic UI "green" family (EarthRef.org heritage)
+    Geochemical Earth Reference Model (GERM) partition coefficients from both experimental and empirical data for all types of rocks, minerals, and elements.
+  color: "#bb4b1c" # Semantic UI "green" family (EarthRef.org heritage)
   links:
     website: https://earthref.org/KdD
     github_issues: https://github.com/earthref/KdD/issues
@@ -20,8 +19,8 @@ node:
 search:
   index: kdd
   levels:
-    - { name: Contributions, table: contribution }
-    - { name: Partition Coefficients, table: kds, count_field: summary.kds._n_results }
+    - {name: Contributions, table: contribution}
+    - {name: Partition Coefficients, table: kds, count_field: summary.kds._n_results}
   extra_types: []
   filters: []
 
