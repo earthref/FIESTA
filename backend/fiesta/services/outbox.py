@@ -12,6 +12,7 @@ from fiesta.domain.parse import ParseError, parse_text
 from fiesta.search.client import get_opensearch
 from fiesta.search.documents import delete_contribution_docs
 from fiesta.search.index import ensure_index
+from fiesta.services import references
 from fiesta.services.contributions import derive_artifacts, index_parsed, latest_validation
 from fiesta.services.revisions import locked, revision_file
 
@@ -70,7 +71,10 @@ async def drain(node, limit=100):
                         )
                     else:
                         user = await session.get(User, contribution.contributor_id)
-                        await index_parsed(node, contribution, user, parsed)
+                        reference = await references.lookup(
+                            session, contribution.reference_doi
+                        )
+                        await index_parsed(node, contribution, user, parsed, reference)
                 contribution.indexing_status = "indexed"
                 event.error = None
                 event.completed_at = datetime.now(UTC)
@@ -86,8 +90,9 @@ async def drain(node, limit=100):
 
 
 async def serve():
-    """Drain every served node's outbox, forever; nodes published in the
-    admin UI join (and changed configs apply) within a refresh interval."""
+    """Drain every served node's outbox, forever, and fetch due reference
+    DOIs; nodes published in the admin UI join (and changed configs apply)
+    within a refresh interval."""
     from fiesta.nodeconfig import get_deployment
     from fiesta.services.node_config import maybe_refresh
 
@@ -98,4 +103,8 @@ async def serve():
                 await drain(node)
             except Exception as exc:
                 logger.warning("outbox poll failed for %s: %s", node.node.slug, exc)
+        try:
+            await references.drain()
+        except Exception as exc:
+            logger.warning("reference fetch failed: %s", exc)
         await asyncio.sleep(2)

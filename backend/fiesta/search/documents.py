@@ -56,3 +56,25 @@ async def update_contribution_flags(
         conflicts="proceed",
         refresh=True,
     )
+
+
+async def set_contribution_reference(
+    client: AsyncOpenSearch, index: str, contribution_id: int, reference: dict
+) -> None:
+    """Set `summary.contribution._reference` (publication metadata) on every
+    doc of a contribution without re-summarizing."""
+    response = await client.update_by_query(
+        index=index,
+        body={
+            "query": {"term": {"summary.contribution.id": contribution_id}},
+            "script": {
+                "source": "ctx._source.summary.contribution._reference = params.reference;",
+                "params": {"reference": reference},
+                "lang": "painless",
+            },
+        },
+        conflicts="proceed",
+        refresh=True,
+    )
+    if response.get("failures"):
+        raise RuntimeError(f"update_by_query failed: {response['failures'][:1]}")

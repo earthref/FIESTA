@@ -4,6 +4,7 @@ fiesta init          apply DB migrations + procrastinate schema, ensure bucket/i
 fiesta create-user   create an account (--admin for admins)
 fiesta rebuild       rebuild search from Postgres and immutable bucket objects
 fiesta worker        run the procrastinate job worker
+fiesta enrich-references   fetch every reference DOI's publication metadata
 """
 
 import asyncio
@@ -198,6 +199,39 @@ def drain_outbox():
         from fiesta.search.client import get_opensearch
 
         await get_opensearch().close()
+
+    asyncio.run(run())
+
+
+@app.command("enrich-references")
+def enrich_references(
+    refresh: bool = typer.Option(False, help="fetch every known DOI again, not just new ones"),
+    batch: int = typer.Option(20, help="DOIs fetched per round"),
+):
+    """Fetch the publication metadata (Crossref, then DataCite) of every
+    contribution's reference DOI and set it on their search docs. The outbox
+    worker does this for new DOIs and monthly refreshes; this is the backfill."""
+    from fiesta.search.client import get_opensearch
+    from fiesta.services import references
+
+    async def run():
+        try:
+            for slug, n in (await references.request_all()).items():
+                typer.echo(f"{slug}: {n} reference DOIs")
+            if refresh:
+                typer.echo(f"{await references.refresh_all()} fetched DOIs made due")
+            totals = {"ok": 0, "not_found": 0, "error": 0, "updated": 0}
+            while True:
+                counts = await references.drain(batch)
+                if not any(counts[k] for k in ("ok", "not_found", "error")):
+                    break
+                totals = {k: totals[k] + counts[k] for k in totals}
+                typer.echo(
+                    f"fetched {totals['ok']} (not found {totals['not_found']}, "
+                    f"errors {totals['error']}); {totals['updated']} contributions updated"
+                )
+        finally:
+            await get_opensearch().close()
 
     asyncio.run(run())
 

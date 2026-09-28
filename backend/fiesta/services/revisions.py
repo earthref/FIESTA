@@ -159,6 +159,10 @@ async def save_revision(
             pass  # Invalid drafts are still saved and receive a validation report.
     if reference_doi is not None:
         snapshot["reference_doi"] = reference_doi
+    from fiesta.services.references import request
+
+    # Its publication metadata is fetched by the outbox worker.
+    await request(session, snapshot["reference_doi"])
     revision = Revision(
         id=str(uuid.uuid4()),
         contribution_id=contribution.id,

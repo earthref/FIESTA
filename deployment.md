@@ -10,6 +10,11 @@ stack (or the equivalent services in your orchestrator).
 | API (every node under `/v2/{node}/...`) | `config/fiesta.yaml` | `uvicorn fiesta.apps.api:create_app --factory` |
 | Worker | `config/fiesta.yaml` | `fiesta worker` |
 
+The worker also runs the outbox (indexing) and fetches reference DOIs' metadata
+from `api.crossref.org` and `api.datacite.org`, so its host needs outbound HTTPS
+to both; `fiesta enrich-references` backfills every contribution's DOI (and
+`--refresh` fetches every known DOI again).
+
 Both run from the same `backend/` image; the role is just the command. One API
 process serves every node listed in `config/fiesta.yaml`; `FIESTA_NODE`
 (comma-separated keys/slugs, empty = all) narrows the set a process serves.

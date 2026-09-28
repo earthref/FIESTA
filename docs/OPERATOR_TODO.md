@@ -127,6 +127,23 @@ Last updated: 2026-09-24
   levels without coordinates (specimens, measurements, ...) and matches a
   contribution by its first position only.
 
+## 2026-09-28 — Reference enrichment (Crossref/DataCite)
+
+- [ ] **Run `fiesta worker` as a service on fiesta-ct** (blocker for everything
+      after an upload: parsing, validation, indexing, and now reference metadata).
+      The deploy script swaps the release and restarts the API only; nothing starts
+      the worker, so dev has been drained by hand from a laptop. A systemd unit
+      beside the API's, restarted by `deploy-fiesta.sh` after `fiesta init`:
+      `ExecStart=/srv/fiesta/current/backend/.venv/bin/fiesta worker`,
+      `WorkingDirectory=/srv/fiesta/current/backend`, the API's `EnvironmentFile`,
+      `FIESTA_CONFIG_FILE=../config/fiesta.yaml`, no `FIESTA_NODE` (every queue),
+      `Restart=always` (paths as the API's unit has them; these are inferred from
+      the release layout, not read off the host). It starts the outbox poller itself.
+- [ ] **Allow outbound HTTPS from the worker host** to `api.crossref.org` and
+      `api.datacite.org`. Crossref's polite pool identifies us by
+      `FIESTA_SMTP_FROM`; set it to an address someone reads if Crossref ever
+      needs to reach us.
+
 ## 2026-09-28 — MapLibre poles view and Rock Magnetism view
 
 - [ ] **Rebuild MagIC's search index once this is deployed** (`fiesta rebuild

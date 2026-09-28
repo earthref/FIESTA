@@ -289,3 +289,26 @@ class NodeRevision(Base):
     repo_status: Mapped[str | None] = mapped_column(String(16))
     repo_ref: Mapped[str | None] = mapped_column(Text)
     repo_error: Mapped[str | None] = mapped_column(Text)
+
+
+class DoiReference(Base):
+    """A publication's metadata by DOI (upper case), fetched from Crossref or,
+    failing that, DataCite, for `summary.contribution._reference`. Shared, as
+    a DOI is the same publication on every node. A cache: a search rebuild
+    reads it but never calls out, and it can always be fetched again.
+
+    status: pending (never fetched) | ok | not_found | error. A row is fetched
+    again once `due_at` passes: a month after a success (n_citations moves),
+    sooner after an error."""
+
+    __tablename__ = "doi_references"
+    __table_args__ = {"schema": SHARED_SCHEMA}
+    doi: Mapped[str] = mapped_column(String(255), primary_key=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    source: Mapped[str | None] = mapped_column(String(16))  # crossref | datacite
+    reference: Mapped[dict | None] = mapped_column(JSON)  # the legacy _reference shape
+    raw: Mapped[dict | None] = mapped_column(JSON)  # the registry's record as fetched
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
