@@ -136,3 +136,42 @@ export const areaToBbox = ([west, south, east, north]: Area): string => {
   const max = wrap(east) === -180 ? 180 : wrap(east);
   return [wrap(west), south, max, north].map((v) => +v.toFixed(4)).join(",");
 };
+
+export const WHOLE_GLOBE: Area = [-180, -90, 180, 90];
+// Margin around areaAround's points, as a share of the area's size (with a
+// minimum), so the outermost points aren't on its edge.
+const AREA_MARGIN = 0.02;
+const AREA_MIN_MARGIN = 0.1;
+// The smallest area around the points (boxes included), with a margin. Its
+// longitudes leave out the widest gap between the points' longitudes, so
+// points either side of the antimeridian get an area across it.
+export const areaAround = (points: MapPoint[]): Area | null => {
+  const corners = points.flatMap((p) =>
+    p.bounds
+      ? [
+          [p.bounds[0], p.bounds[1]],
+          [p.bounds[2], p.bounds[3]],
+        ]
+      : [[p.lon, p.lat]],
+  );
+  if (!corners.length) return null;
+  const lats = corners.map(([, lat]) => lat);
+  const lons = [...new Set(corners.map(([lon]) => ((lon + 540) % 360) - 180))].sort(
+    (a, b) => a - b,
+  );
+  // The gap after each longitude, the last one wrapping round to the first.
+  let [widest, after] = [-1, 0];
+  for (const [i, lon] of lons.entries()) {
+    const gap = (i + 1 < lons.length ? lons[i + 1] : lons[0] + 360) - lon;
+    if (gap > widest) [widest, after] = [gap, i];
+  }
+  let [west, east] =
+    after === lons.length - 1 ? [lons[0], lons[after]] : [lons[after + 1], lons[after] + 360];
+  let [south, north] = [Math.min(...lats), Math.max(...lats)];
+  const lonMargin = Math.max((east - west) * AREA_MARGIN, AREA_MIN_MARGIN);
+  const latMargin = Math.max((north - south) * AREA_MARGIN, AREA_MIN_MARGIN);
+  [west, east] =
+    east - west + 2 * lonMargin >= 360 ? [-180, 180] : [west - lonMargin, east + lonMargin];
+  [south, north] = [Math.max(south - latMargin, -90), Math.min(north + latMargin, 90)];
+  return [west, south, east, north];
+};

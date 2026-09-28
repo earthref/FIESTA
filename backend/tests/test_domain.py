@@ -778,3 +778,54 @@ def test_map_point_from_a_search_doc():
     }
     assert _map_point(location, "locations")["bounds"] == [350.0, 1.0, 10.0, 2.0]
     assert _map_point({"summary": {"_all": {}}}, "sites") is None
+
+
+def test_undersea_features_for_the_map_labels():
+    from fiesta.apps.routers.basemap import undersea_features
+
+    ring = [[179, 10], [-179, 10], [-179, 12], [179, 12], [179, 10]]
+    collection = undersea_features(
+        [
+            (
+                "point",
+                [
+                    {
+                        "properties": {"NAME": "Axial", "TYPE": "Seamount"},
+                        "geometry": {"type": "Point", "coordinates": [-130, 46]},
+                    }
+                ],
+            ),
+            (
+                "line",
+                [
+                    {
+                        "properties": {"NAME": "Gorda Ridge", "TYPE": "Ridge"},
+                        "geometry": {"type": "LineString", "coordinates": [[-127, 41], [-126, 43]]},
+                    }
+                ],
+            ),
+            (
+                "area",
+                [
+                    {
+                        "properties": {"NAME": "Wide", "TYPE": "Basin"},
+                        "geometry": {"type": "Polygon", "coordinates": [ring]},
+                    }
+                ],
+            ),
+            (
+                "area",
+                [
+                    {
+                        "properties": {"NAME": "", "TYPE": "Basin"},
+                        "geometry": {"type": "Polygon", "coordinates": [ring]},
+                    }
+                ],
+            ),
+        ]
+    )
+    names = [(f["properties"]["name"], f["properties"]["kind"]) for f in collection["features"]]
+    assert names == [("Axial Seamount", "point"), ("Gorda Ridge", "line"), ("Wide Basin", "area")]
+    # An area across the antimeridian is labelled on it, not on the far side.
+    lon, lat = collection["features"][2]["geometry"]["coordinates"]
+    assert abs(abs(lon) - 179.4) < 0.5 and lat == 10.8

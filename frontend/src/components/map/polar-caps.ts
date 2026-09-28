@@ -3,8 +3,7 @@ import { MERCATOR_LAT, type PolarCap, type PolarTiles, type Pole } from "./basem
 
 // MapLibre's globe is drawn from Web Mercator tiles, which stop at ±85.05°;
 // past that it stretches the tiles' edge rows out to the pole. This custom
-// layer covers each polar cap it's given (POLAR_CAPS, or POLAR_LABELS over
-// them) with meshes projected by
+// layer covers each polar cap it's given (POLAR_CAPS) with meshes projected by
 // MapLibre's own globe shader code, whose Mercator-to-sphere step has no
 // latitude limit. A cap is drawn from one of:
 // - a flat colour, on a latitude-longitude mesh;
@@ -241,7 +240,7 @@ void main() {
   if (alpha <= 0.0) discard;
   vec4 texel = texture(u_image, v_uv);
   if (u_generalise.y > 0.0) texel = mix(texel, texture(u_image, v_uv, u_generalise.x), u_generalise.y);
-  // Premultiplied, with the texture's own transparency (labels).
+  // Premultiplied, with the texture's own transparency.
   fragColor = vec4(texel.rgb * texel.a * alpha, texel.a * alpha);
 }`;
 
@@ -266,16 +265,11 @@ type Cap = ColorCap | TileCap;
 // least recently drawn are dropped, apart from the minLevel ones.
 const MAX_TILES = 120;
 
-export type PolarCapsLayer = maplibregl.CustomLayerInterface & {
-  setVisible: (visible: boolean) => void;
-};
-
 export const createPolarCapsLayer = (
   id: string,
   config: Partial<Record<Pole, PolarCap>>,
-): PolarCapsLayer => {
+): maplibregl.CustomLayerInterface => {
   const poles = POLES.filter((pole) => config[pole]);
-  let visible = true;
   let map: maplibregl.Map | null = null;
   let gl: WebGL2RenderingContext | null = null;
   const programs = new Map<string, Program>();
@@ -452,8 +446,7 @@ ${VERTEX_SOURCE}`;
   const drawTiles = (pole: Pole, cap: TileCap, uniforms: Program["uniforms"]) => {
     const context = gl!;
     const { tiles } = cap;
-    // A sharp edge is a fade too narrow to see.
-    const fade: Fade = tiles.sharpEdge ? [EDGE - 1e-4, EDGE] : fadeRange(pole);
+    const fade = fadeRange(pole);
     context.uniform2f(uniforms.u_fade, ...fade);
     const { generalise } = tiles;
     if (generalise) {
@@ -535,7 +528,7 @@ ${VERTEX_SOURCE}`;
       gl = context;
     },
     render(_context, args) {
-      if (!gl || !map || !visible) return;
+      if (!gl || !map) return;
       frame++;
       poles.forEach((pole) => {
         caps[pole] ||= createCap(pole);
@@ -578,10 +571,6 @@ ${VERTEX_SOURCE}`;
       programs.clear();
       gl = null;
       map = null;
-    },
-    setVisible(next) {
-      visible = next;
-      map?.triggerRepaint();
     },
   };
 };

@@ -1,3 +1,5 @@
+import { apiUrl } from "../../lib/base";
+
 // The maps' basemap (ported from osu-mgr.org's search map): Esri Ocean, whose Web Mercator tiles stop at ±85.05°.
 // Past that, polar-caps.ts draws the polar caps (POLAR_CAPS).
 export const BASEMAP_TILES =
@@ -7,12 +9,14 @@ export const BASEMAP_TILES =
 export const BASEMAP_MAXZOOM = 10;
 export const BASEMAP_ATTRIBUTION =
   "Esri, GEBCO, NOAA, National Geographic, DeLorme, HERE, Geonames.org, and other contributors";
-// Esri's labels for it (water bodies, undersea features, depths, places and
-// boundaries): transparent tiles drawn over it, which the maps can turn off.
-// Past the cap's edge, POLAR_LABELS.
-export const LABEL_TILES =
-  "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}";
-export const LABEL_MAXZOOM = 13;
+// Labels over it, which the maps can turn off (open data rather than Esri's):
+// - places, water bodies and boundaries: OpenStreetMap's, from OpenFreeMap's
+//   vector tiles, drawn with its Positron style's layers;
+// - undersea features: the IHO-IOC GEBCO Gazetteer of Undersea Feature Names,
+//   which the API fetches and caches (backend/fiesta/apps/routers/basemap.py).
+export const PLACE_LABEL_STYLE = "https://tiles.openfreemap.org/styles/positron";
+export const UNDERSEA_FEATURES = apiUrl("/basemap/undersea-features");
+export const UNDERSEA_ATTRIBUTION = "IHO-IOC GEBCO Gazetteer of Undersea Feature Names";
 
 export const MERCATOR_LAT = 85.0511287798;
 export type Pole = "north" | "south";
@@ -21,9 +25,7 @@ export type Pole = "north" | "south";
 // stereographic projection with scale factor k0 at the pole, in the ArcGIS
 // layout: level 0 is one tile whose top-left corner is origin, and each level
 // halves the resolution (metres per pixel). Levels below minLevel are too
-// coarse to be worth drawing. Tiles fade in before the cap's edge unless
-// sharpEdge, as labels would show twice where they fade.
-// generalise is for basemaps whose own tiles
+// coarse to be worth drawing. generalise is for basemaps whose own tiles
 // smooth out relief when zoomed out: the cap is blended (by weight) with a
 // blurred copy of itself (a mipmap bias), fully below pixelsPerDegree[0] at
 // its edge and not at all past pixelsPerDegree[1].
@@ -37,33 +39,26 @@ export type PolarTiles = {
   resolution: number;
   minLevel: number;
   maxLevel: number;
-  sharpEdge?: boolean;
   generalise?: { bias: number; weight: number; pixelsPerDegree: [number, number] };
 };
 // colors: [map zoom, colour] steps, each from its zoom until the next's.
 export type PolarCap = { tiles: PolarTiles } | { colors: [number, string][] };
 
-// Esri's Arctic polar stereographic (EPSG:5936) tile grid, whose basemap and
-// labels also stop at level 10 (~230 m). Level 6 is the four tiles around the
-// pole, ~300 pixels across the cap.
-const ARCTIC = "https://services.arcgisonline.com/arcgis/rest/services/Polar";
-const ARCTIC_GRID = {
-  lon0: -150,
-  k0: 0.994,
-  falseEasting: 2000000,
-  falseNorthing: 2000000,
-  origin: [-28567784.109255, 32567784.109255] as [number, number],
-  resolution: 238810.813354,
-  minLevel: 6,
-  maxLevel: 10,
-};
-
 export const POLAR_CAPS: Partial<Record<Pole, PolarCap>> = {
-  // The same basemap in Esri's Arctic polar stereographic.
+  // The same basemap in Esri's Arctic polar stereographic (EPSG:5936), whose
+  // tiles also stop at level 10 (~230 m). Level 6 is the four tiles around
+  // the pole, ~300 pixels across the cap.
   north: {
     tiles: {
-      ...ARCTIC_GRID,
-      url: `${ARCTIC}/Arctic_Ocean_Base/MapServer/tile/{z}/{y}/{x}`,
+      url: "https://services.arcgisonline.com/arcgis/rest/services/Polar/Arctic_Ocean_Base/MapServer/tile/{z}/{y}/{x}",
+      lon0: -150,
+      k0: 0.994,
+      falseEasting: 2000000,
+      falseNorthing: 2000000,
+      origin: [-28567784.109255, 32567784.109255],
+      resolution: 238810.813354,
+      minLevel: 6,
+      maxLevel: 10,
       // Zoomed out, the Arctic tiles still draw ridges that the Mercator
       // ones have smoothed away.
       generalise: { bias: 4, weight: 0.9, pixelsPerDegree: [15, 60] },
@@ -78,16 +73,6 @@ export const POLAR_CAPS: Partial<Record<Pole, PolarCap>> = {
       [0, "#e9e8e4"],
       [4, "#f1f0eb"],
     ],
-  },
-};
-// The labels past the cap's edge: Esri's for its Arctic basemap.
-export const POLAR_LABELS: Partial<Record<Pole, PolarCap>> = {
-  north: {
-    tiles: {
-      ...ARCTIC_GRID,
-      url: `${ARCTIC}/Arctic_Ocean_Reference/MapServer/tile/{z}/{y}/{x}`,
-      sharpEdge: true,
-    },
   },
 };
 
