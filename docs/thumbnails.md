@@ -1,474 +1,369 @@
-# Thumbnails and previews
+# Files, embargoes and previews
 
-> Design, 2026-09-27. **Status: proposed, awaiting approval.** Nothing below is
-> built, and no AWS resource exists yet. ROADMAP.md tracks it as Phase T.
+> Design, 2026-09-27, revision 2. **Status: proposed, awaiting approval.**
+> Nothing below is built, and no AWS resource exists. ROADMAP.md tracks it as
+> Phase T.
+>
+> Revision 2 makes this a FIESTA service. OSU-MGR becomes a FIESTA node that
+> keeps its own search interface, but reads FIESTA's OpenSearch index and API,
+> and gets thumbnails from that API. The API is the one gate on what is public.
+> Revision 1 had a standalone Lambda that decided visibility from S3 paths and
+> published public thumbnails at unsigned URLs. That approach is dropped.
 
-One shared service renders two small images for every image file and document a
-node's records point to:
+## What this adds to FIESTA
 
-- a **thumbnail**, which fits a 400 × 400 box, for result cards and file lists;
-- a **preview**, which fits a 2048 × 2048 box, for the modal and the file page.
-
-They are stored in S3 and served through CloudFront at deterministic,
-content-versioned URLs. The first consumer is OSU-MGR's own website and
-pipeline, which are not on FIESTA yet. The design therefore works for a caller
-outside FIESTA as well as for FIESTA's own nodes.
-
-## Decisions at a glance
-
-| Question | Proposal |
-|---|---|
-| Where rendering runs | A Lambda in **us-west-2**, next to the data. FIESTA's worker is on-premises at OSU, not in AWS (below). |
-| One renderer | The Python package `earthref-thumbnails` (`thumbnails/` in this repo). The Lambda, a local CLI and later the FIESTA worker all call the same `reconcile()`. |
-| Core or plugin | **Core**, as an optional `thumbnails:` section in `NodeConfig` beside `storage:`. The reasons are below. |
-| Where images live | A dedicated bucket `earthref-thumbnails` (us-west-2) under the `t/` prefix. Source buckets are never written to and never exposed. |
-| URL | `https://thumbs.earthref.org/t/r1/{bucket}/{key}/{etag}/{thumb\|preview}.webp`, computable from (bucket, key, ETag) alone. |
-| Format | WebP. The thumbnail is quality 75 and the preview quality 80, with metadata stripped. |
-| Caching | `Cache-Control: public, max-age=31536000, immutable`. A changed source file gets a new URL; edge copies live at most 1 day (CloudFront max TTL). |
-| Knowing what exists | One S3 LIST of `t/r1/{bucket}/{prefix}` returns every `thumb.webp`. That is about 110 LIST requests for all of OSU-MGR, so callers never probe for 404s. |
-| Backfill | The daily sweep's first run over the existing S3 inventory. Estimate: about $7 and under 30 minutes, against about $135 and about a day to pull the data on-premises. |
-
-## Where generation runs, and why
-
-**FIESTA runs outside AWS.** `deploy.yml` notes that the `fiesta-ct` runner is
-self-hosted on the deploy host. FIESTA serves `dev.earthref.org/<Node>/`, and
-`dev.earthref.org` resolves to 128.193.72.23, which is Oregon State University's
-campus network. The `fiesta-ct` runner's own address is not visible from here, so
-confirm that the worker runs on that same host (open decision 1). For contrast,
-`api.earthref.org` resolves to AWS us-west-2 addresses; that is the legacy API.
-
-Rendering from the worker would pull every source byte out of AWS:
-
-| | On-premises worker | Lambda in us-west-2 |
-|---|---|---|
-| Bytes read | about 1.6 TB (1.5 TB of core images, plus about 70 GB of whole-rock images, about 15 GB of thin sections and about 15 GB of PDFs) | the same bytes, read in-region |
-| S3 data transfer | about $135 (first 100 GB free, then $0.09/GB) | $0 |
-| Wall time | about 18 h of download at 200 Mbps, or about 3.6 h at 1 Gbps, plus decoding on one host | about 25 min at 100 concurrent invocations |
-| Compute | on-premises CPU | about $5 (below) |
-
-An AWS data-egress waiver for research institutions might remove the $135. It
-would not remove the day of transfer. So **generation runs in a Lambda in
-us-west-2**:
+1. **File references.** Any node's rows can point at files: its own
+   contribution attachments, or objects in a read-only **external source
+   bucket** such as `osu-corelab-storage`. Node config declares which table and
+   column hold them.
+2. **Embargo.** A row-level "withheld until" state, which is a core concept and
+   not OSU-MGR's moratorium special case. It sits beside the existing
+   contribution visibility (`is_activated`, `private_key`, owner, admin).
+3. **One file gate**, in `fiesta.services.access`. Every route that hands out
+   bytes asks it: originals, previews, thumbnails, bulk downloads.
+4. **Renditions.** A thumbnail that fits a 400 px box and a preview that fits a
+   2048 px box, for image files and PDF page 1. They are rendered for every
+   renderable file, public or not, and stored privately. Postgres records which
+   exist.
+5. **Delivery.** The API returns short-lived **CloudFront signed URLs** only for
+   files the caller may see. Bytes flow from S3 through CloudFront and never
+   through MARFIK.
 
 ```
- osu-corelab-storage ──S3 events──► EventBridge rule ─┐
- (ObjectCreated / ObjectRemoved under Collection/)    │
-                                                      ▼
- daily EventBridge Scheduler ─► sweep ─(1 msg/key)─► SQS thumbs-work ─► Lambda reconcile(bucket, key)
- local CLI `ensure` / pilot ──────────────────────────┘      │            │
-                                                           DLQ            ├─► GET source (in-region)
-                                                                          ├─► PUT t/r1/... in earthref-thumbnails
-                                                                          └─► CloudFront invalidation on withdrawal
- earthref-thumbnails ◄──OAC (t/* only)── CloudFront (thumbs.earthref.org) ◄── browsers
+ osu-mgr-website (own UI) ─┐
+ FIESTA SPA ───────────────┼─► FIESTA API on MARFIK ── gate: contribution visible? row embargoed? hidden type?
+ api.earthref.org callers ─┘     │  search/record responses carry signed URLs for allowed files only
+                                 ▼
+                    browser ──► CloudFront (signed URLs only, OAC) ──► S3: FIESTA bucket (renditions, attachments)
+                                                                   └► S3: osu-corelab-storage (originals, read-only)
+ FIESTA worker on MARFIK ── procrastinate job ── invoke ──► Lambda `fiesta-render` (us-west-2)
+   (knows which files, records results in Postgres)            reads the source in-region, writes renditions
 ```
 
-- **Every trigger calls the same function**, `reconcile(bucket, key)`. It is
-  idempotent: it brings the thumbnails for that one key in line with the key's
-  current state. Duplicate or out-of-order events are therefore harmless. For
-  example, a late `ObjectRemoved` for a key that has since been re-uploaded
-  finds the new object and keeps its thumbnails.
-- **S3 events reach the Lambda through EventBridge**, not a bucket notification.
-  EventBridge cannot collide with notification configurations the bucket already
-  has, it filters on the `Collection/` prefix, and it works across accounts if
-  the bucket and the Lambda end up in different ones.
-- **SQS sits in front of the Lambda.** It is the single buffer, and the event
-  source's maximum concurrency caps load. A cruise-folder rename (thousands of
-  copies at once) drains steadily instead of throttling, and failures land in a
-  dead-letter queue.
-- **The daily sweep is also the backfill.** It reads the latest S3 inventory
-  (the bucket already has three daily inventories in
-  `osu-corelab-storage-inventory`, which the pipeline reads) and lists the
-  thumbnail prefix. It then enqueues every public key that has no thumbnail,
-  and every thumbnail whose source is gone or no longer public. This catches
-  missed events and moratorium list changes. Its first run renders the whole
-  collection. S3 Batch Operations over the inventory would also work, but it
-  adds a job role and a report bucket and gives nothing the sweep does not.
-- **The local CLI** (`earthref-thumbnails render|reconcile|ensure|sweep --dry-run`)
-  runs the same code from any machine. It is used for the pilot on one cruise
-  and for repairs. `ensure` only enqueues work, so no data leaves the region.
+## Your two questions
 
-**FIESTA's own contribution files** are handled differently: the worker renders
-them with the same package, as a procrastinate job (phase 2 below). The dividing
-rule is **whoever can decide visibility renders**. An OSU-MGR file's visibility
-follows from its S3 path, so a Lambda can decide it. A FIESTA contribution's
-visibility is `is_activated` in Postgres, and only FIESTA can read that. Those
-files are few and small, so pulling them on-premises costs nothing that matters.
+### Should we use CloudFront at all?
 
-## Core or plugin: core
+**Yes, as the byte path behind the API's gate, not as a public CDN.**
 
-This is a core `thumbnails:` section in `NodeConfig`, next to `storage:`, and
-not a plugin, for four reasons:
+| | CloudFront + signed URLs | Presigned S3 URLs | Everything on MARFIK |
+|---|---|---|---|
+| Egress price | S3 → CloudFront is free. Pay-as-you-go includes **1 TB a month and 10M requests free**, every month, per account; after that about $0.085/GB. The flat-rate **Pro plan is $15 a month for 50 TB**, with no overage. | $0.09/GB after 100 GB a month | Free per GB on the campus link (confirm with OSU) |
+| Speed | Edge-cached worldwide; 479 MB TIFFs don't touch MARFIK | Straight from us-west-2 | Limited by MARFIK's uplink and one site |
+| Gate | The API mints a URL only after its check. A leaked URL expires. | Same | Exact per request (nginx `X-Accel-Redirect` after the check) |
+| Setup | A distribution, OAC on two buckets, a key group (operator) | None | Mirror 2+ TB, keep it synced, back it up |
 
-1. **It is not node science.** Poles and plateaus are plugins because they are
-   one repository's domain logic. A thumbnail is a derived storage artefact that
-   any node with image or document files needs, like a search document.
-2. **Visibility must be decided in one place** (a hard rule in `CLAUDE.md`). The
-   "is this file public" decision for thumbnails lives in one module of the
-   package, and every runner calls it. A plugin would put it behind a hook that
-   only the API process loads.
-3. **It runs outside the API.** None of the plugin hooks fit a Lambda:
-   `derive_docs`, `build_router` and `frontend_config`. The Lambda must not
-   import FastAPI, SQLAlchemy or the plugin registry.
-4. **Several consumers read it**: `record-cards`, `digital-objects`, the core
-   file lists, and OSU-MGR's website. They read URLs, and they need no plugin of
-   their own.
+Egress is roughly free either way, so cost doesn't decide it. CloudFront wins
+because the bytes already live in S3. It makes serving them free and fast
+without moving them, and MARFIK only answers small JSON requests.
 
-The section's pydantic model lives in the package (`earthref_thumbnails.policy`),
-and `NodeConfig` imports it. FIESTA's loader and the Lambda therefore validate
-the same schema. The section is optional: without it, a node has no thumbnails.
+### Should everything live on MARFIK, with S3 as a backup?
+
+**No. S3 stays primary for file bytes. MARFIK keeps the compute and state it
+already runs:** the API, the worker, Postgres and OpenSearch.
+
+- **Curators upload to `osu-corelab-storage` today.** Making MARFIK primary means
+  a new upload path for them, or an S3 → MARFIK sync that makes MARFIK a replica
+  rather than the primary.
+- **Mirroring costs about as much as rendering locally would.** The one-time
+  copy is about 1.6 TB+ of S3 egress (about $135–150, about a day), and every
+  new upload is pulled again. MARFIK also needs 2+ TB of growing disk, with its
+  own backups. S3 already gives durability and versioning, at no cost to MARFIK.
+- **MARFIK is one site.** Its outages and uplink would become the repository's
+  download ceiling.
+- **Renditions don't need a backup.** They are derived, can be regenerated and
+  total about 15 GB, so they live in FIESTA's bucket next to the attachments.
+- **When MARFIK-primary would win:** if EarthRef means to leave AWS, or if
+  campus egress is free and AWS credits end. Neither has been stated; this is
+  open decision 1.
+
+## Embargo, a core concept
+
+**The gate.** A file is publicly available only when all of these hold:
+
+1. its contribution is visible to the caller, under today's rule: activated,
+   or the owner, a workspace member, a node admin, or a matching `private_key`;
+2. its row is not embargoed: the embargo flag is unset, or `embargo_until` has
+   passed. `embargo_until` is evaluated at request time, so a dated embargo
+   lifts itself;
+3. its type is not listed in the node's `hidden_types`, which are never public.
+
+Node admins, the contributor and the workspace's editors bypass conditions 2
+and 3. They are the curators, who need to see withheld material.
+
+- **What the check covers.** `can_read_file(session, node, user, contribution,
+  row, private_key)` in `fiesta.services.access` implements it. Search
+  responses, record responses, the file, rendition and bulk-download routes,
+  and plugin routes (through `load_visible_parsed`) all call it. A new
+  file-serving route may not bypass it.
+- **Search documents keep embargoed rows' metadata.** OSU-MGR shows them with a
+  lock and a "Moratorium" badge today. The API adds no URLs to such rows, and a
+  node can hide the rows entirely instead (`embargo.hide_rows`).
+- **OSU-MGR's moratorium becomes data.** The OSU-MGR importer turns the
+  `-moratorium` folder suffix and the rows of `Collection/moratorium.xlsx` into
+  each `files` row's `moratorium` and `moratorium_expiration` columns (both
+  already in the data model). FIESTA core never knows about folder suffixes or
+  spreadsheets.
+  - **Lifting** is a re-import: the rename, or the spreadsheet change, reaches
+    FIESTA as a new revision with the flag cleared.
+  - **Imposing** works the same way. From that revision on, the API stops
+    minting URLs; URLs already handed out expire within their lifetime (below).
+- `/v1`, the frozen legacy contract, serves only MagIC contribution files, so
+  nothing there changes.
 
 ## Per-node config
 
-For example, in `config/osu-mgr.yaml`:
-
 ```yaml
-thumbnails:
-  sources:
-    - name: collection
-      bucket: osu-corelab-storage
-      region: us-west-2
-      prefixes: ["Collection/Holdings/", "Collection/ACC Holdings/",
-                 "Collection/Oregon Drill Core Holdings/"]
-      inventory:                     # what the daily sweep reads
-        bucket: osu-corelab-storage-inventory
-        configs: [collection-holdings, collection-acc-holdings,
-                  collection-oregon-drill-core-holdings]
-      withheld:                      # never rendered; existing thumbnails are withdrawn
-        path_patterns:               # the moratorium folder suffix
-          - '(?i)^Collection/[^/]*Holdings/[^/]+-moratorium/'
-        prefix_lists:                # the moratorium spreadsheet
-          - { key: Collection/moratorium.xlsx, header_rows: 2, column: 0 }
-  file_types:                        # key patterns, first match wins (FILE_TYPES, ported)
-    core-image:       { render: image, match: ['(?i).*?Holdings/[^+#][^/]+?/image/OSU-([^/~]*?)-image\.(tif|tiff|bmp|jpg|jpeg|png)$'] }
-    whole-rock-image: { render: image, match: ['...'] }
-    core-description: { render: pdf,   match: ['...'] }
-    igsn-sheet:       { render: pdf,   match: ['...'] }
-    # ... every image and PDF type in the pipeline's _THUMBNAIL_*_TYPES
-  hidden_types: [igsn-sheet, imlgs-file, itrax-xray-image]   # the site's hiddenFileTypes
-  max_source_bytes: 1073741824       # larger sources get a skipped marker
-  max_pixels: 2000000000             # a decode ceiling that replaces Pillow's bomb check
+# config/osu-mgr.yaml
+storage:
+  bucket: osu-mgr
+  sources:                          # read-only external buckets that rows may reference
+    collection: { bucket: osu-corelab-storage, region: us-west-2 }
+
+files:
+  - table: files
+    path: file                      # column holding the object key
+    source: collection              # omit to mean this contribution's attachments
+    type: file_type                 # column holding the type (a cv("file_type") term)
+    size: size_bytes
+    embargo: { flag: moratorium, until: moratorium_expiration, hide_rows: false }
+    hidden_types: [igsn-sheet, imlgs-file, itrax-xray-image]
+    renditions:
+      image: [core-image, itrax-image, ct-image, ct-gray-image, ct-color-image, xray-image,
+              field-image, whole-rock-image, whole-rock-foi-image,
+              thin-section-plane-polarized-image, thin-section-plane-polarized-foi-image,
+              thin-section-cross-polarized-image, thin-section-cross-polarized-foi-image]
+      pdf:   [core-description, coring-data-sheet, cruise-report, dredge-log]
+
+# config/erda.yaml (once ERDA stores object bytes)
+files:
+  - { table: files, path: file, type: media_type, renditions: { image: [image/jpeg, image/png, image/tiff], pdf: [application/pdf] } }
 ```
 
-- **Validation**, at load time and before every publication, as `CLAUDE.md`
-  requires:
-  - each regex compiles;
-  - `render` is `image` or `pdf`;
-  - every `file_types` key and every `hidden_types` entry is a term in the
-    node's `file_type` controlled vocabulary.
-  The vocabulary check catches the inconsistency that exists today: the pipeline
-  renders `igsn-sheet` PDFs, but the site hides them.
-- **Sizes, format and quality are not per node.** They belong to the render
-  profile `r1`, which is part of the URL. Callers then need nothing but
-  (bucket, key, ETag) to build a URL. To change output, cut a new profile
-  (`r2`) and let the sweep re-render; old URLs stay valid until they are deleted.
-- **How the Lambda gets the policy.** A node's served config is its published
-  revision in Postgres, and the Lambda cannot reach Postgres. So FIESTA writes
-  the resolved, validated section to `earthref-thumbnails/policies/<slug>.json`
-  (not under `t/`, so not publicly readable). It does this in
-  `fiesta thumbnails publish-policy`, which runs from `fiesta init` and on
-  node-config publication once the deployment has thumbnail credentials; until
-  then an operator runs it. The Lambda re-reads the policy when it is older than
-  5 minutes, with a conditional GET. It **fails closed**: if the policy or a
-  moratorium list cannot be read, it renders nothing, deletes nothing and logs
-  an error.
-- **The ported `FILE_TYPES` patterns are a second copy** of the pipeline's list
-  until the pipeline reads them back from the published policy (a note for the
-  OSU-MGR repos below).
+- **Validation**, at load time and before every publication:
+  - `table` and each column exist in the data model;
+  - `source` is declared under `storage.sources`;
+  - every type named is a term of the column's controlled vocabulary. That check
+    would catch today's drift, where the pipeline renders `igsn-sheet` but the
+    site hides it.
+- **The type comes from a column, not from path patterns.** The importer that
+  fills the `files` rows already classifies by `FILE_TYPES`, so FIESTA needs no
+  copy of those regexes.
+- **Source credentials and region live in deployment settings.** Access keys
+  are deployment secrets (`FIESTA_S3_*`), never YAML. That IAM user gets
+  read-only `s3:GetObject` on each source's prefix.
+- Sizes, format and quality belong to the render **profile** (`r1`), not to
+  nodes.
 
-## Key and URL scheme
+**Core, not a plugin.** Visibility must be decided in one place, and file
+delivery is storage, not node science. It also serves several plugins
+(`record-cards`, `digital-objects`) as well as the core file lists. Plugins read
+the URLs the core attaches.
 
-```
-S3 key : t/{profile}/{bucket}/{key}/{etag}/{size}.webp
-URL    : {base}/t/{profile}/{bucket}/{percent-encoded key}/{etag}/{size}.webp
+## Renditions
 
-profile  r1                                  (the render profile; bump it to change output)
-bucket   the source bucket                   osu-corelab-storage
-key      the source object key, unchanged    Collection/ACC Holdings/…/OSU-…-image.tif
-etag     S3 ETag, quotes stripped, lower-case 5d41402abc4b2a76b9719d911017c592 (or "…-12" if multipart)
-size     thumb | preview
-base     https://thumbs.earthref.org         (deployment setting, not per node)
-```
+- **Key**, in the node's storage prefix:
+  `renditions/{profile}/{source}/{key}/{etag}/{thumb|preview}.webp`. Attachments
+  use the source `attachments` and their `sha256` in place of the ETag. The key
+  is content-versioned, so objects are immutable
+  (`Cache-Control: public, max-age=31536000, immutable`). A changed file gets a
+  new key, and nothing is ever invalidated.
+- **State in Postgres**, following the hard rule that Postgres owns application
+  state. A per-node table `renditions`, with `(source, key, etag, profile)`
+  unique, records:
+  - `status`: `ok`, `skipped` or `error`;
+  - width, height and bytes for each size;
+  - `error` and `rendered_at`.
+  The API therefore knows what exists without listing S3, and a rebuild never
+  needs S3 to find it. The migration follows the `schema_translate_map` rule:
+  `create_table` only.
+- **When they are made.** After a revision is committed, the outbox enqueues
+  `render_files(node, contribution_id)` on the node's queue. It diffs the
+  contribution's file rows against `renditions`, and for each missing
+  `(key, etag)` it calls the renderer. On completion it enqueues a re-index, so
+  search documents record which files have a rendition. Backfill is
+  `fiesta renditions backfill --node osu-mgr`, which enqueues the same job for
+  every contribution; worker concurrency caps the load.
+- **Where the renderer runs:** deployment setting `FIESTA_RENDERER=local|lambda`.
+  - `local` renders in the worker process. Development (RustFS) and CI use it,
+    and so would any deployment whose worker runs in AWS.
+  - `lambda` makes a synchronous `lambda:Invoke` to `fiesta-render` in
+    us-west-2. The request carries `{bucket, key, etag, out_bucket, out_key,
+    profile}` and the reply carries sizes and status. The Lambda reads the
+    source in-region and writes to FIESTA's bucket, so the only bytes crossing
+    to MARFIK are small JSON messages.
+  - The Lambda is a stateless function: no visibility rules, no config, no
+    queues, no event wiring. FIESTA orchestrates it, retries it through
+    procrastinate, and records the result.
+- **Why a Lambda when the worker is on-premises.** The worker would otherwise
+  pull 1.6 TB out of AWS for the backfill: about $135 and a day of transfer,
+  repeated at every profile change. The Lambda does the same work for about $7
+  in about an hour, at 50 concurrent. Steady-state uploads are small, so
+  `local` would do for them. One code path for both is simpler.
+- **Why not events and sweeps any more.** OSU-MGR files reach FIESTA through the
+  importer, so FIESTA's outbox is the trigger. There are no S3 notifications,
+  EventBridge rules, SQS queues or scheduled sweeps to run.
 
-- **Encoding.** Percent-encode the key as UTF-8, leaving only RFC 3986
-  unreserved characters and `/` literal (Python `quote(key, safe="/")`,
-  JavaScript `encodeURIComponent` per `/`-separated segment). `+` becomes `%2B`
-  and a space becomes `%20`; CloudFront passes the path through and S3 decodes
-  it. A key is skipped, with a marker, if it has an empty, `.` or `..` segment,
-  or if it is longer than 900 bytes (so the thumbnail key stays under S3's
-  1024-byte limit).
-- **The path is readable, not hashed**, for three reasons:
-  - Withdrawal is a prefix delete, plus one CloudFront wildcard invalidation per
-    moratorium prefix.
-  - The pipeline can list exactly one cruise's thumbnails.
-  - Operators can read the bucket.
-  The source paths are already public on the OSU-MGR site. A moratorium path
-  cannot be discovered through this scheme, because its thumbnails never exist.
-- **One version per key.** When the key's ETag changes, `reconcile()` renders
-  the new ETag's folder, then deletes the old one and invalidates it. The
-  invalidation matters when a file is replaced because its old content must not
-  be shown.
-- **Write order.** The preview is written first and `thumb.webp` last, so the
-  existence of `thumb.webp` means both are complete. A failure writes
-  `{etag}/error.json` and a size or format skip writes `{etag}/skipped.json`. The
-  sweep does not retry those until the profile or the ETag changes.
-- Object metadata: `source-etag`, `width`, `height`, `renderer` (the package
-  version), and `Content-Type: image/webp`.
+### Rendering (`fiesta.renditions.render`, pure: bytes in, WebP out)
 
-### How a caller learns what exists
-
-- **With the ETag** (the pipeline lists sources, and FIESTA stores ETags), the
-  URL is a string format. With `earthref-thumbnails` installed without extras,
-  it is `thumbnail_url(bucket, key, etag, size)`.
-- **Which files have one.** List `t/r1/{bucket}/{prefix}` once and keep the keys
-  that end in `/thumb.webp`. At 1,000 keys per request, all of OSU-MGR (about
-  55k thumbnails plus previews) takes about 110 LIST calls, which is under
-  $0.001. The listing also carries each key's current ETag, so a caller that
-  does not keep ETags can take them from here. The caller needs `s3:ListBucket`
-  on that prefix, which is an operator IAM grant for the pipeline's user.
-  `earthref_thumbnails.existing(s3, bucket, prefix)` returns `{key: etag}`.
-
-## Visibility
-
-**Rule: a thumbnail exists only while its source is public.** `reconcile()`
-checks visibility on every run, and the sweep re-checks the whole collection
-every day. Nothing else writes to the `t/` prefix.
-
-- **OSU-MGR moratorium.** A file is withheld when either of these holds, as in
-  `_is_moratorium()` in the pipeline:
-  - its cruise folder ends in `-moratorium`;
-  - its key starts with a prefix listed in `Collection/moratorium.xlsx`.
-  The spreadsheet's end dates are not acted on automatically, and the pipeline
-  ignores them too: a moratorium ends when the row is removed or the folder is
-  renamed.
-  - **Lifting by rename.** S3 has no rename, so the new keys arrive as
-    `ObjectCreated:Copy` events and render. The old keys are withheld and have
-    no thumbnails. Thumbnails appear as soon as the new path exists, in seconds
-    to minutes.
-  - **Imposing a moratorium** (renaming into `-moratorium`, or adding a row):
-    the `ObjectRemoved` events, or the spreadsheet's own `ObjectCreated` event,
-    trigger a delete of each affected key's folder plus a CloudFront
-    invalidation. The Lambda keeps the last moratorium list it applied in
-    `state/<slug>/withheld.json` (not public), so a spreadsheet change is a diff.
-  - **Worst case**, if an event is lost: the sweep fixes it within a day. An
-    edge copy lives at most 1 day (CloudFront max TTL 86400), even without an
-    invalidation.
-- **Hidden types** (`hidden_types`) are never rendered, whatever their path.
-- **FIESTA contributions** (phase 2): the worker renders the files of an
-  activated contribution only, and withdraws them on deactivation or deletion.
-  Private and private-key contributions get no thumbnail; the UI falls back to
-  an icon. A private preview would need an authenticated proxy, which is out of
-  scope.
-- **Serving.** CloudFront reads the bucket only through Origin Access Control
-  (OAC), and the bucket policy allows it `s3:GetObject` on
-  `arn:aws:s3:::earthref-thumbnails/t/*` alone. `policies/` and `state/` stay
-  private, Block Public Access stays on, and the source buckets are untouched:
-  the Lambda role can only read them.
-- **Found while surveying, outside this design.** The OSU-MGR website's
-  `pages/api/file/[...path].ts` streams any key in `osu-corelab-storage`
-  without authentication, moratorium files included. Only the UI hides the
-  links. See the notes for the OSU-MGR repos below.
-
-## Rendering
-
-The package is `earthref_thumbnails.render`. It is pure: bytes in, two WebP
-buffers out. It decodes once, at preview size, and derives the thumbnail from
-the preview.
-
-| Input | Decoder | How it shrinks while loading |
-|---|---|---|
-| TIFF (strip, multi-frame CT, 16-bit) | pyvips `thumbnail("f.tif[page=N]", 2048, height=2048, size=down)` | Streams strips sequentially with block shrink, so a 479 MB TIFF never sits in memory. A multi-frame file uses page `n_pages // 2`, the middle frame, as the pipeline does. |
-| JPEG, PNG | pyvips `thumbnail` | libjpeg shrinks by 1/2, 1/4 or 1/8 on load. EXIF rotation is applied and CMYK or ICC colour is converted to sRGB. |
-| BMP | Pillow: `open`, then `reduce(k)`, then LANCZOS to the box | BMP has no shrink-on-load, and the libvips build that pyvips ships has no BMP loader. The decode is bounded by `max_pixels` (Pillow's `MAX_IMAGE_PIXELS` is set per call, never globally off). If memory becomes a problem, a streaming path for uncompressed 24-bit BMP (vips `rawload` + `bandfold`) is an option. |
-| Anything else pyvips cannot open | the Pillow fallback (`draft()` for JPEG, `reduce` otherwise) | |
-| PDF | page 1 via PyMuPDF (or pypdfium2, open decision 5), zoom = `min(2048/w, 2048/h)` | The page renders straight at preview size. |
-| CR2, RAW | skipped (`skipped.json`), as the pipeline does | |
-
-- **16- and 32-bit to 8-bit.** A linear stretch between the 0.5th and 99.5th
-  percentiles, computed on the already-shrunk image. It is cheap, and one hot
-  pixel cannot flatten a CT slice. The pipeline uses min–max; this is a
-  deliberate change.
-- **Alpha** is flattened onto white. Grayscale stays grayscale.
-- **Fit, not fill.** Both sizes fit their box and never upscale:
-  - A 20:1 core strip gets a 400 × 20 thumbnail and a 2048 × 102 preview.
-  - A 3:4 PDF page gets a 300 × 400 thumbnail and a 1536 × 2048 preview.
-  How strips should look on a card is open decision 4.
-- **WebP rather than JPEG.** It is about 25–35% smaller at the same visual
-  quality, handles grayscale and alpha, and every current browser decodes it
-  (Safari since 14, 2020). JPEG is a one-line profile change if a consumer needs
-  it.
-
-**Test fixtures**, generated in `conftest.py` rather than committed as binaries:
-- a multi-frame 16-bit TIFF (checks the middle frame and percentile stretch);
-- a 20:1 strip (checks the box fit);
-- a 24-bit BMP;
-- a 3-page PDF (checks that only page 1 renders);
-- a 400-megapixel compressed TIFF, about 1 MB on disk. It must render within
-  the memory and time budget, and it must also be refused, with `skipped.json`,
-  when `max_pixels` is set below it.
-
-Other tests: the key, URL and encoding rules; policy classification (types,
-hidden types, moratorium suffix and spreadsheet); and `reconcile()` against a
-fake S3, covering create, change of ETag, withdrawal and a late `ObjectRemoved`.
-
-## Package and runners
-
-```
-thumbnails/                          uv project `earthref-thumbnails`, import `earthref_thumbnails`
-  earthref_thumbnails/
-    keys.py      thumbnail_key / thumbnail_url / existing()     (no extras: boto3 only)
-    policy.py    pydantic models (NodeConfig imports them); classify(bucket, key) → Render | Withheld | Skip
-    render.py    decode + encode (extra [render]: pyvips[binary], pymupdf|pypdfium2, pillow, numpy)
-    reconcile.py reconcile(bucket, key) against S3; invalidation batching
-    sweep.py     inventory × thumbnail listing → work items
-    aws_lambda.py handler: SQS batch | EventBridge S3 event | Scheduler sweep | direct invoke
-    cli.py       render FILE | reconcile s3://… | ensure s3://prefix | sweep --node … [--dry-run]
-  tests/
-  lambda/build.sh                    arm64 zip (uv pip install --python-platform aarch64-manylinux2014)
-backend/                             depends on it via a uv path source; `fiesta thumbnails publish-policy`
-```
-
-**Lambda sizing** (to confirm in the pilot):
-
-| Setting | Value |
+| Input | Decoder |
 |---|---|
-| Architecture and runtime | arm64, Python 3.12, zip package (under 250 MB unpacked; no ECR needed) |
-| Memory | 3,008 MB |
-| Ephemeral storage | 2 GB (the source downloads to `/tmp`; the largest is 479 MB) |
-| Timeout | 5 min |
-| SQS | batch size 1, event-source maximum concurrency 100, visibility timeout 6 min, dead-letter queue after 3 attempts |
+| TIFF: strips, multi-frame CT, 16-bit | pyvips `thumbnail("f.tif[page=N]", 2048, height=2048, size=down)`. It streams with block shrink, so a 479 MB TIFF never sits in memory. A multi-frame file uses page `n_pages // 2`. |
+| JPEG, PNG | pyvips `thumbnail`, with libjpeg shrink-on-load, EXIF rotation, and conversion to sRGB. |
+| BMP, or anything pyvips can't open | Pillow `reduce` then LANCZOS, bounded by `max_pixels` (set per call, never globally off). |
+| PDF | Page 1 at zoom `min(2048/w, 2048/h)`, with pypdfium2 (Apache/BSD licence; PyMuPDF is AGPL, see open decision 5). |
+| CR2, RAW, over `max_source_bytes` | status `skipped` |
 
-A streaming read (pyvips `SourceCustom` over ranged GETs) is a possible
-optimisation, not a starting point.
+Beyond the decoders:
+- **Thumbnail from preview.** Each file is decoded once, at preview size; the
+  thumbnail is resized from the preview.
+- **16- and 32-bit to 8-bit.** A linear stretch between the 0.5th and 99.5th
+  percentiles, computed on the shrunk image.
+- **Alpha** is flattened onto white.
+- **Output.** Both sizes fit their box and never upscale. WebP, at quality 75
+  for the thumbnail and 80 for the preview, with metadata stripped.
 
-**Phase 2, FIESTA's worker.** A procrastinate task
-`render_thumbnails(node, contribution_id)` goes on the node's queue. The
-outbox enqueues it after activation, and deactivation or deletion enqueues its
-withdrawal. It calls `reconcile()` with a visibility callback that reads
-Postgres instead of the path rules, and it writes the resulting URLs into the
-node's file rows (`files.thumbnail` already exists in the OSU-MGR data model) so
-search documents carry them. Nothing needs this until a node stores per-file
-bytes in FIESTA (ERDA's object bytes are a known gap), so it is designed here
-but not in v1.
+**Tests**, with fixtures generated in `conftest.py`:
+- a multi-frame 16-bit TIFF;
+- a 20:1 strip;
+- a BMP;
+- a 3-page PDF;
+- a 400-megapixel compressed TIFF, which must render within budget and be
+  refused when it exceeds `max_pixels`.
 
-## Backfill: plan, cost and time
+Also tests for `can_read_file` (every row of the gate) and for the job's diff
+and retry.
 
-1. **Pilot, locally, read-only.** Run `earthref-thumbnails render` on one
-   cruise, using the pipeline's credentials read-only and writing to the
-   scratchpad. Report output sizes, timings (local, not Lambda) and a few
-   rendered examples. That is a few GB of egress, under $0.50. Nothing is
-   written to any bucket.
-2. **Operator creates the AWS pieces** (OPERATOR_TODO, after approval).
-3. **Lambda pilot.** Run `sweep --node osu-mgr --prefix Collection/Holdings/<cruise>/`,
-   then check the Lambda's durations, memory and outputs through CloudFront.
-4. **Full backfill.** The first unrestricted sweep. Then turn on the daily
-   Scheduler and the EventBridge rule.
+## Delivery: the API hands out signed URLs
 
-**Estimate for about 55,400 files** (31.9k images and 23.5k PDFs), at
-arm64 $0.0000133 per GB-second and 2.94 GB:
+- **Search and record responses.** For every file row the caller passes the
+  gate on, the API adds:
+  - `thumbnail_url` and `preview_url`, when a rendition is `ok`;
+  - `download_url`, always.
+  Rows that fail the gate get none, so the UI shows an icon or a lock and never
+  probes for a 404.
+- **Signed URLs.** They use a CloudFront canned policy, signed with a key-group
+  private key that only the API holds (`FIESTA_CDN_KEY_ID`,
+  `FIESTA_CDN_PRIVATE_KEY`, `FIESTA_CDN_URL`).
+  - **Public files:** expiry is rounded to the next UTC midnight plus 24 h. The
+    URL stays the same all day, so browsers cache it. CloudFront's cache key
+    ignores the signature, so the edge caches across days.
+  - **Private or embargoed files, for curators:** 15-minute expiry.
+  - **Downloads:** 1 h, with `response-content-disposition` for the original
+    filename.
+- **Stable links** for callers that can't hold a URL:
+  `GET /v2/{node}/files/{row_id}/{thumbnail|preview|download}` runs the gate and
+  returns a 302 to a freshly signed URL.
+- **Withdrawal.** When a file becomes embargoed or a contribution is
+  deactivated, new responses stop carrying its URLs immediately. A URL already
+  handed out works until it expires: at most 48 h for a public file, 15 minutes
+  for a curator's. If that window is too long, shorten the public expiry; that
+  trades away browser caching, not correctness.
+- **The existing `download_contribution` and `attachment_download` routes** read
+  the whole file into API memory. They move to the same signed redirect.
 
-| Item | Assumption | Cost |
-|---|---|---|
-| Core images, 18.3k | about 5 s each (in-region GET about 1 s, strip decode 2–4 s; about 15 s for the 479 MB largest) | $3.6 |
-| Other images, 13.6k | about 1.5 s each (JPEG shrink-on-load) | $0.8 |
-| PDFs, 23.5k | about 1 s each | $0.9 |
-| S3 requests | 55k GET, 111k PUT, LIST and HEAD | $0.6 |
-| SQS, Lambda requests, CloudWatch Logs | | about $0.6 |
-| **Total** | | **about $7** (under $10 even if the per-file times double) |
-| Time | 135k compute-seconds at 100 concurrent | **about 25 min** |
-| Stored output | about 55k × (20 KB thumbnail + 250 KB preview), about 15 GB | about $0.35 a month |
+## Backfill cost and time (OSU-MGR, about 55,400 files)
 
-**Steady state.** New uploads cost fractions of a cent. The daily sweep reads
-the inventory and makes about 110 LIST calls, also negligible. CloudFront
-delivery is covered by its free tier (1 TB a month) at OSU-MGR's traffic.
+| Item | Estimate |
+|---|---|
+| Lambda compute, arm64 at 3 GB: core images about 5 s each, other images about 1.5 s, PDFs about 1 s | about $5.3 |
+| S3 GET, PUT and HEAD, plus Lambda requests and logs | about $1.5 |
+| Transfer | $0 (the source is read in-region; about 15 GB of renditions cross-region at most, if FIESTA's bucket is not in us-west-2) |
+| Time at 50 concurrent jobs | about 45 min of render time (135k compute-seconds ÷ 50), about an hour with invoke overhead |
+| Stored renditions | about 15 GB, about $0.35 a month |
 
-## Build scope after approval (v1)
+The pilot comes first: `FIESTA_RENDERER=local` on one cruise from this machine,
+with read-only credentials and output to the scratchpad. It reports sizes,
+timings and examples, and costs under $0.50 of egress. Nothing is written to a
+bucket.
 
-1. `thumbnails/` package with the tests above; `make test` and `ci.yml` run them.
-2. `NodeConfig.thumbnails` plus loader checks. `config/osu-mgr.yaml` gets the
-   section, ported from `FILE_TYPES`, `_THUMBNAIL_*_TYPES` and `hiddenFileTypes`.
-3. `fiesta thumbnails publish-policy`, and `lambda/build.sh`.
-4. The pilot on one cruise, with the report.
-5. `docs/OPERATOR_TODO.md` entries with exact settings: bucket, OAC,
-   distribution, ACM certificate and DNS, IAM role, Lambda, SQS and DLQ,
-   EventBridge rule and Scheduler, the pipeline user's `ListBucket` grant,
-   the ETag field on the inventories, and the Lambda concurrency limit.
-6. Notes for the OSU-MGR repos, in the next section.
+## Build order
 
-Not in v1:
-- the FIESTA worker runner (phase 2);
-- spreadsheets and CSVs (`xrf-data`, `mst-data`, dredge-log xlsx; about 1.8k
-  files). These would need headless LibreOffice in a Lambda container image, or
-  a rendered "first rows" table instead of a picture;
-- deep-zoom tiles for core strips;
-- private previews.
+1. **Renderer and renditions:** `fiesta.renditions` (render, job, table,
+   `local` runner, CLI) with tests, plus the one-cruise pilot. It can start now.
+2. **Embargo and the file gate:** `can_read_file`; the `files:` config;
+   `storage.sources`; signed URL minting; the redirect routes; URL fields in
+   search and record responses; the existing download routes moved to
+   redirects.
+3. **The `lambda` runner:** a small zip holding only `render` and the Lambda
+   handler (arm64; under 250 MB; no ECR), plus OPERATOR_TODO entries.
+4. **OSU-MGR importer:** pipeline index or metadata into FIESTA contributions,
+   one per cruise, with the moratorium turned into columns. It is a known gap
+   in `docs/osu-mgr-node.md`, and a prerequisite for OSU-MGR's site to get
+   anything from FIESTA.
+5. **The OSU-MGR site** reads from FIESTA's `/v2/osu-mgr` (notes below).
+6. **Backfill**, then steady state through the outbox.
+
+Out of scope for v1:
+- spreadsheet and CSV renditions (about 1.8k files; they need LibreOffice in a
+  Lambda container image);
+- deep zoom for core strips.
+
+**Operator work** (goes into OPERATOR_TODO once approved):
+- a CloudFront distribution with two S3 origins:
+  - FIESTA's bucket, through OAC, for `*/renditions/*` and the attachment
+    blobs;
+  - `osu-corelab-storage`, through OAC, for `Collection/*`.
+  Both require signed URLs from one trusted key group. Cache policy
+  `CachingOptimized` (query strings are not in the cache key), HTTPS only, a
+  `files.earthref.org` alias with its ACM certificate in us-east-1, and CORS
+  `SimpleCORS`;
+- the key group's private key, stored in FIESTA's production env;
+- the Lambda `fiesta-render` (arm64, 3,008 MB, 2 GB of `/tmp`, 5 min) and its
+  role: read the sources, write `*/renditions/*`;
+- `lambda:InvokeFunction` for FIESTA's IAM user;
+- read-only access for FIESTA's IAM user to `osu-corelab-storage/Collection/*`.
 
 ## Notes for the OSU-MGR repos (not edited from FIESTA)
 
 **osu-mgr-pipeline**
-- Remove `generate_thumbnails()`, `THUMBNAIL_PREFIX` and the
-  `Collection/Thumbnails/` writes. Keep `--no-thumbnails` as a no-op flag for
-  one release.
-- After `classify_files()`, call `existing(s3, "osu-corelab-storage", "Collection/")`
-  once per run; incremental runs list only the changed cruise prefixes. Then set
-  `thumbnail` and `preview` URLs on each `_files` entry whose path has a
-  `thumb.webp` at its current ETag. `_parentFiles` and `_childFiles` inherit
-  them, because `denormalize()` copies the entries.
-- Add `thumbnail` and `preview` (keyword, `index: false`) to the `_files`,
-  `_parentFiles` and `_childFiles` mappings. The pipeline already builds a fresh
-  dated index per full run, so no reindex is needed.
-- Depend on `earthref-thumbnails` without extras (a git subdirectory
-  dependency), or copy the ten lines of `keys.py`. Later, read `FILE_TYPES` and
-  the hidden types from the published policy instead of keeping a second copy.
-- Rotate the OpenSearch credential hard-coded in `OPENSEARCH_HOST`.
-  `docs/osu-mgr-node.md` already flags it.
+- It becomes the importer's source, or the importer itself. It writes
+  cruise-level FIESTA contributions: files rows with `file_type`, `size_bytes`,
+  `moratorium` and `moratorium_expiration`. It resolves the folder suffix and
+  `moratorium.xlsx` there, as `_is_moratorium()` does today. Decide whether the
+  spreadsheet's end date becomes `moratorium_expiration`, which would lift the
+  embargo automatically; today nothing reads those dates.
+- Retire `generate_thumbnails()` and `Collection/Thumbnails/`, which is empty.
+  Rotate the hard-coded OpenSearch credential (flagged in
+  `docs/osu-mgr-node.md`).
 
 **osu-mgr-website**
-- Type the entries as `{type, path, thumbnail?, preview?}` (today only
-  `FileCardProps` is typed; everything else is `any`).
-- **`FileCard`**: use `file.thumbnail` when present, otherwise today's icon.
-  - Switch `object-cover` to `object-contain` on a neutral background, or a 20:1
-    strip is cropped to a sliver.
-  - Add `loading="lazy"` and `decoding="async"`.
-  - An `onError` handler falls back to the icon, for a thumbnail withdrawn after
-    the index was built.
-- **`FileRow`**: show `file.preview` instead of the full original (it loads
-  `/api/file/...` at natural size today). TIFFs and PDFs get a picture for the
-  first time. Keep "Download original" on `/api/file/...`.
-- Move `hiddenFileTypes` and `moratoriumCruises` off hand-kept lists, to the
-  published policy and the index's `_moratorium` flag.
-- **Close the proxy gap.** `/api/file/[...path]` should refuse withheld keys
-  (the `-moratorium` suffix and the spreadsheet prefixes) and hidden types
-  server-side.
+- Search and records come from `/v2/osu-mgr/...` instead of its own OpenSearch
+  alias. File entries arrive with `thumbnail_url`, `preview_url` and
+  `download_url`, or without them when withheld.
+- **`FileCard`**: use `thumbnail_url` when present, otherwise the current icon,
+  or the lock for a withheld file.
+  - Switch `object-cover` to `object-contain`, so a 20:1 strip is not cropped
+    to a sliver.
+  - Add `loading="lazy"`.
+  - Add an `onError` fallback to the icon.
+- **`FileRow`**: use `preview_url`, instead of loading the full original at
+  natural size. TIFFs and PDFs get a picture for the first time.
+- **Retire `pages/api/file/[...path].ts`.** Today it streams any key in the
+  bucket without authentication, moratorium files included. Downloads use
+  `download_url`.
+- `hiddenFileTypes` and `moratoriumCruises` go away: the API only returns what
+  the gate allows.
 
 ## Open decisions
 
-1. **Where FIESTA's worker runs.** Inferred to be on-premises at OSU from
-   `dev.earthref.org` (128.193.72.23) and "self-hosted on the deploy host". If it
-   is in fact in us-west-2, a procrastinate runner becomes viable, though the
-   inventory sweep and moratorium events still favour a Lambda.
-2. **The AWS account** for the Lambda, the thumbnail bucket and CloudFront.
-   Recommended: the account that owns `osu-corelab-storage`, so events and reads
-   stay in one account. Also confirm the region of FIESTA's production bucket,
-   for phase 2.
-3. **A dedicated bucket or a prefix inside the source bucket.** A dedicated
-   `earthref-thumbnails` is recommended: one distribution serves every node, and
-   a policy typo cannot expose source data. The alternative is
-   `osu-corelab-storage/Thumbnails/` with OAC scoped to it, which avoids the new
-   `ListBucket` grant for the pipeline.
-4. **Core strips on cards.** Plain fit (recommended; the site switches to
-   `object-contain`), or a profile option that folds a strip longer than 4:1
-   into side-by-side segments, like a core-box photo. Also decide whether strip
-   previews get a larger long side (for example 4096) for the modal. Decide
-   after seeing the pilot's examples.
-5. **PDF renderer licence.** PyMuPDF is AGPL-3.0; FIESTA is MIT. Using it
-   unmodified in a Lambda is probably fine, but pypdfium2 (Apache-2.0/BSD)
-   renders page 1 as well and removes the question. Recommended: pypdfium2.
-6. **Hostname**: `thumbs.earthref.org` (recommended), or a per-node name.
-7. **The ETag field on the three S3 inventories.** Without it, the sweep can
-   find missing and orphaned thumbnails but not a changed file whose event was
-   lost. Recommended: turn it on.
-8. **Duplicate formats.** The pipeline indexes one format per
-   (OSU-ID, type): jpg, then png, then bmp, then tif. The service renders every
-   matching object, so where a JPEG and a TIFF of one image both exist, both get
-   thumbnails. That is simpler and costs little. The alternative is for the
-   sweep to skip the losers, which puts that ranking in the policy.
+1. **S3 primary with CloudFront (recommended), or MARFIK primary with S3 as a
+   backup.** This hinges on whether EarthRef plans to leave AWS, and whether
+   OSU's campus egress is really free at scale.
+2. **Which AWS account** holds the Lambda and the distribution. Also, which
+   region FIESTA's production bucket is in; us-west-2 would make the rendition
+   writes free.
+3. **Serving originals through CloudFront.** Recommended, because egress is
+   free. It needs an OAC grant in `osu-corelab-storage`'s bucket policy, which
+   is safe because every request must carry an API-minted signature. The
+   alternative is presigned S3 URLs: $0.09/GB, with no change to that bucket.
+4. **How long public URLs live:** until midnight plus 24 h (recommended), or
+   shorter, for faster withdrawal at the cost of browser caching.
+5. **pypdfium2 (recommended) or PyMuPDF**, which is AGPL while FIESTA is MIT.
+6. **Core strips on cards.** Plain fit with `object-contain` (recommended), or a
+   fold-into-segments profile; and whether strip previews get a 4096 long side.
+   Decide from the pilot's examples.
+7. **Metadata of embargoed rows** visible with a lock (recommended, as OSU-MGR
+   does today), or hidden (`hide_rows`).
+8. **Moratorium end dates**: automatic lifting through `moratorium_expiration`,
+   or manual only, as today.
