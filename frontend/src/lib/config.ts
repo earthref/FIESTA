@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext } from "react";
 import { api } from "./api";
+import { setNodeFavicon } from "./node-logo";
 import type { NodeConfig } from "./types";
 
 export const configQueryOptions = {
@@ -22,12 +23,14 @@ export function useNodeConfig() {
   return scoped ? ({ ...query, data: scoped } as typeof query) : query;
 }
 
-/** Apply runtime branding: CSS custom properties + document title. */
-export function applyNodeTheme(config: Pick<NodeConfig, "color" | "title">): void {
+/** Apply runtime branding: CSS custom properties, document title, and the
+ * node's letter logo as the favicon. */
+export function applyNodeTheme(config: Pick<NodeConfig, "key" | "color" | "title">): void {
   const root = document.documentElement;
   root.style.setProperty("--node-color", config.color);
   root.style.setProperty("--node-color-soft", `color-mix(in srgb, ${config.color} 8%, white)`);
   root.style.setProperty("--node-color-dark", `color-mix(in srgb, ${config.color} 85%, black)`);
   root.style.setProperty("--node-color-light", `color-mix(in srgb, ${config.color} 80%, white)`);
   document.title = config.title;
+  setNodeFavicon(config.key, config.color);
 }

@@ -23,6 +23,7 @@ import {
 } from "../lib/admin";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { nodeLogoUrl } from "../lib/node-logo";
 import type { AdminParams } from "../router";
 
 // --- Nodes ----------------------------------------------------------------------
@@ -58,10 +59,26 @@ function NodesPanel({ superAdmin }: { superAdmin: boolean }) {
           {(nodes.data ?? []).map((node) => (
             <Tr key={node.slug}>
               <Td>
-                <Link to="/admin/nodes/$slug" params={{ slug: node.slug }} className="underline">
-                  <NodeChip node={node} />
-                </Link>
-                <div className="text-xs text-gray-500">{node.slug}</div>
+                <div className="flex items-center gap-2">
+                  {/* The node header's letter logo, also its favicon */}
+                  <img
+                    src={nodeLogoUrl(node.key, node.color ?? "#666666")}
+                    alt=""
+                    width={28}
+                    height={28}
+                    className="shrink-0"
+                  />
+                  <div>
+                    <Link
+                      to="/admin/nodes/$slug"
+                      params={{ slug: node.slug }}
+                      className="underline"
+                    >
+                      <NodeChip node={node} />
+                    </Link>
+                    <div className="text-xs text-gray-500">{node.slug}</div>
+                  </div>
+                </div>
               </Td>
               <Td>{node.title ?? <span className="text-gray-400">not served</span>}</Td>
               <Td>
