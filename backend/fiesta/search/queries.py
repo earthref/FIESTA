@@ -165,7 +165,9 @@ def build_search_body(
                 "terms": {"field": f"summary._all.{facet}.raw", "size": 100}
             }
             if count_field:
-                agg["aggs"] = {"count": {"sum": {"field": count_field}}}
+                # Each value's rows, for the Rows sub-tab (a doc without the
+                # count field is one row, as in the router's `_n_rows`).
+                agg["aggs"] = {"count": {"sum": {"field": count_field, "missing": 1}}}
             aggs[facet] = agg
         body["aggs"] = aggs
 

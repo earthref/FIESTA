@@ -99,6 +99,18 @@ async def _constrain(
     body["query"]["bool"]["filter"].append({"term": {"summary.contribution.id": contribution}})
 
 
+def _facet_bucket(bucket: dict) -> dict:
+    """A facet value's docs, its rows (levels with a count_field) and, with
+    `totals`, its positioned docs: the sidebar counts follow the sub-tab."""
+    out = {"key": bucket["key"], "doc_count": bucket["doc_count"]}
+    if "count" in bucket:
+        # An index that has never held the count field sums to 0: one row each.
+        out["rows_count"] = int(bucket["count"]["value"] or 0) or bucket["doc_count"]
+    if "mapped" in bucket:
+        out["mapped_count"] = bucket["mapped"]["doc_count"]
+    return out
+
+
 @router.get("/search/{table}", response_model=SearchPage)
 async def search(
     session: SessionDep,
@@ -139,7 +151,11 @@ async def search(
         if level and level.count_field:
             aggs["_n_rows"] = {"sum": {"field": level.count_field, "missing": 1}}
         if table in node.geo_tables:
-            aggs["_n_mapped"] = {"filter": {"exists": {"field": "summary._all._geo_point"}}}
+            positioned = {"filter": {"exists": {"field": "summary._all._geo_point"}}}
+            aggs["_n_mapped"] = positioned
+            # And per facet value, so the sidebar counts follow the Map sub-tab.
+            for name in node.search.facets if facets else []:
+                aggs[name].setdefault("aggs", {})["mapped"] = positioned
     try:
         response = await get_opensearch().search(index=node.search_index, body=body)
     except NotFoundError:
@@ -152,8 +168,7 @@ async def search(
     aggregations = None
     if facets:
         aggregations = {
-            name: [{"key": b["key"], "doc_count": b["doc_count"]} for b in agg.get("buckets", [])]
-            for name, agg in found.items()
+            name: [_facet_bucket(b) for b in agg.get("buckets", [])] for name, agg in found.items()
         }
     return SearchPage(
         total=total,

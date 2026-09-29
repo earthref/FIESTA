@@ -1049,6 +1049,29 @@ def test_search_scoped_to_one_contribution(monkeypatch):
     assert {"term": {"type": "sites"}} in filters
 
 
+def test_facet_buckets_count_rows_and_mapped():
+    """A facet value carries its rows and positioned docs besides its docs, so
+    the sidebar counts follow the Summaries, Rows and Map sub-tabs."""
+    from fiesta.apps.routers.search import _facet_bucket
+    from fiesta.search.queries import build_search_body
+
+    body = build_search_body(
+        table="sites", query=None, facets=["lithologies"], count_field="summary.sites._n_results"
+    )
+    assert body["aggs"]["lithologies"]["aggs"]["count"]["sum"]["missing"] == 1
+    bucket = {"key": "Basalt", "doc_count": 3, "count": {"value": 12.0}, "mapped": {"doc_count": 2}}
+    assert _facet_bucket(bucket) == {
+        "key": "Basalt",
+        "doc_count": 3,
+        "rows_count": 12,
+        "mapped_count": 2,
+    }
+    # An index that never held the count field: one row per doc.
+    unsummed = {"key": "Basalt", "doc_count": 3, "count": {"value": 0}}
+    assert _facet_bucket(unsummed)["rows_count"] == 3
+    assert _facet_bucket({"key": "Basalt", "doc_count": 3}) == {"key": "Basalt", "doc_count": 3}
+
+
 def test_large_maps_are_unique_locations(magic_node, monkeypatch):
     """Past MAP_DOCS_LIMIT records, a level of points maps as its unique
     locations per contribution (a composite aggregation), paged to the cap."""

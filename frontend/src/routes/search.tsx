@@ -529,16 +529,17 @@ export function SearchPage() {
 
   // A plugin view's count: its own docs matching the search and its filters
   // (ranges on its summary block, the bbox), as it fetches them. Switching
-  // sub-tabs never changes the level tabs' counts.
+  // sub-tabs never changes the level tabs' counts. Its facets are the
+  // sidebar's counts while that view is open.
   const countedTabs = subTabs.filter((tab) => tab.countTable);
   const pluginCounts = useQueries({
     queries: countedTabs.map(({ countTable }) => {
       const tableRanges = ranges.filter((r) => r.startsWith(`summary.${countTable}.`));
       return {
-        queryKey: ["search-count", countTable, q, tableRanges, bbox],
+        queryKey: ["search-count", countTable, q, tableRanges, bbox, "facets"],
         queryFn: () =>
           api<SearchPageData>(`/search/${countTable}`, {
-            params: searchRequestParams(q, 1, 0, false, tableRanges, bbox),
+            params: searchRequestParams(q, 1, 0, true, tableRanges, bbox),
           }),
         staleTime: 60_000,
         placeholderData: keepPreviousData,
@@ -605,6 +606,27 @@ export function SearchPage() {
     return index < 0 ? null : pluginCounts[index]?.data?.total;
   };
   const aggregations = results.data?.pages[0]?.aggregations ?? null;
+  // The sidebar's facet counts follow the sub-tab: records (Summaries), their
+  // rows, those on the map, or a plugin view's own docs. A value with none
+  // drops out (an active one stays, at zero).
+  const activeCounted = activeTab ? countedTabs.indexOf(activeTab) : -1;
+  const pluginFacets = activeCounted >= 0 ? pluginCounts[activeCounted] : undefined;
+  const facetsLoading = pluginFacets ? pluginFacets.isPending : results.isPending;
+  const facetBuckets = (field: string): FacetBucket[] => {
+    if (pluginFacets) return pluginFacets.data?.aggregations?.[field] ?? [];
+    const buckets = aggregations?.[field] ?? [];
+    const count =
+      activeTab?.name === "Rows"
+        ? (bucket: FacetBucket) => bucket.rows_count
+        : activeTab?.name === "Map"
+          ? (bucket: FacetBucket) => bucket.mapped_count
+          : undefined;
+    if (!count) return buckets;
+    return buckets
+      .map((bucket) => ({ key: bucket.key, doc_count: count(bucket) ?? bucket.doc_count }))
+      .filter((bucket) => bucket.doc_count > 0)
+      .sort((a, b) => b.doc_count - a.doc_count);
+  };
   const topContributionId =
     level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
 
@@ -891,8 +913,8 @@ export function SearchPage() {
                         key={filter.field}
                         facet={filter.field ?? ""}
                         label={filter.label ?? undefined}
-                        buckets={aggregations?.[filter.field ?? ""] ?? []}
-                        loading={results.isPending}
+                        buckets={facetBuckets(filter.field ?? "")}
+                        loading={facetsLoading}
                         q={q}
                         onToggle={(name, value) =>
                           setSearch({ q: toggleQueryToken(q, name, value) })
