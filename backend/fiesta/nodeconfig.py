@@ -10,7 +10,7 @@ YAML, resolved relative to the YAML file's directory.
 import json
 import re
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 import yaml
 from pydantic import BaseModel, PrivateAttr, field_validator, model_validator
@@ -133,9 +133,7 @@ class MapColor(BaseModel):
     @model_validator(mode="after")
     def _check_field(self) -> "MapColor":
         if "." in self.field and not self.field.startswith("summary."):
-            raise ValueError(
-                f"map color field {self.field!r} must be a column or a summary.* path"
-            )
+            raise ValueError(f"map color field {self.field!r} must be a column or a summary.* path")
         if self.unit_column and ("." in self.field or not self.unit_factors):
             raise ValueError(
                 f"map color {self.field!r}: unit_column needs a column field and unit_factors"
@@ -292,6 +290,11 @@ class LegacySourceConfig(BaseModel):
     users_index: str = "er_users"
     canonical: str = "{slug}_contribution_{id}.txt"
     max_file_bytes: int = 2 * 1024**3  # larger objects are reported, not imported in memory
+    # The node data model version every legacy record is imported as, replacing
+    # the version the legacy summary (and an index-exported contribution table)
+    # carries; for a legacy index whose version has no FIESTA model. None keeps
+    # the legacy version when the node has it, else the latest.
+    data_model_version: str | None = None
     # Operator-supplied owner for contributions whose legacy record has no usable
     # contributor handle (bulk loads). Keyed by contribution id; the email must still
     # resolve to an er_users account so name/ORCID are verified, never typed in.
@@ -299,6 +302,10 @@ class LegacySourceConfig(BaseModel):
     # Operator-approved mapping of a legacy display name (`_contributor`) to an
     # account email, for bulk-loaded records that carry no handle at all.
     owner_names: dict[str, str] = {}
+    # Operator-approved mapping of a legacy contributor handle that is not an
+    # account (e.g. a bulk loader's shared handle) to an account email; applies to
+    # private records too.
+    owner_handles: dict[str, str] = {}
     # Operator-designated steward account for published records that still have no
     # owner after the maps above (never applied to private contributions).
     default_owner: str | None = None
@@ -310,6 +317,33 @@ class LegacySourceConfig(BaseModel):
         if self.kind == "earthref-cgi" and not (self.base_url and self.max_id > 0):
             raise ValueError("legacy.kind earthref-cgi needs legacy.base_url and legacy.max_id")
         return self
+
+    OWNER_FIELDS: ClassVar[tuple[str, ...]] = (
+        "owner_overrides",
+        "owner_names",
+        "owner_handles",
+        "default_owner",
+    )
+
+    def with_owner_map(self, owner_map: dict) -> "LegacySourceConfig":
+        """A copy with the operator's owner mapping (any of `OWNER_FIELDS`) merged
+        over this block: map fields merge key by key, `default_owner` replaces.
+
+        Owner mappings name accounts by email, so they live in a gitignored
+        per-run file (`legacy-inventory --owner-map`), never in the node YAML.
+        """
+        unknown = sorted(set(owner_map) - set(self.OWNER_FIELDS))
+        if unknown:
+            raise ValueError(f"owner map: unknown fields {unknown}; allowed {self.OWNER_FIELDS}")
+        merged = self.model_dump()
+        for name, value in owner_map.items():
+            if isinstance(merged[name], dict):
+                if not isinstance(value, dict):
+                    raise ValueError(f"owner map: {name} must be an object")
+                merged[name] = {**merged[name], **value}
+            else:
+                merged[name] = value
+        return LegacySourceConfig.model_validate(merged)
 
 
 class NodeConfig(BaseModel):
@@ -341,6 +375,9 @@ class NodeConfig(BaseModel):
     def _check_hierarchy(self) -> "NodeConfig":
         if self.data_model.latest not in self.data_model.versions:
             raise ValueError("data_model.latest must be one of data_model.versions")
+        legacy_version = self.legacy.data_model_version if self.legacy else None
+        if legacy_version and legacy_version not in self.data_model.versions:
+            raise ValueError("legacy.data_model_version must be one of data_model.versions")
         tables = set(self.load_data_model(self.data_model.latest)["tables"])
         missing = [t for t in self.hierarchy if t not in tables]
         if missing:

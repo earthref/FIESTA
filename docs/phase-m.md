@@ -208,7 +208,16 @@ documents, resolves each `@handle` through the shared `er_users` index, hashes t
 activated file from the first bucket that has `<id>/<slug>_contribution_<id>.txt`,
 and exports private contributions (index-only) from their indexed tables into
 `<dir>/files/`. It writes `inventory.json` and `owners.json`; unresolved handles are
-errors and their contributions are left out. `fiesta ensure-owners <node> <dir>/owners.json
+errors and their contributions are left out. Records whose legacy owner is not an
+account are mapped by the operator with `owner_overrides` (by id), `owner_handles` (by
+legacy handle, private records too), `owner_names` (by display name, records without a
+handle) and `default_owner` (published records still unowned). These name accounts by
+email, so they go in a gitignored JSON file passed as `--owner-map <dir>/owner_map.json`
+(e.g. `{"owner_handles": {"cdr": "<email>"}}`), merged over the YAML's `legacy:` block
+for that run, either `legacy.kind`, by `LegacySourceConfig.with_owner_map` (maps merge key by key), never in
+checked-in config. `legacy.data_model_version` imports every record as that node
+version when the legacy index's own version has no FIESTA model (CDR's `cdr-3`, which
+says 3.0, imports as the extended 1.0). `fiesta ensure-owners <node> <dir>/owners.json
 --apply` creates the missing accounts without passwords. `fiesta sync-legacy-users
 <node> --apply` copies every `er_users` account (not only owners) with its `_password`:
 the legacy apps hash with plain bcrypt, so the hash is stored as `password_hash` and

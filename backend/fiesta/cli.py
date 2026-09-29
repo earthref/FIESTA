@@ -296,6 +296,12 @@ def legacy_inventory(
     max_file_mb: float = typer.Option(
         0, help="earthref-cgi: defer files listed at over this size (0: no limit)"
     ),
+    owner_map: str | None = typer.Option(
+        None,
+        "--owner-map",
+        help="JSON of owner_handles/owner_names/owner_overrides/default_owner merged "
+        "over the YAML's legacy block (keep it in the gitignored snapshot directory)",
+    ),
 ):
     """Snapshot NODE's legacy source into OUT/inventory.json and owners.json.
 
@@ -313,6 +319,9 @@ def legacy_inventory(
     if target.legacy is None:
         raise typer.BadParameter(f"{node} has no `legacy:` block")
     out_dir = Path(out).resolve()
+    if owner_map:  # operator owner mapping for this run, never in checked-in config
+        legacy = target.legacy.with_owner_map(json.loads(Path(owner_map).read_text()))
+        target = target.model_copy(update={"legacy": legacy})
 
     async def run():
         from fiesta.search.client import get_opensearch
