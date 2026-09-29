@@ -104,10 +104,14 @@ legacy:
   concurrency: 4
   users_index: er_users
   owner_names: {}
-  # PLACEHOLDER — the steward account has not been chosen yet. Records that
-  # depend on it fail `sync-legacy` with "owner mapping missing" until it is
-  # replaced by a real er_users email.
-  default_owner: steward-not-yet-chosen@placeholder.invalid
+  # Steward for records whose contributor matches no account (user decision
+  # 2026-09-29); it must resolve in er_users like any other owner.
+  default_owner: admin@osu-mgr.org
+  # Records with files over the download cap, or with files the legacy archive
+  # has lost, import as metadata only (files rows kept, noted); a later run with
+  # a higher --max-file-mb attaches the deferred files. 2741 is a test record.
+  incomplete_records: metadata
+  exclude_ids: [2741]
 
 # Local fixtures only; never read during normal application startup.
 development:

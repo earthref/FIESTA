@@ -288,6 +288,11 @@ class LegacySourceConfig(BaseModel):
     base_url: str | None = None  # earthref-cgi
     max_id: int = 0  # earthref-cgi: highest record id probed
     concurrency: int = 4  # earthref-cgi: parallel page/file requests (be polite)
+    exclude_ids: list[int] = []  # earthref-cgi: live records left out (test records)
+    # earthref-cgi: a record whose files are not all on disk (deferred by size, or
+    # lost from the legacy archive). "exclude" leaves it out; "metadata" imports its
+    # text alone, each `files` row noting why its file is not attached.
+    incomplete_records: Literal["exclude", "metadata"] = "exclude"
     buckets: list[str] = []
     users_index: str = "er_users"
     canonical: str = "{slug}_contribution_{id}.txt"

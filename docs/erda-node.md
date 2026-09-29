@@ -144,8 +144,17 @@ revision's attachments next to `erda_contribution_<id>.txt`. Details:
   above a size; `--max-total-gb` (default 20) refuses a larger download.
 - 151 records list files the archive no longer has ("Missing file"): 149 are
   the `10.58052/…` argon-data uploads (ids 2567–2715, contributor "ArArCALC
-  ERDA Uploader"), plus 806 and 1842. Records with a missing or deferred file
-  stay out of the inventory (`excluded.json`).
+  ERDA Uploader"), plus 806 and 1842.
+- **Incomplete records** (a file deferred by `--max-file-mb`, or lost):
+  `incomplete_records: metadata` imports them as **metadata only** — the text
+  with no attachments, every `files` row kept (no `size_bytes` for a file not on
+  disk) and its `description` saying why ("Not imported: lost from the legacy
+  ERDA archive." / "Not imported yet: to be transferred … (listed as …)").
+  `exclude` would leave them out. Both lists are in `excluded.json`. A later
+  run with a higher `--max-file-mb` downloads the deferred files; the record's
+  inventory entry then changes, and `sync-legacy` adds a revision with them.
+- `exclude_ids: [2741]` drops a test record (titled "1", data type "Not
+  specified", the one file that did not validate).
 
 **First run (2026-09-29, files listed ≤ 100 MiB).** 2,160 records in the
 inventory (2,995 attachments, 7.07 GB); 258 records deferred (329 larger
@@ -157,12 +166,21 @@ placeholder `default_owner`. Every generated file validates except record 2741
 against a fresh local `erda` schema plans 2,000 records and reports exactly the
 160 `default_owner` records as "owner mapping missing".
 
+**Decisions (2026-09-29) and the expected next run.** Steward
+`default_owner: admin@osu-mgr.org`; deferred and lost-file records import as
+metadata only; 2741 is excluded. Expected from the cached pages and files:
+2,568 inventory records — 2,159 full (2,134 with attachments, 2,995 files; 25
+link-only records have none) and 409 metadata only (258 deferred, 151 lost);
+319 of them owned by the steward.
+
 **Owners.** The contributor display name maps to an `er_users` account by
 **exact full name** (given + family) only; several documents with one email
 count as one account. `owner_mapping.json` lists every name with its records,
 the matched account, and, for unmatched names, same-name or case-variant
 candidates plus the account at the page's legacy person id (`erml.cgi?n=`,
 which is the `er_users` id) as a hint that is never applied. `owner_names`
-overrides a name; every other unmatched record goes to `default_owner`, which
-is a placeholder (`…@placeholder.invalid`) until a steward account is chosen,
-so those records fail `sync-legacy` with "owner mapping missing".
+overrides a name; every other unmatched record goes to `default_owner`
+(`admin@osu-mgr.org`), which must itself be an `er_users` account: if it is
+not, the run reports an error and those records get no owner. The steward is
+written to `owners.json` like any matched owner, so `ensure-owners` creates it
+where missing.
