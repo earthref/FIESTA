@@ -271,16 +271,23 @@ class DevelopmentConfig(BaseModel):
 
 
 class LegacySourceConfig(BaseModel):
-    """Where this node's contributions live on the legacy Meteor platform.
+    """Where this node's contributions live on the legacy platform.
 
-    Read only by `fiesta legacy-inventory`, never at application startup. The
-    index is addressed by its literal name (no FIESTA_INDEX_PREFIX); buckets are
-    tried in order for `<id>/<canonical>`; contributions with no object in any
-    bucket (private workspaces) are exported from the indexed tables instead.
+    Read only by `fiesta legacy-inventory`, never at application startup.
+    `kind: meteor` (default): the index is addressed by its literal name (no
+    FIESTA_INDEX_PREFIX); buckets are tried in order for `<id>/<canonical>`;
+    contributions with no object in any bucket (private workspaces) are exported
+    from the indexed tables instead. `kind: earthref-cgi`: a Perl CGI archive
+    read from its public record pages `<base_url>/<id>/` for ids `1..max_id`
+    (fiesta.services.legacy_cgi).
     """
 
+    kind: Literal["meteor", "earthref-cgi"] = "meteor"
     source_id: str
-    index: str
+    index: str | None = None
+    base_url: str | None = None  # earthref-cgi
+    max_id: int = 0  # earthref-cgi: highest record id probed
+    concurrency: int = 4  # earthref-cgi: parallel page/file requests (be polite)
     buckets: list[str] = []
     users_index: str = "er_users"
     canonical: str = "{slug}_contribution_{id}.txt"
@@ -295,6 +302,14 @@ class LegacySourceConfig(BaseModel):
     # Operator-designated steward account for published records that still have no
     # owner after the maps above (never applied to private contributions).
     default_owner: str | None = None
+
+    @model_validator(mode="after")
+    def _check_kind(self) -> "LegacySourceConfig":
+        if self.kind == "meteor" and not self.index:
+            raise ValueError("legacy.kind meteor needs legacy.index")
+        if self.kind == "earthref-cgi" and not (self.base_url and self.max_id > 0):
+            raise ValueError("legacy.kind earthref-cgi needs legacy.base_url and legacy.max_id")
+        return self
 
 
 class NodeConfig(BaseModel):

@@ -285,25 +285,50 @@ def sync_legacy(inventory: str, apply: bool = False):
 
 
 @app.command("legacy-inventory")
-def legacy_inventory(node: str, out: str = typer.Option(..., "--out", help="snapshot directory")):
-    """Snapshot NODE's legacy OpenSearch index + S3 buckets into OUT/inventory.json and owners.json.
+def legacy_inventory(
+    node: str,
+    out: str = typer.Option(..., "--out", help="snapshot directory"),
+    download: bool = typer.Option(True, help="earthref-cgi: download the record files"),
+    max_total_gb: float = typer.Option(
+        20, help="earthref-cgi: refuse to download more than this (estimated) in one run"
+    ),
+    max_file_mb: float = typer.Option(
+        0, help="earthref-cgi: defer files listed at over this size (0: no limit)"
+    ),
+):
+    """Snapshot NODE's legacy source into OUT/inventory.json and owners.json.
 
-    Read-only against the legacy sources; review the output, then `ensure-owners`
-    and `sync-legacy`. Needs the node YAML's `legacy:` block.
+    `legacy.kind: meteor` reads the legacy OpenSearch index + S3 buckets;
+    `earthref-cgi` crawls the public record pages (cached under OUT, so a re-run
+    resumes). Read-only against the legacy sources; review the output, then
+    `ensure-owners` and `sync-legacy`. Needs the node YAML's `legacy:` block.
     """
     import json
     from pathlib import Path
 
     from fiesta.nodeconfig import get_deployment
-    from fiesta.services.legacy_inventory import build_inventory
 
     target = get_deployment().node_for(node)
+    if target.legacy is None:
+        raise typer.BadParameter(f"{node} has no `legacy:` block")
     out_dir = Path(out).resolve()
 
     async def run():
         from fiesta.search.client import get_opensearch
 
         try:
+            if target.legacy.kind == "earthref-cgi":
+                from fiesta.services.legacy_cgi import build_inventory as build_cgi
+
+                return await build_cgi(
+                    target,
+                    out_dir,
+                    download=download,
+                    max_total_bytes=int(max_total_gb * 1000**3),
+                    max_file_bytes=int(max_file_mb * 1024**2) or None,
+                )
+            from fiesta.services.legacy_inventory import build_inventory
+
             return await build_inventory(target, out_dir)
         finally:
             await get_opensearch().close()
