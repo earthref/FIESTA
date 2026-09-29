@@ -80,7 +80,7 @@ async def save_revision(
 ):
     if not request_key or len(request_key) > 128:
         raise HTTPException(422, "an idempotency key of 1–128 characters is required")
-    files = files or {}
+    files = dict(files or {})
     remove = remove or []
     for name in [*files, *remove]:
         safe_name(name)
@@ -126,27 +126,23 @@ async def save_revision(
 
         raw = await storage.get_bytes(file_key(contribution.id, contribution.filename))
         files = {contribution.filename: raw, **files}
-    for name, data in files.items():
-        key = f"contributions/{contribution.id}/blobs/{digest(data)}/{name}"
-        if not await storage.exists(key):
-            await storage.put_bytes(key, data, content_type="application/octet-stream")
-        snapshot["files"][name] = {"key": key, "sha256": digest(data), "size": len(data)}
-    for name in remove:
-        snapshot["files"].pop(name, None)
     if canonical is not None:
         snapshot["canonical"] = safe_name(canonical)
-    if snapshot["canonical"] and snapshot["canonical"] not in snapshot["files"]:
-        raise HTTPException(422, "the canonical file cannot be missing")
     canonical_bytes = files.get(snapshot["canonical"])
     if canonical_bytes:
         import re
 
-        from fiesta.domain.parse import ParseError, parse_text
+        from fiesta.domain.parse import ParseError, parse_text, stamp_ids
         from fiesta.domain.validate import guess_data_model_version
 
         try:
-            parsed = parse_text(canonical_bytes.decode("utf-8"))
+            text = canonical_bytes.decode("utf-8")
+            parsed = parse_text(text)
             snapshot["data_model_version"] = guess_data_model_version(node, parsed)
+            # Every write path (upload, editing, /v1, legacy import, new version)
+            # stores the canonical file with its download-only identifiers.
+            model = node.load_data_model(snapshot["data_model_version"])
+            files[snapshot["canonical"]] = stamp_ids(text, contribution.id, model).encode()
             rows = parsed.tables.get("contribution", [])
             reference = rows[0].get("reference", "") if rows else ""
             if (
@@ -157,6 +153,15 @@ async def save_revision(
                 snapshot["reference_doi"] = reference
         except (ParseError, UnicodeDecodeError):
             pass  # Invalid drafts are still saved and receive a validation report.
+    for name, data in files.items():
+        key = f"contributions/{contribution.id}/blobs/{digest(data)}/{name}"
+        if not await storage.exists(key):
+            await storage.put_bytes(key, data, content_type="application/octet-stream")
+        snapshot["files"][name] = {"key": key, "sha256": digest(data), "size": len(data)}
+    for name in remove:
+        snapshot["files"].pop(name, None)
+    if snapshot["canonical"] and snapshot["canonical"] not in snapshot["files"]:
+        raise HTTPException(422, "the canonical file cannot be missing")
     if reference_doi is not None:
         snapshot["reference_doi"] = reference_doi
     from fiesta.services.references import request
