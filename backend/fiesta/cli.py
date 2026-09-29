@@ -8,6 +8,7 @@ fiesta enrich-references   fetch every reference DOI's publication metadata
 """
 
 import asyncio
+import json
 
 import typer
 
@@ -424,6 +425,50 @@ def backfill_revisions():
                     await session.commit()
                     count += 1
             typer.echo(f"{node.node.slug}: backfilled {count}")
+
+    asyncio.run(run())
+
+
+@app.command("stamp-ids")
+def stamp_ids_command(apply: bool = False):
+    """Backfill download-only contribution_id/row_id into stored contribution files
+    saved before every save wrote them (dry run unless --apply; one commit each)."""
+    from sqlalchemy import select
+
+    from fiesta.db.models import Contribution
+    from fiesta.db.session import get_sessionmaker
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.services.revisions import stamp_ids_revision
+
+    async def run():
+        for node in get_deployment().node_list:
+            sessionmaker = get_sessionmaker(node.node.slug)
+            async with sessionmaker() as session:
+                ids = (
+                    await session.execute(
+                        select(Contribution.id)
+                        .where(
+                            Contribution.head_revision.is_not(None),
+                            Contribution.deleted_at.is_(None),
+                        )
+                        .order_by(Contribution.id)
+                    )
+                ).scalars()
+                ids = list(ids)
+            report = {"stamped" if apply else "planned": 0, "unchanged": 0, "errors": []}
+            for cid in ids:
+                async with sessionmaker() as session:
+                    try:
+                        c = await session.get(Contribution, cid)
+                        if await stamp_ids_revision(session, node, c, apply=apply):
+                            await session.commit()
+                            report["stamped" if apply else "planned"] += 1
+                        else:
+                            report["unchanged"] += 1
+                    except Exception as exc:
+                        await session.rollback()
+                        report["errors"].append({"id": cid, "error": str(exc)})
+            typer.echo(f"{node.node.slug}: {json.dumps(report)}")
 
     asyncio.run(run())
 
