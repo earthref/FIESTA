@@ -167,7 +167,8 @@ against a fresh local `erda` schema plans 2,000 records and reports exactly the
 160 `default_owner` records as "owner mapping missing".
 
 **Decisions (2026-09-29) and the expected next run.** Steward
-`default_owner: admin@osu-mgr.org`; deferred and lost-file records import as
+`default_owner` chosen by the user and kept, like every owner email, out of git
+in `migration/erda/owner_map.json`; deferred and lost-file records import as
 metadata only; 2741 is excluded. Expected from the cached pages and files:
 2,568 inventory records — 2,159 full (2,134 with attachments, 2,995 files; 25
 link-only records have none) and 409 metadata only (258 deferred, 151 lost);
@@ -179,8 +180,9 @@ count as one account. `owner_mapping.json` lists every name with its records,
 the matched account, and, for unmatched names, same-name or case-variant
 candidates plus the account at the page's legacy person id (`erml.cgi?n=`,
 which is the `er_users` id) as a hint that is never applied. `owner_names`
-overrides a name; every other unmatched record goes to `default_owner`
-(`admin@osu-mgr.org`), which must itself be an `er_users` account: if it is
+overrides a name; every other unmatched record goes to `default_owner` (both
+from the gitignored owner map, never from the YAML), which must itself be an
+`er_users` account: if it is
 not, the run reports an error and those records get no owner. The steward is
 written to `owners.json` like any matched owner, so `ensure-owners` creates it
 where missing.

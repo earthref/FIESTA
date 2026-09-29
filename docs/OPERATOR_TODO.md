@@ -34,12 +34,13 @@ Last updated: 2026-09-24
       `owner_overrides` / `owner_names` / `default_owner` in `config/magic.yaml`, or leave
       them out; a re-run of the sync picks them up incrementally. The list with ids is
       produced by `legacy-inventory` (report `errors`). Unblocks: nothing; parity only.
-- [ ] **ERDA legacy import: apply** (decisions made 2026-09-29: steward
-      `admin@osu-mgr.org`, deferred and lost-file records metadata only, test record
-      2741 excluded; details in `docs/erda-node.md` "Legacy import"; output in the ERDA
-      import worktree's `migration/erda/`). Re-run `legacy-inventory erda … --max-file-mb
-      100` (reuses the page/file caches; check the report has no `default_owner … not in
-      er_users` error), review `owner_mapping.json` (198 names by exact full name; 21
+- [ ] **ERDA legacy import: apply** (decisions made 2026-09-29: a steward account,
+      kept with every owner email in the gitignored `migration/erda/owner_map.json`;
+      deferred and lost-file records metadata only; test record 2741 excluded; details
+      in `docs/erda-node.md` "Legacy import"; output in the ERDA import worktree's
+      `migration/erda/`). Re-run `legacy-inventory erda … --max-file-mb 100 --owner-map
+      ../migration/erda/owner_map.json` (reuses the page/file caches; check the report
+      has no `default_owner … not in er_users` error), review `owner_mapping.json` (198 names by exact full name; 21
       unmatched names → steward, 319 records), then `fiesta init` for `erda` on dev (the
       schema does not exist there yet), `ensure-owners … --apply`, `sync-legacy … --apply`,
       and drain the outbox. Unblocks: ERDA import (M5).

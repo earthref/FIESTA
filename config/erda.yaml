@@ -103,10 +103,10 @@ legacy:
   max_id: 4900
   concurrency: 4
   users_index: er_users
+  # Owner emails are never checked in: `owner_names` and the steward
+  # (`default_owner`, which must resolve in er_users like any other owner) come
+  # from the gitignored `<out>/owner_map.json` (`--owner-map`).
   owner_names: {}
-  # Steward for records whose contributor matches no account (user decision
-  # 2026-09-29); it must resolve in er_users like any other owner.
-  default_owner: admin@osu-mgr.org
   # Records with files over the download cap, or with files the legacy archive
   # has lost, import as metadata only (files rows kept, noted); a later run with
   # a higher --max-file-mb attaches the deferred files. 2741 is a test record.
