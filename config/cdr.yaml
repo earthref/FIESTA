@@ -82,12 +82,19 @@ features:
 
 # Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).
 # CDR never had S3 buckets; every contribution is exported from the indexed tables.
-# `cdr` is the alias the legacy private-workspace page writes to (data model 1.0);
-# the separate `cdr-3` index (data model 3.0) is not importable until that model
-# exists under config/cdr/data_models/.
+# Decision 2026-09-28: import `cdr-3` only (665 contributions, bulk-loaded 2025-09-16,
+# what the legacy search page shows). The 58 contributions in the `cdr` alias
+# (`cdr-2`, model 1.0, overlapping ids with different content) are left behind.
+# cdr-3 records say data model 3.0, but no 3.0 model exists; 1.0.json was extended
+# with every table and column they carry, so they import as 1.0.
 legacy:
   source_id: legacy-cdr
-  index: cdr
+  index: cdr-3
+  data_model_version: "1.0"
+  # Every cdr-3 record carries the bulk loader's handle `cdr`, which is no account;
+  # they go to the OSU-MGR steward account (decided 2026-09-29) through
+  # `owner_handles` in the gitignored migration/cdr/owner_map.json, passed as
+  # `legacy-inventory --owner-map` (owner emails never go in checked-in config).
   buckets: []
   users_index: er_users
 

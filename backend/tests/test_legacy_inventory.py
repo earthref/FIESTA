@@ -133,6 +133,11 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
     monkeypatch.setattr(karar_node.legacy, "owner_overrides", {13: "Carol@example.org"})
     monkeypatch.setattr(karar_node.legacy, "owner_names", {"Bob Lee": "bob@example.org"})
     monkeypatch.setattr(karar_node.legacy, "default_owner", "alice@example.org")
+    # The per-run --owner-map, merged over the YAML's legacy block (as the CLI does).
+    owner_map = {"owner_handles": {"@bulk": "Carol@example.org"}}
+    karar_node = karar_node.model_copy(
+        update={"legacy": karar_node.legacy.with_owner_map(owner_map)}
+    )
     docs = [
         _doc(
             7,
@@ -163,6 +168,9 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
         _doc(16, handle="", activated=False, history=[]),  # private + no handle: quarantined
         _doc(17, handle="carol@example.org", activated=True, history=[]),  # email as handle
         _doc(18, handle="42", activated=True, history=[]),  # bare account id as handle
+        _doc(  # a bulk loader's shared handle, mapped by the operator (private too)
+            20, handle="bulk", activated=False, history=[], tables={"contribution": [{"id": 20}]}
+        ),
         _doc(  # version 2 of 11, whose owner is unresolved: the link is dropped, not dangling
             19,
             handle="alice",
@@ -189,15 +197,16 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
     report = await legacy_inventory.build_inventory(karar_node, tmp_path, client=client)
 
     assert client.cleared
-    assert (report["contributions"], report["public"], report["private"]) == (11, 8, 1)
-    assert (report["from_s3"], report["from_index"], report["owners"]) == (8, 1, 3)
+    assert (report["contributions"], report["public"], report["private"]) == (12, 8, 2)
+    assert (report["from_s3"], report["from_index"], report["owners"]) == (8, 2, 3)
     assert report["unresolved_handles"] == ["ghost"]
     assert [e["id"] for e in report["errors"]] == [11, 16]
     assert report["orphaned_previous"] == 1
 
     inventory = load_inventory(tmp_path / "inventory.json")
     by_id = {r.id: r for r in inventory.records}
-    assert set(by_id) == {7, 9, 12, 13, 14, 15, 17, 18, 19}
+    assert set(by_id) == {7, 9, 12, 13, 14, 15, 17, 18, 19, 20}
+    assert by_id[20].owner_email == "carol@example.org"  # @bulk mapped by owner_handles
     assert (
         by_id[17].owner_email == "carol@example.org" and by_id[18].owner_email == "bob@example.org"
     )
@@ -258,7 +267,7 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
             "email": "carol@example.org",
             "name": "C. Diaz",
             "orcid": None,
-            "contributions": [13, 17],
+            "contributions": [13, 17, 20],
         },
     ]
 
@@ -321,3 +330,36 @@ async def test_legacy_accounts_carry_bcrypt_passwords():
         "orcid": None,
         "password_hash": None,
     }
+
+
+def test_owner_map_merges_over_the_legacy_block():
+    from fiesta.nodeconfig import LegacySourceConfig
+
+    base = LegacySourceConfig(
+        source_id="s", index="i", owner_names={"A": "a@example.org"}, default_owner="d@x.org"
+    )
+    merged = base.with_owner_map(
+        {
+            "owner_names": {"B": "b@example.org"},
+            "owner_overrides": {"13": "c@example.org"},  # JSON object keys are strings
+            "default_owner": None,
+        }
+    )
+    assert merged.owner_names == {"A": "a@example.org", "B": "b@example.org"}
+    assert merged.owner_overrides == {13: "c@example.org"}
+    assert merged.default_owner is None and base.default_owner == "d@x.org"
+    with pytest.raises(ValueError, match="unknown fields"):
+        base.with_owner_map({"index": "other"})
+
+
+def test_export_tables_stamps_the_import_data_model_version():
+    model = {
+        "tables": {
+            "contribution": {"position": 1, "columns": {"id": {}, "data_model_version": {}}},
+            "cores": {"position": 2, "columns": {"core": {}}},
+        }
+    }
+    tables = {"contribution": [{"id": 5, "data_model_version": "3.0"}], "cores": [{"core": "A"}]}
+    text = legacy_inventory.export_tables(tables, model, "1.0")
+    assert "5\t1.0" in text and "3.0" not in text
+    assert "5\t3.0" in legacy_inventory.export_tables(tables, model)  # no override: kept

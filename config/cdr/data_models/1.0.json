@@ -592,10 +592,21 @@
       "Site 801"
      ]
     },
+    "label": {
+     "label": "Section Label",
+     "group": "Names",
+     "position": 5,
+     "type": "String",
+     "description": "Full label for section, as written on the section and its images",
+     "notes": "Usually <cruise>-<core>-<section>; added for the legacy cdr-3 index import",
+     "examples": [
+      "OSU-HLY0501-5JC-1"
+     ]
+    },
     "core": {
      "label": "Core Name",
      "group": "Parent",
-     "position": 5,
+     "position": 6,
      "type": "String",
      "description": "Name for core",
      "examples": [
@@ -609,7 +620,7 @@
     "type": {
      "label": "Section Type",
      "group": "Section",
-     "position": 6,
+     "position": 7,
      "type": "String",
      "description": "Work or archive section half or full round section",
      "examples": [
@@ -624,7 +635,7 @@
     "number": {
      "label": "Section Number",
      "group": "Section",
-     "position": 7,
+     "position": 8,
      "type": "Number",
      "description": "Number of section in the core starting at the top with 1",
      "examples": [
@@ -640,7 +651,7 @@
     "igsn": {
      "label": "IGSN",
      "group": "Section",
-     "position": 8,
+     "position": 9,
      "type": "String",
      "description": "International Geo Sample Number",
      "validations": [
@@ -650,7 +661,7 @@
     "depth_top": {
      "label": "Section Top Depth",
      "group": "Section",
-     "position": 9,
+     "position": 10,
      "type": "Number",
      "unit": "cm",
      "description": "Depth of the section top relative to the top of the core",
@@ -668,7 +679,7 @@
     "depth_bottom": {
      "label": "Section Bottom Depth",
      "group": "Section",
-     "position": 10,
+     "position": 11,
      "type": "Number",
      "unit": "cm",
      "description": "Depth of the section bottom relative to the top of the core",
@@ -684,14 +695,14 @@
     "description": {
      "label": "Description",
      "group": "Metadata",
-     "position": 11,
+     "position": 12,
      "type": "String",
      "description": "Section description and comments"
     },
     "external_database_ids": {
      "label": "External Database IDs",
      "group": "Metadata",
-     "position": 12,
+     "position": 13,
      "type": "Dictionary",
      "description": "Dictionary of external databases and IDs where data are used",
      "examples": [

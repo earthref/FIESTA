@@ -70,8 +70,13 @@ def _doi(summary: dict) -> str | None:
     return None
 
 
-def export_tables(tables: dict, model: dict) -> str:
-    """Serialize the legacy melded JSON (`{table: [rows]}`) to canonical text."""
+def export_tables(tables: dict, model: dict, data_model_version: str | None = None) -> str:
+    """Serialize the legacy melded JSON (`{table: [rows]}`) to canonical text.
+
+    With `data_model_version`, the contribution table's `data_model_version`
+    column (where the model declares it) is set to that version, so the file
+    names the model it is imported under rather than the legacy one.
+    """
     parsed = ParsedContribution(
         tables={
             table: [{k: _cell(v) for k, v in row.items()} for row in rows]
@@ -79,6 +84,10 @@ def export_tables(tables: dict, model: dict) -> str:
             if isinstance(rows, list) and rows
         }
     )
+    declared = model.get("tables", {}).get("contribution", {}).get("columns", {})
+    if data_model_version and "data_model_version" in declared:
+        for row in parsed.tables.get("contribution", []):
+            row["data_model_version"] = data_model_version
     return export_text(parsed, model)
 
 
@@ -242,12 +251,15 @@ async def _hash_object(bucket: str, key: str) -> str:
 
 def _handle_for(cfg, cid: int, summary: dict) -> str:
     """The owner key for a contribution: `override:<email>` when the operator mapped
-    this id or its legacy display name explicitly, else its `@handle`, else the
+    this id, its legacy handle or its display name explicitly, else its `@handle`, else the
     operator's default owner for published records. Private records without a
     handle stay unowned (quarantined)."""
     if cid in cfg.owner_overrides:
         return f"override:{cfg.owner_overrides[cid].lower()}"
     handle = str(summary.get("contributor") or "").lstrip("@").strip().lower()
+    mapped = {k.lstrip("@").lower(): v for k, v in cfg.owner_handles.items()}
+    if handle in mapped:
+        return f"override:{mapped[handle].lower()}"
     if handle:
         return handle
     name = str(summary.get("_contributor") or "").strip()
@@ -268,7 +280,7 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
         client = get_opensearch()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    model = node.load_data_model(node.data_model.latest)
+    model = node.load_data_model(cfg.data_model_version or node.data_model.latest)
     cache = HashCache(out_dir / "hashes.json")
 
     report = {
@@ -342,7 +354,7 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
                 tables = await fetch_tables(client, cfg.index, cid) or {}
                 if not isinstance(tables, dict) or not tables:
                     raise ValueError("no S3 object and no indexed tables")
-                text = export_tables(tables, model).encode()
+                text = export_tables(tables, model, cfg.data_model_version).encode()
                 local = out_dir / "files" / str(cid) / canonical
                 local.parent.mkdir(parents=True, exist_ok=True)
                 local.write_bytes(text)
@@ -410,7 +422,7 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
         private_key = None
         with contextlib.suppress(TypeError, ValueError):
             private_key = str(uuid.UUID(str(summary.get("_private_key"))))
-        dmv = str(summary.get("data_model_version") or "")
+        dmv = cfg.data_model_version or str(summary.get("data_model_version") or "")
         report["public" if published else "private"] += 1
         report[file["origin"]] += 1
         records.append(
