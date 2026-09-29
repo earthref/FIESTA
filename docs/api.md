@@ -388,12 +388,14 @@ Shared workspaces: owners control membership, editors save, viewers read.
 
 Each plugin router mounts once per plugin. A request to a node that does not
 activate that plugin (`features.plugins` in its YAML) is a 404. Plugin routes
-read contribution data through `fiesta.plugins.util.load_visible_parsed`, which
-enforces the same visibility rules as the core API.
+read contribution data through `fiesta.plugins.util.load_visible_parsed` (or,
+for a route that caches what it reads, `load_visible_contribution` before
+loading), which enforces the same visibility rules as the core API.
 
 | Method | Path | Plugin (node) |
 |---|---|---|
 | GET | `/v2/{repository}/plugins/poles/plate-boundaries` | `poles` (MagIC) — GeoJSON |
+| GET | `/v2/{repository}/plugins/pmag-plots/contributions/{id}/{kind}` | `pmag-plots` (MagIC) — plot data, `kind` ∈ `demag`, `eqarea`, `arai`, `hyst`; counts are `summary.pmag_plots` of `GET /search/pmag_plots?contribution={id}` |
 | GET | `/v2/{repository}/plugins/depth-plot/contributions/{id}/measurements` | `depth-plot` (CDR) |
 | GET | `/v2/{repository}/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau` | `plateau-calculations` (KArAr) |
 

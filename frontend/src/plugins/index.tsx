@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { NodeConfig, SearchLevel, SearchResult } from "../lib/types";
 import { depthPlotPlugin } from "./depth-plot";
 import { plateauPlugin } from "./plateau-calculations";
+import { pmagPlotsPlugin } from "./pmag-plots";
 import { polesPlugin } from "./poles";
 import { recordCardsPlugin } from "./record-cards";
 import { rockMagPlugin } from "./rock-mag";
@@ -75,7 +76,16 @@ export interface ContributionTab {
    * a tab counted this way is hidden when there are none. Without one the
    * tab always shows, with no count. */
   countTable?: string;
+  /** Or a query for the count, hidden the same way at 0; tabs sharing a
+   * queryKey (several counts in one document) fetch it once. */
+  countQuery?: (id: string, privateKey?: string) => TabCountQuery;
   render: (ctx: ContributionTabContext) => ReactNode;
+}
+
+export interface TabCountQuery {
+  queryKey: readonly unknown[];
+  queryFn: () => Promise<unknown>;
+  select: (data: unknown) => number;
 }
 
 export interface PluginModule {
@@ -98,6 +108,7 @@ export const PLUGINS: Record<string, PluginModule> = {
   "depth-plot": depthPlotPlugin,
   "record-cards": recordCardsPlugin,
   "plateau-calculations": plateauPlugin,
+  "pmag-plots": pmagPlotsPlugin,
 };
 
 export function activePlugins(config: NodeConfig | undefined): PluginModule[] {
