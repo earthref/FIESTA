@@ -3,7 +3,13 @@ import pytest
 from fiesta.domain.parse import parse_text
 from fiesta.plugins import active_plugins, all_plugins
 from fiesta.plugins.plateau import identify_plateau, process_plateau_data
-from fiesta.plugins.pmag_plots import PmagPlotsPlugin, compute_plots, dogeo, fisher_mean
+from fiesta.plugins.pmag_plots import (
+    PmagPlotsPlugin,
+    _by_sequence,
+    compute_plots,
+    dogeo,
+    fisher_mean,
+)
 from fiesta.plugins.poles import PolesPlugin
 from fiesta.plugins.rock_mag import (
     RockMagPlugin,
@@ -383,7 +389,7 @@ PMAG_TEXT = "\n>>>>>>>>>>\n".join(
                 },
             ]
             + [
-                # A spreadsheet-mangled `sequence` (9010 -> 901) must not reorder the loop.
+                # Listed from -1 T up, measured (`sequence`) from +1 T down.
                 {
                     "specimen": "D1",
                     "experiment": "D1-HYS",
@@ -453,7 +459,22 @@ def test_pmag_plots_counts_and_data():
 
     (loop,) = plots["hyst"]["loops"]
     assert loop["unit"] == "Am²/kg"
-    assert loop["field"][0] == -1000.0 and len(loop["m"]) == 21
+    assert loop["field"][0] == 1000.0 and loop["field"][-1] == -1000.0 and len(loop["m"]) == 21
+
+
+def test_pmag_plots_sequence_order_repairs_lost_zeros():
+    def order(*sequence):
+        rows = [{"sequence": str(s), "i": i} for i, s in enumerate(sequence)]
+        return [r["i"] for r in _by_sequence(rows)]
+
+    # 9010 saved as 901 (and 15000 as 15) stays between its neighbours.
+    assert order(9008, 9009, 901, 9011, 14999, 15, 15001) == [0, 1, 2, 3, 4, 5, 6]
+    # A loop's first number repaired from the one after it.
+    assert order(1, 11, 12) == [0, 1, 2]
+    # Clean numbers out of file order are sorted.
+    assert order(3, 1, 2) == [1, 2, 0]
+    # Without a sequence on every row, file order.
+    assert [r["i"] for r in _by_sequence([{"sequence": "2", "i": 0}, {"i": 1}])] == [0, 1]
 
 
 def test_pmag_plots_derived_doc_counts(magic_node):
