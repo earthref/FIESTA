@@ -48,22 +48,28 @@ Last updated: 2026-09-24
       `owner_overrides` / `owner_names` / `default_owner` in `config/magic.yaml`, or leave
       them out; a re-run of the sync picks them up incrementally. The list with ids is
       produced by `legacy-inventory` (report `errors`). Unblocks: nothing; parity only.
-- [ ] **ERDA legacy import decisions** (2026-09-29; details in `docs/erda-node.md`
-      "Legacy import", output in the ERDA import worktree's `migration/erda/`).
-      (1) Review `owner_mapping.json` (198 names matched by exact full name).
-      (2) Name the steward account: `default_owner` in `config/erda.yaml` is a
-      `…@placeholder.invalid` placeholder; 160 inventory records depend on it (blank
-      contributor name 45, Kevin Konrad 55, William W Sager 10, …). Optionally map some
-      of the 21 unmatched names with `owner_names` (the file lists same-name candidates
-      and the account at each page's legacy person id). (3) Decide the 258 records with
-      files over 100 MiB (≈122 GB real; 13 TIFFs in records 1601–1706 are over the
-      2 GiB `max_file_bytes` and would be read into memory by `sync-legacy`): download
-      and import them, import metadata only, or leave them on the legacy site.
-      (4) Decide the 151 records whose files the legacy archive has lost (149 are the
-      `10.58052/…` "ArArCALC ERDA Uploader" argon uploads): skip, or import metadata
-      only. (5) Record 2741 is a test record ("1"): exclude it or accept one invalid
-      validation. Then run `fiesta init` for `erda` on dev (the schema does not exist
-      there yet), `sync-legacy … --apply`, and drain the outbox. Unblocks: ERDA import (M5).
+- [ ] **ERDA legacy import: apply** (decisions made 2026-09-29: a steward account,
+      kept with every owner email in the gitignored `migration/erda/owner_map.json`;
+      deferred and lost-file records metadata only; test record 2741 excluded; details
+      in `docs/erda-node.md` "Legacy import"; output in the ERDA import worktree's
+      `migration/erda/`). Re-run `legacy-inventory erda … --max-file-mb 100 --owner-map
+      ../migration/erda/owner_map.json` (reuses the page/file caches; check the report
+      has no `default_owner … not in er_users` error), review `owner_mapping.json` (198 names by exact full name; 21
+      unmatched names → steward, 319 records), then `fiesta init` for `erda` on dev (the
+      schema does not exist there yet), `ensure-owners … --apply`, `sync-legacy … --apply`,
+      and drain the outbox. Unblocks: ERDA import (M5).
+- [ ] **ERDA large files into S3** (after the apply above). 258 records were imported
+      metadata only because their files are listed over 100 MiB; the record/file list is
+      `migration/erda/excluded.json` → `deferred` (329 files). Their listed sizes are
+      unreliable: records 1601–1706 (stereo field images) list sizes 1024× too large, so
+      the real total is ≈122 GB, not the listed ~76 TB, and 13 TIFFs there are really
+      2–3.3 GB — over `legacy.max_file_bytes` (2 GiB) and read whole into memory by
+      `sync-legacy`, so raise that limit on a host with the RAM, or leave those 13 on the
+      legacy site. To transfer: re-run `legacy-inventory erda --max-file-mb 0
+      --max-total-gb 150` (downloads only what is not cached) and `sync-legacy --apply`
+      (adds a revision with the files to each record). The 151 `legacy_missing` records
+      (149 `10.58052/…` "ArArCALC ERDA Uploader" argon uploads, plus 806 and 1842) have
+      no files anywhere we know of; they stay metadata only unless the originals turn up.
 
 ## B — Credentials and access (names only)
 

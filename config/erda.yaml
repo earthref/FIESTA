@@ -103,11 +103,15 @@ legacy:
   max_id: 4900
   concurrency: 4
   users_index: er_users
+  # Owner emails are never checked in: `owner_names` and the steward
+  # (`default_owner`, which must resolve in er_users like any other owner) come
+  # from the gitignored `<out>/owner_map.json` (`--owner-map`).
   owner_names: {}
-  # PLACEHOLDER — the steward account has not been chosen yet. Records that
-  # depend on it fail `sync-legacy` with "owner mapping missing" until it is
-  # replaced by a real er_users email.
-  default_owner: steward-not-yet-chosen@placeholder.invalid
+  # Records with files over the download cap, or with files the legacy archive
+  # has lost, import as metadata only (files rows kept, noted); a later run with
+  # a higher --max-file-mb attaches the deferred files. 2741 is a test record.
+  incomplete_records: metadata
+  exclude_ids: [2741]
 
 # Local fixtures only; never read during normal application startup.
 development:

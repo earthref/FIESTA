@@ -433,6 +433,8 @@ def contribution_text(record: dict, files: list[dict], model: dict, vocab, notes
             row["media_type"] = media_type
         if f.get("size") is not None:
             row["size_bytes"] = str(f["size"])
+        if f.get("description"):
+            row["description"] = _cell(f["description"])
         rows.append(row)
     contribution = {"data_model_version": model["data_model_version"], "description": obj["title"]}
     parsed = ParsedContribution(
@@ -614,8 +616,11 @@ async def build_inventory(
     Nothing is downloaded when `download` is off or the pending downloads are
     estimated (from the sizes the pages list) at over `max_total_bytes`; files
     listed at over `max_file_bytes` are deferred. A record whose files are not all
-    on disk stays out of the inventory: `deferred` (not downloaded yet) or
-    `legacy_missing` (the legacy archive no longer has a file it lists)."""
+    on disk (`deferred`: not downloaded yet; `legacy_missing`: the legacy archive
+    no longer has a file it lists) is left out, or imported as metadata only when
+    `legacy.incomplete_records` is "metadata". `legacy.exclude_ids` are left out.
+    Owners are exact-full-name matches, else `default_owner`, which must itself be
+    an er_users account (the run reports an error otherwise)."""
     cfg = node.legacy
     if cfg is None or cfg.kind != "earthref-cgi":
         raise ValueError(f"{node.node.slug}: legacy.kind is not earthref-cgi")
@@ -726,8 +731,18 @@ async def build_inventory(
         inventory_records, owners, notes = [], {}, {}
         deferred, legacy_missing = {}, {}
         canonical_name = cfg.canonical
+        steward = mapping["default_owner_account"]
+        if cfg.default_owner and steward is None:
+            report["errors"].append(
+                {"id": None, "error": f"default_owner {cfg.default_owner!r} is not in er_users"}
+            )
+        excluded = set(cfg.exclude_ids)
+        report["excluded_ids"] = sorted(excluded & set(records))
+        metadata_only: list[int] = []
         for cid, r in records.items():
             name = (r["contributor"] or {}).get("name", "")
+            if cid in excluded:
+                continue
             if cid in failed:
                 report["errors"].append({"id": cid, "error": "; ".join(failed[cid])})
                 continue
@@ -738,6 +753,7 @@ async def build_inventory(
                 if cached is None:
                     target = legacy_missing if files.missing(key) else deferred
                     target.setdefault(cid, []).append(f"{f['name']} [{f['size_text']}]")
+                    file_rows.append({"name": attachment_name(f["name"]), "size": None})
                     continue
                 attached[attachment_name(f["name"])] = {
                     "source": f"files/{key}",
@@ -745,18 +761,37 @@ async def build_inventory(
                 }
                 file_rows.append({"name": attachment_name(f["name"]), "size": cached["size"]})
             if cid in legacy_missing or cid in deferred:
-                continue
+                if cfg.incomplete_records == "exclude":
+                    continue
+                # Metadata only: no attachments; every files row says why its file is absent.
+                attached = {}
+                lost = cid in legacy_missing
+                for row, f in zip(file_rows, r["files"], strict=True):
+                    key = f"{cid}/{attachment_name(f['name'])}"
+                    if files.missing(key):
+                        row["description"] = "Not imported: lost from the legacy ERDA archive."
+                    elif lost:
+                        row["description"] = (
+                            "Not imported: the record is metadata only because another of "
+                            "its files is lost from the legacy ERDA archive."
+                        )
+                    else:
+                        row["description"] = (
+                            "Not imported yet: to be transferred from the legacy ERDA "
+                            f"archive (listed as {f['size_text']})."
+                        )
+                metadata_only.append(cid)
             if name in mapping["matched"]:
                 account = mapping["matched"][name]["account"]
-                owner_email = account["email"]
-                owners.setdefault(owner_email, account | {"contributions": []})
-                owners[owner_email]["contributions"].append(cid)
-            elif cfg.default_owner:
-                owner_email = cfg.default_owner.lower()
+            elif steward is not None:
+                account = steward
                 report["default_owner_records"].append(cid)
             else:
                 report["errors"].append({"id": cid, "error": f"no account for {name!r}"})
                 continue
+            owner_email = account["email"]
+            owners.setdefault(owner_email, account | {"contributions": []})
+            owners[owner_email]["contributions"].append(cid)
             canonical = canonical_name.format(slug=node.node.slug, id=cid)
             text = contribution_text(r, file_rows, model, vocab, notes).encode()
             target = out_dir / "records" / str(cid) / canonical
@@ -815,12 +850,21 @@ async def build_inventory(
             )
         )
         (out_dir / "notes.json").write_text(json.dumps(notes, indent=2, sort_keys=True))
+        # Files not in the inventory: `deferred` (to be downloaded and re-synced later,
+        # which turns a metadata-only record into a full one) and `legacy_missing`.
         (out_dir / "excluded.json").write_text(
             json.dumps({"deferred": deferred, "legacy_missing": legacy_missing}, indent=1)
         )
         report["deferred_records"] = len(deferred)
         report["legacy_missing_records"] = len(legacy_missing)
         report["inventory_records"] = len(inventory_records)
+        report["metadata_only_records"] = len(metadata_only)
+        report["records_with_attachments"] = sum(
+            1 for rec in inventory_records if len(rec["revisions"][0]["files"]) > 1
+        )
+        report["attachments"] = sum(
+            len(rec["revisions"][0]["files"]) - 1 for rec in inventory_records
+        )
         report["owners"] = {
             "matched_names": len(mapping["matched"]),
             "unmatched_names": {n: len(e["records"]) for n, e in mapping["unmatched"].items()},
