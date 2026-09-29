@@ -165,26 +165,31 @@ async def test_owner_mapping_exact_full_name_only():
 @pytest.mark.asyncio
 async def test_inventory_metadata_only_exclusions_and_steward(erda_node, tmp_path):
     """From a warm cache (no network): a complete record, a record whose file the
-    legacy archive lost (metadata only), an excluded id, the steward as owner."""
-    legacy = erda_node.legacy.model_copy(
-        update={
-            "max_id": 3,
-            "exclude_ids": [3],
-            "incomplete_records": "metadata",
-            "default_owner": "steward@example.test",
-        }
+    legacy archive lost (metadata only), an excluded id, and owners from the
+    per-run `--owner-map` (a mapped name and the steward), merged as the CLI does."""
+    owner_map = {
+        "owner_names": {"Team Account": "mapped@example.test"},
+        "default_owner": "steward@example.test",
+    }
+    legacy = erda_node.legacy.with_owner_map(owner_map).model_copy(
+        update={"max_id": 4, "exclude_ids": [3], "incomplete_records": "metadata"}
     )
     node = erda_node.model_copy(update={"legacy": legacy})
     pages = tmp_path / "pages"
     pages.mkdir()
     base = {"Data Type": "pdf", "Expert Level": "Graduate School", "File Size": "1 KB - 1 file"}
-    for cid, name, person in [(1, "a.pdf", "Sylvia T Cole"), (2, "b.pdf", "Nobody"), (3, "c", "")]:
+    for cid, name, person in [
+        (1, "a.pdf", "Sylvia T Cole"),
+        (2, "b.pdf", "Nobody"),
+        (3, "c", ""),
+        (4, "Not available", "Team Account"),
+    ]:
         contributor = f"<b><a href=erml.cgi?n={cid}>{person}</a></b>"
         rows = base | {"File Name": name, "Contributor": contributor}
         (pages / f"{cid}.html").write_text(_page(cid, rows))
     seen = "2026-09-28T00:00:00+00:00"
     (pages / "index.json").write_text(
-        json.dumps({str(i): {"live": True, "seen": seen} for i in (1, 2, 3)})
+        json.dumps({str(i): {"live": True, "seen": seen} for i in (1, 2, 3, 4)})
     )
     (tmp_path / "files" / "1").mkdir(parents=True)
     (tmp_path / "files" / "1" / "a.pdf").write_bytes(b"%PDF")
@@ -199,17 +204,19 @@ async def test_inventory_metadata_only_exclusions_and_steward(erda_node, tmp_pat
     client = FakeUsers(
         [
             _user(1, "Sylvia T", "Cole", "cole@example.test"),
+            _user(8, "Some", "Admin", "mapped@example.test"),
             _user(9, "Data", "Steward", "steward@example.test"),
         ]
     )
     report = await build_inventory(node, tmp_path, client=client, http=object())
     assert report["errors"] == []
     assert report["excluded_ids"] == [3]
-    assert (report["inventory_records"], report["metadata_only_records"]) == (2, 1)
+    assert (report["inventory_records"], report["metadata_only_records"]) == (3, 1)
     assert report["default_owner_records"] == [2]
     inventory = load_inventory(tmp_path / "inventory.json")
     by_id = {r.id: r for r in inventory.records}
     assert by_id[1].owner_email == "cole@example.test"
+    assert by_id[4].owner_email == "mapped@example.test"  # owner_names from the owner map
     assert set(by_id[1].revisions[0].files) == {"erda_contribution_1.txt", "a.pdf"}
     assert by_id[2].owner_email == "steward@example.test"
     assert set(by_id[2].revisions[0].files) == {"erda_contribution_2.txt"}
@@ -219,4 +226,10 @@ async def test_inventory_metadata_only_exclusions_and_steward(erda_node, tmp_pat
     assert row["description"] == "Not imported: lost from the legacy ERDA archive."
     assert validate_contribution(node, parse_text(text), "1.0").errors == []
     owners = json.loads((tmp_path / "owners.json").read_text())
-    assert [o["email"] for o in owners] == ["cole@example.test", "steward@example.test"]
+    assert [o["email"] for o in owners] == [
+        "cole@example.test",
+        "mapped@example.test",
+        "steward@example.test",
+    ]
+    mapping = json.loads((tmp_path / "owner_mapping.json").read_text())
+    assert mapping["matched"]["Team Account"]["via"] == "owner_names"
