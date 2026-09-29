@@ -112,7 +112,9 @@ async def sync_inventory(node, path, *, apply=False):
                             select(AuditEvent).where(
                                 AuditEvent.contribution_id == c.id,
                                 AuditEvent.created_at > checkpoint.updated_at,
-                                AuditEvent.operation.not_in(["import", "legacy-metadata"]),
+                                AuditEvent.operation.not_in(
+                                    ["import", "legacy-metadata", "stamp-ids"]
+                                ),
                             )
                         )
                     ).first()

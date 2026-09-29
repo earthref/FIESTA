@@ -222,3 +222,52 @@ async def revision_file(session, node, contribution, name=None, revision_id=None
     if digest(raw) != entry["sha256"]:
         raise RuntimeError("stored file checksum does not match revision")
     return raw
+
+
+async def stamp_ids_revision(session, node, contribution, *, apply=True):
+    """Backfill a stored canonical file that predates `stamp_ids`: save it again
+    (a new revision, history kept) so it gains its download-only identifiers.
+    A published contribution's pointer and a legacy-import checkpoint follow the
+    new head, so the contribution stays published and re-syncable. Returns True
+    when the file needs (or received) the identifiers."""
+    from fiesta.db.models import LegacyImport
+    from fiesta.domain.parse import ParseError, parse_text, stamp_ids
+    from fiesta.domain.validate import guess_data_model_version
+
+    head = contribution.head_revision
+    if not head or contribution.deleted_at:
+        return False
+    raw = await revision_file(session, node, contribution)
+    try:
+        text = raw.decode("utf-8")
+        model = node.load_data_model(guess_data_model_version(node, parse_text(text)))
+    except (ParseError, UnicodeDecodeError):
+        return False  # stored as sent; the validation report already says why
+    if stamp_ids(text, contribution.id, model) == text:
+        return False
+    if not apply:
+        return True
+    published = contribution.published_revision == head
+    name = (await session.get(Revision, head)).snapshot["canonical"]
+    revision = await save_revision(
+        session,
+        node,
+        contribution,
+        contribution.contributor_id,
+        expected_revision=head,
+        request_key=f"stamp-ids:{head}",
+        files={name: raw},
+        canonical=name,
+        operation="stamp-ids",
+        allow_published=True,
+    )
+    if published:
+        contribution.published_revision = revision.id
+    checkpoints = await session.execute(
+        select(LegacyImport).where(
+            LegacyImport.contribution_id == contribution.id, LegacyImport.revision_id == head
+        )
+    )
+    for checkpoint in checkpoints.scalars():
+        checkpoint.revision_id = revision.id
+    return True

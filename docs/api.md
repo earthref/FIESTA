@@ -383,7 +383,8 @@ other table that the data model gives the columns, `contribution_id` and a
 `row_id` numbered 1..N across all the contribution's rows in file order.
 Supplied values are overwritten, so a re-uploaded download is renumbered. A
 file that does not parse is stored as sent. Both columns stay out of
-`summary._all`.
+`summary._all`. Files saved earlier are backfilled by `fiesta stamp-ids`
+([phase-m.md](phase-m.md#existing-fiesta-data-and-legacy-migration)).
 
 ### Workspaces (`/v2/{repository}/workspaces`, Bearer or Basic)
 

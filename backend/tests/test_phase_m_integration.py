@@ -411,6 +411,68 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_stamp_ids_backfill(tmp_path, monkeypatch):
+    """A file stored before saves wrote its identifiers gains them in a new
+    revision; a published import stays published and re-syncable."""
+    from fiesta.db.models import Contribution
+    from fiesta.db.session import get_sessionmaker
+    from fiesta.domain import parse
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.services.legacy import sync_inventory
+    from fiesta.services.revisions import digest, revision_file, stamp_ids_revision
+    from fiesta.services.seed import require_local
+
+    require_local()
+    node = get_deployment().node_for("magic")
+    raw = (node.base_dir / "magic/seeds/valid.txt").read_text()
+    legacy_id = 100000 + int(uuid.uuid4().hex[:5], 16)
+    (tmp_path / "source.txt").write_text(raw)
+    record = {
+        "id": legacy_id,
+        "owner_email": "developer@example.test",
+        "created_at": "2020-01-01T00:00:00Z",
+        "published": True,
+        "revisions": [
+            {
+                "key": "1",
+                "canonical": "source.txt",
+                "timestamp": "2020-01-01T00:00:00Z",
+                "files": {"source.txt": {"source": "source.txt", "sha256": digest(raw.encode())}},
+            }
+        ],
+    }
+    inventory = {"format": 1, "node": "magic", "source_id": str(uuid.uuid4()), "records": [record]}
+    manifest = tmp_path / "inventory.json"
+    manifest.write_text(json.dumps(inventory))
+    stamp = parse.stamp_ids
+    monkeypatch.setattr(parse, "stamp_ids", lambda text, cid, model: text)  # an earlier import
+    assert (await sync_inventory(node, manifest, apply=True))["applied"] == 1
+    monkeypatch.setattr(parse, "stamp_ids", stamp)
+
+    async with get_sessionmaker("magic")() as session:
+        c = await session.get(Contribution, legacy_id)
+        head = c.head_revision
+        assert c.published_revision == head
+        assert await stamp_ids_revision(session, node, c, apply=False)
+        assert c.head_revision == head
+        assert await stamp_ids_revision(session, node, c)
+        await session.commit()
+    async with get_sessionmaker("magic")() as session:
+        c = await session.get(Contribution, legacy_id)
+        assert c.head_revision != head and c.published_revision == c.head_revision
+        text = (await revision_file(session, node, c)).decode()
+        assert text == stamp(raw, legacy_id, node.load_data_model("3.0")) != raw
+        assert (await revision_file(session, node, c, revision_id=head)).decode() == raw
+        assert not await stamp_ids_revision(session, node, c)
+
+    assert (await sync_inventory(node, manifest, apply=True))["unchanged"] == 1
+    record["latest"] = False
+    manifest.write_text(json.dumps(inventory))
+    result = await sync_inventory(node, manifest, apply=True)
+    assert result["applied"] == 1, result
+
+
+@pytest.mark.asyncio
 async def test_real_worker_process(tmp_path):
     """Exercise the actual worker/outbox subprocess rather than invoking drain."""
     import sys

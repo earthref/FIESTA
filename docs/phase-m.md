@@ -140,6 +140,13 @@ FIESTA database before Phase M, run `fiesta backfill-revisions`, then
 `fiesta drain-outbox` and `fiesta verify-storage`. This preserves the available
 canonical file as an initial revision; it does not invent earlier edits.
 
+Files stored before every save wrote the download-only `contribution_id` / `row_id`
+(PR #69, 2026-09-28) gain them with `fiesta stamp-ids` (a dry run; `--apply`
+writes), then `fiesta drain-outbox`. Each changed contribution gets a new `stamp-ids`
+revision and keeps the old one; a published contribution's `published_revision` and
+its legacy-import checkpoint move to the new head, so it stays published and a later
+`sync-legacy` still applies (the importer treats `stamp-ids` like its own events).
+
 The legacy importer consumes explicit JSON inventory snapshots. Generate the schema
 from `fiesta.services.legacy.Inventory.model_json_schema()`. A minimal record is:
 
