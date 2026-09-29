@@ -218,7 +218,7 @@ needs `publish.api`.
 SearchPage = {
   "total": 1234,
   "results": [ { ...OpenSearch _source... } ],
-  "aggregations": {"<facet>": [{"key": "...", "doc_count": 1}]} | null,
+  "aggregations": {"<facet>": [{"key": "...", "doc_count": 1, "rows_count": 4?, "mapped_count": 1?}]} | null,
   "rows_total": 5678 | null,
   "mapped_total": 1200 | null
 }
@@ -227,7 +227,11 @@ SearchPage = {
 With `totals=true`, `rows_total` is the matches' rows (the level's `count_field`
 summed, a doc without it counting as one) and `mapped_total` the matches with a
 position (levels whose `geo` is true): the search page's Rows and Map sub-tab
-counts. Otherwise both are null.
+counts. Otherwise both are null. Each facet bucket likewise carries
+`rows_count` (levels with a `count_field`) and, with `totals` on a `geo` level,
+`mapped_count`, so the sidebar's facet counts follow the active sub-tab; a
+plugin view's sub-tab takes its facets from a `facets=true` search of its own
+table.
 
 ```json
 MapPoints = {

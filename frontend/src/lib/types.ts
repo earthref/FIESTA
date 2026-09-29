@@ -126,6 +126,10 @@ export interface TokenResponse {
 export interface FacetBucket {
   key: string;
   doc_count: number;
+  /** The value's rows (levels with a count field) and, with `totals`, its
+   * positioned docs: the sidebar counts follow the Rows and Map sub-tabs. */
+  rows_count?: number;
+  mapped_count?: number;
 }
 
 /**
