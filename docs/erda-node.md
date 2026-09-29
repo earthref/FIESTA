@@ -42,7 +42,7 @@ fields a future editor should render as a textarea rather than an input.
 | Contributor | `contribution.contributor` (workflow metadata, written on activation) |
 | Source / Source Web Site | `objects.citations` + `objects.source_url` |
 | Description / Instructions | `objects.description` / `objects.instructions` |
-| Keywords, Parameters, Materials, Samples | the same four `List` columns on `objects` |
+| Keywords, Parameters, Materials, Samples, Techniques | the same five `List` columns on `objects` (`techniques` added 2026-09-28 for the legacy import) |
 | Location | `objects.continents_oceans`, `countries`, `state_provinces`, `regions`, `oceans_seas`, `locations` (free text), `lat`/`lon`, `lat_s`/`lat_n`/`lon_w`/`lon_e` |
 | Geological Age Range and Timescale | `objects.age_high`/`age_low`/`age_unit` + `timescale_eon`…`timescale_stage` |
 | Project (group ⇒ project ⇒ web site) | `objects.project`, `project_group`, `project_url` |
@@ -91,9 +91,78 @@ card would render nothing but "No … Data".
   so a `range` filter on them would compare lexically. Numeric age-range
   search needs an explicit mapping for these fields in
   `fiesta/search/index.py` — a core change, deliberately not made here.
-- **Object bytes.** The data model describes the files; actually storing and
+- **Object bytes.** The data model describes the files; the legacy import
+  stores each object's files as the revision's non-canonical files, but
   serving per-object downloads (rather than the canonical contribution file)
-  is a storage/API concern, not a data-model one.
-- **Legacy import.** No migration from the `er_*` schema yet. Sampling
-  `earthref.org/ERDA/{id}/` over ids 1–4900 finds roughly 2,600 live
-  records (IDs are sparse; nothing resolves above ~4,300).
+  is still a storage/API concern, not a data-model one.
+
+## Legacy import
+
+`fiesta legacy-inventory erda --out ../migration/erda` (run through
+`make fiesta ENV_FILE=… NODE=erda`), driven by the `legacy:` block in
+`erda.yaml` (`kind: earthref-cgi`, `fiesta/services/legacy_cgi.py`), writes an
+inventory that `fiesta sync-legacy` accepts. It is read-only against the legacy
+side.
+
+**Source.** No structured source is reachable from FIESTA's credentials: the
+`fiesta` role on the legacy OpenSearch cluster reads only `er_users` (every
+other index name, including `erda` and `er_*`, answers 403) and the FIESTA
+Postgres has no `er_*` tables. So the reader crawls the public record pages
+`earthref.org/ERDA/<id>/` for ids 1–`max_id` (4900) and downloads each file
+through the page's `z-download.cgi` links (a single-file record's
+`download:<id>/` link redirects to its file). Everything is cached under the
+output directory (`pages/`, `files/`), so a re-run resumes. As of 2026-09-28:
+**2,569 live records, ids 1–2783** (sparse; nothing above 2783), 3,983 files.
+
+**Mapping.** One contribution per record, with the legacy id as the
+contribution id, published and latest; one `objects` row (object = the legacy
+id) and one `files` row per file (with its real size); the files are the
+revision's attachments next to `erda_contribution_<id>.txt`. Details:
+
+- The pages carry **no dates**, so `created_at`/`activated_at` are the time the
+  page was first seen live (kept in `pages/index.json`, stable across re-runs).
+- **Location** `DMS [- DMS] ▪ DMS [- DMS], term, …` gives `lat`/`lon` or the
+  `lat_s`/`lat_n`/`lon_w`/`lon_e` box; each term goes to the first of
+  `continents_oceans`, `oceans_seas`, `countries`, `state_provinces`,
+  `regions` whose vocabulary knows it, else to `locations`.
+- **Geological Age** `high - low unit, name, …`: numbers to
+  `age_high`/`age_low`/`age_unit`, names to the timescale column whose
+  vocabulary knows them.
+- **Source**: a reference line goes to `citations`, a bare URL line to
+  `source_url`. A record with no file (File Name "Not available", 26 records,
+  mostly `web link`) gets `external_url` from it.
+- Contributor → the contribution owner (below); Resource Matrix →
+  `education_topics`; `Project -- group -- name` → `project`/`project_group`;
+  a trailing version token of Computer Program → `computer_program_version`.
+- The text format splits `List` cells on `:`, so a colon inside an item
+  becomes ` -`; UTF-8 stored as Latin-1 (`â€œ`) is repaired; long text is
+  flattened to one line.
+- **Listed file sizes are unreliable.** Records 1601–1706 (a batch of stereo
+  field images) list sizes 1024× too large ("527.63 MB" for a 540,296-byte
+  PNG; their TIFFs are really up to ~3.3 GB, over `max_file_bytes`); the pages'
+  total of 76.5 TB is really ≈129 GB. `--max-file-mb` defers files listed
+  above a size; `--max-total-gb` (default 20) refuses a larger download.
+- 151 records list files the archive no longer has ("Missing file"): 149 are
+  the `10.58052/…` argon-data uploads (ids 2567–2715, contributor "ArArCALC
+  ERDA Uploader"), plus 806 and 1842. Records with a missing or deferred file
+  stay out of the inventory (`excluded.json`).
+
+**First run (2026-09-29, files listed ≤ 100 MiB).** 2,160 records in the
+inventory (2,995 attachments, 7.07 GB); 258 records deferred (329 larger
+files: ≈47 GB, plus ≈75 GB real for the 1601–1706 batch, 13 files over
+2 GiB); 151 legacy-missing. 198 contributor names matched 195 accounts (all
+already on dev); 21 names are unmatched, 160 inventory records depend on the
+placeholder `default_owner`. Every generated file validates except record 2741
+(a test record titled "1", data type "Not specified"). A `sync-legacy` dry run
+against a fresh local `erda` schema plans 2,000 records and reports exactly the
+160 `default_owner` records as "owner mapping missing".
+
+**Owners.** The contributor display name maps to an `er_users` account by
+**exact full name** (given + family) only; several documents with one email
+count as one account. `owner_mapping.json` lists every name with its records,
+the matched account, and, for unmatched names, same-name or case-variant
+candidates plus the account at the page's legacy person id (`erml.cgi?n=`,
+which is the `er_users` id) as a hint that is never applied. `owner_names`
+overrides a name; every other unmatched record goes to `default_owner`, which
+is a placeholder (`…@placeholder.invalid`) until a steward account is chosen,
+so those records fail `sync-legacy` with "owner mapping missing".

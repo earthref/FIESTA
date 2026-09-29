@@ -34,6 +34,22 @@ Last updated: 2026-09-24
       `owner_overrides` / `owner_names` / `default_owner` in `config/magic.yaml`, or leave
       them out; a re-run of the sync picks them up incrementally. The list with ids is
       produced by `legacy-inventory` (report `errors`). Unblocks: nothing; parity only.
+- [ ] **ERDA legacy import decisions** (2026-09-29; details in `docs/erda-node.md`
+      "Legacy import", output in the ERDA import worktree's `migration/erda/`).
+      (1) Review `owner_mapping.json` (198 names matched by exact full name).
+      (2) Name the steward account: `default_owner` in `config/erda.yaml` is a
+      `…@placeholder.invalid` placeholder; 160 inventory records depend on it (blank
+      contributor name 45, Kevin Konrad 55, William W Sager 10, …). Optionally map some
+      of the 21 unmatched names with `owner_names` (the file lists same-name candidates
+      and the account at each page's legacy person id). (3) Decide the 258 records with
+      files over 100 MiB (≈122 GB real; 13 TIFFs in records 1601–1706 are over the
+      2 GiB `max_file_bytes` and would be read into memory by `sync-legacy`): download
+      and import them, import metadata only, or leave them on the legacy site.
+      (4) Decide the 151 records whose files the legacy archive has lost (149 are the
+      `10.58052/…` "ArArCALC ERDA Uploader" argon uploads): skip, or import metadata
+      only. (5) Record 2741 is a test record ("1"): exclude it or accept one invalid
+      validation. Then run `fiesta init` for `erda` on dev (the schema does not exist
+      there yet), `sync-legacy … --apply`, and drain the outbox. Unblocks: ERDA import (M5).
 
 ## B — Credentials and access (names only)
 
