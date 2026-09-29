@@ -19,6 +19,19 @@ async def load_visible_parsed(
 ) -> tuple[Contribution, ParsedContribution]:
     """Fetch a contribution's parsed canonical file, honoring the same
     visibility rules as the core API (activated, or correct private key)."""
+    contribution = await load_visible_contribution(session, node, contribution_id, private_key)
+    raw = await load_file(node, contribution.id, contribution.filename)
+    return contribution, parse_text(raw.decode("utf-8", errors="replace"))
+
+
+async def load_visible_contribution(
+    session: AsyncSession,
+    node: NodeConfig,
+    contribution_id: int,
+    private_key: str | None = None,
+) -> Contribution:
+    """The contribution row, if its file is visible to this request (the check
+    load_visible_parsed makes, for a route that caches what it reads)."""
     contribution = await session.get(Contribution, contribution_id)
     if (
         contribution is None
@@ -34,8 +47,7 @@ async def load_visible_parsed(
             supplied = None
         if supplied != contribution.private_key:
             raise HTTPException(404, f"contribution {contribution_id} not found")
-    raw = await load_file(node, contribution.id, contribution.filename)
-    return contribution, parse_text(raw.decode("utf-8", errors="replace"))
+    return contribution
 
 
 def to_float(value) -> float | None:

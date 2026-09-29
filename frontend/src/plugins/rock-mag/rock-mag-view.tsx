@@ -1,10 +1,10 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
+import { type BrushRange, EChart, type EChartsOption } from "../../components/echart";
 import { ErrorMessage } from "../../components/error-message";
 import { PageSpinner } from "../../components/ui/spinner";
 import { api } from "../../lib/api";
 import { cx } from "../../lib/utils";
-import { type BrushRange, EChart, type EChartsOption } from "./echart";
 import {
   axisName,
   COLOR_BY,

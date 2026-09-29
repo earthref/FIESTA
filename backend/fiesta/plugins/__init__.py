@@ -20,6 +20,7 @@ from fiesta.plugins.base import FiestaPlugin
 def _registry() -> dict[str, FiestaPlugin]:
     from fiesta.plugins.depth_plot import DepthPlotPlugin
     from fiesta.plugins.plateau import PlateauPlugin
+    from fiesta.plugins.pmag_plots import PmagPlotsPlugin
     from fiesta.plugins.poles import PolesPlugin
     from fiesta.plugins.record_cards import RecordCardsPlugin
     from fiesta.plugins.rock_mag import RockMagPlugin
@@ -27,6 +28,7 @@ def _registry() -> dict[str, FiestaPlugin]:
     plugins = [
         PolesPlugin(),
         RockMagPlugin(),
+        PmagPlotsPlugin(),
         DepthPlotPlugin(),
         PlateauPlugin(),
         RecordCardsPlugin(),

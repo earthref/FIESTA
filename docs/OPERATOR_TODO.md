@@ -160,6 +160,20 @@ Last updated: 2026-09-24
   (e.g. on dev after the rebuild): the panel set, and the rule that reads a
   contribution's coercivities/MDFs as mT when their median is above 1 T.
 
+## 2026-09-28 — interactive PmagPy plots (`pmag-plots`)
+
+- [ ] **Rebuild MagIC's search index once this is deployed** (`fiesta rebuild
+  --yes` for magic, dev and production; one rebuild covers the items above).
+  The contribution modal's plot tabs are counted from `pmag_plots` docs, which
+  exist only for contributions processed after deploy until then, so older
+  contributions show no plot tabs.
+- [ ] **Have a paleomagnetist look over the plot tabs** on dev after the
+  rebuild (Zijderveld axis convention, Arai pTRM-check drawing, which levels
+  Equal Area offers), and choose what comes next: VGP Map and Anisotropy
+  (the other legacy plot types), plots in the search view across
+  contributions, or PmagPy itself on the backend for interpretation
+  statistics (it would add matplotlib, pandas and scipy to the API).
+
 ## Done
 
 _(none yet)_

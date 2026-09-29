@@ -1,6 +1,7 @@
 import { CustomChart, LineChart, ScatterChart } from "echarts/charts";
 import {
   BrushComponent,
+  DataZoomInsideComponent,
   GridComponent,
   MarkLineComponent,
   ToolboxComponent,
@@ -15,6 +16,7 @@ echarts.use([
   LineChart,
   ScatterChart,
   BrushComponent,
+  DataZoomInsideComponent,
   GridComponent,
   MarkLineComponent,
   ToolboxComponent,

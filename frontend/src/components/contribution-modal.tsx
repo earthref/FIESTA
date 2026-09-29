@@ -6,7 +6,7 @@ import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
 import type { NodeConfig, SearchLevel, SearchPage, SearchResult } from "../lib/types";
 import { cx, formatNumber, getPath, singularize } from "../lib/utils";
-import { pluginContributionTabs } from "../plugins";
+import { type ContributionTab, pluginContributionTabs, type TabCountQuery } from "../plugins";
 import { ErrorMessage } from "./error-message";
 import { type ApiMapPoint, type MapPoint, toMapPoint } from "./map/map-points";
 import { citationOf, DefinitionTable, firstString, formatDateLL } from "./result-item";
@@ -241,6 +241,18 @@ function ModalBody({
     const query = countQueries[countTables.indexOf(table)];
     return { count: totalOf(query?.data), isLoading: query?.isPending ?? false };
   };
+  // Plugin tabs counted by a query of their own.
+  const queried = plugins.flatMap((tab) => (tab.countQuery ? [tab] : []));
+  const queriedCounts = useQueries({
+    queries: queried.map((tab) => ({
+      ...(tab.countQuery?.(id, privateKey) as TabCountQuery),
+      staleTime: 60_000,
+    })),
+  });
+  const queriedCountOf = (tab: ContributionTab) => {
+    const query = queriedCounts[queried.indexOf(tab)];
+    return { count: query?.data as number | undefined, isLoading: query?.isPending ?? false };
+  };
 
   // The Map tab plots the levels with positions that have rows here.
   const geoLevels = levels.filter((level) => level.geo);
@@ -308,7 +320,11 @@ function ModalBody({
     render: () => <MapPanel layers={mapLayers} initial={mapDefault?.level.table} />,
   });
   for (const plugin of plugins) {
-    const counted = plugin.countTable ? countOf(plugin.countTable) : undefined;
+    const counted = plugin.countTable
+      ? countOf(plugin.countTable)
+      : plugin.countQuery
+        ? queriedCountOf(plugin)
+        : undefined;
     pushIfAny({
       key: plugin.key,
       label: plugin.label,

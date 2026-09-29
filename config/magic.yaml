@@ -140,7 +140,7 @@ plugins:
     source_table: specimens
 
 features:
-  plugins: [poles, rock-mag]
+  plugins: [poles, rock-mag, pmag-plots]
   # Home page content (legacy client/modules/magic/components/home.jsx + home_news.jsx).
   home:
     # `ui nine cards` resource row: Semantic icon names; `to` = SPA route, `href` = external.
