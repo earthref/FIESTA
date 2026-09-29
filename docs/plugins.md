@@ -125,9 +125,10 @@ live under `src/plugins/<name>/` and activate only when the name appears in
   checks, and the published interpretation's slope over its steps times its
   correction factors (on contribution 20557 it reproduces every `int_abs` to
   within 1%). Equal Area also plots the sites of each location and the
-  samples and specimens of each site, with Fisher means. Rows plot in file
-  order — `sequence` is not trusted, as spreadsheets truncated some (9010 →
-  901). `summary.pmag_plots` of one `pmag_plots` doc per contribution holds
+  samples and specimens of each site, with Fisher means. A hysteresis loop
+  plots in `sequence` order (file order when a row has none), after
+  restoring numbers that lost their trailing zeros in a spreadsheet (…9009,
+  901, 9011… — contributions 20340 and 20710); the other plots in file order. `summary.pmag_plots` of one `pmag_plots` doc per contribution holds
   the counts; `GET /v2/{node}/plugins/pmag-plots/contributions/{id}/{kind}`
   (`demag`, `eqarea`, `arai`, `hyst`) serves the plot data, parsed once per
   contribution revision and cached. UI: a filterable grid of echarts plots

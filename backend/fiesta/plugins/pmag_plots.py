@@ -146,10 +146,29 @@ def _any_prefix(codes: frozenset[str], prefixes: tuple[str, ...]) -> bool:
     return any(c.startswith(prefixes) for c in codes)
 
 
-# Measurements are plotted in the order the file lists them, which is the order
-# they were measured: `sequence` and `treat_step_num` are not trusted to reorder
-# them, as some files' numbers lost trailing zeros in a spreadsheet (9010
-# became 901), which would scramble a hysteresis loop.
+# Demagnetization and Thellier steps are plotted in the order the file lists
+# them; a hysteresis loop in `sequence` order (see hysteresis_loops).
+
+
+def _by_sequence(rows: list[dict]) -> list[dict]:
+    """Rows in `sequence` order when every row has one, else as listed (a
+    stable sort, so repeated numbers keep their file order).
+
+    Some files' numbers lost their trailing zeros in a spreadsheet (…9009,
+    901, 9011… and 1500 as 15): a number that times 10, 100, … is exactly one
+    more than the row before (one less than the row after, for the first) is
+    read as that number."""
+    keys = [_num(r, "sequence") for r in rows]
+    if any(k is None for k in keys):
+        return rows
+    fixed: list[float] = []
+    for key in keys:
+        assert key is not None
+        expected = fixed[-1] + 1 if fixed else (keys[1] or 0) - 1 if len(keys) > 1 else key
+        if key != expected:
+            key = next((key * 10**k for k in range(1, 7) if key * 10**k == expected), key)
+        fixed.append(key)
+    return [r for _, r in sorted(zip(fixed, rows, strict=True), key=lambda kr: kr[0])]
 
 
 def _moment_column(rows: list[dict]) -> str | None:
@@ -580,7 +599,7 @@ def hysteresis_loops(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[
         column = _moment_column(rows)
         if column is None:
             continue
-        rows = [r for r in rows if _num(r, column) is not None]
+        rows = [r for r in _by_sequence(rows) if _num(r, column) is not None]
         if len(rows) < 10:
             continue
         fields = [_num(r, "meas_field_dc") or 0.0 for r in rows]
