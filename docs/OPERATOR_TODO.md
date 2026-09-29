@@ -19,15 +19,29 @@ Last updated: 2026-09-24
       as a proxy change (deployment.md) — confirm or change. Unblocks: E4.
 - [ ] **KdD legacy ownership.** 256 of 264 KdD contributions were bulk-loaded with only
       the display name "Roger Nielsen" and no handle; the shared user index has one
-      matching account (`rnielsen`, nielsenr@geo.oregonstate.edu). Approve adding
-      `owner_names: {"Roger Nielsen": nielsenr@geo.oregonstate.edu}` to `config/kdd.yaml`
-      so all 264 import; otherwise only the 8 with handles do. Unblocks: KdD import (M5).
-- [ ] **Which CDR is real.** Legacy has `cdr` (alias of `cdr-2`: 58 contributions, data
-      model 1.0, what the private workspace writes to; matches FIESTA's CDR config) and
-      `cdr-3` (665 contributions, model 3.0, bulk-loaded 2025-09-16; the checked-out search
-      page defaults to it). Ids overlap with different content, and FIESTA has no CDR 3.0
-      data model. Choose one; `cdr-3` first needs the 3.0 model converted from the legacy
-      repo. CDR has no S3 buckets, so every record exports from the index. Unblocks: CDR import (M5).
+      matching account (`rnielsen`). Approve mapping it with
+      `{"owner_names": {"Roger Nielsen": "<that account's email>"}}` in the gitignored
+      `migration/kdd/owner_map.json` (`legacy-inventory --owner-map`; owner emails never
+      go in checked-in config) so all 264 import; otherwise only the 8 with handles do.
+      Unblocks: KdD import (M5).
+- [x] **Which CDR is real.** Decided 2026-09-28: import `cdr-3` only (665 contributions,
+      bulk-loaded 2025-09-16, what the legacy search page shows). The 58 contributions in
+      the `cdr` alias (`cdr-2`, model 1.0, ids overlapping with different content) are left
+      behind. No CDR 3.0 model exists anywhere, so FIESTA CDR stays at 1.0: `1.0.json` is
+      extended with every table and column cdr-3 carries (only `sections.label` was
+      missing), and `legacy.data_model_version: "1.0"` in `config/cdr.yaml` imports every
+      record as 1.0. CDR has no S3 buckets, so every record exports from the index. The
+      contributor handle on every cdr-3 record is `cdr` (no account); decided 2026-09-29
+      they go to the OSU-MGR steward account via `owner_handles` in the gitignored
+      `migration/cdr/owner_map.json`. Unblocks: CDR import (M5).
+- [ ] **CDR: the 665 cdr-3 contributions import invalid against 1.0** (decided
+      2026-09-29: import as is; 1.0's `required()` and longitude rules unchanged). The
+      2025 bulk load never filled required values: `measurements.experiment`, `quality`,
+      `method_codes`, `citations` (all 309,650 rows); `sections.type` (2,769 rows);
+      `contribution.lab_names` (665); `cores.method` (664). 561 cores give longitude
+      as −180..180 where 1.0 allows 0..360; contribution 88 has no `lat`/`lon`. Decide
+      per cause: fill values (a new version of each contribution), relax the rule in the
+      model, or leave them flagged. Unblocks: nothing; CDR data quality only.
 - [ ] **MagIC contributions with no owner account.** 40 legacy handles (66 contributions)
       match no `er_users` account — deleted account ids such as `user8928` (11 records) and
       `user10068` (4), plus two records with the literal handle `undefined`. Map them with
