@@ -325,7 +325,12 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
         result = await sync_inventory(node, manifest, apply=True)
         assert result["applied"] == 1, result
         imported = (await client.get(f"{root}/{legacy_id}/content")).json()
-        assert imported["text"] == updated
+        # Import writes the download-only identifiers (the legacy id as `id`).
+        from fiesta.domain.parse import stamp_ids
+
+        model = node.load_data_model("3.0")
+        assert imported["text"] == stamp_ids(updated, legacy_id, model)
+        assert f"\n{legacy_id}\t" in imported["text"]
         assert (
             await client.put(
                 f"{root}/{legacy_id}/content",

@@ -196,10 +196,23 @@
 						"downloadOnly()"
 					]
 				},
+				"row_id": {
+					"label": "Contribution Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row ID within a KdD Contribution",
+					"examples": [
+						"743"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
 				"rock_types": {
 					"label": "Rock Types",
 					"group": "Classification",
-					"position": 2,
+					"position": 3,
 					"type": "List",
 					"description": "Colon-delimited list of rock types",
 					"examples": [
@@ -214,7 +227,7 @@
 				"minerals": {
 					"label": "Minerals",
 					"group": "Classification",
-					"position": 3,
+					"position": 4,
 					"type": "List",
 					"description": "Colon-delimited list of minerals",
 					"examples": [
@@ -229,7 +242,7 @@
 				"element": {
 					"label": "Element",
 					"group": "Classification",
-					"position": 4,
+					"position": 5,
 					"type": "String",
 					"description": "Element",
 					"examples": [
@@ -244,7 +257,7 @@
 				"kd": {
 					"label": "Kd",
 					"group": "Partition Coefficient",
-					"position": 5,
+					"position": 6,
 					"type": "Number",
 					"unit": "Dimensionless",
 					"description": "Partition coefficient",
@@ -256,7 +269,7 @@
 				"kd_sigma": {
 					"label": "Kd Sigma",
 					"group": "Partition Coefficient",
-					"position": 6,
+					"position": 7,
 					"type": "Number",
 					"unit": "Dimensionless",
 					"description": "Partition coefficient uncertainty, One sigma",
@@ -268,7 +281,7 @@
 				"kd_low": {
 					"label": "Kd Low",
 					"group": "Partition Coefficient",
-					"position": 7,
+					"position": 8,
 					"type": "Number",
 					"unit": "Dimensionless",
 					"description": "Partition coefficient, Low range",
@@ -279,7 +292,7 @@
 				"kd_high": {
 					"label": "Kd High",
 					"group": "Partition Coefficient",
-					"position": 8,
+					"position": 9,
 					"type": "Number",
 					"unit": "Dimensionless",
 					"description": "Partition coefficient, High range",
@@ -290,7 +303,7 @@
 				"kd_definition": {
 					"label": "Kd Definition",
 					"group": "Partition Coefficient",
-					"position": 9,
+					"position": 10,
 					"type": "String",
 					"description": "Partition coefficient definition",
 					"examples": [
@@ -301,7 +314,7 @@
 				"kd_types": {
 					"label": "Kd Types",
 					"group": "Partition Coefficient",
-					"position": 10,
+					"position": 11,
 					"type": "List",
 					"description": "Colon-delimited list of partition coefficient types",
 					"examples": [

@@ -26,7 +26,7 @@ without changing the document contract.
 from typing import Any
 
 from fiesta.domain.data_model import LIST_TYPES, column_values, split_list
-from fiesta.domain.parse import ParsedContribution
+from fiesta.domain.parse import ID_COLUMNS, ParsedContribution
 from fiesta.nodeconfig import BOX_COLUMNS, LAT_COLUMNS, LON_COLUMNS, NodeConfig
 
 # Columns whose (colon-delimited) values feed summary._all facets when present.
@@ -86,7 +86,7 @@ def _collect_all(columns_def: dict, rows: list[dict], into: dict[str, set]) -> N
     that powers free-text search and facets on parent-level docs."""
     for row in rows:
         for column, value in row.items():
-            if value in (None, ""):
+            if value in (None, "") or column in ID_COLUMNS:
                 continue
             column_def = columns_def.get(column, {})
             if column in FACETABLE_COLUMNS or column_def.get("type") in LIST_TYPES:

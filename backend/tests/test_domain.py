@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from fiesta.domain.parse import ParseError, export_text, parse_text
+from fiesta.domain.parse import ParseError, export_text, parse_text, stamp_ids
 from fiesta.domain.summarize import summarize
 from fiesta.domain.validate import guess_data_model_version, validate_contribution
 from fiesta.nodeconfig import load_deployment
@@ -50,6 +50,34 @@ def test_parse_empty_column_name():
     assert parsed.tables["sites"] == [{"site": "HW01", "lat": "1.5"}]
     parsed = parse_text("tab delimited\tsites\nsite\t\tlat\nHW01\tx\t1.5\n")
     assert parsed.tables["sites"] == [{"site": "HW01", "_unnamed_2": "x", "lat": "1.5"}]
+
+
+def test_stamp_ids(magic_node):
+    model = magic_node.load_data_model("3.0")
+    text = stamp_ids(MAGIC_TEXT + ">>>>>>>>>>\ntab delimited\tnot_a_table\na\nb\n", 777, model)
+    parsed = parse_text(text)
+    assert parsed.tables["contribution"][0]["id"] == "777"
+    assert [(r["contribution_id"], r["row_id"]) for r in parsed.tables["locations"]] == [
+        ("777", "1")
+    ]
+    assert [(r["contribution_id"], r["row_id"]) for r in parsed.tables["sites"]] == [
+        ("777", "2"),
+        ("777", "3"),
+    ]
+    assert text.split("\n")[5] == "contribution_id\trow_id\tlocation\tlocation_type" + (
+        MAGIC_TEXT.split("\n")[5].removeprefix("location\tlocation_type")
+    )
+    assert parsed.tables["not_a_table"] == [{"a": "b"}]
+    stamped = parse_text(stamp_ids(MAGIC_TEXT, 777, model))
+    assert validate_contribution(magic_node, stamped).errors == []
+    # Stamping a download again (e.g. as a new version) overwrites, never adds.
+    restamped = parse_text(stamp_ids(text, 778, model))
+    assert restamped.tables["sites"][1] == {**parsed.tables["sites"][1], "contribution_id": "778"}
+    docs = summarize(magic_node, parsed, {"id": 777})
+    assert all("row_id" not in d["summary"]["_all"] for d in docs if "_all" in d["summary"])
+    # A model that does not declare the columns (MagIC 2.5 sites) is left alone.
+    legacy = "tab delimited\ter_sites\ner_site_name\nHW01\n"
+    assert stamp_ids(legacy, 777, magic_node.load_data_model("2.5")) == legacy
 
 
 def test_guess_version(magic_node):

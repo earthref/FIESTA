@@ -16,6 +16,8 @@ Format (one block per table, blocks separated by a line of `>`s):
 from dataclasses import dataclass, field
 
 TABLE_SEPARATOR = ">>>>>>>>>>"
+# Download-only bookkeeping columns written by stamp_ids (not search values).
+ID_COLUMNS = {"contribution_id", "row_id"}
 DELIMITERS = {"tab": "\t", "tab delimited": "\t"}
 
 
@@ -99,6 +101,50 @@ def parse_text(text: str) -> ParsedContribution:
         parsed.tables.setdefault(table, []).extend(rows)
 
     return parsed
+
+
+def stamp_ids(text: str, contribution_id: int, model: dict) -> str:
+    """Write the download-only identifiers into a contribution's text: the
+    `contribution` table's `id`, and in every other table `contribution_id`
+    plus a `row_id` numbered 1..N across all of the contribution's rows in
+    file order. A column is written only where the data model declares it for
+    that table, added at the front of the block when the file lacks it, and
+    overwritten when present (a re-uploaded download renumbers). Nothing else
+    in the text changes. Call it only on text that `parse_text` accepts."""
+    tables = model.get("tables", {})
+    lines = text.lstrip("﻿").replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    row_id = 0
+    state, missing, index = "table", [], {}
+    for n, line in enumerate(lines):
+        if line.startswith(">>>"):
+            state = "table"
+        elif not line.strip():
+            continue
+        elif state == "table":
+            header = line.split("\t")
+            table = header[1].strip() if len(header) > 1 else ""
+            declared = tables.get(table, {}).get("columns", {})
+            targets = ["id"] if table == "contribution" else ["contribution_id", "row_id"]
+            targets = [c for c in targets if c in declared]
+            state = "columns"
+        elif state == "columns":
+            columns = [c.strip() for c in line.split("\t")]
+            missing = [c for c in targets if c not in columns]
+            columns = missing + columns
+            index = {c: columns.index(c) for c in targets}
+            lines[n] = "\t".join([*missing, line])
+            state = "rows"
+        elif index:
+            cells = [""] * len(missing) + line.split("\t")
+            for column, i in index.items():
+                cells += [""] * (i + 1 - len(cells))
+                if column == "row_id":
+                    row_id += 1
+                    cells[i] = str(row_id)
+                else:
+                    cells[i] = str(contribution_id)
+            lines[n] = "\t".join(cells)
+    return "\n".join(lines)
 
 
 def export_text(parsed: ParsedContribution, model: dict) -> str:

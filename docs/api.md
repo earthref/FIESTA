@@ -376,6 +376,15 @@ ValidationResult = {
 See [Phase M revision management](#phase-m-revision-management) below for the
 concurrency and idempotency semantics of the mutating routes.
 
+Every save of the canonical file (upload, `PUT /content`, a new version, the
+`/v1` private append/replace, legacy import) writes its download-only
+identifiers before storing it: the `contribution` table's `id`, and in every
+other table that the data model gives the columns, `contribution_id` and a
+`row_id` numbered 1..N across all the contribution's rows in file order.
+Supplied values are overwritten, so a re-uploaded download is renumbered. A
+file that does not parse is stored as sent. Both columns stay out of
+`summary._all`.
+
 ### Workspaces (`/v2/{repository}/workspaces`, Bearer or Basic)
 
 Shared workspaces: owners control membership, editors save, viewers read.
