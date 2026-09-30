@@ -502,11 +502,13 @@ function DayPlot({ groups, specimens, selected, select, open }: PanelProps) {
       xAxis: axis("Bcr/Bc", log, [xMin, xMax]),
       yAxis: axis("Mr/Ms", log, [yMin, yMax], { nameGap: 40 }),
       series: [
+        // Whole-axis lines, not coord segments: echarts drops a segment whose
+        // ends a zoomed view leaves out.
         references([
-          [{ coord: [xMin, sdY] }, { coord: [xMax, sdY] }],
-          [{ coord: [xMin, mdY] }, { coord: [xMax, mdY] }],
-          [{ coord: [sdX, yMin] }, { coord: [sdX, yMax] }],
-          [{ coord: [mdX, yMin] }, { coord: [mdX, yMax] }],
+          { yAxis: sdY, label: { show: false } },
+          { yAxis: mdY, label: { show: false } },
+          { xAxis: sdX, label: { show: false } },
+          { xAxis: mdX, label: { show: false } },
         ]),
         regionLabels([
           { text: "SD", at: [mid(xMin, sdX), mid(sdY, yMax)] },
@@ -531,6 +533,7 @@ function DayPlot({ groups, specimens, selected, select, open }: PanelProps) {
         build={build}
         height={CHART_HEIGHT}
         brush="rect"
+        zoom="xy"
         onBrush={onBrush}
         onClick={open}
         label="Day plot of Mr/Ms against Bcr/Bc"
@@ -584,6 +587,7 @@ function SquarenessPlot({ groups, specimens, selected, select, open }: PanelProp
         build={build}
         height={CHART_HEIGHT}
         brush="rect"
+        zoom="xy"
         onBrush={onBrush}
         onClick={open}
         label="Mr/Ms against coercivity"
@@ -637,6 +641,7 @@ function JelinekPlot({ groups, specimens, selected, select, open }: PanelProps) 
         build={build}
         height={CHART_HEIGHT}
         brush="rect"
+        zoom="xy"
         onBrush={onBrush}
         onClick={open}
         label="Jelinek plot of T against P′"
@@ -709,6 +714,7 @@ function ExplorerPanel({ groups, specimens, selected, select, open }: PanelProps
         build={build}
         height={CHART_HEIGHT}
         brush="rect"
+        zoom="xy"
         onBrush={onBrush}
         onClick={open}
         label="Scatter plot of two chosen rock magnetic parameters"
@@ -855,6 +861,7 @@ function Histogram({
         build={build}
         height={CHART_HEIGHT}
         brush="lineX"
+        zoom="x"
         onBrush={onBrush}
         label={`Histogram of ${axisName(param)}`}
       />
@@ -1060,6 +1067,7 @@ function StereonetPanel({ groups, specimens, selected, open }: PanelProps) {
           build={build}
           height={CHART_HEIGHT}
           onClick={open}
+          zoom="square"
           label="Stereonet of maximum and minimum anisotropy axes"
         />
       ) : (
