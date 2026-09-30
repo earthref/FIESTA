@@ -121,7 +121,15 @@ Postgres commits the head and outbox event in one transaction. `fiesta worker`
 runs the existing mail/job worker and a separate outbox polling process. It retries
 failed events, skips superseded revisions, and serializes work per contribution.
 Validation is retained if indexing fails; `indexing_status` and `outbox.error` expose
-that failure. `fiesta drain-outbox` retries a bounded batch for operations and tests.
+that failure. `fiesta drain-outbox` retries a bounded batch (100 events) for
+operations and tests; repeat it until a pass completes nothing, and keep parallel
+drains few on a shared cluster. Re-indexing writes a contribution's docs before it
+deletes its stale ones by id (never a delete-by-query first: one that timed out on
+a loaded cluster could still run after the retry and erase the new docs, the
+likely cause of the ~9% of MagIC and ~4% of ERDA contributions a 10-way and an
+8-way drain on dev left `indexed` but missing from search).
+`fiesta verify-index` compares live contributions with their docs after a drain
+and `--fix` re-indexes what is missing.
 Scientific search still needs OpenSearch; management, editing and settings do not.
 Authorization filters are applied from Postgres before search pagination and
 aggregations. At present this builds an allowed-ID filter; measure its size and
@@ -189,8 +197,9 @@ Do not populate accounts from guessed filenames or contributor display names.
 ```sh
 fiesta sync-legacy /path/inventory.json          # read/verify, no writes
 fiesta sync-legacy /path/inventory.json --apply  # import and checkpoint each record
-fiesta drain-outbox
+fiesta drain-outbox                              # repeat until a pass completes nothing
 fiesta verify-storage
+fiesta verify-index                              # --fix re-indexes missing contributions
 ```
 
 Repeat with refreshed snapshots to sync new contributions, new file revisions and

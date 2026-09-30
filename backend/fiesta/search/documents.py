@@ -1,7 +1,7 @@
 """Indexing contribution documents into the node index."""
 
 from opensearchpy import AsyncOpenSearch
-from opensearchpy.helpers import async_bulk
+from opensearchpy.helpers import async_bulk, async_scan
 
 from fiesta.domain.summarize import doc_id
 
@@ -9,7 +9,13 @@ from fiesta.domain.summarize import doc_id
 async def index_contribution_docs(
     client: AsyncOpenSearch, index: str, contribution_id: int, docs: list[dict]
 ) -> None:
-    await delete_contribution_docs(client, index, contribution_id)
+    """Write a contribution's docs, then delete only its stale ones, by id.
+
+    Doc ids are deterministic, so a write replaces a doc in place. Stale docs (a
+    record the new revision no longer has) go after the write, never by a
+    delete-by-query before it: on a loaded cluster a delete-by-query can time
+    out here yet still run on the server after a retry has re-indexed, leaving
+    the contribution `indexed` in Postgres but missing from search."""
     counters: dict[str, int] = {}
     actions = []
     for doc in docs:
@@ -25,6 +31,24 @@ async def index_contribution_docs(
         )
     if actions:
         await async_bulk(client, actions, chunk_size=500)
+    current = {action["_id"] for action in actions}
+    stale = [
+        hit["_id"]
+        async for hit in async_scan(
+            client,
+            index=index,
+            query={"query": {"term": {"summary.contribution.id": contribution_id}}},
+            _source=False,
+        )
+        if hit["_id"] not in current
+    ]
+    if stale:
+        await async_bulk(
+            client,
+            ({"_op_type": "delete", "_index": index, "_id": i} for i in stale),
+            chunk_size=500,
+            ignore_status=(404,),
+        )
     await client.indices.refresh(index=index)
 
 
