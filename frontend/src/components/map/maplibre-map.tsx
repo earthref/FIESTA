@@ -205,9 +205,14 @@ const areaFeatures = ([west, south, east, north]: Area): GeoJSON.Feature[] => {
 const unwrapLon = (lon: number, near: number) => lon + 360 * Math.round((near - lon) / 360);
 
 // Fitting the view to the points (the fit prop): the margin around them, and
-// the closest it zooms, so that one record still shows its surroundings.
+// the closest it zooms, so that one record still shows its surroundings. Points
+// spread over a small area zoom past that until the spread spans a quarter of
+// the map's width or height, but never closer than FIT_CLOSE_ZOOM.
 const FIT_PADDING = 30;
 const FIT_MAX_ZOOM = 6;
+const FIT_CLOSE_ZOOM = 15;
+const fitZoom = (full: number, quarter: number, spread: boolean) =>
+  Math.min(full, spread ? Math.max(FIT_MAX_ZOOM, Math.min(quarter, FIT_CLOSE_ZOOM)) : FIT_MAX_ZOOM);
 // The points' extent, boxes included, with longitudes taken near their
 // centre of mass so that it can cross the antimeridian.
 const pointsExtent = (points: MapPoint[]): [[number, number], [number, number]] | null => {
@@ -267,14 +272,21 @@ const globeFitCamera = (points: MapPoint[], width: number, height: number) => {
       );
     });
   });
-  // The globe's radius in pixels: the whole globe if points are on its far side.
-  const [halfWidth, halfHeight] = [width / 2 - FIT_PADDING, height / 2 - FIT_PADDING];
-  const radius = farSide
-    ? Math.min(halfWidth, halfHeight)
-    : Math.min(halfWidth / (maxX || 1e-9), halfHeight / (maxY || 1e-9));
+  // The zoom that fits the points in a box of that half-size: from the globe's
+  // radius in pixels (the whole globe if points are on its far side), since
   // MapLibre's globe radius is 512 * 2^zoom / (2π cos(latitude)).
-  const zoom = Math.log2((radius * 2 * Math.PI * Math.cos(lat0 * rad)) / 512);
-  return { center: [lon0, lat0] as [number, number], zoom: Math.min(zoom, FIT_MAX_ZOOM) };
+  const zoomFor = (halfWidth: number, halfHeight: number) => {
+    const radius = farSide
+      ? Math.min(halfWidth, halfHeight)
+      : Math.min(halfWidth / (maxX || 1e-9), halfHeight / (maxY || 1e-9));
+    return Math.log2((radius * 2 * Math.PI * Math.cos(lat0 * rad)) / 512);
+  };
+  const zoom = fitZoom(
+    zoomFor(width / 2 - FIT_PADDING, height / 2 - FIT_PADDING),
+    zoomFor(width / 8, height / 8),
+    Math.max(maxX, maxY) > 1e-9,
+  );
+  return { center: [lon0, lat0] as [number, number], zoom };
 };
 
 // The basemap's labels, on unless turned off with the button under the zoom
@@ -900,9 +912,22 @@ const MapLibreMap: FC<{
       if (globe)
         return globeFitCamera(points, map.transform.width, map.transform.height) ?? undefined;
       const extent = pointsExtent(points);
-      return extent
-        ? map.cameraForBounds(extent, { padding: FIT_PADDING, maxZoom: FIT_MAX_ZOOM })
-        : undefined;
+      const full = extent && map.cameraForBounds(extent, { padding: FIT_PADDING });
+      if (!extent || full?.zoom === undefined) return undefined;
+      // Fitted in the middle quarter of the map, for a small spread.
+      const [x, y] = [(3 * map.transform.width) / 8, (3 * map.transform.height) / 8];
+      const quarter = map.cameraForBounds(extent, {
+        padding: { top: y, bottom: y, left: x, right: x },
+      });
+      const [[west, south], [east, north]] = extent;
+      return {
+        ...full,
+        zoom: fitZoom(
+          full.zoom,
+          quarter?.zoom ?? full.zoom,
+          Math.max(east - west, north - south) > 1e-9,
+        ),
+      };
     };
     // Re-fitted as the container resizes, until the map is moved by hand.
     let autoFit = Boolean(fit);
