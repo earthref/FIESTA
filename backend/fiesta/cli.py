@@ -414,6 +414,32 @@ def verify_storage_command():
         raise typer.Exit(1)
 
 
+@app.command("verify-index")
+def verify_index_command(fix: bool = False):
+    """Compare live contributions with their search docs (run after draining the
+    outbox); --fix re-indexes missing ones and removes orphans, one at a time.
+    Exits 1 when anything is missing or orphaned and --fix was not given."""
+    from fiesta.db.session import get_sessionmaker
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.search.client import get_opensearch
+    from fiesta.services.rebuild import verify_index
+
+    async def run():
+        unhealthy = False
+        for node in get_deployment().node_list:
+            async with get_sessionmaker(node.node.slug)() as session:
+                result = await verify_index(session, node, fix=fix)
+            counts = {k: len(v) if isinstance(v, list) else v for k, v in result.items()}
+            sample = {k: result[k][:20] for k in ("missing", "orphaned", "unparseable")}
+            typer.echo(json.dumps({"node": node.node.slug, **counts, "sample": sample}))
+            unhealthy |= not fix and bool(result["missing"] or result["orphaned"])
+        await get_opensearch().close()
+        return unhealthy
+
+    if asyncio.run(run()):
+        raise typer.Exit(1)
+
+
 @app.command("backfill-revisions")
 def backfill_revisions():
     """Preserve pre-Phase-M FIESTA canonical files as initial immutable revisions."""

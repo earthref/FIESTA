@@ -473,6 +473,88 @@ async def test_stamp_ids_backfill(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_reindex_removes_only_stale_docs_and_verify_index_repairs(tmp_path):
+    """Re-indexing writes before it deletes, and only stale ids; a contribution
+    whose docs vanished is reported by verify_index and restored by fix."""
+    from fiesta.db.models import Contribution
+    from fiesta.db.session import get_engine, get_sessionmaker
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.search.client import get_opensearch
+    from fiesta.search.documents import delete_contribution_docs
+    from fiesta.services.legacy import sync_inventory
+    from fiesta.services.outbox import drain
+    from fiesta.services.rebuild import verify_index
+    from fiesta.services.revisions import digest, enqueue
+    from fiesta.services.seed import require_local
+
+    require_local()
+    get_opensearch.cache_clear()
+    get_engine.cache_clear()
+    get_sessionmaker.cache_clear()
+    node = get_deployment().node_for("magic")
+    raw = (node.base_dir / "magic/seeds/valid.txt").read_text()
+    legacy_id = 100000 + int(uuid.uuid4().hex[:5], 16)
+    (tmp_path / "source.txt").write_text(raw)
+    record = {
+        "id": legacy_id,
+        "owner_email": "developer@example.test",
+        "created_at": "2020-01-01T00:00:00Z",
+        "published": True,
+        "revisions": [
+            {
+                "key": "1",
+                "canonical": "source.txt",
+                "timestamp": "2020-01-01T00:00:00Z",
+                "files": {"source.txt": {"source": "source.txt", "sha256": digest(raw.encode())}},
+            }
+        ],
+    }
+    inventory = {"format": 1, "node": "magic", "source_id": str(uuid.uuid4()), "records": [record]}
+    manifest = tmp_path / "inventory.json"
+    manifest.write_text(json.dumps(inventory))
+    result = await sync_inventory(node, manifest, apply=True)
+    assert result["applied"] == 1, result
+    while (await drain(node))["completed"]:
+        pass
+
+    client = get_opensearch()
+    index = node.search_index
+    term = {"query": {"term": {"summary.contribution.id": legacy_id}}}
+
+    async def doc_ids():
+        await client.indices.refresh(index=index)
+        resp = await client.search(index=index, body={**term, "size": 1000, "_source": False})
+        return {hit["_id"] for hit in resp["hits"]["hits"]}
+
+    current = await doc_ids()
+    assert f"{legacy_id}-contribution-0" in current
+    stale = f"{legacy_id}-sites-999"
+    await client.index(
+        index=index,
+        id=stale,
+        body={"type": "sites", "summary": {"contribution": {"id": legacy_id}}},
+        refresh=True,  # as every earlier index call leaves its docs
+    )
+    async with get_sessionmaker("magic")() as session:
+        c = await session.get(Contribution, legacy_id)
+        enqueue(session, c, "index")
+        await session.commit()
+    while (await drain(node))["completed"]:
+        pass
+    assert await doc_ids() == current  # stale id gone, every current doc kept
+
+    await delete_contribution_docs(client, index, legacy_id)  # a lost projection
+    async with get_sessionmaker("magic")() as session:
+        report = await verify_index(session, node)
+        assert legacy_id in report["missing"]
+        await verify_index(session, node, fix=True)
+        assert legacy_id not in (await verify_index(session, node))["missing"]
+    assert await doc_ids() == current
+    await get_opensearch().close()
+    await get_engine().dispose()
+
+
+@pytest.mark.asyncio
 async def test_real_worker_process(tmp_path):
     """Exercise the actual worker/outbox subprocess rather than invoking drain."""
     import sys

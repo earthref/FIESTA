@@ -72,3 +72,64 @@ async def rebuild_node(session, node):
         await client.indices.delete(index=target)
         raise
     return {"indexed": indexed, "index": target, "alias": alias}
+
+
+async def verify_index(session, node, *, fix=False):
+    """Compare a node's live contributions in Postgres with its search index.
+
+    `missing`: a live contribution with a parseable file and no contribution doc;
+    `orphaned`: a contribution doc whose contribution is deleted or absent. With
+    `fix`, each missing one is re-indexed and each orphan's docs deleted, one
+    contribution at a time (no index swap, unlike `rebuild_node`)."""
+    from opensearchpy.helpers import async_scan
+
+    from fiesta.search.documents import delete_contribution_docs
+
+    client = get_opensearch()
+    index = node.search_index
+    await ensure_index(client, index)
+    indexed = {
+        hit["_source"]["summary"]["contribution"]["id"]
+        async for hit in async_scan(
+            client,
+            index=index,
+            query={"query": {"term": {"type": "contribution"}}},
+            _source=["summary.contribution.id"],
+        )
+    }
+    live = {
+        c.id: c
+        for c in (
+            await session.execute(
+                select(Contribution).where(
+                    Contribution.deleted_at.is_(None), Contribution.filename.is_not(None)
+                )
+            )
+        ).scalars()
+    }
+    report = {"live": len(live), "indexed": len(indexed), "missing": [], "unparseable": []}
+    report["orphaned"] = sorted(indexed - set(live))
+    report["fixed"] = 0
+    for cid in sorted(set(live) - indexed):
+        c = live[cid]
+        raw = (
+            await revision_file(session, node, c)
+            if c.head_revision
+            else await load_file(node, c.id, c.filename)
+        )
+        try:
+            parsed = parse_text(raw.decode("utf-8"))
+        except (ParseError, UnicodeDecodeError):
+            report["unparseable"].append(cid)  # has no docs by design
+            continue
+        report["missing"].append(cid)
+        if fix:
+            contributor = await session.get(User, c.contributor_id)
+            reference = await references.lookup(session, c.reference_doi)
+            await index_parsed(node, c, contributor, parsed, reference)
+            report["fixed"] += 1
+    if fix:
+        for cid in report["orphaned"]:
+            await delete_contribution_docs(client, index, cid)
+            report["fixed"] += 1
+    return report
