@@ -165,14 +165,16 @@ Last updated: 2026-09-24
 
 ## 2026-09-30 — Lunar and Martian globes
 
-- [ ] **Rebuild the MagIC and KArAr search indexes once this is deployed**
-  (`fiesta rebuild --yes` with `FIESTA_NODE=magic`, then `karar`; one rebuild
-  also covers the 2026-09-28 item above). Until then, Lunar/Martian locations
-  keep their coordinates in `_geo_point` and are still drawn on Earth; after
-  it they are on the Moon/Mars globes and thumbnails (7 Lunar and 2 Martian
-  MagIC locations on 2026-09-30). The Moon/Mars basemaps are public services
-  (OpenPlanetaryMap on CARTO, NASA Solar System Treks, USGS Astrogeology WMS)
-  with no key; the API host must reach `planetarymaps.usgs.gov` for the thumbnails.
+- [ ] **Rebuild the dev search indexes** (`make fiesta ENV_FILE=.env.prod
+  NODE=<slug> ARGS="rebuild --yes"` for karar, kdd, cdr, osu-mgr, erda, magic;
+  this also covers the 2026-09-28 item above). The code and the node config
+  (`search.bodies`) reached dev with the 2026-09-30 08:27 UTC deploy, and
+  `fiesta init` on dev reported the config already imported; but the index
+  still has the 7 Lunar MagIC locations (20329, 20328 ×3, 19955, 19781, 12366)
+  in `_geo_point`, so they are drawn on Earth until the rebuild. Claude's
+  attempt was blocked by the auto-mode classifier. The Moon/Mars basemaps are
+  public services (OpenPlanetaryMap on CARTO, NASA Solar System Treks, USGS
+  Astrogeology WMS) with no key; dev already serves `/v2/basemap/moon`.
 
 ## 2026-09-28 — Reference enrichment (Crossref/DataCite)
 
