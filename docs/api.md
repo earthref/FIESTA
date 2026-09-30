@@ -215,6 +215,8 @@ needs `publish.api`.
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
+| GET | `/v2/{repository}/contributions/{id}/versions` | `private_key?` | the `previous_id` chain, oldest first: every published version plus this one — `[{id, version, data_model_version, timestamp, contributor, is_activated, is_latest}]` |
+| GET | `/v2/{repository}/contributions/{id}/rows` | `private_key?` | per-table row stats — `{validated, previous: {id, version} \| null, tables: {<table>: {errors?, warnings?, changed?, removed?}}}`: distinct rows the current revision's validation flagged, and rows added/edited (`changed`) or dropped (`removed`) since the previous published version, ignoring the stamped `row_id`/`contribution_id` (the contribution modal's level-tab badges) |
 
 ```json
 SearchPage = {

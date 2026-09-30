@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from fiesta.domain.parse import ParseError, export_text, parse_text, stamp_ids
+from fiesta.domain.compare import changed_rows, issue_rows
+from fiesta.domain.parse import ParsedContribution, ParseError, export_text, parse_text, stamp_ids
 from fiesta.domain.summarize import summarize
 from fiesta.domain.validate import guess_data_model_version, validate_contribution
 from fiesta.nodeconfig import load_deployment
@@ -1291,3 +1292,37 @@ def test_reference_metadata_in_the_legacy_shape():
 
     assert contribution_meta(Row(), Person())["_reference"] == {"doi": "10.1029/2019gc008479"}
     assert contribution_meta(Row(), Person(), row.reference)["_reference"]["year"] == 2019
+
+
+def test_issue_rows_counts_distinct_rows_per_table():
+    issues = [
+        {"table": "sites", "row": 1, "column": "lat", "message": "a"},
+        {"table": "sites", "row": 1, "column": "lon", "message": "b"},
+        {"table": "sites", "row": 4, "column": "lat", "message": "c"},
+        {"table": "samples", "row": None, "column": "x", "message": "table-level"},
+    ]
+    assert issue_rows(issues) == {"sites": 2}
+
+
+def test_changed_rows_ignores_order_blanks_and_stamped_ids():
+    previous = ParsedContribution(
+        tables={
+            "sites": [
+                {"site": "a", "lat": "1", "row_id": "1", "contribution_id": "10"},
+                {"site": "b", "lat": "2", "row_id": "2", "contribution_id": "10"},
+                {"site": "c", "lat": "3", "row_id": "3", "contribution_id": "10"},
+            ],
+            "samples": [{"sample": "s1", "site": "a"}],
+        }
+    )
+    current = ParsedContribution(
+        tables={
+            "sites": [
+                {"lat": "1", "site": "a", "notes": "", "row_id": "7", "contribution_id": "11"},
+                {"site": "b", "lat": "2.5", "row_id": "8", "contribution_id": "11"},
+                {"site": "d", "lat": "4", "row_id": "9", "contribution_id": "11"},
+            ],
+            "samples": [{"sample": "s1", "site": "a"}],
+        }
+    )
+    assert changed_rows(current, previous) == {"sites": {"changed": 2, "removed": 2}}

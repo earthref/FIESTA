@@ -181,6 +181,27 @@ export interface ContributionOut {
   activated_at: string | null;
 }
 
+/** One entry of GET /contributions/{id}/versions (oldest first). */
+export interface ContributionVersion {
+  id: number;
+  version: number;
+  data_model_version: string;
+  timestamp: string;
+  contributor: string | null;
+  is_activated: boolean;
+  is_latest: boolean;
+}
+
+/** GET /contributions/{id}/rows: per table, flagged and changed row counts. */
+export interface ContributionRowStats {
+  validated: boolean;
+  previous: { id: number; version: number } | null;
+  tables: Record<
+    string,
+    { errors?: number; warnings?: number; changed?: number; removed?: number }
+  >;
+}
+
 export interface ValidationIssue {
   table: string;
   row: number | null;
