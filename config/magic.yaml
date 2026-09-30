@@ -15,6 +15,7 @@ node:
     Promoting information technology infrastructures for the international
     paleomagnetic, geomagnetic and rock magnetic community.
   color: "#800080" # primary brand color (Semantic UI "purple" in the legacy app)
+  logo: logo.svg # config/magic/assets/, on the FIESTA portal home
   links:
     website: https://earthref.org/MagIC
     github_issues: https://github.com/earthref/MagIC/issues

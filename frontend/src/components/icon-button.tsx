@@ -22,6 +22,8 @@ import { SemanticIcon } from "./ui/fa-icon";
  */
 export interface IconButtonProps {
   icon?: string;
+  /** Image URL shown in the icon's place, at the base glyph's size (a node logo). */
+  image?: string;
   cornerIcon?: string;
   title: ReactNode;
   subtitle?: ReactNode;
@@ -51,6 +53,7 @@ export function titleLines(title: string): ReactNode {
 
 export function IconButton({
   icon,
+  image,
   cornerIcon,
   title,
   subtitle,
@@ -88,7 +91,15 @@ export function IconButton({
   };
   const content = (
     <>
-      {icon && (
+      {image && (
+        <img
+          src={image}
+          alt=""
+          className="mx-auto block"
+          style={{ width: iconPx, height: iconPx, marginBottom: "0.5rem" }}
+        />
+      )}
+      {!image && icon && (
         <span
           className="relative inline-block text-[#555555]"
           style={{ fontSize: iconPx, lineHeight: 1, marginBottom: "0.5rem" }}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="KArAr">
+  <!-- FIESTA node logo: node-colored rounded square, white pictogram. KArAr: an hourglass (radiometric ages). -->
+  <rect width="64" height="64" rx="14" fill="#3030bb"/>
+  <g fill="#fff">
+    <rect x="17" y="11" width="30" height="4.5" rx="1.5"/>
+    <rect x="17" y="48.5" width="30" height="4.5" rx="1.5"/>
+    <path d="M25.5 24h13c-1.5 3.5-4.5 5.5-6.5 7-2-1.5-5-3.5-6.5-7z"/>
+    <path d="M24.5 47c1.5-5 5-7.5 7.5-8.5 2.5 1 6 3.5 7.5 8.5z"/>
+  </g>
+  <path d="M22 15.5c0 10 7 13 7 16.5s-7 6.5-7 16.5M42 15.5c0 10-7 13-7 16.5s7 6.5 7 16.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 31v8" stroke="#fff" stroke-width="1.5"/>
+</svg>

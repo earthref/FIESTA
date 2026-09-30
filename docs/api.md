@@ -145,6 +145,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "title": "Magnetics Information Consortium (MagIC)",
   "subtitle": "...",
   "color": "#800080",
+  "logo": "logo.svg",
   "links": {"website": "...", "github_issues": "..."},
   "data_model_versions": ["2.2", "2.3", "2.4", "2.5", "3.0"],
   "data_model_latest": "3.0",

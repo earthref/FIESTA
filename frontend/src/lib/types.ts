@@ -67,6 +67,8 @@ export interface NodeConfig {
   title: string;
   subtitle: string;
   color: string;
+  /** File under config/<slug>/assets/ (node YAML `node.logo`), shown on the portal home. */
+  logo?: string | null;
   links: Record<string, string>;
   data_model_versions: string[];
   data_model_latest: string;

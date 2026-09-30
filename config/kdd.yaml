@@ -12,6 +12,7 @@ node:
   subtitle: >-
     Geochemical Earth Reference Model (GERM) partition coefficients from both experimental and empirical data for all types of rocks, minerals, and elements.
   color: "#bb4b1c" # Semantic UI "green" family (EarthRef.org heritage)
+  logo: logo.svg # config/kdd/assets/, on the FIESTA portal home
   links:
     website: https://earthref.org/KdD
     github_issues: https://github.com/earthref/KdD/issues

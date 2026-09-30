@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { PORTAL } from "../lib/base";
+import { assetUrl, PORTAL } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { FIESTA_PORTAL } from "../lib/portals";
 
@@ -17,24 +17,36 @@ export function NodeHeader() {
     // Legacy `.full-width` layout variant (padding 0 2em) frames the header too.
     <div className="w-full px-[2em]">
       <div>
-        <Link
-          to="/"
-          aria-label={`${config?.key ?? "Node"} home`}
-          className="float-left block bg-white text-center align-middle font-serif font-bold text-node hover:bg-gray-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
-          style={{
-            fontSize: "2.75em",
-            width: "1.5em",
-            height: "1.5em",
-            minHeight: "1.5em",
-            lineHeight: "1.5em",
-            margin: "0 0.25em 0 0",
-            border: "1px solid rgba(34,36,38,.15)",
-            boxShadow: "0 0 0 1px var(--node-color) inset",
-            borderRadius: "0.28571429rem",
-          }}
-        >
-          {config?.key?.charAt(0) ?? "F"}
-        </Link>
+        {PORTAL ? (
+          // The portal home's fireworks logo in the letter-logo's 1.5em square.
+          <Link
+            to="/"
+            aria-label="FIESTA home"
+            className="float-left block focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+            style={{ fontSize: "2.75em", width: "1.5em", height: "1.5em", margin: "0 0.25em 0 0" }}
+          >
+            <img src={assetUrl("/FIESTA.png")} alt="" className="h-full w-full object-contain" />
+          </Link>
+        ) : (
+          <Link
+            to="/"
+            aria-label={`${config?.key ?? "Node"} home`}
+            className="float-left block bg-white text-center align-middle font-serif font-bold text-node hover:bg-gray-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+            style={{
+              fontSize: "2.75em",
+              width: "1.5em",
+              height: "1.5em",
+              minHeight: "1.5em",
+              lineHeight: "1.5em",
+              margin: "0 0.25em 0 0",
+              border: "1px solid rgba(34,36,38,.15)",
+              boxShadow: "0 0 0 1px var(--node-color) inset",
+              borderRadius: "0.28571429rem",
+            }}
+          >
+            {config?.key?.charAt(0)}
+          </Link>
+        )}
         <Link to="/" className="block min-w-0 overflow-hidden focus-visible:outline-hidden">
           <h1
             className="m-0 truncate font-bold text-[rgba(0,0,0,0.87)]"

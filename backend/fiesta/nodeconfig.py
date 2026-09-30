@@ -52,6 +52,7 @@ class NodeIdentity(BaseModel):
     title: str
     subtitle: str = ""
     color: str = "#666666"
+    logo: str | None = None  # path under config/<slug>/assets/ (the portal home's node cards)
     links: NodeLinks = NodeLinks()
 
 
@@ -517,6 +518,7 @@ class NodeConfig(BaseModel):
             "title": self.node.title,
             "subtitle": self.node.subtitle,
             "color": self.node.color,
+            "logo": self.node.logo,
             "links": self.node.links.model_dump(),
             "data_model_versions": self.data_model.versions,
             "data_model_latest": self.data_model.latest,

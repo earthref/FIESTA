@@ -123,6 +123,9 @@ export function PortalHomePage() {
                   href={nodeSiteUrl(config.key)}
                   sameTab
                   icon="database"
+                  image={
+                    config.logo ? apiUrl(`/${config.slug}/config/assets/${config.logo}`) : undefined
+                  }
                   title={config.key}
                   subtitle={
                     <>

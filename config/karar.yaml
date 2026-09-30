@@ -11,6 +11,7 @@ node:
     K/Ar and ⁴⁰Ar/³⁹Ar geochronology results including ages recalculated
     against community-agreed standards and constants.
   color: "#3030bb" # Semantic UI "blue" in the legacy app
+  logo: logo.svg # config/karar/assets/, on the FIESTA portal home
   links:
     website: https://earthref.org/KArAr
     github_issues: https://github.com/earthref/KArAr/issues
