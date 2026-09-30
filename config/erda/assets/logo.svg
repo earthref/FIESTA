@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ERDA">
+  <!-- FIESTA node logo: node-colored rounded square, white pictogram. ERDA: an archive box of digital objects. -->
+  <rect width="64" height="64" rx="14" fill="#006600"/>
+  <g fill="#fff">
+    <rect x="11" y="14" width="42" height="10" rx="2"/>
+    <rect x="14" y="26" width="36" height="25" rx="2"/>
+  </g>
+  <rect x="25" y="31" width="14" height="5" rx="2.5" fill="#006600"/>
+  <!-- bits on the box: digital contents -->
+  <path d="M21 42.5v4M43 42.5v4" stroke="#006600" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="28.5" cy="44.5" r="2.2" fill="none" stroke="#006600" stroke-width="2"/>
+  <path d="M35.5 42.5v4" stroke="#006600" stroke-width="2" stroke-linecap="round"/>
+</svg>

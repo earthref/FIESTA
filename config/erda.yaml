@@ -16,6 +16,7 @@ node:
     Archiving any type of digital data object associated with the Earth
     sciences — data tables, diagrams, reports, maps, presentations and videos.
   color: "#006600" # EarthRef.org green (see frontend/src/lib/portals.ts)
+  logo: logo.svg # config/erda/assets/, on the FIESTA portal home
   links:
     website: https://earthref.org/ERDA
     github_issues: https://github.com/earthref/ERDA/issues

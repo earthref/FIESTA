@@ -31,7 +31,7 @@ export const EARTHREF: Portal = PORTALS[0] as Portal;
 export const FIESTA_PORTAL = {
   key: "FIESTA",
   title: "FIESTA",
-  subtitle: "The EarthRef.org data repositories",
+  subtitle: "Framework for Integrated Earth Science and Technology Applications",
   color: EARTHREF.color,
 };
 

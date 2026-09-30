@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="OSU-MGR">
+  <!-- FIESTA node logo: node-colored rounded square, white pictogram. OSU-MGR: a core taken through the ocean into the seafloor. -->
+  <clipPath id="badge"><rect width="64" height="64" rx="14"/></clipPath>
+  <rect width="64" height="64" rx="14" fill="#D73F09"/>
+  <path d="M10 15c3.7-4 7.3-4 11 0s7.3 4 11 0 7.3-4 11 0 7.3 4 11 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <path d="M10 22c3.7-4 7.3-4 11 0s7.3 4 11 0 7.3-4 11 0 7.3 4 11 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <!-- sediment below the seafloor -->
+  <path d="M0 37c10-3 22-3 32 0s22 3 32 0V64H0z" fill="#fff" opacity="0.35" clip-path="url(#badge)"/>
+  <path d="M32 25v9" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  <rect x="27.5" y="33" width="9" height="21" rx="2" fill="#fff"/>
+  <path d="M27.5 41h9M27.5 47.5h9" stroke="#D73F09" stroke-width="1.5"/>
+</svg>
