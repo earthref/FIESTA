@@ -420,6 +420,81 @@ function OpenCell({
   );
 }
 
+/** A block of at most `lines` lines (inline content, so it may sit in a button). */
+function Clamped({
+  lines,
+  className,
+  children,
+}: {
+  lines: number;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={cx("overflow-hidden", className)}
+      style={{ display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical" }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** "Behar et al. (2019) v. 2", bold. */
+function CitationText({ doc }: { doc: SearchResult }) {
+  const id = contributionId(doc);
+  const version = getPath(doc, "summary.contribution.version");
+  return (
+    <b>
+      {citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown")}
+      {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
+    </b>
+  );
+}
+
+/** The reference title (contributions) or the "{location} ⇒ {site}" breadcrumb. */
+function NameText({
+  doc,
+  level,
+  levels,
+}: {
+  doc: SearchResult;
+  level: SearchLevel;
+  levels: SearchLevel[];
+}) {
+  if (level.table === "contribution")
+    return <>{firstString(getPath(doc, "summary.contribution._reference.title"))}</>;
+  const breadcrumb = breadcrumbOf(doc, level, levels);
+  return (
+    <>
+      {breadcrumb.map((part, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: breadcrumb parts can repeat and the ordered list is static per hit
+        <span key={`${index}-${part}`}>
+          {index > 0 && " ⇒ "}
+          {index === breadcrumb.length - 1 ? <b>{part}</b> : part}
+        </span>
+      ))}
+    </>
+  );
+}
+
+/** "July 7, 2026 by <b>contributor</b>"; `breakLine` puts "by …" on its own line. */
+function ContributedText({ doc, breakLine }: { doc: SearchResult; breakLine?: boolean }) {
+  const contributor = firstString(getPath(doc, "summary.contribution._contributor"));
+  return (
+    <>
+      {formatDateLL(getPath(doc, "summary.contribution.timestamp"))}
+      {contributor && (
+        <>
+          {breakLine ? <br /> : " "}
+          {"by "}
+          <b>{contributor}</b>
+        </>
+      )}
+    </>
+  );
+}
+
 export interface SummaryCellProps {
   column: GridColumn;
   doc: SearchResult;
@@ -456,62 +531,45 @@ function BuiltinCell({
   const id = contributionId(doc);
 
   switch (column.cell) {
-    case "citation": {
-      const version = getPath(doc, "summary.contribution.version");
+    // Citation, then title / name, then date and contributor, in one column
+    case "record":
       return (
         <OpenCell id={id} table={level.table} width={width}>
-          <b>
-            {citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown")}
-            {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
-          </b>
+          <Clamped lines={2}>
+            <CitationText doc={doc} />
+          </Clamped>
+          <Clamped lines={2}>
+            <NameText doc={doc} level={level} levels={config.search_levels} />
+          </Clamped>
+          <Clamped lines={2} className="text-[rgba(0,0,0,.6)]">
+            <ContributedText doc={doc} />
+          </Clamped>
         </OpenCell>
       );
-    }
+
+    case "citation":
+      return (
+        <OpenCell id={id} table={level.table} width={width}>
+          <CitationText doc={doc} />
+        </OpenCell>
+      );
 
     // The reference title (contributions) or the "{location} ⇒ {site}" breadcrumb
-    case "name": {
-      if (level.table === "contribution") {
-        const title = firstString(getPath(doc, "summary.contribution._reference.title"));
-        return (
-          <OpenCell id={id} table={level.table} width={width}>
-            <span
-              className="overflow-hidden"
-              style={{ display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical" }}
-            >
-              {title}
-            </span>
-          </OpenCell>
-        );
-      }
-      const breadcrumb = breadcrumbOf(doc, level, config.search_levels);
+    case "name":
       return (
         <OpenCell id={id} table={level.table} width={width}>
-          {breadcrumb.map((part, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: breadcrumb parts can repeat and the ordered list is static per hit
-            <span key={`${index}-${part}`}>
-              {index > 0 && " ⇒ "}
-              {index === breadcrumb.length - 1 ? <b>{part}</b> : part}
-            </span>
-          ))}
+          <Clamped lines={6}>
+            <NameText doc={doc} level={level} levels={config.search_levels} />
+          </Clamped>
         </OpenCell>
       );
-    }
 
-    case "contributed": {
-      const contributor = firstString(getPath(doc, "summary.contribution._contributor"));
+    case "contributed":
       return (
         <Cell width={width} wrap>
-          {formatDateLL(getPath(doc, "summary.contribution.timestamp"))}
-          {contributor && (
-            <>
-              <br />
-              {"by "}
-              <b>{contributor}</b>
-            </>
-          )}
+          <ContributedText doc={doc} breakLine />
         </Cell>
       );
-    }
 
     // Download (basic tiny fluid compact icon header button, height 100px)
     case "download": {

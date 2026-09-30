@@ -12,6 +12,7 @@ export interface SearchLevel {
 
 /** The tiles a summary grid column can show (fiesta.search.grid). */
 export type GridCellKind =
+  | "record"
   | "citation"
   | "name"
   | "contributed"

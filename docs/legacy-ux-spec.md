@@ -183,8 +183,10 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 - **Summaries are a grid** (2026-09-30), not the legacy card list: one row
   per record, one column per tile (the card's cells, unchanged: download,
   links, counts, map and plot thumbnails, geo, geology, age, intensity, method
-  codes, citations; the card header's citation, name breadcrumb and date/
-  contributor became columns too), each row capped at 105px. A sticky header
+  codes, citations; the card header's citation, title or name breadcrumb and
+  date/contributor are stacked in the first column, "Contribution" on the
+  Contributions level and the level's record ("Site") elsewhere, whose filter
+  matches any of them), each row capped at 105px. A sticky header
   names the columns; a sortable column sorts the search on a click (ascending,
   descending, back to the dropdown's order; the dropdown shows the header sort
   while it applies), a filterable one has a filter box (`filter=<column>:<text>`,
