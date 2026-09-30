@@ -180,9 +180,23 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 - **Download Results** downloads the top contribution file (no bulk-zip endpoint yet, ROADMAP); legacy zipped every matching contribution.
 - **Level tabs** omit legacy "Experiments" until the derived experiment docs exist (ROADMAP C4).
 - **Filter sidebar** renders the YAML `search.filters` (facet buckets, numeric ranges, a lat/lon box), each limited to the levels and result views it names; MagIC shows the buckets on Summaries/Rows and Age / Pole A95 / Geospatial on the Locations level's Poles view. The legacy Publication Year / Intensity ranges and with/without-data toggles are not ported yet. Facet titles default to the singular of the column name ("Method Code"), matching legacy titles, or the filter's `label`.
-- **Result cards wrap their blocks** (`flex-wrap`) and show only the first
-  row (105px cap), so a block that does not fit the pane is hidden rather than
-  cut mid-block.
+- **Summaries are a grid** (2026-09-30), not the legacy card list: one row
+  per record, one column per tile (the card's cells, unchanged: download,
+  links, counts, map and plot thumbnails, geo, geology, age, intensity, method
+  codes, citations; the card header's citation, name breadcrumb and date/
+  contributor became columns too), each row capped at 105px. A sticky header
+  names the columns; a sortable column sorts the search on a click (ascending,
+  descending, back to the dropdown's order; the dropdown shows the header sort
+  while it applies), a filterable one has a filter box (`filter=<column>:<text>`,
+  which also narrows the Rows and Map views and is cleared by Clear Filters and
+  by switching levels). Columns, headers, widths, sorting and filtering are set
+  per level in the node YAML (`search.levels[].columns`) and the admin Summary
+  Grid tab; a level without them shows the default tiles. The expand caret is
+  gone (the modal below replaced it); a count ("2 Locations") opens the
+  contribution's modal at that level's tab. The home page's recent
+  contributions and the private workspace's contribution use the same grid
+  without sort/filter controls; the portal home shows each node's row without
+  a header.
 - **Contribution modal** (2026-09-27) replaces the legacy expand caret, the
   map and plot modals and the contribution page, after osu-mgr.org's record
   modal: clicking a card's header, its map thumbnail or a plot (the plateau

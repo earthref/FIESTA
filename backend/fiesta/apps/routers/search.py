@@ -13,6 +13,7 @@ from fiesta.apps.schemas import MapPoints, SearchPage, SearchValues
 from fiesta.db.models import Contribution
 from fiesta.nodeconfig import BOX_COLUMNS, MapColor
 from fiesta.search.client import get_opensearch
+from fiesta.search.grid import filter_clause, level_columns, sort_clauses
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services.access import constrain_search
 from fiesta.services.contributions import load_file
@@ -38,6 +39,42 @@ def _level_tables(node) -> set[str]:
     for plugin in active_plugins(node):
         tables.update(plugin.search_tables(node))
     return tables
+
+
+def _grid_columns(node, table: str) -> dict:
+    level = next((lvl for lvl in _all_levels(node) if lvl.table == table), None)
+    return {c.key: c for c in level_columns(node, level)} if level else {}
+
+
+def _grid_sort(node, table: str, sort: str | None) -> str | list | None:
+    """A named SORT_OPTIONS key, or `<column>:asc|desc` on a sortable grid
+    column of the level (its header's sort)."""
+    if sort is None or sort in SORT_OPTIONS:
+        return sort
+    key, _, order = sort.rpartition(":")
+    column = _grid_columns(node, table).get(key)
+    if column is None or column.sort is None or order not in ("asc", "desc"):
+        raise HTTPException(
+            422, f"sort must be one of {sorted(SORT_OPTIONS)} or <sortable column>:asc|desc"
+        )
+    return sort_clauses(column, order)
+
+
+def _grid_filters(node, table: str, filters: list[str] | None) -> list[dict]:
+    """`filter=<column>:<text>`: records matching the typed words in a
+    filterable grid column's fields."""
+    if not filters:
+        return []
+    columns = _grid_columns(node, table)
+    clauses = []
+    for spec in filters:
+        key, sep, text = spec.partition(":")
+        column = columns.get(key)
+        if not sep or column is None or not column.filter_fields:
+            raise HTTPException(422, f"filter must be <filterable column>:<text>, got {spec!r}")
+        if clause := filter_clause(column, text):
+            clauses.append(clause)
+    return clauses
 
 
 def _parse_ranges(ranges: list[str] | None) -> list[dict] | None:
@@ -123,14 +160,13 @@ async def search(
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
     sort: str | None = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     contribution: int | None = None,
     private_key: str | None = None,
     totals: bool = False,
 ) -> SearchPage:
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
-    if sort is not None and sort not in SORT_OPTIONS:
-        raise HTTPException(422, f"sort must be one of {sorted(SORT_OPTIONS)}")
     level = next((lvl for lvl in _all_levels(node) if lvl.table == table), None)
     body = build_search_body(
         table=table,
@@ -141,7 +177,8 @@ async def search(
         count_field=level.count_field if level else None,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
-        sort=sort,
+        sort=_grid_sort(node, table, sort),
+        column_filters=_grid_filters(node, table, filter_),
     )
     await _constrain(session, node, body, query, contribution, private_key)
     if totals:
@@ -420,6 +457,7 @@ async def search_points(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     contribution: int | None = None,
     private_key: str | None = None,
     color_by: str | None = None,
@@ -441,6 +479,7 @@ async def search_points(
         size=MAP_PAGE_SIZE,
         ranges=_parse_ranges(range_),
         bbox=area,
+        column_filters=_grid_filters(node, table, filter_),
     )
     await _constrain(session, node, body, query, contribution, private_key)
     body["query"]["bool"]["filter"].append(POSITIONED)

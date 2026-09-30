@@ -8,6 +8,7 @@ import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { AdminGate, Field, NodeChip, RepoStatus, Tabs } from "../components/admin/admin-ui";
 import { DataModelEditor } from "../components/admin/data-model-editor";
 import { FiltersEditor } from "../components/admin/filters-editor";
+import { GridEditor } from "../components/admin/grid-editor";
 import { PagesEditor } from "../components/admin/pages-editor";
 import { PluginsEditor } from "../components/admin/plugins-editor";
 import { VocabularyEditor } from "../components/admin/vocabulary-editor";
@@ -45,6 +46,7 @@ type Section =
   | "settings"
   | "pages"
   | "filters"
+  | "grid"
   | "plugins"
   | "data-models"
   | "vocabularies"
@@ -56,6 +58,7 @@ const SECTIONS: { key: Section; label: string }[] = [
   { key: "settings", label: "Settings" },
   { key: "pages", label: "Pages" },
   { key: "filters", label: "Search Filters" },
+  { key: "grid", label: "Summary Grid" },
   { key: "plugins", label: "Plugins" },
   { key: "data-models", label: "Data Models" },
   { key: "vocabularies", label: "Vocabularies" },
@@ -428,9 +431,9 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
         </div>
       </fieldset>
       <p className="text-xs text-gray-500">
-        Content pages, the search filter sidebar and plugins have their own tabs. Search levels,
-        hierarchy, home page cards and news are edited in the node YAML under Files. Edits keep the
-        YAML's comments and layout.
+        Content pages, the search filter sidebar, the Summaries grid and plugins have their own
+        tabs. Search levels, hierarchy, home page cards and news are edited in the node YAML under
+        Files. Edits keep the YAML's comments and layout.
       </p>
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={!changed || save.isPending}>
@@ -845,7 +848,7 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
         }
       />
       {section === "settings" && <SettingsSection node={n} superAdmin={superAdmin} />}
-      {["pages", "filters", "plugins", "data-models", "vocabularies"].includes(section) &&
+      {["pages", "filters", "grid", "plugins", "data-models", "vocabularies"].includes(section) &&
         (settings.data ? (
           section === "pages" ? (
             <PagesEditor
@@ -855,6 +858,12 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
             />
           ) : section === "filters" ? (
             <FiltersEditor
+              slug={slug}
+              settings={settings.data.settings}
+              settingsLock={lockOf(settings.data)}
+            />
+          ) : section === "grid" ? (
+            <GridEditor
               slug={slug}
               settings={settings.data.settings}
               settingsLock={lockOf(settings.data)}

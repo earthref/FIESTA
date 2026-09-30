@@ -203,7 +203,11 @@ rows). The search filter sidebar
 is `search.filters` (facet / range / bbox, each with the search `levels` and
 result `views` it applies to), edited in the Search Filters tab with a column
 picker from the data model; a range needs a field a plugin indexes as a
-number (row values are text), e.g. `summary.poles.age`.
+number (row values are text), e.g. `summary.poles.age`. Each search level's
+Summaries grid is its `columns` (tiles such as `citation`, `counts`, `map`,
+`age`, or `{ column, label, width }` for a data column; each with its own
+header, width, sort and filter, defaults in `fiesta.search.grid`), edited in
+the Summary Grid tab; a level without `columns` shows the default tiles.
 
 Home page content is YAML too: `features.home.resources` lists the resource
 cards (title, Semantic icon name, optional corner icon, `to` for an SPA route

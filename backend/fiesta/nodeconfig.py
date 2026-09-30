@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, ClassVar, Literal
 
 import yaml
-from pydantic import BaseModel, PrivateAttr, field_validator, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 
 from fiesta.settings import get_settings
 
@@ -59,10 +59,81 @@ class NodeIdentity(BaseModel):
     links: NodeLinks = NodeLinks()
 
 
+GridCell = Literal[
+    "citation",
+    "name",
+    "contributed",
+    "download",
+    "links",
+    "counts",
+    "map",
+    "plot",
+    "geo",
+    "geology",
+    "age",
+    "intensity",
+    "method_codes",
+    "citations",
+    "field",
+    "title",
+]
+
+
+class GridColumn(BaseModel):
+    """One column of a search level's summary grid.
+
+    `cell` names the tile the column shows: a built-in summary tile (citation,
+    name, contributed, download, links, counts, map, plot, geo, geology, age,
+    intensity, method_codes, citations), `field` (one column of the level's
+    summary block, "Label: value") or `title` (a column in bold over an optional
+    `subtitle_column`). Each tile has a default header label, width, sort and
+    filter (fiesta.search.grid); `sortable` / `filterable` switch them off, and
+    `sort_field` (a `.raw` keyword path, or with `numeric` any string path) and
+    `filter_fields` (text paths) replace them.
+    """
+
+    cell: GridCell = "field"
+    column: str | None = None
+    subtitle_column: str | None = None
+    label: str | None = None
+    width: int | None = Field(default=None, ge=40)
+    format: Literal["bytes"] | None = None
+    sortable: bool = True
+    filterable: bool = True
+    sort_field: str | None = None
+    numeric: bool | None = None
+    filter_fields: list[str] | None = None
+
+    @model_validator(mode="after")
+    def _check(self) -> "GridColumn":
+        if self.cell in ("field", "title") and not self.column:
+            raise ValueError(f"a {self.cell} column needs a column")
+        if self.cell not in ("field", "title") and (self.column or self.subtitle_column):
+            raise ValueError(f"a {self.cell} column takes no column")
+        paths = [self.sort_field or "summary.", *(self.filter_fields or [])]
+        if bad := [p for p in paths if not p.startswith("summary.")]:
+            raise ValueError(f"grid sort/filter fields must be summary.* paths: {bad}")
+        return self
+
+    @property
+    def key(self) -> str:
+        """The column's name in sort/filter requests: its data column, or its tile."""
+        return self.column if self.cell in ("field", "title") and self.column else self.cell
+
+
 class SearchLevel(BaseModel):
     name: str
     table: str
     count_field: str | None = None
+    # The Summaries grid's columns, in order; None = the default tiles.
+    columns: list[GridColumn] | None = None
+
+    @model_validator(mode="after")
+    def _unique_columns(self) -> "SearchLevel":
+        keys = [c.key for c in self.columns or []]
+        if dupes := sorted({k for k in keys if keys.count(k) > 1}):
+            raise ValueError(f"search level {self.name!r} repeats grid columns {dupes}")
+        return self
 
 
 class SearchFilter(BaseModel):
@@ -424,12 +495,28 @@ class NodeConfig(BaseModel):
             bodies.column in model_tables[t].get("columns", {}) for t in self.hierarchy
         ):
             raise ValueError(f"search.bodies column {bodies.column!r} is in no hierarchy table")
+        self._check_grid_columns()
         slugs = [p.slug for p in self.pages]
         if len(set(slugs)) != len(slugs):
             raise ValueError(
                 f"duplicate page slugs: {sorted({s for s in slugs if slugs.count(s) > 1})}"
             )
         return self
+
+    def _check_grid_columns(self) -> None:
+        # A grid column naming a column its level's table does not have would
+        # show an empty cell forever: catch the typo before publishing.
+        tables = self.load_data_model(self.data_model.latest)["tables"]
+        for level in self.search.levels:
+            columns = tables.get(level.table, {}).get("columns")
+            if columns is None:
+                continue
+            named = [n for c in level.columns or [] for n in (c.column, c.subtitle_column) if n]
+            if missing := [n for n in named if n not in columns]:
+                raise ValueError(
+                    f"search level {level.name!r} grid names columns {missing} "
+                    f"the {level.table} table does not have"
+                )
 
     def _load_json(self, rel: str) -> Any:
         if rel not in self._asset_cache:
@@ -546,6 +633,16 @@ class NodeConfig(BaseModel):
         """Key prefix inside the bucket: "<slug>/" in a shared bucket, else ""."""
         return f"{self.node.slug}/" if get_settings().s3_bucket else ""
 
+    def public_level(self, level: SearchLevel) -> dict:
+        """A search level as the SPA sees it: its grid columns resolved."""
+        from fiesta.search.grid import public_columns
+
+        return {
+            **level.model_dump(exclude={"columns"}),
+            "geo": level.table in self.geo_tables,
+            "columns": public_columns(self, level),
+        }
+
     def public_config(self) -> dict:
         """The shape served at GET /api/config for the frontend."""
         return {
@@ -558,10 +655,7 @@ class NodeConfig(BaseModel):
             "links": self.node.links.model_dump(),
             "data_model_versions": self.data_model.versions,
             "data_model_latest": self.data_model.latest,
-            "search_levels": [
-                {**lvl.model_dump(), "geo": lvl.table in self.geo_tables}
-                for lvl in self.search.levels
-            ],
+            "search_levels": [self.public_level(lvl) for lvl in self.search.levels],
             "facets": self.search.facets,
             "filters": [f.model_dump() for f in self.search.filters],
             # `tables`: the levels (by table) each is offered on.

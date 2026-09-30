@@ -6,6 +6,42 @@ export interface SearchLevel {
   count_field: string | null;
   /** Its rows can carry a position (lat/lon columns), so it has a Map tab. */
   geo?: boolean;
+  /** Its Summaries grid, in order (node YAML `search.levels[].columns`, or the default tiles). */
+  columns?: GridColumn[];
+}
+
+/** The tiles a summary grid column can show (fiesta.search.grid). */
+export type GridCellKind =
+  | "citation"
+  | "name"
+  | "contributed"
+  | "download"
+  | "links"
+  | "counts"
+  | "map"
+  | "plot"
+  | "geo"
+  | "geology"
+  | "age"
+  | "intensity"
+  | "method_codes"
+  | "citations"
+  | "field"
+  | "title";
+
+/** One summary grid column, resolved by the API (label, width and defaults filled in). */
+export interface GridColumn {
+  /** Its name in `sort=<key>:asc|desc` and `filter=<key>:<text>`. */
+  key: string;
+  cell: GridCellKind;
+  label: string;
+  width: number;
+  /** field/title cells: the level summary block's column (and title's subtitle). */
+  column?: string;
+  subtitle_column?: string;
+  format?: "bytes";
+  sortable: boolean;
+  filterable: boolean;
 }
 
 /** features.home.resources entry: a resource card (title lines split on "\n"). */

@@ -23,10 +23,34 @@ node:
 
 search:
   index: erda
+  # Each level's `columns` are its Summaries grid (header, sort, filter), edited
+  # in the admin UI's Summary Grid tab; a level without them shows the default
+  # tiles. `{ column, label, width }` is a data column; `cell` names a tile.
   levels:
     - { name: Contributions, table: contribution }
-    - { name: Digital Objects, table: objects, count_field: summary.objects._n_results }
-    - { name: Files, table: files, count_field: summary.files._n_results }
+    - name: Digital Objects
+      table: objects
+      count_field: summary.objects._n_results
+      columns:
+        - { cell: title, column: title, subtitle_column: description }
+        - { column: data_types, label: Data Types, width: 150 }
+        - { column: expert_level, label: Expert Level, width: 170 }
+        - { column: keywords, label: Keywords, width: 200 }
+        - { column: computer_program, label: Computer Program, width: 150 }
+        - { column: project, label: Project, width: 180 }
+        - { column: locations, label: Locations, width: 180 }
+        - { cell: citation }
+        - { cell: contributed }
+    - name: Files
+      table: files
+      count_field: summary.files._n_results
+      columns:
+        - { cell: title, column: file, subtitle_column: description }
+        - { column: format, label: Format, width: 90 }
+        - { column: media_type, label: Media Type, width: 180 }
+        - { column: size_bytes, label: File Size, width: 110, format: bytes }
+        - { cell: citation }
+        - { cell: contributed }
   extra_types: []
   # Aggregated on summary._all.<field>.raw — the legacy Advanced Search
   # dropdowns (data type, expert level, project) plus the geographic and
@@ -64,33 +88,8 @@ doi:
 # Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
 pages: []
 
-# Plugin options (one map per plugin, validated against its Options model;
-# edited in the admin UI's Plugins tab).
-plugins:
-  record-cards:
-    # Result card per search table: title column, optional subtitle column, cells
-    # (`width` is the legacy fixed-width cell in px; `format: bytes` renders sizes).
-    cards:
-      objects:
-        title_column: title
-        subtitle_column: description
-        cells:
-          - { column: data_types, label: Data Types, width: 150 }
-          - { column: expert_level, label: Expert Level, width: 170 }
-          - { column: keywords, label: Keywords, width: 200 }
-          - { column: computer_program, label: Computer Program, width: 150 }
-          - { column: project, label: Project, width: 180 }
-          - { column: locations, label: Locations, width: 180 }
-      files:
-        title_column: file
-        subtitle_column: description
-        cells:
-          - { column: format, label: Format, width: 90 }
-          - { column: media_type, label: Media Type, width: 180 }
-          - { column: size_bytes, label: File Size, width: 110, format: bytes }
-
 features:
-  plugins: [record-cards]
+  plugins: []
 
 # Legacy import (`fiesta legacy-inventory erda --out …`): the Perl CGI archive
 # has no reachable er_* tables or index, so its public record pages are crawled.

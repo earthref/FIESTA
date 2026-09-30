@@ -630,6 +630,76 @@ def test_search_body_sort_options():
                 assert "unmapped_type" in spec, name
 
 
+def test_summary_grid_columns(magic_node, osu_mgr_node):
+    from fiesta.nodeconfig import GridColumn, SearchLevel
+    from fiesta.search.grid import filter_clause, level_columns, sort_clauses
+    from fiesta.search.queries import build_search_body
+
+    # No `columns`: the default tiles; download and links only on contributions.
+    contributions, sites = magic_node.search.levels[0], magic_node.search.levels[2]
+    keys = [c.key for c in level_columns(magic_node, contributions)]
+    assert keys[:5] == ["citation", "name", "contributed", "download", "links"]
+    by_key = {c.key: c for c in level_columns(magic_node, sites)}
+    assert "download" not in by_key and by_key["name"].label == "Site"
+    # The breadcrumb filters on the site's ancestors' names too.
+    assert by_key["name"].filter_fields == ["summary._all.location", "summary._all.site"]
+    assert by_key["map"].sort is None and not by_key["map"].filter_fields
+    # Summary values are strings, so a numeric column sorts by script.
+    (script, tie) = sort_clauses(by_key["age"], "desc")
+    assert script["_script"]["type"] == "number" and script["_script"]["order"] == "desc"
+    assert tie == {"summary.contribution.timestamp": {"order": "desc", "unmapped_type": "date"}}
+
+    # Configured columns: data columns take the data model's label and type.
+    cores = next(lvl for lvl in osu_mgr_node.search.levels if lvl.table == "cores")
+    public = {c["key"]: c for c in osu_mgr_node.public_level(cores)["columns"]}
+    assert public["core"]["cell"] == "title" and public["length"]["label"] == "Length (cm)"
+    assert public["citation"]["sortable"] and public["citation"]["filterable"]
+    method = {c.key: c for c in level_columns(osu_mgr_node, cores)}["method"]
+    assert sort_clauses(method, "asc")[0] == {
+        "summary.cores.method.raw": {"order": "asc", "unmapped_type": "keyword", "missing": "_last"}
+    }
+
+    # Switched off, or replaced, per column.
+    level = SearchLevel(
+        name="Sites",
+        table="sites",
+        columns=[
+            GridColumn(cell="age", sortable=False, filterable=False),
+            GridColumn(column="site", sort_field="summary.sites.site.raw", numeric=True),
+        ],
+    )
+    age, site = level_columns(magic_node, level)
+    assert age.sort is None and age.filter_fields == []
+    assert site.sort.type == "number" and site.sort.fields == ["summary.sites.site.raw"]
+
+    # A filter matches every typed word as a prefix, special characters escaped.
+    clause = filter_clause(site, "ab (c")
+    assert clause["simple_query_string"]["query"] == "ab* \\(c*"
+    assert filter_clause(site, "  ") is None
+    body = build_search_body(
+        table="sites", query=None, sort=[{"x": "asc"}], column_filters=[clause]
+    )
+    assert body["sort"] == [{"x": "asc"}] and clause in body["query"]["bool"]["filter"]
+
+    # Config errors: a data column needs its column, tiles take none, keys are
+    # unique, and a column the table does not have fails the node.
+    with pytest.raises(ValueError, match="needs a column"):
+        GridColumn(cell="field")
+    with pytest.raises(ValueError, match="takes no column"):
+        GridColumn(cell="age", column="age")
+    with pytest.raises(ValueError, match="repeats grid columns"):
+        SearchLevel(name="X", table="sites", columns=[GridColumn(cell="age")] * 2)
+    levels = [*osu_mgr_node.search.levels]
+    levels[2] = cores.model_copy(update={"columns": [GridColumn(column="nope")]})
+    with pytest.raises(ValueError, match=r"names columns \['nope'\]"):
+        osu_mgr_node.model_validate(
+            {
+                **osu_mgr_node.model_dump(),
+                "search": {**osu_mgr_node.search.model_dump(), "levels": levels},
+            }
+        )
+
+
 def test_magic_home_config(magic_node):
     home = magic_node.features.home
     assert len(home.resources) == 9
@@ -765,6 +835,25 @@ def test_settings_patch_keeps_yaml_comments():
     assert svc.protected_changes(original, moved) == ["search.index"]
     hidden = svc.patch_yaml(original, [{"path": ["publish", "web"], "value": False}])
     assert svc.protected_changes(original, hidden) == ["publish"]
+
+    # A list item by position: a one-line level gaining its grid columns is
+    # written out in block style, each column on one line; null removes them.
+    columns = [{"cell": "citation"}, {"column": "site", "label": "Site", "width": 150}]
+    gridded = svc.patch_yaml(
+        original, [{"path": ["search", "levels", 1, "columns"], "value": columns}]
+    )
+    text = gridded.decode().replace("{ ", "{").replace(" }", "}")
+    assert "      columns:\n        - {cell: citation}\n" in text
+    assert "- {column: site, label: Site, width: 150}" in text
+    level = yaml.safe_load(gridded)["search"]["levels"][1]
+    assert (
+        level["columns"] == columns
+        and level["name"] == yaml.safe_load(original)["search"]["levels"][1]["name"]
+    )
+    reset = svc.patch_yaml(gridded, [{"path": ["search", "levels", 1, "columns"], "value": None}])
+    assert "columns" not in yaml.safe_load(reset)["search"]["levels"][1]
+    with pytest.raises(svc.ConfigError, match="no item 99"):
+        svc.patch_yaml(original, [{"path": ["search", "levels", 99, "columns"], "value": []}])
 
 
 def test_publish_flags_gate_production_only(monkeypatch, magic_node, osu_mgr_node):

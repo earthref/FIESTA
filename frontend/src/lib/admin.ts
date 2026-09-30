@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import { useAuth } from "./auth";
-import type { UserOut } from "./types";
+import type { GridCellKind, UserOut } from "./types";
 
 export function isAnyAdmin(user: UserOut | null): boolean {
   return !!user && (user.is_admin || user.admin_nodes.length > 0);
@@ -148,7 +148,7 @@ export interface NodeSettings {
   };
   search: {
     index: string;
-    levels: { name: string; table: string }[];
+    levels: { name: string; table: string; count_field?: string; columns?: SettingsColumn[] }[];
     /** Pre-2026-09 shape, still loaded by the API as facet filters. */
     facets?: string[];
     filters?: SettingsFilter[];
@@ -178,6 +178,22 @@ export interface SettingsFilter {
   scale?: number;
   min?: number;
   max?: number;
+}
+
+/** A `search.levels[].columns` entry (a summary grid column) as written in the
+ * YAML; unset fields take the tile's defaults (fiesta.search.grid). */
+export interface SettingsColumn {
+  cell?: GridCellKind;
+  column?: string;
+  subtitle_column?: string;
+  label?: string;
+  width?: number;
+  format?: "bytes";
+  sortable?: boolean;
+  filterable?: boolean;
+  sort_field?: string;
+  numeric?: boolean;
+  filter_fields?: string[];
 }
 
 /** A `pages` entry as written in the YAML. */

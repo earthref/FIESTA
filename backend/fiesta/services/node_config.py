@@ -371,16 +371,33 @@ def patch_yaml(content: bytes, ops: list[dict]) -> bytes:
         path = list(op["path"])
         if not path:
             raise ConfigError(["empty settings path"])
+        where = ".".join(map(str, path))
         parent = doc
-        for part in path[:-1]:
-            if parent.get(part) is None:
+        for index, part in enumerate(path[:-1]):
+            if isinstance(parent, list):
+                # A list item by position (`search.levels.2.columns`).
+                if not isinstance(part, int) or not 0 <= part < len(parent):
+                    raise ConfigError([f"{where}: no item {part} in the list"])
+            elif parent.get(part) is None:
                 parent[part] = {}
             parent = parent[part]
-            if not isinstance(parent, dict):
-                raise ConfigError([f"{'.'.join(map(str, path))}: {part} is not a mapping"])
-        if op.get("value") is None:
+            if not isinstance(parent, dict) and not (
+                isinstance(parent, list) and isinstance(path[index + 1], int)
+            ):
+                raise ConfigError([f"{where}: {part} is not a mapping"])
+        if isinstance(parent, list):
+            if not isinstance(path[-1], int) or not 0 <= path[-1] < len(parent):
+                raise ConfigError([f"{where}: no item {path[-1]} in the list"])
+            if op.get("value") is None:
+                raise ConfigError([f"{where}: list items are replaced, not deleted"])
+            parent[path[-1]] = node(op["value"], in_list=True)
+        elif op.get("value") is None:
             parent.pop(path[-1], None)
         else:
+            if isinstance(op["value"], dict | list) and isinstance(parent, CommentedMap):
+                # A one-line `- { name: Sites, table: sites }` gaining a nested
+                # list or mapping is written out in block style instead.
+                parent.fa.set_block_style()
             parent[path[-1]] = node(op["value"])
     out = io.BytesIO()
     ry.dump(doc, out)

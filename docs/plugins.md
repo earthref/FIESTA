@@ -23,9 +23,8 @@ plugins:
   poles:
     base_level: Locations
     display_columns: [pole_lat, pole_lon, pole_alpha95, age, age_unit]
-  record-cards:
-    cards:
-      cores: { title_column: core, cells: [{ column: method, label: Method, width: 150 }] }
+  depth-plot:
+    levels: [Cores]
 ```
 
 `fiesta.plugins.active_plugins` validates the map at startup and before every
@@ -150,14 +149,10 @@ live under `src/plugins/<name>/` and activate only when the name appears in
   `max_mswd`, `min_ar39_percent`), set in karar.yaml.
   `GET /v2/{node}/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau`
   returns the full age spectrum + plateau. UI: an age-spectrum thumbnail on
-  Experiments result items, opening the contribution modal's Age Spectra tab
+  Experiments rows (the summary grid's `plot` tile), opening the contribution modal's Age Spectra tab
   (every experiment's spectrum and plateau).
-- **`record-cards` (ERDA, OSU-MGR)** — some nodes publish *records* rather than
-  measurements: an ERDA digital object, an OSU-MGR core or dredged rock. The
-  default result card (geologic classes, lithologies, method codes,
-  intensities) has nothing to show for them. The plugin has no behaviour of
-  its own: its `cards` option (in erda.yaml and osu-mgr.yaml) gives, per
-  search table, the column that titles the card, an optional subtitle column
-  and the columns that become cells; `check` rejects a card naming a table or
-  column the data model does not have. UI: title + subtitle cards with the
-  configured cells and human-readable file sizes.
+- **`record-cards`** (ERDA, OSU-MGR) was retired on 2026-09-30: its per-table
+  card layout (title column, subtitle, cells) is now core configuration, each
+  search level's summary grid `columns` (`title` and `field` columns, see
+  api.md "Summary grid"), and the node loader checks their columns against the
+  data model as the plugin's `check` did.

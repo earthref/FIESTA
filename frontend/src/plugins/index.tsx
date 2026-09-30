@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
-import type { NodeConfig, SearchLevel, SearchResult } from "../lib/types";
+import type { GridColumn, NodeConfig, SearchLevel, SearchResult } from "../lib/types";
 import { depthPlotPlugin } from "./depth-plot";
 import { plateauPlugin } from "./plateau-calculations";
 import { pmagPlotsPlugin } from "./pmag-plots";
 import { polesPlugin } from "./poles";
-import { recordCardsPlugin } from "./record-cards";
 import { rockMagPlugin } from "./rock-mag";
 
-export interface PluginResultItemProps {
+export interface PluginGridCellProps {
+  /** The summary grid column being rendered (its `cell` names the tile). */
+  column: GridColumn;
   hit: SearchResult;
   level: SearchLevel;
   config: NodeConfig;
@@ -91,8 +92,9 @@ export interface TabCountQuery {
 export interface PluginModule {
   /** Full-width cards under the home page's primary cards (legacy "Poles / View"). */
   homeCards?: (config: NodeConfig) => PluginHomeCard[];
-  /** Return a custom card for this hit, or null to fall through to the default. */
-  resultItem?: (props: PluginResultItemProps) => ReactNode | null;
+  /** Render a summary grid tile for this hit (e.g. the `plot` tile), or null
+   * to fall through to the built-in tile. */
+  gridCell?: (props: PluginGridCellProps) => ReactNode | null;
   /** Extra result-view sub-tabs contributed to a search level. */
   levelSubTabs?: (level: SearchLevel, config: NodeConfig) => PluginSubTab[];
   /** Replace the facet sidebar for a level; return null to keep the facet sidebar. */
@@ -106,7 +108,6 @@ export const PLUGINS: Record<string, PluginModule> = {
   poles: polesPlugin,
   "rock-mag": rockMagPlugin,
   "depth-plot": depthPlotPlugin,
-  "record-cards": recordCardsPlugin,
   "plateau-calculations": plateauPlugin,
   "pmag-plots": pmagPlotsPlugin,
 };
@@ -123,13 +124,13 @@ export function pluginHomeCards(config: NodeConfig | undefined): PluginHomeCard[
   return activePlugins(config).flatMap((plugin) => plugin.homeCards?.(config) ?? []);
 }
 
-/** First plugin-provided card for a hit, or null. */
-export function pluginResultItem(
+/** First plugin-provided grid tile for a hit's column, or null. */
+export function pluginGridCell(
   config: NodeConfig | undefined,
-  props: PluginResultItemProps,
+  props: PluginGridCellProps,
 ): ReactNode | null {
   for (const plugin of activePlugins(config)) {
-    const node = plugin.resultItem?.(props);
+    const node = plugin.gridCell?.(props);
     if (node) return node;
   }
   return null;

@@ -54,16 +54,23 @@ function usePoints(
   level: SearchLevel,
   query: string,
   ranges: string[] | undefined,
+  filters: string[] | undefined,
   bbox: string | undefined,
   color: string,
   enabled = true,
   colorBy?: string,
 ) {
   return useQuery({
-    queryKey: ["search-points", level.table, query, ranges, bbox, colorBy],
+    queryKey: ["search-points", level.table, query, ranges, filters, bbox, colorBy],
     queryFn: () =>
       api<MapPointsPage>(`/search/${level.table}/points`, {
-        params: { query: query || undefined, range: ranges, bbox, color_by: colorBy },
+        params: {
+          query: query || undefined,
+          range: ranges,
+          filter: filters?.length ? filters : undefined,
+          bbox,
+          color_by: colorBy,
+        },
       }),
     select: (page) => ({
       ...page,
@@ -129,6 +136,7 @@ export function SearchMap({
   level,
   query,
   ranges,
+  filters,
   area,
   onAreaChange,
   areaRequest,
@@ -140,6 +148,8 @@ export function SearchMap({
   level: SearchLevel;
   query: string;
   ranges?: string[];
+  /** The Summaries grid's column filters ("<column>:<text>"). */
+  filters?: string[];
   area: Area | null;
   onAreaChange: (area: Area | null) => void;
   areaRequest: AreaRequest | null;
@@ -177,13 +187,14 @@ export function SearchMap({
     level,
     query,
     ranges,
+    filters,
     area ? areaToBbox(area) : undefined,
     color,
     true,
     colorOption?.field,
   );
   // With an area, the same search without it, for the grey context points.
-  const all = usePoints(level, query, ranges, undefined, color, Boolean(area));
+  const all = usePoints(level, query, ranges, filters, undefined, color, Boolean(area));
   const fetched = inArea.data?.points;
   // Scaled to the values of the search's points (in the area, if any).
   const scale = useMemo(
@@ -223,7 +234,7 @@ export function SearchMap({
   // loaded (as on osu-mgr.org): around them, or, for an unfiltered search,
   // over the middle of the view (requestViewArea), which leaves the map where
   // it is. With an area already, the request only zooms to it.
-  const unfiltered = !query.trim() && !ranges?.length;
+  const unfiltered = !query.trim() && !ranges?.length && !filters?.length;
   const areaPending =
     Boolean(areaRequest) && (!areaRequest?.mode || areaRequest.mode === mode) && !inArea.isFetching;
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the request can be answered
@@ -253,7 +264,7 @@ export function SearchMap({
     : undefined;
 
   // The view re-centres on the points for a new search, not for an area edit.
-  const focusKey = JSON.stringify([level.table, query, ranges]);
+  const focusKey = JSON.stringify([level.table, query, ranges, filters]);
   // Only show the loading overlay when a refresh is slow.
   const [showLoading, setShowLoading] = useState(false);
   useEffect(() => {

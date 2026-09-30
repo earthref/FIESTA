@@ -188,7 +188,6 @@ def test_registry_names():
         "rock-mag",
         "depth-plot",
         "plateau-calculations",
-        "record-cards",
         "pmag-plots",
     }
     for plugin in all_plugins().values():
@@ -196,15 +195,12 @@ def test_registry_names():
         assert plugin.options_schema()["type"] == "object"
 
 
-def test_plugin_options_come_from_the_node_yaml(magic_node, erda_node, karar_node):
+def test_plugin_options_come_from_the_node_yaml(magic_node, karar_node):
     plugins = all_plugins()
     # magic.yaml sets the poles options explicitly; they match the defaults.
     assert plugins["poles"].options(magic_node).base_level == "Locations"
     assert plugins["poles"].options(magic_node) == plugins["poles"].Options()
     assert plugins["poles"].frontend_config(magic_node)["age_color"]["selected"] == "#800080"
-    # record cards are erda.yaml, not a dict keyed by node name in Python.
-    cards = plugins["record-cards"].options(erda_node).cards
-    assert set(cards) == {"objects", "files"} and cards["files"].cells[2].format == "bytes"
     assert plugins["plateau-calculations"].options(karar_node).max_mswd == 2.5
 
     # Options are validated: unknown keys, out-of-range values, and (via
@@ -216,10 +212,6 @@ def test_plugin_options_come_from_the_node_yaml(magic_node, erda_node, karar_nod
         plugins["poles"].options(with_options(magic_node, "poles", {"colour": "red"}))
     with pytest.raises(ValueError, match="max_mswd"):
         active_plugins(with_options(karar_node, "plateau-calculations", {"max_mswd": -1}))
-    with pytest.raises(ValueError, match="no tables \\['ships'\\]"):
-        active_plugins(
-            with_options(erda_node, "record-cards", {"cards": {"ships": {"title_column": "x"}}})
-        )
     with pytest.raises(ValueError, match="not a search level"):
         active_plugins(with_options(magic_node, "poles", {"base_level": "Moons"}))
     with pytest.raises(ValueError, match="unknown plugins \\['nope'\\]"):

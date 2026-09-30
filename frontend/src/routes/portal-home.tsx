@@ -2,7 +2,8 @@ import { useQueries } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton } from "../components/icon-button";
-import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
+import { contributionId, ResultDivider } from "../components/result-item";
+import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { apiUrl, NODES, nodeSiteUrl } from "../lib/base";
@@ -36,7 +37,7 @@ interface NodeRecent {
   doc: SearchResult;
 }
 
-/** One contribution in the cross-node list: the node home's ResultItem,
+/** One contribution in the cross-node list: a row of the node's summary grid,
  * rendered as its own node's (config, colors, links, downloads) and led by
  * the node's key. */
 function RecentItem({ config, doc }: NodeRecent) {
@@ -55,7 +56,9 @@ function RecentItem({ config, doc }: NodeRecent) {
         >
           {config.key}
         </a>
-        <ResultItem doc={doc} level={level} />
+        <div className="overflow-x-auto">
+          <SummaryGrid level={level} hits={[doc]} header={false} />
+        </div>
       </div>
     </NodeConfigScope.Provider>
   );
