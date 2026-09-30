@@ -222,6 +222,10 @@ def test_plugin_options_come_from_the_node_yaml(magic_node, erda_node, karar_nod
         )
     with pytest.raises(ValueError, match="not a search level"):
         active_plugins(with_options(magic_node, "poles", {"base_level": "Moons"}))
+    # A MagIC-model plugin switched on for a node whose model lacks its tables
+    # is refused with a ValueError, not a KeyError the admin UI would 500 on.
+    with pytest.raises(ValueError, match="poles.*no \\['locations'\\] table"):
+        active_plugins(with_options(karar_node, "poles", {"base_level": "Samples"}))
     with pytest.raises(ValueError, match="unknown plugins \\['nope'\\]"):
         active_plugins(with_options(magic_node, "nope", {}))
     # Options of a plugin that is not switched on are still checked.
