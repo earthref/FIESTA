@@ -711,6 +711,85 @@ async def test_v2_serves_every_enabled_node_from_one_process():
 
 
 @pytest.mark.asyncio
+async def test_contribution_versions_and_row_stats():
+    """A published contribution's new version lists both versions, and its row
+    stats count the one sites row edited between them (row ids ignored)."""
+    from fiesta.apps.api import create_app
+    from fiesta.db.session import get_engine, get_sessionmaker
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.search.client import get_opensearch
+    from fiesta.services.outbox import drain
+    from fiesta.services.seed import require_local
+
+    require_local()
+    # Cached clients belong to the previous test's event loop.
+    get_opensearch.cache_clear()
+    get_engine.cache_clear()
+    get_sessionmaker.cache_clear()
+    node = get_deployment().node_for("magic")
+    app = create_app()
+    raw = (node.base_dir / "magic/seeds/valid.txt").read_text()
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://local"
+        ) as client,
+    ):
+        login = await client.post(
+            "/v2/auth/login",
+            data={"username": "developer@example.test", "password": "local-fiesta-only"},
+        )
+        client.headers["Authorization"] = "Bearer " + login.json()["access_token"]
+        root = "/v2/magic/private/contributions"
+
+        async def publish(contribution_id: int, text: str, expected: str | None) -> None:
+            saved = await client.put(
+                f"{root}/{contribution_id}/content",
+                json={
+                    "expected_revision": expected,
+                    "request_key": str(uuid.uuid4()),
+                    "text": text,
+                },
+            )
+            assert saved.status_code == 200, saved.text
+            await drain(node)
+            activated = await client.post(f"{root}/{contribution_id}/activate")
+            assert activated.status_code == 200, activated.text
+            await drain(node)
+
+        first = (await client.post(root)).json()
+        await publish(first["id"], raw, None)
+        second = await client.post(f"{root}/{first['id']}/versions")
+        assert second.status_code == 201, second.text
+        second = second.json()
+        edited = raw.replace(
+            "HW02\tHawaii\tThis study\tLava Flow", "HW02\tHawaii\tEdited\tLava Flow"
+        )
+        assert edited != raw
+        await publish(second["id"], edited, second["head_revision"])
+
+        versions = await client.get(f"/v2/magic/contributions/{second['id']}/versions")
+        assert versions.status_code == 200, versions.text
+        assert [(v["id"], v["version"]) for v in versions.json()] == [
+            (first["id"], 1),
+            (second["id"], 2),
+        ]
+        from_first = await client.get(f"/v2/magic/contributions/{first['id']}/versions")
+        assert [v["id"] for v in from_first.json()] == [first["id"], second["id"]]
+
+        stats = (await client.get(f"/v2/magic/contributions/{second['id']}/rows")).json()
+        assert stats["validated"] is True
+        assert stats["previous"] == {"id": first["id"], "version": 1}
+        assert stats["tables"]["sites"] == {"changed": 1, "removed": 1}
+        assert "locations" not in stats["tables"]
+        first_stats = (await client.get(f"/v2/magic/contributions/{first['id']}/rows")).json()
+        assert first_stats["previous"] is None
+
+    await get_opensearch().close()
+    await get_engine().dispose()
+
+
+@pytest.mark.asyncio
 async def test_v1_legacy_contract_roundtrip():
     """The frozen api.earthref.org contract on FIESTA's Postgres, revisions
     and search projection: create → upload → validate → data → search →

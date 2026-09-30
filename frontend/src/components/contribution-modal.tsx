@@ -4,7 +4,14 @@ import { api } from "../lib/api";
 import { nodeUrl, siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
-import type { NodeConfig, SearchLevel, SearchPage, SearchResult } from "../lib/types";
+import type {
+  ContributionRowStats,
+  ContributionVersion,
+  NodeConfig,
+  SearchLevel,
+  SearchPage,
+  SearchResult,
+} from "../lib/types";
 import { cx, formatNumber, getPath, singularize } from "../lib/utils";
 import { type ContributionTab, pluginContributionTabs, type TabCountQuery } from "../plugins";
 import { ErrorMessage } from "./error-message";
@@ -22,14 +29,57 @@ const MapLibreMap = lazy(() => import("./map/maplibre-map"));
 /** Rows per page in a level tab; more load on demand. */
 const PAGE_SIZE = 100;
 
+/** A badge beside a tab's count: rows flagged by validation or changed. */
+type Flag = { key: string; text: string; title: string; className: string };
+
 type Tab = {
   key: string;
   label: string;
   group: "levels" | "assets";
   count?: number;
   isLoading?: boolean;
+  flags?: Flag[];
   render: () => ReactNode;
 };
+
+/** A level's badges: rows with validation errors (red) and warnings (yellow),
+ * and rows added or changed since the previous version (node color). */
+function rowFlags(stats: ContributionRowStats | undefined, table: string): Flag[] {
+  const entry = stats?.tables[table];
+  if (!entry) return [];
+  const rows = (n: number) => `${formatNumber(n)} row${n === 1 ? "" : "s"}`;
+  const flags: Flag[] = [];
+  if (entry.errors)
+    flags.push({
+      key: "errors",
+      text: formatNumber(entry.errors),
+      title: `${rows(entry.errors)} with validation errors`,
+      className: "bg-red-600 text-white",
+    });
+  if (entry.warnings)
+    flags.push({
+      key: "warnings",
+      text: formatNumber(entry.warnings),
+      title: `${rows(entry.warnings)} with validation warnings`,
+      className: "bg-yellow-400 text-gray-900",
+    });
+  const changed = entry.changed ?? 0;
+  const removed = entry.removed ?? 0;
+  if (stats?.previous && (changed || removed)) {
+    const since = `since version ${stats.previous.version}`;
+    const parts = [
+      changed && `${rows(changed)} added or changed`,
+      removed && `${rows(removed)} removed`,
+    ].filter(Boolean);
+    flags.push({
+      key: "changed",
+      text: changed ? formatNumber(changed) : `−${formatNumber(removed)}`,
+      title: `${parts.join(", ")} ${since}`,
+      className: "border border-node bg-white text-node",
+    });
+  }
+  return flags;
+}
 
 /** The params that scope a search to this contribution (see docs/api.md). */
 function scope(id: string, privateKey?: string) {
@@ -243,6 +293,15 @@ function ModalBody({
     const query = countQueries[countTables.indexOf(table)];
     return { count: totalOf(query?.data), isLoading: query?.isPending ?? false };
   };
+  // Rows flagged by validation or changed since the previous version, per table.
+  const { data: rowStats } = useQuery({
+    queryKey: ["contribution-rows", id, privateKey],
+    queryFn: () =>
+      api<ContributionRowStats>(`/contributions/${id}/rows`, {
+        params: { private_key: privateKey || undefined },
+      }),
+    staleTime: 60_000,
+  });
   // Plugin tabs counted by a query of their own.
   const queried = plugins.flatMap((tab) => (tab.countQuery ? [tab] : []));
   const queriedCounts = useQueries({
@@ -310,6 +369,7 @@ function ModalBody({
       group: "levels",
       count: count ?? 0,
       isLoading,
+      flags: rowFlags(rowStats, level.table),
       render: () => <LevelPanel level={level} id={id} privateKey={privateKey} />,
     });
   }
@@ -351,16 +411,24 @@ function ModalBody({
 
 // --- Tabs down the left (a select on narrow screens) -----------------------------------
 
+const pill =
+  "inline-flex min-w-[2em] items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-[18px]";
+
 function TabCount({ tab, active }: { tab: Tab; active: boolean }) {
   if (tab.count === undefined && !tab.isLoading) return null;
   return (
-    <span
-      className={cx(
-        "inline-flex min-w-[2em] items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-[18px]",
-        active ? "bg-node text-white" : "border border-gray-300 text-gray-600",
-      )}
-    >
-      {tab.isLoading ? <Spinner className="h-3 w-3" /> : formatNumber(tab.count)}
+    <span className="flex shrink-0 items-center gap-1">
+      {tab.flags?.map((flag) => (
+        <span key={flag.key} title={flag.title} className={cx(pill, flag.className)}>
+          {flag.text}
+          <span className="sr-only"> ({flag.title})</span>
+        </span>
+      ))}
+      <span
+        className={cx(pill, active ? "bg-node text-white" : "border border-gray-300 text-gray-600")}
+      >
+        {tab.isLoading ? <Spinner className="h-3 w-3" /> : formatNumber(tab.count)}
+      </span>
     </span>
   );
 }
@@ -430,7 +498,7 @@ function TabList({
             <option key={entry.key} value={entry.key}>
               {entry.label}
               {entry.count !== undefined && !entry.isLoading
-                ? ` (${formatNumber(entry.count)})`
+                ? ` (${[formatNumber(entry.count), ...(entry.flags ?? []).map((f) => f.title)].join(" · ")})`
                 : ""}
             </option>
           ))}
@@ -605,7 +673,26 @@ function VersionsTable({
   const { data: config } = useNodeConfig();
   const open = useOpenContribution();
   const keyQuery = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
-  const rows = versionRows(summary, currentId, isActivated);
+  // Every published version of this contribution, newest first; this one
+  // alone until they load (or if they cannot).
+  const { data: chain } = useQuery({
+    queryKey: ["contribution-versions", currentId, privateKey],
+    queryFn: () =>
+      api<ContributionVersion[]>(`/contributions/${currentId}/versions`, {
+        params: { private_key: privateKey || undefined },
+      }),
+    staleTime: 60_000,
+  });
+  const rows: VersionRow[] = chain
+    ? [...chain].reverse().map((entry) => ({
+        id: String(entry.id),
+        version: String(entry.version),
+        dataModel: entry.data_model_version,
+        date: entry.timestamp,
+        contributor: entry.contributor ?? "",
+        isActivated: entry.is_activated,
+      }))
+    : versionRows(summary, currentId, isActivated);
   const cell = "py-1 pr-3";
   const head = "py-1 pr-3 font-medium";
   return (

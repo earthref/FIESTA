@@ -17,6 +17,7 @@ from fiesta.search.grid import filter_clause, level_columns, sort_clauses
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services.access import constrain_search
 from fiesta.services.contributions import load_file
+from fiesta.services.history import row_stats, versions
 
 logger = logging.getLogger(__name__)
 
@@ -662,6 +663,26 @@ async def get_contribution(
     if hits:
         return hits[0]["_source"]
     raise HTTPException(404, f"contribution {contribution_id} is not indexed yet")
+
+
+@router.get("/contributions/{contribution_id}/versions")
+async def get_versions(
+    session: SessionDep, node: NodeDep, contribution_id: int, private_key: str | None = None
+) -> list[dict]:
+    """The contribution's version chain (previous_id), oldest first: every
+    published version, plus this one."""
+    contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    return await versions(session, contribution)
+
+
+@router.get("/contributions/{contribution_id}/rows")
+async def get_row_stats(
+    session: SessionDep, node: NodeDep, contribution_id: int, private_key: str | None = None
+) -> dict:
+    """Per table, the rows the current revision's validation flagged and the
+    rows that differ from the previous published version."""
+    contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    return await row_stats(session, node, contribution)
 
 
 @router.get("/contributions/{contribution_id}/download")
