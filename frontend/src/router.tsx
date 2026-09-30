@@ -25,6 +25,8 @@ export interface SearchParams {
   sort?: string;
   /** Plugin range filters, each "field:gte:lte" (blank = open end). */
   ranges?: string[];
+  /** Summary grid column filters, each "<column key>:<text>". */
+  filter?: string[];
   /** Plugin bounding-box filter: "minLon,minLat,maxLon,maxLat". */
   bbox?: string;
   /** The Map tab's area filter: "west,south,east,north", east past 180 across the antimeridian. */
@@ -90,6 +92,7 @@ const searchRoute = createRoute({
     view: str(search.view),
     sort: str(search.sort),
     ranges: strArray(search.ranges),
+    filter: strArray(search.filter),
     bbox: str(search.bbox),
     area: str(search.area),
     contribution: id(search.contribution),

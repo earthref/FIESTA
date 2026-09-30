@@ -17,7 +17,7 @@ Counted from the tree, not estimated:
 | | |
 |---|---|
 | Nodes configured (`config/*.yaml`) | 6 — MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR |
-| Plugins | poles, rock-mag (MagIC), depth-plot (CDR), plateau-calculations (KArAr), record-cards, digital-objects (ERDA) |
+| Plugins | poles, rock-mag (MagIC), depth-plot (CDR), plateau-calculations (KArAr), digital-objects (ERDA); record cards became per-level summary grid `columns` (2026-09-30) |
 | Backend apps | 1 — `fiesta.apps.api`: `/v2/{node}/...` for every node plus the frozen legacy `/v1` api.earthref.org contract (`routers/v1.py`) |
 | Backend tests | 84 (domain, plugins, deployment, the `/v1` contract against a fake session; no infra) + the Phase M integration suite in Docker; `scripts/e2e.sh` drives the compose stack |
 | Frontend routes | home, search, contribution, private workspace, upload, validate, data-models, vocabularies, method-codes, contact, login; **6 stubs** (about, technology, grand challenges, workshops, links, help) |

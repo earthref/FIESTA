@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { ErrorMessage } from "../../components/error-message";
-import { Cell, contributionId, NoDataCell, ResultItem } from "../../components/result-item";
+import { Cell, contributionId, NoDataCell } from "../../components/result-item";
 import { PageSpinner, Spinner } from "../../components/ui/spinner";
 import { api } from "../../lib/api";
 import { useOpenContribution } from "../../lib/contribution-modal";
 import type { NodeConfig, SearchPage, SearchResult } from "../../lib/types";
 import { getPath } from "../../lib/utils";
-import type { PluginModule, PluginResultItemProps } from "../index";
+import type { PluginGridCellProps, PluginModule } from "../index";
 
 interface AgeStep {
   step: number | string;
@@ -230,17 +230,19 @@ function PlateauCell({
   id,
   experiment,
   privateKey,
+  width,
 }: {
   id: string;
   experiment: string;
   privateKey?: string;
+  width: number;
 }) {
   const openContribution = useOpenContribution();
   const query = usePlateau(id, experiment, privateKey);
 
   if (query.isPending) {
     return (
-      <Cell width={125}>
+      <Cell width={width}>
         <div className="flex h-[80px] items-center justify-center">
           <Spinner />
         </div>
@@ -249,18 +251,18 @@ function PlateauCell({
   }
 
   if (query.error || !query.data || query.data.age_data.length === 0) {
-    return <NoDataCell label="Plateau" width={125} />;
+    return <NoDataCell label="Plateau" width={width} />;
   }
 
   return (
-    <Cell width={125}>
+    <Cell width={width}>
       <button
         type="button"
         onClick={() => openContribution(id, "age-spectra")}
         aria-label={`Open the age spectra, including ${experiment}`}
         className="block cursor-pointer border border-gray-300 hover:border-node focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
       >
-        <AgeSpectrum data={query.data} width={121} height={80} />
+        <AgeSpectrum data={query.data} width={width - 4} height={80} />
       </button>
     </Cell>
   );
@@ -350,7 +352,9 @@ export const plateauPlugin: PluginModule = {
       },
     ];
   },
-  resultItem(props: PluginResultItemProps) {
+  // The summary grid's plot tile: the experiment's age spectrum.
+  gridCell(props: PluginGridCellProps) {
+    if (props.column.cell !== "plot") return null;
     const levels = props.config.plugins["plateau-calculations"]?.levels;
     const enabled = Array.isArray(levels) ? levels.map(String) : [];
     if (!enabled.includes(props.level.name)) return null;
@@ -358,11 +362,11 @@ export const plateauPlugin: PluginModule = {
     const id = contributionId(props.hit);
     if (!experiment || !id) return null;
     return (
-      <ResultItem
-        doc={props.hit}
-        level={props.level}
+      <PlateauCell
+        id={id}
+        experiment={experiment}
         privateKey={props.privateKey}
-        extraCell={<PlateauCell id={id} experiment={experiment} privateKey={props.privateKey} />}
+        width={props.column.width}
       />
     );
   },

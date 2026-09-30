@@ -89,10 +89,13 @@ def build_search_body(
     private_only: bool = False,
     ranges: list[dict] | None = None,
     bbox: tuple[float, float, float, float] | None = None,
-    sort: str | None = None,
+    sort: str | list | None = None,
+    column_filters: list[dict] | None = None,
 ) -> dict[str, Any]:
-    """`sort` is a SORT_OPTIONS key; None picks relevance when there is free
-    text and newest-first otherwise (the legacy page's default behaviour)."""
+    """`sort` is a SORT_OPTIONS key or a list of sort clauses (a grid column
+    header's); None picks relevance when there is free text and newest-first
+    otherwise (the legacy page's default behaviour). `column_filters` are
+    extra filter clauses (the grid's column filters)."""
     text, tokens = parse_query(query)
     has_private_key = "private_key" in tokens
 
@@ -126,6 +129,8 @@ def build_search_body(
         if bounds:
             filters.append({"range": {field: bounds}})
 
+    filters.extend(column_filters or [])
+
     if bbox is not None:
         min_lon, min_lat, max_lon, max_lat = bbox
         filters.append(
@@ -155,7 +160,9 @@ def build_search_body(
         # Exact totals: the level tabs count past OpenSearch's default 10,000.
         "track_total_hits": True,
         "query": {"bool": {"filter": filters, "must": must}},
-        "sort": SORT_OPTIONS[sort or ("relevance" if text else DEFAULT_SORT)],
+        "sort": sort
+        if isinstance(sort, list)
+        else SORT_OPTIONS[sort or ("relevance" if text else DEFAULT_SORT)],
     }
 
     if facets:

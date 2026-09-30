@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ContributionEditor } from "../components/contribution-editor";
 import { ErrorMessage } from "../components/error-message";
 import { useLoginModal } from "../components/login-modal";
-import { ResultItem } from "../components/result-item";
+import { SummaryGrid } from "../components/summary-grid";
 import { Button } from "../components/ui/button";
 import { Icon } from "../components/ui/icon";
 import { Input } from "../components/ui/input";
@@ -478,7 +478,13 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
           borderTop: "none",
         }}
       >
-        <ResultItem doc={doc} level={contributionLevel} privateKey={contribution.private_key} />
+        <div className="overflow-x-auto">
+          <SummaryGrid
+            level={contributionLevel}
+            hits={[doc]}
+            privateKey={contribution.private_key}
+          />
+        </div>
       </div>
 
       <div className="my-2 flex gap-2">

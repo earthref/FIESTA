@@ -22,7 +22,6 @@ def _registry() -> dict[str, FiestaPlugin]:
     from fiesta.plugins.plateau import PlateauPlugin
     from fiesta.plugins.pmag_plots import PmagPlotsPlugin
     from fiesta.plugins.poles import PolesPlugin
-    from fiesta.plugins.record_cards import RecordCardsPlugin
     from fiesta.plugins.rock_mag import RockMagPlugin
 
     plugins = [
@@ -31,7 +30,6 @@ def _registry() -> dict[str, FiestaPlugin]:
         PmagPlotsPlugin(),
         DepthPlotPlugin(),
         PlateauPlugin(),
-        RecordCardsPlugin(),
     ]
     return {plugin.name: plugin for plugin in plugins}
 

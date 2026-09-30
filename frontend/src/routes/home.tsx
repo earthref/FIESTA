@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton, type IconButtonProps } from "../components/icon-button";
-import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
+import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { nodeUrl } from "../lib/base";
@@ -277,16 +277,8 @@ export function HomePage() {
           {recent.error && <ErrorMessage error={recent.error} />}
           {recent.data && (
             <>
-              <div style={{ margin: "1em 0" }}>
-                {recent.data.results.map((doc, index) => (
-                  <div
-                    // biome-ignore lint/suspicious/noArrayIndexKey: static list of 7, replaced wholesale on refetch
-                    key={`${contributionId(doc) ?? "recent"}-${index}`}
-                  >
-                    <ResultItem doc={doc} level={contributionLevel} />
-                    {recent.data.results.length > 1 && <ResultDivider />}
-                  </div>
-                ))}
+              <div className="overflow-x-auto" style={{ margin: "1em 0" }}>
+                <SummaryGrid level={contributionLevel} hits={recent.data.results} />
               </div>
               <IconButton
                 variant="wide"

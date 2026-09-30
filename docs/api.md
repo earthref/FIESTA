@@ -191,7 +191,7 @@ YAML's `plugins.<name>` map over the plugin's declared defaults.
 A level's `geo` is true when its table has a latitude and a longitude column
 (`lat`/`lat_s`/`lat_n` and `lon`/`lon_w`/`lon_e`) in the latest data model, and
 for the contribution level when any level does: the SPA gives those levels a
-Map tab. `search_levels` is extended with any plugin-contributed levels (no `geo`); `plugins` (a map
+Map tab. Each level's `columns` is its summary grid (see Search). `search_levels` is extended with any plugin-contributed levels (no `geo`); `plugins` (a map
 of active plugin name → its `frontend_config`) and `deployment_nodes` (the
 keys of every node this API serves, which the portal bar links next to itself
 off the production hosts) and `hidden_nodes` (the keys of the nodes whose web
@@ -210,8 +210,8 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
-| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
@@ -318,6 +318,23 @@ is in the query.
 newest), `recent` / `recent_asc` (contribution timestamp), `published` /
 `published_asc` (`_reference.year`), `cited` (`_reference.n_citations`),
 `citation_az` / `citation_za` (`_reference.citation`), `id_desc` / `id_asc`.
+It may instead be `<column>:asc|desc`, a sortable column of the level's summary
+grid (below): its header's sort, newest first on ties.
+
+**Summary grid.** Each search level in `GET /config` carries `columns`, its
+Summaries grid in order: `{key, cell, label, width, column?, subtitle_column?,
+format?, sortable, filterable}`. `cell` names the tile (`citation`, `name`,
+`contributed`, `download`, `links`, `counts`, `map`, `plot`, `geo`, `geology`,
+`age`, `intensity`, `method_codes`, `citations`, or `field` / `title` for a
+`column` of the level's summary block); `key` is the column (field/title) or the
+tile. They come from the node YAML's `search.levels[].columns` (admin Summary
+Grid tab), each unset field filled from the tile's defaults
+(`fiesta.search.grid`), or the default tiles when a level sets none. A sortable
+column sorts on a `.raw` keyword (numbers — data-model `Number` columns, age,
+intensity — by a script that parses the string values; timestamp and id on
+their typed fields). `filter=<key>:<text>` keeps the records whose filterable
+column's text fields hold every typed word as a prefix (`simple_query_string`,
+lenient); an unknown or unsortable/unfilterable key is a 422.
 
 **Reference metadata.** `summary.contribution._reference` is the publication
 behind a contribution's reference DOI (the `reference` column of its

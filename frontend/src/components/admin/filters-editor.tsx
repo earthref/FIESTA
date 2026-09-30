@@ -400,7 +400,7 @@ function FilterModal({
 }
 
 /** A list of chip values with a datalist-backed input that also accepts typing. */
-function TagInput({
+export function TagInput({
   values,
   options,
   placeholder,

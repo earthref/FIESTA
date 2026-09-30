@@ -90,9 +90,9 @@ Facets: `file_type`, `method`, `material`, `texture`, `rv_name`,
 `pi_institution`, `collection` — the repository search's filter groups (file
 types, collection methods, materials, RV names, institutions).
 
-Result cards come from the `record-cards` plugin (see plugins.md), laid out
-by `plugins.record-cards.cards` in osu-mgr.yaml (one card per search table,
-editable in the admin UI's Plugins tab).
+Each level's Summaries grid is its `columns` in osu-mgr.yaml (a title column,
+the record's data columns, citation and contribution date; editable in the
+admin UI's Summary Grid tab), which replaced the `record-cards` plugin.
 
 **Index name is `osumgr`, not `osu-mgr`.** The repository's own pipeline owns an
 OpenSearch alias called `osu-mgr`; keeping the names distinct lets a FIESTA

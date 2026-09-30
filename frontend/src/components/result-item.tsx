@@ -2,8 +2,9 @@ import { type CSSProperties, type ReactNode, useContext } from "react";
 import { apiUrl, nodeSiteUrl, nodeUrl, siteUrl } from "../lib/base";
 import { NodeConfigScope, useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
-import type { SearchLevel, SearchResult } from "../lib/types";
+import type { GridColumn, NodeConfig, SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath, singularize } from "../lib/utils";
+import { pluginGridCell } from "../plugins";
 import { type MapMarker, MapThumbnail, markersFromGeoPoint } from "./map-thumbnail";
 import { Icon } from "./ui/icon";
 
@@ -132,10 +133,9 @@ function breadcrumbOf(doc: SearchResult, level: SearchLevel, levels: SearchLevel
 }
 
 // --- Cell building blocks (legacy search_summaries_list_item.jsx) ---------------
+// The summary grid spaces its columns (1em, the legacy cells' right margin).
 
 const cellBase: CSSProperties = {
-  marginRight: "1em",
-  marginBottom: 5,
   fontSize: 13,
 };
 
@@ -243,71 +243,39 @@ export function ResultDivider() {
   );
 }
 
-// --- Card frame (header row + one row of blocks) --------------------------------
+// --- Card frame (a header row over one row of cells; the Poles detail card) -------
 
-export interface ResultCardFrameProps {
-  doc: SearchResult;
-  level: SearchLevel;
-  cells: ReactNode;
-  /** Row height cap (one row of blocks); 105px default. */
-  collapsedMaxHeight?: number;
-}
-
-/** A result card: the header opens the contribution's modal at this card's
- * level (which replaced the legacy expand caret: everything it showed, and
- * more, is in the modal's tabs). */
+/** A single record as a card: the header opens the contribution's modal at
+ * this level; the cells wrap, showing only their first row. */
 export function ResultCardFrame({
   doc,
   level,
   cells,
-  collapsedMaxHeight = 105,
-}: ResultCardFrameProps) {
+}: {
+  doc: SearchResult;
+  level: SearchLevel;
+  cells: ReactNode;
+}) {
   const { data: config } = useNodeConfig();
   const openContribution = useOpenContribution();
   const id = contributionId(doc);
-  const citation = citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown");
   const version = getPath(doc, "summary.contribution.version");
-  const referenceTitle =
-    level.table === "contribution"
-      ? firstString(getPath(doc, "summary.contribution._reference.title"))
-      : undefined;
   const breadcrumb = breadcrumbOf(doc, level, config?.search_levels ?? []);
-  const timestamp = getPath(doc, "summary.contribution.timestamp");
   const contributor = firstString(getPath(doc, "summary.contribution._contributor"));
-
   return (
-    <div
-      className="relative flow-root text-left"
-      style={{ lineHeight: "16px", color: "rgba(0,0,0,.87)" }}
-    >
-      {/* Header/citation row: opens the contribution modal */}
+    <div className="relative flow-root text-left" style={{ lineHeight: "16px" }}>
       <button
         type="button"
         onClick={() => id && openContribution(id, level.table)}
         title="Open this contribution"
-        className="group relative flex w-full cursor-pointer items-stretch text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
-        style={{ padding: "0 1em 0.5em", margin: "-3.5px -1em 0 0" }}
+        className="group flex w-full cursor-pointer items-stretch text-left text-[13px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+        style={{ paddingBottom: "0.5em" }}
       >
-        <span
-          aria-hidden="true"
-          className="absolute inline-flex items-center justify-center"
-          style={{ left: -4.2, top: 0.8, width: "1.25em", height: "1.25em", fontSize: 14 }}
-        >
-          <Icon
-            name="caret-right"
-            className="group-hover:text-node"
-            style={{ width: "1.15em", height: "1.15em" }}
-          />
+        <span className="whitespace-nowrap font-bold group-hover:text-node">
+          {citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown")}
+          {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
         </span>
-        <span className="whitespace-nowrap text-[13px] font-bold group-hover:text-node">
-          {citation}
-          {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
-        </span>
-        <span
-          className="mx-[0.5em] flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[13px]"
-          style={{ height: "1.25em" }}
-        >
-          {referenceTitle}
+        <span className="mx-[0.5em] flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
           {breadcrumb.map((part, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: breadcrumb parts can repeat and the ordered list is static per hit
             <span key={`${index}-${part}`}>
@@ -316,23 +284,19 @@ export function ResultCardFrame({
             </span>
           ))}
         </span>
-        <span className="whitespace-nowrap text-right text-[13px]">
-          {formatDateLL(timestamp)}
+        <span className="whitespace-nowrap text-right">
+          {formatDateLL(getPath(doc, "summary.contribution.timestamp"))}
           {contributor && (
             <>
-              {" by "}
+              {" by "}
               <b>{contributor}</b>
             </>
           )}
         </span>
       </button>
-
-      {/* Flex data row. Legacy clipped the row at 105px mid-block; FIESTA
-          wraps the blocks and shows only the first row (docs/legacy-ux-spec.md
-          deviations); the rest is in the contribution modal. */}
       <div
-        className="flex flex-wrap font-normal"
-        style={{ marginRight: "-1em", maxHeight: collapsedMaxHeight, overflow: "hidden" }}
+        className="flex flex-wrap"
+        style={{ columnGap: "1em", maxHeight: 105, overflow: "hidden" }}
       >
         {cells}
       </div>
@@ -340,7 +304,7 @@ export function ResultCardFrame({
   );
 }
 
-// --- Default result item (11-cell legacy layout) ---------------------------------
+// --- Summary grid cells (the legacy result card's tiles) ------------------------
 
 export function DefinitionTable({ data }: { data: Record<string, unknown> }) {
   const entries = Object.entries(data).filter(([, value]) => value !== null && value !== undefined);
@@ -412,81 +376,149 @@ function markersOf(doc: SearchResult, level: SearchLevel): MapMarker[] {
   return [];
 }
 
-export function ResultItem({
-  doc,
-  level,
-  privateKey,
-  extraCell,
+function joined(value: unknown): string {
+  return listOf(value).join(", ");
+}
+
+/** "2.20 MB" — a byte count as the legacy repositories render file sizes. */
+function formatBytes(value: unknown): string {
+  const bytes = Number(Array.isArray(value) ? value[0] : value);
+  if (!Number.isFinite(bytes)) return joined(value);
+  const units = ["bytes", "KB", "MB", "GB", "TB"];
+  let size = bytes;
+  let unit = 0;
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024;
+    unit += 1;
+  }
+  return `${unit === 0 ? size : size.toFixed(2)} ${units[unit]}`;
+}
+
+/** A cell that opens the record's contribution in its modal, at this level's tab. */
+function OpenCell({
+  id,
+  table,
+  width,
+  children,
 }: {
+  id: string | undefined;
+  table: string;
+  width: number;
+  children: ReactNode;
+}) {
+  const openContribution = useOpenContribution();
+  return (
+    <button
+      type="button"
+      onClick={() => id && openContribution(id, table)}
+      title="Open this contribution"
+      className="block shrink-0 cursor-pointer self-start overflow-hidden text-left hover:text-node focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+      style={{ ...cellBase, minWidth: width, maxWidth: width }}
+    >
+      {children}
+    </button>
+  );
+}
+
+export interface SummaryCellProps {
+  column: GridColumn;
   doc: SearchResult;
   level: SearchLevel;
   privateKey?: string;
-  /** Plugin slot: rendered in place of the plot-thumbnail placeholder cell. */
-  extraCell?: ReactNode;
-}) {
+}
+
+/** One grid cell: the tile its column names, for one search record. A plugin
+ * may render any tile itself (plateau-calculations' age spectrum in `plot`). */
+export function SummaryCell(props: SummaryCellProps) {
   const { data: config } = useNodeConfig();
+  if (!config) return null;
+  return (
+    pluginGridCell(config, {
+      column: props.column,
+      hit: props.doc,
+      level: props.level,
+      config,
+      privateKey: props.privateKey,
+    }) ?? <BuiltinCell {...props} config={config} />
+  );
+}
+
+function BuiltinCell({
+  column,
+  doc,
+  level,
+  privateKey,
+  config,
+}: SummaryCellProps & { config: NodeConfig }) {
   const nodeApiUrl = useNodeApiUrl();
   const openContribution = useOpenContribution();
-  if (!config) return null;
-
+  const width = column.width;
   const id = contributionId(doc);
-  const isActivated = doc._is_activated !== false;
-  const keyParam = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
-  const publicationDoi = firstString(getPath(doc, "summary.contribution._reference.doi"));
 
-  const counts = config.search_levels
-    .filter((entry) => entry.count_field)
-    .map((entry) => ({ entry, count: getPath(doc, entry.count_field as string) }))
-    .filter(
-      (item): item is { entry: SearchLevel; count: number } => typeof item.count === "number",
-    );
+  switch (column.cell) {
+    case "citation": {
+      const version = getPath(doc, "summary.contribution.version");
+      return (
+        <OpenCell id={id} table={level.table} width={width}>
+          <b>
+            {citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown")}
+            {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
+          </b>
+        </OpenCell>
+      );
+    }
 
-  const geologyClasses = listOf(getPath(doc, "summary._all.geologic_classes"));
-  const geologyTypes = listOf(getPath(doc, "summary._all.geologic_types"));
-  const lithologies = listOf(getPath(doc, "summary._all.lithologies"));
-  const geologyDefined = [geologyClasses, geologyTypes, lithologies].filter(
-    (list) => list.length > 0,
-  ).length;
-  const geologyClamp = geologyDefined === 3 ? 1 : geologyDefined === 2 ? 2 : 5;
+    // The reference title (contributions) or the "{location} ⇒ {site}" breadcrumb
+    case "name": {
+      if (level.table === "contribution") {
+        const title = firstString(getPath(doc, "summary.contribution._reference.title"));
+        return (
+          <OpenCell id={id} table={level.table} width={width}>
+            <span
+              className="overflow-hidden"
+              style={{ display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical" }}
+            >
+              {title}
+            </span>
+          </OpenCell>
+        );
+      }
+      const breadcrumb = breadcrumbOf(doc, level, config.search_levels);
+      return (
+        <OpenCell id={id} table={level.table} width={width}>
+          {breadcrumb.map((part, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: breadcrumb parts can repeat and the ordered list is static per hit
+            <span key={`${index}-${part}`}>
+              {index > 0 && " ⇒ "}
+              {index === breadcrumb.length - 1 ? <b>{part}</b> : part}
+            </span>
+          ))}
+        </OpenCell>
+      );
+    }
 
-  const geologic = unionOf(doc, [
-    "plate_blocks",
-    "terranes",
-    "geological_province_sections",
-    "tectonic_settings",
-  ]);
-  const geographic = unionOf(doc, [
-    "continent_ocean",
-    "country",
-    "ocean_sea",
-    "region",
-    "village_city",
-    "location",
-    "location_type",
-    "location_alternatives",
-  ]);
+    case "contributed": {
+      const contributor = firstString(getPath(doc, "summary.contribution._contributor"));
+      return (
+        <Cell width={width} wrap>
+          {formatDateLL(getPath(doc, "summary.contribution.timestamp"))}
+          {contributor && (
+            <>
+              <br />
+              {"by "}
+              <b>{contributor}</b>
+            </>
+          )}
+        </Cell>
+      );
+    }
 
-  const methodCodes = listOf(getPath(doc, "summary._all.method_codes"));
-  const citations = listOf(
-    getPath(doc, "summary._all.citation_dois") ?? getPath(doc, "summary._all.citations"),
-  ).filter((citation) => !THIS_STUDY.test(citation));
-  const age = rangeText(getPath(doc, "summary._all.ages") ?? getPath(doc, "summary._all.age"));
-  const ageUnit = firstString(getPath(doc, "summary._all.age_unit"));
-  const intensities = listOf(
-    getPath(doc, "summary._all.int_abs") ?? getPath(doc, "summary._all.intensities"),
-  )
-    .map(Number)
-    .filter((n) => Number.isFinite(n));
-  const markers = markersOf(doc, level);
-
-  // Legacy renderDownloadButton/renderLinks only exist on contribution cards.
-  const isContribution = level.table === "contribution";
-
-  const cells = (
-    <>
-      {/* 1. Download (100px cell; basic tiny fluid compact icon header button, height 100px) */}
-      {!isContribution ? null : id ? (
-        <Cell width={100} style={{ fontSize: 14, height: 104 }}>
+    // Download (basic tiny fluid compact icon header button, height 100px)
+    case "download": {
+      if (!id) return <NoDataCell label="Download" width={width} />;
+      const keyParam = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
+      return (
+        <Cell width={width} style={{ fontSize: 14, height: 104 }}>
           <a
             href={nodeApiUrl(`/contributions/${id}/download${keyParam}`)}
             download
@@ -506,13 +538,15 @@ export function ResultItem({
             Download
           </a>
         </Cell>
-      ) : (
-        <NoDataCell label="Download" width={100} />
-      )}
+      );
+    }
 
-      {/* 2. Links (200px) */}
-      {!isContribution ? null : id ? (
-        <Cell width={200}>
+    case "links": {
+      if (!id) return <NoDataCell label="Link" width={width} />;
+      const isActivated = doc._is_activated !== false;
+      const publicationDoi = firstString(getPath(doc, "summary.contribution._reference.doi"));
+      return (
+        <Cell width={width}>
           <b>{config.key} Contribution Link:</b>
           <p className="m-0 overflow-hidden text-ellipsis leading-[1.4285em]">
             <ContributionLink id={id} privateKey={privateKey}>
@@ -554,36 +588,57 @@ export function ResultItem({
             </>
           )}
         </Cell>
-      ) : (
-        <NoDataCell label="Link" width={200} />
-      )}
+      );
+    }
 
-      {/* 3. Counts (135px table, right-aligned counts, singular/plural labels, line-height 1);
-          legacy renders the (possibly empty) table, never a placeholder */}
-      {counts.length > 0 ? (
-        <Cell width={135}>
+    // Counts (right-aligned counts, singular/plural labels, line-height 1); each
+    // opens the contribution's modal at that level's tab. Legacy renders the
+    // (possibly empty) table, never a placeholder.
+    case "counts": {
+      const counts = config.search_levels
+        .filter((entry) => entry.count_field)
+        .map((entry) => ({ entry, count: getPath(doc, entry.count_field as string) }))
+        .filter(
+          (item): item is { entry: SearchLevel; count: number } => typeof item.count === "number",
+        );
+      return (
+        <Cell width={width}>
           <table style={{ lineHeight: 1 }}>
             <tbody>
-              {counts.map(({ entry, count }) => (
-                <tr key={entry.name}>
-                  <td className="text-right" style={{ padding: 1 }}>
-                    {abbreviateNumber(count)}
-                  </td>
-                  <td style={{ padding: 1 }}>
-                    {` ${count === 1 ? singularize(entry.name) : entry.name}`}
-                  </td>
-                </tr>
-              ))}
+              {counts.map(({ entry, count }) => {
+                const open = () => id && openContribution(id, entry.table);
+                return (
+                  <tr key={entry.name} className="hover:text-node">
+                    <td className="text-right" style={{ padding: 1 }}>
+                      <button type="button" tabIndex={-1} onClick={open} className="cursor-pointer">
+                        {abbreviateNumber(count)}
+                      </button>
+                    </td>
+                    <td style={{ padding: 1 }}>
+                      <button
+                        type="button"
+                        onClick={open}
+                        title={`Show this contribution's ${entry.name}`}
+                        className="cursor-pointer text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+                      >
+                        {count === 1 ? singularize(entry.name) : entry.name}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </Cell>
-      ) : (
-        <Cell width={135}>{null}</Cell>
-      )}
+      );
+    }
 
-      {/* 4. Map thumbnail (100px globe); click opens the contribution's Map tab */}
-      {markers.length > 0 ? (
-        <Cell width={100} style={{ fontSize: 14, height: 104 }}>
+    // Map thumbnail (100px globe); click opens the contribution's Map tab
+    case "map": {
+      const markers = markersOf(doc, level);
+      if (markers.length === 0) return <NoDataCell label="Geospatial" width={width} />;
+      return (
+        <Cell width={width} style={{ fontSize: 14, height: 104 }}>
           <button
             type="button"
             onClick={() => id && openContribution(id, "map")}
@@ -593,22 +648,20 @@ export function ResultItem({
             <MapThumbnail markers={markers} width={100} height={100} />
           </button>
         </Cell>
-      ) : (
-        <NoDataCell label="Geospatial" width={100} />
-      )}
+      );
+    }
 
-      {/* 5. Plot thumbnail — plugin slot (legacy SearchPlotThumbnail container) */}
-      {extraCell ?? (
+    // Plot thumbnail: a plugin's (legacy SearchPlotThumbnail container), else none
+    case "plot":
+      return (
         <div
           className="shrink-0 overflow-hidden text-ellipsis text-center text-[#AAAAAA]"
           style={{
             boxSizing: "content-box",
-            minWidth: 98,
-            maxWidth: 98,
+            minWidth: width - 2,
+            maxWidth: width - 2,
             minHeight: 98,
             maxHeight: 98,
-            marginRight: "1rem",
-            marginBottom: 5,
             fontSize: 13,
             border: "1px solid rgba(0,0,0,.1)",
           }}
@@ -622,11 +675,30 @@ export function ResultItem({
           <br />
           <br />
         </div>
-      )}
+      );
 
-      {/* 6. Geo (125px): geologic units then geographic names */}
-      {geologic.length > 0 || geographic.length > 0 ? (
-        <Cell width={125} wrap>
+    // Geologic units then geographic names
+    case "geo": {
+      const geologic = unionOf(doc, [
+        "plate_blocks",
+        "terranes",
+        "geological_province_sections",
+        "tectonic_settings",
+      ]);
+      const geographic = unionOf(doc, [
+        "continent_ocean",
+        "country",
+        "ocean_sea",
+        "region",
+        "village_city",
+        "location",
+        "location_type",
+        "location_alternatives",
+      ]);
+      if (geologic.length === 0 && geographic.length === 0)
+        return <NoDataCell label="Geographic" width={width} />;
+      return (
+        <Cell width={width} wrap>
           {geologic.length > 0 && (
             <ClampedField label="Geologic:" lines={geographic.length > 0 ? 2 : 5}>
               {geologic.join(", ")}
@@ -638,117 +710,170 @@ export function ResultItem({
             </ClampedField>
           )}
         </Cell>
-      ) : (
-        <NoDataCell label="Geographic" width={125} />
-      )}
+      );
+    }
 
-      {/* 7. Geology (125px): Class / Type / Lithology */}
-      {geologyDefined > 0 ? (
-        <Cell width={125} wrap>
-          {geologyClasses.length > 0 && (
-            <ClampedField label="Class:" lines={geologyClamp}>
-              {geologyClasses.join(", ")}
+    // Class / Type / Lithology
+    case "geology": {
+      const classes = listOf(getPath(doc, "summary._all.geologic_classes"));
+      const types = listOf(getPath(doc, "summary._all.geologic_types"));
+      const lithologies = listOf(getPath(doc, "summary._all.lithologies"));
+      const defined = [classes, types, lithologies].filter((list) => list.length > 0).length;
+      if (defined === 0) return <NoDataCell label="Geologic" width={width} />;
+      const clamp = defined === 3 ? 1 : defined === 2 ? 2 : 5;
+      return (
+        <Cell width={width} wrap>
+          {classes.length > 0 && (
+            <ClampedField label="Class:" lines={clamp}>
+              {classes.join(", ")}
             </ClampedField>
           )}
-          {geologyTypes.length > 0 && (
-            <ClampedField label="Type:" lines={geologyClamp}>
-              {geologyTypes.join(", ")}
+          {types.length > 0 && (
+            <ClampedField label="Type:" lines={clamp}>
+              {types.join(", ")}
             </ClampedField>
           )}
           {lithologies.length > 0 && (
-            <ClampedField label="Lithology:" lines={geologyClamp}>
+            <ClampedField label="Lithology:" lines={clamp}>
               {lithologies.join(", ")}
             </ClampedField>
           )}
         </Cell>
-      ) : (
-        <NoDataCell label="Geologic" width={125} />
-      )}
+      );
+    }
 
-      {/* 8. Age (120px) */}
-      {age ? (
-        <Cell width={120} wrap>
+    case "age": {
+      const age = rangeText(getPath(doc, "summary._all.ages") ?? getPath(doc, "summary._all.age"));
+      if (!age) return <NoDataCell label="Age" width={width} />;
+      const ageUnit = firstString(getPath(doc, "summary._all.age_unit"));
+      return (
+        <Cell width={width} wrap>
           <b>Age:</b>
           <br />
           {age}
           {ageUnit ? ` ${ageUnit}` : ""}
         </Cell>
-      ) : (
-        <NoDataCell label="Age" width={120} />
-      )}
+      );
+    }
 
-      {/* 9. Intensity (75px) */}
-      {intensities.length > 0 ? (
-        <Cell width={75} wrap>
-          {Math.min(...intensities) === Math.max(...intensities) ? (
+    case "intensity": {
+      const intensities = listOf(
+        getPath(doc, "summary._all.int_abs") ?? getPath(doc, "summary._all.intensities"),
+      )
+        .map(Number)
+        .filter((n) => Number.isFinite(n));
+      if (intensities.length === 0) return <NoDataCell label="Intensity" width={width} />;
+      const min = Math.min(...intensities);
+      const max = Math.max(...intensities);
+      return (
+        <Cell width={width} wrap>
+          {min === max ? (
             <>
               <b>Int:</b>
               <br />
-              {formatIntensity(intensities[0])}
+              {formatIntensity(min)}
               <br />
             </>
           ) : (
             <>
               <b>Min Int:</b>
               <br />
-              {formatIntensity(Math.min(...intensities))}
+              {formatIntensity(min)}
               <br />
               <b>Max Int:</b>
               <br />
-              {formatIntensity(Math.max(...intensities))}
+              {formatIntensity(max)}
               <br />
             </>
           )}
           <b>N: </b>
           {intensities.length}
         </Cell>
-      ) : (
-        <NoDataCell label="Intensity" width={75} />
-      )}
+      );
+    }
 
-      {/* 10. Method Codes (125px) */}
-      {methodCodes.length > 0 ? (
-        <Cell width={125} wrap>
+    case "method_codes": {
+      const methodCodes = listOf(getPath(doc, "summary._all.method_codes"));
+      if (methodCodes.length === 0)
+        return (
+          <NoDataCell
+            label={
+              <>
+                Method
+                <br />
+                Codes
+              </>
+            }
+            width={width}
+            dataWord={false}
+          />
+        );
+      return (
+        <Cell width={width} wrap>
           <ClampedField label="Method Codes:" lines={5}>
             {methodCodes.join(", ")}
           </ClampedField>
         </Cell>
-      ) : (
-        <NoDataCell
-          label={
-            <>
-              Method
-              <br />
-              Codes
-            </>
-          }
-          width={125}
-          dataWord={false}
-        />
-      )}
+      );
+    }
 
-      {/* 11. Citations (125px) */}
-      {citations.length > 0 ? (
-        <Cell width={125} wrap>
+    case "citations": {
+      const citations = listOf(
+        getPath(doc, "summary._all.citation_dois") ?? getPath(doc, "summary._all.citations"),
+      ).filter((citation) => !THIS_STUDY.test(citation));
+      if (citations.length === 0)
+        return (
+          <NoDataCell
+            label={
+              <>
+                Additional
+                <br />
+                Citations
+              </>
+            }
+            width={width}
+            dataWord={false}
+          />
+        );
+      return (
+        <Cell width={width} wrap>
           <ClampedField label="Citations:" lines={5}>
             {citations.join(", ")}
           </ClampedField>
         </Cell>
-      ) : (
-        <NoDataCell
-          label={
-            <>
-              Additional
-              <br />
-              Citations
-            </>
-          }
-          width={125}
-          dataWord={false}
-        />
-      )}
-    </>
-  );
+      );
+    }
 
-  return <ResultCardFrame doc={doc} level={level} cells={cells} />;
+    // A column in bold over an optional subtitle column (the old record cards' title)
+    case "title": {
+      const block = (getPath(doc, `summary.${level.table}`) ?? {}) as Record<string, unknown>;
+      const title = joined(block[column.column ?? ""]) || "Untitled";
+      const subtitle = column.subtitle_column ? joined(block[column.subtitle_column]) : "";
+      return (
+        <OpenCell id={id} table={level.table} width={width}>
+          <b>{title}</b>
+          {subtitle && (
+            <span className="block overflow-hidden text-gray-600" style={{ maxHeight: "4.5em" }}>
+              {subtitle}
+            </span>
+          )}
+        </OpenCell>
+      );
+    }
+
+    // One column of the level's summary block: "Label: value"
+    default: {
+      const block = (getPath(doc, `summary.${level.table}`) ?? {}) as Record<string, unknown>;
+      const value = block[column.column ?? ""];
+      const text = column.format === "bytes" ? formatBytes(value) : joined(value);
+      if (!text) return <NoDataCell label={column.label} width={width} />;
+      return (
+        <Cell width={width} wrap>
+          <b>{column.label}:</b>
+          <br />
+          {text}
+        </Cell>
+      );
+    }
+  }
 }

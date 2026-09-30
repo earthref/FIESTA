@@ -14,7 +14,7 @@ async def get_config(node: NodeDep) -> dict:
     # Plugins may contribute extra search tabs and per-plugin UI options.
     plugins = active_plugins(node)
     config["search_levels"] += [
-        lvl.model_dump() for plugin in plugins for lvl in plugin.search_levels(node)
+        node.public_level(lvl) for plugin in plugins for lvl in plugin.search_levels(node)
     ]
     config["plugins"] = {plugin.name: plugin.frontend_config(node) for plugin in plugins}
     # Every node this API serves (keys): the SPA links its portal bar to their

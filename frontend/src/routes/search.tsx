@@ -14,7 +14,7 @@ import { ContributionModal } from "../components/contribution-modal";
 import { ErrorMessage } from "../components/error-message";
 import { type Area, areaToBbox, parseArea } from "../components/map/map-points";
 import { type AreaRequest, SearchMap } from "../components/map/search-map";
-import { contributionId, ResultDivider, ResultItem } from "../components/result-item";
+import { contributionId, ResultDivider } from "../components/result-item";
 import { RowsTable } from "../components/rows-table";
 import {
   applicableFilters,
@@ -24,6 +24,13 @@ import {
   RangeFilter,
   rangesFor,
 } from "../components/search-filters";
+import {
+  formatGridFilters,
+  type GridSort,
+  parseGridFilters,
+  parseGridSort,
+  SummaryGrid,
+} from "../components/summary-grid";
 import { buttonIconStyle, SemanticIcon } from "../components/ui/fa-icon";
 import { Icon } from "../components/ui/icon";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
@@ -37,7 +44,6 @@ import type {
   SearchFilter,
   SearchLevel,
   SearchPage as SearchPageData,
-  SearchResult,
 } from "../lib/types";
 import {
   abbreviateNumber,
@@ -49,12 +55,7 @@ import {
   titleCase,
   toggleQueryToken,
 } from "../lib/utils";
-import {
-  type PluginSubTabContext,
-  pluginFiltersPanel,
-  pluginResultItem,
-  pluginSubTabs,
-} from "../plugins";
+import { type PluginSubTabContext, pluginFiltersPanel, pluginSubTabs } from "../plugins";
 
 const PAGE_SIZE = 10;
 const routeApi = getRouteApi("/search");
@@ -163,6 +164,7 @@ function searchRequestParams(
   ranges?: string[],
   bbox?: string,
   sort?: string,
+  filters?: string[],
 ) {
   return {
     query: query || undefined,
@@ -172,6 +174,7 @@ function searchRequestParams(
     range: ranges && ranges.length > 0 ? ranges : undefined,
     bbox: bbox || undefined,
     sort,
+    filter: filters && filters.length > 0 ? filters : undefined,
   };
 }
 
@@ -425,6 +428,11 @@ export function SearchPage() {
   // Legacy `sortDefault`: relevance whenever there is free text and the user
   // has not picked a sort, otherwise newest first.
   const sort = search.sort ?? (hasFreeText ? RELEVANCE_OPTION.value : SORT_OPTIONS[0].value);
+  // The Summaries grid's header sort ("<column>:asc|desc") and column filters,
+  // both on this level's columns.
+  const gridSort = parseGridSort(search.sort);
+  const gridFilterList = useMemo(() => search.filter ?? [], [search.filter]);
+  const gridFilters = useMemo(() => parseGridFilters(gridFilterList), [gridFilterList]);
 
   const [input, setInput] = useState(q);
   // A link may open a sub-tab (the home page's plugin cards); it is kept in
@@ -450,17 +458,20 @@ export function SearchPage() {
   const setSearch = (next: {
     q?: string;
     level?: string;
-    sort?: string;
+    sort?: string | undefined;
     ranges?: string[];
+    filter?: string[];
     bbox?: string | undefined;
     area?: string | undefined;
   }) => {
+    const filter = next.filter ?? gridFilterList;
     navigate({
       search: {
         q: next.q !== undefined ? next.q || undefined : q || undefined,
         level: next.level ?? search.level,
-        sort: next.sort ?? search.sort,
+        sort: "sort" in next ? next.sort : search.sort,
         ranges: (next.ranges ?? ranges).length > 0 ? (next.ranges ?? ranges) : undefined,
+        filter: filter.length > 0 ? filter : undefined,
         bbox: "bbox" in next ? next.bbox || undefined : bbox,
         area: "area" in next ? next.area || undefined : search.area,
       },
@@ -572,11 +583,20 @@ export function SearchPage() {
   const queryBbox = activeTab?.render ? undefined : (areaBbox(level) ?? activeBbox);
 
   const results = useInfiniteQuery({
-    queryKey: ["search", level?.table, q, sort, queryRanges, queryBbox],
+    queryKey: ["search", level?.table, q, sort, queryRanges, queryBbox, gridFilterList],
     queryFn: ({ pageParam }) =>
       api<SearchPageData>(`/search/${level?.table}`, {
         params: {
-          ...searchRequestParams(q, PAGE_SIZE, pageParam, true, queryRanges, queryBbox, sort),
+          ...searchRequestParams(
+            q,
+            PAGE_SIZE,
+            pageParam,
+            true,
+            queryRanges,
+            queryBbox,
+            sort,
+            gridFilterList,
+          ),
           // The Rows and Map sub-tabs' counts, with the first page.
           totals: pageParam === 0 || undefined,
         },
@@ -661,11 +681,17 @@ export function SearchPage() {
     setSearch({
       q: [freeText, ...kept.map(([f, v]) => `${f}:"${v}"`)].filter(Boolean).join(" "),
       ranges: keptRanges,
+      filter: [],
       bbox: activeBbox ? undefined : bbox,
       area: undefined,
     });
   };
-  const clearActive = hasFacetFilters || activeRanges.length > 0 || !!activeBbox || !!area;
+  const clearActive =
+    hasFacetFilters ||
+    activeRanges.length > 0 ||
+    !!activeBbox ||
+    !!area ||
+    gridFilterList.length > 0;
 
   // The sidebar's Geospatial filter opens the Map, in the Mercator view and
   // zoomed to the new area when coming from a list (as on osu-mgr.org).
@@ -685,12 +711,24 @@ export function SearchPage() {
 
   if (!config || !level) return <PageSpinner />;
 
-  const renderHit = (doc: SearchResult) =>
-    pluginResultItem(config, { hit: doc, level, config, privateKey }) ?? (
-      <ResultItem doc={doc} level={level} privateKey={privateKey} />
-    );
-
-  const sortOptions = hasFreeText ? [RELEVANCE_OPTION, ...SORT_OPTIONS] : SORT_OPTIONS;
+  // A header sort shows in the dropdown as its own (selected) entry.
+  const gridSortColumn = gridSort && level.columns?.find((c) => c.key === gridSort.key);
+  const sortOptions = [
+    ...(gridSort && gridSortColumn
+      ? [
+          {
+            value: sort,
+            label: `${gridSortColumn.label} ${gridSort.order === "asc" ? "Ascending" : "Descending"}`,
+          },
+        ]
+      : []),
+    ...(hasFreeText ? [RELEVANCE_OPTION] : []),
+    ...SORT_OPTIONS,
+  ];
+  const onGridSort = (next: GridSort | undefined) =>
+    setSearch({ sort: next ? `${next.key}:${next.order}` : undefined });
+  const onGridFilter = (key: string, text: string) =>
+    setSearch({ filter: formatGridFilters({ ...gridFilters, [key]: text }) });
 
   return (
     <div className="magic-search">
@@ -703,7 +741,16 @@ export function SearchPage() {
             <button
               key={entry.name}
               type="button"
-              onClick={() => setSearch({ level: entry.name, ranges: [], bbox: undefined })}
+              onClick={() =>
+                setSearch({
+                  level: entry.name,
+                  ranges: [],
+                  filter: [],
+                  bbox: undefined,
+                  // A header sort names this level's columns.
+                  sort: gridSort ? undefined : search.sort,
+                })
+              }
               className={cx(
                 "flex items-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
                 !active && "cursor-pointer hover:text-node-dark",
@@ -1016,6 +1063,7 @@ export function SearchPage() {
                   level={level}
                   query={q}
                   ranges={queryRanges}
+                  filters={gridFilterList}
                   area={area}
                   onAreaChange={setArea}
                   areaRequest={areaRequest}
@@ -1046,15 +1094,17 @@ export function SearchPage() {
                 {results.data && (
                   <>
                     {activeTab?.name === "Summaries" && (
-                      <div style={{ margin: "1em 0" }}>
-                        {hits.map((doc, index) => (
-                          // biome-ignore lint/suspicious/noArrayIndexKey: sub-contribution hits can share a contribution id; pages are append-only
-                          <div key={`${contributionId(doc) ?? "hit"}-${index}`}>
-                            {renderHit(doc)}
-                            {hits.length > 1 && <ResultDivider />}
-                          </div>
-                        ))}
-                        {isFetchingNextPage && <LoadingItem divider={false} />}
+                      <div style={{ marginBottom: "1em" }}>
+                        <SummaryGrid
+                          level={level}
+                          hits={hits}
+                          privateKey={privateKey}
+                          sort={gridSort}
+                          onSort={onGridSort}
+                          filters={gridFilters}
+                          onFilter={onGridFilter}
+                          footer={isFetchingNextPage && <LoadingItem divider={false} />}
+                        />
                       </div>
                     )}
                     {activeTab?.name === "Rows" && <RowsTable results={hits} />}
