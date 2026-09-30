@@ -22,6 +22,9 @@ from fiesta.settings import get_settings
 LAT_COLUMNS = ("lat", "lat_s", "lat_n")
 LON_COLUMNS = ("lon", "lon_w", "lon_e")
 BOX_COLUMNS = ("lon_w", "lat_s", "lon_e", "lat_n")
+# Planetary bodies other than Earth that a row's position can be on, which the
+# maps and thumbnails have a basemap for (frontend/src/components/map/bodies.ts).
+Body = Literal["moon", "mars"]
 
 PAGE_SLUG_RE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
 # SPA routes a content page can never shadow (frontend/src/router.tsx).
@@ -146,6 +149,32 @@ class MapColor(BaseModel):
         return self.field if "." in self.field else f"summary.{table}.{self.field}"
 
 
+class BodiesConfig(BaseModel):
+    """Rows positioned on another planetary body: those whose `column` holds
+    one of `values` (location_type "Lunar" -> moon), and the rows below them
+    (a lunar location's sites, samples, ...). Their positions are
+    `summary._all._body_point` ({lat, lon, body}) instead of `_geo_point`, so
+    Earth's area filters and maps leave them out and the maps and thumbnails
+    draw them on that body."""
+
+    column: str
+    values: dict[str, Body]
+
+    def body_of(self, row: dict) -> Body | None:
+        """The body a row's `column` names (the first of a colon-delimited list)."""
+        value = row.get(self.column)
+        if value in (None, ""):
+            return None
+        return next(
+            (
+                self.values[v.strip()]
+                for v in str(value).split(":")
+                if v.strip() in self.values
+            ),
+            None,
+        )
+
+
 class SearchConfig(BaseModel):
     index: str
     levels: list[SearchLevel]
@@ -153,6 +182,7 @@ class SearchConfig(BaseModel):
     filters: list[SearchFilter] = []
     # What the search map can color its markers by, in menu order.
     map_colors: list[MapColor] = []
+    bodies: BodiesConfig | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -384,10 +414,16 @@ class NodeConfig(BaseModel):
         legacy_version = self.legacy.data_model_version if self.legacy else None
         if legacy_version and legacy_version not in self.data_model.versions:
             raise ValueError("legacy.data_model_version must be one of data_model.versions")
-        tables = set(self.load_data_model(self.data_model.latest)["tables"])
+        model_tables = self.load_data_model(self.data_model.latest)["tables"]
+        tables = set(model_tables)
         missing = [t for t in self.hierarchy if t not in tables]
         if missing:
             raise ValueError(f"hierarchy tables missing from data model: {missing}")
+        bodies = self.search.bodies
+        if bodies and not any(
+            bodies.column in model_tables[t].get("columns", {}) for t in self.hierarchy
+        ):
+            raise ValueError(f"search.bodies column {bodies.column!r} is in no hierarchy table")
         slugs = [p.slug for p in self.pages]
         if len(set(slugs)) != len(slugs):
             raise ValueError(

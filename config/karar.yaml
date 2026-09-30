@@ -32,6 +32,11 @@ search:
     - { type: facet, field: lithology }
     - { type: facet, field: material }
     - { type: facet, field: method_codes }
+  # Samples on another planetary body, by their location_type: they and their
+  # specimens, ... are mapped on that body's globe, not Earth's.
+  bodies:
+    column: location_type
+    values: { Lunar: moon, Martian: mars }
 
 storage:
   bucket: karar

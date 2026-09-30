@@ -151,7 +151,7 @@ async def search(
         if level and level.count_field:
             aggs["_n_rows"] = {"sum": {"field": level.count_field, "missing": 1}}
         if table in node.geo_tables:
-            positioned = {"filter": {"exists": {"field": "summary._all._geo_point"}}}
+            positioned = {"filter": POSITIONED}
             aggs["_n_mapped"] = positioned
             # And per facet value, so the sidebar counts follow the Map sub-tab.
             for name in node.search.facets if facets else []:
@@ -190,6 +190,15 @@ MAP_PAGE_SIZE = 10_000
 MAP_DOCS_LIMIT = 10_000
 MAP_PRECISION = 24
 GEO_FIELD = "summary._all._geo_point"
+# Positions on another planetary body ({lat, lon, body}; see summarize.py).
+BODY_FIELD = "summary._all._body_point"
+# Docs with a position on any body.
+POSITIONED = {
+    "bool": {
+        "should": [{"exists": {"field": GEO_FIELD}}, {"exists": {"field": BODY_FIELD}}],
+        "minimum_should_match": 1,
+    }
+}
 
 
 def _to_float(value: Any) -> float | None:
@@ -304,10 +313,12 @@ def _map_points(
     color: MapColor | None = None,
 ) -> list[dict]:
     """A doc's positions for the map: its `_geo_point` (a contribution's are
-    all of its rows', and only those inside `bbox` are drawn), the row's box
-    when it has one, what to call it, and its `color` value."""
+    all of its rows', and only those inside `bbox` are drawn) and, without a
+    `bbox` (an area on Earth), its `_body_point`s with their `body`; the row's
+    box when it has one, what to call it, and its `color` value."""
     summary = source.get("summary") or {}
     geo = (summary.get("_all") or {}).get("_geo_point") or []
+    elsewhere = (summary.get("_all") or {}).get("_body_point") or []
     row = summary.get(table) or {}
     base: dict[str, Any] = {"id": (summary.get("contribution") or {}).get("id")}
     # A level row is named by its own key column ("sites" -> "site").
@@ -324,6 +335,11 @@ def _map_points(
         lat, lon = _to_float(entry.get("lat")), _to_float(entry.get("lon"))
         if lat is not None and lon is not None and (len(geo) < 2 or _inside(lat, lon, bbox)):
             points.append({**base, "lat": lat, "lon": lon})
+    if bbox is None:
+        for entry in elsewhere if isinstance(elsewhere, list) else [elsewhere]:
+            lat, lon = _to_float(entry.get("lat")), _to_float(entry.get("lon"))
+            if lat is not None and lon is not None and entry.get("body"):
+                points.append({**base, "lat": lat, "lon": lon, "body": entry["body"]})
     return points
 
 
@@ -427,9 +443,10 @@ async def search_points(
         bbox=area,
     )
     await _constrain(session, node, body, query, contribution, private_key)
-    body["query"]["bool"]["filter"].append({"exists": {"field": "summary._all._geo_point"}})
+    body["query"]["bool"]["filter"].append(POSITIONED)
     body["_source"] = [
-        "summary._all._geo_point",
+        GEO_FIELD,
+        BODY_FIELD,
         "summary.contribution.id",
         f"summary.{table}.{table.removesuffix('s')}",
         *(f"summary.{table}.{c}" for c in BOX_COLUMNS),
@@ -449,7 +466,21 @@ async def search_points(
             points, truncated = await _location_points(
                 client, node.search_index, body["query"], value
             )
-            return MapPoints(total=count["count"], points=points, truncated=truncated)
+            # The locations are Earth's (a geotile grid); the few records on
+            # other bodies are plotted one by one.
+            elsewhere = {
+                **body,
+                "query": {"bool": {"filter": [body["query"], {"exists": {"field": BODY_FIELD}}]}},
+            }
+            await _scroll(
+                node,
+                elsewhere,
+                lambda source: points.extend(_map_points(source, table, area, color)),
+                lambda: len(points) >= MAX_MAP_POINTS,
+            )
+            return MapPoints(
+                total=count["count"], points=points[:MAX_MAP_POINTS], truncated=truncated
+            )
     points: list[dict] = []
     total = await _scroll(
         node,

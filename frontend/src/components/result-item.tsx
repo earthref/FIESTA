@@ -400,15 +400,13 @@ function unionOf(doc: SearchResult, columns: string[]): string[] {
 }
 
 function markersOf(doc: SearchResult, level: SearchLevel): MapMarker[] {
-  const sources =
-    level.table === "contribution"
-      ? [getPath(doc, "summary._all._geo_point")]
-      : [
-          getPath(doc, `summary.${level.table}._geo_point`),
-          getPath(doc, "summary._all._geo_point"),
-        ];
-  for (const source of sources) {
-    const markers = markersFromGeoPoint(source);
+  const blocks = level.table === "contribution" ? ["_all"] : [level.table, "_all"];
+  for (const block of blocks) {
+    // With those on another body (the thumbnail draws the body with most).
+    const markers = [
+      ...markersFromGeoPoint(getPath(doc, `summary.${block}._geo_point`)),
+      ...markersFromGeoPoint(getPath(doc, `summary.${block}._body_point`)),
+    ];
     if (markers.length > 0) return markers;
   }
   return [];

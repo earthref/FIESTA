@@ -2,15 +2,13 @@ import maplibregl from "maplibre-gl";
 import { type FC, useEffect, useRef } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
-  BASEMAP_ATTRIBUTION,
-  BASEMAP_MAXZOOM,
-  BASEMAP_TILES,
   MERCATOR_LAT,
   PLACE_LABEL_STYLE,
-  POLAR_CAPS,
   UNDERSEA_ATTRIBUTION,
   UNDERSEA_FEATURES,
 } from "./basemap";
+import type { Body } from "./bodies";
+import { BODY_BASEMAPS, registerBodyProtocols } from "./body-basemaps";
 import { createLinesLayer, type LinesLayer, type MapLine } from "./lines-layer";
 import {
   type Area,
@@ -527,6 +525,8 @@ const boxFeature = (p: MapPoint): Feature => {
  */
 const MapLibreMap: FC<{
   mode: Mode;
+  // The planetary body the map is of (its basemap); the points are its.
+  body?: Body;
   points: MapPoint[];
   onSelect?: (id: string) => void;
   // Instead of the view's default zoom.
@@ -560,6 +560,7 @@ const MapLibreMap: FC<{
   pointRadius?: number;
 }> = ({
   mode,
+  body = "earth",
   points,
   onSelect,
   zoom,
@@ -600,13 +601,24 @@ const MapLibreMap: FC<{
   // The lines' layer, once the style has loaded.
   const linesLayerRef = useRef<LinesLayer | null>(null);
 
-  // The map is rebuilt per mode; everything else reaches it through refs.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: rebuilt only when the mode changes
+  // Before the map's rebuild below, which opens on these points (a new body's).
+  useEffect(() => {
+    pointsRef.current = { points, index: colocatedIndex(points) };
+    setPointsRef.current?.();
+  }, [points]);
+
+  // The map is rebuilt per mode and body; everything else reaches it through refs.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: rebuilt only when the mode or body changes
   useEffect(() => {
     if (!containerRef.current || !tooltipRef.current) return;
     const view = VIEWS[mode];
+    const basemap = BODY_BASEMAPS[body];
+    registerBodyProtocols();
     const globe = view.projection !== "mercator";
     const sign = SIGN[mode];
+    // A body's raster labels, but not over a pole, where its zoom-0 tiles'
+    // names would be stretched across the whole view.
+    const bodyLabels = sign ? undefined : basemap.labels;
     const { points: initialPoints } = pointsRef.current;
     // The focus key the view was last centred for.
     let focused: unknown = null;
@@ -650,11 +662,19 @@ const MapLibreMap: FC<{
         sources: {
           basemap: {
             type: "raster",
-            tiles: [BASEMAP_TILES],
+            tiles: [basemap.tiles],
             tileSize: 256,
-            maxzoom: BASEMAP_MAXZOOM,
-            attribution: BASEMAP_ATTRIBUTION,
+            maxzoom: basemap.maxzoom,
+            attribution: basemap.attribution,
           },
+          ...(bodyLabels && {
+            "basemap-labels": {
+              type: "raster",
+              tiles: [bodyLabels],
+              tileSize: 256,
+              maxzoom: basemap.labelsMaxzoom ?? basemap.maxzoom,
+            },
+          }),
           points: { type: "geojson", data: collection([]) },
           boxes: { type: "geojson", data: collection([]) },
           area: { type: "geojson", data: collection([]) },
@@ -663,6 +683,16 @@ const MapLibreMap: FC<{
         layers: [
           { id: "background", type: "background", paint: { "background-color": "#000000" } },
           { id: "basemap", type: "raster", source: "basemap" },
+          ...(bodyLabels
+            ? [
+                {
+                  id: "basemap-labels",
+                  type: "raster" as const,
+                  source: "basemap-labels",
+                  layout: { visibility: labelsOn() ? ("visible" as const) : ("none" as const) },
+                },
+              ]
+            : []),
           {
             id: "context-points",
             type: "circle",
@@ -737,7 +767,8 @@ const MapLibreMap: FC<{
     // The labels' layers (added once they load). Undersea features past Web
     // Mercator's limit would be drawn at its edge, so on the globe they're HTML
     // labels instead, shown from the same scale as the others of their kind.
-    let labelLayers: string[] = [];
+    // A body's own labels are its basemap's; Earth's are loaded (addLabels).
+    let labelLayers: string[] = bodyLabels ? ["basemap-labels"] : [];
     let showLabels = labelsOn();
     let polarLabels: {
       element: HTMLElement;
@@ -772,6 +803,32 @@ const MapLibreMap: FC<{
     const addLabels = (loaded: Labels | null) => {
       if (!loaded || removed) return;
       map.setGlyphs(loaded.glyphs);
+      if (body === "earth") addEarthLabels(loaded);
+      // The records' names, over everything (and not turned off with the
+      // basemap's labels), on a white box like the tooltip's.
+      if (labelPoints) {
+        map.addImage("point-label-box", ...labelBox());
+        map.addLayer({
+          id: "point-labels",
+          type: "symbol",
+          source: "points",
+          layout: {
+            "text-field": ["get", "name"],
+            "text-font": ["Noto Sans Regular"],
+            "text-size": 11,
+            "text-anchor": "left",
+            "text-offset": [0.9, 0],
+            "icon-image": "point-label-box",
+            "icon-text-fit": "both",
+            "icon-text-fit-padding": [2, 5, 2, 5],
+          },
+          paint: { "text-color": "#374151" },
+        });
+      }
+    };
+    // Earth's place, water and undersea feature names (the Positron style's
+    // glyphs also draw the records' names on every body).
+    const addEarthLabels = (loaded: Labels) => {
       map.addSource("labels:places", loaded.source);
       const visibility = showLabels ? "visible" : "none";
       const isPolar = (feature: GeoJSON.Feature) =>
@@ -813,27 +870,6 @@ const MapLibreMap: FC<{
       ];
       for (const layer of layers) map.addLayer(layer, "context-points");
       labelLayers = layers.map((layer) => layer.id);
-      // The records' names, over everything (and not turned off with the
-      // basemap's labels), on a white box like the tooltip's.
-      if (labelPoints) {
-        map.addImage("point-label-box", ...labelBox());
-        map.addLayer({
-          id: "point-labels",
-          type: "symbol",
-          source: "points",
-          layout: {
-            "text-field": ["get", "name"],
-            "text-font": ["Noto Sans Regular"],
-            "text-size": 11,
-            "text-anchor": "left",
-            "text-offset": [0.9, 0],
-            "icon-image": "point-label-box",
-            "icon-text-fit": "both",
-            "icon-text-fit-padding": [2, 5, 2, 5],
-          },
-          paint: { "text-color": "#374151" },
-        });
-      }
       if (globe) {
         polarLabels = loaded.undersea.filter(isPolar).flatMap((feature) => {
           const lngLat = labelPoint(feature);
@@ -972,7 +1008,7 @@ const MapLibreMap: FC<{
     // (isStyleLoaded() is also false while tiles load, so it can't gate these.)
     map.on("load", () => {
       if (globe) {
-        map.addLayer(createPolarCapsLayer("polar-caps", POLAR_CAPS), "context-points");
+        map.addLayer(createPolarCapsLayer("polar-caps", basemap.caps), "context-points");
       }
       loadLabels().then(addLabels);
       setPointsRef.current = setPoints;
@@ -1373,12 +1409,7 @@ const MapLibreMap: FC<{
       container.removeEventListener("touchstart", onTouchStart, true);
       map.remove();
     };
-  }, [mode]);
-
-  useEffect(() => {
-    pointsRef.current = { points, index: colocatedIndex(points) };
-    setPointsRef.current?.();
-  }, [points]);
+  }, [mode, body]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the area by value; the sync reads it from areaRef
   useEffect(() => {

@@ -6,6 +6,7 @@ import type { MapColorOption, SearchLevel } from "../../lib/types";
 import { singularize } from "../../lib/utils";
 import { Icon } from "../ui/icon";
 import { Spinner } from "../ui/spinner";
+import { bodiesOf } from "./bodies";
 import {
   type ColorScale,
   colorPoints,
@@ -15,7 +16,7 @@ import {
   RAMP,
   valueAt,
 } from "./map-colors";
-import { ModeButtons, mapButtonClass, useSavedMode } from "./map-mode";
+import { BodyButtons, ModeButtons, mapButtonClass, useBody, useSavedMode } from "./map-mode";
 import {
   type ApiMapPoint,
   type Area,
@@ -121,7 +122,8 @@ export type AreaRequest = { mode?: Mode; zoomTo?: boolean };
  * record at this level matching the search, on a globe, a Mercator map or a
  * globe over either pole, over Esri's Ocean basemap. The area filter narrows
  * the search to a box that can be moved and resized on the map; the records
- * it leaves out stay on the map in grey.
+ * it leaves out stay on the map in grey. Records on the Moon or Mars are on
+ * that body's map (the Earth / Moon / Mars buttons); the area is on Earth.
  */
 export function SearchMap({
   level,
@@ -188,9 +190,25 @@ export function SearchMap({
     () => (colorOption && fetched ? colorScale(colorOption, fetched) : null),
     [colorOption, fetched],
   );
-  const points = useMemo(
+  const colored = useMemo(
     () => (fetched && colorOption ? colorPoints(fetched, scale) : (fetched ?? [])),
     [fetched, colorOption, scale],
+  );
+  // The bodies with records (an area on Earth leaves the others' out, but
+  // they stay on their maps in grey).
+  const bodies = useMemo(
+    () => bodiesOf([...(fetched ?? []), ...(area ? (all.data?.points ?? []) : [])]),
+    [fetched, area, all.data],
+  );
+  const [body, setBody] = useBody(bodies);
+  const onEarth = body === "earth";
+  // biome-ignore lint/correctness/useExhaustiveDependencies: switches once per request
+  useEffect(() => {
+    if (areaRequest) setBody("earth");
+  }, [areaRequest]);
+  const points = useMemo(
+    () => colored.filter((p) => (p.body ?? "earth") === body),
+    [colored, body],
   );
   const context = useMemo<MapPoint[]>(() => {
     if (!area || !all.data) return [];
@@ -198,8 +216,8 @@ export function SearchMap({
     // number, which differs between the two searches).
     const key = (p: MapPoint) => `${p.id}|${p.count === undefined ? p.name : ""}|${pointKey(p)}`;
     const plotted = new Set(points.map(key));
-    return all.data.points.filter((p) => !plotted.has(key(p)));
-  }, [area, all.data, points]);
+    return all.data.points.filter((p) => (p.body ?? "earth") === body && !plotted.has(key(p)));
+  }, [area, all.data, points, body]);
 
   // An area asked for, in the view asked for, once the search's records have
   // loaded (as on osu-mgr.org): around them, or, for an unfiltered search,
@@ -223,14 +241,15 @@ export function SearchMap({
   }, [areaPending, unfiltered]);
   const requestViewArea = areaPending && !area && unfiltered;
 
-  // Records mapped: a contribution is drawn at each of its positions, and a
-  // large search's points are locations with a count of records each.
+  // Records mapped (on every body): a contribution is drawn at each of its
+  // positions, and a large search's points are locations with a count of
+  // records each.
   const mapped =
     level.table === "contribution"
-      ? new Set(points.map((p) => p.id)).size
-      : points.reduce((sum, p) => sum + recordsOf(p), 0);
-  const locations = points.some((p) => p.count !== undefined)
-    ? new Set(points.map((p) => pointKey(p))).size
+      ? new Set(colored.map((p) => p.id)).size
+      : colored.reduce((sum, p) => sum + recordsOf(p), 0);
+  const locations = colored.some((p) => p.count !== undefined)
+    ? new Set(colored.map((p) => pointKey(p))).size
     : undefined;
 
   // The view re-centres on the points for a new search, not for an area edit.
@@ -248,6 +267,7 @@ export function SearchMap({
   return (
     <div className="flex h-full flex-col gap-2 py-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
+        <BodyButtons bodies={bodies} body={body} setBody={setBody} />
         <ModeButtons mode={mode} setMode={setMode} />
         {area ? (
           <button
@@ -260,15 +280,17 @@ export function SearchMap({
             Remove area
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={onRequestArea}
-            title="Filter to an area you can move and resize on the map"
-            className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 font-bold ${buttonClass(false)}`}
-          >
-            <Icon name="map-marker" className="h-3 w-3" />
-            Filter by area
-          </button>
+          onEarth && (
+            <button
+              type="button"
+              onClick={onRequestArea}
+              title="Filter to an area you can move and resize on the map"
+              className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 font-bold ${buttonClass(false)}`}
+            >
+              <Icon name="map-marker" className="h-3 w-3" />
+              Filter by area
+            </button>
+          )
         )}
         {colorOptions.length > 0 && (
           <label className="inline-flex items-center gap-1.5 font-bold text-gray-700">
@@ -299,12 +321,13 @@ export function SearchMap({
         <Suspense fallback={<Spinner />}>
           <MapLibreMap
             mode={mode}
+            body={body}
             points={points}
             onSelect={onSelect}
-            area={area}
+            area={onEarth ? area : null}
             onAreaChange={onAreaChange}
-            requestViewArea={requestViewArea}
-            zoomTo={zoomTo}
+            requestViewArea={onEarth && requestViewArea}
+            zoomTo={onEarth ? zoomTo : null}
             focusKey={focusKey}
             context={context}
           />

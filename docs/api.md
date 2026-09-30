@@ -53,6 +53,7 @@ Two schemes are accepted; the private routes take either.
 | PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in the seeded `developer@example.test` only against local dev infrastructure |
 | GET | `/v2/basemap/{world\|arctic}` | — | JPEG: Esri Ocean as a 1024×512 plate carrée world image (blank past ±85.05°) and its Arctic band; fetched from Esri once a day and cached in the API process, for the result thumbnails |
+| GET | `/v2/basemap/{moon\|mars}` | — | JPEG: the Moon (LROC WAC) and Mars (Viking MDIM 2.1 colour) as 1024×512 plate carrée images, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on those bodies |
 | GET | `/v2/basemap/undersea-features` | — | GeoJSON `FeatureCollection` of the IHO-IOC GEBCO Gazetteer of Undersea Feature Names (NOAA NCEI's feature service), each `{name, kind: point\|line\|area}` with areas reduced to their middle point; fetched once a day and cached, for the Map tab's labels |
 
 `UserOut = {id, email, name, orcid: string|null, is_admin: bool, admin_nodes: string[]}` —
@@ -237,25 +238,28 @@ table.
 ```json
 MapPoints = {
   "total": 410,
-  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "bounds": [west, south, east, north]?, "count": 12?, "value": 1.5e6?}],
+  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "bounds": [west, south, east, north]?, "count": 12?, "value": 1.5e6?, "body": "moon"?}],
   "truncated": false
 }
 ```
 
-`points` is every match with a `summary._all._geo_point`, up to 50,000
-(`truncated` past that), for the search page's Map tab: `id` is the
+`points` is every match with a `summary._all._geo_point` or `_body_point`, up
+to 50,000 (`truncated` past that), for the search page's Map tab: `id` is the
 contribution, `name` the row's own key column (`sites` → `site`; absent at the
 contribution level), `bounds` the row's `lon_w`/`lat_s`/`lon_e`/`lat_n` when it
-has all four. A contribution doc gives a point per position it carries (only
-those inside `bbox`, when one is given). `{table}` must be a level whose `geo`
-is true, otherwise 404.
+has all four, `body` the planetary body a point on another one is on (`moon`,
+`mars`; absent on Earth). A contribution doc gives a point per position it
+carries (only those inside `bbox`, when one is given: a `bbox` is on Earth, so
+it leaves out the points on other bodies). `{table}` must be a level whose
+`geo` is true, otherwise 404.
 
 Past 10,000 matches at a level of single points (not the contribution level,
 not a level with boxes, not scoped to one `contribution`), `points` are the
 matches' unique locations instead: a composite aggregation of ~2.4 m geotiles
 (zoom 24) by contribution, each point at its records' centroid (to 5 decimals)
 with their `count` and no `name`; `total` is still the matching records and
-`truncated` means more than 50,000 locations.
+`truncated` means more than 50,000 locations. Records on other bodies are
+added one point each.
 
 `color_by` is the `field` of one of the node's `search.map_colors` offered at
 this level (`GET /config`'s `map_colors[].tables`; otherwise 400) and adds each
@@ -286,7 +290,12 @@ nearest ancestor's, found by that level's key column (a specimen's `sample`),
 so a geospatial filter narrows every level. A level is `geo` when its table has
 coordinate columns or such a key column. The contribution doc carries every
 distinct own position of its rows (up to 500), so it matches an area that holds
-any of them.
+any of them. A row on another planetary body — one whose column named by the
+node YAML's `search.bodies` (MagIC and KArAr: `location_type`) has a value it
+maps to a body (`Lunar` → `moon`, `Martian` → `mars`), and every row below it —
+has its position as `summary._all._body_point` (`{lat, lon, body}`; a list on
+the contribution doc) instead, so Earth's area filters and location
+aggregations leave it out; `mapped_total` counts either.
 Visibility is the same as the search's. The SPA sends the Map tab's area
 filter as `bbox` here and to `/search/{table}`, with a `minLon` east of `maxLon`
 when it crosses the antimeridian.

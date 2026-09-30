@@ -1,31 +1,37 @@
 import { geoOrthographic } from "d3-geo";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiUrl } from "../lib/base";
 import {
   THUMBNAIL_HEIGHT as HEIGHT,
   THUMBNAIL_POLAR_ROWS as POLAR_ROWS,
   THUMBNAIL_WIDTH as WIDTH,
 } from "./map/basemap";
+import { type Body, bodiesOf, isBody } from "./map/bodies";
 
 /**
  * Orthographic globe thumbnail centred on the result's markers, drawn from
  * the Esri Ocean basemap that the search page's Map tab uses (as
  * osu-mgr.org's result thumbnails are). Replaces the legacy
  * `svg_map_thumbnail.jsx` globe of 110m countries coloured by climate.
+ * Markers on the Moon or Mars are drawn on that body's globe instead.
  */
 
 export interface MapMarker {
   lat: number;
   lon: number;
+  // The planetary body it is on, when not Earth.
+  body?: Exclude<Body, "earth">;
 }
 
-// The basemap as one low-resolution world image, shared by every thumbnail
-// on the page, from the API's cache (/v2/basemap). It stops at Web
-// Mercator's limit, so past that the north comes from Esri's Arctic version
-// of it and the south is its plain Antarctic ice (as on the maps).
+// Each body's basemap as one low-resolution image of the whole body, shared
+// by every thumbnail on the page, from the API's cache (/v2/basemap). Earth's
+// stops at Web Mercator's limit, so past that the north comes from Esri's
+// Arctic version of it and the south is its plain Antarctic ice (as on the
+// maps); the other bodies' go to the poles.
 const ANTARCTIC_COLOR = "#f1f0eb";
-// Without the image (Esri unreachable), the globe is plain ocean.
-const OCEAN_COLOR = "#8db3e2";
+// Without the image (its source unreachable), the globe is plain ocean, or
+// the body's grey or red.
+const PLAIN_COLOR: Record<Body, string> = { earth: "#8db3e2", moon: "#8e8e8e", mars: "#b86a45" };
 const MARKER_COLOR = "#8B5A8E";
 
 const loadImage = (src: string) =>
@@ -37,26 +43,36 @@ const loadImage = (src: string) =>
     image.src = src;
   });
 
-let basemap: Promise<ImageData | null> | undefined;
-function loadBasemap(): Promise<ImageData | null> {
-  basemap ??= Promise.all([
-    loadImage(apiUrl("/basemap/world")),
-    loadImage(apiUrl("/basemap/arctic")).catch(() => null),
-  ])
-    .then(([world, arctic]) => {
+const basemaps = new Map<Body, Promise<ImageData | null>>();
+function loadBasemap(body: Body): Promise<ImageData | null> {
+  const cached = basemaps.get(body);
+  if (cached) return cached;
+  const images =
+    body === "earth"
+      ? [
+          loadImage(apiUrl("/basemap/world")),
+          loadImage(apiUrl("/basemap/arctic")).catch(() => null),
+        ]
+      : [loadImage(apiUrl(`/basemap/${body}`))];
+  const loading = Promise.all(images)
+    .then(([image, arctic]) => {
+      if (!image) return null;
       const canvas = document.createElement("canvas");
       canvas.width = WIDTH;
       canvas.height = HEIGHT;
       const context = canvas.getContext("2d");
       if (!context) return null;
-      context.drawImage(world, 0, 0);
-      if (arctic) context.drawImage(arctic, 0, 0);
-      context.fillStyle = ANTARCTIC_COLOR;
-      context.fillRect(0, HEIGHT - POLAR_ROWS, WIDTH, POLAR_ROWS);
+      context.drawImage(image, 0, 0, WIDTH, HEIGHT);
+      if (body === "earth") {
+        if (arctic) context.drawImage(arctic, 0, 0);
+        context.fillStyle = ANTARCTIC_COLOR;
+        context.fillRect(0, HEIGHT - POLAR_ROWS, WIDTH, POLAR_ROWS);
+      }
       return context.getImageData(0, 0, WIDTH, HEIGHT);
     })
     .catch(() => null);
-  return basemap;
+  basemaps.set(body, loading);
+  return loading;
 }
 
 const RAD = Math.PI / 180;
@@ -83,6 +99,7 @@ function drawThumbnail(
   width: number,
   height: number,
   image: ImageData | null,
+  body: Body,
 ) {
   const scale = Math.min(window.devicePixelRatio || 1, 2);
   const [w, h] = [Math.round(width * scale), Math.round(height * scale)];
@@ -122,7 +139,7 @@ function drawThumbnail(
   } else {
     context.beginPath();
     context.arc(w / 2, h / 2, radius, 0, 2 * Math.PI);
-    context.fillStyle = OCEAN_COLOR;
+    context.fillStyle = PLAIN_COLOR[body];
     context.fill();
   }
 
@@ -164,54 +181,67 @@ export function MapThumbnail({
   height?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // The body with the most markers, and those on it.
+  const body = bodiesOf(markers)[0] ?? "earth";
+  const shown = useMemo(
+    () => markers.filter((marker) => (marker.body ?? "earth") === body),
+    [markers, body],
+  );
   // undefined while the basemap loads; null when it failed.
   const [image, setImage] = useState<ImageData | null | undefined>(undefined);
 
   useEffect(() => {
     let alive = true;
-    loadBasemap().then((data) => {
+    setImage(undefined);
+    loadBasemap(body).then((data) => {
       if (alive) setImage(data);
     });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [body]);
 
   useEffect(() => {
     if (canvasRef.current && image !== undefined) {
-      drawThumbnail(canvasRef.current, markers, width, height, image);
+      drawThumbnail(canvasRef.current, shown, width, height, image, body);
     }
-  }, [markers, width, height, image]);
+  }, [shown, width, height, image, body]);
 
   return (
     <canvas
       ref={canvasRef}
       role="img"
-      aria-label="Map of the result locations"
+      aria-label={
+        body === "earth"
+          ? "Map of the result locations"
+          : `Map of the result locations on ${body === "moon" ? "the Moon" : "Mars"}`
+      }
       style={{ display: "block", width, height }}
     />
   );
 }
 
 /** Markers from a summary `_geo_point` value: `{lat, lon}`, GeoJSON
- * `{coordinates: [lon, lat]}`, a `"lat,lon"` string, or an array of those. */
+ * `{coordinates: [lon, lat]}`, a `"lat,lon"` string, or an array of those;
+ * or a `_body_point` value (`{lat, lon, body}`, or an array of those). */
 export function markersFromGeoPoint(value: unknown): MapMarker[] {
   const entries = Array.isArray(value) ? value : value ? [value] : [];
   const seen = new Set<string>();
   const markers: MapMarker[] = [];
-  const push = (lat: unknown, lon: unknown) => {
+  const push = (lat: unknown, lon: unknown, body?: unknown) => {
     const latitude = Number(lat);
     const longitude = Number(lon);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
-    const key = `${latitude},${longitude}`;
+    const on = isBody(body) && body !== "earth" ? body : undefined;
+    const key = `${latitude},${longitude},${on ?? ""}`;
     if (seen.has(key)) return;
     seen.add(key);
-    markers.push({ lat: latitude, lon: longitude });
+    markers.push({ lat: latitude, lon: longitude, ...(on && { body: on }) });
   };
   for (const entry of entries) {
     if (entry && typeof entry === "object") {
       const record = entry as Record<string, unknown>;
-      if ("lat" in record && "lon" in record) push(record.lat, record.lon);
+      if ("lat" in record && "lon" in record) push(record.lat, record.lon, record.body);
       else if (Array.isArray(record.coordinates))
         push(record.coordinates[1], record.coordinates[0]);
     } else if (typeof entry === "string" && entry.includes(",")) {
