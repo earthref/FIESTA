@@ -78,7 +78,10 @@ class PolesPlugin(FiestaPlugin):
             raise ValueError(
                 f"plugin 'poles': base_level {options.base_level!r} is not a search level"
             )
-        columns = node.load_data_model(node.data_model.latest)["tables"]["locations"]["columns"]
+        tables = node.load_data_model(node.data_model.latest)["tables"]
+        if "locations" not in tables:
+            raise ValueError("plugin 'poles': the data model has no ['locations'] table")
+        columns = tables["locations"]["columns"]
         unknown = [c for c in options.display_columns if c not in columns]
         if unknown:
             raise ValueError(f"plugin 'poles': display_columns {unknown} are not locations columns")
