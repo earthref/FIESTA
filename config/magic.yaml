@@ -80,6 +80,11 @@ search:
     - { label: VGP Latitude, field: vgp_lat, unit: "°" }
     - { label: Magnetic Moment, field: magn_moment, unit: Am², log: true }
     - { label: Mass Susceptibility, field: susc_chi_mass, unit: m³/kg, log: true }
+  # Locations on another planetary body, by their location_type: they and
+  # their sites, samples, ... are mapped on that body's globe, not Earth's.
+  bodies:
+    column: location_type
+    values: { Lunar: moon, Martian: mars }
 
 storage:
   bucket: magic

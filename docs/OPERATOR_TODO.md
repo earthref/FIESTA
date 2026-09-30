@@ -163,6 +163,17 @@ Last updated: 2026-09-24
   levels without coordinates (specimens, measurements, ...) and matches a
   contribution by its first position only.
 
+## 2026-09-30 — Lunar and Martian globes
+
+- [ ] **Rebuild the MagIC and KArAr search indexes once this is deployed**
+  (`fiesta rebuild --yes` with `FIESTA_NODE=magic`, then `karar`; one rebuild
+  also covers the 2026-09-28 item above). Until then, Lunar/Martian locations
+  keep their coordinates in `_geo_point` and are still drawn on Earth; after
+  it they are on the Moon/Mars globes and thumbnails (7 Lunar and 2 Martian
+  MagIC locations on 2026-09-30). The Moon/Mars basemaps are public services
+  (OpenPlanetaryMap on CARTO, NASA Solar System Treks, USGS Astrogeology WMS)
+  with no key; the API host must reach `planetarymaps.usgs.gov` for the thumbnails.
+
 ## 2026-09-28 — Reference enrichment (Crossref/DataCite)
 
 - [ ] **Run `fiesta worker` as a service on fiesta-ct** (blocker for everything

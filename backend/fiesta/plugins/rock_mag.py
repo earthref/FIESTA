@@ -26,7 +26,14 @@ from typing import Any
 from pydantic import Field
 
 from fiesta.domain.parse import ParsedContribution
-from fiesta.domain.summarize import FACETABLE_COLUMNS, _geo_point, group_rows, merge_rows
+from fiesta.domain.summarize import (
+    FACETABLE_COLUMNS,
+    _geo_point,
+    group_rows,
+    merge_rows,
+    placed,
+    planetary_bodies,
+)
 from fiesta.nodeconfig import NodeConfig
 from fiesta.plugins.base import FiestaPlugin, PluginOptions
 from fiesta.plugins.util import to_float
@@ -305,6 +312,7 @@ class RockMagPlugin(FiestaPlugin):
         samples = {
             str(r.get("sample")): r for r in parsed.tables.get("samples", []) if r.get("sample")
         }
+        bodies = planetary_bodies(node, parsed)
         docs: list[dict] = []
         rows = parsed.tables.get(source, [])
         units = field_units(rows)
@@ -320,7 +328,17 @@ class RockMagPlugin(FiestaPlugin):
                     all_block[column] = [v.strip() for v in str(value).split(":") if v.strip()]
             geo = next((g for r in lineage if r and (g := _geo_point(r))), None)
             if geo is not None:
-                all_block["_geo_point"] = geo
+                # On its own, its sample's or its site's body (by their names).
+                named = ((source, row), ("samples", sample), ("sites", site))
+                body = next(
+                    (
+                        found
+                        for table, r in named
+                        if (found := bodies.get(table, {}).get(str(r.get(table[:-1]) or "")))
+                    ),
+                    None,
+                )
+                all_block.update(placed(geo, body))
             docs.append(
                 {
                     "type": "rock_mag",

@@ -16,6 +16,10 @@ For a node with hierarchy [contribution, A, B, ...] this produces:
   sample's, found by the `sample` column), so every level narrows under the
   same filter. A row without a name is a doc of its own.
 
+Positions on another planetary body (a lunar location and the rows below
+it, by the node's `search.bodies`) are `_body_point` ({lat, lon, body})
+instead of `_geo_point`, on the contribution doc too.
+
 This is a deliberate simplification of the legacy
 `summarize_contribution.js` adopt/inherit/aggregate pipeline: enough for
 search, facets, counts, geolocation, and downloads. Deeper rollups (age
@@ -98,11 +102,58 @@ def _collect_all(columns_def: dict, rows: list[dict], into: dict[str, set]) -> N
                 bucket.update(values)
 
 
-def _finalize_all(collected: dict[str, set], geo_point: dict | list | None) -> dict:
+def _finalize_all(
+    collected: dict[str, set], geo_point: dict | list | None, body_point: list | None = None
+) -> dict:
     result: dict[str, Any] = {k: sorted(v) for k, v in collected.items() if v}
     if geo_point:
         result["_geo_point"] = geo_point
+    if body_point:
+        result["_body_point"] = body_point
     return result
+
+
+def placed(point: dict, body: str | None) -> dict:
+    """A position's `summary._all` entry: `_geo_point` on Earth, or on another
+    body `_body_point` with its name (kept out of the geo_point field, which
+    Earth's area filters and map aggregations read)."""
+    return {"_geo_point": point} if body is None else {"_body_point": {**point, "body": body}}
+
+
+def _row_body(
+    node: NodeConfig,
+    row: dict,
+    ancestors: list[tuple[str, str]],
+    found: dict[str, dict[str, str]],
+) -> str | None:
+    config = node.search.bodies
+    if config is None:
+        return None
+    return config.body_of(row) or next(
+        (
+            body
+            for ancestor, key in ancestors
+            if (body := found.get(ancestor, {}).get(str(row.get(key) or "")))
+        ),
+        None,
+    )
+
+
+def planetary_bodies(node: NodeConfig, parsed: ParsedContribution) -> dict[str, dict[str, str]]:
+    """The named rows of each level that are on another planetary body
+    ({"sites": {"S1": "moon"}}): those whose `search.bodies` column names one,
+    and those below them (by their ancestors' key columns)."""
+    found: dict[str, dict[str, str]] = {}
+    if node.search.bodies is None:
+        return found
+    levels = node.hierarchy[1:]
+    for index, level in enumerate(levels):
+        ancestors = [(a, a.removesuffix("s")) for a in reversed(levels[:index])]
+        for row in parsed.tables.get(level, []):
+            name = row.get(level.removesuffix("s"))
+            if name not in (None, "") and (body := _row_body(node, row, ancestors, found)):
+                found.setdefault(level, {}).setdefault(str(name), body)
+    return found
 
 
 def group_rows(rows: list[dict], key: str) -> list[list[dict]]:
@@ -159,7 +210,9 @@ def summarize(
     # Every level's positions by row name ({"samples": {"S1-a": point}}), for
     # the rows below it that have none of their own; and the contribution's.
     positions: dict[str, dict[str, dict]] = {}
-    points: dict[tuple[float, float], dict] = {}
+    # By (body, lat, lon), with Earth's body None.
+    points: dict[tuple[str | None, float, float], dict] = {}
+    bodies = planetary_bodies(node, parsed)
     levels = hierarchy[1:]
 
     for index, level in enumerate(levels):
@@ -172,13 +225,19 @@ def summarize(
 
         for group in group_rows(rows, level.removesuffix("s")):
             merged = merge_rows(group)
+            name = merged.get(level.removesuffix("s"))
+            body = (
+                bodies.get(level, {}).get(str(name))
+                if name not in (None, "")
+                else _row_body(node, merged, ancestors, bodies)
+            )
             row_all: dict[str, set] = {}
             _collect_all(columns_def, group, row_all)
             geo = None
             for row in group:
                 own = _geo_point(row)
                 if own is not None and len(points) < MAX_GEO_POINTS:
-                    points.setdefault((round(own["lat"], 4), round(own["lon"], 4)), own)
+                    points.setdefault((body, round(own["lat"], 4), round(own["lon"], 4)), own)
                 geo = geo or own
             if geo is None:
                 geo = next(
@@ -189,7 +248,6 @@ def summarize(
                     ),
                     None,
                 )
-            name = merged.get(level.removesuffix("s"))
             if geo is not None and name not in (None, ""):
                 positions.setdefault(level, {}).setdefault(str(name), geo)
             docs.append(
@@ -198,7 +256,10 @@ def summarize(
                     "summary": {
                         "contribution": contribution_summary,
                         level: {**merged, "_n_results": len(group)},
-                        "_all": _finalize_all(row_all, geo),
+                        "_all": {
+                            **_finalize_all(row_all, None),
+                            **(placed(geo, body) if geo else {}),
+                        },
                     },
                     "rows": group,
                 }
@@ -208,7 +269,11 @@ def summarize(
         "type": "contribution",
         "summary": {
             "contribution": contribution_summary,
-            "_all": _finalize_all(all_values, list(points.values()) or None),
+            "_all": _finalize_all(
+                all_values,
+                [p for (body, *_), p in points.items() if body is None] or None,
+                [{**p, "body": body} for (body, *_), p in points.items() if body is not None],
+            ),
             **level_counts,
         },
     }

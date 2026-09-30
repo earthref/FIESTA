@@ -143,6 +143,49 @@ def test_summarize_docs(magic_node):
     assert site_doc["summary"]["_all"]["_geo_point"] == {"lat": 19.5, "lon": -155.5}
 
 
+def test_summarize_places_other_bodies(magic_node):
+    # A lunar location's sites (and a sample below one, by its site) are on
+    # the Moon: _body_point, never _geo_point, so Earth's filters skip them.
+    text = "\n>>>>>>>>>>\n".join(
+        [
+            _tab_block("contribution", ["id"], [{"id": 1}]),
+            _tab_block(
+                "locations",
+                ["location", "location_type", "lat", "lon"],
+                [
+                    {"location": "Hawaii", "location_type": "Outcrop", "lat": 19.5, "lon": 204.5},
+                    {"location": "Apollo 11", "location_type": "Lunar", "lat": 0.67, "lon": 23.47},
+                ],
+            ),
+            _tab_block(
+                "sites",
+                ["site", "location", "lat", "lon"],
+                [
+                    {"site": "HW01", "location": "Hawaii", "lat": 19.5, "lon": 204.5},
+                    {"site": "10020", "location": "Apollo 11", "lat": 0.67, "lon": 23.47},
+                ],
+            ),
+            _tab_block("samples", ["sample", "site"], [{"sample": "10020,1", "site": "10020"}]),
+        ]
+    )
+    docs = summarize(magic_node, parse_text(text), {"id": 1})
+    by_name = {
+        (d["type"], d["summary"][d["type"]].get(d["type"].removesuffix("s"))): d["summary"]["_all"]
+        for d in docs
+        if d["type"] != "contribution"
+    }
+    moon = {"lat": 0.67, "lon": 23.47, "body": "moon"}
+    for key in [("locations", "Apollo 11"), ("sites", "10020")]:
+        assert by_name[key]["_body_point"] == moon
+        assert "_geo_point" not in by_name[key]
+    # Positioned by its site, on its site's body.
+    assert by_name[("samples", "10020,1")]["_body_point"] == moon
+    assert by_name[("sites", "HW01")]["_geo_point"] == {"lat": 19.5, "lon": -155.5}
+    contribution = docs[0]["summary"]["_all"]
+    assert contribution["_body_point"] == [moon]
+    assert all("body" not in p for p in contribution["_geo_point"])
+
+
 def test_summarize_groups_a_records_rows(magic_node):
     # A specimen's rows (e.g. a hysteresis and an anisotropy result) are one
     # doc, as in the legacy index: Summaries count records, Rows their rows.
@@ -943,6 +986,15 @@ def test_map_points_from_a_search_doc():
     assert len(_map_points(contribution, "contribution")) == 2
     inside = _map_points(contribution, "contribution", (170, -5, -170, 5))
     assert [p["lon"] for p in inside] == [179.0]
+    # Points on another body carry it, and an area (on Earth) leaves them out.
+    contribution["summary"]["_all"]["_body_point"] = [{"lat": 1, "lon": 23, "body": "moon"}]
+    assert _map_points(contribution, "contribution")[-1] == {
+        "id": 9,
+        "lat": 1.0,
+        "lon": 23.0,
+        "body": "moon",
+    }
+    assert len(_map_points(contribution, "contribution", (170, -5, -170, 5))) == 1
 
 
 def test_map_colors_are_node_configuration(magic_node):

@@ -1,4 +1,5 @@
 import { MERCATOR_LAT } from "./basemap";
+import { type Body, isBody } from "./bodies";
 
 // Records plotted on the maps, and their tooltips. Ported from the
 // osu-mgr.org search map (components/search/map-points.ts).
@@ -18,7 +19,7 @@ export const MODES: [Mode, string][] = [
 // is one location's records in one contribution, not a record. value: the
 // number it is colored by (a location's records' mean), and its text for the
 // tooltip (`valueText`). contribution: the record's contribution, when id
-// is something else.
+// is something else. body: the planetary body it is on, when not Earth.
 export type MapPoint = {
   id: string;
   contribution?: string;
@@ -31,6 +32,7 @@ export type MapPoint = {
   count?: number;
   value?: number;
   valueText?: string;
+  body?: Exclude<Body, "earth">;
 };
 
 /** A point as GET /search/{table}/points returns it. */
@@ -42,6 +44,7 @@ export type ApiMapPoint = {
   bounds?: [number, number, number, number];
   count?: number;
   value?: number;
+  body?: string;
 };
 
 const toLat = (lat: number) => (Math.abs(lat) <= 90 ? lat : Number.NaN);
@@ -72,6 +75,7 @@ export const toMapPoint = (
     color,
     ...(count !== undefined && { count }),
     ...(point.value != null && { value: point.value }),
+    ...(isBody(point.body) && point.body !== "earth" && { body: point.body }),
   };
   if (point.bounds) {
     const [lonW, latS, lonE, latN] = point.bounds;
