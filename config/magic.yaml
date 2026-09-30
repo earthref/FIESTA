@@ -149,7 +149,7 @@ features:
       - { title: "Method\nCodes", icon: lab, corner_icon: write, to: /method-codes }
       - { title: "Vocabulary\nLists", icon: list, corner_icon: info, to: /vocabularies }
       - { title: "PmagPy\nSoftware", icon: bar chart, corner_icon: calculator, href: "https://pmagpy.github.io/PmagPy-docs/intro.html" }
-      - { title: "Paleomag\nTextbook", icon: book, corner_icon: info, href: "https://earthref.org/MagIC/books/Tauxe/Essentials/" }
+      - { title: "Paleomag\nTextbook", icon: book, corner_icon: info, href: "https://pmagpy.github.io/Essentials-JupyterBook/" }
       - { title: "Jupyter\nNotebooks", icon: file outline, corner_icon: code, to: /jupyter-notebooks }
       - { title: "YouTube\nChannel", icon: tv, corner_icon: headphones, href: "https://www.youtube.com/channel/UC-DbvhEu49a6dZXdvUWorhQ" }
       - { title: "MagIC/FIESTA\nAPI", icon: exchange, corner_icon: info, href: "https://api.earthref.org/" }
