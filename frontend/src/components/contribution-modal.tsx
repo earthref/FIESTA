@@ -835,7 +835,17 @@ function MapPanel({
     <div className="flex h-full min-h-[420px] flex-col gap-2 p-4 sm:p-6">
       {(layers.length > 1 || body !== "earth" || bodies.length > 1) && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
-          <BodyButtons bodies={bodies} body={body} setBody={setBody} />
+          <BodyButtons
+            bodies={bodies}
+            body={body}
+            setBody={setBody}
+            counts={Object.fromEntries(
+              bodies.map((each) => [
+                each,
+                layer.points.filter((p) => (p.body ?? "earth") === each).length,
+              ]),
+            )}
+          />
           {layers.length > 1 && (
             <div className="inline-flex self-start">
               {layers.map((entry, index) => {

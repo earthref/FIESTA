@@ -6,7 +6,8 @@ import type { MapColorOption, SearchLevel } from "../../lib/types";
 import { singularize } from "../../lib/utils";
 import { Icon } from "../ui/icon";
 import { Spinner } from "../ui/spinner";
-import { bodiesOf } from "./bodies";
+import { MERCATOR_LAT } from "./basemap";
+import { BODIES, type Body, bodiesOf } from "./bodies";
 import {
   type ColorScale,
   colorPoints,
@@ -42,6 +43,18 @@ interface MapPointsPage {
 // The field the markers are colored by (a node `map_colors` field, or "" for
 // the node's color), remembered in this browser for every search map.
 const COLOR_KEY = "search-map-color";
+
+// Where a body's or a view's records are, in its disabled button's tooltip.
+const BODY_PLACES: Record<Body, string> = {
+  earth: "on Earth",
+  moon: "on the Moon",
+  mars: "on Mars",
+};
+const MODE_PLACES: Record<Exclude<Mode, "globe">, string> = {
+  flat: "within the Mercator map's ±85°",
+  north: "in the northern hemisphere",
+  south: "in the southern hemisphere",
+};
 function savedColorBy(): string {
   try {
     return localStorage.getItem(COLOR_KEY) ?? "";
@@ -205,12 +218,9 @@ export function SearchMap({
     () => (fetched && colorOption ? colorPoints(fetched, scale) : (fetched ?? [])),
     [fetched, colorOption, scale],
   );
-  // The bodies with records (an area on Earth leaves the others' out, but
-  // they stay on their maps in grey).
-  const bodies = useMemo(
-    () => bodiesOf([...(fetched ?? []), ...(area ? (all.data?.points ?? []) : [])]),
-    [fetched, area, all.data],
-  );
+  // The bodies with records, most first (an area on Earth leaves the others'
+  // out).
+  const bodies = useMemo(() => bodiesOf(fetched ?? []), [fetched]);
   const [body, setBody] = useBody(bodies);
   const onEarth = body === "earth";
   // biome-ignore lint/correctness/useExhaustiveDependencies: switches once per request
@@ -252,16 +262,36 @@ export function SearchMap({
   }, [areaPending, unfiltered]);
   const requestViewArea = areaPending && !area && unfiltered;
 
-  // Records mapped (on every body): a contribution is drawn at each of its
-  // positions, and a large search's points are locations with a count of
+  // The records on each body, and in each view of the body shown, for their
+  // buttons (none until the points load): a contribution is drawn at each of
+  // its positions, and a large search's points are locations with a count of
   // records each.
-  const mapped =
-    level.table === "contribution"
-      ? new Set(colored.map((p) => p.id)).size
-      : colored.reduce((sum, p) => sum + recordsOf(p), 0);
-  const locations = colored.some((p) => p.count !== undefined)
-    ? new Set(colored.map((p) => pointKey(p))).size
-    : undefined;
+  const counts = useMemo(() => {
+    if (!fetched) return undefined;
+    const records = (of: MapPoint[]) =>
+      level.table === "contribution"
+        ? new Set(of.map((p) => p.id)).size
+        : of.reduce((sum, p) => sum + recordsOf(p), 0);
+    const on = (each: Body) => colored.filter((p) => (p.body ?? "earth") === each);
+    return {
+      bodies: Object.fromEntries(BODIES.map(([each]) => [each, records(on(each))])),
+      modes: {
+        globe: records(points),
+        flat: records(points.filter((p) => Math.abs(p.lat) <= MERCATOR_LAT)),
+        north: records(points.filter((p) => p.lat >= 0)),
+        south: records(points.filter((p) => p.lat <= 0)),
+      } satisfies Record<Mode, number>,
+    };
+  }, [fetched, colored, points, level.table]);
+  // A disabled button's tooltip: where there are none, and, for a filtered
+  // search, that clearing its filters shows more.
+  const records = level.name.toLowerCase();
+  const noneMapped = (where: string) =>
+    unfiltered && !area
+      ? `No mapped ${records} ${where}`
+      : `No mapped ${records} ${where} match this search; clear its filters to see more`;
+  const onBody = (each: Body) => BODY_PLACES[each];
+  const inMode = (each: Mode) => (each === "globe" ? onBody(body) : MODE_PLACES[each]);
 
   // The view re-centres on the points for a new search, not for an area edit.
   const focusKey = JSON.stringify([level.table, query, ranges, filters]);
@@ -278,8 +308,19 @@ export function SearchMap({
   return (
     <div className="flex h-full flex-col gap-2 py-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
-        <BodyButtons bodies={bodies} body={body} setBody={setBody} />
-        <ModeButtons mode={mode} setMode={setMode} />
+        <BodyButtons
+          bodies={["earth", ...(config?.bodies ?? [])]}
+          body={body}
+          setBody={setBody}
+          counts={counts?.bodies}
+          emptyTitle={(each) => noneMapped(onBody(each))}
+        />
+        <ModeButtons
+          mode={mode}
+          setMode={setMode}
+          counts={counts?.modes}
+          emptyTitle={(each) => noneMapped(inMode(each))}
+        />
         {area ? (
           <button
             type="button"
@@ -320,11 +361,9 @@ export function SearchMap({
             </select>
           </label>
         )}
-        {inArea.data && (
+        {inArea.data?.truncated && (
           <span className="text-gray-600">
-            {mapped.toLocaleString()} mapped {mapped === 1 ? singularize(level.name) : level.name}
-            {locations !== undefined && ` at ${locations.toLocaleString()} locations`}
-            {inArea.data.truncated && ` (the first of ${inArea.data.total.toLocaleString()})`}
+            The first of {inArea.data.total.toLocaleString()} mapped {records}
           </span>
         )}
       </div>
