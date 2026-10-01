@@ -26,10 +26,17 @@ compose = docker compose -f docker-compose.yml$(if $(PROD),, -f docker-compose.d
 COMPOSE := $(call compose,$(ENV_FILE))
 COMPOSE_OPS := $(call compose,$(OPS_ENV_FILE))
 
-# FIESTA_NODE is a comma-separated node list (magic,karar,cdr). The one API,
-# worker and frontend serve every listed node (the frontend at
-# http://localhost:$(FRONTEND_PORT)/<Key>/).
-FIESTA_NODE ?= magic
+# FIESTA_NODE is a comma-separated node list (magic,karar,cdr), or `all` (the
+# default, also when empty): every node config/fiesta.yaml lists, so a new node
+# is served as soon as it is added there. The one API, worker and frontend
+# serve every listed node (the frontend at http://localhost:$(FRONTEND_PORT)/<Key>/);
+# the first is the default node.
+ALL_NODES := $(shell sed -n 's/^ *- *\([A-Za-z0-9_-]*\)\.yaml *$$/\1/p' config/fiesta.yaml | paste -sd, -)
+FIESTA_NODE ?= all
+ifneq ($(filter-out all,$(strip $(FIESTA_NODE))),)
+else
+override FIESTA_NODE := $(ALL_NODES)
+endif
 export FIESTA_NODE
 
 .DEFAULT_GOAL := help

@@ -57,7 +57,9 @@ files in the old `fiesta_minio-data` volume that RustFS does not read, so run
 rename any `MINIO_*` overrides in `.env` to `RUSTFS_ACCESS_KEY`,
 `RUSTFS_SECRET_KEY`, `RUSTFS_API_PORT`, `RUSTFS_CONSOLE_PORT`.
 
-`FIESTA_NODE` accepts a comma-separated list to run several nodes at once:
+`FIESTA_NODE` defaults to `all`, every node `config/fiesta.yaml` lists (also
+when it is empty), so a node added there is served without touching `.env`.
+A comma-separated list narrows the stack:
 
 ```sh
 make up FIESTA_NODE=magic,karar,cdr

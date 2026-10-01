@@ -8,7 +8,9 @@
 # OpenSearch index, S3 prefix and job queue.
 #
 #   FIESTA_NODE=magic,karar,cdr     # in .env: which nodes the stack serves
-#   make up                         # runs the nodes in FIESTA_NODE
+#   make up                         # runs the nodes in FIESTA_NODE; `all` (make's
+#                                   # default) is every node in config/fiesta.yaml.
+#                                   # Plain `docker compose` does not expand `all`.
 #   make up FIESTA_NODE=magic,karar # override on the command line
 #
 # Default host ports (override in .env):
