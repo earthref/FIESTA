@@ -1,0 +1,457 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: West Pacific Seamount Province (113 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	volcanic_activity	plate_age_min	plate_age_max	age	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	description	sc_id
+SMNT-021N-1490E	Mussau Ridge Seamount	Mussau Ridge Seamount 1	Seamount			2.08	149.04	West Pacific Seamount Province	Pacific Plate							0											1759
+SMNT-046N-1687E	Ebon Atoll	Epoon	Atoll			4.64	168.73	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1434
+SMNT-056N-1681E	Namorik Atoll	Namdik	Atoll			5.62	168.12	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1435
+SMNT-056N-1691E	Kili Island	Kole	Island			5.64	169.12	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1433
+SMNT-056N-1724E	Limalok Guyot	Harrie	Guyot			5.6	172.36	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			68	0											1419
+SMNT-059N-1735E	Keats Reef Seamount		Seamount			5.9	173.48	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1446
+SMNT-060N-1696E	Jaluit Atoll	Jalwoj	Atoll			6.04	169.55	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1432
+SMNT-061N-1719E	Mili Guyot	Mile	Guyot	Very Large	B2	6.08567	171.87417	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	147.9	152.6		3985	345	4330	16825	1.53	0.01	1.20	0.04	1	4	Mili Guyot is located at 6° 5.1' N, 171° 52.4' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3985 m high with the top at -345 m and ocean bottom at -4330 m. The seamount is very large with a volume of 16825 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 108°. The edges are slightly irregular.	1447
+SMNT-066N-1724E	Lomolka Seamount		Seamount			6.63	172.36	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1469
+SMNT-067N-1693E	Maanjidep Seamount		Seamount			6.73	169.33	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1474
+SMNT-074N-1688E	Ailinglapalap Seamount	Aelonlaplap	Seamount			7.4	168.78	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1436
+SMNT-075N-1697E	Jebro Seamount		Seamount			7.48	169.72	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1475
+SMNT-079N-1682E	Namu Atoll	Nadikdik	Atoll			7.9	168.2	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1437
+SMNT-080N-1709E	Aur Atoll		Atoll			7.98	170.92	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1449
+SMNT-083N-1606E	Litakpooki Seamount		Seamount			8.31	160.64	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1483
+SMNT-083N-1674E	Lib Island		Island			8.31	167.4	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1438
+SMNT-087N-1711E	Maloelap Atoll		Atoll			8.73	171.06	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1450
+SMNT-088N-1632E	Mij-Lep Seamount		Seamount			8.81	163.21	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			106	0											1410
+SMNT-089N-1663E	Lae Guyot		Guyot	Small	A1	8.92417	166.24767	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	163.0	164.7		3820	1200	5020	4347	1.48	0.00	1.00	0.00	1	0	Lae Guyot is located at 8° 55.4' N, 166° 14.8' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3820 m high with the top at -1200 m and ocean bottom at -5020 m. The seamount is fairly small with a volume of 4347 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 109°.	1439
+SMNT-091N-1656E	Ujae Guyot		Guyot	Large	B3	9.05167	165.64233	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	162.5	167.2		4045	0	4045	11242	2.24	0.04	1.22	0.05	1	0	Ujae Guyot is located at 9° 3.1' N, 165° 38.5' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4045 m high with the top at sealevel and ocean bottom at -4045 m. The seamount is large with a volume of 11242 km3. It is moderately elongated in a southeast, northwest direction with an azimuth of approximately 135°. The edges are slightly irregular.	1440
+SMNT-092N-1674E	Kwajalein Guyot	Kuwajleen	Guyot	Very Large	B3	9.1195	167.46117	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	159.5	167.1		4315	0	4315	38564	2.45	0.03	1.37	0.03	1	0	Kwajalein Guyot is located at 9° 7.2' N, 167° 27.7' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4315 m high with the top at sealevel and ocean bottom at -4315 m. The seamount is very large with a volume of 38563 km3. It is moderately elongated in a southeast, northwest direction with an azimuth of approximately 121°. The edges are slightly irregular.	1476
+SMNT-092N-1700E	Erikub Seamount	Lokkworkwor	Seamount			9.15	170.0	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			87	0											1418
+SMNT-094N-1700E	Wotje Atoll		Atoll			9.43	170.02	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1451
+SMNT-098N-1604E	Ujlan Guyot	Ujelang	Guyot			9.78	160.42	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			80	0											1409
+SMNT-099N-1691E	Likiep Island		Island			9.9	169.13	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1453
+SMNT-101N-1599E	Lalibjet Seamount		Seamount			10.14	159.92	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			74	0											1465
+SMNT-101N-1629E	Lo-En Guyot	Hess	Guyot			10.1	162.87	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			113	0											1403
+SMNT-101N-1660E	Wotho Guyot	Wotto	Guyot	Intermediate	B2	10.10633	165.96783	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	167.4	168.7		4155	0	4155	5825	1.61	0.03	1.25	0.05	1	3	Wotho Guyot is located at 10° 6.4' N, 165° 58.1' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4155 m high with the top at sealevel and ocean bottom at -4155 m. The seamount is intermediate in size with a volume of 5825 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 152°. The edges are slightly irregular.	1441
+SMNT-101N-1695E	Jema Island		Island			10.08	169.53	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1452
+SMNT-102N-1607E	Lotab Seamount		Seamount			10.23	160.72	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			80	0											1408
+SMNT-103N-1699E	Ailuk Atoll	Aelok	Atoll			10.311	169.92333	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1454
+SMNT-103N-1709E	Mejit Island	Majej	Island			10.28	170.88	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1455
+SMNT-105N-1608E	Lajutokwa Guyot		Guyot			10.48	160.78	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			81	0											1407
+SMNT-106N-1605E	Likelep Guyot		Guyot			10.6	160.48	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			82	0											1406
+SMNT-106N-1665E	Lewonjoui Guyot		Guyot	Small	A4	10.5385	166.46383	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	168.3	169.1		2320	2985	5305	1441	2.56	0.10	0.75	0.04	1	0	Lewonjoui Guyot is located at 10° 32.3' N, 166° 27.8' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 2320 m high with the top at -2985 m and ocean bottom at -5305 m. The seamount is fairly small with a volume of 1440 km3. It is elongated in an northeast, southwest direction with an azimuth of approximately 56°. The edges are relatively smooth.	1478
+SMNT-109N-1615E	Litormalu Seamount		Seamount			10.89	161.46	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1485
+SMNT-111N-1664E	Ailinginae Guyot	Aeloninae	Guyot	Intermediate	A4	11.139	166.42467	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	168.9	169.9		3745	270	4015	6409	2.59	0.45	0.68	0.10	1	0	Ailinginae Guyot is located at 11° 8.3' N, 166° 25.5' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3745 m high with the top at -270 m and ocean bottom at -4015 m. The seamount is intermediate in size with a volume of 6409 km3. It is elongated in an east, west direction with an azimuth of approximately 92°. The edges are relatively smooth.	1442
+SMNT-111N-1696E	Taka Atoll	Toke	Atoll			11.14	169.64	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1458
+SMNT-111N-1707E	Jebo Seamount		Seamount			11.05	170.66	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1470
+SMNT-112N-1611E	Lainjin Seamount		Seamount			11.15	161.05	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1484
+SMNT-113N-1668E	Rangelap Atoll	Ronlap	Atoll			11.3	166.8	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1443
+SMNT-113N-1674E	Rangerik Atoll	Rondik	Atoll			11.34	167.44	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1445
+SMNT-113N-1698E	Utirik Atoll	Utrok	Atoll			11.25	169.8	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1456
+SMNT-114N-1611E	Lojemeja Seamount		Seamount			11.44	161.09	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1486
+SMNT-115N-1622E	Anewetak Atoll	Eniwetak:Enewetak	Atoll			11.5	162.23	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			76	0											1411
+SMNT-116N-1654E	Bikini Atoll	Pikini:Pikinni	Atoll			11.6	165.4	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1444
+SMNT-118N-1670E	Ruwituntun Guyot		Guyot			11.83	167.0	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			66	0											1460
+SMNT-119N-1614E	Lami Seamount		Seamount			11.91	161.41	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			86	0											1412
+SMNT-119N-1649E	Wodejebato Guyot	Sylvania	Guyot	Large	B1	11.9325	164.862	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	170.2	172.0	82	3215	1290	4505	12476	1.48	0.05	1.28	0.10	1	3	Wodejebato Guyot is located at 11° 55.9' N, 164° 51.7' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3215 m high with the top at -1290 m and ocean bottom at -4505 m. The seamount is large with a volume of 12475 km3. It is relatively round with very little elongation and an azimuth of approximately 134°. The edges are slightly irregular.	1402
+SMNT-122N-1623E	Lo-Wuliej Seamount		Seamount			12.16	162.26	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1488
+SMNT-122N-1662E	Look Seamount		Seamount			12.2	166.23	West Pacific Seamount Province	Pacific Plate			Extinct			140	0											1431
+SMNT-122N-1689E	Lawun-Pikaar Seamount		Seamount			12.16	168.86	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1472
+SMNT-122N-1701E	Bikar Guyot	Pikaar	Guyot	Large	A2	12.17883	170.11567	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	168.9	169.9		4775	235	5010	13367	1.52	0.38	1.13	0.14	2	0	Bikar Guyot is located at 12° 10.7' N, 170° 6.9' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4775 m high with the top at -235 m and ocean bottom at -4010 m. The seamount is large with a volume of 13367 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 133°. The edges are relatively smooth.	1457
+SMNT-124N-1613E	Peto-En Seamount		Seamount			12.38	161.32	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1487
+SMNT-127N-1626E	South Laanmojanjan Seamount		Seamount	Small	A1	12.69267	162.6195	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	172.6	172.8		3675	1395	5070	1611	1.19	0.02	1.03	0.00	1	7	South Laanmojanjan Guyot is located at 12° 41.6' N, 162° 37.2' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3675 m high with the top at -1395 m and ocean bottom at -5070 m. The seamount is fairly small with a volume of 1610 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 219°.	1482
+SMNT-129N-1568E	Ita Mai Tai Guyot		Guyot			12.85	156.77	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			118	0											1401
+SMNT-131N-1628E	North Laanmojanjan Seamount		Seamount			13.13	162.78667	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1481
+SMNT-131N-1694E	Lokoto-Nornor Seamount		Seamount			13.1	169.44	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1471
+SMNT-132N-1645E	Lojabon-Bar Seamount		Seamount			13.15	164.5	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1479
+SMNT-136N-1644E	Bwewa-Kan Seamount		Seamount			13.56	164.42	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			88	0											1413
+SMNT-139N-1639E	Lobbadede Guyot	Lobhadode	Guyot			13.88	163.86	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			94	0											1416
+SMNT-139N-1675E	Ratak Guyot	Woden-Kopakut	Guyot			13.94	167.48	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			85	0											1417
+SMNT-140N-1631E	Lewa Guyot		Guyot			14.03	163.13	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			100	0											1466
+SMNT-141N-1561E	Ioah Seamount	Ioan:Fedorov	Seamount			14.1	156.14	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			87	0											1405
+SMNT-144N-1610E	Neen-Koiaak Guyot		Guyot	Intermediate	B1	14.377	161.01933	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	174.8	175.0	102	4040	1025	5065	7083	1.26	0.06	1.27	0.02	1	9	Neen-Koiaak Guyot is located at 14° 22.6' N, 161° 1.2' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4040 m high with the top at -1025 m and ocean bottom at -5065 m. The seamount is intermediate in size with a volume of 7083 km3. It is relatively round with very little elongation and an azimuth of approximately 116°. The edges are slightly irregular.	1399
+SMNT-146N-1690E	Bokak Atoll	Taongi	Atoll			14.64	168.97	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1473
+SMNT-147N-1635E	Lomtal Guyot		Guyot			14.73	163.5	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			86	0											1467
+SMNT-149N-1605E	Aean Kan Guyot		Guyot	Large	B2	14.883	160.45633	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	173.7	175.0		3875	850	4725	10389	1.51	0.11	1.22	0.03	1	5	Aean Kan Guyot is located at 14° 53' N, 160° 27.4' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3875 m high with the top at -850 m and ocean bottom at -4725 m. The seamount is fairly large with a volume of 10389 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 137°. The edges are slightly irregular.	1480
+SMNT-151N-1593E	Seascan Seamount		Seamount			15.07	159.28	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			84	0											1468
+SMNT-152N-1630E	South-Wod-En Guyot	Wod-En Rok	Guyot			15.22	163.0	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			76	0											1415
+SMNT-157N-1552E	Pako Guyot		Guyot	Very Large	A2	15.71383	155.19933	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	167.1	168.5	92	3890	1365	5255	20362	1.63	0.09	1.03	0.03	1	2	Pako Guyot is located at 15° 42.8' N, 155° 12' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3890 m high with the top at -1365 m and ocean bottom at -5255 m. The seamount is very large with a volume of 20362 km3. It is slightly elongated in a northeast, southwest direction with an azimuth of approximately 61°. The edges are relatively smooth.	1404
+SMNT-161N-1630E	North-Wod-En Guyot	Wod-En Ion	Guyot			16.1	163.04	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			86	0											1414
+SMNT-169N-1543E	Vlinder Guyot		Guyot	Very Large	E3	16.96017	154.27717	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	161.9	167.6	95	4175	765	4940	26374	2.15	0.41	1.93	0.23	2	10	Vlinder Guyot is located at 16° 57.6' N, 154° 16.6' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4175 m high with the top at -765 m and ocean bottom at -4940 m. The seamount is very large with a volume of 26374 km3. It is moderately elongated in a south, north direction with an azimuth of approximately 181°. The edges are very irregular.	1400
+SMNT-173N-1739E	Thomas Guyot		Guyot			17.34	173.92	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											214
+SMNT-186N-1621E	Dixie Jane Seamount		Seamount			18.64	162.08	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct				0											1459
+SMNT-197N-1516E	Hemler Guyot		Guyot			19.71	151.64	West Pacific Seamount Province	Pacific Plate						100	0											154
+SMNT-202N-1566E	Batiza Guyot		Guyot	Intermediate	B3	20.21567	156.51217	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain		163.5	166.4	107	2555	1505	4060	7068	2.30	0.17	1.38	0.06	3	6	Batiza Guyot is located at 20° 12.9' N, 156° 30.7' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 2555 m high with the top at -1505 m and ocean bottom at -4060 m. The seamount is intermediate in size with a volume of 7068 km3. It is moderately elongated in a southeast, northwest direction with an azimuth of approximately 165°. The edges are slightly irregular.	130
+SMNT-209N-1564E	Jennings Guyot		Guyot	Intermediate	B3	20.87217	156.32367	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	162.7	164.8	103	2940	1780	4720	5609	2.26	0.14	1.31	0.02	1	4	Jennings Guyot is located at 20° 52.3' N, 156° 19.4' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 2940 m high with the top at -1780 m and ocean bottom at -4720 m. The seamount is intermediate in size with a volume of 5608 km3. It is moderately elongated in a northeast, southwest direction with an azimuth of approximately 59°. The edges are slightly irregular.	1425
+SMNT-210N-1572E	Maloney Guyot		Guyot	Intermediate	A2	20.9375	157.23583	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	163.8	166.4	101	2915	1555	4470	7452	1.92	0.43	1.13	0.12	1	3	Maloney Guyot is located at 20° 56.3' N, 157° 14.1' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 2915 m high with the top at -1555 m and ocean bottom at -4470 m. The seamount is intermediate in size with a volume of 7452 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 105°. The edges are relatively smooth.	1426
+SMNT-211N-1549E	Missy Guyot		Guyot	Very Large	A2	21.08383	154.82833	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	159.5	162.6	97	4440	1125	5565	24681	1.74	0.04	1.18	0.08	3	3	Missy Guyot is located at 21° 5' N, 154° 49.7' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4440 m high with the top at -1125 m and ocean bottom at -5565 m. The seamount is very large with a volume of 24681 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 120°. The edges are relatively smooth.	1424
+SMNT-211N-1633E	Wilde Guyot		Guyot	Intermediate	A1	21.14567	163.2785	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain		164.2	167.1	91	3240	1320	4560	6172	1.14	0.01	1.15	0.04	1	9	Wilde Guyot is located at 21° 8.7' N, 163° 16.7' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3240 m high with the top at -1320 m and ocean bottom at -4560 m. The seamount is intermediate in size with a volume of 6171 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 118°.	210
+SMNT-213N-1532E	Golden-Dragon Guyot		Guyot	Intermediate	A1	21.30667	153.19317	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	157.6	158.6	102	4530	990	5520	8640	1.35	0.02	1.10	0.03	1	15	Golden-Dragon Guyot is located at 21° 18.4' N, 153° 11.6' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4530 m high with the top at -990 m and ocean bottom at -5520 m. The seamount is intermediate in size with a volume of 8640 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 64°.	1423
+SMNT-214N-1596E	Lamont Guyot		Guyot	Very Large	A5	21.425	159.6565	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain		165.9	168.5	87	4190	1180	5370	20912	3.50	0.29	1.06	0.01	2	1	Lamont Guyot is located at 21° 25.5' N, 159° 39.4' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4190 m high with the top at -1180 m and ocean bottom at -5370 m. The seamount is very large with a volume of 20911 km3. It is very elongated in an southeast, northwest direction with an azimuth of approximately 114°. The edges are relatively smooth.	167
+SMNT-216N-1518E	HIMU Seamount		Seamount			21.57	151.75	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			120	0											1422
+SMNT-217N-1619E	Miami Guyot		Guyot			21.66667	161.91667	West Pacific Seamount Province	Pacific Plate	Hotspot Trail					99	0											173
+SMNT-229N-1694E	Duncan Seamount		Seamount			22.92	169.37	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1530
+SMNT-236N-1687E	Henry Seamount		Seamount			23.59	168.73	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1531
+SMNT-238N-1488E	Seth Guyot		Guyot			23.82	148.76	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			134	0											1427
+SMNT-238N-1593E	Scripps Guyot		Guyot	Large	A2	23.78	159.32533	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain		159.8	162.4	101	3980	1170	5150	13122	1.68	0.11	1.11	0.10	1	3	Scripps Guyot is located at 23° 46.8' N, 159° 19.5' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3980 m high with the top at -1170 m and ocean bottom at -5150 m. The seamount is large with a volume of 13122 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 145°. The edges are relatively smooth.	191
+SMNT-239N-1617E	Hydock Seamount		Seamount			23.9	161.68	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1548
+SMNT-242N-1501E	Alcatraz Guyot		Guyot			24.16	150.07	West Pacific Seamount Province	Pacific Plate	Hotspot Trail		Extinct			113	0											1421
+SMNT-242N-1672E	Buffington Seamount		Seamount			24.17	167.2	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1533
+SMNT-247N-1632E	Newhouse Seamount		Seamount			24.66	163.2	West Pacific Seamount Province	Pacific Plate							0											1546
+SMNT-248N-1656E	Sharman Seamount		Seamount			24.84	165.55	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1534
+SMNT-250N-1620E	Taylor Seamount		Seamount			24.99	161.99	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1549
+SMNT-255N-1672E	Rea Seamount		Seamount			25.5	167.24	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1535
+SMNT-257N-1692E	Erickson Seamount		Seamount			25.68	169.24	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1536
+SMNT-258N-1688E	Naugler Seamount		Seamount			25.77	168.8	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1537
+SMNT-262N-1635E	Schoenbechler Seamount		Seamount			26.15	163.5	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1543
+SMNT-265N-1631E	Moore Seamount		Seamount			26.52	163.12	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1544
+SMNT-269N-1641E	W. Smith Seamount		Seamount			26.86	164.12	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1542
+SMNT-270N-1486E	Grant Seamount		Seamount			27.03	148.64	West Pacific Seamount Province	Pacific Plate			Extinct			114	0											1430
+SMNT-273N-1519E	MIT Guyot		Guyot	Intermediate	A4	27.28617	151.82317	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	154.8	155.1	123	4165	1085	5250	6040	2.79	0.23	1.13	0.04	1	6	MIT Guyot is located at 27° 17.2' N, 151° 49.4' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 4165 m high with the top at -1085 m and ocean bottom at -5250 m. The seamount is intermediate in size with a volume of 6040 km3. It is elongated in a northeast, southwest direction with an azimuth of approximately 62°. The edges are relatively smooth.	1429
+SMNT-275N-1662E	Mammerickx Seamount		Seamount			27.5	166.17	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1539
+SMNT-278N-1619E	Busch Seamount		Seamount			27.75	161.91	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1545
+SMNT-278N-1687E	Guadelupe Seamount		Seamount			27.79	168.74	West Pacific Seamount Province	Pacific Plate	Hotspot Trail						0											1540
+SMNT-295N-1535E	Makarov Guyot		Guyot	Intermediate	A1	29.49	153.491	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	152.9	154.3	94	3950	1310	5260	6670	1.37	0.07	1.11	0.02	1	6	Makarov Guyot is located at 29° 29.4' N, 153° 29.5' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3950 m high with the top at -1310 m and ocean bottom at -5260 m. The seamount is intermediate in size with a volume of 6670 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 86°.	1428
+SMNT-316N-1512E	Isakov Guyot		Guyot	Small	A2	31.55083	151.17017	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain		148.8	150.1	104	3865	1395	5260	2393	1.52	0.06	1.12	0.06	1	13	Isakov Guyot is located at 31° 33' N, 151° 10.2' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3865 m high with the top at -1395 m and ocean bottom at -5260 m. The seamount is fairly small with a volume of 2392 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 120°. The edges are relatively smooth.	851
+SMNT-328N-1483E	Winterer Guyot		Guyot	Small	A1	32.777	148.326	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	144.1	145.1	108	3755	1400	5155	2515	1.36	0.02	1.17	0.02	1	4	Winterer Guyot is located at 32° 46.6' N, 148° 19.6' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3755 m high with the top at -1400 m and ocean bottom at -5155 m. The seamount is fairly small with a volume of 2515 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 80°.	1420
+SMNT-340N-1459E	Maiko Seamount		Seamount			34.03333	145.91667	West Pacific Seamount Province	Pacific Plate							0											957
+SMNT-342N-1443E	Takuyo-Daisan Guyot		Guyot	Small	A1	34.19317	144.29233	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain		136.8	137.9	118	3420	1430	4850	2287	1.41	0.07	1.12	0.02	1	11	Takuyo-Daisan Guyot is located at 34° 11.6' N, 144° 17.5' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3420 m high with the top at -1430 m and ocean bottom at -4850 m. The seamount is fairly small with a volume of 2287 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 94°.	1257
+SMNT-343N-1439E	Takuyo-Daini Guyot		Guyot	Small	A1	34.29467	143.853	West Pacific Seamount Province	Pacific Plate	Hotspot Trail	Abyssal Plain				118	3775	1420	5195	2237	1.24	0.11	1.07	0.03	1	7	Takuyo-Daini Guyot is located at 34° 17.7' N, 143° 51.2' E and is part of the West Pacific Seamount Province on the Pacific Plate. It is 3775 m high with the top at -1420 m and ocean bottom at -5195 m. The seamount is fairly small with a volume of 2236 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 91°.	1256
+SMNT-409N-1449E	Erimo Seamount	Sisoev Seamount	Seamount			40.92	144.92	West Pacific Seamount Province	Pacific Plate	Hotspot Trail					72	0											723
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-061N-1719E	1939	108.8	2641.2	81.2	52.7	1.540	234.0	188.5	1.241
+SMNT-061N-1719E	2338	109.2	3136.9	86.3	56.4	1.531	247.9	205.3	1.208
+SMNT-061N-1719E	2736	107.8	3605.2	90.0	59.2	1.519	254.3	219.8	1.157
+SMNT-101N-1660E	1662	153.5	416.1	38.6	23.5	1.642	98.9	75.6	1.308
+SMNT-101N-1660E	2078	152.9	536.8	41.4	25.8	1.606	106.7	85.6	1.246
+SMNT-101N-1660E	2493	152.2	677.3	44.3	28.2	1.572	115.2	95.8	1.203
+SMNT-119N-1649E	2576	134.8	2021.0	67.1	44.5	1.507	228.4	164.4	1.389
+SMNT-119N-1649E	2898	134.5	2392.6	71.6	47.6	1.506	229.1	178.8	1.281
+SMNT-119N-1649E	3219	134.0	2823.1	75.6	53.1	1.423	228.2	192.7	1.184
+SMNT-127N-1626E	2865	222.3	113.9	13.5	11.1	1.210	39.2	38.1	1.030
+SMNT-127N-1626E	3233	219.9	166.3	16.2	13.5	1.196	47.1	46.0	1.024
+SMNT-127N-1626E	3600	216.8	234.8	19.1	16.2	1.178	56.3	54.6	1.032
+SMNT-144N-1610E	2641	112.4	769.1	40.5	30.4	1.333	126.8	99.8	1.271
+SMNT-144N-1610E	3045	118.5	948.4	43.5	35.5	1.227	141.2	110.0	1.284
+SMNT-144N-1610E	3449	118.2	1151.9	46.4	38.0	1.223	151.2	121.2	1.247
+SMNT-149N-1605E	2400	137.8	1379.9	56.5	35.2	1.607	171.7	137.2	1.252
+SMNT-149N-1605E	2788	138.4	1645.3	59.6	39.0	1.528	180.8	148.6	1.217
+SMNT-149N-1605E	3175	136.1	1983.7	61.6	44.2	1.393	191.6	161.1	1.189
+SMNT-157N-1552E	2921	61.7	3108.3	85.8	49.9	1.722	222.3	208.5	1.066
+SMNT-157N-1552E	3310	62.1	3489.3	88.1	54.0	1.633	223.8	218.8	1.023
+SMNT-157N-1552E	3699	59.9	3975.0	91.5	59.6	1.535	232.1	231.2	1.004
+SMNT-169N-1543E	2435	182.1	1793.9	116.4	49.9	2.335	283.9	170.3	1.667
+SMNT-169N-1543E	2853	182.6	2500.2	135.6	55.5	2.445	426.3	203.7	2.093
+SMNT-169N-1543E	3270	180.7	3557.3	114.4	68.0	1.683	453.4	222.2	2.041
+SMNT-202N-1566E	2527	166.1	1481.0	76.6	30.9	2.480	207.3	157.4	1.317
+SMNT-202N-1566E	2783	166.5	1697.7	79.8	34.7	2.299	237.4	164.9	1.439
+SMNT-202N-1566E	3038	165.3	1973.2	81.9	38.3	2.137	242.3	174.4	1.389
+SMNT-209N-1564E	2662	65.4	637.0	52.7	22.6	2.327	132.7	101.4	1.310
+SMNT-209N-1564E	2956	58.8	938.6	62.6	26.6	2.349	164.5	123.4	1.333
+SMNT-209N-1564E	3250	53.5	1216.1	66.5	31.7	2.096	176.5	136.3	1.296
+SMNT-210N-1572E	2721	103.5	817.8	43.4	26.4	1.640	112.5	106.0	1.061
+SMNT-210N-1572E	3013	103.9	1021.2	49.7	29.2	1.700	125.5	119.3	1.053
+SMNT-210N-1572E	3304	110.5	1447.5	77.2	31.9	2.419	195.5	154.5	1.266
+SMNT-211N-1549E	2901	123.5	1853.0	74.6	42.0	1.778	204.9	162.0	1.264
+SMNT-211N-1549E	3345	119.9	2445.9	82.5	47.0	1.755	215.3	185.7	1.159
+SMNT-211N-1549E	3789	116.6	3118.9	89.2	52.5	1.699	231.5	208.4	1.111
+SMNT-211N-1633E	2616	117.5	826.3	36.6	31.8	1.149	113.0	102.3	1.105
+SMNT-211N-1633E	2940	118.5	1029.2	40.4	35.6	1.135	134.4	114.1	1.178
+SMNT-211N-1633E	3264	118.7	1305.9	45.8	40.0	1.144	151.1	128.5	1.175
+SMNT-213N-1532E	2802	59.7	498.9	31.6	22.9	1.379	89.2	80.7	1.105
+SMNT-213N-1532E	3255	63.2	630.3	34.8	25.7	1.354	97.0	90.5	1.072
+SMNT-213N-1532E	3708	68.2	841.3	39.5	29.7	1.330	117.3	104.4	1.124
+SMNT-214N-1596E	2856	114.3	2378.6	118.8	31.3	3.796	243.0	230.2	1.056
+SMNT-214N-1596E	3275	114.2	2888.0	123.6	35.5	3.485	263.5	245.8	1.072
+SMNT-214N-1596E	3694	114.0	3468.1	128.7	40.1	3.212	278.6	261.7	1.065
+SMNT-238N-1593E	2762	148.1	1253.8	58.6	33.3	1.761	150.4	133.0	1.131
+SMNT-238N-1593E	3160	145.7	1565.4	64.4	37.2	1.732	178.0	148.2	1.201
+SMNT-238N-1593E	3558	143.7	1996.5	67.4	43.3	1.557	166.3	164.2	1.013
+SMNT-273N-1519E	2751	63.9	649.5	56.1	18.4	3.050	120.7	111.3	1.085
+SMNT-273N-1519E	3168	62.7	817.3	59.2	21.9	2.700	136.1	120.0	1.135
+SMNT-273N-1519E	3584	62.4	1001.8	64.7	24.7	2.615	153.6	131.5	1.168
+SMNT-295N-1535E	2890	92.3	625.9	36.9	25.5	1.447	99.4	91.0	1.093
+SMNT-295N-1535E	3285	86.7	784.0	40.7	29.9	1.360	112.3	101.0	1.112
+SMNT-295N-1535E	3680	79.6	986.5	45.2	34.4	1.315	127.7	112.9	1.131
+SMNT-316N-1512E	2941	122.1	202.0	22.9	14.5	1.585	61.7	52.4	1.179
+SMNT-316N-1512E	3328	121.3	274.3	25.6	17.0	1.506	67.9	60.6	1.122
+SMNT-316N-1512E	3714	119.1	361.8	28.6	19.5	1.471	74.0	69.3	1.067
+SMNT-328N-1483E	2902	78.5	302.5	26.0	19.3	1.346	74.4	62.7	1.187
+SMNT-328N-1483E	3278	80.6	381.6	29.1	21.5	1.350	82.7	70.4	1.174
+SMNT-328N-1483E	3653	82.3	472.6	32.6	23.5	1.388	89.7	78.6	1.141
+SMNT-342N-1443E	2798	95.9	287.8	26.8	18.6	1.440	69.1	61.6	1.121
+SMNT-342N-1443E	3140	94.8	364.0	30.3	20.8	1.458	76.5	69.4	1.101
+SMNT-342N-1443E	3482	92.7	442.6	32.0	24.0	1.335	86.5	75.7	1.142
+SMNT-343N-1439E	2930	94.1	218.8	19.5	17.5	1.117	55.1	52.6	1.049
+SMNT-343N-1439E	3308	91.6	302.6	25.0	19.5	1.287	69.1	62.4	1.108
+SMNT-343N-1439E	3685	89.2	393.6	28.6	21.8	1.312	75.9	71.3	1.065
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Mussau Ridge Seamount -- Predicted satellite bathymetry	SMNT-021N-1490E	SMNT-021N-1490E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-021N-1490E.std.180m.ss.map.jpg	180	693	773	3760
+Ebon Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-046N-1687E	SMNT-046N-1687E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-046N-1687E.std.180m.mg.map.jpg	180	952	1033	3761
+Ebon Atoll -- Multibeam bathymetry	SMNT-046N-1687E	SMNT-046N-1687E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-046N-1687E.std.180m.mb.map.jpg	180	1341	1421	3762
+Ebon Atoll -- Predicted satellite bathymetry	SMNT-046N-1687E	SMNT-046N-1687E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-046N-1687E.std.180m.ss.map.jpg	180	952	1033	3763
+Ebon Atoll -- Residual bathymetry	SMNT-046N-1687E	SMNT-046N-1687E	Seamount	Residual bathymetry	Map:Grid	SMNT-046N-1687E.std.180m.rs.map.jpg	180	952	1033	3764
+Namorik Atoll -- Predicted satellite bathymetry	SMNT-056N-1681E	SMNT-056N-1681E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-056N-1681E.std.180m.ss.map.jpg	180	745	825	3765
+Kili Island -- Predicted satellite bathymetry	SMNT-056N-1691E	SMNT-056N-1691E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-056N-1691E.std.180m.ss.map.jpg	180	693	773	3766
+Limalok Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-056N-1724E	SMNT-056N-1724E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-056N-1724E.std.180m.mg.map.jpg	180	952	1033	3767
+Limalok Guyot -- Multibeam bathymetry	SMNT-056N-1724E	SMNT-056N-1724E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-056N-1724E.std.180m.mb.map.jpg	180	1341	1421	3768
+Limalok Guyot -- Predicted satellite bathymetry	SMNT-056N-1724E	SMNT-056N-1724E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-056N-1724E.std.180m.ss.map.jpg	180	952	1033	3769
+Limalok Guyot -- Residual bathymetry	SMNT-056N-1724E	SMNT-056N-1724E	Seamount	Residual bathymetry	Map:Grid	SMNT-056N-1724E.std.180m.rs.map.jpg	180	952	1033	3770
+Keats Reef Seamount -- Predicted satellite bathymetry	SMNT-059N-1735E	SMNT-059N-1735E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-059N-1735E.std.180m.ss.map.jpg	180	693	773	3771
+Jaluit Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-060N-1696E	SMNT-060N-1696E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-060N-1696E.std.180m.mg.map.jpg	180	1212	1292	3772
+Jaluit Atoll -- Multibeam bathymetry	SMNT-060N-1696E	SMNT-060N-1696E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-060N-1696E.std.180m.mb.map.jpg	180	1730	1810	3773
+Jaluit Atoll -- Predicted satellite bathymetry	SMNT-060N-1696E	SMNT-060N-1696E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-060N-1696E.std.180m.ss.map.jpg	180	1212	1292	3774
+Jaluit Atoll -- Residual bathymetry	SMNT-060N-1696E	SMNT-060N-1696E	Seamount	Residual bathymetry	Map:Grid	SMNT-060N-1696E.std.180m.rs.map.jpg	180	1212	1292	3775
+Mili Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-061N-1719E	SMNT-061N-1719E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-061N-1719E.std.180m.mg.map.jpg	180	1212	1292	3776
+Mili Guyot -- Multibeam bathymetry	SMNT-061N-1719E	SMNT-061N-1719E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-061N-1719E.std.180m.mb.map.jpg	180	1730	1810	3777
+Mili Guyot -- Predicted satellite bathymetry	SMNT-061N-1719E	SMNT-061N-1719E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-061N-1719E.std.180m.ss.map.jpg	180	1212	1292	3778
+Mili Guyot -- Residual bathymetry	SMNT-061N-1719E	SMNT-061N-1719E	Seamount	Residual bathymetry	Map:Grid	SMNT-061N-1719E.std.180m.rs.map.jpg	180	1212	1292	3779
+Lomolka Seamount -- Predicted satellite bathymetry	SMNT-066N-1724E	SMNT-066N-1724E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-066N-1724E.std.180m.ss.map.jpg	180	693	773	3782
+Maanjidep Seamount -- Predicted satellite bathymetry	SMNT-067N-1693E	SMNT-067N-1693E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-067N-1693E.std.180m.ss.map.jpg	180	641	721	3783
+Ailinglapalap Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-074N-1688E	SMNT-074N-1688E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-074N-1688E.std.180m.mg.map.jpg	180	1108	1188	3784
+Ailinglapalap Seamount -- Multibeam bathymetry	SMNT-074N-1688E	SMNT-074N-1688E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-074N-1688E.std.180m.mb.map.jpg	180	1575	1655	3785
+Ailinglapalap Seamount -- Predicted satellite bathymetry	SMNT-074N-1688E	SMNT-074N-1688E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-074N-1688E.std.180m.ss.map.jpg	180	1108	1188	3786
+Ailinglapalap Seamount -- Residual bathymetry	SMNT-074N-1688E	SMNT-074N-1688E	Seamount	Residual bathymetry	Map:Grid	SMNT-074N-1688E.std.180m.rs.map.jpg	180	1108	1188	3787
+Jebro Seamount -- Predicted satellite bathymetry	SMNT-075N-1697E	SMNT-075N-1697E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-075N-1697E.std.180m.ss.map.jpg	180	901	981	3788
+Namu Atoll -- Predicted satellite bathymetry	SMNT-079N-1682E	SMNT-079N-1682E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-079N-1682E.std.180m.ss.map.jpg	180	1108	1188	3789
+Aur Atoll -- Predicted satellite bathymetry	SMNT-080N-1709E	SMNT-080N-1709E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-080N-1709E.std.180m.ss.map.jpg	180	849	929	3790
+Litakpooki Seamount -- Predicted satellite bathymetry	SMNT-083N-1606E	SMNT-083N-1606E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-083N-1606E.std.180m.ss.map.jpg	180	1004	1084	3791
+Lib Island -- Multibeam data merged with predicted satellite bathymetry	SMNT-083N-1674E	SMNT-083N-1674E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-083N-1674E.std.180m.mg.map.jpg	180	693	773	3792
+Lib Island -- Multibeam bathymetry	SMNT-083N-1674E	SMNT-083N-1674E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-083N-1674E.std.180m.mb.map.jpg	180	952	1033	3793
+Lib Island -- Predicted satellite bathymetry	SMNT-083N-1674E	SMNT-083N-1674E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-083N-1674E.std.180m.ss.map.jpg	180	693	773	3794
+Lib Island -- Residual bathymetry	SMNT-083N-1674E	SMNT-083N-1674E	Seamount	Residual bathymetry	Map:Grid	SMNT-083N-1674E.std.180m.rs.map.jpg	180	693	773	3795
+Maloelap Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-087N-1711E	SMNT-087N-1711E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-087N-1711E.std.180m.mg.map.jpg	180	1212	1292	3796
+Maloelap Atoll -- Multibeam bathymetry	SMNT-087N-1711E	SMNT-087N-1711E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-087N-1711E.std.180m.mb.map.jpg	180	1730	1810	3797
+Maloelap Atoll -- Predicted satellite bathymetry	SMNT-087N-1711E	SMNT-087N-1711E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-087N-1711E.std.180m.ss.map.jpg	180	1212	1292	3798
+Maloelap Atoll -- Residual bathymetry	SMNT-087N-1711E	SMNT-087N-1711E	Seamount	Residual bathymetry	Map:Grid	SMNT-087N-1711E.std.180m.rs.map.jpg	180	1212	1292	3799
+Mij-Lep Seamount -- Predicted satellite bathymetry	SMNT-088N-1632E	SMNT-088N-1632E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-088N-1632E.std.180m.ss.map.jpg	180	1056	1136	3800
+Lae Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-089N-1663E	SMNT-089N-1663E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-089N-1663E.std.180m.mg.map.jpg	180	849	929	3801
+Lae Guyot -- Multibeam bathymetry	SMNT-089N-1663E	SMNT-089N-1663E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-089N-1663E.std.180m.mb.map.jpg	180	1186	1266	3802
+Lae Guyot -- Predicted satellite bathymetry	SMNT-089N-1663E	SMNT-089N-1663E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-089N-1663E.std.180m.ss.map.jpg	180	849	929	3803
+Lae Guyot -- Residual bathymetry	SMNT-089N-1663E	SMNT-089N-1663E	Seamount	Residual bathymetry	Map:Grid	SMNT-089N-1663E.std.180m.rs.map.jpg	180	849	929	3804
+Ujae Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-091N-1656E	SMNT-091N-1656E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-091N-1656E.std.180m.mg.map.jpg	180	1160	1240	3805
+Ujae Guyot -- Multibeam bathymetry	SMNT-091N-1656E	SMNT-091N-1656E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-091N-1656E.std.180m.mb.map.jpg	180	1652	1732	3806
+Ujae Guyot -- Predicted satellite bathymetry	SMNT-091N-1656E	SMNT-091N-1656E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-091N-1656E.std.180m.ss.map.jpg	180	1160	1240	3807
+Ujae Guyot -- Residual bathymetry	SMNT-091N-1656E	SMNT-091N-1656E	Seamount	Residual bathymetry	Map:Grid	SMNT-091N-1656E.std.180m.rs.map.jpg	180	1160	1240	3808
+Kwajalein Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-092N-1674E	SMNT-092N-1674E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-092N-1674E.std.180m.mg.map.jpg	180	1471	1551	3809
+Kwajalein Guyot -- Multibeam bathymetry	SMNT-092N-1674E	SMNT-092N-1674E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-092N-1674E.std.180m.mb.map.jpg	180	2119	2199	3810
+Kwajalein Guyot -- Predicted satellite bathymetry	SMNT-092N-1674E	SMNT-092N-1674E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-092N-1674E.std.180m.ss.map.jpg	180	1471	1551	3811
+Kwajalein Guyot -- Residual bathymetry	SMNT-092N-1674E	SMNT-092N-1674E	Seamount	Residual bathymetry	Map:Grid	SMNT-092N-1674E.std.180m.rs.map.jpg	180	1471	1551	3812
+Erikub Seamount -- Predicted satellite bathymetry	SMNT-092N-1700E	SMNT-092N-1700E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-092N-1700E.std.180m.ss.map.jpg	180	797	877	3813
+Wotje Atoll -- Predicted satellite bathymetry	SMNT-094N-1700E	SMNT-094N-1700E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-094N-1700E.std.180m.ss.map.jpg	180	1212	1292	3814
+Ujlan Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-098N-1604E	SMNT-098N-1604E	Seamount	Multibeam merged with predicted satellite bathymetry	Grid					3815
+Ujlan Guyot -- Multibeam bathymetry	SMNT-098N-1604E	SMNT-098N-1604E	Seamount	Multibeam bathymetry	Grid					3816
+Ujlan Guyot -- Predicted satellite bathymetry	SMNT-098N-1604E	SMNT-098N-1604E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-098N-1604E.std.180m.ss.map.jpg	180	693	773	3817
+Ujlan Guyot -- Residual bathymetry	SMNT-098N-1604E	SMNT-098N-1604E	Seamount	Residual bathymetry	Grid					3818
+Likiep Island -- Multibeam data merged with predicted satellite bathymetry	SMNT-099N-1691E	SMNT-099N-1691E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-099N-1691E.std.180m.mg.map.jpg	180	1212	1292	3819
+Likiep Island -- Multibeam bathymetry	SMNT-099N-1691E	SMNT-099N-1691E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-099N-1691E.std.180m.mb.map.jpg	180	1730	1810	3820
+Likiep Island -- Predicted satellite bathymetry	SMNT-099N-1691E	SMNT-099N-1691E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-099N-1691E.std.180m.ss.map.jpg	180	1212	1292	3821
+Likiep Island -- Residual bathymetry	SMNT-099N-1691E	SMNT-099N-1691E	Seamount	Residual bathymetry	Map:Grid	SMNT-099N-1691E.std.180m.rs.map.jpg	180	1212	1292	3822
+Lalibjet Seamount -- Predicted satellite bathymetry	SMNT-101N-1599E	SMNT-101N-1599E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-101N-1599E.std.180m.ss.map.jpg	180	693	773	3823
+Lo-En Guyot -- Predicted satellite bathymetry	SMNT-101N-1629E	SMNT-101N-1629E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-101N-1629E.std.180m.ss.map.jpg	180	1004	1084	3824
+Wotho Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-101N-1660E	SMNT-101N-1660E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-101N-1660E.std.180m.mg.map.jpg	180	693	773	3825
+Wotho Guyot -- Multibeam bathymetry	SMNT-101N-1660E	SMNT-101N-1660E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-101N-1660E.std.180m.mb.map.jpg	180	952	1033	3826
+Wotho Guyot -- Predicted satellite bathymetry	SMNT-101N-1660E	SMNT-101N-1660E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-101N-1660E.std.180m.ss.map.jpg	180	693	773	3827
+Wotho Guyot -- Residual bathymetry	SMNT-101N-1660E	SMNT-101N-1660E	Seamount	Residual bathymetry	Map:Grid	SMNT-101N-1660E.std.180m.rs.map.jpg	180	693	773	3828
+Jema Island -- Predicted satellite bathymetry	SMNT-101N-1695E	SMNT-101N-1695E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-101N-1695E.std.180m.ss.map.jpg	180	849	929	3831
+Lotab Seamount -- Predicted satellite bathymetry	SMNT-102N-1607E	SMNT-102N-1607E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-102N-1607E.std.180m.ss.map.jpg	180	589	670	3833
+Ailuk Atoll -- Predicted satellite bathymetry	SMNT-103N-1699E	SMNT-103N-1699E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-103N-1699E.std.180m.ss.map.jpg	180	1108	1188	3834
+Mejit Island -- Predicted satellite bathymetry	SMNT-103N-1709E	SMNT-103N-1709E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-103N-1709E.std.180m.ss.map.jpg	180	693	773	3835
+Lajutokwa Guyot -- Predicted satellite bathymetry	SMNT-105N-1608E	SMNT-105N-1608E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-105N-1608E.std.180m.ss.map.jpg	180	693	773	3836
+Likelep Guyot -- Predicted satellite bathymetry	SMNT-106N-1605E	SMNT-106N-1605E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-106N-1605E.std.180m.ss.map.jpg	180	952	1033	3837
+Lewonjoui Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-106N-1665E	SMNT-106N-1665E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-106N-1665E.std.180m.mg.map.jpg	180	693	773	3838
+Lewonjoui Guyot -- Multibeam bathymetry	SMNT-106N-1665E	SMNT-106N-1665E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-106N-1665E.std.180m.mb.map.jpg	180	952	1033	3839
+Lewonjoui Guyot -- Predicted satellite bathymetry	SMNT-106N-1665E	SMNT-106N-1665E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-106N-1665E.std.180m.ss.map.jpg	180	693	773	3840
+Lewonjoui Guyot -- Residual bathymetry	SMNT-106N-1665E	SMNT-106N-1665E	Seamount	Residual bathymetry	Map:Grid	SMNT-106N-1665E.std.180m.rs.map.jpg	180	693	773	3841
+Litormalu Seamount -- Predicted satellite bathymetry	SMNT-109N-1615E	SMNT-109N-1615E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-109N-1615E.std.180m.ss.map.jpg	180	901	981	3842
+Ailinginae Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-111N-1664E	SMNT-111N-1664E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-111N-1664E.std.180m.mg.map.jpg	180	1056	1136	3843
+Ailinginae Guyot -- Multibeam bathymetry	SMNT-111N-1664E	SMNT-111N-1664E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-111N-1664E.std.180m.mb.map.jpg	180	1497	1577	3844
+Ailinginae Guyot -- Predicted satellite bathymetry	SMNT-111N-1664E	SMNT-111N-1664E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-111N-1664E.std.180m.ss.map.jpg	180	1056	1136	3845
+Ailinginae Guyot -- Residual bathymetry	SMNT-111N-1664E	SMNT-111N-1664E	Seamount	Residual bathymetry	Map:Grid	SMNT-111N-1664E.std.180m.rs.map.jpg	180	1056	1136	3846
+Taka Atoll -- Predicted satellite bathymetry	SMNT-111N-1696E	SMNT-111N-1696E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-111N-1696E.std.180m.ss.map.jpg	180	1212	1292	3847
+Jebo Seamount -- Predicted satellite bathymetry	SMNT-111N-1707E	SMNT-111N-1707E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-111N-1707E.std.180m.ss.map.jpg	180	693	773	3848
+Lainjin Seamount -- Predicted satellite bathymetry	SMNT-112N-1611E	SMNT-112N-1611E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-112N-1611E.std.180m.ss.map.jpg	180	693	773	3849
+Rangelap Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-113N-1668E	SMNT-113N-1668E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-113N-1668E.std.180m.mg.map.jpg	180	1056	1136	3850
+Rangelap Atoll -- Multibeam bathymetry	SMNT-113N-1668E	SMNT-113N-1668E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-113N-1668E.std.180m.mb.map.jpg	180	1497	1577	3851
+Rangelap Atoll -- Predicted satellite bathymetry	SMNT-113N-1668E	SMNT-113N-1668E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-113N-1668E.std.180m.ss.map.jpg	180	1056	1136	3852
+Rangelap Atoll -- Residual bathymetry	SMNT-113N-1668E	SMNT-113N-1668E	Seamount	Residual bathymetry	Map:Grid	SMNT-113N-1668E.std.180m.rs.map.jpg	180	1056	1136	3853
+Rangerik Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-113N-1674E	SMNT-113N-1674E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-113N-1674E.std.180m.mg.map.jpg	180	1056	1136	3854
+Rangerik Atoll -- Multibeam bathymetry	SMNT-113N-1674E	SMNT-113N-1674E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-113N-1674E.std.180m.mb.map.jpg	180	1497	1577	3855
+Rangerik Atoll -- Predicted satellite bathymetry	SMNT-113N-1674E	SMNT-113N-1674E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-113N-1674E.std.180m.ss.map.jpg	180	1056	1136	3856
+Rangerik Atoll -- Residual bathymetry	SMNT-113N-1674E	SMNT-113N-1674E	Seamount	Residual bathymetry	Map:Grid	SMNT-113N-1674E.std.180m.rs.map.jpg	180	1056	1136	3857
+Utirik Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-113N-1698E	SMNT-113N-1698E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-113N-1698E.std.180m.mg.map.jpg	180	1212	1292	3858
+Utirik Atoll -- Multibeam bathymetry	SMNT-113N-1698E	SMNT-113N-1698E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-113N-1698E.std.180m.mb.map.jpg	180	1730	1810	3859
+Utirik Atoll -- Predicted satellite bathymetry	SMNT-113N-1698E	SMNT-113N-1698E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-113N-1698E.std.180m.ss.map.jpg	180	1212	1292	3860
+Utirik Atoll -- Residual bathymetry	SMNT-113N-1698E	SMNT-113N-1698E	Seamount	Residual bathymetry	Map:Grid	SMNT-113N-1698E.std.180m.rs.map.jpg	180	1212	1292	3861
+Lojemeja Seamount -- Predicted satellite bathymetry	SMNT-114N-1611E	SMNT-114N-1611E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-114N-1611E.std.180m.ss.map.jpg	180	693	773	3862
+Anewetak Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-115N-1622E	SMNT-115N-1622E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-115N-1622E.std.180m.mg.map.jpg	180	1212	1292	3863
+Anewetak Atoll -- Multibeam bathymetry	SMNT-115N-1622E	SMNT-115N-1622E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-115N-1622E.std.180m.mb.map.jpg	180	1730	1810	3864
+Anewetak Atoll -- Predicted satellite bathymetry	SMNT-115N-1622E	SMNT-115N-1622E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-115N-1622E.std.180m.ss.map.jpg	180	1212	1292	3865
+Anewetak Atoll -- Residual bathymetry	SMNT-115N-1622E	SMNT-115N-1622E	Seamount	Residual bathymetry	Map:Grid	SMNT-115N-1622E.std.180m.rs.map.jpg	180	1212	1292	3866
+Bikini Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-116N-1654E	SMNT-116N-1654E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-116N-1654E.std.180m.mg.map.jpg	180	952	1033	3867
+Bikini Atoll -- Multibeam bathymetry	SMNT-116N-1654E	SMNT-116N-1654E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-116N-1654E.std.180m.mb.map.jpg	180	1341	1421	3868
+Bikini Atoll -- Predicted satellite bathymetry	SMNT-116N-1654E	SMNT-116N-1654E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-116N-1654E.std.180m.ss.map.jpg	180	952	1033	3869
+Bikini Atoll -- Residual bathymetry	SMNT-116N-1654E	SMNT-116N-1654E	Seamount	Residual bathymetry	Map:Grid	SMNT-116N-1654E.std.180m.rs.map.jpg	180	952	1033	3870
+Ruwituntun Guyot -- Predicted satellite bathymetry	SMNT-118N-1670E	SMNT-118N-1670E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-118N-1670E.std.180m.ss.map.jpg	180	952	1033	3871
+Lami Seamount -- Predicted satellite bathymetry	SMNT-119N-1614E	SMNT-119N-1614E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-119N-1614E.std.180m.ss.map.jpg	180	797	877	3872
+Wodejebato Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-119N-1649E	SMNT-119N-1649E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-119N-1649E.std.180m.mg.map.jpg	180	1056	1136	3873
+Wodejebato Guyot -- Multibeam bathymetry	SMNT-119N-1649E	SMNT-119N-1649E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-119N-1649E.std.180m.mb.map.jpg	180	1497	1577	3874
+Wodejebato Guyot -- Predicted satellite bathymetry	SMNT-119N-1649E	SMNT-119N-1649E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-119N-1649E.std.180m.ss.map.jpg	180	1056	1136	3875
+Wodejebato Guyot -- Residual bathymetry	SMNT-119N-1649E	SMNT-119N-1649E	Seamount	Residual bathymetry	Map:Grid	SMNT-119N-1649E.std.180m.rs.map.jpg	180	1056	1136	3876
+Lo-Wuliej Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-122N-1623E	SMNT-122N-1623E	Seamount	Multibeam merged with predicted satellite bathymetry	Grid					3877
+Lo-Wuliej Seamount -- Multibeam bathymetry	SMNT-122N-1623E	SMNT-122N-1623E	Seamount	Multibeam bathymetry	Grid					3878
+Lo-Wuliej Seamount -- Predicted satellite bathymetry	SMNT-122N-1623E	SMNT-122N-1623E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-122N-1623E.std.180m.ss.map.jpg	180	797	877	3879
+Lo-Wuliej Seamount -- Residual bathymetry	SMNT-122N-1623E	SMNT-122N-1623E	Seamount	Residual bathymetry	Grid					3880
+Look Seamount -- Predicted satellite bathymetry	SMNT-122N-1662E	SMNT-122N-1662E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-122N-1662E.std.180m.ss.map.jpg	180	849	929	3881
+Lawun-Pikaar Seamount -- Predicted satellite bathymetry	SMNT-122N-1689E	SMNT-122N-1689E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-122N-1689E.std.180m.ss.map.jpg	180	1056	1136	3882
+Bikar Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-122N-1701E	SMNT-122N-1701E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-122N-1701E.std.180m.mg.map.jpg	180	1212	1292	3883
+Bikar Guyot -- Multibeam bathymetry	SMNT-122N-1701E	SMNT-122N-1701E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-122N-1701E.std.180m.mb.map.jpg	180	1730	1810	3884
+Bikar Guyot -- Predicted satellite bathymetry	SMNT-122N-1701E	SMNT-122N-1701E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-122N-1701E.std.180m.ss.map.jpg	180	1212	1292	3885
+Bikar Guyot -- Residual bathymetry	SMNT-122N-1701E	SMNT-122N-1701E	Seamount	Residual bathymetry	Map:Grid	SMNT-122N-1701E.std.180m.rs.map.jpg	180	1212	1292	3886
+Peto-En Seamount -- Predicted satellite bathymetry	SMNT-124N-1613E	SMNT-124N-1613E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-124N-1613E.std.180m.ss.map.jpg	180	693	773	3887
+South Laanmojanjan Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-127N-1626E	SMNT-127N-1626E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-127N-1626E.std.180m.mg.map.jpg	180	693	773	3888
+South Laanmojanjan Seamount -- Multibeam bathymetry	SMNT-127N-1626E	SMNT-127N-1626E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-127N-1626E.std.180m.mb.map.jpg	180	952	1033	3889
+South Laanmojanjan Seamount -- Predicted satellite bathymetry	SMNT-127N-1626E	SMNT-127N-1626E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-127N-1626E.std.180m.ss.map.jpg	180	693	773	3890
+South Laanmojanjan Seamount -- Residual bathymetry	SMNT-127N-1626E	SMNT-127N-1626E	Seamount	Residual bathymetry	Map:Grid	SMNT-127N-1626E.std.180m.rs.map.jpg	180	693	773	3891
+Ita Mai Tai Guyot -- Predicted satellite bathymetry	SMNT-129N-1568E	SMNT-129N-1568E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-129N-1568E.std.180m.ss.map.jpg	180	1212	1292	3892
+North Laanmojanjan Seamount -- Predicted satellite bathymetry	SMNT-131N-1628E	SMNT-131N-1628E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-131N-1628E.std.180m.ss.map.jpg	180	952	1033	3893
+Lokoto-Nornor Seamount -- Predicted satellite bathymetry	SMNT-131N-1694E	SMNT-131N-1694E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-131N-1694E.std.180m.ss.map.jpg	180	693	773	3896
+Lojabon-Bar Seamount -- Predicted satellite bathymetry	SMNT-132N-1645E	SMNT-132N-1645E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-132N-1645E.std.180m.ss.map.jpg	180	693	773	3898
+Bwewa-Kan Seamount -- Predicted satellite bathymetry	SMNT-136N-1644E	SMNT-136N-1644E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-136N-1644E.std.180m.ss.map.jpg	180	952	1033	3899
+Lobbadede Guyot -- Predicted satellite bathymetry	SMNT-139N-1639E	SMNT-139N-1639E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-139N-1639E.std.180m.ss.map.jpg	180	1212	1292	3900
+Ratak Guyot -- Predicted satellite bathymetry	SMNT-139N-1675E	SMNT-139N-1675E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-139N-1675E.std.180m.ss.map.jpg	180	1471	1551	3901
+Lewa Guyot -- Predicted satellite bathymetry	SMNT-140N-1631E	SMNT-140N-1631E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-140N-1631E.std.180m.ss.map.jpg	180	849	929	3902
+Ioah Seamount -- Predicted satellite bathymetry	SMNT-141N-1561E	SMNT-141N-1561E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-141N-1561E.std.180m.ss.map.jpg	180	1212	1292	3903
+Neen-Koiaak Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-144N-1610E	SMNT-144N-1610E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-144N-1610E.std.180m.mg.map.jpg	180	693	773	3904
+Neen-Koiaak Guyot -- Multibeam bathymetry	SMNT-144N-1610E	SMNT-144N-1610E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-144N-1610E.std.180m.mb.map.jpg	180	952	1033	3905
+Neen-Koiaak Guyot -- Predicted satellite bathymetry	SMNT-144N-1610E	SMNT-144N-1610E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-144N-1610E.std.180m.ss.map.jpg	180	693	773	3906
+Neen-Koiaak Guyot -- Residual bathymetry	SMNT-144N-1610E	SMNT-144N-1610E	Seamount	Residual bathymetry	Map:Grid	SMNT-144N-1610E.std.180m.rs.map.jpg	180	693	773	3907
+Bokak Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-146N-1690E	SMNT-146N-1690E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-146N-1690E.std.180m.mg.map.jpg	180	1212	1292	3908
+Bokak Atoll -- Multibeam bathymetry	SMNT-146N-1690E	SMNT-146N-1690E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-146N-1690E.std.180m.mb.map.jpg	180	1730	1810	3909
+Bokak Atoll -- Predicted satellite bathymetry	SMNT-146N-1690E	SMNT-146N-1690E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-146N-1690E.std.180m.ss.map.jpg	180	1212	1292	3910
+Bokak Atoll -- Residual bathymetry	SMNT-146N-1690E	SMNT-146N-1690E	Seamount	Residual bathymetry	Map:Grid	SMNT-146N-1690E.std.180m.rs.map.jpg	180	1212	1292	3911
+Lomtal Guyot -- Predicted satellite bathymetry	SMNT-147N-1635E	SMNT-147N-1635E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-147N-1635E.std.180m.ss.map.jpg	180	952	1033	3912
+Aean Kan Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-149N-1605E	SMNT-149N-1605E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-149N-1605E.std.180m.mg.map.jpg	180	1108	1188	3913
+Aean Kan Guyot -- Multibeam bathymetry	SMNT-149N-1605E	SMNT-149N-1605E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-149N-1605E.std.180m.mb.map.jpg	180	1575	1655	3914
+Aean Kan Guyot -- Predicted satellite bathymetry	SMNT-149N-1605E	SMNT-149N-1605E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-149N-1605E.std.180m.ss.map.jpg	180	1108	1188	3915
+Aean Kan Guyot -- Residual bathymetry	SMNT-149N-1605E	SMNT-149N-1605E	Seamount	Residual bathymetry	Map:Grid	SMNT-149N-1605E.std.180m.rs.map.jpg	180	1108	1188	3916
+Seascan Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-151N-1593E	SMNT-151N-1593E	Seamount	Multibeam merged with predicted satellite bathymetry	Grid					3917
+Seascan Seamount -- Multibeam bathymetry	SMNT-151N-1593E	SMNT-151N-1593E	Seamount	Multibeam bathymetry	Grid					3918
+Seascan Seamount -- Predicted satellite bathymetry	SMNT-151N-1593E	SMNT-151N-1593E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-151N-1593E.std.180m.ss.map.jpg	180	693	773	3919
+Seascan Seamount -- Residual bathymetry	SMNT-151N-1593E	SMNT-151N-1593E	Seamount	Residual bathymetry	Grid					3920
+South-Wod-En Guyot -- Predicted satellite bathymetry	SMNT-152N-1630E	SMNT-152N-1630E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-152N-1630E.std.180m.ss.map.jpg	180	952	1033	3921
+Pako Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-157N-1552E	SMNT-157N-1552E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-157N-1552E.std.180m.mg.map.jpg	180	1212	1292	3922
+Pako Guyot -- Multibeam bathymetry	SMNT-157N-1552E	SMNT-157N-1552E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-157N-1552E.std.180m.mb.map.jpg	180	1730	1810	3923
+Pako Guyot -- Predicted satellite bathymetry	SMNT-157N-1552E	SMNT-157N-1552E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-157N-1552E.std.180m.ss.map.jpg	180	1212	1292	3924
+Pako Guyot -- Residual bathymetry	SMNT-157N-1552E	SMNT-157N-1552E	Seamount	Residual bathymetry	Map:Grid	SMNT-157N-1552E.std.180m.rs.map.jpg	180	1212	1292	3925
+North-Wod-En Guyot -- Predicted satellite bathymetry	SMNT-161N-1630E	SMNT-161N-1630E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-161N-1630E.std.180m.ss.map.jpg	180	1056	1136	3926
+Vlinder Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-169N-1543E	SMNT-169N-1543E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-169N-1543E.std.180m.mg.map.jpg	180	1212	1292	3927
+Vlinder Guyot -- Multibeam bathymetry	SMNT-169N-1543E	SMNT-169N-1543E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-169N-1543E.std.180m.mb.map.jpg	180	1730	1810	3928
+Vlinder Guyot -- Predicted satellite bathymetry	SMNT-169N-1543E	SMNT-169N-1543E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-169N-1543E.std.180m.ss.map.jpg	180	1212	1292	3929
+Vlinder Guyot -- Residual bathymetry	SMNT-169N-1543E	SMNT-169N-1543E	Seamount	Residual bathymetry	Map:Grid	SMNT-169N-1543E.std.180m.rs.map.jpg	180	1212	1292	3930
+Thomas Guyot -- Predicted satellite bathymetry	SMNT-173N-1739E	SMNT-173N-1739E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-173N-1739E.std.180m.ss.map.jpg	180	693	773	3931
+Dixie Jane Seamount -- Predicted satellite bathymetry	SMNT-186N-1621E	SMNT-186N-1621E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-186N-1621E.std.180m.ss.map.jpg	180	693	773	3932
+Hemler Guyot -- Predicted satellite bathymetry	SMNT-197N-1516E	SMNT-197N-1516E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-197N-1516E.std.180m.ss.map.jpg	180	693	773	3933
+Batiza Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-202N-1566E	SMNT-202N-1566E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-202N-1566E.std.180m.mg.map.jpg	180	1056	1136	3934
+Batiza Guyot -- Multibeam bathymetry	SMNT-202N-1566E	SMNT-202N-1566E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-202N-1566E.std.180m.mb.map.jpg	180	1497	1577	3935
+Batiza Guyot -- Predicted satellite bathymetry	SMNT-202N-1566E	SMNT-202N-1566E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-202N-1566E.std.180m.ss.map.jpg	180	1056	1136	3936
+Batiza Guyot -- Residual bathymetry	SMNT-202N-1566E	SMNT-202N-1566E	Seamount	Residual bathymetry	Map:Grid	SMNT-202N-1566E.std.180m.rs.map.jpg	180	1056	1136	3937
+Jennings Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-209N-1564E	SMNT-209N-1564E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-209N-1564E.std.180m.mg.map.jpg	180	1004	1084	3938
+Jennings Guyot -- Multibeam bathymetry	SMNT-209N-1564E	SMNT-209N-1564E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-209N-1564E.std.180m.mb.map.jpg	180	1419	1499	3939
+Jennings Guyot -- Predicted satellite bathymetry	SMNT-209N-1564E	SMNT-209N-1564E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-209N-1564E.std.180m.ss.map.jpg	180	1004	1084	3940
+Jennings Guyot -- Residual bathymetry	SMNT-209N-1564E	SMNT-209N-1564E	Seamount	Residual bathymetry	Map:Grid	SMNT-209N-1564E.std.180m.rs.map.jpg	180	1004	1084	3941
+Maloney Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-210N-1572E	SMNT-210N-1572E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-210N-1572E.std.180m.mg.map.jpg	180	1212	1292	3942
+Maloney Guyot -- Multibeam bathymetry	SMNT-210N-1572E	SMNT-210N-1572E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-210N-1572E.std.180m.mb.map.jpg	180	1730	1810	3943
+Maloney Guyot -- Predicted satellite bathymetry	SMNT-210N-1572E	SMNT-210N-1572E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-210N-1572E.std.180m.ss.map.jpg	180	1212	1292	3944
+Maloney Guyot -- Residual bathymetry	SMNT-210N-1572E	SMNT-210N-1572E	Seamount	Residual bathymetry	Map:Grid	SMNT-210N-1572E.std.180m.rs.map.jpg	180	1212	1292	3945
+Missy Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-211N-1549E	SMNT-211N-1549E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-211N-1549E.std.180m.mg.map.jpg	180	1212	1292	3946
+Missy Guyot -- Multibeam bathymetry	SMNT-211N-1549E	SMNT-211N-1549E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-211N-1549E.std.180m.mb.map.jpg	180	1730	1810	3947
+Missy Guyot -- Predicted satellite bathymetry	SMNT-211N-1549E	SMNT-211N-1549E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-211N-1549E.std.180m.ss.map.jpg	180	1212	1292	3948
+Missy Guyot -- Residual bathymetry	SMNT-211N-1549E	SMNT-211N-1549E	Seamount	Residual bathymetry	Map:Grid	SMNT-211N-1549E.std.180m.rs.map.jpg	180	1212	1292	3949
+Wilde Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-211N-1633E	SMNT-211N-1633E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-211N-1633E.std.180m.mg.map.jpg	180	693	773	3950
+Wilde Guyot -- Multibeam bathymetry	SMNT-211N-1633E	SMNT-211N-1633E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-211N-1633E.std.180m.mb.map.jpg	180	952	1033	3951
+Wilde Guyot -- Predicted satellite bathymetry	SMNT-211N-1633E	SMNT-211N-1633E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-211N-1633E.std.180m.ss.map.jpg	180	693	773	3952
+Wilde Guyot -- Residual bathymetry	SMNT-211N-1633E	SMNT-211N-1633E	Seamount	Residual bathymetry	Map:Grid	SMNT-211N-1633E.std.180m.rs.map.jpg	180	693	773	3953
+Golden-Dragon Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-213N-1532E	SMNT-213N-1532E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-213N-1532E.std.180m.mg.map.jpg	180	1108	1188	3954
+Golden-Dragon Guyot -- Multibeam bathymetry	SMNT-213N-1532E	SMNT-213N-1532E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-213N-1532E.std.180m.mb.map.jpg	180	1575	1655	3955
+Golden-Dragon Guyot -- Predicted satellite bathymetry	SMNT-213N-1532E	SMNT-213N-1532E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-213N-1532E.std.180m.ss.map.jpg	180	1108	1188	3956
+Golden-Dragon Guyot -- Residual bathymetry	SMNT-213N-1532E	SMNT-213N-1532E	Seamount	Residual bathymetry	Map:Grid	SMNT-213N-1532E.std.180m.rs.map.jpg	180	1108	1188	3957
+Lamont Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-214N-1596E	SMNT-214N-1596E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-214N-1596E.std.180m.mg.map.jpg	180	1212	1292	3958
+Lamont Guyot -- Multibeam bathymetry	SMNT-214N-1596E	SMNT-214N-1596E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-214N-1596E.std.180m.mb.map.jpg	180	1730	1810	3959
+Lamont Guyot -- Predicted satellite bathymetry	SMNT-214N-1596E	SMNT-214N-1596E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-214N-1596E.std.180m.ss.map.jpg	180	1212	1292	3960
+Lamont Guyot -- Residual bathymetry	SMNT-214N-1596E	SMNT-214N-1596E	Seamount	Residual bathymetry	Map:Grid	SMNT-214N-1596E.std.180m.rs.map.jpg	180	1212	1292	3961
+HIMU Seamount -- Predicted satellite bathymetry	SMNT-216N-1518E	SMNT-216N-1518E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-216N-1518E.std.180m.ss.map.jpg	180	693	773	3962
+Miami Guyot -- Predicted satellite bathymetry	SMNT-217N-1619E	SMNT-217N-1619E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-217N-1619E.std.180m.ss.map.jpg	180	693	773	3963
+Duncan Seamount -- Predicted satellite bathymetry	SMNT-229N-1694E	SMNT-229N-1694E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-229N-1694E.std.180m.ss.map.jpg	180	641	721	3964
+Henry Seamount -- Predicted satellite bathymetry	SMNT-236N-1687E	SMNT-236N-1687E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-236N-1687E.std.180m.ss.map.jpg	180	693	773	3965
+Seth Guyot -- Predicted satellite bathymetry	SMNT-238N-1488E	SMNT-238N-1488E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-238N-1488E.std.180m.ss.map.jpg	180	693	773	3966
+Scripps Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-238N-1593E	SMNT-238N-1593E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-238N-1593E.std.180m.mg.map.jpg	180	1108	1188	3967
+Scripps Guyot -- Multibeam bathymetry	SMNT-238N-1593E	SMNT-238N-1593E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-238N-1593E.std.180m.mb.map.jpg	180	1575	1655	3968
+Scripps Guyot -- Predicted satellite bathymetry	SMNT-238N-1593E	SMNT-238N-1593E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-238N-1593E.std.180m.ss.map.jpg	180	1108	1188	3969
+Scripps Guyot -- Residual bathymetry	SMNT-238N-1593E	SMNT-238N-1593E	Seamount	Residual bathymetry	Map:Grid	SMNT-238N-1593E.std.180m.rs.map.jpg	180	1108	1188	3970
+Alcatraz Guyot -- Predicted satellite bathymetry	SMNT-242N-1501E	SMNT-242N-1501E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-242N-1501E.std.180m.ss.map.jpg	180	1108	1188	3972
+Buffington Seamount -- Predicted satellite bathymetry	SMNT-242N-1672E	SMNT-242N-1672E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-242N-1672E.std.180m.ss.map.jpg	180	693	773	3973
+Newhouse Seamount -- Predicted satellite bathymetry	SMNT-247N-1632E	SMNT-247N-1632E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-247N-1632E.std.180m.ss.map.jpg	180	693	773	3974
+Sharman Seamount -- Predicted satellite bathymetry	SMNT-248N-1656E	SMNT-248N-1656E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-248N-1656E.std.180m.ss.map.jpg	180	693	773	3975
+Taylor Seamount -- Predicted satellite bathymetry	SMNT-250N-1620E	SMNT-250N-1620E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-250N-1620E.std.180m.ss.map.jpg	180	901	981	3976
+Rea Seamount -- Predicted satellite bathymetry	SMNT-255N-1672E	SMNT-255N-1672E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-255N-1672E.std.180m.ss.map.jpg	180	849	929	3977
+Erickson Seamount -- Predicted satellite bathymetry	SMNT-257N-1692E	SMNT-257N-1692E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-257N-1692E.std.180m.ss.map.jpg	180	693	773	3978
+Naugler Seamount -- Predicted satellite bathymetry	SMNT-258N-1688E	SMNT-258N-1688E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-258N-1688E.std.180m.ss.map.jpg	180	693	773	3979
+Schoenbechler Seamount -- Predicted satellite bathymetry	SMNT-262N-1635E	SMNT-262N-1635E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-262N-1635E.std.180m.ss.map.jpg	180	693	773	3980
+Moore Seamount -- Predicted satellite bathymetry	SMNT-265N-1631E	SMNT-265N-1631E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-265N-1631E.std.180m.ss.map.jpg	180	693	773	3981
+W. Smith Seamount -- Predicted satellite bathymetry	SMNT-269N-1641E	SMNT-269N-1641E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-269N-1641E.std.180m.ss.map.jpg	180	693	773	3982
+Grant Seamount -- Predicted satellite bathymetry	SMNT-270N-1486E	SMNT-270N-1486E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-270N-1486E.std.180m.ss.map.jpg	180	693	773	3983
+MIT Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-273N-1519E	SMNT-273N-1519E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-273N-1519E.std.180m.mg.map.jpg	180	1056	1136	3984
+MIT Guyot -- Multibeam bathymetry	SMNT-273N-1519E	SMNT-273N-1519E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-273N-1519E.std.180m.mb.map.jpg	180	1497	1577	3985
+MIT Guyot -- Predicted satellite bathymetry	SMNT-273N-1519E	SMNT-273N-1519E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-273N-1519E.std.180m.ss.map.jpg	180	1056	1136	3986
+MIT Guyot -- Residual bathymetry	SMNT-273N-1519E	SMNT-273N-1519E	Seamount	Residual bathymetry	Map:Grid	SMNT-273N-1519E.std.180m.rs.map.jpg	180	1056	1136	3987
+Mammerickx Seamount -- Predicted satellite bathymetry	SMNT-275N-1662E	SMNT-275N-1662E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-275N-1662E.std.180m.ss.map.jpg	180	693	773	3988
+Busch Seamount -- Predicted satellite bathymetry	SMNT-278N-1619E	SMNT-278N-1619E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-278N-1619E.std.180m.ss.map.jpg	180	693	773	3989
+Guadelupe Seamount -- Predicted satellite bathymetry	SMNT-278N-1687E	SMNT-278N-1687E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-278N-1687E.std.180m.ss.map.jpg	180	797	877	3990
+Makarov Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-295N-1535E	SMNT-295N-1535E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-295N-1535E.std.180m.mg.map.jpg	180	952	1033	3991
+Makarov Guyot -- Multibeam bathymetry	SMNT-295N-1535E	SMNT-295N-1535E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-295N-1535E.std.180m.mb.map.jpg	180	1341	1421	3992
+Makarov Guyot -- Predicted satellite bathymetry	SMNT-295N-1535E	SMNT-295N-1535E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-295N-1535E.std.180m.ss.map.jpg	180	952	1033	3993
+Makarov Guyot -- Residual bathymetry	SMNT-295N-1535E	SMNT-295N-1535E	Seamount	Residual bathymetry	Map:Grid	SMNT-295N-1535E.std.180m.rs.map.jpg	180	952	1033	3994
+Isakov Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-316N-1512E	SMNT-316N-1512E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-316N-1512E.std.180m.mg.map.jpg	180	693	773	3995
+Isakov Guyot -- Multibeam bathymetry	SMNT-316N-1512E	SMNT-316N-1512E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-316N-1512E.std.180m.mb.map.jpg	180	952	1033	3996
+Isakov Guyot -- Predicted satellite bathymetry	SMNT-316N-1512E	SMNT-316N-1512E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-316N-1512E.std.180m.ss.map.jpg	180	693	773	3997
+Isakov Guyot -- Residual bathymetry	SMNT-316N-1512E	SMNT-316N-1512E	Seamount	Residual bathymetry	Map:Grid	SMNT-316N-1512E.std.180m.rs.map.jpg	180	693	773	3998
+Winterer Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-328N-1483E	SMNT-328N-1483E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-328N-1483E.std.180m.mg.map.jpg	180	693	773	3999
+Winterer Guyot -- Multibeam bathymetry	SMNT-328N-1483E	SMNT-328N-1483E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-328N-1483E.std.180m.mb.map.jpg	180	952	1033	4000
+Winterer Guyot -- Predicted satellite bathymetry	SMNT-328N-1483E	SMNT-328N-1483E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-328N-1483E.std.180m.ss.map.jpg	180	693	773	4001
+Winterer Guyot -- Residual bathymetry	SMNT-328N-1483E	SMNT-328N-1483E	Seamount	Residual bathymetry	Map:Grid	SMNT-328N-1483E.std.180m.rs.map.jpg	180	693	773	4002
+Maiko Seamount -- Predicted satellite bathymetry	SMNT-340N-1459E	SMNT-340N-1459E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-340N-1459E.std.180m.ss.map.jpg	180	693	773	4003
+Takuyo-Daisan Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-342N-1443E	SMNT-342N-1443E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-342N-1443E.std.180m.mg.map.jpg	180	901	981	4004
+Takuyo-Daisan Guyot -- Multibeam bathymetry	SMNT-342N-1443E	SMNT-342N-1443E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-342N-1443E.std.180m.mb.map.jpg	180	1264	1344	4005
+Takuyo-Daisan Guyot -- Predicted satellite bathymetry	SMNT-342N-1443E	SMNT-342N-1443E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-342N-1443E.std.180m.ss.map.jpg	180	901	981	4006
+Takuyo-Daisan Guyot -- Residual bathymetry	SMNT-342N-1443E	SMNT-342N-1443E	Seamount	Residual bathymetry	Map:Grid	SMNT-342N-1443E.std.180m.rs.map.jpg	180	901	981	4007
+Takuyo-Daini Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-343N-1439E	SMNT-343N-1439E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-343N-1439E.std.180m.mg.map.jpg	180	693	773	4008
+Takuyo-Daini Guyot -- Multibeam bathymetry	SMNT-343N-1439E	SMNT-343N-1439E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-343N-1439E.std.180m.mb.map.jpg	180	952	1033	4009
+Takuyo-Daini Guyot -- Predicted satellite bathymetry	SMNT-343N-1439E	SMNT-343N-1439E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-343N-1439E.std.180m.ss.map.jpg	180	693	773	4010
+Takuyo-Daini Guyot -- Residual bathymetry	SMNT-343N-1439E	SMNT-343N-1439E	Seamount	Residual bathymetry	Map:Grid	SMNT-343N-1439E.std.180m.rs.map.jpg	180	693	773	4011
+Erimo Seamount -- Predicted satellite bathymetry	SMNT-409N-1449E	SMNT-409N-1449E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-409N-1449E.std.180m.ss.map.jpg	180	693	773	4012
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2163	SMNT-129N-1568E	Haggerty, J.A. and Premoli-Silva, I. (1986). Ooids and shallow-water debris in Albian-Aptian sediments from the East Mariana Basin, Deep Sea Drilling Project site 585: Implications for the environment of formation of the ooids. Initial Reports of the Deep Sea Drilling Project 89: 399-427.	https://earthref.org/ERR/2163/
+2165	SMNT-217N-1619E:SMNT-295N-1535E:SMNT-340N-1459E	Harrison, C.G., Jarrard, A.R.D., Vacquier, V. and Larson, R.L. (1975). Palaeomagnetim of Cretaceous Pacific seamounts. Geophysical Journal of the Royal Astronomical Society 42: 859-882.	https://earthref.org/ERR/2165/
+2175	SMNT-211N-1633E:SMNT-214N-1596E:SMNT-217N-1619E:SMNT-238N-1593E:SMNT-295N-1535E:SMNT-316N-1512E:SMNT-328N-1483E:SMNT-343N-1439E	Heezen, B.C., Matthews, J.L., Catalano, R., Natland, J., Coogan, A., Tharp, M. and Rawson, M. (1973). Western Pacific Guyots. Initial Reports of the Deep Sea Drilling Project 20: 653-723.	https://earthref.org/ERR/2175/
+2177	SMNT-217N-1619E	Hildebrand, J.A. and Parker, R.L. (1987). Paleomagnetism of the Cretaceous Pacific Seamount revisited. Journal of Geophysical Research 92: 12,695-12,712.	https://earthref.org/ERR/2177/
+2222	SMNT-115N-1622E	Kulp, L.J. (1963). Potassium-argon dating of volcanic rocks. Bulletin of Volcanology 26: 247-258.	https://earthref.org/ERR/2222/
+2245	SMNT-118N-1670E:SMNT-119N-1649E	Lincoln, J.M., Schlanger, S.O., Bergerson, D., Coogan, A.H. and Premoli-Silva, I. (1989). Cretaceous foundations and multiple periods of uplift in the northern Marshall Islands, West Central Pacific. Abstracts with Programs, Geological Society of America 21(6): 195.	https://earthref.org/ERR/2245/
+2251	SMNT-238N-1593E:SMNT-295N-1535E:SMNT-316N-1512E:SMNT-328N-1483E:SMNT-409N-1449E	Matthews, J.L., Heezen, B.C., Catalano, R., Coogan, A., Tharp, M., Natland, J. and Rawson, M. (1974). Cretaceous drowning of reefs on Mid-Pacific and Japanese Guyots. Science 4135: 462-464.	https://earthref.org/ERR/2251/
+2287	SMNT-409N-1449E	Ozima, M., Kaneoka, I. and Aramaki, S. (1970). K-Ar ages of submarine basalts dredged from seamounts in the western Pacific area and discussion of oceanic crust. Earth and Planetary Science Letters 8: 237-249. doi: 10.1016/0012-821X(70)90183-4.	https://earthref.org/ERR/2287/
+2288	SMNT-211N-1633E:SMNT-214N-1596E:SMNT-238N-1593E:SMNT-295N-1535E	Ozima, M., Honda, M. and Saito, K. (1977). 40Ar/39Ar ages of guyots in the western Pacific and discussion of their evolution. Geophysical Journal of the Royal Astronomical Society 51(2): 475-485.	https://earthref.org/ERR/2288/
+2290	SMNT-213N-1532E	Ozima, M., Kaneoka, I., Saito, K., Honda, M., Yanagisawa, M. and Takigami, Y. (1983). Summary of geochronological studies of submarine rocks from the Western Pacific Ocean. In: Geodynamics of the Western Pacific-Indonesian region, Geodynamics Series 11. Hilde, T.W.C. and Uyeda, S. (Editors), American Geophysical Union, Washington, D.C.. 137-142.	https://earthref.org/ERR/2290/
+2313	SMNT-056N-1724E	Schlanger, S.O., Campbell, J.F. and Jackson, M.W. (1987). Post-Eocene subsidence of the Marshall Islands recorded by drowned atolls on Harrie and Sylvania guyots. In: Seamounts, Islands and Atolls, Geophysical Monograph Series 43. Keating, B.H., Fryer, P., Batiza, R. and Boehlert, G.W. (Editors), American Geophysical Union, Washington, D.C.. 43: 165-174.	https://earthref.org/ERR/2313/
+2333	SMNT-116N-1654E	Todd, R. and Post, R. (1954). Smaller Foraminifera from Bikini drill holes. United States Geological Survey, Professional Paper 260-N: 547-568.	https://earthref.org/ERR/2333/
+2617	SMNT-056N-1724E:SMNT-092N-1700E:SMNT-106N-1605E:SMNT-115N-1622E:SMNT-116N-1654E:SMNT-119N-1649E:SMNT-122N-1662E:SMNT-129N-1568E:SMNT-139N-1639E:SMNT-139N-1675E:SMNT-141N-1561E:SMNT-144N-1610E:SMNT-157N-1552E:SMNT-161N-1630E:SMNT-169N-1543E:SMNT-197N-1516E:SMNT-209N-1564E:SMNT-210N-1572E:SMNT-211N-1633E:SMNT-213N-1532E:SMNT-214N-1596E:SMNT-216N-1518E:SMNT-217N-1619E:SMNT-238N-1593E	Clouard, V. and Bonneville, A. (2001). Ages of seamounts, islands and plateaus on the Pacific plate. 1-42.	https://earthref.org/ERR/2617/
+2618	SMNT-056N-1724E:SMNT-060N-1696E:SMNT-115N-1622E:SMNT-116N-1654E:SMNT-119N-1649E:SMNT-129N-1568E:SMNT-211N-1633E:SMNT-214N-1596E:SMNT-217N-1619E:SMNT-238N-1593E:SMNT-295N-1535E	Keating, B.H. (1987). Summary of radiometric ages from the Pacific. In: Intergovernmental Oceanographic Comission technical series. UNESCO. 32.	https://earthref.org/ERR/2618/
+2621	SMNT-056N-1724E:SMNT-088N-1632E:SMNT-092N-1700E:SMNT-098N-1604E:SMNT-101N-1629E:SMNT-102N-1607E:SMNT-105N-1608E:SMNT-106N-1605E:SMNT-115N-1622E:SMNT-119N-1614E:SMNT-119N-1649E:SMNT-122N-1662E:SMNT-129N-1568E:SMNT-136N-1644E:SMNT-139N-1639E:SMNT-139N-1675E:SMNT-141N-1561E:SMNT-144N-1610E:SMNT-152N-1630E:SMNT-157N-1552E:SMNT-161N-1630E:SMNT-169N-1543E:SMNT-209N-1564E:SMNT-210N-1572E:SMNT-211N-1549E:SMNT-213N-1532E:SMNT-216N-1518E:SMNT-238N-1488E:SMNT-242N-1501E:SMNT-270N-1486E:SMNT-273N-1519E:SMNT-295N-1535E:SMNT-328N-1483E	Koppers, A.A.P. (1998). 40Ar/39Ar Geochronology and Isotope Geochemistry of the West Pacific Seamount Province Implications for Absolute Pacific Plate Motions and the Motions of Hotspots. Vrije Universiteit, Amsterdam. 263pp.	https://earthref.org/ERR/2621/
+33495	SMNT-116N-1654E	Detrick, R.S. and Crough, T. (1978). Island subsidence, hot spots, and lithospheric thinning. Journal of Geophysical Research 83: doi: 10.1029/JB083iB03p01236. issn: 0148-0227.	https://earthref.org/ERR/33495/
+37240	SMNT-213N-1532E	Sager, W.W. and Pringle, M.S. (1988). Mid-Cretaceous to early tertiary apparent polar wander path of the Pacific plate. Journal of Geophysical Research 93: doi: 10.1029/88JB00077. issn: 0148-0227.	https://earthref.org/ERR/37240/
+37730	SMNT-092N-1700E:SMNT-139N-1675E	Davis, A.S., Pringle, M.S., Pickthorn, L.G., Clague, D.A. and Schwab, W.C. (1989). Petrology and age of alkalic lava from the Ratak chain of the Marshall Islands. Journal of Geophysical Research 94: doi: 10.1029/88JB04318. issn: 0148-0227.	https://earthref.org/ERR/37730/
+37943	SMNT-197N-1516E:SMNT-216N-1518E	Smith, W.H.F., Staudigel, H., Watts, A.B. and Pringle, M.S. (1989). The Magellan seamounts: early Cretaceous record of the South Pacific Isotopic and Thermal Anomaly. Journal of Geophysical Research 94: doi: 10.1029/89JB01080. issn: 0148-0227.	https://earthref.org/ERR/37943/

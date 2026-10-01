@@ -1,0 +1,60 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: NE Atlantic (22 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	tectonic_setting	oceanic_province	plate_age_min	plate_age_max	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	sc_id
+SMNT-064S-0002E	Seamount	Bank 405	Seamount			-6.41	0.24	NE Atlantic					0										1751
+SMNT-156N-1496E	Conception Guyot		Guyot	Very Small	A1	15.5595	149.59517	NE Atlantic	Hotspot Trail	Abyssal Plain	154.3	155.7	2260	2555	4815	798	1.06	0.01	1.01	0.00	1	0	645
+SMNT-239N-0207W	Tropic Seamount		Seamount			23.88	-20.71	NE Atlantic					0										1282
+SMNT-296N-0290W	Small Meteor Seamount		Seamount			29.62	-28.99	NE Atlantic					0										1566
+SMNT-300N-0285W	Great Meteor Guyot		Guyot			30.0	-28.5	NE Atlantic					0										1564
+SMNT-309N-0287W	Plateau Seamount		Seamount			30.88	-28.73	NE Atlantic					0										1624
+SMNT-312N-0137W	Dacia Seamount		Seamount			31.15	-13.66	NE Atlantic					0										656
+SMNT-315N-0290W	Hyeres Seamount	Jer	Seamount			31.48	-28.965	NE Atlantic					0										842
+SMNT-332N-0296W	Plato Seamount		Seamount			33.23	-29.63	NE Atlantic					0										1102
+SMNT-338N-0144W	Seine Seamount		Seamount			33.76	-14.38	NE Atlantic					0										1189
+SMNT-339N-0284W	Tyro Seamount		Seamount			33.91	-28.38	NE Atlantic					0										1766
+SMNT-350N-0119W	Seamount	Unnamed Shirshov 5:East of Josephine Seamount	Seamount			34.967	-11.9	NE Atlantic					0										1756
+SMNT-351N-0129W	Ampere Seamount		Seamount			35.08333	-12.91667	NE Atlantic					0										547
+SMNT-365N-0116W	Gettysburg Seamount		Seamount			36.54	-11.56	NE Atlantic					0										772
+SMNT-367N-0112W	Ormonde Seamount		Seamount			36.71	-11.15	NE Atlantic					0										1067
+SMNT-367N-0143W	Josephine Seamount		Seamount			36.667	-14.25	NE Atlantic					0										1565
+SMNT-436N-0224W	Antialtair Seamount		Seamount			43.58333	-22.41667	NE Atlantic					0										554
+SMNT-575N-0111W	Anton Dohrn Seamount		Seamount			57.46	-11.08	NE Atlantic					0										555
+SMNT-592N-0103W	Rosemary Bank Seamount	Rosemary	Seamount			59.2	-10.25	NE Atlantic					0										1726
+SMNT-604N-0126W	Lousy Bank Seamount	Outer Bailey	Seamount			60.417	-12.583	NE Atlantic					0										1725
+SMNT-606N-0103W	Bill Bailey Bank Seamount		Seamount			60.583	-10.333	NE Atlantic					0										1724
+SMNT-611N-0086W	Faeroe Bank Seamount	Faroe	Seamount			61.117	-8.567	NE Atlantic					0										1728
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Antialtair Seamount -- Predicted satellite bathymetry	SMNT-436N-0224W	SMNT-436N-0224W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-436N-0224W.std.180m.ss.map.jpg	180	1004	1084	2394
+Anton Dohrn Seamount -- Predicted satellite bathymetry	SMNT-575N-0111W	SMNT-575N-0111W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-575N-0111W.std.180m.ss.map.jpg	180	1108	1188	2409
+Rosemary Bank Seamount -- Predicted satellite bathymetry	SMNT-592N-0103W	SMNT-592N-0103W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-592N-0103W.std.180m.ss.map.jpg	180	1471	1551	2411
+Lousy Bank Seamount -- Predicted satellite bathymetry	SMNT-604N-0126W	SMNT-604N-0126W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-604N-0126W.std.180m.ss.map.jpg	180	2300	2380	2412
+Bill Bailey Bank Seamount -- Predicted satellite bathymetry	SMNT-606N-0103W	SMNT-606N-0103W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-606N-0103W.std.180m.ss.map.jpg	180	1937	2017	2413
+Faeroe Bank Seamount -- Predicted satellite bathymetry	SMNT-611N-0086W	SMNT-611N-0086W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-611N-0086W.std.180m.ss.map.jpg	180	2093	2173	2414
+Tropic Seamount -- Predicted satellite bathymetry	SMNT-239N-0207W	SMNT-239N-0207W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-239N-0207W.std.180m.ss.map.jpg	180	693	773	2489
+Small Meteor Seamount -- Predicted satellite bathymetry	SMNT-296N-0290W	SMNT-296N-0290W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-296N-0290W.std.180m.ss.map.jpg	180	693	773	2498
+Great Meteor Guyot -- Predicted satellite bathymetry	SMNT-300N-0285W	SMNT-300N-0285W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-300N-0285W.std.180m.ss.map.jpg	180	1212	1292	2499
+Plateau Seamount -- Predicted satellite bathymetry	SMNT-309N-0287W	SMNT-309N-0287W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-309N-0287W.std.180m.ss.map.jpg	180	693	773	2500
+Dacia Seamount -- Predicted satellite bathymetry	SMNT-312N-0137W	SMNT-312N-0137W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-312N-0137W.std.180m.ss.map.jpg	180	693	773	2501
+Hyeres Seamount -- Predicted satellite bathymetry	SMNT-315N-0290W	SMNT-315N-0290W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-315N-0290W.std.180m.ss.map.jpg	180	693	773	2502
+Plato Seamount -- Predicted satellite bathymetry	SMNT-332N-0296W	SMNT-332N-0296W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-332N-0296W.std.180m.ss.map.jpg	180	1056	1136	2509
+Seine Seamount -- Predicted satellite bathymetry	SMNT-338N-0144W	SMNT-338N-0144W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-338N-0144W.std.180m.ss.map.jpg	180	952	1033	2519
+Tyro Seamount -- Predicted satellite bathymetry	SMNT-339N-0284W	SMNT-339N-0284W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-339N-0284W.std.180m.ss.map.jpg	180	1004	1084	2520
+Unnamed Seamount -- Predicted satellite bathymetry (2523)		SMNT-350N-0119W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-350N-0119W.std.180m.ss.map.jpg	180	1212	1292	2523
+Ampere Seamount -- Predicted satellite bathymetry	SMNT-351N-0129W	SMNT-351N-0129W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-351N-0129W.std.180m.ss.map.jpg	180	693	773	2524
+Gettysburg Seamount -- Predicted satellite bathymetry	SMNT-365N-0116W	SMNT-365N-0116W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-365N-0116W.std.180m.ss.map.jpg	180	1212	1292	2531
+Ormonde Seamount -- Predicted satellite bathymetry	SMNT-367N-0112W	SMNT-367N-0112W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-367N-0112W.std.180m.ss.map.jpg	180	797	877	2533
+Josephine Seamount -- Predicted satellite bathymetry	SMNT-367N-0143W	SMNT-367N-0143W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-367N-0143W.std.180m.ss.map.jpg	180	1212	1292	2534
+Unnamed Seamount -- Predicted satellite bathymetry (2704)		SMNT-064S-0002E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-064S-0002E.std.180m.ss.map.jpg	180	952	1033	2704
+Conception Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-156N-1496E	SMNT-156N-1496E	Seamount	Multibeam merged with predicted satellite bathymetry	Grid					2816
+Conception Guyot -- Multibeam bathymetry	SMNT-156N-1496E	SMNT-156N-1496E	Seamount	Multibeam bathymetry	Grid					2817
+Conception Guyot -- Predicted satellite bathymetry	SMNT-156N-1496E	SMNT-156N-1496E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-156N-1496E.std.180m.ss.map.jpg	180	693	773	2818
+Conception Guyot -- Residual bathymetry	SMNT-156N-1496E	SMNT-156N-1496E	Seamount	Residual bathymetry	Grid					2819
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+seamounts -- diagram, graphs, model cartoon, photograph, animation, movie, video excerpt, cross section, map, data compilation, database, spreadsheet, template, presentation, seminar, poster, lesson plan, teachers log, news letter, news release, news item, document, glossary item, field guide, report, text, white book, senior thesis, master thesis, PhD thesis, web link, executable file, program source code, unpublished data	SMNT-296N-0290W:SMNT-300N-0285W:SMNT-309N-0287W:SMNT-315N-0290W:SMNT-332N-0296W:SMNT-338N-0144W:SMNT-339N-0284W:SMNT-365N-0116W:SMNT-367N-0112W:SMNT-367N-0143W:SMNT-436N-0224W	1826	https://earthref.org/ERDA/1826/

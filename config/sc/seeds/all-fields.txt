@@ -1,0 +1,44 @@
+tab delimited	contribution
+id	version	data_model_version	description	timestamp	contributor	is_validated	is_reviewed	reference	author	supplemental_links
+1	1	1.0	Synthetic SC all-fields coverage example	2026-09-30T12:00:00Z	@sc-steward	f	f	Synthetic example	Synthetic example	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	volcanic_activity	plate_age_min	plate_age_max	age	height	summit_depth	base_depth	shelf_edge_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	description	sc_id	contribution_id	row_id
+SMNT-047N-1725E	Niu Guyot	Synthetic Name	Guyot	Small	A3	4.72267	172.50917	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	148.2	149.3	1.5	3065	1110	4175		2857	2.28	0.19	1.18	0.13	1	31	Niu Guyot is located at 4° 43.7' N, 172° 30.5' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3095 m high with the top at -1200 m and the ocean bottom at -4295 m. The guyot has a volume of 3490 km3 and is elongated with two cones separated by a saddle, which may represent two separate volcanoes. The east and northwest rifts define the length of the volcano, which is heavily covered with corals. The observed flattish top results in the classification of Niu as a guyot. It is the northern most volcano on a common platform including Pulu Guyot and Sua Seamount.	1	1	1
+SMNT-086S-1725W	Atafu Atoll		Atoll	Intermediate	C2	-8.55	-172.5	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct				4208	400	4608	492	7053	1.66	0.22	1.43	0.05	2	33	Atafu Atoll is located at 8° 32.9' S, 172° 31.0' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4208 m high with the top at -400 m and the ocean bottom at -4608 m. The atoll has a volume of 7053 km3 and is slightly elongated with an azimuth of approximately 122°. The atoll has relatively smooth edges with two predominate rifts observed, one to the northwest and the other to the southwest. The top surface is relatively flat with two summits. A saddle connects Atafu to Pogisa and Ufiata seamounts to the north. Dredge AVON2-D60 was taken on the northwest rift and dredge AVON2-D61 was taken on the southwest rift.	43		
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity	contribution_id	row_id
+SMNT-047N-1725E	2336	122.3	459.3	38.9	17.7	2.199	110.2	84.8	1.300	1	1
+SMNT-047N-1725E	2643	125.9	588.8	43.3	20.2	2.147	113.5	95.4	1.190		
+SMNT-047N-1725E	2949	133.5	743.9	60.6	24.2	2.507	117.5	111.9	1.050		
+SMNT-086S-1725W	1873	113.4	213.2	31.1	16.2	1.917	79.9	55.8	1.431		
+SMNT-086S-1725W	2294	122.8	372.7	31.3	20.3	1.542	105.3	70.8	1.487		
+SMNT-086S-1725W	2714	132.9	575.0	36.6	24.0	1.525	121.5	87.8	1.383		
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id	contribution_id	row_id
+Niu Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-047N-1725E	SMNT-047N-1725E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-047N-1725E.std.180m.mg.map.jpg	180	693	773	234	1	1
+Niu Guyot -- Multibeam bathymetry	SMNT-047N-1725E	SMNT-047N-1725E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-047N-1725E.std.180m.mb.map.jpg	180	952	1033	235		
+Niu Guyot -- Predicted satellite bathymetry	SMNT-047N-1725E	SMNT-047N-1725E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-047N-1725E.std.180m.ss.map.jpg	180	693	773	236		
+Niu Guyot -- Residual bathymetry	SMNT-047N-1725E	SMNT-047N-1725E	Seamount	Residual bathymetry	Map:Grid	SMNT-047N-1725E.std.180m.rs.map.jpg	180	693	773	237		
+Gilberts Ridge -- Multibeam data merged with predicted satellite bathymetry		SMNT-047N-1725E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-024N-1746E.std.990m.mg.map.jpg	990	1981	2415	246		
+Gilberts Ridge -- Multibeam bathymetry		SMNT-047N-1725E	Regional	Multibeam bathymetry	Map:Grid	REGION-024N-1746E.std.990m.mb.map.jpg	990	1981	2415	247		
+Gilberts Ridge -- Predicted satellite bathymetry		SMNT-047N-1725E	Regional	Predicted satellite bathymetry	Map:Grid	REGION-024N-1746E.std.990m.ss.map.jpg	990	1981	2415	248		
+Gilberts Ridge -- Residual bathymetry		SMNT-047N-1725E	Regional	Residual bathymetry	Map:Grid	REGION-024N-1746E.std.990m.rs.map.jpg	990	1981	2415	249		
+Atafu Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-086S-1725W	SMNT-086S-1725W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-086S-1725W.std.180m.mg.map.jpg	180	693	773	3342		
+Atafu Atoll -- Multibeam bathymetry	SMNT-086S-1725W	SMNT-086S-1725W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-086S-1725W.std.180m.mb.map.jpg	180	952	1033	3343		
+Atafu Atoll -- Predicted satellite bathymetry	SMNT-086S-1725W	SMNT-086S-1725W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-086S-1725W.std.180m.ss.map.jpg	180	693	773	3344		
+Atafu Atoll -- Residual bathymetry	SMNT-086S-1725W	SMNT-086S-1725W	Seamount	Residual bathymetry	Map:Grid	SMNT-086S-1725W.std.180m.rs.map.jpg	180	693	773	3345		
+Tokelau Seamounts -- Multibeam data merged with predicted satellite bathymetry		SMNT-086S-1725W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-026S-1736W.std.1020m.mg.map.jpg	1020	2004	2414	3378		
+Tokelau Seamounts -- Multibeam bathymetry		SMNT-086S-1725W	Regional	Multibeam bathymetry	Map:Grid	REGION-026S-1736W.std.1020m.mb.map.jpg	1020	2004	2414	3379		
+Tokelau Seamounts -- Predicted satellite bathymetry		SMNT-086S-1725W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-026S-1736W.std.1020m.ss.map.jpg	1020	2004	2414	3380		
+Tokelau Seamounts -- Residual bathymetry		SMNT-086S-1725W	Regional	Residual bathymetry	Map:Grid	REGION-026S-1736W.std.1020m.rs.map.jpg	1020	2004	2414	3381		
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url	contribution_id	row_id
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-1-7 -- graphs, spreadsheet	SMNT-047N-1725E	442	https://earthref.org/ERDA/442/	1	1
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url	contribution_id	row_id
+2720	SMNT-086S-1725W	Robertson, E.I. (1987). Gravity survey on Atafu Atoll, Tokelau Islands, Southwest Pacific Ocean. New Zealand Journal of Geology and Geophysics 30(2): 211-212.	https://earthref.org/ERR/2720/	1	1

@@ -1,0 +1,11 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Carribean Sea (1 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	lat	lon	region	height	sc_id
+SMNT-148N-0734W	Beata Ridge Seamount	Seamount	14.84	-73.37	Carribean Sea	0	1761
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Beata Ridge Seamount -- Predicted satellite bathymetry	SMNT-148N-0734W	SMNT-148N-0734W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-148N-0734W.std.180m.ss.map.jpg	180	1212	1292	12

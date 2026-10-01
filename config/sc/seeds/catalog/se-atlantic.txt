@@ -1,0 +1,50 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: SE Atlantic (14 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	tectonic_setting	oceanic_province	plate_age_min	plate_age_max	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	sc_id
+SMNT-112S-0004W	Dampier Seamount		Seamount			-11.15	-0.45	SE Atlantic	Hotspot Trail				0										668
+SMNT-116S-0053W	Pobeda Seamount	Bank 157	Seamount			-11.6	-5.25	SE Atlantic					0										1750
+SMNT-156N-1604E	Zubov Seamount		Seamount	Small	A1	15.5925	160.345	SE Atlantic	Hotspot Trail	Abyssal Plain	173.4	173.8	3130	1250	4380	1229	1.29	0.04	1.10	0.02	1	6	1358
+SMNT-262S-0063E	Valdivia Seamount		Seamount			-26.21	6.28	SE Atlantic					0										1695
+SMNT-296S-0143E	Tripp Seamount		Seamount			-29.64	14.32	SE Atlantic					0										1281
+SMNT-387S-0113W	Crawford Seamount		Seamount			-38.66667	-11.29	SE Atlantic					0										649
+SMNT-395S-0066W	R.S.A. Seamount		Seamount			-39.54	-6.64	SE Atlantic					0										1123
+SMNT-401S-0086W	McNish Seamount		Seamount			-40.12	-8.6	SE Atlantic					0										981
+SMNT-420S-0002E	Discovery Seamount		Seamount			-42.0	0.167	SE Atlantic					0										1694
+SMNT-430S-0024E	Shannon Seamount		Seamount			-42.97	2.4	SE Atlantic					0										1198
+SMNT-448S-0040E	Meteor Rise Seamount		Seamount			-44.75	4.0	SE Atlantic					0										491
+SMNT-523S-0413E	Ob' Seamount		Seamount			-52.33333	41.25	SE Atlantic					0										1062
+SMNT-529S-0443E	Lena Seamount		Seamount			-52.91	44.25	SE Atlantic					0										942
+SMNT-547S-0001E	Spiess Seamount		Seamount			-54.71	0.12	SE Atlantic					0										1227
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-156N-1604E	2502	123.7	195.7	19.2	14.3	1.342	56.1	50.4	1.113
+SMNT-156N-1604E	2815	118.8	260.7	21.3	16.9	1.258	62.4	57.8	1.080
+SMNT-156N-1604E	3128	119.5	343.5	24.7	19.4	1.272	72.6	66.4	1.093
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Dampier Seamount -- Predicted satellite bathymetry	SMNT-112S-0004W	SMNT-112S-0004W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-112S-0004W.std.180m.ss.map.jpg	180	693	773	2587
+Pobeda Seamount -- Predicted satellite bathymetry	SMNT-116S-0053W	SMNT-116S-0053W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-116S-0053W.std.180m.ss.map.jpg	180	797	877	2588
+Crawford Seamount -- Predicted satellite bathymetry	SMNT-387S-0113W	SMNT-387S-0113W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-387S-0113W.std.180m.ss.map.jpg	180	693	773	2621
+R.S.A. Seamount -- Predicted satellite bathymetry	SMNT-395S-0066W	SMNT-395S-0066W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-395S-0066W.std.180m.ss.map.jpg	180	1264	1344	2622
+McNish Seamount -- Predicted satellite bathymetry	SMNT-401S-0086W	SMNT-401S-0086W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-401S-0086W.std.180m.ss.map.jpg	180	693	773	2624
+Discovery Seamount -- Predicted satellite bathymetry	SMNT-420S-0002E	SMNT-420S-0002E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-420S-0002E.std.180m.ss.map.jpg	180	1730	1810	2626
+Valdivia Seamount -- Predicted satellite bathymetry	SMNT-262S-0063E	SMNT-262S-0063E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-262S-0063E.std.180m.ss.map.jpg	180	1108	1188	2734
+Tripp Seamount -- Predicted satellite bathymetry	SMNT-296S-0143E	SMNT-296S-0143E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-296S-0143E.std.180m.ss.map.jpg	180	589	670	2736
+Shannon Seamount -- Predicted satellite bathymetry	SMNT-430S-0024E	SMNT-430S-0024E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-430S-0024E.std.180m.ss.map.jpg	180	693	773	2759
+Meteor Rise Seamount -- Predicted satellite bathymetry	SMNT-448S-0040E	SMNT-448S-0040E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-448S-0040E.std.180m.ss.map.jpg	180	1212	1292	2760
+Ob' Seamount -- Predicted satellite bathymetry	SMNT-523S-0413E	SMNT-523S-0413E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-523S-0413E.std.180m.ss.map.jpg	180	1315	1395	2773
+Lena Seamount -- Predicted satellite bathymetry	SMNT-529S-0443E	SMNT-529S-0443E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-529S-0443E.std.180m.ss.map.jpg	180	1834	1914	2775
+Spiess Seamount -- Predicted satellite bathymetry	SMNT-547S-0001E	SMNT-547S-0001E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-547S-0001E.std.180m.ss.map.jpg	180	1212	1292	2778
+Zubov Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-156N-1604E	SMNT-156N-1604E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-156N-1604E.std.180m.mg.map.jpg	180	693	773	2820
+Zubov Seamount -- Multibeam bathymetry	SMNT-156N-1604E	SMNT-156N-1604E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-156N-1604E.std.180m.mb.map.jpg	180	952	1033	2821
+Zubov Seamount -- Predicted satellite bathymetry	SMNT-156N-1604E	SMNT-156N-1604E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-156N-1604E.std.180m.ss.map.jpg	180	693	773	2822
+Zubov Seamount -- Residual bathymetry	SMNT-156N-1604E	SMNT-156N-1604E	Seamount	Residual bathymetry	Map:Grid	SMNT-156N-1604E.std.180m.rs.map.jpg	180	693	773	2823
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+Valdivia Bank Multibeam Bathymetry Grid -- unpublished data	SMNT-262S-0063E	2532	https://earthref.org/ERDA/2532/

@@ -1,0 +1,15 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Mathematicians Seamount Trail (1 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	lat	lon	region	plate	tectonic_setting	height	sc_id
+SMNT-166N-1148W	Downwind Seamount	Seamount	16.6	-114.77	Mathematicians Seamount Trail	Pacific Plate	Plate Boundary	0	694
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Downwind Seamount -- Predicted satellite bathymetry	SMNT-166N-1148W	SMNT-166N-1148W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-166N-1148W.std.180m.ss.map.jpg	180	589	670	670
+Mathematicians Seamount Trail -- Multibeam data merged with predicted satellite bathymetry		SMNT-166N-1148W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-148N-1110W.std.660m.mg.map.jpg	660	2037	2415	671
+Mathematicians Seamount Trail -- Multibeam bathymetry		SMNT-166N-1148W	Regional	Multibeam bathymetry	Map:Grid	REGION-148N-1110W.std.660m.mb.map.jpg	660	2037	2415	672
+Mathematicians Seamount Trail -- Predicted satellite bathymetry		SMNT-166N-1148W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-148N-1110W.std.660m.ss.map.jpg	660	2037	2415	673
+Mathematicians Seamount Trail -- Residual bathymetry		SMNT-166N-1148W	Regional	Residual bathymetry	Map:Grid	REGION-148N-1110W.std.660m.rs.map.jpg	660	2037	2414	674

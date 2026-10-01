@@ -1,0 +1,12 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Dellwood Seamounts (1 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	lat	lon	region	plate	tectonic_setting	height	sc_id
+SMNT-485N-1332W	Eickelberg Seamount	Seamount	48.52	-133.15	Dellwood Seamounts	Pacific Plate	Plate Boundary	0	702
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Eickelberg Seamount -- Predicted satellite bathymetry	SMNT-485N-1332W	SMNT-485N-1332W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-485N-1332W.std.180m.ss.map.jpg	180	693	773	35
+Dellwood Seamounts -- Predicted bathymetry Smith & Sandwell v8.2		SMNT-485N-1332W	Regional	Predicted bathymetry Smith & Sandwell v8.2	Map:Grid	REGION-481N-1343W.std.750m.ss.map.jpg	750	1969	2415	36

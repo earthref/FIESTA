@@ -2,7 +2,7 @@
 
 ## What This Is
 
-FIESTA is the platform behind the EarthRef.org data repositories (nodes): MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR. One codebase serves any node; a deployment is fully described by one YAML in `config/`. Rebuilt from scratch in July 2026 (Meteor/Semantic-UI → FastAPI + Vite/React). The direction as of 2026-09-10 is **one FIESTA API for every node** (`/v2/{node}/...`) that the SPA talks to directly — see `ROADMAP.md` Phase A. Long-form rationale lives in `docs/`, `development.md`, `deployment.md` and `ROADMAP.md`; this file is the rules.
+FIESTA is the platform behind the EarthRef.org data repositories (nodes): MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR, SC. One codebase serves any node; a deployment is fully described by one YAML in `config/`. Rebuilt from scratch in July 2026 (Meteor/Semantic-UI → FastAPI + Vite/React). The direction as of 2026-09-10 is **one FIESTA API for every node** (`/v2/{node}/...`) that the SPA talks to directly — see `ROADMAP.md` Phase A. Long-form rationale lives in `docs/`, `development.md`, `deployment.md` and `ROADMAP.md`; this file is the rules.
 
 ## Stack
 

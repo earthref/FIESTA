@@ -1,0 +1,29 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Tuvalu Seamount Trail (5 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	lat	lon	region	plate	tectonic_setting	volcanic_activity	height	description	sc_id
+SMNT-057S-1761E	Nanumea Seamount		Seamount	-5.67	176.11	Tuvalu Seamount Trail	Pacific Plate			0		1801
+SMNT-073S-1772E	Nui Seamount		Seamount	-7.27	177.17	Tuvalu Seamount Trail	Pacific Plate			0		1802
+SMNT-080S-1784E	Vaitupu Seamount		Seamount	-8.0	178.36	Tuvalu Seamount Trail	Pacific Plate			0		1804
+SMNT-085S-1791E	Funaputi Seamount	Funafuti	Seamount	-8.51	179.13	Tuvalu Seamount Trail	Pacific Plate			0		1803
+SMNT-094S-1799E	Nukulaelae Atoll		Atoll	-9.4	179.88	Tuvalu Seamount Trail	Pacific Plate	Hotspot Trail	Extinct	0	Nukulaelae Atoll is located at 9° 24' S, 179° 52.8' E and is part of the Tuvalu Seamount Trail on the Pacific Plate. The atoll has an elliptical morphology and well-developed barrier reef. It has a narrow free-air gravity anomaly and unusually-oriented residual magnetic anomaly. The seamount was probably formed on young lithosphere in the Cretaceous.	1381
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Nanumea Seamount -- Predicted satellite bathymetry	SMNT-057S-1761E	SMNT-057S-1761E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-057S-1761E.std.180m.ss.map.jpg	180	693	773	3738
+Nui Seamount -- Predicted satellite bathymetry	SMNT-073S-1772E	SMNT-073S-1772E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-073S-1772E.std.180m.ss.map.jpg	180	745	825	3742
+Vaitupu Seamount -- Predicted satellite bathymetry	SMNT-080S-1784E	SMNT-080S-1784E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-080S-1784E.std.180m.ss.map.jpg	180	797	877	3746
+Funaputi Seamount -- Predicted satellite bathymetry	SMNT-085S-1791E	SMNT-085S-1791E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-085S-1791E.std.180m.ss.map.jpg	180	849	929	3750
+Nukulaelae Atoll -- Predicted satellite bathymetry	SMNT-094S-1799E	SMNT-094S-1799E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-094S-1799E.std.180m.ss.map.jpg	180	693	773	3754
+Tuvalu Seamount Trail -- Multibeam data merged with predicted satellite bathymetry		SMNT-057S-1761E:SMNT-073S-1772E:SMNT-080S-1784E:SMNT-085S-1791E:SMNT-094S-1799E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-070S-1779E.std.720m.mg.map.jpg	720	2243	2415	3756
+Tuvalu Seamount Trail -- Multibeam bathymetry		SMNT-057S-1761E:SMNT-073S-1772E:SMNT-080S-1784E:SMNT-085S-1791E:SMNT-094S-1799E	Regional	Multibeam bathymetry	Map:Grid	REGION-070S-1779E.std.720m.mb.map.jpg	720	2243	2415	3757
+Tuvalu Seamount Trail -- Predicted satellite bathymetry		SMNT-057S-1761E:SMNT-073S-1772E:SMNT-080S-1784E:SMNT-085S-1791E:SMNT-094S-1799E	Regional	Predicted satellite bathymetry	Map:Grid	REGION-070S-1779E.std.720m.ss.map.jpg	720	2243	2415	3758
+Tuvalu Seamount Trail -- Residual bathymetry		SMNT-057S-1761E:SMNT-073S-1772E:SMNT-080S-1784E:SMNT-085S-1791E:SMNT-094S-1799E	Regional	Residual bathymetry	Map:Grid	REGION-070S-1779E.std.720m.rs.map.jpg	720	2243	2415	3759
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2162	SMNT-085S-1791E	Gramlich, J.W., Lewis, V.A. and Naughton, J.J. (1971). Potassium-Argon dating of Holocene basalts of the Honolulu volcanic series. Geological Society of America, Bulletin 82: 1,399-1,404.	https://earthref.org/ERR/2162/
+2279	SMNT-094S-1799E	Brocher, T.M. (1985). On the age progression of the seamounts west of the Samoan Islands, SW Pacific. In: Investigations of the Northern Melanesian Borderland. Brocher, T.M. (Editors), Circum-Pacific Council for Energy and Mineral Resources, Houston. 3: 173-185.	https://earthref.org/ERR/2279/
+33495	SMNT-085S-1791E	Detrick, R.S. and Crough, T. (1978). Island subsidence, hot spots, and lithospheric thinning. Journal of Geophysical Research 83: doi: 10.1029/JB083iB03p01236. issn: 0148-0227.	https://earthref.org/ERR/33495/

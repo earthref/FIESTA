@@ -1,0 +1,15 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: South Fiji Basin (1 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	lat	lon	region	height	sc_id
+SMNT-290S-1793E	Seamount	SONNE 167 LINZ 4	Seamount	-28.97	179.29	South Fiji Basin	0	1529
+>>>>>>>>>>
+tab delimited	maps
+map	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Unnamed Seamount -- Predicted satellite bathymetry	SMNT-290S-1793E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-290S-1793E.std.180m.ss.map.jpg	180	693	773	3114
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2619	SMNT-290S-1793E	Stoffers, P., Worthington, T., Schwarz-Schampera, U., Ackermand, D., Daudoin, Y., Bigalke, N., Fretzdorff, S., Gibson, H., Hekinian, R., Kindermann, A., Kuhn, T., Main, W., Schreiber, K., Timm, C., Tonga'onevai, S., Turkay, M., Unverricht, D., Vailea, A. and Zimmerer, M. (2003). Cruise Report SONNE 167 Louisville, Louisville Ridge: Dynamics and Magmatism of a Mantle plume and its influence on the Tonga-Kermadec Subduction System. In: Ber. -Rep., Institute for Gewiss.. Universitat Kiel, Kiel.	https://earthref.org/ERR/2619/

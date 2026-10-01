@@ -1,0 +1,18 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: SE Pacific (3 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	lat	lon	region	height	sc_id
+SMNT-011S-0891W	Seamount		Seamount	-1.07	-89.1	SE Pacific	0	1680
+SMNT-324S-1791W	Seamount	Kermadec Ridge Unnamed 1 Seamount	Seamount	-32.4	-179.14	SE Pacific	0	1592
+SMNT-461S-0839W	Seamount	Chilean Unnamed 1 Seamount	Seamount	-46.067	-83.917	SE Pacific	0	1587
+>>>>>>>>>>
+tab delimited	maps
+map	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-324S-1791W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-324S-1791W.std.180m.mg.map.jpg	180	1730	1810	2369
+Unnamed Seamount -- Multibeam bathymetry	SMNT-324S-1791W	Regional	Multibeam bathymetry	Map:Grid	SMNT-324S-1791W.std.180m.mb.map.jpg	180	2508	2588	2370
+Unnamed Seamount -- Predicted satellite bathymetry (2371)	SMNT-324S-1791W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-324S-1791W.std.180m.ss.map.jpg	180	1730	1810	2371
+Unnamed Seamount -- Residual bathymetry	SMNT-324S-1791W	Regional	Residual bathymetry	Map:Grid	SMNT-324S-1791W.std.180m.rs.map.jpg	180	1730	1810	2372
+Unnamed Seamount -- Predicted satellite bathymetry (2579)	SMNT-011S-0891W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-011S-0891W.std.180m.ss.map.jpg	180	849	929	2579
+Unnamed Seamount -- Predicted satellite bathymetry (2628)	SMNT-461S-0839W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-461S-0839W.std.180m.ss.map.jpg	180	693	773	2628

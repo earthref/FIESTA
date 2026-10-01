@@ -1,0 +1,16 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Kodiak Seamount Trail (1 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	lat	lon	region	plate	height	sc_id
+SMNT-569N-1493W	Kodiak Seamount	Seamount	56.87	-149.26	Kodiak Seamount Trail	Pacific Plate	0	914
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Kodiak Seamount -- Predicted satellite bathymetry	SMNT-569N-1493W	SMNT-569N-1493W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-569N-1493W.std.180m.ss.map.jpg	180	641	721	326
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2344	SMNT-569N-1493W	Turner, D.L., Forbes, R.B. and Naeser, C.W. (1973). Radiometric Ages of Kodiak Seamount and Giacomini Guyot, Gulf of Alaska; implications for Circum-Pacific Tectonics. Science 182(4112): 579-581.	https://earthref.org/ERR/2344/
+34230	SMNT-569N-1493W	Turner, D.L., Jarrard, R.D. and Forbes, R.B. (1980). Geochronology and origin of the Pratt-Welker seamount chain, Gulf of Alaska: A new pole of rotation for the Pacific plate. Journal of Geophysical Research 85: doi: 10.1029/JB080i011p06547. issn: 0148-0227.	https://earthref.org/ERR/34230/

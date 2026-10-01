@@ -1,0 +1,23 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Cobb Seamount Trail (4 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	lat	lon	region	plate	tectonic_setting	height	sc_id
+SMNT-467N-1308W	Cobb Seamount	Seamount	46.74	-130.8	Cobb Seamount Trail	Pacific Plate	Plate Boundary	0	640
+SMNT-509N-1433W	Pathfinder Seamount	Seamount	50.91667	-143.3	Cobb Seamount Trail	Pacific Plate		0	1087
+SMNT-536N-1443W	Miller Seamount	Seamount	53.56	-144.32	Cobb Seamount Trail	Pacific Plate		0	997
+SMNT-546N-1504W	Patton Seamount	Seamount	54.58	-150.44	Cobb Seamount Trail	Pacific Plate		0	1089
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Cobb Seamount -- Predicted satellite bathymetry	SMNT-467N-1308W	SMNT-467N-1308W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-467N-1308W.std.180m.ss.map.jpg	180	693	773	17
+Pathfinder Seamount -- Predicted satellite bathymetry	SMNT-509N-1433W	SMNT-509N-1433W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-509N-1433W.std.180m.ss.map.jpg	180	952	1033	18
+Miller Seamount -- Predicted satellite bathymetry	SMNT-536N-1443W	SMNT-536N-1443W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-536N-1443W.std.180m.ss.map.jpg	180	901	981	19
+Patton Seamount -- Predicted satellite bathymetry	SMNT-546N-1504W	SMNT-546N-1504W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-546N-1504W.std.180m.ss.map.jpg	180	1004	1084	20
+Cobb Seamount Trail -- Predicted satellite bathymetry		SMNT-467N-1308W:SMNT-509N-1433W:SMNT-536N-1443W:SMNT-546N-1504W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-501N-1413W.std.1620m.ss.map.jpg	1620	4531	2419	21
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2126	SMNT-509N-1433W:SMNT-536N-1443W:SMNT-546N-1504W	Steele, W.K. (1971). Paleomagnetic directions from the Iztaccihuatl volcano, Mexico. Earth and Planetary Science Letters 11(3): 211-218. doi: 10.1016/0012-821X(71)90166-X.	https://earthref.org/ERR/2126/
+2134	SMNT-467N-1308W	Dymond, J. and Windom, H.L. (1968). Cretaceous K-Ar ages from Pacific Ocean seamounts. Earth and Planetary Science Letters 4: 47-52. doi: 10.1016/0012-821X(68)90052-6.	https://earthref.org/ERR/2134/

@@ -1,0 +1,197 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Mid-Pacific Mountains (81 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	plate_age_min	plate_age_max	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	sc_id
+SMNT-131N-1742W	Seamount		Seamount			13.1	-174.2	Mid-Pacific Mountains	Pacific Plate					0										2159
+SMNT-133N-1756E	Seamount		Seamount			13.3	175.55	Mid-Pacific Mountains	Pacific Plate					0										2148
+SMNT-133N-1790E	Seamount		Seamount			13.32	179.04	Mid-Pacific Mountains	Pacific Plate					0										2149
+SMNT-135N-1734W	Vityaz Seamount		Seamount			13.47	-173.41	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										1307
+SMNT-135N-1793W	Seamount		Seamount			13.46	-179.25	Mid-Pacific Mountains	Pacific Plate					0										2150
+SMNT-138N-1720W	Seamount		Seamount			13.87	-171.98	Mid-Pacific Mountains	Pacific Plate					0										2165
+SMNT-139N-1737E	Seamount		Seamount			13.94	173.69	Mid-Pacific Mountains	Pacific Plate					0										2147
+SMNT-140N-1678W	Seamount		Seamount			14.0	-167.77	Mid-Pacific Mountains	Pacific Plate					0										2170
+SMNT-140N-1705W	Seamount		Seamount			14.0	-170.45	Mid-Pacific Mountains	Pacific Plate					0										2168
+SMNT-141N-1697W	Seamount		Seamount			14.11	-169.65	Mid-Pacific Mountains	Pacific Plate					0										2169
+SMNT-141N-1722E	Seamount		Seamount			14.07	172.2	Mid-Pacific Mountains	Pacific Plate					0										2146
+SMNT-145N-1735W	Seamount		Seamount			14.5	-173.5	Mid-Pacific Mountains	Pacific Plate					0										2158
+SMNT-146N-1797E	Seamount	Mid-Pacific Seamount 10	Seamount			14.59	179.74	Mid-Pacific Mountains	Pacific Plate					0										1778
+SMNT-148N-1741W	Seamount		Seamount			14.78	-174.08	Mid-Pacific Mountains	Pacific Plate					0										2156
+SMNT-149N-1723W	Seamount		Seamount			14.9	-172.34	Mid-Pacific Mountains	Pacific Plate					0										2160
+SMNT-150N-1732W	Seamount		Seamount			15.03	-173.18	Mid-Pacific Mountains	Pacific Plate					0										2157
+SMNT-151N-1710W	Seamount		Seamount			15.1	-171.0	Mid-Pacific Mountains	Pacific Plate					0										2162
+SMNT-153N-1683W	Seamount		Seamount			15.34	-168.34	Mid-Pacific Mountains	Pacific Plate					0										2171
+SMNT-154N-1721W	Seamount		Seamount			15.4	-172.06	Mid-Pacific Mountains	Pacific Plate					0										2161
+SMNT-156N-1772W	Seamount		Seamount			15.55	-177.2	Mid-Pacific Mountains	Pacific Plate					0										2152
+SMNT-157N-1693W	Seamount		Seamount			15.64	-169.22	Mid-Pacific Mountains	Pacific Plate					0										2167
+SMNT-157N-1712W	Seamount		Seamount			15.67	-171.18	Mid-Pacific Mountains	Pacific Plate					0										2163
+SMNT-157N-1746W	Seamount		Seamount			15.73	-174.56	Mid-Pacific Mountains	Pacific Plate					0										2155
+SMNT-158N-1728E	Seamount		Seamount			15.77	172.8	Mid-Pacific Mountains	Pacific Plate					0										2145
+SMNT-159N-1771W	Seamount		Seamount			15.86	-177.13	Mid-Pacific Mountains	Pacific Plate					0										2151
+SMNT-160N-1669W	Emmons Seamount		Seamount			15.96	-166.85	Mid-Pacific Mountains	Pacific Plate					0										710
+SMNT-160N-1726E	Seamount		Seamount			16.02	172.58	Mid-Pacific Mountains	Pacific Plate					0										2144
+SMNT-162N-1751W	Seamount		Seamount			16.16	-175.05	Mid-Pacific Mountains	Pacific Plate					0										2154
+SMNT-164N-1723E	Seamount		Seamount			16.42	172.26	Mid-Pacific Mountains	Pacific Plate					0										2143
+SMNT-165N-1755W	Seamount		Seamount			16.5	-175.47	Mid-Pacific Mountains	Pacific Plate					0										2153
+SMNT-171N-1773W	Cape Johnson Guyot	Cape Johnson Tablemount	Guyot			17.13333	-177.25	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										136
+SMNT-177N-1698E	Seamount		Seamount	Small	A3	17.68983	169.78283	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail	Abyssal Plain	164.5	165.7	2400	2575	4975	1215	2.23	0.17	1.03	0.01	1	5	2142
+SMNT-178N-1688E	Karin Seamount		Seamount			17.76	168.84	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										884
+SMNT-178N-1726E	Harvey Guyot		Guyot			17.8	172.63333	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										153
+SMNT-178N-1744W	Hess Guyot		Guyot			17.8	-174.36	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										1362
+SMNT-179N-1765W	Seamount		Seamount			17.93	-176.46	Mid-Pacific Mountains	Pacific Plate					0										2133
+SMNT-180N-1760E	Renard Seamount		Seamount			17.99	176.01	Mid-Pacific Mountains	Pacific Plate					0										2035
+SMNT-181N-1736E	Seamount		Seamount			18.07	173.58	Mid-Pacific Mountains	Pacific Plate					0										2122
+SMNT-182N-1718W	Seamount		Seamount			18.23	-171.84	Mid-Pacific Mountains	Pacific Plate					0										2141
+SMNT-183N-1741E	Allen Guyot		Guyot			18.25	174.08333	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										125
+SMNT-183N-1783W	Seamount	Mid-Pacific Seamount 3	Seamount			18.29	-178.31	Mid-Pacific Mountains	Pacific Plate					0										1771
+SMNT-184N-1713E	SIO Guyot	Seamount F:Unnamed Guyot (958)	Guyot			18.4	171.3	Mid-Pacific Mountains	Pacific Plate					0										1561
+SMNT-185N-1764W	Seamount		Seamount			18.48	-176.4	Mid-Pacific Mountains	Pacific Plate					0										2134
+SMNT-185N-1780E	Seamount	Mid-Pacific Seamount 11	Seamount			18.48	177.98	Mid-Pacific Mountains	Pacific Plate					0										1779
+SMNT-185N-1796W	Allison Guyot	Hamilton(misapplied)	Guyot			18.517	-179.6	Mid-Pacific Mountains	Pacific Plate					0										1550
+SMNT-186N-1750W	Seamount	Mid-Pacific Seamount 4	Seamount			18.617	-174.983	Mid-Pacific Mountains	Pacific Plate					0										1772
+SMNT-191N-1712E	Seamount	Mid-Pacific Seamount 13	Seamount			19.06	171.21	Mid-Pacific Mountains	Pacific Plate					0										1781
+SMNT-191N-1734W	Lacroix Guyot		Guyot			19.1	-173.42	Mid-Pacific Mountains	Pacific Plate					0										166
+SMNT-192N-1649E	Seamount	Seamount C	Seamount			19.22	164.883	Mid-Pacific Mountains	Pacific Plate					0										1668
+SMNT-192N-1733E	Hig Guyot		Guyot			19.16667	173.25	Mid-Pacific Mountains	Pacific Plate					0										155
+SMNT-192N-1798W	Shepard Guyot		Guyot			19.24	-179.75	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										192
+SMNT-193N-1690W	Horizon Guyot		Guyot			19.28	-169.02	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										1363
+SMNT-193N-1767E	Jacqueline Guyot		Guyot			19.33333	176.66667	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										158
+SMNT-195N-1795E	Revelle Guyot		Guyot			19.53	179.47	Mid-Pacific Mountains	Pacific Plate					0										188
+SMNT-197N-1720E	Seamount		Seamount			19.7	171.95	Mid-Pacific Mountains	Pacific Plate					0										2121
+SMNT-197N-1761E	Stetson Guyot		Guyot			19.66	176.13	Mid-Pacific Mountains	Pacific Plate					0										196
+SMNT-200N-1715W	Seamount		Seamount			19.98	-171.47	Mid-Pacific Mountains	Pacific Plate					0										2137
+SMNT-200N-1772E	Hamilton Guyot		Guyot			19.95	177.18	Mid-Pacific Mountains	Pacific Plate					0										1553
+SMNT-200N-1779E	Seamount		Seamount			20.03	177.93	Mid-Pacific Mountains	Pacific Plate					0										1619
+SMNT-201N-1706W	Seamount		Seamount			20.13	-170.61	Mid-Pacific Mountains	Pacific Plate					0										2138
+SMNT-202N-1790E	Seamount		Seamount			20.22	179.02	Mid-Pacific Mountains	Pacific Plate					0										2131
+SMNT-203N-1698W	Seamount		Seamount			20.3	-169.8	Mid-Pacific Mountains	Pacific Plate					0										2140
+SMNT-203N-1742E	Ewing Seamount		Seamount			20.33333	174.16667	Mid-Pacific Mountains	Pacific Plate					0										730
+SMNT-206N-1799W	Seamount	Mid-Pacific Seamount 1	Seamount			20.57	-179.9	Mid-Pacific Mountains	Pacific Plate					0										1770
+SMNT-207N-1707W	Seamount	Mid-Pacific Seamount 5	Seamount			20.68	-170.69	Mid-Pacific Mountains	Pacific Plate					0										1773
+SMNT-208N-1734E	Menard Guyot		Guyot			20.8	173.38	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail				0										172
+SMNT-210N-1773E	Seamount		Seamount			20.96	177.34	Mid-Pacific Mountains	Pacific Plate					0										2128
+SMNT-211N-1764E	Seamount	Seamount I	Seamount			21.11	176.4	Mid-Pacific Mountains	Pacific Plate					0										1670
+SMNT-211N-1784E	Seamount		Seamount			21.13	178.37	Mid-Pacific Mountains	Pacific Plate					0										2130
+SMNT-212N-1738E	Heezen Seamount		Seamount			21.2	173.8	Mid-Pacific Mountains	Pacific Plate					0										2034
+SMNT-213N-1743E	Resolution Guyot		Guyot			21.25	174.33333	Mid-Pacific Mountains	Pacific Plate					0										187
+SMNT-217N-1764E	Seamount		Seamount			21.69	176.39	Mid-Pacific Mountains	Pacific Plate					0										2126
+SMNT-219N-1755E	Seamount	Mid-Pacific Seamount 12	Seamount			21.94	175.54	Mid-Pacific Mountains	Pacific Plate					0										1780
+SMNT-220N-1756E	Seamount		Seamount			21.95	175.55	Mid-Pacific Mountains	Pacific Plate					0										2124
+SMNT-221N-1716E	Darwin Guyot		Guyot	Small	A3	22.03367	171.64683	Mid-Pacific Mountains	Pacific Plate	Hotspot Trail	Abyssal Plain	152.2	153.1	3965	1285	5250	2287	2.20	0.08	1.12	0.02	1	17	1552
+SMNT-221N-1781E	Seamount		Seamount			22.06	178.13	Mid-Pacific Mountains	Pacific Plate					0										2129
+SMNT-223N-1688E	Seamount		Seamount			22.3	168.8	Mid-Pacific Mountains	Pacific Plate					0										2120
+SMNT-224N-1615E	Seamount	Mid-Pacific Seamount 9	Seamount			22.36	161.46	Mid-Pacific Mountains	Pacific Plate					0										1777
+SMNT-226N-1609E	Seamount	Mid-Pacific Seamount 8	Seamount			22.64	160.88	Mid-Pacific Mountains	Pacific Plate					0										1776
+SMNT-230N-1756E	Seamount		Seamount			22.95	175.6	Mid-Pacific Mountains	Pacific Plate					0										2123
+SMNT-236N-1573E	Seamount	Mid-Pacific Seamount 7	Seamount			23.61	157.29	Mid-Pacific Mountains	Pacific Plate					0										1775
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-177N-1698E	3535	65.6	263.4	29.6	12.3	2.411	67.4	65.8	1.023
+SMNT-177N-1698E	3775	66.6	336.0	31.9	14.4	2.214	75.2	72.6	1.035
+SMNT-177N-1698E	4015	67.5	416.7	34.3	16.5	2.075	81.6	79.6	1.026
+SMNT-221N-1716E	2871	124.1	171.8	24.8	10.8	2.287	59.6	52.4	1.137
+SMNT-221N-1716E	3268	121.5	231.0	27.1	12.7	2.136	68.0	59.7	1.140
+SMNT-221N-1716E	3664	121.6	328.2	32.3	14.9	2.171	78.4	71.4	1.098
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Unnamed Seamount -- Predicted satellite bathymetry (676)		SMNT-131N-1742W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-131N-1742W.std.180m.ss.map.jpg	180	693	773	676
+Unnamed Seamount -- Predicted satellite bathymetry (677)		SMNT-133N-1756E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-133N-1756E.std.180m.ss.map.jpg	180	797	877	677
+Unnamed Seamount -- Predicted satellite bathymetry (678)		SMNT-133N-1790E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-133N-1790E.std.180m.ss.map.jpg	180	693	773	678
+Vityaz Seamount -- Predicted satellite bathymetry	SMNT-135N-1734W	SMNT-135N-1734W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-135N-1734W.std.180m.ss.map.jpg	180	693	773	679
+Unnamed Seamount -- Predicted satellite bathymetry (680)		SMNT-135N-1793W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-135N-1793W.std.180m.ss.map.jpg	180	693	773	680
+Unnamed Seamount -- Predicted satellite bathymetry (681)		SMNT-138N-1720W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-138N-1720W.std.180m.ss.map.jpg	180	693	773	681
+Unnamed Seamount -- Predicted satellite bathymetry (682)		SMNT-139N-1737E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-139N-1737E.std.180m.ss.map.jpg	180	693	773	682
+Unnamed Seamount -- Predicted satellite bathymetry (683)		SMNT-140N-1678W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-140N-1678W.std.180m.ss.map.jpg	180	693	773	683
+Unnamed Seamount -- Predicted satellite bathymetry (684)		SMNT-140N-1705W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-140N-1705W.std.180m.ss.map.jpg	180	693	773	684
+Unnamed Seamount -- Predicted satellite bathymetry (685)		SMNT-141N-1697W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-141N-1697W.std.180m.ss.map.jpg	180	849	929	685
+Unnamed Seamount -- Predicted satellite bathymetry (686)		SMNT-141N-1722E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-141N-1722E.std.180m.ss.map.jpg	180	693	773	686
+Unnamed Seamount -- Predicted satellite bathymetry (687)		SMNT-145N-1735W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-145N-1735W.std.180m.ss.map.jpg	180	797	877	687
+Unnamed Seamount -- Predicted satellite bathymetry (688)		SMNT-146N-1797E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-146N-1797E.std.180m.ss.map.jpg	180	693	773	688
+Unnamed Seamount -- Predicted satellite bathymetry (689)		SMNT-148N-1741W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-148N-1741W.std.180m.ss.map.jpg	180	797	877	689
+Unnamed Seamount -- Predicted satellite bathymetry (690)		SMNT-149N-1723W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-149N-1723W.std.180m.ss.map.jpg	180	693	773	690
+Unnamed Seamount -- Predicted satellite bathymetry (691)		SMNT-150N-1732W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-150N-1732W.std.180m.ss.map.jpg	180	693	773	691
+Unnamed Seamount -- Predicted satellite bathymetry (692)		SMNT-151N-1710W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-151N-1710W.std.180m.ss.map.jpg	180	849	929	692
+Unnamed Seamount -- Predicted satellite bathymetry (693)		SMNT-153N-1683W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-153N-1683W.std.180m.ss.map.jpg	180	693	773	693
+Unnamed Seamount -- Predicted satellite bathymetry (694)		SMNT-154N-1721W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-154N-1721W.std.180m.ss.map.jpg	180	693	773	694
+Unnamed Seamount -- Predicted satellite bathymetry (695)		SMNT-156N-1772W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-156N-1772W.std.180m.ss.map.jpg	180	693	773	695
+Unnamed Seamount -- Predicted satellite bathymetry (696)		SMNT-157N-1693W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-157N-1693W.std.180m.ss.map.jpg	180	1056	1136	696
+Unnamed Seamount -- Predicted satellite bathymetry (697)		SMNT-157N-1712W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-157N-1712W.std.180m.ss.map.jpg	180	693	773	697
+Unnamed Seamount -- Predicted satellite bathymetry (698)		SMNT-157N-1746W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-157N-1746W.std.180m.ss.map.jpg	180	693	773	698
+Unnamed Seamount -- Predicted satellite bathymetry (699)		SMNT-158N-1728E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-158N-1728E.std.180m.ss.map.jpg	180	693	773	699
+Unnamed Seamount -- Predicted satellite bathymetry (700)		SMNT-159N-1771W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-159N-1771W.std.180m.ss.map.jpg	180	589	670	700
+Emmons Seamount -- Predicted satellite bathymetry	SMNT-160N-1669W	SMNT-160N-1669W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-160N-1669W.std.180m.ss.map.jpg	180	693	773	701
+Unnamed Seamount -- Predicted satellite bathymetry (702)		SMNT-160N-1726E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-160N-1726E.std.180m.ss.map.jpg	180	693	773	702
+Unnamed Seamount -- Predicted satellite bathymetry (703)		SMNT-162N-1751W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-162N-1751W.std.180m.ss.map.jpg	180	693	773	703
+Unnamed Seamount -- Predicted satellite bathymetry (704)		SMNT-164N-1723E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-164N-1723E.std.180m.ss.map.jpg	180	693	773	704
+Unnamed Seamount -- Predicted satellite bathymetry (705)		SMNT-165N-1755W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-165N-1755W.std.180m.ss.map.jpg	180	693	773	705
+Cape Johnson Guyot -- Predicted satellite bathymetry	SMNT-171N-1773W	SMNT-171N-1773W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-171N-1773W.std.180m.ss.map.jpg	180	797	877	706
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (707)		SMNT-177N-1698E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-177N-1698E.std.180m.mg.map.jpg	180	693	773	707
+Unnamed Seamount -- Multibeam bathymetry (708)		SMNT-177N-1698E	Regional	Multibeam bathymetry	Map:Grid	SMNT-177N-1698E.std.180m.mb.map.jpg	180	952	1033	708
+Unnamed Seamount -- Predicted satellite bathymetry (709)		SMNT-177N-1698E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-177N-1698E.std.180m.ss.map.jpg	180	693	773	709
+Unnamed Seamount -- Residual bathymetry (710)		SMNT-177N-1698E	Regional	Residual bathymetry	Map:Grid	SMNT-177N-1698E.std.180m.rs.map.jpg	180	693	772	710
+Karin Seamount -- Predicted satellite bathymetry	SMNT-178N-1688E	SMNT-178N-1688E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-178N-1688E.std.180m.ss.map.jpg	180	693	773	711
+Harvey Guyot -- Predicted satellite bathymetry	SMNT-178N-1726E	SMNT-178N-1726E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-178N-1726E.std.180m.ss.map.jpg	180	745	825	712
+Hess Guyot -- Predicted satellite bathymetry	SMNT-178N-1744W	SMNT-178N-1744W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-178N-1744W.std.180m.ss.map.jpg	180	693	773	713
+Unnamed Seamount -- Predicted satellite bathymetry (714)		SMNT-179N-1765W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-179N-1765W.std.180m.ss.map.jpg	180	797	877	714
+Renard Seamount -- Predicted satellite bathymetry	SMNT-180N-1760E	SMNT-180N-1760E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-180N-1760E.std.180m.ss.map.jpg	180	693	773	716
+Unnamed Seamount -- Predicted satellite bathymetry (717)		SMNT-181N-1736E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-181N-1736E.std.180m.ss.map.jpg	180	693	773	717
+Unnamed Seamount -- Predicted satellite bathymetry (718)		SMNT-182N-1718W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-182N-1718W.std.180m.ss.map.jpg	180	693	773	718
+Allen Guyot -- Predicted satellite bathymetry	SMNT-183N-1741E	SMNT-183N-1741E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-183N-1741E.std.180m.ss.map.jpg	180	693	773	719
+Unnamed Seamount -- Predicted satellite bathymetry (720)		SMNT-183N-1783W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-183N-1783W.std.180m.ss.map.jpg	180	952	1033	720
+SIO Guyot -- Predicted satellite bathymetry	SMNT-184N-1713E	SMNT-184N-1713E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-184N-1713E.std.180m.ss.map.jpg	180	1471	1551	721
+Unnamed Seamount -- Predicted satellite bathymetry (722)		SMNT-185N-1764W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-185N-1764W.std.180m.ss.map.jpg	180	693	773	722
+Unnamed Seamount -- Predicted satellite bathymetry (723)		SMNT-185N-1780E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-185N-1780E.std.180m.ss.map.jpg	180	693	773	723
+Allison Guyot -- Predicted satellite bathymetry	SMNT-185N-1796W	SMNT-185N-1796W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-185N-1796W.std.180m.ss.map.jpg	180	1212	1292	724
+Unnamed Seamount -- Predicted satellite bathymetry (725)		SMNT-186N-1750W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-186N-1750W.std.180m.ss.map.jpg	180	849	929	725
+Unnamed Seamount -- Predicted satellite bathymetry (726)		SMNT-191N-1712E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-191N-1712E.std.180m.ss.map.jpg	180	693	773	726
+Lacroix Guyot -- Predicted satellite bathymetry	SMNT-191N-1734W	SMNT-191N-1734W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-191N-1734W.std.180m.ss.map.jpg	180	1056	1136	727
+Unnamed Seamount -- Predicted satellite bathymetry (728)		SMNT-192N-1649E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-192N-1649E.std.180m.ss.map.jpg	180	1264	1344	728
+Hig Guyot -- Predicted satellite bathymetry	SMNT-192N-1733E	SMNT-192N-1733E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-192N-1733E.std.180m.ss.map.jpg	180	745	825	729
+Shepard Guyot -- Predicted satellite bathymetry	SMNT-192N-1798W	SMNT-192N-1798W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-192N-1798W.std.180m.ss.map.jpg	180	693	773	730
+Horizon Guyot -- Predicted satellite bathymetry	SMNT-193N-1690W	SMNT-193N-1690W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-193N-1690W.std.180m.ss.map.jpg	180	1730	1810	731
+Jacqueline Guyot -- Predicted satellite bathymetry	SMNT-193N-1767E	SMNT-193N-1767E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-193N-1767E.std.180m.ss.map.jpg	180	693	773	732
+Revelle Guyot -- Predicted satellite bathymetry	SMNT-195N-1795E	SMNT-195N-1795E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-195N-1795E.std.180m.ss.map.jpg	180	693	773	734
+Unnamed Seamount -- Predicted satellite bathymetry (735)		SMNT-197N-1720E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-197N-1720E.std.180m.ss.map.jpg	180	797	877	735
+Stetson Guyot -- Predicted satellite bathymetry	SMNT-197N-1761E	SMNT-197N-1761E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-197N-1761E.std.180m.ss.map.jpg	180	797	877	736
+Unnamed Seamount -- Predicted satellite bathymetry (737)		SMNT-200N-1715W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-200N-1715W.std.180m.ss.map.jpg	180	797	877	737
+Hamilton Guyot -- Predicted satellite bathymetry	SMNT-200N-1772E	SMNT-200N-1772E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-200N-1772E.std.180m.ss.map.jpg	180	693	773	738
+Unnamed Seamount -- Predicted satellite bathymetry (739)		SMNT-200N-1779E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-200N-1779E.std.180m.ss.map.jpg	180	693	773	739
+Unnamed Seamount -- Predicted satellite bathymetry (740)		SMNT-201N-1706W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-201N-1706W.std.180m.ss.map.jpg	180	589	670	740
+Unnamed Seamount -- Predicted satellite bathymetry (741)		SMNT-202N-1790E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-202N-1790E.std.180m.ss.map.jpg	180	797	877	741
+Unnamed Seamount -- Predicted satellite bathymetry (742)		SMNT-203N-1698W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-203N-1698W.std.180m.ss.map.jpg	180	952	1033	742
+Ewing Seamount -- Predicted satellite bathymetry	SMNT-203N-1742E	SMNT-203N-1742E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-203N-1742E.std.180m.ss.map.jpg	180	693	773	743
+Unnamed Seamount -- Predicted satellite bathymetry (744)		SMNT-206N-1799W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-206N-1799W.std.180m.ss.map.jpg	180	693	773	744
+Unnamed Seamount -- Predicted satellite bathymetry (745)		SMNT-207N-1707W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-207N-1707W.std.180m.ss.map.jpg	180	745	825	745
+Menard Guyot -- Predicted satellite bathymetry	SMNT-208N-1734E	SMNT-208N-1734E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-208N-1734E.std.180m.ss.map.jpg	180	693	773	746
+Unnamed Seamount -- Predicted satellite bathymetry (747)		SMNT-210N-1773E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-210N-1773E.std.180m.ss.map.jpg	180	849	929	747
+Unnamed Seamount -- Predicted satellite bathymetry (749)		SMNT-211N-1784E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-211N-1784E.std.180m.ss.map.jpg	180	693	773	749
+Heezen Seamount -- Predicted satellite bathymetry	SMNT-212N-1738E	SMNT-212N-1738E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-212N-1738E.std.180m.ss.map.jpg	180	901	981	750
+Resolution Guyot -- Predicted satellite bathymetry	SMNT-213N-1743E	SMNT-213N-1743E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-213N-1743E.std.180m.ss.map.jpg	180	797	877	751
+Unnamed Seamount -- Predicted satellite bathymetry (752)		SMNT-217N-1764E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-217N-1764E.std.180m.ss.map.jpg	180	797	877	752
+Unnamed Seamount -- Predicted satellite bathymetry (753)		SMNT-219N-1755E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-219N-1755E.std.180m.ss.map.jpg	180	693	773	753
+Unnamed Seamount -- Predicted satellite bathymetry (754)		SMNT-220N-1756E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-220N-1756E.std.180m.ss.map.jpg	180	693	773	754
+Darwin Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-221N-1716E	SMNT-221N-1716E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-221N-1716E.std.180m.mg.map.jpg	180	693	773	755
+Darwin Guyot -- Multibeam bathymetry	SMNT-221N-1716E	SMNT-221N-1716E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-221N-1716E.std.180m.mb.map.jpg	180	952	1033	756
+Darwin Guyot -- Predicted satellite bathymetry	SMNT-221N-1716E	SMNT-221N-1716E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-221N-1716E.std.180m.ss.map.jpg	180	693	773	757
+Darwin Guyot -- Residual bathymetry	SMNT-221N-1716E	SMNT-221N-1716E	Seamount	Residual bathymetry	Map:Grid	SMNT-221N-1716E.std.180m.rs.map.jpg	180	693	772	758
+Unnamed Seamount -- Predicted satellite bathymetry (759)		SMNT-221N-1781E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-221N-1781E.std.180m.ss.map.jpg	180	797	877	759
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (760)		SMNT-223N-1688E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-223N-1688E.std.180m.mg.map.jpg	180	849	929	760
+Unnamed Seamount -- Multibeam bathymetry (761)		SMNT-223N-1688E	Regional	Multibeam bathymetry	Map:Grid	SMNT-223N-1688E.std.180m.mb.map.jpg	180	1186	1266	761
+Unnamed Seamount -- Predicted satellite bathymetry (762)		SMNT-223N-1688E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-223N-1688E.std.180m.ss.map.jpg	180	849	929	762
+Unnamed Seamount -- Residual bathymetry (763)		SMNT-223N-1688E	Regional	Residual bathymetry	Map:Grid	SMNT-223N-1688E.std.180m.rs.map.jpg	180	848	928	763
+Unnamed Seamount -- Predicted satellite bathymetry (764)		SMNT-224N-1615E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-224N-1615E.std.180m.ss.map.jpg	180	952	1033	764
+Unnamed Seamount -- Predicted satellite bathymetry (767)		SMNT-226N-1609E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-226N-1609E.std.180m.ss.map.jpg	180	693	773	767
+Unnamed Seamount -- Predicted satellite bathymetry (770)		SMNT-230N-1756E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-230N-1756E.std.180m.ss.map.jpg	180	797	877	770
+Unnamed Seamount -- Predicted satellite bathymetry (771)		SMNT-236N-1573E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-236N-1573E.std.180m.ss.map.jpg	180	1212	1292	771
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2165	SMNT-221N-1716E	Harrison, C.G., Jarrard, A.R.D., Vacquier, V. and Larson, R.L. (1975). Palaeomagnetim of Cretaceous Pacific seamounts. Geophysical Journal of the Royal Astronomical Society 42: 859-882.	https://earthref.org/ERR/2165/
+2177	SMNT-221N-1716E	Hildebrand, J.A. and Parker, R.L. (1987). Paleomagnetism of the Cretaceous Pacific Seamount revisited. Journal of Geophysical Research 92: 12,695-12,712.	https://earthref.org/ERR/2177/
+2246	SMNT-193N-1690W	Lonsdale, P., Normark, W.R. and Newman, W.A. (1972). Sedimentation and erosion on Horizon Guyot. Geological Society of America, Bulletin 83: 289-316.	https://earthref.org/ERR/2246/
+2251	SMNT-192N-1798W:SMNT-193N-1767E:SMNT-208N-1734E	Matthews, J.L., Heezen, B.C., Catalano, R., Coogan, A., Tharp, M., Natland, J. and Rawson, M. (1974). Cretaceous drowning of reefs on Mid-Pacific and Japanese Guyots. Science 4135: 462-464.	https://earthref.org/ERR/2251/
+2294	SMNT-193N-1690W	Premoli-Silva, I. and Brusa, C. (1981). Shallow-water skeletal debris and larger foraminifers from Deep Sea Drilling Project Site 462, Nauru Basin, western equatorial Pacific. 61: 439-473.	https://earthref.org/ERR/2294/
+2709	SMNT-193N-1690W	Natland, J.H. (1976). Possible volcanologic explanations for the origin of flat-topped seamounts and ridges in the Line Islands and Mid-Pacific Mountains. Initial Reports of the Deep Sea Drilling Project 33: 779-787.	https://earthref.org/ERR/2709/

@@ -16,3 +16,4 @@ api:
     - karar.yaml
     - erda.yaml
     - osu-mgr.yaml
+    - sc.yaml

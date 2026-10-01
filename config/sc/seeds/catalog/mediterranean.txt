@@ -1,0 +1,11 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Mediterranean (1 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	lat	lon	region	height	sc_id
+SMNT-337N-0327E	Eratosthenes Seamount	Seamount	33.66667	32.66667	Mediterranean	0	719
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Eratosthenes Seamount -- Predicted satellite bathymetry	SMNT-337N-0327E	SMNT-337N-0327E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-337N-0327E.std.180m.ss.map.jpg	180	1212	1292	2517
