@@ -82,10 +82,15 @@ export const toMapPoint = (
     const [south, north] = [toLat(latS), toLat(latN)];
     let [west, east] = [toLon(lonW), toLon(lonE)];
     if (![south, north, west, east].some(Number.isNaN) && (south !== north || west !== east)) {
-      // A box whose west is east of its east crosses the antimeridian.
-      if (west > east) east += 360;
-      // MapLibre can't draw areas past Web Mercator's limit. Boxes of any
-      // other size are drawn, so that a typo in a coordinate shows as a huge box.
+      // Two longitudes bound two boxes, one each way round the globe: draw
+      // the narrower, so a box with its west and east swapped isn't drawn
+      // round the rest of the world. A box spanning every longitude stays.
+      if (east - west < 360) {
+        const span = (((east - west) % 360) + 360) % 360;
+        if (span > 180) [west, east] = [east, west];
+        if (west > east) east += 360;
+      }
+      // MapLibre can't draw areas past Web Mercator's limit.
       if (Math.max(-south, north) < MERCATOR_LAT && south <= north) {
         const lon = (west + east) / 2;
         return {
