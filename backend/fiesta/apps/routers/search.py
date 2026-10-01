@@ -11,7 +11,7 @@ from opensearchpy.exceptions import NotFoundError, TransportError
 from fiesta.apps.deps import NodeDep, SessionDep
 from fiesta.apps.schemas import MapPoints, SearchPage, SearchValues
 from fiesta.db.models import Contribution
-from fiesta.nodeconfig import BOX_COLUMNS, MapColor
+from fiesta.nodeconfig import MapColor
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import filter_clause, level_columns, sort_clauses
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
@@ -352,8 +352,8 @@ def _map_points(
 ) -> list[dict]:
     """A doc's positions for the map: its `_geo_point` (a contribution's are
     all of its rows', and only those inside `bbox` are drawn) and, without a
-    `bbox` (an area on Earth), its `_body_point`s with their `body`; the row's
-    box when it has one, what to call it, and its `color` value."""
+    `bbox` (an area on Earth), its `_body_point`s with their `body`; what to
+    call it, and its `color` value."""
     summary = source.get("summary") or {}
     geo = (summary.get("_all") or {}).get("_geo_point") or []
     elsewhere = (summary.get("_all") or {}).get("_body_point") or []
@@ -363,9 +363,6 @@ def _map_points(
     name = row.get(table.removesuffix("s")) if table != "contribution" else None
     if name not in (None, ""):
         base["name"] = str(name[0] if isinstance(name, list) else name)
-    box = [_to_float(row.get(c)) for c in BOX_COLUMNS]
-    if all(v is not None for v in box):
-        base["bounds"] = box
     if color is not None and (value := _color_value(source, table, color)) is not None:
         base["value"] = value
     points = []
@@ -379,13 +376,6 @@ def _map_points(
             if lat is not None and lon is not None and entry.get("body"):
                 points.append({**base, "lat": lat, "lon": lon, "body": entry["body"]})
     return points
-
-
-def _has_boxes(node, table: str) -> bool:
-    """Whether a table's rows can be boxes (lat_s/lat_n/lon_w/lon_e), which
-    the map draws per record."""
-    columns = node.load_data_model(node.data_model.latest)["tables"].get(table, {})
-    return all(c in columns.get("columns", {}) for c in BOX_COLUMNS)
 
 
 def _location_point(bucket: dict) -> dict | None:
@@ -465,7 +455,7 @@ async def search_points(
 ) -> MapPoints:
     """Every positioned doc matching a search, for the search page's map; past
     MAP_DOCS_LIMIT matches at a level of single points (not the contribution
-    level, not boxes, not one contribution's modal), their unique locations
+    level, not areas, not one contribution's modal), their unique locations
     with a `count` each instead. `color_by` (a node `map_colors` field) adds
     each point's `value`: the doc's number, or a location's records' mean."""
     if table not in node.geo_tables:
@@ -489,13 +479,12 @@ async def search_points(
         BODY_FIELD,
         "summary.contribution.id",
         f"summary.{table}.{table.removesuffix('s')}",
-        *(f"summary.{table}.{c}" for c in BOX_COLUMNS),
     ]
     if color is not None:
         body["_source"].append(color.path(table))
         if color.unit_column:
             body["_source"].append(f"summary.{table}.{color.unit_column}")
-    if contribution is None and table != "contribution" and not _has_boxes(node, table):
+    if contribution is None and table != "contribution" and table not in node.area_tables:
         client = get_opensearch()
         try:
             count = await client.count(index=node.search_index, body={"query": body["query"]})

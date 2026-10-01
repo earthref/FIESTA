@@ -1173,10 +1173,21 @@ def test_rows_without_coordinates_take_their_ancestors_position(magic_node):
     parsed = ParsedContribution(
         tables={
             "locations": [
-                {"location": "L", "lat_s": "10", "lat_n": "12", "lon_w": "359", "lon_e": "1"}
+                {"location": "L", "lat_s": "10", "lat_n": "12", "lon_w": "359", "lon_e": "1"},
+                {"location": "Box", "lat_s": "10", "lat_n": "12", "lon_w": "359", "lon_e": "1"},
+                {"location": "Swapped", "lat_s": "0", "lat_n": "2"}
+                | {"lon_w": "-110", "lon_e": "-120"},
+                {"location": "Dot", "lat_s": "5", "lat_n": "5", "lon_w": "200", "lon_e": "-160"},
             ],
-            "sites": [{"site": "S", "location": "L", "lat": "11", "lon": "0.5"}],
-            "samples": [{"sample": "A", "site": "S"}, {"sample": "B", "site": "unknown"}],
+            "sites": [
+                {"site": "S", "location": "L", "lat": "11", "lon": "0.5"},
+                {"site": "T", "location": "L", "lat": "13", "lon": "2"},
+            ],
+            "samples": [
+                {"sample": "A", "site": "S"},
+                {"sample": "B", "site": "unknown"},
+                {"sample": "C", "site": "T", "lat": "13.5", "lon": "2"},
+            ],
             "specimens": [{"specimen": "a1", "sample": "A"}],
         }
     )
@@ -1188,17 +1199,35 @@ def test_rows_without_coordinates_take_their_ancestors_position(magic_node):
         for d in docs
         if d["type"] != "contribution"
     }
-    # A box's position is its middle, across the antimeridian.
-    assert geo[("locations", "L")] == {"lat": 11.0, "lon": 0.0}
+    def ordered(points):
+        return sorted(points, key=lambda p: (p["lat"], p["lon"]))
+
+    # A location is where its sites and their samples are, not its box.
+    assert ordered(geo[("locations", "L")]) == [
+        {"lat": 11.0, "lon": 0.5},
+        {"lat": 13.0, "lon": 2.0},
+        {"lat": 13.5, "lon": 2.0},
+    ]
+    # A site, not an area, is only where it is.
+    assert geo[("sites", "T")] == {"lat": 13.0, "lon": 2.0}
+    # Without them, a box's middle: the narrower way round, across the
+    # antimeridian or with its corners swapped; a box that is a point is one.
+    assert geo[("locations", "Box")] == {"lat": 11.0, "lon": 0.0}
+    assert geo[("locations", "Swapped")] == {"lat": 1.0, "lon": -115.0}
+    assert geo[("locations", "Dot")] == {"lat": 5.0, "lon": -160.0}
     assert geo[("samples", "A")] == {"lat": 11.0, "lon": 0.5}
     assert geo[("specimens", "a1")] == {"lat": 11.0, "lon": 0.5}
     # An unknown parent inherits nothing.
     assert geo[("samples", "B")] is None
     contribution = next(d for d in docs if d["type"] == "contribution")
-    # The contribution carries each distinct own position once.
-    assert contribution["summary"]["_all"]["_geo_point"] == [
+    # The contribution carries each distinct position once.
+    assert ordered(contribution["summary"]["_all"]["_geo_point"]) == [
+        {"lat": 1.0, "lon": -115.0},
+        {"lat": 5.0, "lon": -160.0},
         {"lat": 11.0, "lon": 0.0},
         {"lat": 11.0, "lon": 0.5},
+        {"lat": 13.0, "lon": 2.0},
+        {"lat": 13.5, "lon": 2.0},
     ]
 
 
@@ -1223,10 +1252,14 @@ def test_map_points_from_a_search_doc():
                 "lon_w": "350",
                 "lon_e": "10",
             },
-            "_all": {"_geo_point": {"lat": 1, "lon": -10}},
+            "_all": {"_geo_point": [{"lat": 1, "lon": -10}, {"lat": 2, "lon": 5}]},
         }
     }
-    assert _map_points(location, "locations")[0]["bounds"] == [350.0, 1.0, 10.0, 2.0]
+    # An area is its points (its sites'), never its box.
+    assert _map_points(location, "locations") == [
+        {"id": 8, "lat": 1.0, "lon": -10.0, "name": "L"},
+        {"id": 8, "lat": 2.0, "lon": 5.0, "name": "L"},
+    ]
     assert _map_points({"summary": {"_all": {}}}, "sites") == []
     # A contribution's points; with an area, only those inside it (across 180°).
     contribution = {
@@ -1411,8 +1444,7 @@ def test_large_maps_are_unique_locations(magic_node, monkeypatch):
 
     from fiesta.apps.routers import search as router
 
-    assert router._has_boxes(magic_node, "locations")
-    assert not router._has_boxes(magic_node, "sites")
+    assert magic_node.area_tables == {"locations"}
 
     pages = [
         [

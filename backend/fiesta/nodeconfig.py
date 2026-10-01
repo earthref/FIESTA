@@ -582,6 +582,18 @@ class NodeConfig(BaseModel):
                 geo.add(table)
         return geo | {"contribution"} if geo else geo
 
+    @property
+    def area_tables(self) -> set[str]:
+        """Hierarchy tables whose rows are areas (a lat_s/lat_n/lon_w/lon_e box
+        in the latest data model): the summarizer maps each at the positions
+        of the rows below it, so its docs are many points, never aggregated."""
+        tables = self.load_data_model(self.data_model.latest)["tables"]
+        return {
+            table
+            for table in self.hierarchy
+            if all(c in tables.get(table, {}).get("columns", {}) for c in BOX_COLUMNS)
+        }
+
     def map_color_tables(self, color: MapColor) -> list[str]:
         """The search levels' tables whose map `color` can color: levels with
         positions, those it names, and for a column those whose table has it."""
