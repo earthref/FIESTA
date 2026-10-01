@@ -240,7 +240,7 @@ table.
 ```json
 MapPoints = {
   "total": 410,
-  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "bounds": [west, south, east, north]?, "count": 12?, "value": 1.5e6?, "body": "moon"?}],
+  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "count": 12?, "value": 1.5e6?, "body": "moon"?}],
   "truncated": false
 }
 ```
@@ -248,15 +248,16 @@ MapPoints = {
 `points` is every match with a `summary._all._geo_point` or `_body_point`, up
 to 50,000 (`truncated` past that), for the search page's Map tab: `id` is the
 contribution, `name` the row's own key column (`sites` → `site`; absent at the
-contribution level), `bounds` the row's `lon_w`/`lat_s`/`lon_e`/`lat_n` when it
-has all four, `body` the planetary body a point on another one is on (`moon`,
-`mars`; absent on Earth). A contribution doc gives a point per position it
-carries (only those inside `bbox`, when one is given: a `bbox` is on Earth, so
-it leaves out the points on other bodies). `{table}` must be a level whose
+contribution level), `body` the planetary body a point on another one is on
+(`moon`, `mars`; absent on Earth). A doc with several positions (a
+contribution; an area such as a location, mapped at its sites' and samples'
+positions rather than drawn as its box) gives a point per position it carries
+(only those inside `bbox`, when one is given: a `bbox` is on Earth, so it
+leaves out the points on other bodies). `{table}` must be a level whose
 `geo` is true, otherwise 404.
 
 Past 10,000 matches at a level of single points (not the contribution level,
-not a level with boxes, not scoped to one `contribution`), `points` are the
+not an area level, not scoped to one `contribution`), `points` are the
 matches' unique locations instead: a composite aggregation of ~2.4 m geotiles
 (zoom 24) by contribution, each point at its records' centroid (to 5 decimals)
 with their `count` and no `name`; `total` is still the matching records and
@@ -286,13 +287,18 @@ docs (the `rock-mag` plugin's Rock Magnetism view). A field must be a path
 under `summary` at least three deep, and no part of it may start with
 `_private` (422 otherwise). Visibility is the same as the search's.
 
-Positions (`summary._all._geo_point`): a row's own `lat`/`lon`, or the middle
-of its `lat_s`/`lat_n`/`lon_w`/`lon_e` box; a row with neither takes its
-nearest ancestor's, found by that level's key column (a specimen's `sample`),
-so a geospatial filter narrows every level. A level is `geo` when its table has
-coordinate columns or such a key column. The contribution doc carries every
-distinct own position of its rows (up to 500), so it matches an area that holds
-any of them. A row on another planetary body — one whose column named by the
+Positions (`summary._all._geo_point`, one `{lat, lon}` or a list): a record's
+rows' own `lat`/`lon` (a box that is a single point counts as one). A record of
+an area level (a table with `lat_s`/`lat_n`/`lon_w`/`lon_e`, e.g. MagIC
+locations) also carries every distinct position of the rows below it that name
+it (its sites' and samples', up to 500), and is mapped at those rather than
+drawn as its box. A record with none of these takes the middle of its box (the
+narrower of the two its longitudes bound, so swapped corners stay put), or else
+its nearest ancestor's position, found by that level's key column (a
+specimen's `sample`), so a geospatial filter narrows every level. A level is
+`geo` when its table has coordinate columns or such a key column. The
+contribution doc carries every distinct position of its records (up to 500),
+so it matches an area that holds any of them. A row on another planetary body — one whose column named by the
 node YAML's `search.bodies` (MagIC and KArAr: `location_type`) has a value it
 maps to a body (`Lunar` → `moon`, `Martian` → `mars`), and every row below it —
 has its position as `summary._all._body_point` (`{lat, lon, body}`; a list on

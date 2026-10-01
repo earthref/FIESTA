@@ -120,7 +120,6 @@ class MapPoint(BaseModel):
     name: str | None = None  # the level row's key column
     lat: float
     lon: float
-    bounds: list[float] | None = None  # [west, south, east, north]
     count: int | None = None  # records at this location (the aggregated map)
     value: float | None = None  # its `color_by` number (a location's records' mean)
     body: str | None = None  # another planetary body it is on ("moon", "mars"); None: Earth

@@ -163,6 +163,16 @@ Last updated: 2026-09-24
   levels without coordinates (specimens, measurements, ...) and matches a
   contribution by its first position only.
 
+## 2026-09-30 — Locations mapped at their sites, no boxes
+
+- [ ] **Rebuild MagIC's and OSU-MGR's search indexes once this is deployed**
+  (`fiesta rebuild --yes`, dev and production; the dev rebuild below covers
+  it if it runs after this deploy). A location (or cruise) doc's `_geo_point`
+  becomes its sites' and samples' (cores', dives') positions, and the maps no
+  longer draw boxes. Until the rebuild, a location is a single point at its
+  box's centre, which is on the far side of the world when its `lon_w` and
+  `lon_e` are swapped.
+
 ## 2026-09-30 — Lunar and Martian globes
 
 - [ ] **Rebuild the dev search indexes** (`make fiesta ENV_FILE=.env.prod

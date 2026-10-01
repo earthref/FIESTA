@@ -121,10 +121,7 @@ const polarConstrain = (lngLat: maplibregl.LngLat, zoom: number) => {
 const MAX_FLAT_CENTER_LAT = 70;
 // Hit tolerance around the pointer, in pixels.
 const HIT_PX = 4;
-const HIT_LAYERS = ["points", "boxes"];
-// A record's box replaces its marker once both its sides are this long on
-// screen (the marker's width); smaller, the marker shows where it is.
-const BOX_MIN_PX = 8;
+const HIT_LAYERS = ["points"];
 // MapLibre's GeoJSON tiles are Web Mercator, which moves points past ±85.05°
 // to its edge. On the globe those are HTML markers instead, styled like the
 // circles; the flat map has nowhere else to put them.
@@ -213,28 +210,20 @@ const FIT_MAX_ZOOM = 6;
 const FIT_CLOSE_ZOOM = 15;
 const fitZoom = (full: number, quarter: number, spread: boolean) =>
   Math.min(full, spread ? Math.max(FIT_MAX_ZOOM, Math.min(quarter, FIT_CLOSE_ZOOM)) : FIT_MAX_ZOOM);
-// The points' extent, boxes included, with longitudes taken near their
-// centre of mass so that it can cross the antimeridian.
+// The points' extent, with longitudes taken near their centre of mass so
+// that it can cross the antimeridian.
 const pointsExtent = (points: MapPoint[]): [[number, number], [number, number]] | null => {
   const centroid = sphericalCentroid(points);
   if (!centroid) return null;
   let [west, south, east, north] = [Infinity, Infinity, -Infinity, -Infinity];
-  points.forEach((p) => {
-    const corners = p.bounds
-      ? [
-          [p.bounds[0], p.bounds[1]],
-          [p.bounds[2], p.bounds[3]],
-        ]
-      : [[p.lon, p.lat]];
-    corners.forEach(([lon, lat]) => {
-      const near = unwrapLon(lon, centroid[0]);
-      [west, south, east, north] = [
-        Math.min(west, near),
-        Math.min(south, lat),
-        Math.max(east, near),
-        Math.max(north, lat),
-      ];
-    });
+  points.forEach(({ lon, lat }) => {
+    const near = unwrapLon(lon, centroid[0]);
+    [west, south, east, north] = [
+      Math.min(west, near),
+      Math.min(south, lat),
+      Math.max(east, near),
+      Math.max(north, lat),
+    ];
   });
   return [
     [west, south],
@@ -243,7 +232,7 @@ const pointsExtent = (points: MapPoint[]): [[number, number], [number, number]] 
 };
 
 // On the globe, the camera centred on the points' centre of mass that fits
-// them, boxes included. MapLibre's cameraForBounds works in Web Mercator, which
+// them. MapLibre's cameraForBounds works in Web Mercator, which
 // leaves out points past ±85°; this places them as seen straight down on the
 // globe (x across, y up, in globe radii), and sizes the globe so they fit.
 const globeFitCamera = (points: MapPoint[], width: number, height: number) => {
@@ -252,25 +241,15 @@ const globeFitCamera = (points: MapPoint[], width: number, height: number) => {
   const rad = Math.PI / 180;
   const [lon0, lat0] = [centroid[0], Math.max(Math.min(centroid[1], MERCATOR_LAT), -MERCATOR_LAT)];
   let [maxX, maxY, farSide] = [0, 0, false];
-  points.forEach((p) => {
-    const corners = p.bounds
-      ? [
-          [p.bounds[0], p.bounds[1]],
-          [p.bounds[2], p.bounds[1]],
-          [p.bounds[2], p.bounds[3]],
-          [p.bounds[0], p.bounds[3]],
-        ]
-      : [[p.lon, p.lat]];
-    corners.forEach(([lon, lat]) => {
-      const [dLon, phi, phi0] = [(lon - lon0) * rad, lat * rad, lat0 * rad];
-      if (Math.sin(phi0) * Math.sin(phi) + Math.cos(phi0) * Math.cos(phi) * Math.cos(dLon) < 0)
-        farSide = true;
-      maxX = Math.max(maxX, Math.abs(Math.cos(phi) * Math.sin(dLon)));
-      maxY = Math.max(
-        maxY,
-        Math.abs(Math.cos(phi0) * Math.sin(phi) - Math.sin(phi0) * Math.cos(phi) * Math.cos(dLon)),
-      );
-    });
+  points.forEach(({ lon, lat }) => {
+    const [dLon, phi, phi0] = [(lon - lon0) * rad, lat * rad, lat0 * rad];
+    if (Math.sin(phi0) * Math.sin(phi) + Math.cos(phi0) * Math.cos(phi) * Math.cos(dLon) < 0)
+      farSide = true;
+    maxX = Math.max(maxX, Math.abs(Math.cos(phi) * Math.sin(dLon)));
+    maxY = Math.max(
+      maxY,
+      Math.abs(Math.cos(phi0) * Math.sin(phi) - Math.sin(phi0) * Math.cos(phi) * Math.cos(dLon)),
+    );
   });
   // The zoom that fits the points in a box of that half-size: from the globe's
   // radius in pixels (the whole globe if points are on its far side), since
@@ -502,37 +481,15 @@ const collection = (features: GeoJSON.Feature[]): GeoJSON.FeatureCollection => (
   type: "FeatureCollection",
   features,
 });
-// Numbered, for the feature state that hides a marker inside its box.
-const pointFeature = (p: MapPoint, id: number): Feature => ({
+const pointFeature = (p: MapPoint): Feature => ({
   type: "Feature",
-  id,
   properties: { key: pointKey(p), color: p.color, name: p.name },
   geometry: { type: "Point", coordinates: [p.lon, p.lat] },
 });
-const boxFeature = (p: MapPoint): Feature => {
-  const [west, south, east, north] = p.bounds!;
-  return {
-    type: "Feature",
-    properties: { key: pointKey(p), color: p.color },
-    geometry: {
-      type: "Polygon",
-      coordinates: [
-        [
-          [west, south],
-          [east, south],
-          [east, north],
-          [west, north],
-          [west, south],
-        ],
-      ],
-    },
-  };
-};
 
 /**
  * Esri Ocean map of records' positions, on a globe, a Mercator map or a globe
- * over either pole. Records with start and end positions are drawn as boxes
- * around them as well. The view starts, and moves whenever the points change,
+ * over either pole. The view starts, and moves whenever the points change,
  * centred on the points (see focusCenter). Clicking a record opens it.
  */
 const MapLibreMap: FC<{
@@ -688,7 +645,6 @@ const MapLibreMap: FC<{
             },
           }),
           points: { type: "geojson", data: collection([]) },
-          boxes: { type: "geojson", data: collection([]) },
           area: { type: "geojson", data: collection([]) },
           context: { type: "geojson", data: collection([]) },
         },
@@ -732,18 +688,6 @@ const MapLibreMap: FC<{
             paint: { "line-color": areaColor(), "line-width": 2, "line-dasharray": [3, 2] },
           },
           {
-            id: "boxes",
-            type: "fill",
-            source: "boxes",
-            paint: { "fill-color": ["get", "color"], "fill-opacity": 0.3 },
-          },
-          {
-            id: "box-edges",
-            type: "line",
-            source: "boxes",
-            paint: { "line-color": "#ffffff", "line-width": 1 },
-          },
-          {
             id: "points",
             type: "circle",
             source: "points",
@@ -752,13 +696,6 @@ const MapLibreMap: FC<{
               "circle-color": ["get", "color"],
               "circle-stroke-color": "#ffffff",
               "circle-stroke-width": 1,
-              "circle-opacity": ["case", ["boolean", ["feature-state", "inBox"], false], 0, 1],
-              "circle-stroke-opacity": [
-                "case",
-                ["boolean", ["feature-state", "inBox"], false],
-                0,
-                1,
-              ],
             },
           },
         ],
@@ -941,19 +878,6 @@ const MapLibreMap: FC<{
     });
 
     const tooltip = createTooltip(tooltipRef.current);
-    // Records drawn with boxes (by their point feature's id), and whether the
-    // box is big enough on screen to stand in for the marker.
-    let boxed: { id: number; bounds: [number, number, number, number]; inBox: boolean }[] = [];
-    const showBoxes = () => {
-      boxed.forEach((box) => {
-        const [west, south, east, north] = box.bounds;
-        const [a, b] = [map.project([west, south]), map.project([east, north])];
-        const inBox = Math.min(Math.abs(b.x - a.x), Math.abs(b.y - a.y)) >= BOX_MIN_PX;
-        if (inBox === box.inBox) return;
-        box.inBox = inBox;
-        map.setFeatureState({ source: "points", id: box.id }, { inBox });
-      });
-    };
     let markers: maplibregl.Marker[] = [];
     // The map's mousemove sees the pointer over a marker as over no record.
     let overMarker = false;
@@ -963,14 +887,6 @@ const MapLibreMap: FC<{
       const plotted = globe ? points.filter((p) => !isPolar(p)) : points;
       (map.getSource("points") as maplibregl.GeoJSONSource).setData(
         collection(plotted.map(pointFeature)),
-      );
-      map.removeFeatureState({ source: "points" });
-      boxed = plotted.flatMap((p, id) =>
-        p.bounds ? [{ id, bounds: p.bounds, inBox: false }] : [],
-      );
-      showBoxes();
-      (map.getSource("boxes") as maplibregl.GeoJSONSource).setData(
-        collection(plotted.filter((p) => p.bounds).map(boxFeature)),
       );
       for (const marker of markers) marker.remove();
       markers = [];
@@ -1398,7 +1314,6 @@ const MapLibreMap: FC<{
       else tooltip.scheduleHide();
     });
     map.on("movestart", tooltip.hide);
-    map.on("moveend", showBoxes);
     // Several records at one spot are opened from the tooltip's links.
     map.on("click", (e) => {
       const members = hitTest(e);

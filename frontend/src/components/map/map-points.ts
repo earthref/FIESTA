@@ -1,4 +1,3 @@
-import { MERCATOR_LAT } from "./basemap";
 import { type Body, isBody } from "./bodies";
 
 // Records plotted on the maps, and their tooltips. Ported from the
@@ -13,9 +12,7 @@ export const MODES: [Mode, string][] = [
 ];
 
 // id: what clicking it opens (its contribution); name and label (its search
-// level, singular) head its tooltip. bounds: [west, south, east, north] of a
-// row's box, with east past 180 when the box crosses the antimeridian;
-// lat/lon is then the box's centre. count: on a large search's map, a point
+// level, singular) head its tooltip. count: on a large search's map, a point
 // is one location's records in one contribution, not a record. value: the
 // number it is colored by (a location's records' mean), and its text for the
 // tooltip (`valueText`). contribution: the record's contribution, when id
@@ -28,7 +25,6 @@ export type MapPoint = {
   color: string;
   lat: number;
   lon: number;
-  bounds?: [number, number, number, number];
   count?: number;
   value?: number;
   valueText?: string;
@@ -41,7 +37,6 @@ export type ApiMapPoint = {
   name?: string;
   lat: number;
   lon: number;
-  bounds?: [number, number, number, number];
   count?: number;
   value?: number;
   body?: string;
@@ -53,7 +48,7 @@ const toLon = (value: number) => {
   return Math.abs(lon) <= 180 ? lon : Number.NaN;
 };
 
-/** A search doc's position: its box's centre when the row has a box. A
+/** A search doc's position (one of them, for a doc with several). A
  * location's records are named by their number ("12 sites"; `plural`). */
 export const toMapPoint = (
   point: ApiMapPoint,
@@ -77,31 +72,6 @@ export const toMapPoint = (
     ...(point.value != null && { value: point.value }),
     ...(isBody(point.body) && point.body !== "earth" && { body: point.body }),
   };
-  if (point.bounds) {
-    const [lonW, latS, lonE, latN] = point.bounds;
-    const [south, north] = [toLat(latS), toLat(latN)];
-    let [west, east] = [toLon(lonW), toLon(lonE)];
-    if (![south, north, west, east].some(Number.isNaN) && (south !== north || west !== east)) {
-      // Two longitudes bound two boxes, one each way round the globe: draw
-      // the narrower, so a box with its west and east swapped isn't drawn
-      // round the rest of the world. A box spanning every longitude stays.
-      if (east - west < 360) {
-        const span = (((east - west) % 360) + 360) % 360;
-        if (span > 180) [west, east] = [east, west];
-        if (west > east) east += 360;
-      }
-      // MapLibre can't draw areas past Web Mercator's limit.
-      if (Math.max(-south, north) < MERCATOR_LAT && south <= north) {
-        const lon = (west + east) / 2;
-        return {
-          ...base,
-          lat: (south + north) / 2,
-          lon: lon > 180 ? lon - 360 : lon,
-          bounds: [west, south, east, north],
-        };
-      }
-    }
-  }
   const [lat, lon] = [toLat(point.lat), toLon(point.lon)];
   return Number.isNaN(lat) || Number.isNaN(lon) ? null : { ...base, lat, lon };
 };
@@ -166,7 +136,7 @@ export const markerTooltip = (members: MapPoint[]) => {
 };
 
 // Geospatial filter area: [west, south, east, north] in degrees, with east
-// past 180 when it crosses the antimeridian (as MapPoint bounds).
+// past 180 when it crosses the antimeridian.
 export type Area = [number, number, number, number];
 
 const formatLat = (lat: number) => `${Math.abs(lat).toFixed(2)}°${lat < 0 ? "S" : "N"}`;
@@ -203,18 +173,11 @@ export const WHOLE_GLOBE: Area = [-180, -90, 180, 90];
 // minimum), so the outermost points aren't on its edge.
 const AREA_MARGIN = 0.02;
 const AREA_MIN_MARGIN = 0.1;
-// The smallest area around the points (boxes included), with a margin. Its
-// longitudes leave out the widest gap between the points' longitudes, so
-// points either side of the antimeridian get an area across it.
+// The smallest area around the points, with a margin. Its longitudes leave
+// out the widest gap between the points' longitudes, so points either side
+// of the antimeridian get an area across it.
 export const areaAround = (points: MapPoint[]): Area | null => {
-  const corners = points.flatMap((p) =>
-    p.bounds
-      ? [
-          [p.bounds[0], p.bounds[1]],
-          [p.bounds[2], p.bounds[3]],
-        ]
-      : [[p.lon, p.lat]],
-  );
+  const corners = points.map((p) => [p.lon, p.lat]);
   if (!corners.length) return null;
   const lats = corners.map(([, lat]) => lat);
   const lons = [...new Set(corners.map(([lon]) => ((lon + 540) % 360) - 180))].sort(

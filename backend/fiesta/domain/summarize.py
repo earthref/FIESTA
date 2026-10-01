@@ -4,17 +4,20 @@ For a node with hierarchy [contribution, A, B, ...] this produces:
 
 - one `contribution` doc: the contribution row, per-level `_n_results`
   counts, and a cross-level `summary._all` union of facetable values and
-  every distinct `_geo_point` of its rows (capped), so a geospatial filter
+  every distinct `_geo_point` of its records (capped), so a geospatial filter
   matches it when any part of it is inside;
 - one doc per named record of each hierarchy level below `contribution` (as
   the legacy docs): a level's rows sharing a name (its key column, "site" for
   sites) are one doc, with the shared `summary.contribution` block, the rows
   merged under `summary.<level>` (each column's first value) plus
   `_n_results` (how many rows, the level's `count_field`), the raw rows in
-  `rows`, and per-doc `_all` values, including its `_geo_point`: its rows'
-  own coordinates or, without any, its nearest ancestor's (a specimen's
-  sample's, found by the `sample` column), so every level narrows under the
-  same filter. A row without a name is a doc of its own.
+  `rows`, and per-doc `_all` values, including its `_geo_point`: every
+  distinct lat/lon of its rows and, for an area (a table with a box), of the
+  rows below it that name it (a location's sites' and samples'), one point
+  or a list (capped); without any, its box's centre or its nearest
+  ancestor's position (a specimen's sample's, found by the `sample` column),
+  so every level narrows under the same filter. A row without a name is a
+  doc of its own.
 
 Positions on another planetary body (a lunar location and the rows below
 it, by the node's `search.bodies`) are `_body_point` ({lat, lon, body})
@@ -57,22 +60,47 @@ def _wrap(lon: float) -> float:
     return ((lon + 180) % 360) - 180
 
 
-def _geo_point(row: dict) -> dict | None:
-    """A row's position: its lat/lon, or the middle of its box (lat_s/lat_n,
-    lon_w/lon_e, which may cross the antimeridian)."""
-    box = [_to_float(row.get(c)) for c in BOX_COLUMNS]
-    if row.get("lat") in (None, "") and all(v is not None for v in box):
-        west, south, east, north = box
-        west, east = _wrap(west), _wrap(east)
-        if west > east:
-            east += 360
-        lat, lon = (south + north) / 2, (west + east) / 2
-    else:
-        lat = next((v for c in LAT_COLUMNS if (v := _to_float(row.get(c))) is not None), None)
-        lon = next((v for c in LON_COLUMNS if (v := _to_float(row.get(c))) is not None), None)
+def _point(lat: float | None, lon: float | None) -> dict | None:
     if lat is None or lon is None or not (-90 <= lat <= 90):
         return None
     return {"lat": lat, "lon": _wrap(lon)}
+
+
+def _lat_lon(row: dict) -> dict | None:
+    """A row's own lat/lon, or its box when the box is a single point."""
+    if (point := _point(_to_float(row.get("lat")), _to_float(row.get("lon")))) is not None:
+        return point
+    west, south, east, north = (_to_float(row.get(c)) for c in BOX_COLUMNS)
+    if None in (west, south, east, north) or south != north or _wrap(west) != _wrap(east):
+        return None
+    return _point(south, west)
+
+
+def _box_centre(row: dict) -> dict | None:
+    """The middle of a row's box (lat_s/lat_n, lon_w/lon_e): of the two boxes
+    its longitudes bound, one each way round the globe, the narrower, so
+    swapped corners don't put it on the far side of the world."""
+    box = [_to_float(row.get(c)) for c in BOX_COLUMNS]
+    if any(v is None for v in box):
+        return None
+    west, south, east, north = box
+    if east - west < 360:
+        west, east = _wrap(west), _wrap(east)
+        if (east - west) % 360 > 180:
+            west, east = east, west
+        if west > east:
+            east += 360
+    return _point((south + north) / 2, (west + east) / 2)
+
+
+def _geo_point(row: dict) -> dict | None:
+    """A row's position: its lat/lon, or the middle of its box, or its first
+    lat/lon-like column (lat_s, lon_w, ...)."""
+    if (point := _lat_lon(row) or _box_centre(row)) is not None:
+        return point
+    lat = next((v for c in LAT_COLUMNS if (v := _to_float(row.get(c))) is not None), None)
+    lon = next((v for c in LON_COLUMNS if (v := _to_float(row.get(c))) is not None), None)
+    return _point(lat, lon)
 
 
 # Distinct positions on the contribution doc (enough to match an area anywhere
@@ -118,6 +146,27 @@ def placed(point: dict, body: str | None) -> dict:
     body `_body_point` with its name (kept out of the geo_point field, which
     Earth's area filters and map aggregations read)."""
     return {"_geo_point": point} if body is None else {"_body_point": {**point, "body": body}}
+
+
+# A position by (body, lat, lon), with Earth's body None.
+PointKey = tuple[str | None, float, float]
+
+
+def _point_key(point: dict, body: str | None) -> PointKey:
+    return (body, round(point["lat"], 4), round(point["lon"], 4))
+
+
+def _placements(points: dict[PointKey, dict]) -> dict:
+    """A record's positions as its `summary._all` entries: one point, or a
+    list of them, under `_geo_point` on Earth and `_body_point` elsewhere."""
+    earth = [p for (body, *_), p in points.items() if body is None]
+    elsewhere = [{**p, "body": body} for (body, *_), p in points.items() if body is not None]
+    result: dict[str, Any] = {}
+    if earth:
+        result["_geo_point"] = earth[0] if len(earth) == 1 else earth
+    if elsewhere:
+        result["_body_point"] = elsewhere[0] if len(elsewhere) == 1 else elsewhere
+    return result
 
 
 def _row_body(
@@ -208,10 +257,15 @@ def summarize(
     all_values: dict[str, set] = {}
     level_counts: dict[str, dict] = {}
     # Every level's positions by row name ({"samples": {"S1-a": point}}), for
-    # the rows below it that have none of their own; and the contribution's.
+    # the rows below it that have none of their own.
     positions: dict[str, dict[str, dict]] = {}
-    # By (body, lat, lon), with Earth's body None.
-    points: dict[tuple[str | None, float, float], dict] = {}
+    # Each record's points: its rows' lat/lon and, for an area (a location, a
+    # box), those of the records below it once every level is read, so it is
+    # mapped where its sites are. Its box's centre, or its ancestor's
+    # position, only without any.
+    placements: list[dict[str, Any]] = []
+    named: dict[tuple[str, str], dict[str, Any]] = {}
+    areas = node.area_tables
     bodies = planetary_bodies(node, parsed)
     levels = hierarchy[1:]
 
@@ -233,12 +287,11 @@ def summarize(
             )
             row_all: dict[str, set] = {}
             _collect_all(columns_def, group, row_all)
-            geo = None
+            points: dict[PointKey, dict] = {}
             for row in group:
-                own = _geo_point(row)
-                if own is not None and len(points) < MAX_GEO_POINTS:
-                    points.setdefault((body, round(own["lat"], 4), round(own["lon"], 4)), own)
-                geo = geo or own
+                if (point := _lat_lon(row)) is not None and len(points) < MAX_GEO_POINTS:
+                    points.setdefault(_point_key(point, body), point)
+            own = geo = next((p for row in group if (p := _geo_point(row))), None)
             if geo is None:
                 geo = next(
                     (
@@ -250,20 +303,49 @@ def summarize(
                 )
             if geo is not None and name not in (None, ""):
                 positions.setdefault(level, {}).setdefault(str(name), geo)
-            docs.append(
-                {
-                    "type": level,
-                    "summary": {
-                        "contribution": contribution_summary,
-                        level: {**merged, "_n_results": len(group)},
-                        "_all": {
-                            **_finalize_all(row_all, None),
-                            **(placed(geo, body) if geo else {}),
-                        },
-                    },
-                    "rows": group,
-                }
+            doc = {
+                "type": level,
+                "summary": {
+                    "contribution": contribution_summary,
+                    level: {**merged, "_n_results": len(group)},
+                    "_all": _finalize_all(row_all, None),
+                },
+                "rows": group,
+            }
+            docs.append(doc)
+            # The nearest record above it that it names.
+            parent = next(
+                (
+                    named[key]
+                    for ancestor, column in ancestors
+                    if (key := (ancestor, str(merged.get(column) or ""))) in named
+                ),
+                None,
             )
+            placement = {"doc": doc, "body": body, "points": points, "own": own, "geo": geo}
+            placements.append({**placement, "parent": parent, "below": dict(points)})
+            placements[-1]["area"] = level in areas
+            if name not in (None, ""):
+                named.setdefault((level, str(name)), placements[-1])
+
+    # The deepest records first, so each passes its descendants' points on too
+    # (a sample's through its site to its location).
+    for placement in reversed(placements):
+        if (above := placement["parent"]) is not None:
+            for key, point in placement["below"].items():
+                if len(above["below"]) >= MAX_GEO_POINTS:
+                    break
+                above["below"].setdefault(key, point)
+    # The contribution's: every record's points, or its own box's centre.
+    points: dict[PointKey, dict] = {}
+    for placement in placements:
+        mapped = placement["below" if placement["area"] else "points"]
+        body, geo, own = (placement[k] for k in ("body", "geo", "own"))
+        all_block = placement["doc"]["summary"]["_all"]
+        all_block.update(_placements(mapped) if mapped else placed(geo, body) if geo else {})
+        for key, point in (mapped or ({_point_key(own, body): own} if own else {})).items():
+            if len(points) < MAX_GEO_POINTS:
+                points.setdefault(key, point)
 
     contribution_doc = {
         "type": "contribution",
