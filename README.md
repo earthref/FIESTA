@@ -36,7 +36,7 @@ Postgres backups plus the bucket. See [Phase M operations](docs/phase-m.md).
 ## Quick start
 
 ```sh
-cp .env.example .env          # FIESTA_NODE=magic  or a list: magic,karar,erda
+cp .env.example .env          # FIESTA_NODE=all (every node)  or a list: magic,karar,erda
 make up                       # infra + one API + one worker + one frontend for every listed node
 ```
 
