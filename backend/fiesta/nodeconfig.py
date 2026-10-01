@@ -680,6 +680,8 @@ class NodeConfig(BaseModel):
                 }
                 for c in self.search.map_colors
             ],
+            # The planetary bodies besides Earth its records can be on.
+            "bodies": sorted(set(self.search.bodies.values.values())) if self.search.bodies else [],
             "pages": [p.model_dump() for p in self.pages],
             "features": self.features.model_dump(),
             "publish": self.publish.model_dump(),

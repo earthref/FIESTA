@@ -163,6 +163,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "map_colors": [
     {"label": "Age", "field": "age", "unit": "Ma", "scale": 1000000.0, "log": true, "tables": ["locations", "sites"]}
   ],
+  "bodies": ["mars", "moon"],
   "pages": [{"slug": "about", "title": "About", "menu": "left", "icon": null}],
   "features": {"plugins": ["poles"]},
   "publish": {"api": true, "web": true},
@@ -182,7 +183,9 @@ tab) it names, empty meaning all. `facets` lists the facet filters' fields (what
 facet filters). `map_colors` are the node YAML's `search.map_colors`, what the
 Map tab's "Color by" menu offers (as `color_by` on `/search/{table}/points`) on
 the levels whose table is in `tables`; `field` is a column or a `summary.*`
-path, and a value / `scale` is what the legend shows. `pages` are the content
+path, and a value / `scale` is what the legend shows. `bodies` are the planetary
+bodies besides Earth the node YAML's `search.bodies` can put a record on (empty
+for most nodes), for the Map tab's Earth / Moon / Mars buttons. `pages` are the content
 pages in menu order.
 
 Each active plugin's `frontend_config` is built from its options: the node

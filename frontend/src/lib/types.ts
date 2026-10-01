@@ -117,6 +117,9 @@ export interface NodeConfig {
   filters: SearchFilter[];
   /** The search map's "Color by" menu (node YAML `search.map_colors`). */
   map_colors?: MapColorOption[];
+  /** The planetary bodies besides Earth a record can be on (node YAML
+   * `search.bodies`): the search map's Earth / Moon / Mars buttons. */
+  bodies?: ("moon" | "mars")[];
   /** Content pages (node YAML `pages`), in menu order. */
   pages: NodePage[];
   features: {
