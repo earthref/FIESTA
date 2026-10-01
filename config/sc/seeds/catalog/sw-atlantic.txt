@@ -1,0 +1,34 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: SW Atlantic (10 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	lat	lon	region	height	sc_id
+SMNT-025S-0373W	Seamount		Seamount	-2.48	-37.28	SW Atlantic	0	1723
+SMNT-204S-0366W	Montague Seamount		Seamount	-20.37	-36.64	SW Atlantic	0	1017
+SMNT-205S-0360W	Jaseur Seamount		Seamount	-20.47	-36.04	SW Atlantic	0	862
+SMNT-207S-0318W	Columbia Seamount		Seamount	-20.71	-31.82	SW Atlantic	0	642
+SMNT-207S-0348W	Davis Seamount		Seamount	-20.65	-34.77	SW Atlantic	0	1719
+SMNT-207S-0354W	Seamount	Unnamed - 1519	Seamount	-20.72	-35.42	SW Atlantic	0	1721
+SMNT-208S-0378W	Vitoria Seamount		Seamount	-20.75	-37.75	SW Atlantic	0	1308
+SMNT-209S-0337W	Dogaressa Seamount		Seamount	-20.86	-33.67	SW Atlantic	0	1720
+SMNT-355N-0519W	Seamount	Seamount SW of Rockaway	Seamount	35.54	-51.91	SW Atlantic	0	1748
+SMNT-592S-0446W	Seamount	Unnamed Shirshov 3	Seamount	-59.15	-44.64	SW Atlantic	0	1760
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Unnamed Seamount -- Predicted satellite bathymetry (2525)		SMNT-355N-0519W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-355N-0519W.std.180m.ss.map.jpg	180	1056	1136	2525
+Unnamed Seamount -- Predicted satellite bathymetry (2581)		SMNT-025S-0373W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-025S-0373W.std.180m.ss.map.jpg	180	589	670	2581
+Montague Seamount -- Predicted satellite bathymetry	SMNT-204S-0366W	SMNT-204S-0366W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-204S-0366W.std.180m.ss.map.jpg	180	952	1033	2602
+Jaseur Seamount -- Predicted satellite bathymetry	SMNT-205S-0360W	SMNT-205S-0360W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-205S-0360W.std.180m.ss.map.jpg	180	1004	1084	2603
+Columbia Seamount -- Predicted satellite bathymetry	SMNT-207S-0318W	SMNT-207S-0318W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-207S-0318W.std.180m.ss.map.jpg	180	1056	1136	2604
+Davis Seamount -- Predicted satellite bathymetry	SMNT-207S-0348W	SMNT-207S-0348W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-207S-0348W.std.180m.ss.map.jpg	180	1108	1188	2605
+Unnamed Seamount -- Predicted satellite bathymetry (2606)		SMNT-207S-0354W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-207S-0354W.std.180m.ss.map.jpg	180	901	981	2606
+Vitoria Seamount -- Predicted satellite bathymetry	SMNT-208S-0378W	SMNT-208S-0378W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-208S-0378W.std.180m.ss.map.jpg	180	1212	1292	2607
+Dogaressa Seamount -- Predicted satellite bathymetry	SMNT-209S-0337W	SMNT-209S-0337W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-209S-0337W.std.180m.ss.map.jpg	180	745	825	2608
+Unnamed Seamount -- Predicted satellite bathymetry (2631)		SMNT-592S-0446W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-592S-0446W.std.180m.ss.map.jpg	180	1730	1810	2631
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+Tiger Shark Diet -- poster	SMNT-207S-0354W	816	https://earthref.org/ERDA/816/
+Tiger Shark Distribution -- map, poster, document	SMNT-207S-0354W	817	https://earthref.org/ERDA/817/

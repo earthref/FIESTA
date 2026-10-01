@@ -1,0 +1,310 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Gilberts Ridge (34 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	volcanic_activity	plate_age_min	plate_age_max	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	description	sc_id
+SMNT-002N-1729E	Curreri Seamount		Seamount	Very Small	B1	0.22367	172.86267	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	134.7	135.0	2800	1400	4200	921	1.05	0.02	1.28	0.04	1	99	Curreri Seamount is located at 0° 13.4' N, 172° 51.8' E and is part of the Gilberts Ridge region on the Pacific Plate. The seamount is 2916 m high with the top at -1400 m and the ocean bottom at -4316 m. It has a volume of 4161 km3 and is fairly round with every little elongation. The edges are slightly irregular and the top forms a central summit.	9
+SMNT-002N-1735E	Kuria Atoll	Aranuka	Atoll	Intermediate	A3	0.199	173.48533	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	133.3	135.4	3820	150	3970	5871	2.13	0.13	1.07	0.02	1	18	Kuria Atoll is located at 0° 11.8' N, 173° 29.7' E and is part of the Gilberts Ridge region on the Pacific Plate. The atoll is 3560 m high with the top at -200 m and the ocean bottom at -3760 m. It has a volume of 5717 km3 and is moderately elongated with an azimuth of approximately 117°. The edges of the atoll are very smooth. The top is relatively flat with the highest point on the eastern side and a gradual decrease in height to the west. Kuria is part of a cluster of volcanoes on a common platform and is connected by saddles to Mauga Umi and Amu Tau.	54
+SMNT-002S-1736E	Amu Tau Seamount		Seamount	Small	D4	-0.18167	173.61317	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	132.6	134.0	3085	1085	4170	1581	2.76	0.76	1.61	0.28	1	48	Amu Tau Seamount is located at 0° 10.8' S, 173° 36.8' E and is part of the Gilberts Ridge region on the Pacific Plate. The seamount is 3273 m high with the top at -1200 m and the ocean bottom at -4473 m. It has a volume of 3891 km3 and is very elongated with an azimuth at approximately 166°. There are several small volcanoes on the eastern flanks of the seamount and the western side appears to have coral slopes. A saddle to the north connects Amu Tau to an unnamed seamount.	10
+SMNT-005N-1731E	Mauga Umi Seamount		Seamount	Small	C2	0.4945	173.13467	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	134.7	136.1	2450	1455	3905	1092	1.75	0.17	1.43	0.66	1	53	Mauga Umi Seamount is located at 0° 29.5' N, 173° 8.4' E and is part of the Gilberts Ridge region on the Pacific Plate. The seamount is 2325 m high with the top at -1500 m and the ocean bottom at -3825 m. It has a volume of 1414 km3 and is elongated in a northwest, southeast direction with an azimuth at approximately 137°. No prominent rifts are seen. There may be some mass wasting along the southwest side of the seamount. Mauga Umi is on the southwestern edge of a plateau, which it shares with Tofe Tolu Seamount.	8
+SMNT-007N-1732E	Tofe Tolu Seamount		Seamount	Very Small	B3	0.7245	173.23683	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	135.8	136.2	2375	1395	3770	590	2.17	0.71	1.38	0.37	1	58	Tofe Tolu Seamount is located at 0° 43.4' N, 173° 14.1' E and is part of the Gilberts Ridge region on the Pacific Plate. The seamount is 2626 m high with the top at -1500 m and the ocean bottom at -4126 m. It has a volume of 578 km3 and is elongated in a north, south direction with an azimuth of approximately 144°. Two rifts can be seen radiating out to the northeast. The seamount is on the edge of a raised plateau, which it shares with Mauga Umi Seamount. The slopes on the western side and eastern edge of Tofe Tolu are effected by the plateau.	7
+SMNT-007S-1743E	Nonouti Guyot		Guyot	Large	A2	-0.684	174.31633	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	130.1	132.7	3980	420	4400	10393	1.77	0.09	1.10	0.02	1	12	Nanouti Atoll is located at 0° 40.2' S, 174° 18.9' E and is part of the Gilberts Ridge region on the Pacific Plate. The atoll is 4136 m high with the top at -600 m and the ocean bottom at -4736 m. It has a volume of 15938 km3 and is slightly elongated with an azimuth of approximately 131°. The edges are very smooth along the western side and slightly irregular along the eastern side of the seamount. The top is a relatively flat surface and a saddle connects the atoll to a seamount to the southeast. The atoll was only partially surveyed by SeaBeam. Dredge AVON2-D12 was taken off the northern tip of the northwest trending rift.	11
+SMNT-009S-1755E	Palutu Seamount		Seamount	Small	B2	-0.8765	175.51133	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	129.9	130.4	3095	1680	4775	1562	1.70	0.29	1.36	0.12	1	57	Palutu Seamount is located at 0° 52.6' S, 175° 30.8' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3018 m high with the top at -1700 m and ocean bottom at -4718 m. It has a volume of 2116 km3 and is slightly elongated with an azimuth of approximately 111°. The seamount has relatively irregular edges and five predominant rifts, which meet at the seamount summit. The seamount has a plateau off to the west raised to approximately -3500 m with apparent volcanoes. Dredges AVON2-D13 and AVON2-D14 were taken off the west trending and southwest trending rifts respectively.	12
+SMNT-013S-1748E	Tabiteuea Guyot		Guyot	Very Large	A5	-1.348	174.815	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	127.8	131.4	4410	80	4490	18149	3.03	0.19	1.08	0.03	1	14	Tabiteuea Atoll is located at 1° 20.7' S, 174° 48.9' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3960 m high with the top at -400 m and the ocean bottom at -4360 m. The atoll has a volume of 15918 km3 and is very elongated with an azimuth of approximately 138°. The edges are very smooth and the top surface is relatively flat. A saddle to the north connects Tabiteuea Atoll to Nonouti.	55
+SMNT-013S-1760E	Beru Guyot		Guyot	Small	B3	-1.3075	175.97267	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	128.1	129.5	3805	710	4515	4026	2.18	0.07	1.38	0.21	2	31	Beru Guyot is located at 1° 18.4' S, 175° 58.2' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3487 m high with the top at -1000 m and ocean bottom at -4487 m. The guyot has a volume of 3930 km3 and is elongated with an azimuth of approximately 127°. It has slightly irregular edges and a relatively flat top surface. A saddle to the east connects the guyot to Nikunau Seamount, which effects the slope. Volcanism appears to be present on the saddle and the northeast oriented rift goes into this saddle. There is a rift feature west of the seamount that is approximately 5 nautical miles in width, runs approximately east west and bends above Kantu Seamount to the northwest. Dredge AVON2-D16 was taken off of the northwest rift.	14
+SMNT-014N-1730E	Tarawa Guyot		Guyot	Large	A1	1.45167	173.006	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	136.8	139.4	3890	280	4170	10670	1.22	0.02	1.13	0.03	2	19	Tarawa Atoll is located at 1° 26.7' N, 173° 0.2' E and is part of the Gilberts Ridge region on the Pacific Plate. The atoll is elongated in a north south direction and has irregular edges. A salient ridge is seen to the southwest and the top of the atoll is relatively flat. The atoll is located in a cluster of seamounts and is connected by saddles to the north and south to other seamounts.	74
+SMNT-014S-1754E	Kautu Seamount		Seamount	Very Small	B3	-1.36933	175.36233	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	129.0	129.0	1670	2995	4665	141	2.22	0.33	1.30	0.11	1	100	Kautu Seamount is located at 1° 22.1' S, 175° 21.7' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 1615 m high and is relatively deep with the top at -3100 m and ocean bottom at -4715 m. The seamount has a volume of 337 km3 and is moderately elongated with an azimuth of approximately 97°. The edges are slightly irregular and the south side is slightly higher than the north side. There are three major ridges radiating out to the east, west and south of a central summit. Dredge AVON2-D17 was taken off the northwestern end of the west trending rift.	15
+SMNT-014S-1765E	Nikunau Seamount		Seamount	Intermediate	C3	-1.398	176.43833	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	127.1	129.4	3845	1040	4885	6872	2.29	0.16	1.48	0.23	1	23	Nikunau Atoll is located at 1° 23.9' S, 176° 26.0' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3767 m high with the top at -1100 m and ocean bottom at -4867 m. The seamount has a volume of 8668 km3 and displays a bent elbow shape pointing to the west and southeast. It is elongated with an azimuth of approximately 129°. The edges are irregular and the two major rifts defining the seamount are running west and southeast respectively. These rifts also affect Beru Seamount, which is connected to Nikunau by a saddle with a depth of -2800 m.	13
+SMNT-015N-1736E	Seamount		Seamount	Small	B1	1.478	173.57517	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	137.5	138.2	2835	1480	4315	1173	1.07	0.02	1.35	0.08	1	44	Unnamed Seamount SMNT-015N-1736E is located at 1° 28.8' N, 173° 34.6' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 2670 m high with the top at -1500 m and the ocean bottom at -4170 m. The seamount has a volume of 894 km3 and is fairly round with slightly irregular edges. It has three predominate rifts, which trend north, south and southeast. These rifts meet at a slightly flattened summit. The seamount is connected by a saddle to another seamount to the east.	53
+SMNT-018S-1758E	Mauga Povi Hill		Hill	Very Small	A2	-1.752	175.8175	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct			1605	2835	4440	56	1.52	0.12	1.15	0.02	1	100	Mauga Povi Seamount is located at 1° 45.1' S, 175° 49.2' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 1942 m high with the top at -2900 m and ocean bottom at -4842 m. The seamount has a volume of 125 km3 and is relatively round. It has three predominant rifts, which resemble a triple junction and meet at a central summit. The seamount's elevation is effected on the western flanks by the presence of Onotoa Atoll. There is a 1000 m difference in height between the eastern and western sides.	18
+SMNT-019N-1729E	Abaiang Guyot		Guyot	Small	A2	1.86	172.92533	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	138.2	140.7	3070	590	3660	4699	1.60	0.06	1.13	0.04	2	12	Abaiang Atoll is located at 1° 52.2' N, 172° 56.0' E and is part of the Gilberts Ridge region on the Pacific Plate. It is slightly elongated in a north south direction and has slightly irregular edges. The top surface is relatively flat with a small elevated peak in the northwestern corner. It is connected to another seamount to the south.	52
+SMNT-019S-1756E	Onotoa Guyot		Guyot	Intermediate	C3	-1.93	175.55033	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	126.5	128.8	3990	305	4295	7058	2.10	0.09	1.48	0.05	2	33	Onotoa Atoll is located at 1° 55.8' S, 175° 33.0' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 4113 m high with the top at -700 m and the ocean bottom at -4813 m. The atoll has a volume of 11232 km3 and is moderately elongated with an azimuth of approximately 163°. The edges are irregular and the top is relatively flat with the highest point along the eastern side. A saddle to the south connects Onotoa to Tuba Seamount.	56
+SMNT-020N-1733E	Marakei					2.02	173.29	Gilberts Ridge	Pacific Plate			Extinct			0											2173
+SMNT-021S-1762E	Iroij Seamount		Seamount	Small	B4	-2.10383	176.21117	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	126.2	127.7	3505	1580	5085	4139	2.61	0.32	1.36	0.04	2	46	Iroij Seamount is located at 2° 6.2' S, 176° 12.7' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3436 m high with the top at -1500 m and bottom at -4936 m. It has a volume of 3485 km3 and is very elongated with an azimuth of approximately 145°. The edges of the seamount are slightly irregular and due to a lack of coverage, not more than two rifts are seen. To the southwest of Iroij is Tamana Island. Dredge AVON2-D22 was taken off the northern tip of the northwest trending rift.	19
+SMNT-023S-1750E	Ava Seamount		Seamount	Very Small	B1	-2.27317	174.95367	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	127.1	127.4	2950	1650	4600	680	1.12	0.07	1.31	0.05	1	93	Ava Seamount is located at 2° 16.3' S, 174° 57.2' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 2973 m high with the top at -1700 m and ocean bottom at -4673 m. The seamount has a volume of 941 km3 and is fairly round with very little elongation. The edges are slightly irregular and there are a lot of small radial like ridges on the seamount. Ava is the western most volcano in a cluster on a common platform, which includes Tuba Seamount. Dredge number AVON2-D18 was taken off the western trending rift.	16
+SMNT-023S-1778E	Sakau Seamount		Seamount	Small	C5	-2.33683	177.82067	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	124.9	126.1	2490	2800	5290	2087	3.49	1.44	1.52	0.40	1	44	Sakau Seamount is located at 2° 20.0' S, 177° 49.1' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 2723 m high with the top at -2700 m and the ocean bottom at 5423 m. The seamount has a volume of 3270 km3 and is very elongated with an azimuth of approximately 132°. The edges of the seamount are irregular and two rifts were observed. The north side of the west trending rift is shallow and platform like. To the lower northeast, there is a saddle connecting the Sakau Seamount to an unnamed seamount. Dredge 24 was taken on the western rift.	21
+SMNT-023S-1784E	Seamount		Seamount	Small	A1	-2.29167	178.452	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	124.8	125.3	2875	2230	5105	1199	1.39	0.01	1.08	0.00	1	43	Unnamed Seamount SMNT-023S-1784E is located at 2° 17.5' S, 178° 27.0' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3285 m high with the top at -2300 m and the ocean bottom at -5585 m. The seamount has a volume of 3173 km3 and is fairly round with relatively smooth edges.	59
+SMNT-023S-1798E	Seamount		Seamount	Very Small	A5	-2.32217	179.7985	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	123.9	124.1	1840	3255	5095	192	3.92	0.58	1.10	0.04	1	71	Unnamed Seamount SMNT-023S-1798E is located at 2° 19.2' S, 179° 48.1' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 2041 m high with the top at -3400 m and the ocean bottom at -5441 m. The seamount has a volume of 625 km3 and is very elongated with an azimuth of approximately 213°. It has fairly smooth edges and only one dominate rift zone which runs along the azimuth of the seamount. There is no predominate summit and the seamount is not connected to any other seamounts.	60
+SMNT-023S-1800E	Seamount		Seamount	Very Small	B2	-2.28667	179.97617	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	123.9	124.1	1460	3725	5185	133	1.92	0.05	1.23	0.03	1	79	Unnamed Seamount SMNT-023S-1800E is located at 2° 17.2' S, 179° 58.5' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 1600 m high with the top at -3800 m and ocean bottom at -5400 m. It has a volume of 476 km3 and is slightly elongated with an azimuth of approximately 209°. There is very little irregularity of the edges. Another unnamed seamount to the west has a similar elongation direction.	20
+SMNT-024N-1728E	Fetulele Seamount		Seamount	Very Small	B1	2.3515	172.81583	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	140.9	141.2	1960	2065	4025	174	1.38	0.06	1.31	0.05	1	99	Fetulele Seamount is located at 2° 21.2' N, 172° 48.9' E and is part of the Gilberts Ridge region on the Pacific Plate. The seamount is 1844 m high with the top at -2100 m and the ocean bottom at -3944 m. It has a volume of 224 km3. The seamount is slightly elongated with an azimuth of approximately 148° and is defined by 3 rifts, which resemble a triple junction. The top of the seamount forms a peak where the three predominate rifts meet.	6
+SMNT-024S-1754E	Tuba Seamount		Seamount	Small	B1	-2.42317	175.4065	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	126.4	126.7	3865	365	4230	1075	1.22	0.05	1.31	0.04	1	76	Tuba Seamount is located at 2° 25.4' S, 175° 24.5' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3883 m high with a very shallow summit at -400 m and the ocean bottom at -4283 m. The seamount has a volume of 1463 km3 and is fairly round with very little elongation and only slightly irregular edges. Four predominant rifts are observed that meet at the seamount summit. Tuba is located in a cluster of volcanoes sharing a common platform. Dredge AVON2-D19 was taken from the west end of the northwest oriented rift.	17
+SMNT-025N-1729E	Musina Seamount		Seamount	Very Small	B2	2.5015	172.89917	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	141.4	141.4	1550	2045	3595	90	1.94	0.01	1.30	0.07	1	100	Musina Seamount is located at 2° 30.3' N, 172° 54.0' E and is part of the Gilberts Ridge region on the Pacific Plate. The seamount is 2104 m high with the top at -2100 m and the ocean bottom at -4204 m. It has a volume of 728 km3 and is slightly elongated with an azimuth of approximately 155°. The edges are irregular and there are several rifts radiating out from a central peak. A small saddle to the north connects Musina to the Burtaritari Atoll.	5
+SMNT-025S-1760E	Tamana Seamount		Seamount	Small	A2	-2.473	175.96667	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	125.9	126.4	3785	690	4475	2266	1.58	0.05	1.12	0.02	1	29	Tamana Seamount is located at 2° 28.0' S, 175° 57.9' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3309 m high with the top at -1000 m and the ocean bottom at -4309 m. The seamount has a volume of 1949 km3 and is slightly elongated with an azimuth of approximately 151°. The edges are fairly smooth and the summit is located along the southern edge of the seamount. To the northeast of Tamana is Tuba Seamount.	57
+SMNT-025S-1791E	Seka Seamount		Seamount	Very Small	B1	-2.46333	179.09867	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	124.3	124.5	2475	2590	5065	886	1.04	0.02	1.27	0.14	1	96	Seka Seamount is located at 2° 27.7' S, 179° 6.0' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 2752 m high with the top at -2700 m and the ocean bottom at -5423 m. The seamount has a volume of 2281 km3 and is fairly round with little elongation or irregularity of the edges. The westward trending rift extends further than the measurement, and is very faint. Some volcanism appears to be present.	22
+SMNT-026S-1768E	Arorae Guyot		Guyot	Small	A2	-2.63217	176.795	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	124.8	126.0	4065	110	4175	4674	1.99	0.20	1.02	0.03	1	2	Arorae Atoll is located at 2° 37.8' S, 176° 48.1' E and is part of the Gilberts Ridge region on the Pacific Plate. It is moderately elongated in a northwest, southeast direction. The edges of the atoll are very smooth. The top is rounded with the summit above sea level on the southeastern end. The atoll is connected by a saddle to a seamount to the southeast.	58
+SMNT-032N-1729E	Burtaritari Guyot	Makin	Guyot	Very Large	B2	3.20567	172.86333	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	141.2	146.9	4045	95	4140	16396	1.51	0.16	1.37	0.14	2	5	Burtaritari Atoll is located at 3° 11.5' N, 172° 52.1' E and is part of the Gilberts Ridge region on the Pacific Plate. The Burataitari Atoll is 4300 m high with the top at sea level and the ocean bottom at -4300 m. It has relatively smooth edges and displays a U like shape along the northwestern side. The top surface is relatively flat. There is a saddle to the south connecting the atoll to Musina Seamount.	4
+SMNT-043N-1724E	Sua Seamount		Seamount	Very Small	C2	4.26883	172.43567	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	147.9	148.2	2520	1540	4060	671	1.80	0.23	1.40	0.08	1	95	Sua Seamount is located at 4° 16.3' N, 172° 26.4' E and is part of the Gilberts Ridge region on the Pacific Plate. The seamount is 2679 m high with the top at -1500 m and the ocean bottom at -4159 m. The Sua Seamount has a volume of 675 km3 and is moderately elongated in a northeast, southwest direction with an azimuth of approximately 53°. There are two predominant sets of rifts, one oriented northeast, southwest and the other northwest, southeast. The top surface of the seamount comes to a peak. Sua is the southwestern most volcano on a common platform including the Niu and Pulu Guyots. There is a small saddle to the northeast connecting Sua to an unnamed seamount.	3
+SMNT-043N-1729E	Pulu Guyot		Guyot	Small	B2	4.26833	172.89883	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	145.7	148.7	2765	1055	3820	4631	1.69	0.05	1.35	0.04	1	24	Pulu Guyot is located at 4° 16.4' N, 172° 53.9' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3126 m high with the top at -1200 m and the ocean bottom at -4326 m. The guyot has a volume of 7543 km3 and is moderately elongated in a northwest, southeast direction with an azimuth of approximately 144°. The edges are irregular and there is a small narrow ridge radiating off to the northeast. Along the western margin of the guyot there appears to be some mass wasting. The guyot is mostly covered with corals. The relatively flat top surface of Pulu results in its classification as a guyot. Pulu is the southern most volcano on a common platform including the Niu Guyot and Sua Seamount.	2
+SMNT-047N-1725E	Niu Guyot		Guyot	Small	A3	4.72267	172.50917	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	148.2	149.3	3065	1110	4175	2857	2.28	0.19	1.18	0.13	1	31	Niu Guyot is located at 4° 43.7' N, 172° 30.5' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 3095 m high with the top at -1200 m and the ocean bottom at -4295 m. The guyot has a volume of 3490 km3 and is elongated with two cones separated by a saddle, which may represent two separate volcanoes. The east and northwest rifts define the length of the volcano, which is heavily covered with corals. The observed flattish top results in the classification of Niu as a guyot. It is the northern most volcano on a common platform including Pulu Guyot and Sua Seamount.	1
+SMNT-071N-1712E	Majuro Guyot		Guyot	Intermediate	B2	7.11367	171.21183	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	151.5	154.3	3880	0	3880	9004	1.91	0.20	1.28	0.09	1	10	Majuro Atoll is located at 7° 6.5' N, 171° 13.6' E and is part of the Gilberts Ridge region on the Pacific Plate. It is moderately elongated in an east west direction and has slightly irregular edges. The top is relatively flat with a circular depression along the western side. To the east the atoll is connected by a saddle to another atoll.	51
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-002N-1729E	2520	165.8	47.2	8.5	7.8	1.079	30.7	24.4	1.258
+SMNT-002N-1729E	2800	179.4	77.5	10.4	10.0	1.041	41.6	31.2	1.334
+SMNT-002N-1729E	3080	172.0	115.1	12.6	12.2	1.034	47.8	38.0	1.258
+SMNT-002N-1735E	1678	115.1	886.6	52.8	23.2	2.273	124.5	118.8	1.048
+SMNT-002N-1735E	2060	117.1	1056.0	55.8	26.3	2.116	136.1	127.3	1.069
+SMNT-002N-1735E	2442	119.2	1257.4	59.6	29.7	2.009	150.2	137.1	1.095
+SMNT-002S-1736E	2319	165.1	81.5	15.0	7.8	1.919	47.7	34.5	1.381
+SMNT-002S-1736E	2628	166.6	147.3	30.9	9.1	3.399	106.1	55.0	1.929
+SMNT-002S-1736E	2936	164.6	288.9	35.1	11.9	2.958	112.3	73.5	1.529
+SMNT-005N-1731E	2680	140.1	238.1	26.9	14.2	1.897	128.4	58.9	2.180
+SMNT-005N-1731E	2925	141.9	472.5	33.4	18.7	1.785	98.5	81.9	1.203
+SMNT-005N-1731E	3170	140.9	671.8	37.9	24.2	1.567	87.3	95.3	0.916
+SMNT-007N-1732E	2108	158.4	20.7	8.1	3.4	2.391	19.5	18.4	1.061
+SMNT-007N-1732E	2345	152.8	35.6	12.4	4.5	2.744	32.4	25.2	1.290
+SMNT-007N-1732E	2583	113.9	115.6	18.4	13.4	1.376	69.0	38.8	1.777
+SMNT-007S-1743E	2012	130.4	1353.8	57.6	31.7	1.819	151.4	139.2	1.088
+SMNT-007S-1743E	2410	133.8	1689.7	64.5	35.2	1.829	168.9	155.6	1.085
+SMNT-007S-1743E	2808	137.2	2068.5	67.8	40.6	1.671	189.4	169.2	1.119
+SMNT-009S-1755E	2918	114.6	88.7	13.9	9.1	1.532	43.9	34.5	1.271
+SMNT-009S-1755E	3228	111.7	133.8	17.0	11.2	1.524	55.9	42.4	1.319
+SMNT-009S-1755E	3537	100.7	201.4	27.6	13.6	2.033	82.5	55.0	1.499
+SMNT-013S-1748E	1844	138.4	1926.1	93.0	29.4	3.167	204.2	194.1	1.052
+SMNT-013S-1748E	2285	138.9	2338.6	101.3	32.5	3.117	235.5	212.7	1.107
+SMNT-013S-1748E	2726	138.3	2825.3	104.1	37.0	2.814	243.0	226.0	1.075
+SMNT-013S-1760E	2232	127.5	407.0	38.1	17.1	2.235	104.2	80.1	1.300
+SMNT-013S-1760E	2613	120.1	574.7	45.6	21.6	2.107	151.4	93.8	1.614
+SMNT-013S-1760E	2993	122.8	782.1	49.9	22.7	2.199	135.5	110.6	1.225
+SMNT-014N-1730E	1836	149.1	1314.9	49.4	40.2	1.229	151.7	129.6	1.171
+SMNT-014N-1730E	2225	139.3	1521.7	52.2	43.4	1.204	156.1	139.2	1.121
+SMNT-014N-1730E	2614	130.9	1751.9	57.1	46.1	1.238	165.5	149.6	1.106
+SMNT-014S-1754E	3663	95.0	19.9	7.4	3.9	1.882	20.0	17.0	1.179
+SMNT-014S-1754E	3830	100.6	31.5	10.5	4.7	2.238	29.8	22.3	1.337
+SMNT-014S-1754E	3997	94.5	45.9	14.0	5.5	2.537	38.7	27.9	1.387
+SMNT-014S-1765E	2578	129.5	708.7	57.2	27.1	2.109	180.5	104.2	1.732
+SMNT-014S-1765E	2963	129.9	1010.9	65.6	27.4	2.396	185.8	128.8	1.443
+SMNT-014S-1765E	3347	131.5	1339.8	70.5	29.8	2.365	187.8	147.7	1.271
+SMNT-015N-1736E	2614	119.9	120.7	14.8	14.1	1.050	56.1	39.0	1.441
+SMNT-015N-1736E	2898	92.8	170.4	16.9	15.7	1.075	61.5	46.3	1.328
+SMNT-015N-1736E	3181	93.1	228.0	18.9	17.4	1.086	69.2	53.6	1.292
+SMNT-018S-1758E	3477	80.4	9.1	4.6	2.9	1.612	12.6	11.2	1.128
+SMNT-018S-1758E	3638	82.4	13.8	5.6	3.6	1.569	15.6	13.7	1.142
+SMNT-018S-1758E	3798	75.5	19.4	6.3	4.6	1.383	18.6	15.9	1.167
+SMNT-019N-1729E	1818	132.9	849.8	47.2	28.5	1.655	127.6	108.2	1.179
+SMNT-019N-1729E	2125	137.5	1072.7	50.8	31.7	1.603	132.8	120.9	1.098
+SMNT-019N-1729E	2432	139.3	1271.6	53.6	34.8	1.542	146.1	130.8	1.117
+SMNT-019S-1756E	2300	164.9	779.4	58.9	26.8	2.202	161.7	110.5	1.464
+SMNT-019S-1756E	2699	161.9	1013.2	64.2	30.6	2.097	190.1	124.4	1.528
+SMNT-019S-1756E	3098	164.4	1301.3	68.0	33.7	2.015	200.7	139.6	1.438
+SMNT-021S-1762E	2982	145.6	343.9	36.9	12.7	2.907	106.7	79.7	1.339
+SMNT-021S-1762E	3333	145.2	503.7	42.8	16.2	2.646	124.3	93.6	1.328
+SMNT-021S-1762E	3683	145.4	704.4	46.8	20.7	2.266	149.1	105.8	1.409
+SMNT-023S-1750E	2830	74.2	70.2	11.0	9.2	1.197	40.6	29.9	1.360
+SMNT-023S-1750E	3125	74.3	105.9	12.6	11.3	1.121	46.9	36.6	1.284
+SMNT-023S-1750E	3420	86.4	146.4	14.3	13.6	1.055	55.0	42.9	1.280
+SMNT-023S-1778E	3547	131.6	144.8	51.5	10.0	5.133	67.6	63.9	1.058
+SMNT-023S-1778E	3796	134.2	241.6	40.1	13.8	2.913	117.8	66.8	1.762
+SMNT-023S-1778E	4045	130.0	374.7	44.1	18.1	2.435	136.6	78.8	1.734
+SMNT-023S-1784E	3380	95.2	177.3	18.0	12.8	1.401	51.9	48.2	1.076
+SMNT-023S-1784E	3668	94.7	241.1	20.8	15.0	1.386	60.8	56.1	1.082
+SMNT-023S-1784E	3955	94.9	313.8	23.8	17.1	1.392	69.6	64.1	1.086
+SMNT-023S-1798E	3991	213.2	34.3	14.7	3.3	4.512	31.2	29.5	1.056
+SMNT-023S-1798E	4175	213.2	48.8	16.2	4.2	3.900	37.1	33.3	1.114
+SMNT-023S-1798E	4359	213.0	68.3	17.8	5.3	3.355	41.9	37.3	1.124
+SMNT-023S-1800E	4309	207.2	26.5	8.5	4.4	1.952	24.0	19.8	1.214
+SMNT-023S-1800E	4455	209.5	40.4	10.4	5.4	1.949	31.0	24.4	1.272
+SMNT-023S-1800E	4601	207.1	61.5	12.6	6.7	1.873	36.1	29.8	1.208
+SMNT-024N-1728E	2849	149.7	24.4	7.7	5.4	1.416	23.6	17.9	1.322
+SMNT-024N-1728E	3045	148.5	36.9	9.4	6.6	1.423	29.6	22.0	1.345
+SMNT-024N-1728E	3241	151.4	54.1	10.5	8.0	1.308	33.1	26.4	1.253
+SMNT-024S-1754E	1911	87.7	42.1	8.8	7.6	1.159	31.2	23.1	1.351
+SMNT-024S-1754E	2298	97.5	76.3	12.1	9.6	1.264	40.5	31.3	1.296
+SMNT-024S-1754E	2684	96.4	126.1	15.0	12.2	1.228	51.5	40.1	1.284
+SMNT-025N-1729E	2665	146.1	20.9	7.7	4.0	1.950	24.1	17.6	1.373
+SMNT-025N-1729E	2820	147.1	29.0	8.9	4.6	1.931	26.2	20.6	1.270
+SMNT-025N-1729E	2975	148.4	39.1	10.3	5.3	1.942	29.9	24.0	1.248
+SMNT-025S-1760E	2204	148.6	139.0	17.9	11.1	1.615	49.1	43.6	1.127
+SMNT-025S-1760E	2583	146.7	199.0	21.4	13.3	1.612	59.5	52.1	1.140
+SMNT-025S-1760E	2961	145.2	274.6	24.1	15.9	1.518	66.8	60.7	1.101
+SMNT-025S-1791E	3580	214.6	36.6	7.7	7.4	1.036	30.8	21.5	1.437
+SMNT-025S-1791E	3828	165.7	63.7	9.3	9.2	1.012	33.9	28.3	1.198
+SMNT-025S-1791E	4075	84.8	94.8	11.7	11.0	1.060	40.6	34.5	1.177
+SMNT-026S-1768E	1736	136.3	372.6	29.8	16.1	1.856	73.7	73.3	1.006
+SMNT-026S-1768E	2143	136.6	506.9	35.2	18.6	1.891	86.9	85.9	1.012
+SMNT-026S-1768E	2549	135.7	716.1	46.3	20.9	2.212	111.8	106.0	1.055
+SMNT-032N-1729E	1713	209.2	1944.4	62.5	47.0	1.329	196.0	158.7	1.235
+SMNT-032N-1729E	2118	185.3	2340.2	82.3	50.4	1.632	242.4	179.2	1.353
+SMNT-032N-1729E	2522	185.1	2893.5	85.6	55.0	1.555	299.3	197.6	1.514
+SMNT-043N-1724E	2296	50.0	50.5	11.4	6.5	1.735	39.8	26.6	1.496
+SMNT-043N-1724E	2548	48.1	79.4	13.3	8.2	1.610	44.4	32.9	1.348
+SMNT-043N-1724E	2800	66.5	117.8	20.8	10.1	2.058	57.8	42.2	1.370
+SMNT-043N-1729E	2161	140.2	1033.3	55.3	32.0	1.730	167.8	120.4	1.395
+SMNT-043N-1729E	2438	141.2	1219.5	58.0	34.0	1.709	173.1	130.4	1.327
+SMNT-043N-1729E	2714	146.4	1412.9	60.3	36.9	1.631	183.6	139.2	1.319
+SMNT-047N-1725E	2336	122.3	459.3	38.9	17.7	2.199	110.2	84.8	1.300
+SMNT-047N-1725E	2643	125.9	588.8	43.3	20.2	2.147	113.5	95.4	1.190
+SMNT-047N-1725E	2949	133.5	743.9	60.6	24.2	2.507	117.5	111.9	1.050
+SMNT-071N-1712E	1552	105.2	832.5	49.3	23.0	2.140	135.7	113.3	1.198
+SMNT-071N-1712E	1940	108.8	1073.5	54.8	30.0	1.827	171.7	124.0	1.384
+SMNT-071N-1712E	2328	116.2	1610.5	65.4	37.0	1.767	191.8	150.9	1.271
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Curreri Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-002N-1729E	SMNT-002N-1729E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-002N-1729E.std.180m.mg.map.jpg	180	589	670	42
+Curreri Seamount -- Multibeam bathymetry	SMNT-002N-1729E	SMNT-002N-1729E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-002N-1729E.std.180m.mb.map.jpg	180	797	877	43
+Curreri Seamount -- Predicted satellite bathymetry	SMNT-002N-1729E	SMNT-002N-1729E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-002N-1729E.std.180m.ss.map.jpg	180	589	670	44
+Curreri Seamount -- Residual bathymetry	SMNT-002N-1729E	SMNT-002N-1729E	Seamount	Residual bathymetry	Map:Grid	SMNT-002N-1729E.std.180m.rs.map.jpg	180	589	670	45
+Kuria Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-002N-1735E	SMNT-002N-1735E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-002N-1735E.std.180m.mg.map.jpg	180	693	773	48
+Kuria Atoll -- Multibeam bathymetry	SMNT-002N-1735E	SMNT-002N-1735E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-002N-1735E.std.180m.mb.map.jpg	180	952	1033	49
+Kuria Atoll -- Predicted satellite bathymetry	SMNT-002N-1735E	SMNT-002N-1735E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-002N-1735E.std.180m.ss.map.jpg	180	693	773	50
+Kuria Atoll -- Residual bathymetry	SMNT-002N-1735E	SMNT-002N-1735E	Seamount	Residual bathymetry	Map:Grid	SMNT-002N-1735E.std.180m.rs.map.jpg	180	693	773	51
+Amu Tau Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-002S-1736E	SMNT-002S-1736E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-002S-1736E.std.180m.mg.map.jpg	180	693	773	54
+Amu Tau Seamount -- Multibeam bathymetry	SMNT-002S-1736E	SMNT-002S-1736E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-002S-1736E.std.180m.mb.map.jpg	180	952	1033	55
+Amu Tau Seamount -- Predicted satellite bathymetry	SMNT-002S-1736E	SMNT-002S-1736E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-002S-1736E.std.180m.ss.map.jpg	180	693	773	56
+Amu Tau Seamount -- Residual bathymetry	SMNT-002S-1736E	SMNT-002S-1736E	Seamount	Residual bathymetry	Map:Grid	SMNT-002S-1736E.std.180m.rs.map.jpg	180	693	773	57
+Mauga Umi Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-005N-1731E	SMNT-005N-1731E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-005N-1731E.std.180m.mg.map.jpg	180	589	670	60
+Mauga Umi Seamount -- Multibeam bathymetry	SMNT-005N-1731E	SMNT-005N-1731E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-005N-1731E.std.180m.mb.map.jpg	180	797	877	61
+Mauga Umi Seamount -- Predicted satellite bathymetry	SMNT-005N-1731E	SMNT-005N-1731E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-005N-1731E.std.180m.ss.map.jpg	180	589	670	62
+Mauga Umi Seamount -- Residual bathymetry	SMNT-005N-1731E	SMNT-005N-1731E	Seamount	Residual bathymetry	Map:Grid	SMNT-005N-1731E.std.180m.rs.map.jpg	180	589	670	63
+Tofe Tolu Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-007N-1732E	SMNT-007N-1732E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-007N-1732E.std.180m.mg.map.jpg	180	589	670	66
+Tofe Tolu Seamount -- Multibeam bathymetry	SMNT-007N-1732E	SMNT-007N-1732E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-007N-1732E.std.180m.mb.map.jpg	180	797	877	67
+Tofe Tolu Seamount -- Predicted satellite bathymetry	SMNT-007N-1732E	SMNT-007N-1732E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-007N-1732E.std.180m.ss.map.jpg	180	589	670	68
+Tofe Tolu Seamount -- Residual bathymetry	SMNT-007N-1732E	SMNT-007N-1732E	Seamount	Residual bathymetry	Map:Grid	SMNT-007N-1732E.std.180m.rs.map.jpg	180	589	670	69
+Nonouti Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-007S-1743E	SMNT-007S-1743E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-007S-1743E.std.180m.mg.map.jpg	180	1212	1292	72
+Nonouti Guyot -- Multibeam bathymetry	SMNT-007S-1743E	SMNT-007S-1743E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-007S-1743E.std.180m.mb.map.jpg	180	1730	1810	73
+Nonouti Guyot -- Predicted satellite bathymetry	SMNT-007S-1743E	SMNT-007S-1743E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-007S-1743E.std.180m.ss.map.jpg	180	1212	1292	74
+Nonouti Guyot -- Residual bathymetry	SMNT-007S-1743E	SMNT-007S-1743E	Seamount	Residual bathymetry	Map:Grid	SMNT-007S-1743E.std.180m.rs.map.jpg	180	1212	1292	75
+Palutu Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-009S-1755E	SMNT-009S-1755E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-009S-1755E.std.180m.mg.map.jpg	180	693	773	78
+Palutu Seamount -- Multibeam bathymetry	SMNT-009S-1755E	SMNT-009S-1755E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-009S-1755E.std.180m.mb.map.jpg	180	952	1033	79
+Palutu Seamount -- Predicted satellite bathymetry	SMNT-009S-1755E	SMNT-009S-1755E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-009S-1755E.std.180m.ss.map.jpg	180	693	773	80
+Palutu Seamount -- Residual bathymetry	SMNT-009S-1755E	SMNT-009S-1755E	Seamount	Residual bathymetry	Map:Grid	SMNT-009S-1755E.std.180m.rs.map.jpg	180	693	773	81
+Tabiteuea Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-013S-1748E	SMNT-013S-1748E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-013S-1748E.std.180m.mg.map.jpg	180	1056	1136	84
+Tabiteuea Guyot -- Multibeam bathymetry	SMNT-013S-1748E	SMNT-013S-1748E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-013S-1748E.std.180m.mb.map.jpg	180	1497	1577	85
+Tabiteuea Guyot -- Predicted satellite bathymetry	SMNT-013S-1748E	SMNT-013S-1748E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-013S-1748E.std.180m.ss.map.jpg	180	1056	1136	86
+Tabiteuea Guyot -- Residual bathymetry	SMNT-013S-1748E	SMNT-013S-1748E	Seamount	Residual bathymetry	Map:Grid	SMNT-013S-1748E.std.180m.rs.map.jpg	180	1056	1136	87
+Beru Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-013S-1760E	SMNT-013S-1760E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-013S-1760E.std.180m.mg.map.jpg	180	693	773	90
+Beru Guyot -- Multibeam bathymetry	SMNT-013S-1760E	SMNT-013S-1760E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-013S-1760E.std.180m.mb.map.jpg	180	952	1033	91
+Beru Guyot -- Predicted satellite bathymetry	SMNT-013S-1760E	SMNT-013S-1760E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-013S-1760E.std.180m.ss.map.jpg	180	693	773	92
+Beru Guyot -- Residual bathymetry	SMNT-013S-1760E	SMNT-013S-1760E	Seamount	Residual bathymetry	Map:Grid	SMNT-013S-1760E.std.180m.rs.map.jpg	180	693	773	93
+Tarawa Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-014N-1730E	SMNT-014N-1730E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-014N-1730E.std.180m.mg.map.jpg	180	1004	1084	96
+Tarawa Guyot -- Multibeam bathymetry	SMNT-014N-1730E	SMNT-014N-1730E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-014N-1730E.std.180m.mb.map.jpg	180	1419	1499	97
+Tarawa Guyot -- Predicted satellite bathymetry	SMNT-014N-1730E	SMNT-014N-1730E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-014N-1730E.std.180m.ss.map.jpg	180	1004	1084	98
+Tarawa Guyot -- Residual bathymetry	SMNT-014N-1730E	SMNT-014N-1730E	Seamount	Residual bathymetry	Map:Grid	SMNT-014N-1730E.std.180m.rs.map.jpg	180	1004	1084	99
+Kautu Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-014S-1754E	SMNT-014S-1754E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-014S-1754E.std.180m.mg.map.jpg	180	589	670	102
+Kautu Seamount -- Multibeam bathymetry	SMNT-014S-1754E	SMNT-014S-1754E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-014S-1754E.std.180m.mb.map.jpg	180	797	877	103
+Kautu Seamount -- Predicted satellite bathymetry	SMNT-014S-1754E	SMNT-014S-1754E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-014S-1754E.std.180m.ss.map.jpg	180	589	670	104
+Kautu Seamount -- Residual bathymetry	SMNT-014S-1754E	SMNT-014S-1754E	Seamount	Residual bathymetry	Map:Grid	SMNT-014S-1754E.std.180m.rs.map.jpg	180	589	670	105
+Nikunau Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-014S-1765E	SMNT-014S-1765E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-014S-1765E.std.180m.mg.map.jpg	180	693	773	108
+Nikunau Seamount -- Multibeam bathymetry	SMNT-014S-1765E	SMNT-014S-1765E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-014S-1765E.std.180m.mb.map.jpg	180	952	1033	109
+Nikunau Seamount -- Predicted satellite bathymetry	SMNT-014S-1765E	SMNT-014S-1765E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-014S-1765E.std.180m.ss.map.jpg	180	693	773	110
+Nikunau Seamount -- Residual bathymetry	SMNT-014S-1765E	SMNT-014S-1765E	Seamount	Residual bathymetry	Map:Grid	SMNT-014S-1765E.std.180m.rs.map.jpg	180	693	773	111
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (114)		SMNT-015N-1736E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-015N-1736E.std.180m.mg.map.jpg	180	589	670	114
+Unnamed Seamount -- Multibeam bathymetry (115)		SMNT-015N-1736E	Regional	Multibeam bathymetry	Map:Grid	SMNT-015N-1736E.std.180m.mb.map.jpg	180	797	877	115
+Unnamed Seamount -- Predicted satellite bathymetry (116)		SMNT-015N-1736E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-015N-1736E.std.180m.ss.map.jpg	180	589	670	116
+Unnamed Seamount -- Residual bathymetry (117)		SMNT-015N-1736E	Regional	Residual bathymetry	Map:Grid	SMNT-015N-1736E.std.180m.rs.map.jpg	180	589	670	117
+Mauga Povi Hill -- Multibeam data merged with predicted satellite bathymetry	SMNT-018S-1758E	SMNT-018S-1758E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-018S-1758E.std.180m.mg.map.jpg	180	589	670	120
+Mauga Povi Hill -- Multibeam bathymetry	SMNT-018S-1758E	SMNT-018S-1758E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-018S-1758E.std.180m.mb.map.jpg	180	797	877	121
+Mauga Povi Hill -- Predicted satellite bathymetry	SMNT-018S-1758E	SMNT-018S-1758E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-018S-1758E.std.180m.ss.map.jpg	180	589	670	122
+Mauga Povi Hill -- Residual bathymetry	SMNT-018S-1758E	SMNT-018S-1758E	Seamount	Residual bathymetry	Map:Grid	SMNT-018S-1758E.std.180m.rs.map.jpg	180	589	670	123
+Abaiang Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-019N-1729E	SMNT-019N-1729E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-019N-1729E.std.180m.mg.map.jpg	180	1004	1084	126
+Abaiang Guyot -- Multibeam bathymetry	SMNT-019N-1729E	SMNT-019N-1729E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-019N-1729E.std.180m.mb.map.jpg	180	1419	1499	127
+Abaiang Guyot -- Predicted satellite bathymetry	SMNT-019N-1729E	SMNT-019N-1729E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-019N-1729E.std.180m.ss.map.jpg	180	1004	1084	128
+Abaiang Guyot -- Residual bathymetry	SMNT-019N-1729E	SMNT-019N-1729E	Seamount	Residual bathymetry	Map:Grid	SMNT-019N-1729E.std.180m.rs.map.jpg	180	1004	1084	129
+Onotoa Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-019S-1756E	SMNT-019S-1756E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-019S-1756E.std.180m.mg.map.jpg	180	693	773	132
+Onotoa Guyot -- Multibeam bathymetry	SMNT-019S-1756E	SMNT-019S-1756E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-019S-1756E.std.180m.mb.map.jpg	180	952	1033	133
+Onotoa Guyot -- Predicted satellite bathymetry	SMNT-019S-1756E	SMNT-019S-1756E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-019S-1756E.std.180m.ss.map.jpg	180	693	773	134
+Onotoa Guyot -- Residual bathymetry	SMNT-019S-1756E	SMNT-019S-1756E	Seamount	Residual bathymetry	Map:Grid	SMNT-019S-1756E.std.180m.rs.map.jpg	180	693	773	135
+Marakei -- Multibeam data merged with predicted satellite bathymetry	SMNT-020N-1733E	SMNT-020N-1733E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-020N-1733E.std.180m.mg.map.jpg	180	693	773	138
+Marakei -- Multibeam bathymetry	SMNT-020N-1733E	SMNT-020N-1733E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-020N-1733E.std.180m.mb.map.jpg	180	952	1033	139
+Marakei -- Predicted satellite bathymetry	SMNT-020N-1733E	SMNT-020N-1733E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-020N-1733E.std.180m.ss.map.jpg	180	693	773	140
+Marakei -- Residual bathymetry	SMNT-020N-1733E	SMNT-020N-1733E	Seamount	Residual bathymetry	Map:Grid	SMNT-020N-1733E.std.180m.rs.map.jpg	180	693	773	141
+Iroij Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-021S-1762E	SMNT-021S-1762E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-021S-1762E.std.180m.mg.map.jpg	180	693	773	144
+Iroij Seamount -- Multibeam bathymetry	SMNT-021S-1762E	SMNT-021S-1762E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-021S-1762E.std.180m.mb.map.jpg	180	952	1033	145
+Iroij Seamount -- Predicted satellite bathymetry	SMNT-021S-1762E	SMNT-021S-1762E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-021S-1762E.std.180m.ss.map.jpg	180	693	773	146
+Iroij Seamount -- Residual bathymetry	SMNT-021S-1762E	SMNT-021S-1762E	Seamount	Residual bathymetry	Map:Grid	SMNT-021S-1762E.std.180m.rs.map.jpg	180	693	773	147
+Ava Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-023S-1750E	SMNT-023S-1750E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-023S-1750E.std.180m.mg.map.jpg	180	589	670	150
+Ava Seamount -- Multibeam bathymetry	SMNT-023S-1750E	SMNT-023S-1750E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-023S-1750E.std.180m.mb.map.jpg	180	797	877	151
+Ava Seamount -- Predicted satellite bathymetry	SMNT-023S-1750E	SMNT-023S-1750E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-023S-1750E.std.180m.ss.map.jpg	180	589	670	152
+Ava Seamount -- Residual bathymetry	SMNT-023S-1750E	SMNT-023S-1750E	Seamount	Residual bathymetry	Map:Grid	SMNT-023S-1750E.std.180m.rs.map.jpg	180	589	670	153
+Sakau Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-023S-1778E	SMNT-023S-1778E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-023S-1778E.std.180m.mg.map.jpg	180	693	773	156
+Sakau Seamount -- Multibeam bathymetry	SMNT-023S-1778E	SMNT-023S-1778E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-023S-1778E.std.180m.mb.map.jpg	180	952	1033	157
+Sakau Seamount -- Predicted satellite bathymetry	SMNT-023S-1778E	SMNT-023S-1778E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-023S-1778E.std.180m.ss.map.jpg	180	693	773	158
+Sakau Seamount -- Residual bathymetry	SMNT-023S-1778E	SMNT-023S-1778E	Seamount	Residual bathymetry	Map:Grid	SMNT-023S-1778E.std.180m.rs.map.jpg	180	693	773	159
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (162)		SMNT-023S-1784E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-023S-1784E.std.180m.mg.map.jpg	180	641	721	162
+Unnamed Seamount -- Multibeam bathymetry (163)		SMNT-023S-1784E	Regional	Multibeam bathymetry	Map:Grid	SMNT-023S-1784E.std.180m.mb.map.jpg	180	875	955	163
+Unnamed Seamount -- Predicted satellite bathymetry (164)		SMNT-023S-1784E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-023S-1784E.std.180m.ss.map.jpg	180	641	721	164
+Unnamed Seamount -- Residual bathymetry (165)		SMNT-023S-1784E	Regional	Residual bathymetry	Map:Grid	SMNT-023S-1784E.std.180m.rs.map.jpg	180	641	721	165
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (168)		SMNT-023S-1798E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-023S-1798E.std.180m.mg.map.jpg	180	589	670	168
+Unnamed Seamount -- Multibeam bathymetry (169)		SMNT-023S-1798E	Regional	Multibeam bathymetry	Map:Grid	SMNT-023S-1798E.std.180m.mb.map.jpg	180	797	877	169
+Unnamed Seamount -- Predicted satellite bathymetry (170)		SMNT-023S-1798E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-023S-1798E.std.180m.ss.map.jpg	180	589	670	170
+Unnamed Seamount -- Residual bathymetry (171)		SMNT-023S-1798E	Regional	Residual bathymetry	Map:Grid	SMNT-023S-1798E.std.180m.rs.map.jpg	180	589	670	171
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (174)		SMNT-023S-1800E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-023S-1800E.std.180m.mg.map.jpg	180	589	670	174
+Unnamed Seamount -- Multibeam bathymetry (175)		SMNT-023S-1800E	Regional	Multibeam bathymetry	Map:Grid	SMNT-023S-1800E.std.180m.mb.map.jpg	180	797	877	175
+Unnamed Seamount -- Predicted satellite bathymetry (176)		SMNT-023S-1800E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-023S-1800E.std.180m.ss.map.jpg	180	589	670	176
+Unnamed Seamount -- Residual bathymetry (177)		SMNT-023S-1800E	Regional	Residual bathymetry	Map:Grid	SMNT-023S-1800E.std.180m.rs.map.jpg	180	589	670	177
+Fetulele Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-024N-1728E	SMNT-024N-1728E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-024N-1728E.std.180m.mg.map.jpg	180	589	670	180
+Fetulele Seamount -- Multibeam bathymetry	SMNT-024N-1728E	SMNT-024N-1728E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-024N-1728E.std.180m.mb.map.jpg	180	797	877	181
+Fetulele Seamount -- Predicted satellite bathymetry	SMNT-024N-1728E	SMNT-024N-1728E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-024N-1728E.std.180m.ss.map.jpg	180	589	670	182
+Fetulele Seamount -- Residual bathymetry	SMNT-024N-1728E	SMNT-024N-1728E	Seamount	Residual bathymetry	Map:Grid	SMNT-024N-1728E.std.180m.rs.map.jpg	180	589	670	183
+Tuba Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-024S-1754E	SMNT-024S-1754E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-024S-1754E.std.180m.mg.map.jpg	180	589	670	186
+Tuba Seamount -- Multibeam bathymetry	SMNT-024S-1754E	SMNT-024S-1754E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-024S-1754E.std.180m.mb.map.jpg	180	797	877	187
+Tuba Seamount -- Predicted satellite bathymetry	SMNT-024S-1754E	SMNT-024S-1754E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-024S-1754E.std.180m.ss.map.jpg	180	589	670	188
+Tuba Seamount -- Residual bathymetry	SMNT-024S-1754E	SMNT-024S-1754E	Seamount	Residual bathymetry	Map:Grid	SMNT-024S-1754E.std.180m.rs.map.jpg	180	589	670	189
+Musina Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-025N-1729E	SMNT-025N-1729E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-025N-1729E.std.180m.mg.map.jpg	180	589	670	192
+Musina Seamount -- Multibeam bathymetry	SMNT-025N-1729E	SMNT-025N-1729E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-025N-1729E.std.180m.mb.map.jpg	180	797	877	193
+Musina Seamount -- Predicted satellite bathymetry	SMNT-025N-1729E	SMNT-025N-1729E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-025N-1729E.std.180m.ss.map.jpg	180	589	670	194
+Musina Seamount -- Residual bathymetry	SMNT-025N-1729E	SMNT-025N-1729E	Seamount	Residual bathymetry	Map:Grid	SMNT-025N-1729E.std.180m.rs.map.jpg	180	589	670	195
+Tamana Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-025S-1760E	SMNT-025S-1760E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-025S-1760E.std.180m.mg.map.jpg	180	641	721	198
+Tamana Seamount -- Multibeam bathymetry	SMNT-025S-1760E	SMNT-025S-1760E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-025S-1760E.std.180m.mb.map.jpg	180	875	955	199
+Tamana Seamount -- Predicted satellite bathymetry	SMNT-025S-1760E	SMNT-025S-1760E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-025S-1760E.std.180m.ss.map.jpg	180	641	721	200
+Tamana Seamount -- Residual bathymetry	SMNT-025S-1760E	SMNT-025S-1760E	Seamount	Residual bathymetry	Map:Grid	SMNT-025S-1760E.std.180m.rs.map.jpg	180	641	721	201
+Seka Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-025S-1791E	SMNT-025S-1791E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-025S-1791E.std.180m.mg.map.jpg	180	641	721	204
+Seka Seamount -- Multibeam bathymetry	SMNT-025S-1791E	SMNT-025S-1791E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-025S-1791E.std.180m.mb.map.jpg	180	875	955	205
+Seka Seamount -- Predicted satellite bathymetry	SMNT-025S-1791E	SMNT-025S-1791E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-025S-1791E.std.180m.ss.map.jpg	180	641	721	206
+Seka Seamount -- Residual bathymetry	SMNT-025S-1791E	SMNT-025S-1791E	Seamount	Residual bathymetry	Map:Grid	SMNT-025S-1791E.std.180m.rs.map.jpg	180	641	721	207
+Arorae Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-026S-1768E	SMNT-026S-1768E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-026S-1768E.std.180m.mg.map.jpg	180	693	773	210
+Arorae Guyot -- Multibeam bathymetry	SMNT-026S-1768E	SMNT-026S-1768E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-026S-1768E.std.180m.mb.map.jpg	180	952	1033	211
+Arorae Guyot -- Predicted satellite bathymetry	SMNT-026S-1768E	SMNT-026S-1768E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-026S-1768E.std.180m.ss.map.jpg	180	693	773	212
+Arorae Guyot -- Residual bathymetry	SMNT-026S-1768E	SMNT-026S-1768E	Seamount	Residual bathymetry	Map:Grid	SMNT-026S-1768E.std.180m.rs.map.jpg	180	693	773	213
+Burtaritari Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-032N-1729E	SMNT-032N-1729E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-032N-1729E.std.180m.mg.map.jpg	180	1108	1188	216
+Burtaritari Guyot -- Multibeam bathymetry	SMNT-032N-1729E	SMNT-032N-1729E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-032N-1729E.std.180m.mb.map.jpg	180	1575	1655	217
+Burtaritari Guyot -- Predicted satellite bathymetry	SMNT-032N-1729E	SMNT-032N-1729E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-032N-1729E.std.180m.ss.map.jpg	180	1108	1188	218
+Burtaritari Guyot -- Residual bathymetry	SMNT-032N-1729E	SMNT-032N-1729E	Seamount	Residual bathymetry	Map:Grid	SMNT-032N-1729E.std.180m.rs.map.jpg	180	1108	1188	219
+Sua Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-043N-1724E	SMNT-043N-1724E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-043N-1724E.std.180m.mg.map.jpg	180	589	670	222
+Sua Seamount -- Multibeam bathymetry	SMNT-043N-1724E	SMNT-043N-1724E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-043N-1724E.std.180m.mb.map.jpg	180	797	877	223
+Sua Seamount -- Predicted satellite bathymetry	SMNT-043N-1724E	SMNT-043N-1724E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-043N-1724E.std.180m.ss.map.jpg	180	589	670	224
+Sua Seamount -- Residual bathymetry	SMNT-043N-1724E	SMNT-043N-1724E	Seamount	Residual bathymetry	Map:Grid	SMNT-043N-1724E.std.180m.rs.map.jpg	180	589	670	225
+Pulu Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-043N-1729E	SMNT-043N-1729E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-043N-1729E.std.180m.mg.map.jpg	180	745	825	228
+Pulu Guyot -- Multibeam bathymetry	SMNT-043N-1729E	SMNT-043N-1729E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-043N-1729E.std.180m.mb.map.jpg	180	1030	1110	229
+Pulu Guyot -- Predicted satellite bathymetry	SMNT-043N-1729E	SMNT-043N-1729E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-043N-1729E.std.180m.ss.map.jpg	180	745	825	230
+Pulu Guyot -- Residual bathymetry	SMNT-043N-1729E	SMNT-043N-1729E	Seamount	Residual bathymetry	Map:Grid	SMNT-043N-1729E.std.180m.rs.map.jpg	180	745	825	231
+Niu Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-047N-1725E	SMNT-047N-1725E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-047N-1725E.std.180m.mg.map.jpg	180	693	773	234
+Niu Guyot -- Multibeam bathymetry	SMNT-047N-1725E	SMNT-047N-1725E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-047N-1725E.std.180m.mb.map.jpg	180	952	1033	235
+Niu Guyot -- Predicted satellite bathymetry	SMNT-047N-1725E	SMNT-047N-1725E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-047N-1725E.std.180m.ss.map.jpg	180	693	773	236
+Niu Guyot -- Residual bathymetry	SMNT-047N-1725E	SMNT-047N-1725E	Seamount	Residual bathymetry	Map:Grid	SMNT-047N-1725E.std.180m.rs.map.jpg	180	693	773	237
+Majuro Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-071N-1712E	SMNT-071N-1712E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-071N-1712E.std.180m.mg.map.jpg	180	1056	1136	240
+Majuro Guyot -- Multibeam bathymetry	SMNT-071N-1712E	SMNT-071N-1712E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-071N-1712E.std.180m.mb.map.jpg	180	1497	1577	241
+Majuro Guyot -- Predicted satellite bathymetry	SMNT-071N-1712E	SMNT-071N-1712E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-071N-1712E.std.180m.ss.map.jpg	180	1056	1136	242
+Majuro Guyot -- Residual bathymetry	SMNT-071N-1712E	SMNT-071N-1712E	Seamount	Residual bathymetry	Map:Grid	SMNT-071N-1712E.std.180m.rs.map.jpg	180	1056	1136	243
+Gilberts Ridge -- Multibeam data merged with predicted satellite bathymetry		SMNT-002N-1729E:SMNT-002N-1735E:SMNT-002S-1736E:SMNT-005N-1731E:SMNT-007N-1732E:SMNT-007S-1743E:SMNT-009S-1755E:SMNT-013S-1748E:SMNT-013S-1760E:SMNT-014N-1730E:SMNT-014S-1754E:SMNT-014S-1765E:SMNT-015N-1736E:SMNT-018S-1758E:SMNT-019N-1729E:SMNT-019S-1756E:SMNT-020N-1733E:SMNT-021S-1762E:SMNT-023S-1750E:SMNT-023S-1778E:SMNT-023S-1784E:SMNT-023S-1798E:SMNT-023S-1800E:SMNT-024N-1728E:SMNT-024S-1754E:SMNT-025N-1729E:SMNT-025S-1760E:SMNT-025S-1791E:SMNT-026S-1768E:SMNT-032N-1729E:SMNT-043N-1724E:SMNT-043N-1729E:SMNT-047N-1725E:SMNT-071N-1712E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-024N-1746E.std.990m.mg.map.jpg	990	1981	2415	246
+Gilberts Ridge -- Multibeam bathymetry		SMNT-002N-1729E:SMNT-002N-1735E:SMNT-002S-1736E:SMNT-005N-1731E:SMNT-007N-1732E:SMNT-007S-1743E:SMNT-009S-1755E:SMNT-013S-1748E:SMNT-013S-1760E:SMNT-014N-1730E:SMNT-014S-1754E:SMNT-014S-1765E:SMNT-015N-1736E:SMNT-018S-1758E:SMNT-019N-1729E:SMNT-019S-1756E:SMNT-020N-1733E:SMNT-021S-1762E:SMNT-023S-1750E:SMNT-023S-1778E:SMNT-023S-1784E:SMNT-023S-1798E:SMNT-023S-1800E:SMNT-024N-1728E:SMNT-024S-1754E:SMNT-025N-1729E:SMNT-025S-1760E:SMNT-025S-1791E:SMNT-026S-1768E:SMNT-032N-1729E:SMNT-043N-1724E:SMNT-043N-1729E:SMNT-047N-1725E:SMNT-071N-1712E	Regional	Multibeam bathymetry	Map:Grid	REGION-024N-1746E.std.990m.mb.map.jpg	990	1981	2415	247
+Gilberts Ridge -- Predicted satellite bathymetry		SMNT-002N-1729E:SMNT-002N-1735E:SMNT-002S-1736E:SMNT-005N-1731E:SMNT-007N-1732E:SMNT-007S-1743E:SMNT-009S-1755E:SMNT-013S-1748E:SMNT-013S-1760E:SMNT-014N-1730E:SMNT-014S-1754E:SMNT-014S-1765E:SMNT-015N-1736E:SMNT-018S-1758E:SMNT-019N-1729E:SMNT-019S-1756E:SMNT-020N-1733E:SMNT-021S-1762E:SMNT-023S-1750E:SMNT-023S-1778E:SMNT-023S-1784E:SMNT-023S-1798E:SMNT-023S-1800E:SMNT-024N-1728E:SMNT-024S-1754E:SMNT-025N-1729E:SMNT-025S-1760E:SMNT-025S-1791E:SMNT-026S-1768E:SMNT-032N-1729E:SMNT-043N-1724E:SMNT-043N-1729E:SMNT-047N-1725E:SMNT-071N-1712E	Regional	Predicted satellite bathymetry	Map:Grid	REGION-024N-1746E.std.990m.ss.map.jpg	990	1981	2415	248
+Gilberts Ridge -- Residual bathymetry		SMNT-002N-1729E:SMNT-002N-1735E:SMNT-002S-1736E:SMNT-005N-1731E:SMNT-007N-1732E:SMNT-007S-1743E:SMNT-009S-1755E:SMNT-013S-1748E:SMNT-013S-1760E:SMNT-014N-1730E:SMNT-014S-1754E:SMNT-014S-1765E:SMNT-015N-1736E:SMNT-018S-1758E:SMNT-019N-1729E:SMNT-019S-1756E:SMNT-020N-1733E:SMNT-021S-1762E:SMNT-023S-1750E:SMNT-023S-1778E:SMNT-023S-1784E:SMNT-023S-1798E:SMNT-023S-1800E:SMNT-024N-1728E:SMNT-024S-1754E:SMNT-025N-1729E:SMNT-025S-1760E:SMNT-025S-1791E:SMNT-026S-1768E:SMNT-032N-1729E:SMNT-043N-1724E:SMNT-043N-1729E:SMNT-047N-1725E:SMNT-071N-1712E	Regional	Residual bathymetry	Map:Grid	REGION-024N-1746E.std.990m.rs.map.jpg	990	1981	2415	249
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-1-7 -- graphs, spreadsheet	SMNT-047N-1725E	442	https://earthref.org/ERDA/442/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-3-7 -- graphs, spreadsheet	SMNT-043N-1724E	443	https://earthref.org/ERDA/443/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-4-3 -- graphs, spreadsheet	SMNT-032N-1729E	444	https://earthref.org/ERDA/444/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-4-6 -- graphs, spreadsheet	SMNT-032N-1729E	445	https://earthref.org/ERDA/445/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-5-5 -- graphs, spreadsheet	SMNT-025N-1729E	446	https://earthref.org/ERDA/446/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-7-1 -- graphs, spreadsheet	SMNT-007N-1732E	447	https://earthref.org/ERDA/447/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-7-2 -- graphs, spreadsheet	SMNT-007N-1732E	448	https://earthref.org/ERDA/448/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-14-7 -- graphs, spreadsheet	SMNT-009S-1755E	449	https://earthref.org/ERDA/449/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-16-22 -- graphs, spreadsheet	SMNT-013S-1760E	450	https://earthref.org/ERDA/450/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-17-28 -- graphs, spreadsheet	SMNT-014S-1754E	451	https://earthref.org/ERDA/451/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-18-16 -- graphs, spreadsheet	SMNT-023S-1750E	452	https://earthref.org/ERDA/452/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-24-16 -- graphs, spreadsheet	SMNT-023S-1778E	453	https://earthref.org/ERDA/453/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-24-30 -- graphs, spreadsheet	SMNT-023S-1778E	454	https://earthref.org/ERDA/454/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-25-6 -- graphs, spreadsheet	SMNT-025S-1791E	455	https://earthref.org/ERDA/455/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-25-47 -- graphs, spreadsheet	SMNT-025S-1791E	456	https://earthref.org/ERDA/456/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-25-48 -- graphs, spreadsheet	SMNT-025S-1791E	457	https://earthref.org/ERDA/457/
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2703	SMNT-014N-1730E	Falkland, A.C. and Woodroffe, C.D. (1997). Geology and hydrogeology of Tarawa and Christmas Island, Kiribati. 54: 577-610.	https://earthref.org/ERR/2703/
+2717	SMNT-019S-1756E	Todd, R. (1961). Foraminifera from Onotoa Atoll, Gilbert Islands. United States Geological Survey, Professional Paper P0354-H: 171-191.	https://earthref.org/ERR/2717/
+2721	SMNT-014N-1730E:SMNT-020N-1733E	Neprochnov, Y.P., Moskalenko, V.N. and Shishkina, N.A. (1977). The structure of the sedimentary mantle and basement in the Gilbert Islands region. Oceanology 17(3): 308-310.	https://earthref.org/ERR/2721/

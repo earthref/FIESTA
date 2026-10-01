@@ -1,0 +1,115 @@
+# FIESTA deployment configuration — Seamount Catalog (SC) node
+# The Seamount Biogeosciences Network's catalog of seamount morphology:
+# location, size, shape and setting for each seamount, the contour-by-contour
+# morphology behind those numbers, the bathymetric maps and grids it was
+# measured from (one `maps` row per map, with its grid), linked ERDA files, and
+# the literature (ERR) on each seamount.
+# Ported from the legacy Perl CGI catalog at https://earthref.org/SC/ —
+# docs/sc-node.md has the field mapping and how the catalog is imported.
+
+fiesta: 1
+deployment: node
+
+node:
+  key: SC
+  slug: sc
+  title: Seamount Catalog (SC)
+  subtitle: >-
+    A digital archive of seamount morphology, bathymetric maps and grids, and
+    the literature on each seamount, from the Seamount Biogeosciences Network.
+  color: "#005b87" # SBN blue (frontend/src/lib/portals.ts)
+  links:
+    website: https://earthref.org/SC/
+
+search:
+  index: sc
+  # One contribution per legacy region (a seamount trail or ocean basin); each
+  # level's `columns` are its Summaries grid, edited in the Summary Grid tab.
+  levels:
+    - { name: Contributions, table: contribution }
+    - name: Seamounts
+      table: seamounts
+      count_field: summary.seamounts._n_results
+      columns:
+        - { cell: title, column: seamount_name, subtitle_column: seamount }
+        - { column: seamount_type, label: Type, width: 110 }
+        - { column: size_class, label: Size, width: 120 }
+        - { column: region, label: Region, width: 210 }
+        - { column: plate, label: Plate, width: 130 }
+        - { column: lat, label: Latitude, width: 100 }
+        - { column: lon, label: Longitude, width: 100 }
+        - { column: height, label: Height (m), width: 110 }
+        - { column: summit_depth, label: Summit (m), width: 110 }
+        - { column: volume, label: Volume (km³), width: 120 }
+        - { column: tectonic_setting, label: Tectonic Setting, width: 160 }
+        - { cell: contributed }
+    - name: Maps
+      table: maps
+      count_field: summary.maps._n_results
+      columns:
+        - { cell: title, column: map, subtitle_column: file_name }
+        - { column: data_type, label: Bathymetry, width: 260 }
+        - { column: scale, label: Scale, width: 100 }
+        - { column: products, label: Products, width: 110 }
+        - { column: grid_spacing, label: Grid Spacing (m), width: 140 }
+        - { cell: contributed }
+    - name: References
+      table: references
+      count_field: summary.references._n_results
+      columns:
+        - { cell: title, column: citation, subtitle_column: url }
+        - { column: reference, label: ERR ID, width: 100 }
+        - { cell: contributed }
+  # Searchable without a tab of their own.
+  extra_types: [contours, files]
+  filters:
+    - { type: facet, field: seamount_type }
+    - { type: facet, field: size_class }
+    - { type: facet, field: region }
+    - { type: facet, field: plate }
+    - { type: facet, field: tectonic_setting }
+    - { type: facet, field: oceanic_province }
+    - { type: facet, field: volcanic_activity }
+    - { type: facet, field: data_type }
+    - { type: facet, field: scale }
+    - { type: facet, field: products }
+
+storage:
+  bucket: sc
+
+data_model:
+  versions: ["1.0"]
+  latest: "1.0"
+  dir: sc/data_models
+
+vocabularies:
+  controlled: sc/controlled_vocabularies.json
+  suggested: sc/suggested_vocabularies.json
+
+# Seamounts first, so every level below can take its position from the
+# seamount it names (`seamount`); maps, files and references also list every
+# seamount they cover in `seamounts`.
+hierarchy:
+  - contribution
+  - seamounts
+  - contours
+  - maps
+  - files
+  - references
+
+# Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
+pages: []
+
+features:
+  plugins: []
+
+# Production serves the API but not the web app at /SC/ — the legacy CGI
+# catalog still answers there until cutover; a local stack serves both.
+publish:
+  api: true
+  web: false
+
+# Local fixtures only; never read during normal application startup. The
+# catalog itself is generated from earthref.org/SC by scripts/sc-legacy-catalog.py.
+development:
+  seed_manifest: sc/seeds/manifest.yaml

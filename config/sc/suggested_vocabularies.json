@@ -1,0 +1,188 @@
+{
+	"region": {
+		"label": "Regions",
+		"database_column": "region",
+		"items": [
+			{
+				"item": "Azores"
+			},
+			{
+				"item": "Bowie Seamount Trail"
+			},
+			{
+				"item": "Carribean Sea"
+			},
+			{
+				"item": "Cobb Seamount Trail"
+			},
+			{
+				"item": "Dellwood Seamounts"
+			},
+			{
+				"item": "Gilberts Ridge"
+			},
+			{
+				"item": "Hawaii-Emperor Seamount Trail"
+			},
+			{
+				"item": "Kodiak Seamount Trail"
+			},
+			{
+				"item": "Line Islands"
+			},
+			{
+				"item": "Louisville Seamount Trail"
+			},
+			{
+				"item": "Mathematicians Seamount Trail"
+			},
+			{
+				"item": "Mediterranean"
+			},
+			{
+				"item": "Mid-Pacific Mountains"
+			},
+			{
+				"item": "Musicians Seamount Trail"
+			},
+			{
+				"item": "NE Atlantic"
+			},
+			{
+				"item": "NE Pacific"
+			},
+			{
+				"item": "NW Atlantic"
+			},
+			{
+				"item": "NW Pacific"
+			},
+			{
+				"item": "Nazca Seamount Trail"
+			},
+			{
+				"item": "SE Atlantic"
+			},
+			{
+				"item": "SE Pacific"
+			},
+			{
+				"item": "SW Atlantic"
+			},
+			{
+				"item": "SW Pacific"
+			},
+			{
+				"item": "Sala y Gomez Seamount Trail"
+			},
+			{
+				"item": "Samoan Hotspot Trail"
+			},
+			{
+				"item": "Society Seamount Trail"
+			},
+			{
+				"item": "South Atlantic"
+			},
+			{
+				"item": "South Fiji Basin"
+			},
+			{
+				"item": "Tokelau Seamounts"
+			},
+			{
+				"item": "Tuamotu Seamount Trail"
+			},
+			{
+				"item": "Tuvalu Seamount Trail"
+			},
+			{
+				"item": "West Pacific Seamount Province"
+			}
+		]
+	},
+	"plate": {
+		"label": "Plates",
+		"database_column": "plate",
+		"items": [
+			{
+				"item": "Nazca Plate"
+			},
+			{
+				"item": "Pacific Plate"
+			}
+		]
+	},
+	"shape_class": {
+		"label": "Shape Classes",
+		"database_column": "shape_class",
+		"items": [
+			{
+				"item": "A1"
+			},
+			{
+				"item": "A2"
+			},
+			{
+				"item": "A3"
+			},
+			{
+				"item": "A4"
+			},
+			{
+				"item": "A5"
+			},
+			{
+				"item": "B1"
+			},
+			{
+				"item": "B2"
+			},
+			{
+				"item": "B3"
+			},
+			{
+				"item": "B4"
+			},
+			{
+				"item": "B5"
+			},
+			{
+				"item": "C1"
+			},
+			{
+				"item": "C2"
+			},
+			{
+				"item": "C3"
+			},
+			{
+				"item": "C4"
+			},
+			{
+				"item": "C5"
+			},
+			{
+				"item": "D1"
+			},
+			{
+				"item": "D2"
+			},
+			{
+				"item": "D3"
+			},
+			{
+				"item": "D4"
+			},
+			{
+				"item": "E1"
+			},
+			{
+				"item": "E2"
+			},
+			{
+				"item": "E3"
+			}
+		]
+	}
+}

@@ -1,0 +1,1056 @@
+{
+	"updated_day": "2026:09:30",
+	"published_day": "2026:09:30",
+	"data_model_version": "1.0",
+	"tables": {
+		"contribution": {
+			"label": "Contribution",
+			"position": 1,
+			"description": "Contribution metadata",
+			"notes": "One contribution per legacy catalog region (a seamount trail, chain or ocean basin).",
+			"columns": {
+				"id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique SC Contribution ID",
+					"notes": "Written during contribution activation",
+					"examples": [
+						"1"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"version": {
+					"label": "Version",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Contribution version number",
+					"notes": "1 for the original contribution, empty if the contribution is not activated",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"timestamp": {
+					"label": "Activation Timestamp",
+					"group": "Contribution",
+					"position": 3,
+					"type": "Timestamp",
+					"description": "Date and time of contribution activation",
+					"notes": "ISO 8601 date and time (e.g. \"yyyy-mm-ddThh:mm:ss.sssZ\")",
+					"examples": [
+						"2026-09-30T19:03:00Z"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"contributor": {
+					"label": "Contributor",
+					"group": "Contribution",
+					"position": 4,
+					"type": "String",
+					"description": "Contributor EarthRef handle",
+					"notes": "Written during contribution activation",
+					"examples": [
+						"@akoppers"
+					],
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"is_validated": {
+					"label": "Is Validated",
+					"group": "Contribution",
+					"position": 5,
+					"type": "String",
+					"description": "Contribution has passed the SC Data Model validation",
+					"unit": "Flag",
+					"validations": [
+						"cv(\"boolean\")",
+						"downloadOnly()"
+					]
+				},
+				"is_reviewed": {
+					"label": "Is Reviewed",
+					"group": "Contribution",
+					"position": 6,
+					"type": "String",
+					"description": "Contribution has been reviewed for correct usage of the SC Data Model",
+					"unit": "Flag",
+					"validations": [
+						"cv(\"boolean\")",
+						"downloadOnly()"
+					]
+				},
+				"data_model_version": {
+					"label": "Data Model Version",
+					"group": "Contribution",
+					"position": 7,
+					"type": "String",
+					"description": "SC data model version",
+					"examples": [
+						"1.0"
+					],
+					"validations": [
+						"cv(\"sc_version\")",
+						"downloadOnly()"
+					]
+				},
+				"reference": {
+					"label": "Contribution Reference",
+					"group": "Contribution",
+					"position": 8,
+					"type": "String",
+					"description": "DOI or citation of the publication this contribution supports",
+					"examples": [
+						"10.1029/2003GC000609"
+					],
+					"validations": [
+						"recommended()"
+					]
+				},
+				"author": {
+					"label": "Contribution Author",
+					"group": "Contribution",
+					"position": 9,
+					"type": "String",
+					"description": "EarthRef handle, ORCID, or name and email of the author of the contribution",
+					"validations": [
+						"type(\"users\")"
+					]
+				},
+				"description": {
+					"label": "Description",
+					"group": "Contribution",
+					"position": 10,
+					"type": "String",
+					"description": "Description of the contribution as a whole",
+					"validations": [
+						"recommended()"
+					]
+				},
+				"supplemental_links": {
+					"label": "Supplemental Links",
+					"group": "Contribution",
+					"position": 11,
+					"type": "Dictionary",
+					"description": "Links to related resources hosted elsewhere",
+					"examples": [
+						"{\"Legacy SC\": \"https://earthref.org/SC/\"}"
+					]
+				}
+			}
+		},
+		"seamounts": {
+			"label": "Seamounts",
+			"position": 2,
+			"description": "One row per seamount: location, setting, size and shape",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique SC Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"seamount": {
+					"label": "Seamount Index",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Catalog index of the seamount, from its summit position",
+					"notes": "SMNT-<latitude x10><N|S>-<longitude x10><E|W>, as assigned by the legacy catalog",
+					"examples": [
+						"SMNT-453S-1575W"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"seamount_name": {
+					"label": "Seamount Name",
+					"group": "Names",
+					"position": 4,
+					"type": "String",
+					"description": "Name of the seamount as cataloged",
+					"notes": "Unnamed seamounts are named by their longitude or latitude and type",
+					"examples": [
+						"157.5°W Guyot",
+						"Bowie Seamount"
+					],
+					"validations": [
+						"required()"
+					]
+				},
+				"alternative_names": {
+					"label": "Alternative Names",
+					"group": "Names",
+					"position": 5,
+					"type": "List",
+					"description": "Other names the seamount is known by",
+					"notes": "Colon-delimited",
+					"examples": [
+						"Shirshov 4"
+					]
+				},
+				"seamount_type": {
+					"label": "Seamount Type",
+					"group": "Classification",
+					"position": 6,
+					"type": "String",
+					"description": "Morphological type of the seamount",
+					"examples": [
+						"Guyot"
+					],
+					"validations": [
+						"cv(\"seamount_type\")",
+						"recommended()"
+					]
+				},
+				"size_class": {
+					"label": "Size Class",
+					"group": "Classification",
+					"position": 7,
+					"type": "String",
+					"description": "Size class of the seamount by volume",
+					"examples": [
+						"Intermediate"
+					],
+					"validations": [
+						"cv(\"size_class\")"
+					]
+				},
+				"shape_class": {
+					"label": "Shape Class",
+					"group": "Classification",
+					"position": 8,
+					"type": "String",
+					"description": "Shape class of the seamount",
+					"notes": "Legacy catalog class: a letter for the flank profile and a number for the summit shape",
+					"examples": [
+						"A3"
+					],
+					"validations": [
+						"sv(\"shape_class\")"
+					]
+				},
+				"lat": {
+					"label": "Latitude",
+					"group": "Position",
+					"position": 9,
+					"type": "Number",
+					"description": "Latitude of the seamount summit",
+					"unit": "Degrees",
+					"notes": "Decimal degrees north",
+					"examples": [
+						"-45.3308"
+					],
+					"validations": [
+						"min(-90)",
+						"max(90)",
+						"required()"
+					]
+				},
+				"lon": {
+					"label": "Longitude",
+					"group": "Position",
+					"position": 10,
+					"type": "Number",
+					"description": "Longitude of the seamount summit",
+					"unit": "Degrees",
+					"notes": "Decimal degrees east, -180 to 180",
+					"examples": [
+						"-157.5403"
+					],
+					"validations": [
+						"min(-180)",
+						"max(180)",
+						"required()"
+					]
+				},
+				"region": {
+					"label": "Region",
+					"group": "Setting",
+					"position": 11,
+					"type": "String",
+					"description": "Seamount trail, chain or ocean region the seamount is in",
+					"examples": [
+						"Louisville Seamount Trail"
+					],
+					"validations": [
+						"sv(\"region\")"
+					]
+				},
+				"plate": {
+					"label": "Plate",
+					"group": "Setting",
+					"position": 12,
+					"type": "String",
+					"description": "Tectonic plate the seamount sits on",
+					"examples": [
+						"Pacific Plate"
+					],
+					"validations": [
+						"sv(\"plate\")"
+					]
+				},
+				"tectonic_setting": {
+					"label": "Tectonic Setting",
+					"group": "Setting",
+					"position": 13,
+					"type": "String",
+					"description": "Tectonic setting of the seamount",
+					"examples": [
+						"Hotspot Trail"
+					],
+					"validations": [
+						"cv(\"tectonic_setting\")"
+					]
+				},
+				"oceanic_province": {
+					"label": "Oceanic Province",
+					"group": "Setting",
+					"position": 14,
+					"type": "String",
+					"description": "Physiographic province of the ocean floor around the seamount",
+					"examples": [
+						"Abyssal Plain"
+					],
+					"validations": [
+						"cv(\"oceanic_province\")"
+					]
+				},
+				"volcanic_activity": {
+					"label": "Volcanic Activity",
+					"group": "Setting",
+					"position": 15,
+					"type": "String",
+					"description": "Volcanic activity of the seamount",
+					"examples": [
+						"Extinct"
+					],
+					"validations": [
+						"cv(\"volcanic_activity\")"
+					]
+				},
+				"plate_age_min": {
+					"label": "Plate Age Min",
+					"group": "Age",
+					"position": 16,
+					"type": "Number",
+					"description": "Minimum age of the oceanic crust under the seamount",
+					"unit": "Ma",
+					"examples": [
+						"65.8"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"plate_age_max": {
+					"label": "Plate Age Max",
+					"group": "Age",
+					"position": 17,
+					"type": "Number",
+					"description": "Maximum age of the oceanic crust under the seamount",
+					"unit": "Ma",
+					"examples": [
+						"74.1"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"age": {
+					"label": "Seamount Age",
+					"group": "Age",
+					"position": 18,
+					"type": "Number",
+					"description": "Age of the seamount",
+					"unit": "Ma",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"height": {
+					"label": "Height",
+					"group": "Morphology",
+					"position": 19,
+					"type": "Number",
+					"description": "Height of the seamount above the surrounding ocean floor",
+					"unit": "Meters",
+					"examples": [
+						"3625"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"summit_depth": {
+					"label": "Summit Depth",
+					"group": "Morphology",
+					"position": 20,
+					"type": "Number",
+					"description": "Water depth of the seamount summit",
+					"unit": "Meters",
+					"notes": "Legacy \"Seamount Top\"; a negative depth is above sea level",
+					"examples": [
+						"250"
+					]
+				},
+				"base_depth": {
+					"label": "Base Depth",
+					"group": "Morphology",
+					"position": 21,
+					"type": "Number",
+					"description": "Water depth of the ocean floor around the seamount",
+					"unit": "Meters",
+					"notes": "Legacy \"Ocean Bottom\"",
+					"examples": [
+						"3875"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"shelf_edge_depth": {
+					"label": "Shelf Edge Depth",
+					"group": "Morphology",
+					"position": 22,
+					"type": "Number",
+					"description": "Water depth of the shelf edge of a guyot",
+					"unit": "Meters",
+					"validations": [
+						"min(0)"
+					]
+				},
+				"volume": {
+					"label": "Volume",
+					"group": "Morphology",
+					"position": 23,
+					"type": "Number",
+					"description": "Volume of the seamount above its base",
+					"unit": "Cubic Kilometers",
+					"examples": [
+						"8157"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"elongation": {
+					"label": "Elongation",
+					"group": "Morphology",
+					"position": 24,
+					"type": "Number",
+					"description": "Mean ratio of length to width over the seamount's contours",
+					"unit": "Ratio",
+					"examples": [
+						"2.45"
+					],
+					"validations": [
+						"min(1)"
+					]
+				},
+				"elongation_sigma": {
+					"label": "Elongation Sigma",
+					"group": "Morphology",
+					"position": 25,
+					"type": "Number",
+					"description": "Standard deviation of the elongation",
+					"unit": "Ratio",
+					"examples": [
+						"0.21"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"irregularity": {
+					"label": "Irregularity",
+					"group": "Morphology",
+					"position": 26,
+					"type": "Number",
+					"description": "Mean ratio of contour to ellipse perimeter over the seamount's contours",
+					"unit": "Ratio",
+					"examples": [
+						"1.09"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"irregularity_sigma": {
+					"label": "Irregularity Sigma",
+					"group": "Morphology",
+					"position": 27,
+					"type": "Number",
+					"description": "Standard deviation of the irregularity",
+					"unit": "Ratio",
+					"examples": [
+						"0.01"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"n_summits": {
+					"label": "Number of Summits",
+					"group": "Morphology",
+					"position": 28,
+					"type": "Integer",
+					"description": "Number of summits on the seamount",
+					"examples": [
+						"2"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"multibeam_coverage": {
+					"label": "Multibeam Coverage",
+					"group": "Morphology",
+					"position": 29,
+					"type": "Number",
+					"description": "Share of the seamount covered by multibeam bathymetry",
+					"unit": "Percent",
+					"examples": [
+						"17"
+					],
+					"validations": [
+						"min(0)",
+						"max(100)"
+					]
+				},
+				"description": {
+					"label": "Description",
+					"group": "Description",
+					"position": 30,
+					"type": "Text",
+					"description": "Description of the seamount"
+				},
+				"sc_id": {
+					"label": "Legacy SC ID",
+					"group": "Legacy",
+					"position": 31,
+					"type": "Integer",
+					"description": "Seamount id in the legacy EarthRef.org Seamount Catalog",
+					"notes": "sc_smnt_id; the legacy page was https://earthref.org/SC/<seamount index>/",
+					"examples": [
+						"3073"
+					],
+					"validations": [
+						"unique()"
+					]
+				}
+			}
+		},
+		"contours": {
+			"label": "Contours",
+			"position": 3,
+			"description": "Morphology of one depth contour of a seamount",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique SC Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"seamount": {
+					"label": "Seamount",
+					"group": "Parent",
+					"position": 3,
+					"type": "String",
+					"description": "Seamount index this row belongs to",
+					"examples": [
+						"SMNT-453S-1575W"
+					],
+					"validations": [
+						"in(\"seamounts.seamount\")",
+						"required()"
+					]
+				},
+				"depth": {
+					"label": "Contour Depth",
+					"group": "Contour",
+					"position": 4,
+					"type": "Number",
+					"description": "Water depth of the contour",
+					"unit": "Meters",
+					"examples": [
+						"1736"
+					]
+				},
+				"azimuth": {
+					"label": "Azimuth",
+					"group": "Contour",
+					"position": 5,
+					"type": "Number",
+					"description": "Azimuth of the long axis of the ellipse fitted to the contour",
+					"unit": "Degrees",
+					"examples": [
+						"136.3"
+					],
+					"validations": [
+						"min(0)",
+						"max(360)"
+					]
+				},
+				"area": {
+					"label": "Area",
+					"group": "Contour",
+					"position": 6,
+					"type": "Number",
+					"description": "Area enclosed by the contour",
+					"unit": "Square Kilometers",
+					"examples": [
+						"372.6"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"length": {
+					"label": "Length",
+					"group": "Contour",
+					"position": 7,
+					"type": "Number",
+					"description": "Length of the long axis of the fitted ellipse",
+					"unit": "Kilometers",
+					"examples": [
+						"29.8"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"width": {
+					"label": "Width",
+					"group": "Contour",
+					"position": 8,
+					"type": "Number",
+					"description": "Length of the short axis of the fitted ellipse",
+					"unit": "Kilometers",
+					"examples": [
+						"16.1"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"elongation": {
+					"label": "Elongation",
+					"group": "Contour",
+					"position": 9,
+					"type": "Number",
+					"description": "Ratio of length to width",
+					"unit": "Ratio",
+					"examples": [
+						"1.856"
+					],
+					"validations": [
+						"min(1)"
+					]
+				},
+				"contour_perimeter": {
+					"label": "Contour Perimeter",
+					"group": "Contour",
+					"position": 10,
+					"type": "Number",
+					"description": "Perimeter of the contour",
+					"unit": "Kilometers",
+					"examples": [
+						"73.7"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"ellipse_perimeter": {
+					"label": "Ellipse Perimeter",
+					"group": "Contour",
+					"position": 11,
+					"type": "Number",
+					"description": "Perimeter of the fitted ellipse",
+					"unit": "Kilometers",
+					"examples": [
+						"73.3"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"irregularity": {
+					"label": "Irregularity",
+					"group": "Contour",
+					"position": 12,
+					"type": "Number",
+					"description": "Ratio of contour to ellipse perimeter",
+					"unit": "Ratio",
+					"examples": [
+						"1.006"
+					],
+					"validations": [
+						"min(0)"
+					]
+				}
+			}
+		},
+		"maps": {
+			"label": "Maps",
+			"position": 4,
+			"description": "A bathymetric map and/or grid of one seamount or of a region",
+			"notes": "`seamount` is set for a map of one seamount; `seamounts` lists every seamount whose legacy page linked the map.",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique SC Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"map": {
+					"label": "Map Name",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Title of the map",
+					"examples": [
+						"157.5°W Guyot -- Predicted satellite bathymetry"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"seamount": {
+					"label": "Seamount",
+					"group": "Parent",
+					"position": 4,
+					"type": "String",
+					"description": "Seamount index this row belongs to",
+					"examples": [
+						"SMNT-453S-1575W"
+					],
+					"validations": [
+						"in(\"seamounts.seamount\")"
+					]
+				},
+				"seamounts": {
+					"label": "Seamounts",
+					"group": "Parent",
+					"position": 5,
+					"type": "List",
+					"description": "Every seamount in the contribution this map covers",
+					"notes": "Colon-delimited seamount indices",
+					"examples": [
+						"SMNT-453S-1575W:SMNT-455S-1578W"
+					]
+				},
+				"scale": {
+					"label": "Scale",
+					"group": "Coverage",
+					"position": 6,
+					"type": "String",
+					"description": "Whether the map covers one seamount or a region",
+					"examples": [
+						"Seamount"
+					],
+					"validations": [
+						"cv(\"scale\")",
+						"required()"
+					]
+				},
+				"data_type": {
+					"label": "Data Type",
+					"group": "Coverage",
+					"position": 7,
+					"type": "String",
+					"description": "Bathymetry the map shows",
+					"examples": [
+						"Predicted satellite bathymetry"
+					],
+					"validations": [
+						"cv(\"bathymetry_type\")",
+						"required()"
+					]
+				},
+				"products": {
+					"label": "Products",
+					"group": "File",
+					"position": 8,
+					"type": "List",
+					"description": "Forms the map was published in",
+					"notes": "Colon-delimited: Map (an image) and/or Grid (a gridded bathymetry file)",
+					"examples": [
+						"Map:Grid"
+					],
+					"validations": [
+						"cv(\"map_product\")"
+					]
+				},
+				"file_name": {
+					"label": "Image File Name",
+					"group": "File",
+					"position": 9,
+					"type": "String",
+					"description": "File name of the map image",
+					"notes": "Image files were served from erda.sdsc.edu/maps/<area>/JPG/; the grid of the same map is <name>.grd (.map.jpg replaced)",
+					"examples": [
+						"SMNT-453S-1575W.std.180m.ss.map.jpg"
+					]
+				},
+				"grid_spacing": {
+					"label": "Grid Spacing",
+					"group": "File",
+					"position": 10,
+					"type": "Number",
+					"description": "Spacing of the grid the map was drawn from",
+					"unit": "Meters",
+					"examples": [
+						"180"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"image_width": {
+					"label": "Image Width",
+					"group": "File",
+					"position": 11,
+					"type": "Integer",
+					"description": "Width of the map image",
+					"unit": "Pixels",
+					"examples": [
+						"1367"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"image_height": {
+					"label": "Image Height",
+					"group": "File",
+					"position": 12,
+					"type": "Integer",
+					"description": "Height of the map image",
+					"unit": "Pixels",
+					"examples": [
+						"1447"
+					],
+					"validations": [
+						"min(0)"
+					]
+				},
+				"sc_file_id": {
+					"label": "Legacy File ID",
+					"group": "Legacy",
+					"position": 13,
+					"type": "Integer",
+					"description": "File id of the map in the legacy EarthRef.org Seamount Catalog",
+					"examples": [
+						"6759"
+					],
+					"validations": [
+						"unique()"
+					]
+				}
+			}
+		},
+		"files": {
+			"label": "Files",
+			"position": 5,
+			"description": "A file in the EarthRef Digital Archive (ERDA) linked to seamounts",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique SC Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"file": {
+					"label": "File Title",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "Title of the ERDA file",
+					"examples": [
+						"High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-5-5 -- graphs, spreadsheet"
+					],
+					"validations": [
+						"key()",
+						"required()"
+					]
+				},
+				"seamounts": {
+					"label": "Seamounts",
+					"group": "Parent",
+					"position": 4,
+					"type": "List",
+					"description": "Every seamount in the contribution this file covers",
+					"notes": "Colon-delimited seamount indices",
+					"examples": [
+						"SMNT-453S-1575W:SMNT-455S-1578W"
+					]
+				},
+				"erda_id": {
+					"label": "ERDA ID",
+					"group": "Link",
+					"position": 5,
+					"type": "Integer",
+					"description": "ERDA contribution id of the file",
+					"examples": [
+						"446"
+					],
+					"validations": [
+						"required()"
+					]
+				},
+				"url": {
+					"label": "URL",
+					"group": "Link",
+					"position": 6,
+					"type": "String",
+					"description": "Where the file is published",
+					"examples": [
+						"https://earthref.org/ERDA/446/"
+					]
+				}
+			}
+		},
+		"references": {
+			"label": "References",
+			"position": 6,
+			"description": "A publication about seamounts in the contribution",
+			"columns": {
+				"contribution_id": {
+					"label": "Contribution ID",
+					"group": "Contribution",
+					"position": 1,
+					"type": "Integer",
+					"description": "Unique SC Contribution ID",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"row_id": {
+					"label": "Row ID",
+					"group": "Contribution",
+					"position": 2,
+					"type": "Integer",
+					"description": "Unique row number within the table",
+					"validations": [
+						"downloadOnly()"
+					]
+				},
+				"reference": {
+					"label": "ERR ID",
+					"group": "Names",
+					"position": 3,
+					"type": "String",
+					"description": "EarthRef Reference Database (ERR) id of the publication",
+					"examples": [
+						"2702"
+					],
+					"validations": [
+						"key()",
+						"required()",
+						"unique()"
+					]
+				},
+				"seamounts": {
+					"label": "Seamounts",
+					"group": "Parent",
+					"position": 4,
+					"type": "List",
+					"description": "Every seamount in the contribution this publication covers",
+					"notes": "Colon-delimited seamount indices",
+					"examples": [
+						"SMNT-453S-1575W:SMNT-455S-1578W"
+					]
+				},
+				"citation": {
+					"label": "Citation",
+					"group": "Reference",
+					"position": 5,
+					"type": "Text",
+					"description": "Full citation of the publication",
+					"validations": [
+						"required()"
+					]
+				},
+				"url": {
+					"label": "URL",
+					"group": "Reference",
+					"position": 6,
+					"type": "String",
+					"description": "Where the reference is published",
+					"examples": [
+						"https://earthref.org/ERR/2702/"
+					]
+				}
+			}
+		}
+	}
+}

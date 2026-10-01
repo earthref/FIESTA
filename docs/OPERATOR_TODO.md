@@ -223,6 +223,22 @@ Last updated: 2026-09-24
   contributions, or PmagPy itself on the backend for interpretation
   statistics (it would add matplotlib, pandas and scipy to the API).
 
+## 2026-09-30 — Seamount Catalog (SC) node
+
+- [ ] **Import the catalog on production.** Pick the steward account the 33
+  region contributions belong to (the legacy pages name no contributors), then
+  `python3 scripts/sc-legacy-catalog.py --cache ../migration/sc/pages
+  --inventory ../migration/sc --owner <steward email>` and `make fiesta
+  ENV_FILE=.env.prod NODE=sc ARGS="sync-legacy ../migration/sc/inventory.json"`
+  (add `--apply` once the dry run reads right). See `docs/sc-node.md`.
+- [ ] **Find the map images and grids.** They were served from
+  `erda.sdsc.edu/maps/<area>/{JPG,GRD}/` (404 now) and earthref.org answers the
+  same paths with HTML. If they survive on MARFIK or an SDSC backup, say where;
+  the SC `maps` rows carry each file's name and legacy file id to attach them by.
+- [ ] **Decide when FIESTA serves `/SC/`.** `publish.web` is false in
+  `config/sc.yaml` because the legacy CGI catalog still answers at
+  `earthref.org/SC/`; flip it at that node's cutover.
+
 ## Done
 
 _(none yet)_

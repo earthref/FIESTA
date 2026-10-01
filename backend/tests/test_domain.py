@@ -606,6 +606,152 @@ def test_osu_mgr_extra_types_are_hierarchy_tables(osu_mgr_node):
     assert set(osu_mgr_node.search.extra_types) <= set(osu_mgr_node.hierarchy)
 
 
+# An SC contribution: two Gilberts Ridge seamounts from the legacy catalog, one
+# with its contour morphology, a map of one of them, a regional map covering
+# both, an ERDA file and a reference.
+SC_TEXT = "\n>>>>>>>>>>\n".join(
+    [
+        _tab_block(
+            "contribution",
+            ["id", "version", "data_model_version"],
+            [{"id": 7, "version": 1, "data_model_version": "1.0"}],
+        ),
+        _tab_block(
+            "seamounts",
+            ["seamount", "seamount_name", "seamount_type", "size_class", "shape_class"]
+            + ["lat", "lon", "region", "plate", "tectonic_setting", "volcanic_activity"]
+            + ["height", "sc_id"],
+            [
+                {
+                    "seamount": "SMNT-025N-1729E",
+                    "seamount_name": "Musina Seamount",
+                    "seamount_type": "Seamount",
+                    "size_class": "Very Small",
+                    "shape_class": "B2",
+                    "lat": 2.5015,
+                    "lon": 172.89917,
+                    "region": "Gilberts Ridge",
+                    "plate": "Pacific Plate",
+                    "tectonic_setting": "Hotspot Trail",
+                    "volcanic_activity": "Extinct",
+                    "height": 1550,
+                    "sc_id": 5,
+                },
+                {
+                    "seamount": "SMNT-026S-1768E",
+                    "seamount_name": "Arorae Guyot",
+                    "seamount_type": "Guyot",
+                    "size_class": "Small",
+                    "shape_class": "A2",
+                    "lat": -2.63217,
+                    "lon": 176.795,
+                    "region": "Gilberts Ridge",
+                    "plate": "Pacific Plate",
+                    "tectonic_setting": "Hotspot Trail",
+                    "volcanic_activity": "Extinct",
+                    "height": 4065,
+                    "sc_id": 58,
+                },
+            ],
+        ),
+        _tab_block(
+            "contours",
+            ["seamount", "depth", "irregularity"],
+            [
+                {"seamount": "SMNT-025N-1729E", "depth": 2665, "irregularity": 1.373},
+                {"seamount": "SMNT-025N-1729E", "depth": 2820, "irregularity": 1.27},
+            ],
+        ),
+        _tab_block(
+            "maps",
+            ["map", "seamount", "seamounts", "scale", "data_type", "products"]
+            + ["file_name", "sc_file_id"],
+            [
+                {
+                    "map": "Musina Seamount -- Multibeam bathymetry",
+                    "seamount": "SMNT-025N-1729E",
+                    "seamounts": "SMNT-025N-1729E",
+                    "scale": "Seamount",
+                    "data_type": "Multibeam bathymetry",
+                    "products": "Map:Grid",
+                    "file_name": "SMNT-025N-1729E.std.180m.mb.map.jpg",
+                    "sc_file_id": 193,
+                },
+                {
+                    "map": "Gilberts Ridge -- Predicted satellite bathymetry",
+                    "seamounts": "SMNT-025N-1729E:SMNT-026S-1768E",
+                    "scale": "Regional",
+                    "data_type": "Predicted satellite bathymetry",
+                    "products": "Grid",
+                    "sc_file_id": 180,
+                },
+            ],
+        ),
+        _tab_block(
+            "files",
+            ["file", "seamounts", "erda_id", "url"],
+            [
+                {
+                    "file": "40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-5-5",
+                    "seamounts": "SMNT-025N-1729E",
+                    "erda_id": 446,
+                    "url": "https://earthref.org/ERDA/446/",
+                }
+            ],
+        ),
+        _tab_block(
+            "references",
+            ["reference", "seamounts", "citation", "url"],
+            [
+                {
+                    "reference": "2702",
+                    "seamounts": "SMNT-025N-1729E:SMNT-026S-1768E",
+                    "citation": "Keating, B.H. (1991). Insular geology of the Line Islands.",
+                    "url": "https://earthref.org/ERR/2702/",
+                }
+            ],
+        ),
+    ]
+)
+
+
+def test_sc_config_loads(sc_node):
+    assert sc_node.node.key == "SC"
+    assert sc_node.hierarchy[:2] == ["contribution", "seamounts"]
+    assert {"seamounts", "contours", "maps"} <= sc_node.geo_tables
+    model = sc_node.load_data_model(sc_node.data_model.latest)
+    columns = {c for table in model["tables"].values() for c in table["columns"]}
+    assert set(sc_node.search.facets) <= columns
+    assert set(sc_node.search.extra_types) <= set(sc_node.hierarchy)
+
+
+def test_sc_validate(sc_node):
+    assert validate_contribution(sc_node, parse_text(SC_TEXT)).errors == []
+    bad = SC_TEXT.replace("Hotspot Trail", "Hotspot Trial").replace("Map:Grid", "Map:Poster")
+    messages = " | ".join(e.message for e in validate_contribution(sc_node, parse_text(bad)).errors)
+    assert "Hotspot Trial" in messages
+    assert "Poster" in messages
+
+
+def test_sc_summarize_positions_maps_by_seamount(sc_node):
+    meta = {"id": 7, "version": 1, "_is_activated": True, "_is_latest": True}
+    docs = summarize(sc_node, parse_text(SC_TEXT), meta)
+    by_type = {}
+    for doc in docs:
+        by_type.setdefault(doc["type"], []).append(doc)
+    assert len(by_type["seamounts"]) == 2
+    assert len(by_type["contours"]) == 2
+    maps = {d["summary"]["maps"]["map"]: d["summary"]["_all"] for d in by_type["maps"]}
+    # A map of one seamount sits on it; a regional map lists its seamounts but
+    # has no one position to take.
+    point = maps["Musina Seamount -- Multibeam bathymetry"]["_geo_point"]
+    assert point == {"lat": 2.5015, "lon": pytest.approx(172.89917)}
+    regional = maps["Gilberts Ridge -- Predicted satellite bathymetry"]
+    assert "_geo_point" not in regional
+    assert set(regional["seamounts"]) == {"SMNT-025N-1729E", "SMNT-026S-1768E"}
+    assert "Pacific Plate" in by_type["contribution"][0]["summary"]["_all"]["plate"]
+
+
 def test_search_body_sort_options():
     from fiesta.search.queries import DEFAULT_SORT, SORT_OPTIONS, build_search_body
 
@@ -727,6 +873,7 @@ def test_deployment_lists_every_node_and_resolves_key_or_slug():
         "karar",
         "erda",
         "osu-mgr",
+        "sc",
     ]
     assert deployment.node_for("MagIC") is deployment.node_for("magic")
     assert deployment.node_for("OSU-MGR").node.slug == "osu-mgr"
@@ -738,7 +885,7 @@ def test_deployment_narrowed_by_fiesta_node():
     narrowed = load_deployment(CONFIG_DIR / "fiesta.yaml", only=["magic", " KArAr", ""])
     assert sorted(narrowed.nodes) == ["karar", "magic"]
     everything = load_deployment(CONFIG_DIR / "fiesta.yaml", only=[""])
-    assert len(everything.nodes) == 6
+    assert len(everything.nodes) == 7
     with pytest.raises(ValueError, match="nope"):
         load_deployment(CONFIG_DIR / "fiesta.yaml", only=["nope"])
 
@@ -975,7 +1122,7 @@ def test_published_tree_is_written_back_to_config(tmp_path, monkeypatch):
     deployment_yaml = (CONFIG_DIR / "fiesta.yaml").read_text()
     assert add_to_deployment_yaml(deployment_yaml, "magic.yaml") is None
     added = add_to_deployment_yaml(deployment_yaml, "paleo.yaml")
-    assert "    - osu-mgr.yaml\n    - paleo.yaml" in added and added.startswith("# FIESTA")
+    assert "    - sc.yaml\n    - paleo.yaml" in added and added.startswith("# FIESTA")
     assert blob_sha(b"hello\n") == "ce013625030ba8dba906f756967f9e9ca394464a"
 
     shutil.copy(CONFIG_DIR / "fiesta.yaml", tmp_path / "fiesta.yaml")

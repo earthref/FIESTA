@@ -1,0 +1,18 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: NW Atlantic (5 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	lat	lon	region	height	sc_id
+SMNT-241N-0745W	San Salvador Seamount	Seamount	24.05	-74.483	NW Atlantic	0	1578
+SMNT-320N-0652W	Argus Seamount	Seamount	31.983	-65.183	NW Atlantic	0	1597
+SMNT-327N-0646W	Bowditch Seamount	Seamount	32.73333	-64.55	NW Atlantic	0	593
+SMNT-389N-0604W	San Pablo Seamount	Seamount	38.86	-60.42	NW Atlantic	0	1577
+SMNT-399N-0674W	Bear Seamount	Seamount	39.91667	-67.41667	NW Atlantic	0	576
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+San Salvador Seamount -- Predicted satellite bathymetry	SMNT-241N-0745W	SMNT-241N-0745W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-241N-0745W.std.180m.ss.map.jpg	180	1056	1136	2491
+Bowditch Seamount -- Predicted satellite bathymetry	SMNT-327N-0646W	SMNT-327N-0646W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-327N-0646W.std.180m.ss.map.jpg	180	589	670	2507
+San Pablo Seamount -- Predicted satellite bathymetry	SMNT-389N-0604W	SMNT-389N-0604W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-389N-0604W.std.180m.ss.map.jpg	180	693	773	2550
+Bear Seamount -- Predicted satellite bathymetry	SMNT-399N-0674W	SMNT-399N-0674W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-399N-0674W.std.180m.ss.map.jpg	180	693	773	2562

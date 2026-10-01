@@ -35,3 +35,8 @@ def erda_node():
 @pytest.fixture(scope="session")
 def osu_mgr_node():
     return load_deployment(CONFIG_DIR / "osu-mgr.yaml").node_for("osu-mgr")
+
+
+@pytest.fixture(scope="session")
+def sc_node():
+    return load_deployment(CONFIG_DIR / "sc.yaml").node_for("sc")

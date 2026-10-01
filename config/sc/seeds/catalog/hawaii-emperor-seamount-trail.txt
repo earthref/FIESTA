@@ -1,0 +1,158 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Hawaii-Emperor Seamount Trail (37 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	plate_age_min	plate_age_max	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	sc_id
+SMNT-115N-1685W	Northampton Seamount		Seamount			11.48	-168.52	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1060
+SMNT-186N-1554W	Apuupuu Guyot	SAUP 3636	Guyot	Very Small	A2	18.55017	-155.43533	Hawaii-Emperor Seamount Trail	Pacific Plate	Hotspot Trail	Abyssal Plain	95.5	96.3	2200	2185	4385	860	1.63	0.59	1.12	0.07	2	0	557
+SMNT-186N-1566W	Palmer Seamount	Woollard	Seamount			18.62	-156.56	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1077
+SMNT-187N-1571W	McCall Seamount		Seamount			18.72	-157.07	Hawaii-Emperor Seamount Trail	Pacific Plate					0										976
+SMNT-187N-1583W	Cross Seamount		Seamount	Small	A1	18.7045	-158.26617	Hawaii-Emperor Seamount Trail	Pacific Plate	Hotspot Trail	Abyssal Plain	102.8	103.3	3705	595	4300	1796	1.29	0.06	1.04	0.00	1	0	652
+SMNT-189N-1553W	Loihi Seamount		Seamount			18.93	-155.25	Hawaii-Emperor Seamount Trail	Pacific Plate					0										948
+SMNT-190N-1539W	Wini Seamount		Seamount			19.02	-153.85	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1329
+SMNT-222N-1626W	Chautauqua Seamount		Seamount			22.18	-162.58	Hawaii-Emperor Seamount Trail	Pacific Plate					0										627
+SMNT-230N-1622W	West Bank Seamount		Seamount			23.0	-162.233	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1641
+SMNT-232N-1630W	Twin Banks Seamount	Banks 1:2 and 3	Seamount			23.233	-163.033	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1653
+SMNT-241N-1668W	Brooks Bank Seamount		Seamount			24.117	-166.817	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1643
+SMNT-243N-1671W	Saint Rogatien Bank Seamount		Seamount			24.34	-167.12	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1644
+SMNT-246N-1673W	Seamount	Bank 7	Seamount			24.63	-167.26	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1645
+SMNT-256N-1695W	Raita Bank Seamount		Seamount			25.56	-169.47	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1646
+SMNT-263N-1745W	Seamount	Bank 8:Unsurveyed Bank (1416):Seamount 8	Seamount			26.3	-174.53	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1647
+SMNT-269N-1765W	Salmon Bank Seamount		Seamount			26.933	-176.467	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1649
+SMNT-270N-1756W	Seamount	Bank 9:Seamount 9	Seamount			27.02	-175.6	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1648
+SMNT-278N-1758W	Pearl And Hermes Reef Seamount		Seamount			27.83333	-175.83333	Hawaii-Emperor Seamount Trail	Pacific Plate					0										428
+SMNT-280N-1780W	Nero Seamount		Seamount			27.99	-177.95	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1043
+SMNT-285N-1767W	Ladd Seamount		Seamount			28.533	-176.667	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1558
+SMNT-289N-1779W	Wentworth Seamount		Seamount			28.9	-177.87	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1621
+SMNT-289N-1786W	Turnif Seamount		Seamount			28.917	-178.6	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1562
+SMNT-289N-1789W	Academician Berg Seamount	Bank or Seamount 10:HIG-D-20	Seamount			28.85	-178.867	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1675
+SMNT-289N-1796W	Zapadnaya Seamount	Bank or Seamount 11	Seamount			28.9	-179.6	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1650
+SMNT-297N-1794E	Equator Seamount		Seamount			29.7	179.367	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1689
+SMNT-298N-1791E	Hancock Southeast Seamount	T3-D2:Townsend Cromwell	Seamount			29.79	179.07	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1657
+SMNT-303N-1787E	Hancock Northwest Seamount	Pedestal	Seamount			30.27	178.72	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1658
+SMNT-310N-1759E	Colahan Seamount		Seamount			31.03	175.9	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1555
+SMNT-318N-1743E	Abbott Seamount		Seamount			31.8	174.3	Hawaii-Emperor Seamount Trail	Pacific Plate					0										530
+SMNT-327N-1723E	Yuryaku Guyot		Guyot			32.67	172.27	Hawaii-Emperor Seamount Trail	Pacific Plate					0										211
+SMNT-353N-1716E	Koko Guyot	Kinmei	Guyot			35.25	171.58333	Hawaii-Emperor Seamount Trail	Pacific Plate					0										165
+SMNT-368N-1714E	Lira Seamount		Seamount			36.8	171.35	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1559
+SMNT-380N-1704E	Ojin Guyot		Guyot			37.97	170.38	Hawaii-Emperor Seamount Trail	Pacific Plate					0										181
+SMNT-411N-1706E	Nintoku Guyot		Guyot			41.08	170.57	Hawaii-Emperor Seamount Trail	Pacific Plate					0										180
+SMNT-423N-1705E	Multipeak Seamount	Yomei	Seamount			42.267	170.45	Hawaii-Emperor Seamount Trail	Pacific Plate					0										1560
+SMNT-446N-1703E	Suiko Guyot		Guyot			44.58333	170.33333	Hawaii-Emperor Seamount Trail	Pacific Plate					0										200
+SMNT-460N-1694E	Jimmu Guyot	Papanin	Guyot			46.0	169.41667	Hawaii-Emperor Seamount Trail	Pacific Plate					0										159
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Northampton Seamount -- Predicted satellite bathymetry	SMNT-115N-1685W	SMNT-115N-1685W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-115N-1685W.std.180m.ss.map.jpg	180	589	670	250
+Apuupuu Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-186N-1554W	SMNT-186N-1554W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-186N-1554W.std.180m.mg.map.jpg	180	693	773	251
+Apuupuu Guyot -- Multibeam bathymetry	SMNT-186N-1554W	SMNT-186N-1554W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-186N-1554W.std.180m.mb.map.jpg	180	952	1033	252
+Apuupuu Guyot -- Predicted satellite bathymetry	SMNT-186N-1554W	SMNT-186N-1554W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-186N-1554W.std.180m.ss.map.jpg	180	693	773	253
+Apuupuu Guyot -- Residual bathymetry	SMNT-186N-1554W	SMNT-186N-1554W	Seamount	Residual bathymetry	Map:Grid	SMNT-186N-1554W.std.180m.rs.map.jpg	180	693	773	254
+Palmer Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-186N-1566W	SMNT-186N-1566W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-186N-1566W.std.180m.mg.map.jpg	180	589	670	255
+Palmer Seamount -- Multibeam bathymetry	SMNT-186N-1566W	SMNT-186N-1566W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-186N-1566W.std.180m.mb.map.jpg	180	797	877	256
+Palmer Seamount -- Predicted satellite bathymetry	SMNT-186N-1566W	SMNT-186N-1566W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-186N-1566W.std.180m.ss.map.jpg	180	589	670	257
+Palmer Seamount -- Residual bathymetry	SMNT-186N-1566W	SMNT-186N-1566W	Seamount	Residual bathymetry	Map:Grid	SMNT-186N-1566W.std.180m.rs.map.jpg	180	589	670	258
+McCall Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-187N-1571W	SMNT-187N-1571W	Seamount	Multibeam merged with predicted satellite bathymetry	Grid					259
+McCall Seamount -- Multibeam bathymetry	SMNT-187N-1571W	SMNT-187N-1571W	Seamount	Multibeam bathymetry	Grid					260
+McCall Seamount -- Predicted satellite bathymetry	SMNT-187N-1571W	SMNT-187N-1571W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-187N-1571W.std.180m.ss.map.jpg	180	693	773	261
+McCall Seamount -- Residual bathymetry	SMNT-187N-1571W	SMNT-187N-1571W	Seamount	Residual bathymetry	Grid					262
+Cross Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-187N-1583W	SMNT-187N-1583W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-187N-1583W.std.180m.mg.map.jpg	180	641	721	263
+Cross Seamount -- Multibeam bathymetry	SMNT-187N-1583W	SMNT-187N-1583W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-187N-1583W.std.180m.mb.map.jpg	180	875	955	264
+Cross Seamount -- Predicted satellite bathymetry	SMNT-187N-1583W	SMNT-187N-1583W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-187N-1583W.std.180m.ss.map.jpg	180	641	721	265
+Cross Seamount -- Residual bathymetry	SMNT-187N-1583W	SMNT-187N-1583W	Seamount	Residual bathymetry	Map:Grid	SMNT-187N-1583W.std.180m.rs.map.jpg	180	641	721	266
+Loihi Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-189N-1553W	SMNT-189N-1553W	Seamount	Multibeam merged with predicted satellite bathymetry	Grid					267
+Loihi Seamount -- Multibeam bathymetry	SMNT-189N-1553W	SMNT-189N-1553W	Seamount	Multibeam bathymetry	Grid					268
+Loihi Seamount -- Predicted satellite bathymetry	SMNT-189N-1553W	SMNT-189N-1553W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-189N-1553W.std.180m.ss.map.jpg	180	589	670	269
+Loihi Seamount -- Residual bathymetry	SMNT-189N-1553W	SMNT-189N-1553W	Seamount	Residual bathymetry	Grid					270
+Wini Seamount -- Predicted satellite bathymetry	SMNT-190N-1539W	SMNT-190N-1539W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-190N-1539W.std.180m.ss.map.jpg	180	693	773	271
+Chautauqua Seamount -- Predicted satellite bathymetry	SMNT-222N-1626W	SMNT-222N-1626W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-222N-1626W.std.180m.ss.map.jpg	180	589	670	272
+West Bank Seamount -- Predicted satellite bathymetry	SMNT-230N-1622W	SMNT-230N-1622W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-230N-1622W.std.180m.ss.map.jpg	180	1056	1136	273
+Twin Banks Seamount -- Predicted satellite bathymetry	SMNT-232N-1630W	SMNT-232N-1630W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-232N-1630W.std.180m.ss.map.jpg	180	1056	1136	274
+Brooks Bank Seamount -- Predicted satellite bathymetry	SMNT-241N-1668W	SMNT-241N-1668W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-241N-1668W.std.180m.ss.map.jpg	180	1471	1551	275
+Saint Rogatien Bank Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-243N-1671W	SMNT-243N-1671W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-243N-1671W.std.180m.mg.map.jpg	180	1471	1551	276
+Saint Rogatien Bank Seamount -- Multibeam bathymetry	SMNT-243N-1671W	SMNT-243N-1671W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-243N-1671W.std.180m.mb.map.jpg	180	2119	2199	277
+Saint Rogatien Bank Seamount -- Predicted satellite bathymetry	SMNT-243N-1671W	SMNT-243N-1671W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-243N-1671W.std.180m.ss.map.jpg	180	1471	1551	278
+Saint Rogatien Bank Seamount -- Residual bathymetry	SMNT-243N-1671W	SMNT-243N-1671W	Seamount	Residual bathymetry	Map:Grid	SMNT-243N-1671W.std.180m.rs.map.jpg	180	1471	1551	279
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry		SMNT-246N-1673W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-246N-1673W.std.180m.mg.map.jpg	180	1730	1810	280
+Unnamed Seamount -- Multibeam bathymetry		SMNT-246N-1673W	Regional	Multibeam bathymetry	Map:Grid	SMNT-246N-1673W.std.180m.mb.map.jpg	180	2508	2588	281
+Unnamed Seamount -- Predicted satellite bathymetry (282)		SMNT-246N-1673W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-246N-1673W.std.180m.ss.map.jpg	180	1730	1810	282
+Unnamed Seamount -- Residual bathymetry		SMNT-246N-1673W	Regional	Residual bathymetry	Map:Grid	SMNT-246N-1673W.std.180m.rs.map.jpg	180	1730	1810	283
+Raita Bank Seamount -- Predicted satellite bathymetry	SMNT-256N-1695W	SMNT-256N-1695W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-256N-1695W.std.180m.ss.map.jpg	180	1004	1084	284
+Unnamed Seamount -- Predicted satellite bathymetry (285)		SMNT-263N-1745W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-263N-1745W.std.180m.ss.map.jpg	180	693	773	285
+Unnamed Seamount -- Predicted satellite bathymetry (287)		SMNT-270N-1756W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-270N-1756W.std.180m.ss.map.jpg	180	952	1033	287
+Pearl And Hermes Reef Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-278N-1758W	SMNT-278N-1758W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-278N-1758W.std.180m.mg.map.jpg	180	1212	1292	288
+Pearl And Hermes Reef Seamount -- Multibeam bathymetry	SMNT-278N-1758W	SMNT-278N-1758W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-278N-1758W.std.180m.mb.map.jpg	180	1730	1810	289
+Pearl And Hermes Reef Seamount -- Predicted satellite bathymetry	SMNT-278N-1758W	SMNT-278N-1758W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-278N-1758W.std.180m.ss.map.jpg	180	1212	1292	290
+Pearl And Hermes Reef Seamount -- Residual bathymetry	SMNT-278N-1758W	SMNT-278N-1758W	Seamount	Residual bathymetry	Map:Grid	SMNT-278N-1758W.std.180m.rs.map.jpg	180	1212	1292	291
+Nero Seamount -- Predicted satellite bathymetry	SMNT-280N-1780W	SMNT-280N-1780W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-280N-1780W.std.180m.ss.map.jpg	180	849	929	292
+Ladd Seamount -- Predicted satellite bathymetry	SMNT-285N-1767W	SMNT-285N-1767W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-285N-1767W.std.180m.ss.map.jpg	180	1004	1084	293
+Wentworth Seamount -- Predicted satellite bathymetry	SMNT-289N-1779W	SMNT-289N-1779W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-289N-1779W.std.180m.ss.map.jpg	180	641	721	296
+Turnif Seamount -- Predicted satellite bathymetry	SMNT-289N-1786W	SMNT-289N-1786W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-289N-1786W.std.180m.ss.map.jpg	180	641	721	300
+Academician Berg Seamount -- Predicted satellite bathymetry	SMNT-289N-1789W	SMNT-289N-1789W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-289N-1789W.std.180m.ss.map.jpg	180	693	773	304
+Zapadnaya Seamount -- Predicted satellite bathymetry	SMNT-289N-1796W	SMNT-289N-1796W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-289N-1796W.std.180m.ss.map.jpg	180	693	773	306
+Equator Seamount -- Predicted satellite bathymetry	SMNT-297N-1794E	SMNT-297N-1794E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-297N-1794E.std.180m.ss.map.jpg	180	693	773	307
+Hancock Northwest Seamount -- Predicted satellite bathymetry	SMNT-303N-1787E	SMNT-303N-1787E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-303N-1787E.std.180m.ss.map.jpg	180	693	773	309
+Colahan Seamount -- Predicted satellite bathymetry	SMNT-310N-1759E	SMNT-310N-1759E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-310N-1759E.std.180m.ss.map.jpg	180	641	721	310
+Abbott Seamount -- Predicted satellite bathymetry	SMNT-318N-1743E	SMNT-318N-1743E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-318N-1743E.std.180m.ss.map.jpg	180	693	773	311
+Yuryaku Guyot -- Predicted satellite bathymetry	SMNT-327N-1723E	SMNT-327N-1723E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-327N-1723E.std.180m.ss.map.jpg	180	693	773	312
+Koko Guyot -- Predicted satellite bathymetry	SMNT-353N-1716E	SMNT-353N-1716E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-353N-1716E.std.180m.ss.map.jpg	180	1730	1810	313
+Lira Seamount -- Predicted satellite bathymetry	SMNT-368N-1714E	SMNT-368N-1714E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-368N-1714E.std.180m.ss.map.jpg	180	1108	1188	314
+Ojin Guyot -- Predicted satellite bathymetry	SMNT-380N-1704E	SMNT-380N-1704E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-380N-1704E.std.180m.ss.map.jpg	180	1471	1551	315
+Nintoku Guyot -- Predicted satellite bathymetry	SMNT-411N-1706E	SMNT-411N-1706E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-411N-1706E.std.180m.ss.map.jpg	180	1471	1551	316
+Multipeak Seamount -- Predicted satellite bathymetry	SMNT-423N-1705E	SMNT-423N-1705E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-423N-1705E.std.180m.ss.map.jpg	180	1212	1292	317
+Suiko Guyot -- Predicted satellite bathymetry	SMNT-446N-1703E	SMNT-446N-1703E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-446N-1703E.std.180m.ss.map.jpg	180	1730	1810	318
+Jimmu Guyot -- Predicted satellite bathymetry	SMNT-460N-1694E	SMNT-460N-1694E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-460N-1694E.std.180m.ss.map.jpg	180	693	773	319
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+Looking Inside Loihi with Electrical Resistance Tomography -- poster	SMNT-189N-1553W	686	https://earthref.org/ERDA/686/
+Collecting a Rock Specimen near Pisces Peak on Loihi Seamount -- video excerpt	SMNT-189N-1553W	693	https://earthref.org/ERDA/693/
+Exposure Experiments at Pisces Peak -- video excerpt	SMNT-189N-1553W	694	https://earthref.org/ERDA/694/
+Validating an Exposure Experiment on Loihi Seamount -- video excerpt	SMNT-189N-1553W	695	https://earthref.org/ERDA/695/
+Abbott Seamount Bathymetry -- map	SMNT-318N-1743E	710	https://earthref.org/ERDA/710/
+Loihi Seamount Bathymetry -- map	SMNT-189N-1553W	733	https://earthref.org/ERDA/733/
+Scoop sample 1 at Ula Nui -- video excerpt	SMNT-189N-1553W	826	https://earthref.org/ERDA/826/
+Bact trap 53 deployed at Ula Nui -- video excerpt	SMNT-189N-1553W	827	https://earthref.org/ERDA/827/
+Jason II and Medea Recovery after Dive J2-365 -- video excerpt	SMNT-189N-1553W	920	https://earthref.org/ERDA/920/
+Damage to Elevator Floating Spheres during J2-366 Dive -- video excerpt	SMNT-189N-1553W	921	https://earthref.org/ERDA/921/
+Dive J2-365 Marker 36 -- video excerpt	SMNT-189N-1553W	922	https://earthref.org/ERDA/922/
+Eager Scientists Getting to their Samples -- video excerpt	SMNT-189N-1553W	923	https://earthref.org/ERDA/923/
+Mariprofundus Ferroxydans growing -- video excerpt	SMNT-189N-1553W	924	https://earthref.org/ERDA/924/
+J2-366: Scooping Bacterial Mat at Ula Nui -- video excerpt	SMNT-189N-1553W	926	https://earthref.org/ERDA/926/
+J2-366: Closing the Scoop Valve -- video excerpt	SMNT-189N-1553W	927	https://earthref.org/ERDA/927/
+J2-366: Inspecting Damaged Elevator -- video excerpt	SMNT-189N-1553W	928	https://earthref.org/ERDA/928/
+J2-367: Walking Octopus at 5000m -- video excerpt	SMNT-189N-1553W	929	https://earthref.org/ERDA/929/
+J2-367: Jason Taking a Rock Sample -- video excerpt	SMNT-189N-1553W	930	https://earthref.org/ERDA/930/
+J2-368: Bacteria Trap Recovery 2 -- video excerpt	SMNT-189N-1553W	931	https://earthref.org/ERDA/931/
+J2-368: Finger Chimney Scooping -- video excerpt	SMNT-189N-1553W	932	https://earthref.org/ERDA/932/
+J2-368: Rock Sample on North Rift -- video excerpt	SMNT-189N-1553W	933	https://earthref.org/ERDA/933/
+J2-369: Exposure Experiment at New M17 -- video excerpt	SMNT-189N-1553W	934	https://earthref.org/ERDA/934/
+J2-369: Deep Sea Coral -- video excerpt	SMNT-189N-1553W	935	https://earthref.org/ERDA/935/
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2108	SMNT-353N-1716E	Clague, D.A. and Dalrymple, G.B. (1973). Age of Koko Seamount, Emperor Seamount Chain. Earth and Planetary Science Letters 17: 411-415. doi: 10.1016/0012-821X(73)90209-4.	https://earthref.org/ERR/2108/
+2109	SMNT-189N-1553W	Clague, D.A. and Dalrymple, G.B. (1987). The Hawaiian-Emperor volcanic chain, Part 1: Geologic evolution. United States Geological Survey, Professional Paper 1350-1: 5-54.	https://earthref.org/ERR/2109/
+2111	SMNT-353N-1716E	Clague, D.A. and Jarrard, R.D. (1973). Tertiary Pacific plate motion deduced from the Hawaiian-Emperor Chain. Geological Society of America, Bulletin 84: 1,135-1,154.	https://earthref.org/ERR/2111/
+2118	SMNT-353N-1716E	Morales, J., Goguitchaichvili, A. and Urrutia-Fucugauchi, J. (2001). A rock-magnetic and paleointensity study of some Mexican volcanic lava flows during the latest Pleistocene to the Holocene. Earth Planets and Space 53(9): 893-902. doi: 10.5636/eps.53.893.	https://earthref.org/ERR/2118/
+2124	SMNT-380N-1704E:SMNT-411N-1706E	Dalrymple, G.B., Lanphere, M.A. and Clague, D.A. (1980). Conventional and 40Ar/39Ar K-Ar ages of volcanic rocks from Ojin (Site 430), Nintoku (Site 432), and Suiko (Site 433) Seamounts and te chronology of volcanic propagation along the Hawaiian-Emperor Chain. Initial Reports of the Deep Sea Drilling Project 55: 659-676.	https://earthref.org/ERR/2124/
+2130	SMNT-310N-1759E:SMNT-318N-1743E	Duncan, R.A. and Clague, D.A. (1984). The earliest volcanism on the Hawaiian Ridge. EOS, Transactions of the American Geophysical Union 1076: 1,984.	https://earthref.org/ERR/2130/
+2134	SMNT-187N-1583W	Dymond, J. and Windom, H.L. (1968). Cretaceous K-Ar ages from Pacific Ocean seamounts. Earth and Planetary Science Letters 4: 47-52. doi: 10.1016/0012-821X(68)90052-6.	https://earthref.org/ERR/2134/
+2157	SMNT-190N-1539W	Francheteau, J., Harrison, C.G.A., Sclater, J.G. and Richards, M.L. (1970). Magnetization of Pacific seamounts: a preliminary polar wander curve for the Northeastern Pacific. Journal of Geophysical Research 75: 2,035-2,061.	https://earthref.org/ERR/2157/
+2198	SMNT-380N-1704E:SMNT-411N-1706E	Shambach, J., Jackson, E.D., Koizumi, I., Avdeiko, G., Butt, A., Clague, D., Dalrymple, G.B., Greene, H.G., Karpoff, A.M., Kirkpatrick, R.J., Kono, M., Hsin, Y.L., McKenzie, J., Morgan, J. and Takayama, T. (1980). Site 430; Ojin Seamount. Initial Reports of the Deep Sea Drilling Project 55: 45-76.	https://earthref.org/ERR/2198/
+2199	SMNT-380N-1704E:SMNT-411N-1706E	Shambach, J., Jackson, E.D., Koizumi, I., Avdeiko, G., Butt, A., Clague, D., Dalrymple, G.B., Greene, H.G., Karpoff, A.M., Kirkpatrick, R.J., Kono, M., Hsin, Y.L., McKenzie, J., Morgan, J. and Takayama, T. (1980). Site 431; Yomei Seamount. Initial Reports of the Deep Sea Drilling Project 55: 77-94.	https://earthref.org/ERR/2199/
+2200	SMNT-380N-1704E:SMNT-411N-1706E	Shambach, J., Jackson, E.D., Koizumi, I., Avdeiko, G., Butt, A., Clague, D., Dalrymple, G.B., Greene, H.G., Karpoff, A.M., Kirkpatrick, R.J., Kono, M., Hsin, Y.L., McKenzie, J., Morgan, J. and Takayama, T. (1980). Site 432; Nintoku Seamount. Initial Reports of the Deep Sea Drilling Project 55: 95-126.	https://earthref.org/ERR/2200/
+2201	SMNT-380N-1704E:SMNT-411N-1706E	Shambach, J., Jackson, E.D., Koizumi, I., Avdeiko, G., Butt, A., Clague, D., Dalrymple, G.B., Greene, H.G., Karpoff, A.M., Kirkpatrick, R.J., Kono, M., Hsin, Y.L., McKenzie, J., Morgan, J. and Takayama, T. (1980). Site 433; Suiko Seamount. Initial Reports of the Deep Sea Drilling Project 55: 127-282.	https://earthref.org/ERR/2201/
+2233	SMNT-353N-1716E	Larson, R.L., Moberly, R., Bukry, D., Foreman, H.P., Gardner, J.V., Keene, J.B., Lancelot, Y., Luterbacher, H., Marshall, M.C. and Matter, A. (1975). Site 308; Koko Guyot. Initial Reports of the Deep Sea Drilling Project 32: 215-226.	https://earthref.org/ERR/2233/
+2234	SMNT-353N-1716E	Larson, R.L., Moberly, R., Bukry, D., Foreman, H.P., Gardner, J.V., Keene, J.B., Lancelot, Y., Luterbacher, H., Marshall, M.C. and Matter, A. (1975). Site 309; Koko Guyot. Initial Reports of the Deep Sea Drilling Project 32: 215-226.	https://earthref.org/ERR/2234/
+2248	SMNT-189N-1553W	Malahoff, A., McMurty, G.M., Wiltshire, J.C. and Yeh, H.-W. (1982). Geology and geochemistry of hydrothermal deposits from active submarine volcano Loihi, Hawaii. Nature 298: 234-239.	https://earthref.org/ERR/2248/
+2301	SMNT-310N-1759E	Sager, W.W. (1987). Late Eocene and Maastrichtian paleomagnetic poles for the Pacific Plate; implications for the validity of seamount paleomagnetic data. Tectonophysics 144(4): 301-314. doi: 10.1016/0040-1951(87)90298-8.	https://earthref.org/ERR/2301/
+2302	SMNT-187N-1571W:SMNT-187N-1583W	Sager, W.W. and Pringle, M.S. (1987). Paleomagnetic constraints on the origin and evolution of the Musicians and South Hawaiian seamounts, Central Pacific Ocean. In: Seamounts, Islands and Atolls, Geophysical Monograph Series 43. Keating, B.H., Fryer, P., Batiza, R. and Boehlert, G.W. (Editors), American Geophysical Union, Washington, D.C.. 43: 133-162.	https://earthref.org/ERR/2302/
+2307	SMNT-222N-1626W	Schimke, G.R. and Bufe, C.G. (1968). Geophysical description of a Pacific Ocean seamount. Journal of Geophysical Research 73(2): 559-569.	https://earthref.org/ERR/2307/
+2515	SMNT-189N-1553W	Moore, J.G., Clague, D.A. and Normark, W.R. (1982). Diverse basalt types from Loihi Seamount, Hawaii. Geology 10(2): 88-92.	https://earthref.org/ERR/2515/
+5874	SMNT-278N-1758W:SMNT-289N-1779W:SMNT-327N-1723E	Koyanagi, R.Y., Endo, E.T. and Ebisu, J.S. (1975). Reawakening of Mauna Loa volcano, Hawaii: A preliminary evaluation of seismic evidence. Geophysical Research Letters 2: doi: 10.1029/GL002i009p00405. issn: 0094-8276.	https://earthref.org/ERR/5874/
+34956	SMNT-189N-1553W	Klein, F.W. (1982). Earthquakes at Loihi submarine volcano and the Hawaiian hot spot. Journal of Geophysical Research 87: doi: 10.1029/JB087iB09p07719. issn: 0148-0227.	https://earthref.org/ERR/34956/
+35496	SMNT-318N-1743E	Sager, W.W. (1984). Paleomagnetism of Abbott Seamount and implications for the latitudinal drift of the Hawaiian hot spot. Journal of Geophysical Research 89: doi: 10.1029/JB089iB07p06271. issn: 0148-0227.	https://earthref.org/ERR/35496/
+37240	SMNT-222N-1626W	Sager, W.W. and Pringle, M.S. (1988). Mid-Cretaceous to early tertiary apparent polar wander path of the Pacific plate. Journal of Geophysical Research 93: doi: 10.1029/88JB00077. issn: 0148-0227.	https://earthref.org/ERR/37240/
+85170	SMNT-241N-1668W	Garcia, M.O., Grooms, D.G. and Naughton, J.J. (1987). Petrology and geochronology of volcanic rocks from seamounts along and near the Hawaiian Ridge: Implications for propagation rate of the ridge. Lithos 20: 323-336. doi: 10.1016/S0024-4937(87)80005-1.	https://earthref.org/ERR/85170/

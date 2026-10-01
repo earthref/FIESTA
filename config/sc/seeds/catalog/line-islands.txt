@@ -1,0 +1,268 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Line Islands (57 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	plate_age_min	plate_age_max	age	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	description	sc_id
+SMNT-002S-1571W	Seamount		Seamount			-0.23	-157.08	Line Islands	Pacific Plate						0											2101
+SMNT-004S-1600W	Jarvis Island		Island	Small	A1	-0.38933	-159.9915	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	111.6	111.8		4580	0	4580	4088	1.17	0.08	1.18	0.18	1	1	Jarvis Island is located at 0° 23.4' S, 159° 59.5' W and is part of the Line Islands on the Pacific Plate. It is 4580 m high with the top at sealevel and ocean bottom at -4580 m. The seamount is fairly small with a volume of 4088 km3. It is fairly round with smooth edges and little elongation or irregularity. The azimuth is at approximately 127°.	1949
+SMNT-008N-1580W	Seamount		Seamount			0.76	-158.01	Line Islands	Pacific Plate						0											2100
+SMNT-013N-1600W	Seamount		Seamount			1.28	-159.96	Line Islands	Pacific Plate						0											2099
+SMNT-018N-1574W	Christmas Seamount	Kiritimati	Seamount			1.82	-157.39	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain				0											1950
+SMNT-028S-1558W	Schlanger Seamount		Seamount	Very Small	A1	-2.84433	-155.82717	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	105.6	105.9		2720	1780	4500	645	1.25	0.06	1.18	0.05	1	30	Schlanger Seamount is located at 2° 50.6' S, 155° 49.6' W and is part of the Line Islands on the Pacific Plate. It is 2720 m high with the top at -1780 m and ocean bottom at -4500 m. The seamount is very small with a volume of 645 km3. It is fairly round with smooth edges and little elongation or irregularity. The azimuth is at approximately 120°.	1177
+SMNT-033S-1539W	Clarke Seamount		Seamount	Very Small	A4	-3.33483	-153.92283	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	100.6	101.7		1720	3240	4960	816	2.61	0.33	1.07	0.03	2	6	Clarke Seamount is located at 3° 20.1' S, 153° 55.4' W and is part of the Line Islands on the Pacific Plate. It is 1720 m high with the top at -3240 m and ocean bottom at -4960 m. The seamount is very small with a volume of 816 km3. It is elongated in an north, south direction with an azimuth of approximately 2°. The edges of the seamount are relatively smooth.	1972
+SMNT-034S-1557W	Seamount		Seamount	Small	A1	-3.38	-155.6915	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plateau	105.5	106.1		3065	1175	4240	1149	1.38	0.06	1.11	0.03	1	20	Unnamed Seamount SMNT-034S-1557W is located at 3° 22.8' S, 155° 41.5' W and is part of the Line Islands on the Pacific Plate. It is 3065 m high with the top at -1175 m and ocean bottom at -4240 m. The seamount is fairly small with a volume of 1148 km3. It is fairly round with smooth edges and little elongation or irregularity. The azimuth is at approximately 122°.	2102
+SMNT-035N-1602W	Chapman Seamount		Seamount	Small	A1	3.5365	-160.14183	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	108.8	109.7		2600	1425	4025	1058	1.33	0.03	1.05	0.05	1	0	Chapman Seamount is located at 3° 32.2' N, 160° 8.5' W and is part of the Line Islands on the Pacific Plate. It is 2600 m high with the top at -1425 m and ocean bottom at -4025 m. The seamount is fairly small with a volume of 1058 km3. It is fairly round with smooth edges and little elongation or irregularity. The azimuth is at approximately 116°.	1973
+SMNT-038S-1532W	Seamount		Seamount			-3.82	-153.19	Line Islands	Pacific Plate						0											2105
+SMNT-039N-1594W	Fanning Island	Tabuaeran	Island	Small	C5	3.827	-159.165	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	105.3	107.9		1700	0	1700	3782	3.26	0.07	1.45	0.11	1	0	Fanning or Tabuaeran Island is located at 3° 49.6' N, 159° 9.9' W and is part of the Line Islands on the Pacific Plate. It is 1700 m high with the top at sealevel and ocean bottom at -1700 m. The seamount is fairly small with a volume of 3781 km3. It is very elongated in an southeast, northwest direction with an azimuth of approximately 114°. The edges of the seamount are moderately irregular.	1951
+SMNT-039S-1552W	Guyot		Guyot	Small	A1	-3.91333	-155.15467	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	104.3	105.3		3270	1330	4600	1786	1.37	0.06	1.18	0.06	1	12	Unnamed Seamount SMNT-039S-1552W is located at 3° 54.8' S, 155° 9.3' W and is part of the Line Islands on the Pacific Plate. It is 3270 m high with the top at -1330 m and ocean bottom at -4600 m. The seamount is fairly small with a volume of 1785 km3. It is relatively round with smooth edges and little elongation or irregularity. The azimuth is at approximately 110°.	2103
+SMNT-040S-1549W	Guyot		Guyot	Small	A1	-4.02517	-154.93267	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	103.9	104.8		3560	290	3850	1574	1.32	0.12	1.13	0.03	1	6	Unnamed Seamount SMNT-040S-1549W is located at 4° 1.5' S, 154° 56' W and is part of the Line Islands on the Pacific Plate. It is 3560 m high with the top at -290 m and ocean bottom at -3850 m. The seamount is fairly small with a volume of 1574 km3. It is relatively round with smooth edges and little elongation or irregularity. The azimuth is at approximately 107°.	2104
+SMNT-045S-1550W	Malden Guyot		Guyot	Very Small	A1	-4.5225	-155.04583	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	104.8	105.2		2935	2000	4935	799	1.16	0.05	1.01	0.00	1	0	Malden Guyot is located at 4° 31.3' S, 155° 2.8' W and is part of the Line Islands on the Pacific Plate. It is 2935 m high with the top at -2000 m and ocean bottom at -4935 m. The seamount is very small with a volume of 799 km3. It is fairly round with smooth edges and little elongation or irregularity. The azimuth is at approximately 83°.	1948
+SMNT-047N-1604W	Washington Island	Teraina	Island	Small	A4	4.6895	-160.36967	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	108.5	109.9		2560	360	2920	2187	2.67	0.08	1.09	0.06	1	1	Washington or Teraina Island is located at 4° 41.4' N, 160° 22.2' W and is part of the Line Islands on the Pacific Plate. It is 2560 m high with the top at -360 m and ocean bottom at -2920 m. The seamount is fairly small with a volume of 2187 km3. It is very elongated in an southeast, northwest direction with an azimuth of approximately 115°. The edges of the seamount are relatively smooth.	1952
+SMNT-056S-1559W	Starbuck Seamount		Seamount	Small	A1	-5.64017	-155.8975	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	107.4	108.7		3765	640	4405	2910	1.11	0.01	1.02	0.00	2	4	Starbuck Seamount is located at 5° 38.4' S, 155° 53.9' W and is part of the Line Islands on the Pacific Plate. It is 3765 m high with the top at -640 m and ocean bottom at -4405 m. The seamount is fairly small with a volume of 2909 km3. It is fairly round with smooth edges and little elongation or irregularity. The azimuth is at approximately 124°.	1947
+SMNT-059N-1621W	Palmyra Island		Island	Small	A3	5.867	-162.02383	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	111.7	112.2		2715	0	2715	2168	2.15	0.25	1.04	0.19	1	3	Palmyra Island is located at 5° 52' N, 162° 1.4' W and is part of the Line Islands on the Pacific Plate. It is 2715 m high with the top at sealevel and ocean bottom at -2715 m. The seamount is fairly small with a volume of 2167 km3. It is elongated in an east, west direction with an azimuth of approximately 94°. The edges of the seamount are relatively smooth.	1953
+SMNT-064N-1626W	Kingman Reef Island		Island	Large	E2	6.36683	-162.63433	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	111.7	113.0		3495	0	3495	12352	1.68	0.13	2.19	0.10	3	6	Kingman Reef is located at 6° 22' N, 162° 38.1' W and is part of the Line Islands on the Pacific Plate. It is 3495 m high with the top at sealevel and ocean bottom at -3495 m. The seamount is fairly large with a volume of 12352 km3. It is slightly elongated in an east west direction with an azimuth of approximately 95°. The edges of the seamount are very irregular.	412
+SMNT-074N-1613W	Seamount		Seamount			7.35	-161.29	Line Islands	Pacific Plate						0											2096
+SMNT-075N-1633W	Seamount		Seamount			7.52	-163.25	Line Islands	Pacific Plate						0											2097
+SMNT-076S-1516W	Wageman Seamount	Uyeda	Seamount			-7.56	-151.55	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain			72	0											1971
+SMNT-078N-1615W	Stanley Guyot		Guyot	Small	A2	7.84283	-161.55033	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	110.0	111.0	24	3145	1035	4180	2449	1.80	0.02	0.99	0.07	1	6	Stanley Guyot is located at 7° 50.6' N, 161° 33' W and is part of the Line Islands on the Pacific Plate. It is 3145 m high with the top at -1035 m and ocean bottom at -4180 m. The seamount is fairly small with a volume of 2449 km3. It is slightly elongated in an northwest, southeast direction with an azimuth of approximately 154°. The edges of the seamount are relatively smooth.	1966
+SMNT-079N-1619W	Willoughby Seamount		Seamount	Very Small	A1	7.88117	-161.94317	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	111.3	111.5		1415	2630	4045	167	1.20	0.06	1.03	0.00	1	9	Willoughby Seamount is located at 7° 52.9' N, 161° 56.6' W and is part of the Line Islands on the Pacific Plate. It is 1415 m high with the top at -2630 m and ocean bottom at -4045 m. The seamount is very small with a volume of 167 km3. It is fairly round with smooth edges and little elongation or irregularity. The azimuth is at approximately 116°.	1974
+SMNT-080S-1551W	Seamount		Seamount			-7.95	-155.05	Line Islands	Pacific Plate						0											2106
+SMNT-083N-1600W	Seamount		Seamount			8.25	-160.0	Line Islands	Pacific Plate						0											2098
+SMNT-083N-1642W	S.P. Lee Guyot		Guyot	Intermediate	B1	8.30333	-164.2225	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	113.3	114.2	72	3305	890	4195	6769	1.25	0.08	1.22	0.04	1	2	S.P. Lee Guyot is located at 8° 16.1' N, 164° 13.4' W and is part of the Line Islands on the Pacific Plate. It is 3305 m high with the top at -890 m and ocean bottom at -4195 m. The seamount is intermediate in size with a volume of 6769 km3. It is fairly round with slightly irregular edges. The azimuth is at approximately 108°.	1965
+SMNT-083S-1511W	Seamount		Seamount	Small	A1	-8.2365	-151.114	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plateau	105.1	106.4		2825	1350	4175	1597	1.14	0.02	1.05	0.02	1	5	Unnamed Seamount SMNT-083S-1511W is located at 8° 14.2' S, 151° 6.8' W and is part of the Line Islands on the Pacific Plate. It is 2825 m high with the top at -1350 m and ocean bottom at -4175 m. The seamount is fairly small with a volume of 1597 km3. It is relatively round with smooth edges and little elongation or irregularity. The azimuth is at approximately 93°.	2107
+SMNT-086S-1511W	Guyot		Guyot	Small	A1	-8.5445	-151.1365	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	105.6	106.3		2660	1215	3875	1153	1.29	0.04	1.04	0.01	1	11	Unnamed Seamount SMNT-086S-1511W is located at 8° 32.7' S, 151° 8.2' W and is part of the Line Islands on the Pacific Plate. It is 2660 m high with the top at -1215 m and ocean bottom at -3875 m. The seamount is fairly small with a volume of 1152 km3. It is relatively round with smooth edges and little elongation or irregularity. The azimuth is at approximately 146°.	2108
+SMNT-088S-1510W	Guyot		Guyot	Small	A1	-8.81833	-150.92283	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	105.0	106.6		2675	1690	4365	2078	1.39	0.02	1.11	0.03	1	3	Unnamed Seamount SMNT-088S-1510W is located at 8° 49.1' S, 150° 55.4' W and is part of the Line Islands on the Pacific Plate. It is 2675 m high with the top at -1690 m and ocean bottom at -4365 m. The seamount is fairly small with a volume of 2078 km3. It is relatively round with smooth edges and little elongation or irregularity. The azimuth is at approximately 55°.	2109
+SMNT-091S-1507W	Merlin Seamount		Seamount			-9.1	-150.7	Line Islands	Pacific Plate						0											2110
+SMNT-092N-1580W	Carol Seamount	Serrano	Seamount			9.2	-158.0	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain				0											1954
+SMNT-093N-1585W	Stu Guyot		Guyot	Small	B2	9.26517	-158.475	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	101.4	103.5		2910	1390	4300	3835	1.82	0.10	1.25	0.07	1	0	Stu Guyot is located at 9° 15.9' N, 158° 28.5' W and is part of the Line Islands on the Pacific Plate. It is 2910 m high with the top at -1390 m and ocean bottom at -4300 m. The seamount is fairly small with a volume of 3835 km3. It is sightly elongated in an east, west direction with an azimuth of approximately 87°. The edges of the seamount are slightly irregular.	1975
+SMNT-093N-1606W	Seamount		Seamount	Very Small	A3	9.26883	-160.53017	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	107.1	107.6	79	2085	3195	5280	538	2.04	0.03	1.08	0.01	1	0	Unnamed Seamount SMNT-093N-1606W is located at 9° 16.1' N, 160° 31.8' W and is part of the Line Islands on the Pacific Plate. It is 2085 m high with the top at -3195 m and ocean bottom at -5280 m. The seamount is very small with a volume of 538 km3. It is elongated in an northeast, southwest direction with an azimuth of approximately 66°. The edges of the seamount are relatively smooth.	1964
+SMNT-093N-1631W	Jacqueline Island		Island	Small	B2	9.33367	-163.1305	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	112.0	112.8		2320	1415	3735	2819	1.83	0.05	1.37	0.13	2	0	Jacqueline Island is located at 9° 20' N, 163° 7.8' W and is part of the Line Islands on the Pacific Plate. It is 2320 m high with the top at -1415 m and ocean bottom at -3735 m. The seamount is fairly small with a volume of 2818 km3. It is sightly elongated in an east, west direction with an azimuth of approximately 84°. The edges of the seamount are slightly irregular.	1976
+SMNT-094S-1504W	Seamount		Seamount			-9.36	-150.41	Line Islands	Pacific Plate						0											2111
+SMNT-095N-1640W	Seamount		Seamount			9.54	-164.02	Line Islands	Pacific Plate						0											2094
+SMNT-099N-1622W	Seamount		Seamount			9.86	-162.22	Line Islands	Pacific Plate						0											2095
+SMNT-100S-1502W	Caroline Guyot		Guyot	Very Small	A1	-9.96117	-150.22983	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain	104.3	105.1		3335	400	3735	994	1.37	0.05	1.03	0.01	1	27	Caroline Guyot is located at 9° 57.7' N, 150° 13.8' W and is part of the Line Islands on the Pacific Plate. It is 3335 m high with the top at - 400 m and ocean bottom at -3735 m. The seamount is very small with a volume of 994 km3. It is fairly round with smooth edges and little elongation or irregularity. The azimuth is at approximately 194°.	1944
+SMNT-101N-1654W	Seamount		Seamount			10.1	-165.44	Line Islands	Pacific Plate						0											2092
+SMNT-101S-1524W	Vostok Seamount		Seamount			-10.1	-152.39	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain				0											1946
+SMNT-103N-1680W	Eveline Seamount		Seamount			10.29	-167.99	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain				0											1977
+SMNT-105N-1598W	Ironwood Seamount		Seamount			10.53	-159.79	Line Islands	Pacific Plate						0											849
+SMNT-107N-1656W	Seamount		Seamount			10.74	-165.57	Line Islands	Pacific Plate						0											2091
+SMNT-108N-1642W	Embattle Seamount		Seamount			10.75	-164.16667	Line Islands	Pacific Plate						0											708
+SMNT-108S-1494W	Seamount		Seamount			-10.8	-149.4	Line Islands	Pacific Plate						0											2112
+SMNT-113N-1638W	Proa Seamount		Seamount			11.33333	-163.83333	Line Islands	Pacific Plate						0											1113
+SMNT-114S-1490W	Seamount		Seamount			-11.39	-149.04	Line Islands	Pacific Plate						0											2113
+SMNT-114S-1518W	Flint Seamount		Seamount			-11.42	-151.8	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain				0											1945
+SMNT-120S-1485W	Seamount		Seamount			-12.04	-148.5	Line Islands	Pacific Plate						0											2114
+SMNT-121N-1659W	Kapsitotwa Seamount		Seamount			12.05	-165.86	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain			84	0											1963
+SMNT-126N-1670W	Nagata Seamount		Seamount			12.57	-167.01	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain			85	0											1962
+SMNT-145N-1690W	Seamount		Seamount			14.45	-169.0	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain			56	0											1961
+SMNT-150N-1666W	Seamount		Seamount			15.03	-166.57	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain			82	0											1960
+SMNT-166N-1683W	Seamount		Seamount			16.63	-168.27	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain			79	0											1959
+SMNT-167N-1695W	Johnston Seamount		Seamount			16.7	-169.5	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain				0											1955
+SMNT-175N-1693W	Watkins Seamount		Seamount			17.48	-169.26	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain				0											1978
+SMNT-180N-1690W	Seamount		Seamount			17.97	-168.95	Line Islands	Pacific Plate	Hotspot Trail	Abyssal Plain			128	0											1957
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-004S-1600W	1832	128.8	211.1	19.7	15.7	1.259	72.2	52.0	1.387
+SMNT-004S-1600W	2290	123.9	314.4	22.2	19.5	1.135	69.1	63.0	1.097
+SMNT-004S-1600W	2748	129.4	416.9	25.2	22.6	1.116	77.1	72.5	1.062
+SMNT-028S-1558W	2868	117.9	76.2	11.6	8.8	1.316	38.3	31.4	1.222
+SMNT-028S-1558W	3140	121.1	116.0	14.1	11.3	1.242	46.0	38.5	1.194
+SMNT-028S-1558W	3412	123.5	155.2	15.8	13.1	1.207	50.2	44.4	1.130
+SMNT-034S-1557W	2401	118.2	148.5	16.8	11.7	1.442	47.7	44.3	1.078
+SMNT-034S-1557W	2708	124.6	209.6	19.3	14.5	1.333	59.1	52.1	1.134
+SMNT-034S-1557W	3014	124.2	274.1	21.9	16.2	1.353	66.0	59.7	1.105
+SMNT-039S-1552W	2638	107.8	256.6	23.1	16.1	1.437	72.7	58.2	1.250
+SMNT-039S-1552W	2965	109.9	346.9	26.0	19.1	1.359	76.4	67.2	1.137
+SMNT-039S-1552W	3292	111.4	458.4	28.4	21.6	1.311	88.0	76.9	1.144
+SMNT-040S-1549W	1714	100.4	201.0	18.4	15.1	1.218	56.8	50.6	1.122
+SMNT-040S-1549W	2070	106.8	255.2	21.3	16.5	1.290	64.1	57.3	1.118
+SMNT-040S-1549W	2426	115.1	331.5	25.8	17.8	1.446	77.0	66.2	1.163
+SMNT-047N-1604W	1384	115.6	250.1	32.0	12.1	2.657	74.6	66.0	1.130
+SMNT-047N-1604W	1640	115.3	407.1	41.7	15.1	2.754	95.3	85.2	1.118
+SMNT-047N-1604W	1896	116.1	579.8	46.1	17.7	2.605	102.3	99.9	1.024
+SMNT-056S-1559W	2146	119.2	304.0	21.0	18.8	1.119	63.4	62.0	1.024
+SMNT-056S-1559W	2523	125.6	402.1	23.9	21.7	1.100	72.6	71.2	1.020
+SMNT-056S-1559W	2899	127.6	516.6	27.0	24.6	1.099	82.5	80.7	1.022
+SMNT-059N-1621W	815	98.8	250.7	35.6	15.0	2.371	80.3	63.9	1.256
+SMNT-059N-1621W	1086	95.1	437.6	47.2	21.5	2.197	78.2	82.7	0.945
+SMNT-059N-1621W	1358	88.4	617.4	50.8	26.9	1.887	87.4	94.7	0.923
+SMNT-064N-1626W	1398	97.6	1312.7	81.9	45.0	1.821	312.6	137.1	2.281
+SMNT-064N-1626W	1748	94.5	1751.5	79.1	48.5	1.631	342.7	155.0	2.211
+SMNT-064N-1626W	2097	92.7	2198.2	81.4	51.4	1.583	359.2	172.8	2.079
+SMNT-078N-1615W	2293	154.7	470.1	33.3	18.4	1.809	84.1	81.9	1.026
+SMNT-078N-1615W	2608	154.0	609.5	38.0	21.0	1.811	96.3	93.3	1.033
+SMNT-078N-1615W	2922	154.9	761.7	42.1	23.7	1.777	94.3	103.9	0.908
+SMNT-079N-1619W	3196	193.0	67.2	10.7	8.4	1.262	30.4	29.4	1.036
+SMNT-079N-1619W	3338	196.7	83.8	11.6	9.7	1.200	33.8	32.7	1.034
+SMNT-079N-1619W	3479	198.3	101.9	12.5	10.9	1.148	37.0	35.9	1.031
+SMNT-083N-1642W	2543	101.9	1276.5	47.4	40.2	1.178	156.7	127.3	1.232
+SMNT-083N-1642W	2873	110.5	1574.8	53.6	43.1	1.245	177.6	141.9	1.251
+SMNT-083N-1642W	3204	113.4	1921.5	60.8	45.7	1.332	185.8	157.8	1.177
+SMNT-083S-1511W	2480	89.4	268.6	20.2	17.7	1.143	60.5	58.3	1.039
+SMNT-083S-1511W	2763	90.7	372.9	23.8	20.7	1.151	71.0	68.7	1.034
+SMNT-083S-1511W	3045	98.7	498.3	27.1	24.2	1.118	84.5	79.3	1.066
+SMNT-086S-1511W	2013	144.8	164.1	17.1	13.0	1.317	48.1	46.1	1.043
+SMNT-086S-1511W	2279	145.8	214.7	19.3	14.9	1.302	54.6	52.6	1.038
+SMNT-086S-1511W	2545	147.7	275.9	21.5	17.2	1.246	62.4	59.4	1.050
+SMNT-088S-1510W	3028	53.0	563.2	34.4	24.6	1.401	98.7	85.9	1.149
+SMNT-088S-1510W	3295	55.9	720.5	38.1	27.1	1.408	107.0	97.2	1.100
+SMNT-088S-1510W	3563	57.3	870.3	40.8	29.7	1.372	115.4	106.5	1.083
+SMNT-100S-1502W	1734	190.8	177.5	18.1	12.8	1.420	49.2	48.3	1.018
+SMNT-100S-1502W	2068	193.7	229.5	20.2	14.8	1.362	56.2	54.7	1.027
+SMNT-100S-1502W	2401	197.8	292.4	22.5	17.0	1.327	64.3	61.5	1.044
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Unnamed Seamount -- Predicted satellite bathymetry (330)		SMNT-002S-1571W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-002S-1571W.std.180m.ss.map.jpg	180	693	773	330
+Jarvis Island -- Multibeam data merged with predicted satellite bathymetry	SMNT-004S-1600W	SMNT-004S-1600W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-004S-1600W.std.180m.mg.map.jpg	180	693	773	332
+Jarvis Island -- Multibeam bathymetry	SMNT-004S-1600W	SMNT-004S-1600W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-004S-1600W.std.180m.mb.map.jpg	180	952	1033	333
+Jarvis Island -- Predicted satellite bathymetry	SMNT-004S-1600W	SMNT-004S-1600W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-004S-1600W.std.180m.ss.map.jpg	180	693	773	334
+Jarvis Island -- Residual bathymetry	SMNT-004S-1600W	SMNT-004S-1600W	Seamount	Residual bathymetry	Map:Grid	SMNT-004S-1600W.std.180m.rs.map.jpg	180	693	773	335
+Unnamed Seamount -- Predicted satellite bathymetry (338)		SMNT-008N-1580W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-008N-1580W.std.180m.ss.map.jpg	180	693	773	338
+Unnamed Seamount -- Predicted satellite bathymetry (342)		SMNT-013N-1600W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-013N-1600W.std.180m.ss.map.jpg	180	693	773	342
+Christmas Seamount -- Predicted satellite bathymetry	SMNT-018N-1574W	SMNT-018N-1574W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-018N-1574W.std.180m.ss.map.jpg	180	1212	1292	346
+Schlanger Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-028S-1558W	SMNT-028S-1558W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-028S-1558W.std.180m.mg.map.jpg	180	641	721	348
+Schlanger Seamount -- Multibeam bathymetry	SMNT-028S-1558W	SMNT-028S-1558W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-028S-1558W.std.180m.mb.map.jpg	180	875	955	349
+Schlanger Seamount -- Predicted satellite bathymetry	SMNT-028S-1558W	SMNT-028S-1558W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-028S-1558W.std.180m.ss.map.jpg	180	641	721	350
+Schlanger Seamount -- Residual bathymetry	SMNT-028S-1558W	SMNT-028S-1558W	Seamount	Residual bathymetry	Map:Grid	SMNT-028S-1558W.std.180m.rs.map.jpg	180	641	721	351
+Clarke Seamount -- Predicted satellite bathymetry	SMNT-033S-1539W	SMNT-033S-1539W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-033S-1539W.std.180m.ss.map.jpg	180	693	773	354
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (356)		SMNT-034S-1557W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-034S-1557W.std.180m.mg.map.jpg	180	693	773	356
+Unnamed Seamount -- Multibeam bathymetry (357)		SMNT-034S-1557W	Regional	Multibeam bathymetry	Map:Grid	SMNT-034S-1557W.std.180m.mb.map.jpg	180	952	1033	357
+Unnamed Seamount -- Predicted satellite bathymetry (358)		SMNT-034S-1557W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-034S-1557W.std.180m.ss.map.jpg	180	693	773	358
+Unnamed Seamount -- Residual bathymetry (359)		SMNT-034S-1557W	Regional	Residual bathymetry	Map:Grid	SMNT-034S-1557W.std.180m.rs.map.jpg	180	693	773	359
+Chapman Seamount -- Predicted satellite bathymetry	SMNT-035N-1602W	SMNT-035N-1602W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-035N-1602W.std.180m.ss.map.jpg	180	693	773	362
+Unnamed Seamount -- Predicted satellite bathymetry (366)		SMNT-038S-1532W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-038S-1532W.std.180m.ss.map.jpg	180	693	773	366
+Fanning Island -- Predicted satellite bathymetry	SMNT-039N-1594W	SMNT-039N-1594W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-039N-1594W.std.180m.ss.map.jpg	180	849	929	370
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (372)		SMNT-039S-1552W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-039S-1552W.std.180m.mg.map.jpg	180	693	773	372
+Unnamed Guyot -- Multibeam bathymetry (373)		SMNT-039S-1552W	Regional	Multibeam bathymetry	Map:Grid	SMNT-039S-1552W.std.180m.mb.map.jpg	180	952	1033	373
+Unnamed Guyot -- Predicted satellite bathymetry (374)		SMNT-039S-1552W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-039S-1552W.std.180m.ss.map.jpg	180	693	773	374
+Unnamed Guyot -- Residual bathymetry (375)		SMNT-039S-1552W	Regional	Residual bathymetry	Map:Grid	SMNT-039S-1552W.std.180m.rs.map.jpg	180	693	773	375
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (376)		SMNT-040S-1549W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-040S-1549W.std.180m.mg.map.jpg	180	693	773	376
+Unnamed Guyot -- Multibeam bathymetry (377)		SMNT-040S-1549W	Regional	Multibeam bathymetry	Map:Grid	SMNT-040S-1549W.std.180m.mb.map.jpg	180	952	1033	377
+Unnamed Guyot -- Predicted satellite bathymetry (378)		SMNT-040S-1549W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-040S-1549W.std.180m.ss.map.jpg	180	693	773	378
+Unnamed Guyot -- Residual bathymetry (379)		SMNT-040S-1549W	Regional	Residual bathymetry	Map:Grid	SMNT-040S-1549W.std.180m.rs.map.jpg	180	693	773	379
+Malden Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-045S-1550W	SMNT-045S-1550W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-045S-1550W.std.180m.mg.map.jpg	180	693	773	380
+Malden Guyot -- Multibeam bathymetry	SMNT-045S-1550W	SMNT-045S-1550W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-045S-1550W.std.180m.mb.map.jpg	180	952	1033	381
+Malden Guyot -- Predicted satellite bathymetry	SMNT-045S-1550W	SMNT-045S-1550W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-045S-1550W.std.180m.ss.map.jpg	180	693	773	382
+Malden Guyot -- Residual bathymetry	SMNT-045S-1550W	SMNT-045S-1550W	Seamount	Residual bathymetry	Map:Grid	SMNT-045S-1550W.std.180m.rs.map.jpg	180	693	773	383
+Washington Island -- Multibeam data merged with predicted satellite bathymetry	SMNT-047N-1604W	SMNT-047N-1604W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-047N-1604W.std.180m.mg.map.jpg	180	849	929	384
+Washington Island -- Multibeam bathymetry	SMNT-047N-1604W	SMNT-047N-1604W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-047N-1604W.std.180m.mb.map.jpg	180	1186	1266	385
+Washington Island -- Predicted satellite bathymetry	SMNT-047N-1604W	SMNT-047N-1604W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-047N-1604W.std.180m.ss.map.jpg	180	849	929	386
+Washington Island -- Residual bathymetry	SMNT-047N-1604W	SMNT-047N-1604W	Seamount	Residual bathymetry	Map:Grid	SMNT-047N-1604W.std.180m.rs.map.jpg	180	849	929	387
+Starbuck Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-056S-1559W	SMNT-056S-1559W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-056S-1559W.std.180m.mg.map.jpg	180	797	877	388
+Starbuck Seamount -- Multibeam bathymetry	SMNT-056S-1559W	SMNT-056S-1559W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-056S-1559W.std.180m.mb.map.jpg	180	1108	1188	389
+Starbuck Seamount -- Predicted satellite bathymetry	SMNT-056S-1559W	SMNT-056S-1559W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-056S-1559W.std.180m.ss.map.jpg	180	797	877	390
+Starbuck Seamount -- Residual bathymetry	SMNT-056S-1559W	SMNT-056S-1559W	Seamount	Residual bathymetry	Map:Grid	SMNT-056S-1559W.std.180m.rs.map.jpg	180	797	877	391
+Palmyra Island -- Multibeam data merged with predicted satellite bathymetry	SMNT-059N-1621W	SMNT-059N-1621W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-059N-1621W.std.180m.mg.map.jpg	180	693	773	392
+Palmyra Island -- Multibeam bathymetry	SMNT-059N-1621W	SMNT-059N-1621W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-059N-1621W.std.180m.mb.map.jpg	180	952	1033	393
+Palmyra Island -- Predicted satellite bathymetry	SMNT-059N-1621W	SMNT-059N-1621W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-059N-1621W.std.180m.ss.map.jpg	180	693	773	394
+Palmyra Island -- Residual bathymetry	SMNT-059N-1621W	SMNT-059N-1621W	Seamount	Residual bathymetry	Map:Grid	SMNT-059N-1621W.std.180m.rs.map.jpg	180	693	773	395
+Kingman Reef Island -- Multibeam data merged with predicted satellite bathymetry	SMNT-064N-1626W	SMNT-064N-1626W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-064N-1626W.std.180m.mg.map.jpg	180	1212	1292	398
+Kingman Reef Island -- Multibeam bathymetry	SMNT-064N-1626W	SMNT-064N-1626W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-064N-1626W.std.180m.mb.map.jpg	180	1730	1810	399
+Kingman Reef Island -- Predicted satellite bathymetry	SMNT-064N-1626W	SMNT-064N-1626W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-064N-1626W.std.180m.ss.map.jpg	180	1212	1292	400
+Kingman Reef Island -- Residual bathymetry	SMNT-064N-1626W	SMNT-064N-1626W	Seamount	Residual bathymetry	Map:Grid	SMNT-064N-1626W.std.180m.rs.map.jpg	180	1212	1292	401
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (404)		SMNT-074N-1613W	Regional	Multibeam merged with predicted satellite bathymetry	Grid					404
+Unnamed Seamount -- Multibeam bathymetry (405)		SMNT-074N-1613W	Regional	Multibeam bathymetry	Grid					405
+Unnamed Seamount -- Predicted satellite bathymetry (406)		SMNT-074N-1613W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-074N-1613W.std.180m.ss.map.jpg	180	952	1033	406
+Unnamed Seamount -- Residual bathymetry (407)		SMNT-074N-1613W	Regional	Residual bathymetry	Grid					407
+Unnamed Seamount -- Predicted satellite bathymetry (412)		SMNT-075N-1633W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-075N-1633W.std.180m.ss.map.jpg	180	693	773	412
+Wageman Seamount -- Predicted satellite bathymetry	SMNT-076S-1516W	SMNT-076S-1516W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-076S-1516W.std.180m.ss.map.jpg	180	693	773	418
+Stanley Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-078N-1615W	SMNT-078N-1615W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-078N-1615W.std.180m.mg.map.jpg	180	693	773	420
+Stanley Guyot -- Multibeam bathymetry	SMNT-078N-1615W	SMNT-078N-1615W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-078N-1615W.std.180m.mb.map.jpg	180	952	1033	421
+Stanley Guyot -- Predicted satellite bathymetry	SMNT-078N-1615W	SMNT-078N-1615W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-078N-1615W.std.180m.ss.map.jpg	180	693	773	422
+Stanley Guyot -- Residual bathymetry	SMNT-078N-1615W	SMNT-078N-1615W	Seamount	Residual bathymetry	Map:Grid	SMNT-078N-1615W.std.180m.rs.map.jpg	180	693	773	423
+Willoughby Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-079N-1619W	SMNT-079N-1619W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-079N-1619W.std.180m.mg.map.jpg	180	589	670	426
+Willoughby Seamount -- Multibeam bathymetry	SMNT-079N-1619W	SMNT-079N-1619W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-079N-1619W.std.180m.mb.map.jpg	180	797	877	427
+Willoughby Seamount -- Predicted satellite bathymetry	SMNT-079N-1619W	SMNT-079N-1619W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-079N-1619W.std.180m.ss.map.jpg	180	589	670	428
+Willoughby Seamount -- Residual bathymetry	SMNT-079N-1619W	SMNT-079N-1619W	Seamount	Residual bathymetry	Map:Grid	SMNT-079N-1619W.std.180m.rs.map.jpg	180	589	670	429
+Unnamed Seamount -- Predicted satellite bathymetry (432)		SMNT-080S-1551W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-080S-1551W.std.180m.ss.map.jpg	180	693	773	432
+Unnamed Seamount -- Predicted satellite bathymetry (435)		SMNT-083N-1600W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-083N-1600W.std.180m.ss.map.jpg	180	849	929	435
+S.P. Lee Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-083N-1642W	SMNT-083N-1642W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-083N-1642W.std.180m.mg.map.jpg	180	952	1033	439
+S.P. Lee Guyot -- Multibeam bathymetry	SMNT-083N-1642W	SMNT-083N-1642W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-083N-1642W.std.180m.mb.map.jpg	180	1341	1421	440
+S.P. Lee Guyot -- Predicted satellite bathymetry	SMNT-083N-1642W	SMNT-083N-1642W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-083N-1642W.std.180m.ss.map.jpg	180	952	1033	441
+S.P. Lee Guyot -- Residual bathymetry	SMNT-083N-1642W	SMNT-083N-1642W	Seamount	Residual bathymetry	Map:Grid	SMNT-083N-1642W.std.180m.rs.map.jpg	180	952	1033	442
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (443)		SMNT-083S-1511W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-083S-1511W.std.180m.mg.map.jpg	180	693	773	443
+Unnamed Seamount -- Multibeam bathymetry (444)		SMNT-083S-1511W	Regional	Multibeam bathymetry	Map:Grid	SMNT-083S-1511W.std.180m.mb.map.jpg	180	952	1033	444
+Unnamed Seamount -- Predicted satellite bathymetry (445)		SMNT-083S-1511W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-083S-1511W.std.180m.ss.map.jpg	180	693	773	445
+Unnamed Seamount -- Residual bathymetry (446)		SMNT-083S-1511W	Regional	Residual bathymetry	Map:Grid	SMNT-083S-1511W.std.180m.rs.map.jpg	180	693	773	446
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (447)		SMNT-086S-1511W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-086S-1511W.std.180m.mg.map.jpg	180	693	773	447
+Unnamed Guyot -- Multibeam bathymetry (448)		SMNT-086S-1511W	Regional	Multibeam bathymetry	Map:Grid	SMNT-086S-1511W.std.180m.mb.map.jpg	180	952	1033	448
+Unnamed Guyot -- Predicted satellite bathymetry (449)		SMNT-086S-1511W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-086S-1511W.std.180m.ss.map.jpg	180	693	773	449
+Unnamed Guyot -- Residual bathymetry (450)		SMNT-086S-1511W	Regional	Residual bathymetry	Map:Grid	SMNT-086S-1511W.std.180m.rs.map.jpg	180	693	773	450
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (451)		SMNT-088S-1510W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-088S-1510W.std.180m.mg.map.jpg	180	693	773	451
+Unnamed Guyot -- Multibeam bathymetry (452)		SMNT-088S-1510W	Regional	Multibeam bathymetry	Map:Grid	SMNT-088S-1510W.std.180m.mb.map.jpg	180	952	1033	452
+Unnamed Guyot -- Predicted satellite bathymetry (453)		SMNT-088S-1510W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-088S-1510W.std.180m.ss.map.jpg	180	693	773	453
+Unnamed Guyot -- Residual bathymetry (454)		SMNT-088S-1510W	Regional	Residual bathymetry	Map:Grid	SMNT-088S-1510W.std.180m.rs.map.jpg	180	693	773	454
+Carol Seamount -- Predicted satellite bathymetry	SMNT-092N-1580W	SMNT-092N-1580W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-092N-1580W.std.180m.ss.map.jpg	180	693	773	463
+Stu Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-093N-1585W	SMNT-093N-1585W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-093N-1585W.std.180m.mg.map.jpg	180	952	1033	465
+Stu Guyot -- Multibeam bathymetry	SMNT-093N-1585W	SMNT-093N-1585W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-093N-1585W.std.180m.mb.map.jpg	180	1341	1421	466
+Stu Guyot -- Predicted satellite bathymetry	SMNT-093N-1585W	SMNT-093N-1585W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-093N-1585W.std.180m.ss.map.jpg	180	952	1033	467
+Stu Guyot -- Residual bathymetry	SMNT-093N-1585W	SMNT-093N-1585W	Seamount	Residual bathymetry	Map:Grid	SMNT-093N-1585W.std.180m.rs.map.jpg	180	952	1033	468
+Unnamed Seamount -- Predicted satellite bathymetry (473)		SMNT-093N-1606W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-093N-1606W.std.180m.ss.map.jpg	180	693	773	473
+Jacqueline Island -- Multibeam data merged with predicted satellite bathymetry	SMNT-093N-1631W	SMNT-093N-1631W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-093N-1631W.std.180m.mg.map.jpg	180	1056	1136	477
+Jacqueline Island -- Multibeam bathymetry	SMNT-093N-1631W	SMNT-093N-1631W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-093N-1631W.std.180m.mb.map.jpg	180	1497	1577	478
+Jacqueline Island -- Predicted satellite bathymetry	SMNT-093N-1631W	SMNT-093N-1631W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-093N-1631W.std.180m.ss.map.jpg	180	1056	1136	479
+Jacqueline Island -- Residual bathymetry	SMNT-093N-1631W	SMNT-093N-1631W	Seamount	Residual bathymetry	Map:Grid	SMNT-093N-1631W.std.180m.rs.map.jpg	180	1056	1136	480
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (483)		SMNT-094S-1504W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-094S-1504W.std.180m.mg.map.jpg	180	693	773	483
+Unnamed Seamount -- Multibeam bathymetry (484)		SMNT-094S-1504W	Regional	Multibeam bathymetry	Map:Grid	SMNT-094S-1504W.std.180m.mb.map.jpg	180	952	1033	484
+Unnamed Seamount -- Predicted satellite bathymetry (485)		SMNT-094S-1504W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-094S-1504W.std.180m.ss.map.jpg	180	693	773	485
+Unnamed Seamount -- Residual bathymetry (486)		SMNT-094S-1504W	Regional	Residual bathymetry	Map:Grid	SMNT-094S-1504W.std.180m.rs.map.jpg	180	693	773	486
+Unnamed Seamount -- Predicted satellite bathymetry (491)		SMNT-095N-1640W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-095N-1640W.std.180m.ss.map.jpg	180	693	773	491
+Unnamed Seamount -- Predicted satellite bathymetry (495)		SMNT-099N-1622W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-099N-1622W.std.180m.ss.map.jpg	180	849	929	495
+Caroline Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-100S-1502W	SMNT-100S-1502W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-100S-1502W.std.180m.mg.map.jpg	180	693	773	499
+Caroline Guyot -- Multibeam bathymetry	SMNT-100S-1502W	SMNT-100S-1502W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-100S-1502W.std.180m.mb.map.jpg	180	952	1033	500
+Caroline Guyot -- Predicted satellite bathymetry	SMNT-100S-1502W	SMNT-100S-1502W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-100S-1502W.std.180m.ss.map.jpg	180	693	773	501
+Caroline Guyot -- Residual bathymetry	SMNT-100S-1502W	SMNT-100S-1502W	Seamount	Residual bathymetry	Map:Grid	SMNT-100S-1502W.std.180m.rs.map.jpg	180	693	773	502
+Unnamed Seamount -- Predicted satellite bathymetry (505)		SMNT-101N-1654W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-101N-1654W.std.180m.ss.map.jpg	180	1056	1136	505
+Vostok Seamount -- Predicted satellite bathymetry	SMNT-101S-1524W	SMNT-101S-1524W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-101S-1524W.std.180m.ss.map.jpg	180	693	773	508
+Eveline Seamount -- Predicted satellite bathymetry	SMNT-103N-1680W	SMNT-103N-1680W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-103N-1680W.std.180m.ss.map.jpg	180	589	670	512
+Ironwood Seamount -- Predicted satellite bathymetry	SMNT-105N-1598W	SMNT-105N-1598W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-105N-1598W.std.180m.ss.map.jpg	180	745	825	514
+Unnamed Seamount -- Predicted satellite bathymetry (515)		SMNT-107N-1656W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-107N-1656W.std.180m.ss.map.jpg	180	693	773	515
+Embattle Seamount -- Predicted satellite bathymetry	SMNT-108N-1642W	SMNT-108N-1642W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-108N-1642W.std.180m.ss.map.jpg	180	745	825	516
+Unnamed Seamount -- Predicted satellite bathymetry (519)		SMNT-108S-1494W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-108S-1494W.std.180m.ss.map.jpg	180	693	773	519
+Proa Seamount -- Predicted satellite bathymetry	SMNT-113N-1638W	SMNT-113N-1638W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-113N-1638W.std.180m.ss.map.jpg	180	641	721	523
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (524)		SMNT-114S-1490W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-114S-1490W.std.180m.mg.map.jpg	180	693	773	524
+Unnamed Seamount -- Multibeam bathymetry (525)		SMNT-114S-1490W	Regional	Multibeam bathymetry	Map:Grid	SMNT-114S-1490W.std.180m.mb.map.jpg	180	952	1033	525
+Unnamed Seamount -- Predicted satellite bathymetry (526)		SMNT-114S-1490W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-114S-1490W.std.180m.ss.map.jpg	180	693	773	526
+Unnamed Seamount -- Residual bathymetry (527)		SMNT-114S-1490W	Regional	Residual bathymetry	Map:Grid	SMNT-114S-1490W.std.180m.rs.map.jpg	180	693	773	527
+Flint Seamount -- Predicted satellite bathymetry	SMNT-114S-1518W	SMNT-114S-1518W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-114S-1518W.std.180m.ss.map.jpg	180	693	773	530
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (532)		SMNT-120S-1485W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-120S-1485W.std.180m.mg.map.jpg	180	693	773	532
+Unnamed Seamount -- Multibeam bathymetry (533)		SMNT-120S-1485W	Regional	Multibeam bathymetry	Map:Grid	SMNT-120S-1485W.std.180m.mb.map.jpg	180	952	1033	533
+Unnamed Seamount -- Predicted satellite bathymetry (534)		SMNT-120S-1485W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-120S-1485W.std.180m.ss.map.jpg	180	693	773	534
+Unnamed Seamount -- Residual bathymetry (535)		SMNT-120S-1485W	Regional	Residual bathymetry	Map:Grid	SMNT-120S-1485W.std.180m.rs.map.jpg	180	693	773	535
+Kapsitotwa Seamount -- Predicted satellite bathymetry	SMNT-121N-1659W	SMNT-121N-1659W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-121N-1659W.std.180m.ss.map.jpg	180	693	773	538
+Nagata Seamount -- Predicted satellite bathymetry	SMNT-126N-1670W	SMNT-126N-1670W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-126N-1670W.std.180m.ss.map.jpg	180	693	773	542
+Unnamed Seamount -- Predicted satellite bathymetry (546)		SMNT-145N-1690W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-145N-1690W.std.180m.ss.map.jpg	180	693	773	546
+Unnamed Seamount -- Predicted satellite bathymetry (550)		SMNT-150N-1666W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-150N-1666W.std.180m.ss.map.jpg	180	693	773	550
+Unnamed Seamount -- Predicted satellite bathymetry (554)		SMNT-166N-1683W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-166N-1683W.std.180m.ss.map.jpg	180	693	773	554
+Johnston Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-167N-1695W	SMNT-167N-1695W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-167N-1695W.std.180m.mg.map.jpg	180	693	773	556
+Johnston Seamount -- Multibeam bathymetry	SMNT-167N-1695W	SMNT-167N-1695W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-167N-1695W.std.180m.mb.map.jpg	180	952	1033	557
+Johnston Seamount -- Predicted satellite bathymetry	SMNT-167N-1695W	SMNT-167N-1695W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-167N-1695W.std.180m.ss.map.jpg	180	693	773	558
+Johnston Seamount -- Residual bathymetry	SMNT-167N-1695W	SMNT-167N-1695W	Seamount	Residual bathymetry	Map:Grid	SMNT-167N-1695W.std.180m.rs.map.jpg	180	693	773	559
+Watkins Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-175N-1693W	SMNT-175N-1693W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-175N-1693W.std.180m.mg.map.jpg	180	797	877	560
+Watkins Seamount -- Multibeam bathymetry	SMNT-175N-1693W	SMNT-175N-1693W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-175N-1693W.std.180m.mb.map.jpg	180	1108	1188	561
+Watkins Seamount -- Predicted satellite bathymetry	SMNT-175N-1693W	SMNT-175N-1693W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-175N-1693W.std.180m.ss.map.jpg	180	797	877	562
+Watkins Seamount -- Residual bathymetry	SMNT-175N-1693W	SMNT-175N-1693W	Seamount	Residual bathymetry	Map:Grid	SMNT-175N-1693W.std.180m.rs.map.jpg	180	797	877	563
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (564)		SMNT-180N-1690W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-180N-1690W.std.180m.mg.map.jpg	180	797	877	564
+Unnamed Seamount -- Multibeam bathymetry (565)		SMNT-180N-1690W	Regional	Multibeam bathymetry	Map:Grid	SMNT-180N-1690W.std.180m.mb.map.jpg	180	1108	1188	565
+Unnamed Seamount -- Predicted satellite bathymetry (566)		SMNT-180N-1690W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-180N-1690W.std.180m.ss.map.jpg	180	797	877	566
+Unnamed Seamount -- Residual bathymetry (567)		SMNT-180N-1690W	Regional	Residual bathymetry	Map:Grid	SMNT-180N-1690W.std.180m.rs.map.jpg	180	797	877	567
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2164	SMNT-076S-1516W	Haggerty, J.A., Schlanger, S.O. and Premoli-Silva, I. (1982). Late Cretaceous and Eocene volcanism in the southern Line Islands and implications for hot spot theory. Geology 10(8): 433-427.	https://earthref.org/ERR/2164/
+2165	SMNT-121N-1659W	Harrison, C.G., Jarrard, A.R.D., Vacquier, V. and Larson, R.L. (1975). Palaeomagnetim of Cretaceous Pacific seamounts. Geophysical Journal of the Royal Astronomical Society 42: 859-882.	https://earthref.org/ERR/2165/
+2177	SMNT-121N-1659W:SMNT-126N-1670W	Hildebrand, J.A. and Parker, R.L. (1987). Paleomagnetism of the Cretaceous Pacific Seamount revisited. Journal of Geophysical Research 92: 12,695-12,712.	https://earthref.org/ERR/2177/
+2202	SMNT-093N-1631W:SMNT-103N-1680W:SMNT-121N-1659W	Jarrard, R.D. and Clague, D.A. (1977). Implications of Pacific island and seamount ages for the origin of volcanic chains. Reviews of Geophysics and Space Physics 15: 57-76.	https://earthref.org/ERR/2202/
+2206	SMNT-175N-1693W	Keating, B. and Sager, W. (1980). Watkins Seamount; preliminary paleomagnetic results. Journal of Geophysical Research 85(B7): 3,567-3,571.	https://earthref.org/ERR/2206/
+2303	SMNT-126N-1670W	Sager, W.W., Davis, G.T., Keating, B.H. and Philpotts, J.A. (1982). A geophysical and geologic study of Nagata Seamount, northern Line Islands. Journal of Geomagnetism and Geoelectricity 34(5): 283-305.	https://earthref.org/ERR/2303/
+2305	SMNT-121N-1659W	Saito, K. and Ozima, M. (1976). (super 40) Ar/ (super 39) Ar ages of submarine rocks from the Line Islands; implications on the origin of the Line Islands. In: The Geophysics of the Pacific Ocean Basin and its Margins, Geophysical Monograph Series 19. Sutton, G.H., Manghnani, M.H. and Moberly, R. (Editors), American Geophysical Union, Washington, D.C.. 369-374.	https://earthref.org/ERR/2305/
+2306	SMNT-093N-1585W:SMNT-103N-1680W	Saito, K. and Ozima, M. (1977). (super 40) Ar- (super 39) Ar geochronological studies on submarine rocks from the western Pacific area. Earth and Planetary Science Letters 33(3): 353-369. doi: 10.1016/0012-821X(77)90087-5.	https://earthref.org/ERR/2306/
+2702	SMNT-004S-1600W:SMNT-018N-1574W:SMNT-039N-1594W:SMNT-045S-1550W:SMNT-047N-1604W:SMNT-056S-1559W:SMNT-059N-1621W:SMNT-064N-1626W:SMNT-100S-1502W:SMNT-101S-1524W:SMNT-114S-1518W:SMNT-167N-1695W	Keating, B.H. (1991). Insular geology of the Line Islands. In: Geology and Offshore mineral resources of the central Pacific basin, Circum-Pacific Council for Energy and Mineral Resources, Earth Science Series. Keating, B.H. and Bolton, B.R. (Editors), Springer-Verlag, New York. 14: 77-99.	https://earthref.org/ERR/2702/
+2703	SMNT-018N-1574W	Falkland, A.C. and Woodroffe, C.D. (1997). Geology and hydrogeology of Tarawa and Christmas Island, Kiribati. 54: 577-610.	https://earthref.org/ERR/2703/
+2704	SMNT-018N-1574W	Trichet, J., Defarge, C., Tribble, J., Tribble, G. and Sansone, F. (2001). Christmas Island lagoonal lakes, models for the deposition of carbonate-evaporite-organic laminated sediments. Sedimentary Geology 140(1-2): 177-189.	https://earthref.org/ERR/2704/
+2708	SMNT-018N-1574W:SMNT-039N-1594W:SMNT-047N-1604W:SMNT-064N-1626W	Winterer, E.L. (1976). Bathymetry and regional tectonic setting of the Line Islands Chain. Initial Reports of the Deep Sea Drilling Project 33: 731-747.	https://earthref.org/ERR/2708/
+35461	SMNT-033S-1539W:SMNT-035N-1602W:SMNT-076S-1516W:SMNT-078N-1615W:SMNT-079N-1619W	Sager, W.W. and Keating, B.H. (1984). Paleomagnetism of line islands seamounts: evidence for late cretaceous and early tertiary volcanism. Journal of Geophysical Research 89: doi: 10.1029/JB080i013p11135. issn: 0148-0227.	https://earthref.org/ERR/35461/
+35468	SMNT-076S-1516W:SMNT-078N-1615W:SMNT-079N-1619W:SMNT-093N-1585W:SMNT-126N-1670W	Schlanger, S.O., Garcia, M.O., Keating, B.H., Naughton, J.J., Sager, W.W., Haggerty, J.A., Philpotts, J.A. and Duncan, R.A. (1984). Geology and geochronology of the Line Island. Journal of Geophysical Research 89: doi: 10.1029/JB080i013p11261. issn: 0148-0227.	https://earthref.org/ERR/35468/

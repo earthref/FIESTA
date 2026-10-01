@@ -1,0 +1,54 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: SW Pacific (21 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	sc_id
+SMNT-155S-1471E	Bougainville Reef Seamount	Bougainvilla	Seamount			-15.52	147.12	SW Pacific				0										389
+SMNT-225S-1593E	Nova Bank Seamount		Seamount			-22.467	159.25	SW Pacific	Pacific Plate			0										1664
+SMNT-232S-1596E	Argo Seamount		Seamount			-23.217	159.583	SW Pacific				0										1654
+SMNT-237S-1680E	Jumeau West Seamount	Jumeau Quest:Les Trois Bancs	Seamount			-23.667	168.0	SW Pacific				0										1615
+SMNT-238S-1698E	Seamount	Le mont J	Seamount			-23.81	169.8	SW Pacific				0										1662
+SMNT-241S-1595E	Kelso Seamount		Seamount			-24.07	159.47	SW Pacific	Pacific Plate			0										1655
+SMNT-246S-1681E	Kaiyo Maru Seamount		Seamount			-24.6	168.06	SW Pacific				0										1682
+SMNT-246S-1701E	Seamount	Le mont K	Seamount			-24.6	170.1	SW Pacific				0										1661
+SMNT-247S-1686E	Introuvable Banc Seamount		Seamount			-24.667	168.633	SW Pacific				0										1671
+SMNT-248S-1681E	Kaimon Maru Seamount		Seamount			-24.75	168.117	SW Pacific				0										1616
+SMNT-249S-1684E	Eponge Guyot	Sponge	Guyot			-24.89	168.37	SW Pacific				0										145
+SMNT-250S-1597E	Capel Guyot		Guyot			-25.0	159.717	SW Pacific				0										1656
+SMNT-250S-1699E	Sud-Loyante Seamount		Seamount			-24.96	169.93	SW Pacific	Pacific Plate			0										1672
+SMNT-251S-1702E	Seamount	Le mont n°1	Seamount			-25.09	170.18	SW Pacific				0										1659
+SMNT-254S-1705E	Seamount	Le mont n°2	Seamount			-25.36	170.45	SW Pacific				0										1660
+SMNT-267S-1594E	Gifford Guyot		Guyot	Small	B2	-26.68933	159.4125	SW Pacific		Hotspot Trail	Abyssal Plain	1785	0	1785	1394	1.61	0.07	1.21	0.09	1	0	148
+SMNT-283S-1556E	Britannia Guyot		Guyot			-28.32	155.62	SW Pacific				0										212
+SMNT-326S-1676E	Seamount	Norfolk Ridge Seamount 1	Seamount			-32.55	167.58	SW Pacific				0										1596
+SMNT-332S-1562E	Taupo Seamount		Seamount			-33.167	156.167	SW Pacific	Pacific Plate			0										1665
+SMNT-367S-1562E	Gascoyne Seamount		Seamount			-36.66667	156.18	SW Pacific				0										766
+SMNT-458S-1504E	Soela Seamount		Seamount			-45.833	150.35	SW Pacific				0										1698
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Bougainville Reef Seamount -- Predicted satellite bathymetry	SMNT-155S-1471E	SMNT-155S-1471E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-155S-1471E.std.180m.ss.map.jpg	180	589	670	3030
+Nova Bank Seamount -- Predicted satellite bathymetry	SMNT-225S-1593E	SMNT-225S-1593E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-225S-1593E.std.180m.ss.map.jpg	180	1212	1292	3067
+Argo Seamount -- Predicted satellite bathymetry	SMNT-232S-1596E	SMNT-232S-1596E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-232S-1596E.std.180m.ss.map.jpg	180	901	981	3069
+Jumeau West Seamount -- Predicted satellite bathymetry	SMNT-237S-1680E	SMNT-237S-1680E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-237S-1680E.std.180m.ss.map.jpg	180	693	773	3070
+Unnamed Seamount -- Predicted satellite bathymetry (3071)		SMNT-238S-1698E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-238S-1698E.std.180m.ss.map.jpg	180	693	773	3071
+Kelso Seamount -- Predicted satellite bathymetry	SMNT-241S-1595E	SMNT-241S-1595E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-241S-1595E.std.180m.ss.map.jpg	180	952	1033	3072
+Kaiyo Maru Seamount -- Predicted satellite bathymetry	SMNT-246S-1681E	SMNT-246S-1681E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-246S-1681E.std.180m.ss.map.jpg	180	693	773	3074
+Unnamed Seamount -- Predicted satellite bathymetry (3075)		SMNT-246S-1701E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-246S-1701E.std.180m.ss.map.jpg	180	952	1033	3075
+Introuvable Banc Seamount -- Predicted satellite bathymetry	SMNT-247S-1686E	SMNT-247S-1686E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-247S-1686E.std.180m.ss.map.jpg	180	589	670	3076
+Kaimon Maru Seamount -- Predicted satellite bathymetry	SMNT-248S-1681E	SMNT-248S-1681E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-248S-1681E.std.180m.ss.map.jpg	180	641	721	3077
+Eponge Guyot -- Predicted satellite bathymetry	SMNT-249S-1684E	SMNT-249S-1684E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-249S-1684E.std.180m.ss.map.jpg	180	589	670	3078
+Capel Guyot -- Predicted satellite bathymetry	SMNT-250S-1597E	SMNT-250S-1597E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-250S-1597E.std.180m.ss.map.jpg	180	1471	1551	3079
+Sud-Loyante Seamount -- Predicted satellite bathymetry	SMNT-250S-1699E	SMNT-250S-1699E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-250S-1699E.std.180m.ss.map.jpg	180	693	773	3080
+Unnamed Seamount -- Predicted satellite bathymetry (3083)		SMNT-251S-1702E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-251S-1702E.std.180m.ss.map.jpg	180	693	773	3083
+Unnamed Seamount -- Predicted satellite bathymetry (3091)		SMNT-254S-1705E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-254S-1705E.std.180m.ss.map.jpg	180	952	1033	3091
+Gifford Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-267S-1594E	SMNT-267S-1594E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-267S-1594E.std.180m.mg.map.jpg	180	693	773	3100
+Gifford Guyot -- Multibeam bathymetry	SMNT-267S-1594E	SMNT-267S-1594E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-267S-1594E.std.180m.mb.map.jpg	180	952	1033	3101
+Gifford Guyot -- Predicted satellite bathymetry	SMNT-267S-1594E	SMNT-267S-1594E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-267S-1594E.std.180m.ss.map.jpg	180	693	773	3102
+Gifford Guyot -- Residual bathymetry	SMNT-267S-1594E	SMNT-267S-1594E	Seamount	Residual bathymetry	Map:Grid	SMNT-267S-1594E.std.180m.rs.map.jpg	180	693	773	3103
+Britannia Guyot -- Predicted satellite bathymetry	SMNT-283S-1556E	SMNT-283S-1556E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-283S-1556E.std.180m.ss.map.jpg	180	693	773	3112
+Unnamed Seamount -- Predicted satellite bathymetry (3124)		SMNT-326S-1676E	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-326S-1676E.std.180m.ss.map.jpg	180	1056	1136	3124
+Taupo Seamount -- Predicted satellite bathymetry	SMNT-332S-1562E	SMNT-332S-1562E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-332S-1562E.std.180m.ss.map.jpg	180	1108	1188	3125
+Gascoyne Seamount -- Predicted satellite bathymetry	SMNT-367S-1562E	SMNT-367S-1562E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-367S-1562E.std.180m.ss.map.jpg	180	797	877	3132
+Soela Seamount -- Predicted satellite bathymetry	SMNT-458S-1504E	SMNT-458S-1504E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-458S-1504E.std.180m.ss.map.jpg	180	797	877	3137

@@ -1,0 +1,16 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Bowie Seamount Trail (1 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	lat	lon	region	plate	height	sc_id
+SMNT-533N-1357W	Bowie Seamount	Seamount	53.31	-135.65	Bowie Seamount Trail	Pacific Plate	0	595
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Bowie Seamount -- Predicted satellite bathymetry	SMNT-533N-1357W	SMNT-533N-1357W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-533N-1357W.std.180m.ss.map.jpg	180	693	773	6
+Bowie Seamount Trail -- Predicted satellite bathymetry		SMNT-533N-1357W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-538N-1367W.std.570m.ss.map.jpg	570	2334	2414	7
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2176	SMNT-533N-1357W	Herzer, R.H. (1971). Bowie Seamount, a recently active, flat-topped seamount in the northeast Pacific Ocean. Canadian Journal of Earth Sciences 8: 676-687.	https://earthref.org/ERR/2176/

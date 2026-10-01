@@ -1,0 +1,141 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: NE Pacific (32 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	plate_age_min	plate_age_max	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	sc_id
+SMNT-099N-1044W	Sasha Guyot	EPR	Guyot	Very Small	E1	9.89633	-104.41467	NE Pacific		Hotspot Trail	Abyssal Plain	0.1	0.1	840	1660	2500	21	1.44	0.05	2.46	0.27	1	100	1707
+SMNT-099N-1045W	MIB Guyot		Guyot	Very Small	E1	9.9285	-104.48017	NE Pacific	Pacific Plate	Hotspot Trail	Abyssal Plain	0.2	0.2	1000	1645	2645	51	1.28	0.02	2.02	0.40	1	99	1570
+SMNT-1006N-10473W	DTD Guyot		Guyot	Very Small	A4	10.05833	-104.73333	NE Pacific	Pacific Plate	Hotspot Trail	Abyssal Plain	0.8	1.4	1155	1690	2845	144	2.61	0.04	1.19	0.11	2	81	1569
+SMNT-1007N-10467W	New Guyot		Guyot	Very Small	A4	10.06667	-104.66667	NE Pacific		Hotspot Trail	Abyssal Plain	0.8	1.4	1155	1690	2845	144	2.61	0.04	1.19	0.11	2	81	1704
+SMNT-100N-1046W	MOK Guyot		Guyot	Very Small	E1	9.95517	-104.57683	NE Pacific	Pacific Plate	Hotspot Trail	Abyssal Plain	0.2	0.8	1040	1750	2790	149	1.38	0.05	1.89	0.30	1	93	1571
+SMNT-127N-1026W	Baja A Seamount	Volcano 6	Seamount	Very Small	A2	12.73433	-102.57283	NE Pacific	Pacific Plate	Hotspot Trail	Abyssal Plain	2.3	2.5	1235	1715	2950	104	1.58	0.04	1.16	0.07	1	85	1575
+SMNT-130N-1032W	Guyot	Volcano D:Seamount D	Guyot	Very Small	A1	12.956	-103.22067	NE Pacific	Pacific Plate	Hotspot Trail	Abyssal Plain	1.8	1.8	960	2090	3050	26	1.06	0.05	1.05	0.01	1	92	1573
+SMNT-130N-1035W	Guyot	Volcano 5:Seamount 5	Guyot	Very Small	A1	12.95783	-103.4835	NE Pacific	Pacific Plate	Hotspot Trail	Abyssal Plain	1.2	1.4	1990	980	2970	351	1.11	0.02	1.14	0.04	1	65	1574
+SMNT-135N-1199W	Dowd Guyot		Guyot			13.46	-119.85	NE Pacific	Pacific Plate					0										1598
+SMNT-208N-1093W	Green Seamount		Seamount	Very Small	A3	20.81483	-109.29817	NE Pacific		Hotspot Trail	Abyssal Plain	0.5	0.5	535	2100	2635	17	2.00	0.18	1.07	0.05	1	0	1706
+SMNT-208N-1094W	Red Seamount		Seamount	Very Small	A1	20.804	-109.38733	NE Pacific		Hotspot Trail	Abyssal Plain	0.7	0.7	675	1930	2605	14	1.19	0.09	1.02	0.01	1	17	1705
+SMNT-231N-1249W	Seamount	Seamount 350	Seamount			23.08	-124.93	NE Pacific	Pacific Plate					0										1599
+SMNT-302N-1229W	Central Echo Seamount		Seamount			30.16	-122.94	NE Pacific						0										1702
+SMNT-304N-1227W	Jasper Seamount		Seamount			30.44	-122.74	NE Pacific	Pacific Plate					0										863
+SMNT-3115N-12219W	West Bonanza Seamount	W Bonanza	Seamount			31.154	-122.19	NE Pacific						0										1700
+SMNT-3118N-12223W	Northwest Bonanza Seamount	NW Bonanza	Seamount			31.183	-122.233	NE Pacific	Pacific Plate					0										1572
+SMNT-312N-1249W	Linzer Seamount		Seamount			31.2	-124.917	NE Pacific						0										1701
+SMNT-321N-1183W	Sixtymile Bank Seamount	Sixtymile	Seamount			32.083	-118.25	NE Pacific						0										1693
+SMNT-321N-1269W	Hoke Seamount		Seamount			32.09	-126.92	NE Pacific	Pacific Plate					0										826
+SMNT-324N-1278W	Fieberling Guyot		Guyot			32.44	-127.76	NE Pacific	Pacific Plate					0										1361
+SMNT-329N-1325W	Erben Guyot		Guyot			32.86667	-132.53333	NE Pacific						0										720
+SMNT-357N-1227W	Davidson Seamount		Seamount			35.71667	-122.71667	NE Pacific						0										671
+SMNT-370N-1234W	Guide Seamount		Seamount			37.01	-123.35	NE Pacific						0										790
+SMNT-481N-1328W	Warwick Seamount		Seamount			48.06	-132.77	NE Pacific						0										1316
+SMNT-495N-1327W	Union Seamount		Seamount			49.53	-132.72	NE Pacific	Pacific Plate	Plate Boundary				0										1294
+SMNT-545N-1370W	Dickins Seamount	Dickens	Seamount			54.5	-137.0	NE Pacific	Pacific Plate					0										683
+SMNT-555N-1428W	Applequist Seamount		Seamount			55.51	-142.81	NE Pacific	Pacific Plate	Hotspot Trail				0										556
+SMNT-558N-1419W	Durgin Guyot		Guyot			55.8	-141.87	NE Pacific	Pacific Plate	Hotspot Trail				0										143
+SMNT-561N-1443W	Surveyor Seamount		Seamount			56.06	-144.3	NE Pacific	Pacific Plate	Hotspot Trail				0										1246
+SMNT-563N-1426W	Pratt Guyot		Guyot			56.25	-142.6	NE Pacific	Pacific Plate	Hotspot Trail				0										183
+SMNT-563N-1453W	Quinn Seamount		Seamount			56.29	-145.25	NE Pacific	Pacific Plate	Hotspot Trail				0										1122
+SMNT-565N-1464W	Giacomini Seamount		Seamount			56.47	-146.37	NE Pacific	Pacific Plate	Hotspot Trail				0										773
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-099N-1044W	2080	133.3	12.7	6.7	4.5	1.499	35.7	13.0	2.749
+SMNT-099N-1044W	2164	137.3	19.1	7.2	5.2	1.390	37.8	15.8	2.391
+SMNT-099N-1044W	2248	136.2	24.2	8.1	5.6	1.446	39.9	17.9	2.231
+SMNT-099N-1045W	2045	148.3	31.0	8.0	6.1	1.311	48.8	20.0	2.436
+SMNT-099N-1045W	2145	147.5	37.0	8.2	6.4	1.270	43.3	21.8	1.986
+SMNT-099N-1045W	2245	144.1	41.4	8.5	6.7	1.266	37.5	23.0	1.629
+SMNT-100N-1046W	2166	107.4	62.5	11.7	8.2	1.432	64.2	28.7	2.237
+SMNT-100N-1046W	2270	114.2	72.4	12.2	8.9	1.365	53.5	30.7	1.743
+SMNT-100N-1046W	2374	119.2	82.6	12.7	9.6	1.329	55.5	32.7	1.698
+SMNT-127N-1026W	2333	76.4	35.3	9.0	5.7	1.594	27.3	21.9	1.244
+SMNT-127N-1026W	2456	79.4	45.6	10.1	6.3	1.599	28.2	24.9	1.133
+SMNT-127N-1026W	2580	83.0	57.7	11.0	7.2	1.534	31.1	27.9	1.118
+SMNT-130N-1032W	2474	199.7	20.6	5.5	4.9	1.109	17.1	16.1	1.063
+SMNT-130N-1032W	2570	170.7	24.9	5.8	5.7	1.022	18.6	17.7	1.050
+SMNT-130N-1032W	2666	138.0	28.2	6.2	6.0	1.038	19.6	18.8	1.040
+SMNT-130N-1035W	1776	112.4	64.9	9.9	8.9	1.111	32.8	28.6	1.146
+SMNT-130N-1035W	1975	127.6	84.7	11.3	10.0	1.134	38.5	32.7	1.178
+SMNT-130N-1035W	2174	114.2	109.3	12.8	11.7	1.093	40.6	37.1	1.095
+SMNT-208N-1094W	2268	180.6	11.4	4.5	3.5	1.286	12.6	12.1	1.038
+SMNT-208N-1094W	2335	186.3	15.5	4.9	4.3	1.148	14.2	14.0	1.016
+SMNT-208N-1094W	2403	211.9	20.0	5.6	4.9	1.123	16.1	15.9	1.013
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Warwick Seamount -- Predicted satellite bathymetry	SMNT-481N-1328W	SMNT-481N-1328W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-481N-1328W.std.180m.ss.map.jpg	180	849	929	1864
+Union Seamount -- Predicted satellite bathymetry	SMNT-495N-1327W	SMNT-495N-1327W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-495N-1327W.std.180m.ss.map.jpg	180	693	773	1879
+Dickins Seamount -- Predicted satellite bathymetry	SMNT-545N-1370W	SMNT-545N-1370W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-545N-1370W.std.180m.ss.map.jpg	180	745	825	1915
+Applequist Seamount -- Predicted satellite bathymetry	SMNT-555N-1428W	SMNT-555N-1428W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-555N-1428W.std.180m.ss.map.jpg	180	693	773	1922
+Durgin Guyot -- Predicted satellite bathymetry	SMNT-558N-1419W	SMNT-558N-1419W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-558N-1419W.std.180m.ss.map.jpg	180	901	981	1923
+Surveyor Seamount -- Predicted satellite bathymetry	SMNT-561N-1443W	SMNT-561N-1443W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-561N-1443W.std.180m.ss.map.jpg	180	1056	1136	1924
+Pratt Guyot -- Predicted satellite bathymetry	SMNT-563N-1426W	SMNT-563N-1426W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-563N-1426W.std.180m.ss.map.jpg	180	952	1033	1925
+Quinn Seamount -- Predicted satellite bathymetry	SMNT-563N-1453W	SMNT-563N-1453W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-563N-1453W.std.180m.ss.map.jpg	180	693	773	1926
+Giacomini Seamount -- Predicted satellite bathymetry	SMNT-565N-1464W	SMNT-565N-1464W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-565N-1464W.std.180m.ss.map.jpg	180	952	1033	1928
+Sasha Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-099N-1044W	SMNT-099N-1044W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-099N-1044W.std.180m.mg.map.jpg	180	589	670	1948
+Sasha Guyot -- Multibeam bathymetry	SMNT-099N-1044W	SMNT-099N-1044W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-099N-1044W.std.180m.mb.map.jpg	180	797	877	1949
+Sasha Guyot -- Predicted satellite bathymetry	SMNT-099N-1044W	SMNT-099N-1044W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-099N-1044W.std.180m.ss.map.jpg	180	589	670	1950
+Sasha Guyot -- Residual bathymetry	SMNT-099N-1044W	SMNT-099N-1044W	Seamount	Residual bathymetry	Map:Grid	SMNT-099N-1044W.std.180m.rs.map.jpg	180	589	670	1951
+MIB Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-099N-1045W	SMNT-099N-1045W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-099N-1045W.std.180m.mg.map.jpg	180	589	670	1952
+MIB Guyot -- Multibeam bathymetry	SMNT-099N-1045W	SMNT-099N-1045W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-099N-1045W.std.180m.mb.map.jpg	180	797	877	1953
+MIB Guyot -- Predicted satellite bathymetry	SMNT-099N-1045W	SMNT-099N-1045W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-099N-1045W.std.180m.ss.map.jpg	180	589	670	1954
+MIB Guyot -- Residual bathymetry	SMNT-099N-1045W	SMNT-099N-1045W	Seamount	Residual bathymetry	Map:Grid	SMNT-099N-1045W.std.180m.rs.map.jpg	180	589	670	1955
+MOK Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-100N-1046W	SMNT-100N-1046W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-100N-1046W.std.180m.mg.map.jpg	180	589	670	1960
+MOK Guyot -- Multibeam bathymetry	SMNT-100N-1046W	SMNT-100N-1046W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-100N-1046W.std.180m.mb.map.jpg	180	797	877	1961
+MOK Guyot -- Predicted satellite bathymetry	SMNT-100N-1046W	SMNT-100N-1046W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-100N-1046W.std.180m.ss.map.jpg	180	589	670	1962
+MOK Guyot -- Residual bathymetry	SMNT-100N-1046W	SMNT-100N-1046W	Seamount	Residual bathymetry	Map:Grid	SMNT-100N-1046W.std.180m.rs.map.jpg	180	589	670	1963
+Baja A Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-127N-1026W	SMNT-127N-1026W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-127N-1026W.std.180m.mg.map.jpg	180	589	670	1985
+Baja A Seamount -- Multibeam bathymetry	SMNT-127N-1026W	SMNT-127N-1026W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-127N-1026W.std.180m.mb.map.jpg	180	797	877	1986
+Baja A Seamount -- Predicted satellite bathymetry	SMNT-127N-1026W	SMNT-127N-1026W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-127N-1026W.std.180m.ss.map.jpg	180	589	670	1987
+Baja A Seamount -- Residual bathymetry	SMNT-127N-1026W	SMNT-127N-1026W	Seamount	Residual bathymetry	Map:Grid	SMNT-127N-1026W.std.180m.rs.map.jpg	180	589	670	1988
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1997)		SMNT-130N-1032W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-130N-1032W.std.180m.mg.map.jpg	180	589	670	1997
+Unnamed Guyot -- Multibeam bathymetry (1998)		SMNT-130N-1032W	Regional	Multibeam bathymetry	Map:Grid	SMNT-130N-1032W.std.180m.mb.map.jpg	180	797	877	1998
+Unnamed Guyot -- Predicted satellite bathymetry (1999)		SMNT-130N-1032W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-130N-1032W.std.180m.ss.map.jpg	180	589	670	1999
+Unnamed Guyot -- Residual bathymetry (2000)		SMNT-130N-1032W	Regional	Residual bathymetry	Map:Grid	SMNT-130N-1032W.std.180m.rs.map.jpg	180	589	670	2000
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (2001)		SMNT-130N-1035W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-130N-1035W.std.180m.mg.map.jpg	180	589	670	2001
+Unnamed Guyot -- Multibeam bathymetry (2002)		SMNT-130N-1035W	Regional	Multibeam bathymetry	Map:Grid	SMNT-130N-1035W.std.180m.mb.map.jpg	180	797	877	2002
+Unnamed Guyot -- Predicted satellite bathymetry (2003)		SMNT-130N-1035W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-130N-1035W.std.180m.ss.map.jpg	180	589	670	2003
+Unnamed Guyot -- Residual bathymetry (2004)		SMNT-130N-1035W	Regional	Residual bathymetry	Map:Grid	SMNT-130N-1035W.std.180m.rs.map.jpg	180	589	670	2004
+Dowd Guyot -- Predicted satellite bathymetry	SMNT-135N-1199W	SMNT-135N-1199W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-135N-1199W.std.180m.ss.map.jpg	180	693	773	2005
+Green Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-208N-1093W	SMNT-208N-1093W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-208N-1093W.std.180m.mg.map.jpg	180	693	773	2139
+Green Seamount -- Multibeam bathymetry	SMNT-208N-1093W	SMNT-208N-1093W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-208N-1093W.std.180m.mb.map.jpg	180	952	1033	2140
+Green Seamount -- Predicted satellite bathymetry	SMNT-208N-1093W	SMNT-208N-1093W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-208N-1093W.std.180m.ss.map.jpg	180	693	773	2141
+Green Seamount -- Residual bathymetry	SMNT-208N-1093W	SMNT-208N-1093W	Seamount	Residual bathymetry	Map:Grid	SMNT-208N-1093W.std.180m.rs.map.jpg	180	693	773	2142
+Red Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-208N-1094W	SMNT-208N-1094W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-208N-1094W.std.180m.mg.map.jpg	180	693	773	2143
+Red Seamount -- Multibeam bathymetry	SMNT-208N-1094W	SMNT-208N-1094W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-208N-1094W.std.180m.mb.map.jpg	180	952	1033	2144
+Red Seamount -- Predicted satellite bathymetry	SMNT-208N-1094W	SMNT-208N-1094W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-208N-1094W.std.180m.ss.map.jpg	180	693	773	2145
+Red Seamount -- Residual bathymetry	SMNT-208N-1094W	SMNT-208N-1094W	Seamount	Residual bathymetry	Map:Grid	SMNT-208N-1094W.std.180m.rs.map.jpg	180	693	773	2146
+Unnamed Seamount -- Predicted satellite bathymetry		SMNT-231N-1249W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-231N-1249W.std.180m.ss.map.jpg	180	693	773	2157
+Central Echo Seamount -- Predicted satellite bathymetry	SMNT-302N-1229W	SMNT-302N-1229W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-302N-1229W.std.180m.ss.map.jpg	180	589	670	2196
+Jasper Seamount -- Predicted satellite bathymetry	SMNT-304N-1227W	SMNT-304N-1227W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-304N-1227W.std.180m.ss.map.jpg	180	641	721	2198
+Linzer Seamount -- Predicted satellite bathymetry	SMNT-312N-1249W	SMNT-312N-1249W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-312N-1249W.std.180m.ss.map.jpg	180	589	670	2203
+Sixtymile Bank Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-321N-1183W	SMNT-321N-1183W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-321N-1183W.std.180m.mg.map.jpg	180	589	670	2205
+Sixtymile Bank Seamount -- Multibeam bathymetry	SMNT-321N-1183W	SMNT-321N-1183W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-321N-1183W.std.180m.mb.map.jpg	180	797	877	2206
+Sixtymile Bank Seamount -- Predicted satellite bathymetry	SMNT-321N-1183W	SMNT-321N-1183W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-321N-1183W.std.180m.ss.map.jpg	180	589	670	2207
+Sixtymile Bank Seamount -- Residual bathymetry	SMNT-321N-1183W	SMNT-321N-1183W	Seamount	Residual bathymetry	Map:Grid	SMNT-321N-1183W.std.180m.rs.map.jpg	180	589	670	2208
+Hoke Seamount -- Predicted satellite bathymetry	SMNT-321N-1269W	SMNT-321N-1269W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-321N-1269W.std.180m.ss.map.jpg	180	693	773	2209
+Fieberling Guyot -- Predicted satellite bathymetry	SMNT-324N-1278W	SMNT-324N-1278W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-324N-1278W.std.180m.ss.map.jpg	180	745	825	2211
+Erben Guyot -- Predicted satellite bathymetry	SMNT-329N-1325W	SMNT-329N-1325W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-329N-1325W.std.180m.ss.map.jpg	180	693	773	2212
+Davidson Seamount -- Predicted satellite bathymetry	SMNT-357N-1227W	SMNT-357N-1227W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-357N-1227W.std.180m.ss.map.jpg	180	693	773	2217
+Guide Seamount -- Predicted satellite bathymetry	SMNT-370N-1234W	SMNT-370N-1234W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-370N-1234W.std.180m.ss.map.jpg	180	589	670	2218
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+Bamboo corals and other benthic invertebrates on Warwick Seamount -- video excerpt	SMNT-481N-1328W	968	https://earthref.org/ERDA/968/
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2090	SMNT-329N-1325W	Bandy, O.L. (1963). Aquitanian planktonic foraminifera from Erben Guyot. Science 140: 1,402-1,403.	https://earthref.org/ERR/2090/
+2211	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 172. Initial Reports of the Deep Sea Drilling Project 18: 15-30.	https://earthref.org/ERR/2211/
+2212	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 173. Initial Reports of the Deep Sea Drilling Project 18: 31-95.	https://earthref.org/ERR/2212/
+2213	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 174. Initial Reports of the Deep Sea Drilling Project 18: 97-167.	https://earthref.org/ERR/2213/
+2214	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 175. Initial Reports of the Deep Sea Drilling Project 18: 169-212.	https://earthref.org/ERR/2214/
+2215	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 176. Initial Reports of the Deep Sea Drilling Project 18: 213-231.	https://earthref.org/ERR/2215/
+2216	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 177. Initial Reports of the Deep Sea Drilling Project 18: 233-285.	https://earthref.org/ERR/2216/
+2217	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 178. Initial Reports of the Deep Sea Drilling Project 18: 287-376.	https://earthref.org/ERR/2217/
+2218	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 179. Initial Reports of the Deep Sea Drilling Project 18: 377-405.	https://earthref.org/ERR/2218/
+2219	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 180. Initial Reports of the Deep Sea Drilling Project 18: 407-447.	https://earthref.org/ERR/2219/
+2220	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 181. Initial Reports of the Deep Sea Drilling Project 18: 449-499.	https://earthref.org/ERR/2220/
+2221	SMNT-565N-1464W	Kulm, L.V.D., Von Huene, R., Ingle, J.C.Jr., Kling, S.A., Musich, L.F., Piper, D.J.W., Pratt, R.M., Schrader, H.-J., Weser, O.E. and Wise, S.W.Jr. (1973). Site 182. Initial Reports of the Deep Sea Drilling Project 18: 501-513.	https://earthref.org/ERR/2221/
+2344	SMNT-565N-1464W	Turner, D.L., Forbes, R.B. and Naeser, C.W. (1973). Radiometric Ages of Kodiak Seamount and Giacomini Guyot, Gulf of Alaska; implications for Circum-Pacific Tectonics. Science 182(4112): 579-581.	https://earthref.org/ERR/2344/
+34230	SMNT-545N-1370W:SMNT-565N-1464W	Turner, D.L., Jarrard, R.D. and Forbes, R.B. (1980). Geochronology and origin of the Pratt-Welker seamount chain, Gulf of Alaska: A new pole of rotation for the Pacific plate. Journal of Geophysical Research 85: doi: 10.1029/JB080i011p06547. issn: 0148-0227.	https://earthref.org/ERR/34230/

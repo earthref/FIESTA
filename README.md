@@ -51,7 +51,7 @@ Default ports (one API and one frontend for every node):
 | Service | Port |
 |---|---|
 | API (all nodes, docs at `/v2/docs`) | :8000 |
-| Frontend (all nodes: `/MagIC/`, `/KdD/`, `/CDR/`, `/KArAr/`, `/ERDA/`, `/OSU-MGR/`) | :8080 |
+| Frontend (all nodes: `/MagIC/`, `/KdD/`, `/CDR/`, `/KArAr/`, `/ERDA/`, `/OSU-MGR/`, `/SC/`) | :8080 |
 
 The ports are `API_PORT` and `FRONTEND_PORT` in `.env`. The frontend publishes
 each node in `FIESTA_NODE` under its key, the same layout as `earthref.org/MagIC/`;

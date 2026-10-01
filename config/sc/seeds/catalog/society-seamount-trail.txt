@@ -1,0 +1,18 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Society Seamount Trail (1 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	lat	lon	region	plate	height	sc_id
+SMNT-177S-1495W	Tahiti Island	Island	-17.7	-149.46	Society Seamount Trail	Pacific Plate	0	2172
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Tahiti Island -- Multibeam data merged with predicted satellite bathymetry	SMNT-177S-1495W	SMNT-177S-1495W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-177S-1495W.std.180m.mg.map.jpg	180	1212	1292	3149
+Tahiti Island -- Multibeam bathymetry	SMNT-177S-1495W	SMNT-177S-1495W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-177S-1495W.std.180m.mb.map.jpg	180	1730	1810	3150
+Tahiti Island -- Predicted satellite bathymetry	SMNT-177S-1495W	SMNT-177S-1495W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-177S-1495W.std.180m.ss.map.jpg	180	1212	1292	3151
+Tahiti Island -- Residual bathymetry	SMNT-177S-1495W	SMNT-177S-1495W	Seamount	Residual bathymetry	Map:Grid	SMNT-177S-1495W.std.180m.rs.map.jpg	180	1212	1292	3152
+Society Seamount Trail -- Multibeam data merged with predicted satellite bathymetry		SMNT-177S-1495W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-177S-1517W.std.780m.mg.map.jpg	780	3124	2414	3155
+Society Seamount Trail -- Multibeam bathymetry		SMNT-177S-1495W	Regional	Multibeam bathymetry	Map:Grid	REGION-177S-1517W.std.780m.mb.map.jpg	780	3124	2414	3156
+Society Seamount Trail -- Predicted satellite bathymetry		SMNT-177S-1495W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-177S-1517W.std.780m.ss.map.jpg	780	3124	2414	3157
+Society Seamount Trail -- Residual bathymetry		SMNT-177S-1495W	Regional	Residual bathymetry	Map:Grid	REGION-177S-1517W.std.780m.rs.map.jpg	780	3124	2414	3158

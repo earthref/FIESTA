@@ -1,0 +1,322 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Tokelau Seamounts (35 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	volcanic_activity	plate_age_min	plate_age_max	height	summit_depth	base_depth	shelf_edge_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	description	sc_id
+SMNT-002N-1765W	Baker Guyot		Guyot	Small	A1	0.196	-176.47383	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	123.8	124.3	4090	925	5015		2302	1.18	0.01	1.17	0.04	1	64	Baker Island is located at 0° 11.9' N, 176° 28.4' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4447 m high with the top at -1000m and the ocean bottom at -5447 m. The seamount has a volume of 9758 km3 and is fairly round with relatively smooth edges. There are multiple rifts radiating out from a slightly rounded summit.	61
+SMNT-004S-1761W	Kalevu Guyot	Kaleve	Guyot	Small	B2	-0.36817	-176.1175	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	122.9	123.4	3700	1070	4770		2699	1.54	0.10	1.31	0.04	1	65	Kalevu Seamount is located at 0° 22.0' S, 176° 7.1' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3736 m high with the top at -1100 m and the ocean bottom at -4836 m. The seamount has a volume of 4472 km3 and is slightly elongated with an azimuth at approximately 68°. The edges of the seamount are fairly irregular. The northeastern rift widens into two ridges in the corner of the seamount (-48°+96). The top of the seamount is moderately flat but not enough so to merit a classification as a guyot. A saddle to the southwest connects Kalevu to Ulu Seamount. The end of the western rift is where dredge AVON2-D30 is located.	24
+SMNT-006S-1762W	Ulu Seamount		Seamount	Small	B1	-0.59883	-176.21883	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	122.8	123.2	3845	1305	5150		1555	1.37	0.05	1.34	0.02	1	74	Ulu Seamount is located at 0° 35.9' S, 176° 13.0' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3762 m high with the top at -1400 m and the ocean bottom at -5162 m. The seamount has a volume of 2115 km3 and is fairly round with slightly irregular edges. There are three predominant rifts radiating out from a central peak. The southeast trending rift broadens out to form three small ridges near its termination. A saddle to the north connects Ulu to Kalevu Seamount. Dredge AVON2-D31 was taken off the south side of the westward trending rift and dredge 32 was taken off the west side of the southeast trending rift.	25
+SMNT-008N-1766W	Howland Seamount		Seamount	Small	B1	0.81017	-176.62067	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	124.6	125.2	4450	400	4850		2889	1.30	0.07	1.34	0.05	1	79	Howland Volcanic Island is located at 0° 48.8' N, 176° 37.2' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4639 m high with the top at -700 m and the ocean bottom at -5339 m. It has a volume of 8959 km3 and is fairly round with slightly irregular edges. The rifts radiate out in four predominate directions from a central peak. The first dredge for the Tokelau Seamounts was taken at Howland. Dredge AVON2-D26 was taken on the northwestern rift. Dredge AVON2-D27 was on the northeastern rift. Dredge AVON2-D28 was on the southeastern rift and dredge AVON2-D29 was on the southern rift.	23
+SMNT-009S-1763W	Goto Motu Seamount		Seamount	Very Small	B1	-0.896	-176.26517	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	122.7	122.9	3280	1570	4850		534	1.48	0.11	1.24	0.20	1	81	Goto Motu Seamount is located at 0° 53.7' S, 176° 16.0' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3666 m high with the top at -1600 m and the ocean bottom at -5266 m. The seamount has a volume of 1000 km3 and is fairly round with a central peak. It is connected by a saddle to the southeast with the Lelei Seamount. Dredge AVON2-D33 crossed over the northwest trending rift.	26
+SMNT-010S-1761W	Lelei Seamount		Seamount	Small	B1	-1.00717	-176.1285	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	122.3	122.8	3570	1125	4695		1380	1.44	0.05	1.34	0.08	1	67	Lelei Seamount is located at 1° 0.4' S, 176° 7.8' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3898 m high with the top at -1200 m and the ocean bottom at -5098 m. The seamount has a volume of 2086 km3 and is fairly round with slightly irregular edges. Multiple rifts radiate out from the center of the seamount. Lelei is located in a cluster of volcanoes with an azimuth of approximately 303°. There is a saddle between this seamount and the Goto Motu Seamount to the north. To the south is a raised platform at approximately -4000 m. Dredge AVON2-D34 was taken off the southwest oriented rift.	27
+SMNT-013S-1761W	Leaga Seamount		Seamount	Very Small	B2	-1.345	-176.13567	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	122.1	122.3	2885	1555	4440		714	1.65	0.39	1.30	0.18	1	86	Leaga Seamount is located at 1° 19.8' S, 176° 8.0' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3366 m high with the top at -1600 m and the ocean bottom at -4966 m. The seamount has a volume of 1582 km3 and is slightly elongated with an azimuth of approximately 194°. The edges of the seamount are irregular and multiple rifts are seen radiating out from a central summit. To the north is Lelei Seamount and to the southeast is Talofa. Dredge AVON2-D36 was taken on the southwest trending rift and dredge AVON2-D35 was taken on the northwest side of the seamount.	28
+SMNT-016S-1759W	Talofa Seamount		Seamount	Small	B1	-1.5585	-175.94317	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	121.7	121.9	3750	1505	5255		1430	1.24	0.15	1.38	0.10	1	65	Talofa Seamount is located at 1° 33.4' S, 175° 56.6' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3923 m high with the top at -1500 m and the ocean bottom at -5423 m. The seamount has a volume of 2540 km3 and is fairly round with slightly irregular edges. Rift 2 is not well defined and widens out into a volcanic platform with a depth of approximately -4000 m, which connects to Leaga Seamount. Also on the east side of Talofa volcanism is present. Dredge AVON2-D37 was taken on the west trending rift.	29
+SMNT-017S-1752W	Winslow Reef Seamount		Seamount	Intermediate	B2	-1.68383	-175.24017	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	120.7	121.6	3985	1435	5420		7267	1.57	0.05	1.27	0.17	2	17	Winslow Reef is located at 1° 41.2' S, 175° 14.7' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3700 m high with the top at -1500 m and the ocean bottom at -5200 m. The reef has a volume of 4677 km3 and is slightly elongated with an azimuth of approximately 84°. The edges are slightly irregular and four predominant rifts are observed. There is a saddle to the east, connecting it with the rest of the Winslow Reef. Dredge 38 was taken on the south side of the northeast trending rift.	30
+SMNT-026S-1754W	Siapo Seamount		Seamount	Very Small	B1	-2.57433	-175.4035	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	120.3	120.5	3170	2135	5305		841	1.24	0.03	1.25	0.02	1	95	Siapo Seamount is located at 2° 34.3' S, 175° 24.1' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3212 m high with the top at -2200 m and ocean bottom at -5412 m. The seamount has a volume of 1258 km3 and is fairly round with slightly irregular edges. There are five predominate rifts meeting at a single summit. A saddle connects this seamount with the Polo Seamount to the south. Dredge AVON2-D39 was taken on the south trending rift and dredge AVON2-D40 was taken on the north trending rift.	31
+SMNT-027S-1751W	Polo Seamount		Seamount	Small	A2	-2.71517	-175.09117	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	119.8	120.2	4160	1030	5190		2807	1.62	0.13	1.19	0.04	1	46	Polo Seamount is located at 2° 42.9' S, 175° 5.4' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4229 m high with the top at -1100 m and the ocean bottom at -5329 m. The seamount has a volume of 3225 km3 and is slightly elongated with an azimuth of approximately 133°. The edges of the seamount are slightly irregular and there is one predominate rift which radiates out to the southwest from the summit. A saddle to the northwest connects Polo to Siapo Seamount. Dredge AVON2-D41 was taken off the south flank of the southwest trending rift.	32
+SMNT-034S-1747W	Seamount		Seamount	Small	A1	-3.41283	-174.707	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	119.0	119.3	3800	1025	4825		1498	1.19	0.08	1.11	0.04	1	34	Unnamed Guyot SMNT-034S-1747W is located at 3° 24.6' S, 174° 42.2' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4633 m high with the top at -1100 m and the ocean bottom at -5733 m. The guyot has a volume of 5231 km3 and is a fairly round with relatively smooth edges. There appears to be three rifts to the south and two rifts to the northwest. The top is relatively flat resulting in the classification as a guyot. To the southeast a saddle connects the guyot to an unnamed seamount.	62
+SMNT-037S-1746W	Seamount		Seamount	Very Small	B1	-3.69483	-174.56083	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	118.8	118.8	2575	2360	4935		319	1.17	0.10	1.24	0.02	1	99	Unnamed Seamount SMNT-037S-1746W is located at 3° 41.6' S, 174° 33.6' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 2835 m high with the top at -2400 m and the ocean bottom at -5235 m. The seamount has a volume of 577 km3 and is fairly round with relatively smooth edges. There are six predominate peaks radiating out from a single summit. The seamount is connected by a saddle to another unnamed seamount to the north.	63
+SMNT-039S-1733W	Tai Seamount		Seamount	Small	B5	-3.878	-173.26517	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	117.6	118.3	3145	2105	5250		3534	3.25	0.15	1.26	0.05	1	30	Tai Seamount is located at 3° 52.4' S, 173° 16.1' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3590 m high with the top at -2000 m and the ocean bottom at -5590 m. The seamount has a volume of 6507 km3 and is very elongated with an azimuth of approximately 121°. The edges of the seamount are slightly irregular but none of the rifts are very pronounced. Dredge AVON2-D42 was taken on the south side of the west trending rift.	33
+SMNT-042S-1748W	Seamount		Seamount	Intermediate	E2	-4.1875	-174.82783	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			4458	1100	5558		5934	1.52	0.56	1.81	0.30	3	31	Unnamed Seamount SMNT-042S-1748W is located at 4° 11.2' S, 174° 49.7' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4458 m high with the top at -1100 m and the ocean bottom at -5558 m. The seamount has a volume of 5934 km3 and is slightly elongated with an azimuth of approximately 164°. The edges are very irregular and two predominant rifts radiate out to the east and south of a peak in the northwest corner of the seamount.	64
+SMNT-047S-1745W	Gardner Seamount	Nikumaroro	Seamount	Small	A2	-4.69967	-174.50517	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	117.6	118.1	4380	550	4930		4476	1.72	0.05	1.12	0.05	1	25	Gardner Volcanic Island is located at 4° 42.0' S, 174° 30.3' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4584 m high with the top at -600 m and the ocean bottom at -5184 m. The seamount has a volume of 7506 km3 and is slightly elongated with an azimuth of approximately 161°. The edges of the volcano are relatively smooth and no dominate rifts are seen.	65
+SMNT-054S-1740W	Seamount		Seamount	Small	A2	-5.4085	-173.97383	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	117.1	117.1	4340	315	4655		1950	2.00	0.12	1.17	0.09	2	69	Unnamed Seamount SMNT-054S-1740W is located at 5° 24.5' S, 173° 58.4' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4707 m high with the top at -400 m and the ocean bottom at -5107 m. The seamount has a volume of 3395 km3 and is slightly elongated with an azimuth of approximately 126°. The edges are relatively smooth but several rifts are seen radiating out from a central ridge. To the southeast there is a saddle connecting the seamount to Carondelet Volcanic Island.	66
+SMNT-056S-1739W	Carondelet Seamount		Seamount	Small	A2	-5.57417	-173.86733	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct			3785	795	4580		1223	1.70	0.17	1.16	0.23	1	48	Carondelet Volcanic Island is located at 5° 34.7' S, 173° 51.9' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4365 m high with the top at -700 m and the ocean bottom at -5065 m. The seamount has a volume of 2359 km3 and is slightly elongated with an azimuth of approximately 150°. The edges are fairly smooth. A single summit is observed. A saddle to the northwest connects Carondelet to an unnamed seamount.	67
+SMNT-058S-1741W	Fautasi Seamount		Seamount	Small	C2	-5.82083	-174.11333	Tokelau Seamounts	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct			3790	1590	5380		2198	1.53	0.18	1.41	0.04	1	68	Fautasi Seamount is located at 5° 48.9' S, 174° 6.7' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3745 m high with the top at -1700 m and the ocean bottom at -5445 m. The seamount has a volume of 2457 km3 and is cross-shaped with very little elongation and only slightly irregular edges. Carondelet Volcanic Island is located to the northeast of Fautasi. Dredge AVON2-D43 was taken on the southwest trending rift and dredge AVON2-D44 was taken on the north trending rift.	34
+SMNT-060S-1738W	Tanoa Seamount		Seamount	Small	B3	-6.0	-173.76633	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			2748	2600	5348		1080	2.03	0.18	1.30	0.09	1	68	Tanoa Seamount is located at 5° 60.0' S, 173° 46.0' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 2748 m high with the top at -2600 m and the ocean bottom at -5348 m. The seamount has a volume of 1080 km3 and is moderately elongated with an azimuth of approximately 157°. The edges of the seamount are slightly irregular and there are multiple rifts radiating out from a central summit. A saddle exists to the south connecting Tanoa to Tau Tau Seamount. Tanoa is the northern most volcano in a cluster of volcanoes on a common platform with an orientation of 333°. Dredge AVON2-D45 was taken on the north end of the northwest trending rift and dredge AVON2-D46 was taken on the south trending rift.	35
+SMNT-062S-1737W	Tau Tau Seamount		Seamount	Small	B2	-6.18917	-173.65	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3592	1600	5192		1665	1.77	0.07	1.35	0.03	1	56	Tau Tau Seamount is located at 6° 11.3' S, 173° 39.0' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3592 m high with the top at -1600 m and the ocean bottom at -5192 m. The seamount has a volume of 1665 km3 and is slightly elongated with an azimuth of approximately 154°. The edges are slightly irregular with rifts radiating out from the center. The summit was not mapped in by SeaBeam. Tau Tau is part of a cluster of volcanoes oriented at 333°. A saddle connects Tau Tau to Tanoa Seamount to the north and to a unnamed seamount to the south. Dredge AVON2-D47 crosses the end of the southeast trending rift.	36
+SMNT-065S-1736W	Seamount		Seamount	Small	B4	-6.48	-173.58	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3715	1500	5215		2176	2.79	0.33	1.23	0.11	1	66	Unnamed Seamount SMNT-065S-1736W is located at 6° 26.7' S, 173° 35.4' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3715 m high with the top at -1500 m and the ocean bottom at -5215 m. The seamount has a volume of 2176 km3 and is moderately elongated with an azimuth of approximately 164°. The edges are slightly irregular and a central peak is observed. The seamount is connected by saddles to the north and south to Tau Tau and Matai respectively.	68
+SMNT-067S-1734W	Matai Seamount		Seamount	Small	B1	-6.685	-173.42217	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3495	1900	5395		1824	1.30	0.03	1.21	0.01	1	85	Matai Seamount is located at 6° 41.1' S, 173° 25.3' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3495 m high with the top at -1900 m and the ocean bottom at -5395 m. The seamount has a volume of 1824 km3 and is fairly round with slightly irregular edges. Five predominant rifts are seen radiating out from a central summit. A saddle to the northwest connects Matai to an unnamed seamount. Dredge AVON2-D48 was taken on the west trending rift and dredge AVON2-D49 was taken on the northwest trending rift.	37
+SMNT-069S-1737W	Ula Seamount		Seamount	Small	B1	-6.92667	-173.723	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3281	2200	5481		1098	1.28	0.06	1.22	0.08	1	77	Ula Seamount is located at 6° 55.6' S, 173° 43.4' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3281 m high with the top at -2200 m and the ocean bottom at -5481 m. The seamount has a volume of 1098 km3 and is fairly round with slightly irregular edges. Six predominate rifts radiate out from the central summit. To the south of Ula is Pao Pao Seamount. Dredges AVON2-D50 and AVON2-D51 where taken on the west trending rift.	38
+SMNT-072S-1736W	Pao Pao Seamount		Seamount	Small	B2	-7.19433	-173.63683	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			4776	300	5076		3790	1.70	0.27	1.27	0.10	1	67	Pao Pao Seamount is located at 7° 11.7' S, 173° 38.2' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4776 m high with the top at -300 m and the ocean bottom at -5076 m. The seamount has a volume of 3790 km3 and is slightly elongated with an azimuth of approximately 150°. The edges are relatively smooth and five rifts are observed radiating out from the summit. Minor rifts extend off north of rift 1. The seamount is part of a cluster trending 333° and it is connected by saddles to Ula Seamount to the north and an unnamed seamount to the west. Dredge AVON-D52 was taken on the northwestern rift.	39
+SMNT-073S-1739W	Guyot		Guyot	Small	A1	-7.28	-173.86	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3597	1300	4897	1318	1923	1.17	0.05	1.17	0.05	1	78	Unnamed Guyot SMNT-073S-1739W is located at 7° 16.9' S, 173° 51.3' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3597 m high with the top at -1300 m and the ocean bottom at -4897 m. The guyot has a volume of 1923 km3 and is fairly round with relatively smooth edges. Multiple rifts are observed radiating out from the center. The most salient of these rifts are located on the southern side of the guyot. The top is relatively flat resulting in its classification as a guyot. It is connected by a saddle to Pao Pao to the east.	69
+SMNT-077S-1733W	Umu Seamount		Seamount	Small	B4	-7.73117	-173.25533	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3394	2000	5394		2489	2.71	0.04	1.37	0.08	1	50	Umu Seamount is located at 7° 43.9' S, 173° 15.3' W and is part of the Tokelau Seamount Chain on the Pacific Plate. It is 3394 m high with the top at -2000 m and the ocean bottom at -5394 m. The seamount has a volume of 2489 km3 and is very elongated with an azimuth of approximately 153°. The edges are slightly irregular and the seamount has a single summit. Dredge 55 was taken on the north end of the northwest trending rift. Dredge 54 was taken on the south end of the southeast trending rift and dredge 53 was taken on the west trending rift.	40
+SMNT-082S-1727W	Pogisa Seamount		Seamount	Small	B1	-8.15233	-172.663	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3766	1000	4766		1570	1.25	0.08	1.38	0.19	1	95	Pogisa Seamount is located at 8° 9.1' S, 172° 39.8' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3766 m high with the top at -1000 m and the ocean bottom at -4766 m. The seamount has a volume of 1570 km3 and is fairly round with slightly irregular edges. Three predominate rifts are observed, which meet at a central summit. There may be some mass wasting along the northern side of the seamount. Saddles connect Pogisa with Ufiata Seamount to the west and Atafu Atoll to the south.	42
+SMNT-082S-1729W	Ufiata Seamount		Seamount	Small	C3	-8.15833	-172.90133	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3930	900	4830		3622	2.21	0.15	1.44	0.14	2	67	Ufiata Seamount is located at 8° 9.5' S, 172° 54.1' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3930 m high with the top at -900 m and the ocean bottom at -4830 m. The seamount has a volume of 3622 km3 and is moderately elongated with an azimuth of approximately 141°. The edges are slightly irregular with three predominate rifts observed. Saddles connect Ufiata to Pogisa Seamount to the east and Atafu Atoll to the south.	41
+SMNT-086S-1725W	Atafu Atoll		Atoll	Intermediate	C2	-8.55	-172.5	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			4208	400	4608	492	7053	1.66	0.22	1.43	0.05	2	33	Atafu Atoll is located at 8° 32.9' S, 172° 31.0' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 4208 m high with the top at -400 m and the ocean bottom at -4608 m. The atoll has a volume of 7053 km3 and is slightly elongated with an azimuth of approximately 122°. The atoll has relatively smooth edges with two predominate rifts observed, one to the northwest and the other to the southwest. The top surface is relatively flat with two summits. A saddle connects Atafu to Pogisa and Ufiata seamounts to the north. Dredge AVON2-D60 was taken on the northwest rift and dredge AVON2-D61 was taken on the southwest rift.	43
+SMNT-092S-1718W	Nukunono Atoll		Atoll	Small	A1	-9.162	-171.81383	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3253	100	3353	251	3185	1.18	0.06	1.05	0.05	1	30	Nukunono Atoll is located at 9° 9.7' S, 171° 48.8' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3253 m high with the top at -100 m and the ocean bottom at -3353 m. The atoll has a volume of 3185 km3 and is fairly round with relatively smooth edges. No dominate rifts are seen and the top surface of the atoll is relatively flat. To the west of the atoll is a large plateau.	70
+SMNT-094S-1712W	Fakaofu Atoll		Atoll	Intermediate	B1	-9.37317	-171.2195	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			3734	100	3834		5420	1.48	0.05	1.36	0.08	1	57	Fakaofu Atoll is located at 9° 22.4' S, 171° 13.2' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 3734 m high with the top at -100 m and the ocean bottom at -3834 m. The atoll has a volume of 5420 km3 and is fairly round with slightly irregular edges. There is one predominate rift off to the north and there may be mass wasting occurring along the southwestern side of the atoll resulting in the formation of scarps. The top surface of the atoll is relatively flat. There are pockmark features to west southwest of the atoll and there may be a platform located to the west southwest. Dredge number AVON2-D62 was taken on the north trending rift.	44
+SMNT-097S-1687W	Seamount		Seamount	Small	A3	-9.744	-168.68167	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			2861	2500	5361		2511	2.10	0.14	1.04	0.33	1	19	Unnamed Seamount SMNT-097S-1687W is located at 9° 44.6' S, 168° 40.9' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 2861 m high with the top at -2500 m and the ocean bottom at -5361 m. The seamount has a volume of 2511 km3 and is moderately elongated with an azimuth of approximately 66°. The edges of the seamount are slightly irregular. No dominate rifts are observed. There is a platform to the east of the seamount.	73
+SMNT-097S-1694W	Seamount		Seamount	Small	A4	-9.72	-169.35	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			2347	3000	5347		1264	2.99	0.09	1.15	0.03	1	62	Unnamed Seamount SMNT-097S-1694W is located at 9° 43.5' S, 169° 21.8' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 2347 m high with the top at -3000 m and the ocean bottom at -5347 m. The seamount has a volume of 1264 km3 and is elongated with an azimuth of approximately 60°. The edges are fairly smooth.	72
+SMNT-097S-1701W	Seamount		Seamount	Small	C5	-9.68267	-170.11317	Tokelau Seamounts	Pacific Plate	Hotspot Trail		Extinct			1944	3000	4944		1910	3.90	0.59	1.58	0.07	1	39	Unnamed Seamount SMNT-097S-1701W is located at 9° 41.0' S, 170° 6.8' W and is part of the Tokelau Seamounts on the Pacific Plate. It is 1944 m high with the top at -3000 m and the ocean bottom at -4944 m. The seamount has a volume of 1910 km3 and is very elongated with an azimuth of approximately 74°. The edges are moderately irregular and no dominate rifts are seen. This seamount shares a platform with Fakaofu, which lies to the northwest.	71
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-002N-1765W	2561	107.2	201.1	18.2	15.2	1.198	60.7	50.6	1.200
+SMNT-002N-1765W	2970	104.4	276.1	20.8	17.7	1.176	69.5	59.2	1.175
+SMNT-002N-1765W	3379	92.3	377.6	24.0	20.5	1.169	78.1	69.2	1.129
+SMNT-004S-1761W	2550	67.7	191.6	22.0	13.4	1.638	69.2	51.3	1.350
+SMNT-004S-1761W	2920	68.1	266.5	24.4	15.7	1.553	76.1	60.0	1.269
+SMNT-004S-1761W	3290	68.7	363.6	26.7	18.6	1.434	90.2	69.2	1.302
+SMNT-006S-1762W	2843	109.1	69.9	13.5	9.5	1.431	41.2	30.4	1.358
+SMNT-006S-1762W	3228	101.3	110.0	15.8	11.9	1.328	49.9	37.7	1.321
+SMNT-006S-1762W	3612	95.6	171.8	19.8	14.6	1.357	63.1	47.3	1.334
+SMNT-008N-1766W	2180	158.4	176.8	18.9	13.8	1.375	63.1	48.0	1.314
+SMNT-008N-1766W	2625	158.5	263.4	23.1	18.1	1.277	81.8	58.2	1.406
+SMNT-008N-1766W	3070	159.3	366.6	26.1	20.8	1.252	89.9	68.5	1.312
+SMNT-009S-1763W	2882	124.7	48.4	9.6	7.0	1.364	32.4	25.1	1.292
+SMNT-009S-1763W	3210	117.5	81.4	12.9	8.6	1.503	46.3	33.0	1.404
+SMNT-009S-1763W	3538	124.0	124.4	16.6	10.6	1.574	41.5	41.1	1.011
+SMNT-010S-1761W	2553	119.0	122.2	16.3	11.6	1.398	56.4	40.0	1.410
+SMNT-010S-1761W	2910	121.1	178.1	20.4	13.6	1.499	66.0	48.8	1.354
+SMNT-010S-1761W	3267	123.9	269.2	23.3	16.4	1.419	74.3	59.5	1.249
+SMNT-013S-1761W	2421	187.5	32.6	8.0	5.5	1.453	24.9	20.8	1.200
+SMNT-013S-1761W	2709	187.8	52.2	9.9	7.0	1.404	31.2	26.2	1.191
+SMNT-013S-1761W	2998	193.2	82.2	16.9	8.1	2.098	53.3	35.4	1.504
+SMNT-016S-1759W	3005	183.4	66.2	10.0	9.3	1.076	36.5	28.9	1.264
+SMNT-016S-1759W	3380	139.6	108.0	14.4	11.3	1.271	53.1	37.2	1.425
+SMNT-016S-1759W	3755	135.9	178.8	18.9	13.8	1.376	70.1	48.3	1.450
+SMNT-017S-1752W	3029	85.6	511.0	35.6	23.4	1.519	115.2	82.8	1.392
+SMNT-017S-1752W	3428	82.3	769.1	42.3	26.6	1.588	137.7	102.2	1.347
+SMNT-017S-1752W	3826	83.3	1033.2	48.8	30.3	1.611	127.0	118.8	1.069
+SMNT-026S-1754W	3403	56.8	50.6	9.7	7.6	1.273	32.5	25.5	1.276
+SMNT-026S-1754W	3720	56.6	75.8	11.4	9.3	1.223	38.2	31.1	1.230
+SMNT-026S-1754W	4037	59.5	108.3	13.5	11.1	1.218	46.5	37.2	1.251
+SMNT-027S-1751W	2694	135.6	141.5	17.5	11.8	1.484	53.1	43.4	1.225
+SMNT-027S-1751W	3110	136.7	230.3	22.8	13.9	1.640	67.7	56.3	1.203
+SMNT-027S-1751W	3526	133.2	346.2	28.5	16.3	1.750	79.7	69.8	1.142
+SMNT-034S-1747W	2545	113.5	120.8	14.1	11.3	1.256	42.0	39.3	1.068
+SMNT-034S-1747W	2925	123.2	184.0	17.4	14.4	1.208	55.8	48.4	1.152
+SMNT-034S-1747W	3305	135.5	267.2	19.9	18.2	1.095	64.4	58.0	1.110
+SMNT-037S-1746W	3390	61.5	33.9	7.7	6.0	1.284	26.2	20.9	1.256
+SMNT-037S-1746W	3648	67.4	50.6	8.8	7.7	1.140	30.8	25.3	1.219
+SMNT-037S-1746W	3905	69.1	75.1	10.5	9.7	1.085	38.1	30.8	1.240
+SMNT-039S-1733W	3363	120.8	273.7	35.9	10.6	3.388	96.6	74.9	1.289
+SMNT-039S-1733W	3678	120.1	385.6	40.0	12.9	3.096	103.3	86.2	1.199
+SMNT-039S-1733W	3992	132.0	521.3	59.7	18.3	3.256	130.9	101.9	1.285
+SMNT-042S-1748W	3106	137.0	214.1	70.3	32.6	2.158	118.2	57.6	2.052
+SMNT-042S-1748W	3552	158.2	432.8	35.9	31.1	1.152	141.4	74.0	1.911
+SMNT-042S-1748W	3998	199.3	696.1	39.6	32.0	1.238	139.7	94.3	1.481
+SMNT-047S-1745W	2302	161.6	313.1	26.2	15.7	1.669	69.6	65.8	1.058
+SMNT-047S-1745W	2740	161.1	435.4	32.0	18.2	1.758	90.6	78.4	1.156
+SMNT-047S-1745W	3178	161.1	601.5	37.5	21.5	1.743	104.9	92.0	1.141
+SMNT-054S-1740W	2051	117.1	85.8	15.7	7.5	2.096	39.1	36.2	1.081
+SMNT-054S-1740W	2485	128.1	139.2	20.8	10.2	2.029	52.8	45.7	1.154
+SMNT-054S-1740W	2919	130.2	235.4	24.7	13.2	1.871	73.8	58.4	1.264
+SMNT-056S-1739W	2688	147.9	150.6	20.4	10.9	1.865	66.3	46.7	1.420
+SMNT-056S-1739W	3066	146.6	236.2	23.2	13.7	1.699	61.2	57.3	1.068
+SMNT-056S-1739W	3445	147.1	327.2	26.0	17.0	1.530	65.7	66.3	0.990
+SMNT-058S-1741W	3106	207.0	100.8	14.3	10.5	1.359	50.5	36.2	1.394
+SMNT-058S-1741W	3485	182.7	174.4	22.9	13.3	1.716	72.3	49.4	1.464
+SMNT-058S-1741W	3864	182.2	269.1	25.1	16.7	1.507	82.9	60.0	1.382
+SMNT-060S-1738W	3424	159.3	42.5	11.3	5.6	2.011	32.7	25.2	1.298
+SMNT-060S-1738W	3699	157.8	73.1	16.2	7.3	2.224	47.4	33.9	1.397
+SMNT-060S-1738W	3974	152.3	121.5	18.1	9.7	1.862	50.6	41.9	1.207
+SMNT-062S-1737W	3037	158.9	118.0	17.5	10.1	1.730	56.6	40.7	1.390
+SMNT-062S-1737W	3396	153.4	199.1	22.1	12.8	1.734	70.7	52.9	1.338
+SMNT-062S-1737W	3755	150.6	303.9	28.4	15.4	1.850	87.8	66.2	1.327
+SMNT-065S-1736W	2986	165.3	141.1	24.7	8.0	3.093	70.2	52.1	1.348
+SMNT-065S-1736W	3358	164.4	238.5	30.2	10.6	2.840	80.3	65.9	1.219
+SMNT-065S-1736W	3729	162.1	354.8	34.1	13.9	2.445	86.0	76.7	1.121
+SMNT-067S-1734W	3298	147.4	113.1	14.1	11.0	1.281	45.8	38.1	1.200
+SMNT-067S-1734W	3648	151.2	166.3	17.3	13.4	1.289	56.0	46.3	1.210
+SMNT-067S-1734W	3997	143.6	236.6	21.2	15.8	1.344	67.2	55.4	1.212
+SMNT-069S-1737W	3512	175.0	56.0	10.0	7.9	1.256	34.8	26.8	1.299
+SMNT-069S-1737W	3841	174.0	89.0	12.1	9.7	1.245	38.4	33.7	1.139
+SMNT-069S-1737W	4169	165.8	133.9	15.8	11.7	1.351	50.4	41.7	1.208
+SMNT-072S-1736W	2210	148.2	75.0	14.9	7.6	1.967	40.7	33.3	1.222
+SMNT-072S-1736W	2688	149.9	151.9	19.0	11.1	1.712	55.2	46.0	1.199
+SMNT-072S-1736W	3166	156.1	276.9	23.8	16.7	1.426	83.6	60.4	1.384
+SMNT-073S-1739W	2379	167.2	72.5	10.9	8.9	1.220	34.1	30.4	1.121
+SMNT-073S-1739W	2739	162.6	115.7	13.4	11.7	1.139	45.2	38.3	1.182
+SMNT-073S-1739W	3099	170.6	173.4	16.2	14.2	1.144	56.9	46.8	1.214
+SMNT-077S-1733W	3358	155.3	102.9	20.1	7.3	2.748	62.3	42.8	1.455
+SMNT-077S-1733W	3697	152.4	183.5	26.5	9.9	2.679	78.1	56.7	1.377
+SMNT-077S-1733W	4036	151.7	312.6	34.6	12.9	2.691	95.5	74.1	1.288
+SMNT-082S-1727W	2506	86.7	49.7	9.5	7.1	1.333	30.4	25.4	1.199
+SMNT-082S-1727W	2883	113.7	89.9	12.6	10.6	1.186	45.6	33.8	1.349
+SMNT-082S-1727W	3260	139.9	165.7	17.2	14.0	1.230	72.9	46.0	1.585
+SMNT-082S-1729W	2472	141.0	246.0	33.6	14.3	2.342	100.1	63.1	1.586
+SMNT-082S-1729W	2865	141.6	403.7	38.1	17.0	2.240	112.5	79.9	1.408
+SMNT-082S-1729W	3258	140.2	589.7	42.6	20.9	2.041	124.4	94.3	1.320
+SMNT-086S-1725W	1873	113.4	213.2	31.1	16.2	1.917	79.9	55.8	1.431
+SMNT-086S-1725W	2294	122.8	372.7	31.3	20.3	1.542	105.3	70.8	1.487
+SMNT-086S-1725W	2714	132.9	575.0	36.6	24.0	1.525	121.5	87.8	1.383
+SMNT-092S-1718W	1401	182.1	274.2	21.1	17.1	1.234	60.5	59.2	1.023
+SMNT-092S-1718W	1727	177.4	352.5	23.3	19.8	1.176	68.0	66.9	1.017
+SMNT-092S-1718W	2052	170.3	463.6	26.3	23.4	1.121	84.5	76.5	1.104
+SMNT-094S-1712W	1407	177.2	204.1	22.9	15.2	1.508	74.7	52.3	1.429
+SMNT-094S-1712W	1780	182.4	294.2	26.2	17.5	1.496	86.8	62.6	1.385
+SMNT-094S-1712W	2154	178.4	396.0	28.5	20.0	1.424	91.9	72.2	1.274
+SMNT-097S-1687W	3358	70.9	310.9	29.2	15.1	1.935	95.0	67.6	1.405
+SMNT-097S-1687W	3644	66.5	563.1	40.4	18.5	2.185	88.2	93.7	0.942
+SMNT-097S-1687W	3931	64.9	775.8	49.3	22.7	2.176	85.3	109.9	0.776
+SMNT-097S-1694W	3939	60.8	86.1	18.6	6.1	3.048	47.2	40.5	1.165
+SMNT-097S-1694W	4174	60.0	128.4	22.8	7.5	3.039	58.0	49.4	1.173
+SMNT-097S-1694W	4408	60.1	180.8	26.3	9.1	2.884	64.4	57.6	1.117
+SMNT-097S-1701W	3583	72.6	114.5	30.3	6.6	4.581	83.3	54.3	1.534
+SMNT-097S-1701W	3778	75.0	216.0	35.6	9.9	3.593	112.8	68.0	1.659
+SMNT-097S-1701W	3972	74.1	351.5	42.9	12.2	3.521	132.4	86.1	1.538
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Baker Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-002N-1765W	SMNT-002N-1765W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-002N-1765W.std.180m.mg.map.jpg	180	693	773	3168
+Baker Guyot -- Multibeam bathymetry	SMNT-002N-1765W	SMNT-002N-1765W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-002N-1765W.std.180m.mb.map.jpg	180	952	1033	3169
+Baker Guyot -- Predicted satellite bathymetry	SMNT-002N-1765W	SMNT-002N-1765W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-002N-1765W.std.180m.ss.map.jpg	180	693	773	3170
+Baker Guyot -- Residual bathymetry	SMNT-002N-1765W	SMNT-002N-1765W	Seamount	Residual bathymetry	Map:Grid	SMNT-002N-1765W.std.180m.rs.map.jpg	180	693	773	3171
+Kalevu Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-004S-1761W	SMNT-004S-1761W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-004S-1761W.std.180m.mg.map.jpg	180	641	721	3174
+Kalevu Guyot -- Multibeam bathymetry	SMNT-004S-1761W	SMNT-004S-1761W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-004S-1761W.std.180m.mb.map.jpg	180	875	955	3175
+Kalevu Guyot -- Predicted satellite bathymetry	SMNT-004S-1761W	SMNT-004S-1761W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-004S-1761W.std.180m.ss.map.jpg	180	641	721	3176
+Kalevu Guyot -- Residual bathymetry	SMNT-004S-1761W	SMNT-004S-1761W	Seamount	Residual bathymetry	Map:Grid	SMNT-004S-1761W.std.180m.rs.map.jpg	180	641	721	3177
+Ulu Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-006S-1762W	SMNT-006S-1762W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-006S-1762W.std.180m.mg.map.jpg	180	589	670	3180
+Ulu Seamount -- Multibeam bathymetry	SMNT-006S-1762W	SMNT-006S-1762W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-006S-1762W.std.180m.mb.map.jpg	180	797	877	3181
+Ulu Seamount -- Predicted satellite bathymetry	SMNT-006S-1762W	SMNT-006S-1762W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-006S-1762W.std.180m.ss.map.jpg	180	589	670	3182
+Ulu Seamount -- Residual bathymetry	SMNT-006S-1762W	SMNT-006S-1762W	Seamount	Residual bathymetry	Map:Grid	SMNT-006S-1762W.std.180m.rs.map.jpg	180	589	670	3183
+Howland Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-008N-1766W	SMNT-008N-1766W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-008N-1766W.std.180m.mg.map.jpg	180	693	773	3186
+Howland Seamount -- Multibeam bathymetry	SMNT-008N-1766W	SMNT-008N-1766W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-008N-1766W.std.180m.mb.map.jpg	180	952	1033	3187
+Howland Seamount -- Predicted satellite bathymetry	SMNT-008N-1766W	SMNT-008N-1766W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-008N-1766W.std.180m.ss.map.jpg	180	693	773	3188
+Howland Seamount -- Residual bathymetry	SMNT-008N-1766W	SMNT-008N-1766W	Seamount	Residual bathymetry	Map:Grid	SMNT-008N-1766W.std.180m.rs.map.jpg	180	693	773	3189
+Goto Motu Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-009S-1763W	SMNT-009S-1763W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-009S-1763W.std.180m.mg.map.jpg	180	589	670	3192
+Goto Motu Seamount -- Multibeam bathymetry	SMNT-009S-1763W	SMNT-009S-1763W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-009S-1763W.std.180m.mb.map.jpg	180	797	877	3193
+Goto Motu Seamount -- Predicted satellite bathymetry	SMNT-009S-1763W	SMNT-009S-1763W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-009S-1763W.std.180m.ss.map.jpg	180	589	670	3194
+Goto Motu Seamount -- Residual bathymetry	SMNT-009S-1763W	SMNT-009S-1763W	Seamount	Residual bathymetry	Map:Grid	SMNT-009S-1763W.std.180m.rs.map.jpg	180	589	670	3195
+Lelei Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-010S-1761W	SMNT-010S-1761W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-010S-1761W.std.180m.mg.map.jpg	180	589	670	3198
+Lelei Seamount -- Multibeam bathymetry	SMNT-010S-1761W	SMNT-010S-1761W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-010S-1761W.std.180m.mb.map.jpg	180	797	877	3199
+Lelei Seamount -- Predicted satellite bathymetry	SMNT-010S-1761W	SMNT-010S-1761W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-010S-1761W.std.180m.ss.map.jpg	180	589	670	3200
+Lelei Seamount -- Residual bathymetry	SMNT-010S-1761W	SMNT-010S-1761W	Seamount	Residual bathymetry	Map:Grid	SMNT-010S-1761W.std.180m.rs.map.jpg	180	589	670	3201
+Leaga Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-013S-1761W	SMNT-013S-1761W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-013S-1761W.std.180m.mg.map.jpg	180	589	670	3204
+Leaga Seamount -- Multibeam bathymetry	SMNT-013S-1761W	SMNT-013S-1761W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-013S-1761W.std.180m.mb.map.jpg	180	797	877	3205
+Leaga Seamount -- Predicted satellite bathymetry	SMNT-013S-1761W	SMNT-013S-1761W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-013S-1761W.std.180m.ss.map.jpg	180	589	670	3206
+Leaga Seamount -- Residual bathymetry	SMNT-013S-1761W	SMNT-013S-1761W	Seamount	Residual bathymetry	Map:Grid	SMNT-013S-1761W.std.180m.rs.map.jpg	180	589	670	3207
+Talofa Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-016S-1759W	SMNT-016S-1759W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-016S-1759W.std.180m.mg.map.jpg	180	589	670	3210
+Talofa Seamount -- Multibeam bathymetry	SMNT-016S-1759W	SMNT-016S-1759W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-016S-1759W.std.180m.mb.map.jpg	180	797	877	3211
+Talofa Seamount -- Predicted satellite bathymetry	SMNT-016S-1759W	SMNT-016S-1759W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-016S-1759W.std.180m.ss.map.jpg	180	589	670	3212
+Talofa Seamount -- Residual bathymetry	SMNT-016S-1759W	SMNT-016S-1759W	Seamount	Residual bathymetry	Map:Grid	SMNT-016S-1759W.std.180m.rs.map.jpg	180	589	670	3213
+Winslow Reef Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-017S-1752W	SMNT-017S-1752W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-017S-1752W.std.180m.mg.map.jpg	180	952	1033	3216
+Winslow Reef Seamount -- Multibeam bathymetry	SMNT-017S-1752W	SMNT-017S-1752W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-017S-1752W.std.180m.mb.map.jpg	180	1341	1421	3217
+Winslow Reef Seamount -- Predicted satellite bathymetry	SMNT-017S-1752W	SMNT-017S-1752W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-017S-1752W.std.180m.ss.map.jpg	180	952	1033	3218
+Winslow Reef Seamount -- Residual bathymetry	SMNT-017S-1752W	SMNT-017S-1752W	Seamount	Residual bathymetry	Map:Grid	SMNT-017S-1752W.std.180m.rs.map.jpg	180	952	1033	3219
+Siapo Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-026S-1754W	SMNT-026S-1754W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-026S-1754W.std.180m.mg.map.jpg	180	589	670	3222
+Siapo Seamount -- Multibeam bathymetry	SMNT-026S-1754W	SMNT-026S-1754W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-026S-1754W.std.180m.mb.map.jpg	180	797	877	3223
+Siapo Seamount -- Predicted satellite bathymetry	SMNT-026S-1754W	SMNT-026S-1754W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-026S-1754W.std.180m.ss.map.jpg	180	589	670	3224
+Siapo Seamount -- Residual bathymetry	SMNT-026S-1754W	SMNT-026S-1754W	Seamount	Residual bathymetry	Map:Grid	SMNT-026S-1754W.std.180m.rs.map.jpg	180	589	670	3225
+Polo Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-027S-1751W	SMNT-027S-1751W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-027S-1751W.std.180m.mg.map.jpg	180	641	721	3228
+Polo Seamount -- Multibeam bathymetry	SMNT-027S-1751W	SMNT-027S-1751W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-027S-1751W.std.180m.mb.map.jpg	180	875	955	3229
+Polo Seamount -- Predicted satellite bathymetry	SMNT-027S-1751W	SMNT-027S-1751W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-027S-1751W.std.180m.ss.map.jpg	180	641	721	3230
+Polo Seamount -- Residual bathymetry	SMNT-027S-1751W	SMNT-027S-1751W	Seamount	Residual bathymetry	Map:Grid	SMNT-027S-1751W.std.180m.rs.map.jpg	180	641	721	3231
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (3234)		SMNT-034S-1747W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-034S-1747W.std.180m.mg.map.jpg	180	693	773	3234
+Unnamed Seamount -- Multibeam bathymetry (3235)		SMNT-034S-1747W	Regional	Multibeam bathymetry	Map:Grid	SMNT-034S-1747W.std.180m.mb.map.jpg	180	952	1033	3235
+Unnamed Seamount -- Predicted satellite bathymetry (3236)		SMNT-034S-1747W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-034S-1747W.std.180m.ss.map.jpg	180	693	773	3236
+Unnamed Seamount -- Residual bathymetry (3237)		SMNT-034S-1747W	Regional	Residual bathymetry	Map:Grid	SMNT-034S-1747W.std.180m.rs.map.jpg	180	693	773	3237
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (3240)		SMNT-037S-1746W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-037S-1746W.std.180m.mg.map.jpg	180	589	670	3240
+Unnamed Seamount -- Multibeam bathymetry (3241)		SMNT-037S-1746W	Regional	Multibeam bathymetry	Map:Grid	SMNT-037S-1746W.std.180m.mb.map.jpg	180	797	877	3241
+Unnamed Seamount -- Predicted satellite bathymetry (3242)		SMNT-037S-1746W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-037S-1746W.std.180m.ss.map.jpg	180	589	670	3242
+Unnamed Seamount -- Residual bathymetry (3243)		SMNT-037S-1746W	Regional	Residual bathymetry	Map:Grid	SMNT-037S-1746W.std.180m.rs.map.jpg	180	589	670	3243
+Tai Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-039S-1733W	SMNT-039S-1733W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-039S-1733W.std.180m.mg.map.jpg	180	693	773	3246
+Tai Seamount -- Multibeam bathymetry	SMNT-039S-1733W	SMNT-039S-1733W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-039S-1733W.std.180m.mb.map.jpg	180	952	1033	3247
+Tai Seamount -- Predicted satellite bathymetry	SMNT-039S-1733W	SMNT-039S-1733W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-039S-1733W.std.180m.ss.map.jpg	180	693	773	3248
+Tai Seamount -- Residual bathymetry	SMNT-039S-1733W	SMNT-039S-1733W	Seamount	Residual bathymetry	Map:Grid	SMNT-039S-1733W.std.180m.rs.map.jpg	180	693	773	3249
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (3252)		SMNT-042S-1748W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-042S-1748W.std.180m.mg.map.jpg	180	693	773	3252
+Unnamed Seamount -- Multibeam bathymetry (3253)		SMNT-042S-1748W	Regional	Multibeam bathymetry	Map:Grid	SMNT-042S-1748W.std.180m.mb.map.jpg	180	952	1033	3253
+Unnamed Seamount -- Predicted satellite bathymetry (3254)		SMNT-042S-1748W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-042S-1748W.std.180m.ss.map.jpg	180	693	773	3254
+Unnamed Seamount -- Residual bathymetry (3255)		SMNT-042S-1748W	Regional	Residual bathymetry	Map:Grid	SMNT-042S-1748W.std.180m.rs.map.jpg	180	693	773	3255
+Gardner Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-047S-1745W	SMNT-047S-1745W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-047S-1745W.std.180m.mg.map.jpg	180	693	773	3258
+Gardner Seamount -- Multibeam bathymetry	SMNT-047S-1745W	SMNT-047S-1745W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-047S-1745W.std.180m.mb.map.jpg	180	952	1033	3259
+Gardner Seamount -- Predicted satellite bathymetry	SMNT-047S-1745W	SMNT-047S-1745W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-047S-1745W.std.180m.ss.map.jpg	180	693	773	3260
+Gardner Seamount -- Residual bathymetry	SMNT-047S-1745W	SMNT-047S-1745W	Seamount	Residual bathymetry	Map:Grid	SMNT-047S-1745W.std.180m.rs.map.jpg	180	693	773	3261
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (3264)		SMNT-054S-1740W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-054S-1740W.std.180m.mg.map.jpg	180	589	670	3264
+Unnamed Seamount -- Multibeam bathymetry (3265)		SMNT-054S-1740W	Regional	Multibeam bathymetry	Map:Grid	SMNT-054S-1740W.std.180m.mb.map.jpg	180	797	877	3265
+Unnamed Seamount -- Predicted satellite bathymetry (3266)		SMNT-054S-1740W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-054S-1740W.std.180m.ss.map.jpg	180	589	670	3266
+Unnamed Seamount -- Residual bathymetry (3267)		SMNT-054S-1740W	Regional	Residual bathymetry	Map:Grid	SMNT-054S-1740W.std.180m.rs.map.jpg	180	589	670	3267
+Carondelet Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-056S-1739W	SMNT-056S-1739W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-056S-1739W.std.180m.mg.map.jpg	180	589	670	3270
+Carondelet Seamount -- Multibeam bathymetry	SMNT-056S-1739W	SMNT-056S-1739W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-056S-1739W.std.180m.mb.map.jpg	180	797	877	3271
+Carondelet Seamount -- Predicted satellite bathymetry	SMNT-056S-1739W	SMNT-056S-1739W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-056S-1739W.std.180m.ss.map.jpg	180	589	670	3272
+Carondelet Seamount -- Residual bathymetry	SMNT-056S-1739W	SMNT-056S-1739W	Seamount	Residual bathymetry	Map:Grid	SMNT-056S-1739W.std.180m.rs.map.jpg	180	589	670	3273
+Fautasi Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-058S-1741W	SMNT-058S-1741W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-058S-1741W.std.180m.mg.map.jpg	180	589	670	3276
+Fautasi Seamount -- Multibeam bathymetry	SMNT-058S-1741W	SMNT-058S-1741W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-058S-1741W.std.180m.mb.map.jpg	180	797	877	3277
+Fautasi Seamount -- Predicted satellite bathymetry	SMNT-058S-1741W	SMNT-058S-1741W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-058S-1741W.std.180m.ss.map.jpg	180	589	670	3278
+Fautasi Seamount -- Residual bathymetry	SMNT-058S-1741W	SMNT-058S-1741W	Seamount	Residual bathymetry	Map:Grid	SMNT-058S-1741W.std.180m.rs.map.jpg	180	589	670	3279
+Tanoa Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-060S-1738W	SMNT-060S-1738W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-060S-1738W.std.180m.mg.map.jpg	180	589	670	3282
+Tanoa Seamount -- Multibeam bathymetry	SMNT-060S-1738W	SMNT-060S-1738W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-060S-1738W.std.180m.mb.map.jpg	180	797	877	3283
+Tanoa Seamount -- Predicted satellite bathymetry	SMNT-060S-1738W	SMNT-060S-1738W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-060S-1738W.std.180m.ss.map.jpg	180	589	670	3284
+Tanoa Seamount -- Residual bathymetry	SMNT-060S-1738W	SMNT-060S-1738W	Seamount	Residual bathymetry	Map:Grid	SMNT-060S-1738W.std.180m.rs.map.jpg	180	589	670	3285
+Tau Tau Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-062S-1737W	SMNT-062S-1737W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-062S-1737W.std.180m.mg.map.jpg	180	589	670	3288
+Tau Tau Seamount -- Multibeam bathymetry	SMNT-062S-1737W	SMNT-062S-1737W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-062S-1737W.std.180m.mb.map.jpg	180	797	877	3289
+Tau Tau Seamount -- Predicted satellite bathymetry	SMNT-062S-1737W	SMNT-062S-1737W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-062S-1737W.std.180m.ss.map.jpg	180	589	670	3290
+Tau Tau Seamount -- Residual bathymetry	SMNT-062S-1737W	SMNT-062S-1737W	Seamount	Residual bathymetry	Map:Grid	SMNT-062S-1737W.std.180m.rs.map.jpg	180	589	670	3291
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (3294)		SMNT-065S-1736W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-065S-1736W.std.180m.mg.map.jpg	180	693	773	3294
+Unnamed Seamount -- Multibeam bathymetry (3295)		SMNT-065S-1736W	Regional	Multibeam bathymetry	Map:Grid	SMNT-065S-1736W.std.180m.mb.map.jpg	180	952	1033	3295
+Unnamed Seamount -- Predicted satellite bathymetry (3296)		SMNT-065S-1736W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-065S-1736W.std.180m.ss.map.jpg	180	693	773	3296
+Unnamed Seamount -- Residual bathymetry (3297)		SMNT-065S-1736W	Regional	Residual bathymetry	Map:Grid	SMNT-065S-1736W.std.180m.rs.map.jpg	180	693	773	3297
+Matai Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-067S-1734W	SMNT-067S-1734W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-067S-1734W.std.180m.mg.map.jpg	180	589	670	3300
+Matai Seamount -- Multibeam bathymetry	SMNT-067S-1734W	SMNT-067S-1734W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-067S-1734W.std.180m.mb.map.jpg	180	797	877	3301
+Matai Seamount -- Predicted satellite bathymetry	SMNT-067S-1734W	SMNT-067S-1734W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-067S-1734W.std.180m.ss.map.jpg	180	589	670	3302
+Matai Seamount -- Residual bathymetry	SMNT-067S-1734W	SMNT-067S-1734W	Seamount	Residual bathymetry	Map:Grid	SMNT-067S-1734W.std.180m.rs.map.jpg	180	589	670	3303
+Ula Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-069S-1737W	SMNT-069S-1737W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-069S-1737W.std.180m.mg.map.jpg	180	589	670	3306
+Ula Seamount -- Multibeam bathymetry	SMNT-069S-1737W	SMNT-069S-1737W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-069S-1737W.std.180m.mb.map.jpg	180	797	877	3307
+Ula Seamount -- Predicted satellite bathymetry	SMNT-069S-1737W	SMNT-069S-1737W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-069S-1737W.std.180m.ss.map.jpg	180	589	670	3308
+Ula Seamount -- Residual bathymetry	SMNT-069S-1737W	SMNT-069S-1737W	Seamount	Residual bathymetry	Map:Grid	SMNT-069S-1737W.std.180m.rs.map.jpg	180	589	670	3309
+Pao Pao Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-072S-1736W	SMNT-072S-1736W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-072S-1736W.std.180m.mg.map.jpg	180	641	721	3312
+Pao Pao Seamount -- Multibeam bathymetry	SMNT-072S-1736W	SMNT-072S-1736W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-072S-1736W.std.180m.mb.map.jpg	180	875	955	3313
+Pao Pao Seamount -- Predicted satellite bathymetry	SMNT-072S-1736W	SMNT-072S-1736W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-072S-1736W.std.180m.ss.map.jpg	180	641	721	3314
+Pao Pao Seamount -- Residual bathymetry	SMNT-072S-1736W	SMNT-072S-1736W	Seamount	Residual bathymetry	Map:Grid	SMNT-072S-1736W.std.180m.rs.map.jpg	180	641	721	3315
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry		SMNT-073S-1739W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-073S-1739W.std.180m.mg.map.jpg	180	589	670	3318
+Unnamed Guyot -- Multibeam bathymetry		SMNT-073S-1739W	Regional	Multibeam bathymetry	Map:Grid	SMNT-073S-1739W.std.180m.mb.map.jpg	180	797	877	3319
+Unnamed Guyot -- Predicted satellite bathymetry		SMNT-073S-1739W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-073S-1739W.std.180m.ss.map.jpg	180	589	670	3320
+Unnamed Guyot -- Residual bathymetry		SMNT-073S-1739W	Regional	Residual bathymetry	Map:Grid	SMNT-073S-1739W.std.180m.rs.map.jpg	180	589	670	3321
+Umu Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-077S-1733W	SMNT-077S-1733W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-077S-1733W.std.180m.mg.map.jpg	180	589	670	3324
+Umu Seamount -- Multibeam bathymetry	SMNT-077S-1733W	SMNT-077S-1733W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-077S-1733W.std.180m.mb.map.jpg	180	797	877	3325
+Umu Seamount -- Predicted satellite bathymetry	SMNT-077S-1733W	SMNT-077S-1733W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-077S-1733W.std.180m.ss.map.jpg	180	589	670	3326
+Umu Seamount -- Residual bathymetry	SMNT-077S-1733W	SMNT-077S-1733W	Seamount	Residual bathymetry	Map:Grid	SMNT-077S-1733W.std.180m.rs.map.jpg	180	589	670	3327
+Pogisa Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-082S-1727W	SMNT-082S-1727W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-082S-1727W.std.180m.mg.map.jpg	180	589	670	3330
+Pogisa Seamount -- Multibeam bathymetry	SMNT-082S-1727W	SMNT-082S-1727W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-082S-1727W.std.180m.mb.map.jpg	180	797	877	3331
+Pogisa Seamount -- Predicted satellite bathymetry	SMNT-082S-1727W	SMNT-082S-1727W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-082S-1727W.std.180m.ss.map.jpg	180	589	670	3332
+Pogisa Seamount -- Residual bathymetry	SMNT-082S-1727W	SMNT-082S-1727W	Seamount	Residual bathymetry	Map:Grid	SMNT-082S-1727W.std.180m.rs.map.jpg	180	589	670	3333
+Ufiata Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-082S-1729W	SMNT-082S-1729W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-082S-1729W.std.180m.mg.map.jpg	180	693	773	3336
+Ufiata Seamount -- Multibeam bathymetry	SMNT-082S-1729W	SMNT-082S-1729W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-082S-1729W.std.180m.mb.map.jpg	180	952	1033	3337
+Ufiata Seamount -- Predicted satellite bathymetry	SMNT-082S-1729W	SMNT-082S-1729W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-082S-1729W.std.180m.ss.map.jpg	180	693	773	3338
+Ufiata Seamount -- Residual bathymetry	SMNT-082S-1729W	SMNT-082S-1729W	Seamount	Residual bathymetry	Map:Grid	SMNT-082S-1729W.std.180m.rs.map.jpg	180	693	773	3339
+Atafu Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-086S-1725W	SMNT-086S-1725W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-086S-1725W.std.180m.mg.map.jpg	180	693	773	3342
+Atafu Atoll -- Multibeam bathymetry	SMNT-086S-1725W	SMNT-086S-1725W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-086S-1725W.std.180m.mb.map.jpg	180	952	1033	3343
+Atafu Atoll -- Predicted satellite bathymetry	SMNT-086S-1725W	SMNT-086S-1725W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-086S-1725W.std.180m.ss.map.jpg	180	693	773	3344
+Atafu Atoll -- Residual bathymetry	SMNT-086S-1725W	SMNT-086S-1725W	Seamount	Residual bathymetry	Map:Grid	SMNT-086S-1725W.std.180m.rs.map.jpg	180	693	773	3345
+Nukunono Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-092S-1718W	SMNT-092S-1718W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-092S-1718W.std.180m.mg.map.jpg	180	693	773	3348
+Nukunono Atoll -- Multibeam bathymetry	SMNT-092S-1718W	SMNT-092S-1718W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-092S-1718W.std.180m.mb.map.jpg	180	952	1033	3349
+Nukunono Atoll -- Predicted satellite bathymetry	SMNT-092S-1718W	SMNT-092S-1718W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-092S-1718W.std.180m.ss.map.jpg	180	693	773	3350
+Nukunono Atoll -- Residual bathymetry	SMNT-092S-1718W	SMNT-092S-1718W	Seamount	Residual bathymetry	Map:Grid	SMNT-092S-1718W.std.180m.rs.map.jpg	180	693	773	3351
+Fakaofu Atoll -- Multibeam data merged with predicted satellite bathymetry	SMNT-094S-1712W	SMNT-094S-1712W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-094S-1712W.std.180m.mg.map.jpg	180	693	773	3354
+Fakaofu Atoll -- Multibeam bathymetry	SMNT-094S-1712W	SMNT-094S-1712W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-094S-1712W.std.180m.mb.map.jpg	180	952	1033	3355
+Fakaofu Atoll -- Predicted satellite bathymetry	SMNT-094S-1712W	SMNT-094S-1712W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-094S-1712W.std.180m.ss.map.jpg	180	693	773	3356
+Fakaofu Atoll -- Residual bathymetry	SMNT-094S-1712W	SMNT-094S-1712W	Seamount	Residual bathymetry	Map:Grid	SMNT-094S-1712W.std.180m.rs.map.jpg	180	693	773	3357
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (3360)		SMNT-097S-1687W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-097S-1687W.std.180m.mg.map.jpg	180	641	721	3360
+Unnamed Seamount -- Multibeam bathymetry (3361)		SMNT-097S-1687W	Regional	Multibeam bathymetry	Map:Grid	SMNT-097S-1687W.std.180m.mb.map.jpg	180	875	955	3361
+Unnamed Seamount -- Predicted satellite bathymetry (3362)		SMNT-097S-1687W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-097S-1687W.std.180m.ss.map.jpg	180	641	721	3362
+Unnamed Seamount -- Residual bathymetry (3363)		SMNT-097S-1687W	Regional	Residual bathymetry	Map:Grid	SMNT-097S-1687W.std.180m.rs.map.jpg	180	641	721	3363
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (3366)		SMNT-097S-1694W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-097S-1694W.std.180m.mg.map.jpg	180	589	670	3366
+Unnamed Seamount -- Multibeam bathymetry (3367)		SMNT-097S-1694W	Regional	Multibeam bathymetry	Map:Grid	SMNT-097S-1694W.std.180m.mb.map.jpg	180	797	877	3367
+Unnamed Seamount -- Predicted satellite bathymetry (3368)		SMNT-097S-1694W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-097S-1694W.std.180m.ss.map.jpg	180	589	670	3368
+Unnamed Seamount -- Residual bathymetry (3369)		SMNT-097S-1694W	Regional	Residual bathymetry	Map:Grid	SMNT-097S-1694W.std.180m.rs.map.jpg	180	589	670	3369
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (3372)		SMNT-097S-1701W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-097S-1701W.std.180m.mg.map.jpg	180	693	773	3372
+Unnamed Seamount -- Multibeam bathymetry (3373)		SMNT-097S-1701W	Regional	Multibeam bathymetry	Map:Grid	SMNT-097S-1701W.std.180m.mb.map.jpg	180	952	1033	3373
+Unnamed Seamount -- Predicted satellite bathymetry (3374)		SMNT-097S-1701W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-097S-1701W.std.180m.ss.map.jpg	180	693	773	3374
+Unnamed Seamount -- Residual bathymetry (3375)		SMNT-097S-1701W	Regional	Residual bathymetry	Map:Grid	SMNT-097S-1701W.std.180m.rs.map.jpg	180	693	773	3375
+Tokelau Seamounts -- Multibeam data merged with predicted satellite bathymetry		SMNT-002N-1765W:SMNT-004S-1761W:SMNT-006S-1762W:SMNT-008N-1766W:SMNT-009S-1763W:SMNT-010S-1761W:SMNT-013S-1761W:SMNT-016S-1759W:SMNT-017S-1752W:SMNT-026S-1754W:SMNT-027S-1751W:SMNT-034S-1747W:SMNT-037S-1746W:SMNT-039S-1733W:SMNT-042S-1748W:SMNT-047S-1745W:SMNT-054S-1740W:SMNT-056S-1739W:SMNT-058S-1741W:SMNT-060S-1738W:SMNT-062S-1737W:SMNT-065S-1736W:SMNT-067S-1734W:SMNT-069S-1737W:SMNT-072S-1736W:SMNT-073S-1739W:SMNT-077S-1733W:SMNT-082S-1727W:SMNT-082S-1729W:SMNT-086S-1725W:SMNT-092S-1718W:SMNT-094S-1712W:SMNT-097S-1687W:SMNT-097S-1694W:SMNT-097S-1701W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-026S-1736W.std.1020m.mg.map.jpg	1020	2004	2414	3378
+Tokelau Seamounts -- Multibeam bathymetry		SMNT-002N-1765W:SMNT-004S-1761W:SMNT-006S-1762W:SMNT-008N-1766W:SMNT-009S-1763W:SMNT-010S-1761W:SMNT-013S-1761W:SMNT-016S-1759W:SMNT-017S-1752W:SMNT-026S-1754W:SMNT-027S-1751W:SMNT-034S-1747W:SMNT-037S-1746W:SMNT-039S-1733W:SMNT-042S-1748W:SMNT-047S-1745W:SMNT-054S-1740W:SMNT-056S-1739W:SMNT-058S-1741W:SMNT-060S-1738W:SMNT-062S-1737W:SMNT-065S-1736W:SMNT-067S-1734W:SMNT-069S-1737W:SMNT-072S-1736W:SMNT-073S-1739W:SMNT-077S-1733W:SMNT-082S-1727W:SMNT-082S-1729W:SMNT-086S-1725W:SMNT-092S-1718W:SMNT-094S-1712W:SMNT-097S-1687W:SMNT-097S-1694W:SMNT-097S-1701W	Regional	Multibeam bathymetry	Map:Grid	REGION-026S-1736W.std.1020m.mb.map.jpg	1020	2004	2414	3379
+Tokelau Seamounts -- Predicted satellite bathymetry		SMNT-002N-1765W:SMNT-004S-1761W:SMNT-006S-1762W:SMNT-008N-1766W:SMNT-009S-1763W:SMNT-010S-1761W:SMNT-013S-1761W:SMNT-016S-1759W:SMNT-017S-1752W:SMNT-026S-1754W:SMNT-027S-1751W:SMNT-034S-1747W:SMNT-037S-1746W:SMNT-039S-1733W:SMNT-042S-1748W:SMNT-047S-1745W:SMNT-054S-1740W:SMNT-056S-1739W:SMNT-058S-1741W:SMNT-060S-1738W:SMNT-062S-1737W:SMNT-065S-1736W:SMNT-067S-1734W:SMNT-069S-1737W:SMNT-072S-1736W:SMNT-073S-1739W:SMNT-077S-1733W:SMNT-082S-1727W:SMNT-082S-1729W:SMNT-086S-1725W:SMNT-092S-1718W:SMNT-094S-1712W:SMNT-097S-1687W:SMNT-097S-1694W:SMNT-097S-1701W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-026S-1736W.std.1020m.ss.map.jpg	1020	2004	2414	3380
+Tokelau Seamounts -- Residual bathymetry		SMNT-002N-1765W:SMNT-004S-1761W:SMNT-006S-1762W:SMNT-008N-1766W:SMNT-009S-1763W:SMNT-010S-1761W:SMNT-013S-1761W:SMNT-016S-1759W:SMNT-017S-1752W:SMNT-026S-1754W:SMNT-027S-1751W:SMNT-034S-1747W:SMNT-037S-1746W:SMNT-039S-1733W:SMNT-042S-1748W:SMNT-047S-1745W:SMNT-054S-1740W:SMNT-056S-1739W:SMNT-058S-1741W:SMNT-060S-1738W:SMNT-062S-1737W:SMNT-065S-1736W:SMNT-067S-1734W:SMNT-069S-1737W:SMNT-072S-1736W:SMNT-073S-1739W:SMNT-077S-1733W:SMNT-082S-1727W:SMNT-082S-1729W:SMNT-086S-1725W:SMNT-092S-1718W:SMNT-094S-1712W:SMNT-097S-1687W:SMNT-097S-1694W:SMNT-097S-1701W	Regional	Residual bathymetry	Map:Grid	REGION-026S-1736W.std.1020m.rs.map.jpg	1020	2004	2414	3381
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-26-40 -- graphs, spreadsheet	SMNT-008N-1766W	458	https://earthref.org/ERDA/458/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-26-33 -- graphs, spreadsheet	SMNT-008N-1766W	459	https://earthref.org/ERDA/459/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-27-18 -- graphs, spreadsheet	SMNT-008N-1766W	460	https://earthref.org/ERDA/460/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-27-24 -- graphs, spreadsheet	SMNT-008N-1766W	461	https://earthref.org/ERDA/461/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-28-10 -- graphs, spreadsheet	SMNT-008N-1766W	462	https://earthref.org/ERDA/462/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-34-1 -- graphs, spreadsheet	SMNT-010S-1761W	463	https://earthref.org/ERDA/463/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-34-2 -- graphs, spreadsheet	SMNT-010S-1761W	464	https://earthref.org/ERDA/464/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-34-7 -- graphs, spreadsheet	SMNT-010S-1761W	466	https://earthref.org/ERDA/466/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-39-17 -- graphs, spreadsheet	SMNT-026S-1754W	467	https://earthref.org/ERDA/467/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-39-38 -- graphs, spreadsheet	SMNT-026S-1754W	468	https://earthref.org/ERDA/468/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-39-33 -- graphs, spreadsheet	SMNT-026S-1754W	469	https://earthref.org/ERDA/469/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-40-1 -- graphs, spreadsheet	SMNT-026S-1754W	470	https://earthref.org/ERDA/470/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-40-9 -- graphs, spreadsheet	SMNT-026S-1754W	471	https://earthref.org/ERDA/471/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-40-36 -- graphs, spreadsheet	SMNT-026S-1754W	472	https://earthref.org/ERDA/472/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-41-1 -- graphs, spreadsheet	SMNT-027S-1751W	473	https://earthref.org/ERDA/473/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-41-9 -- graphs, spreadsheet	SMNT-027S-1751W	474	https://earthref.org/ERDA/474/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-48-19 -- graphs, spreadsheet	SMNT-067S-1734W	475	https://earthref.org/ERDA/475/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-48-27 -- graphs, spreadsheet	SMNT-067S-1734W	476	https://earthref.org/ERDA/476/
+High resolution 40Ar/39Ar ages for the Tokelau seamount trail: sample AVON2-57-1 -- graphs, spreadsheet	SMNT-082S-1729W	477	https://earthref.org/ERDA/477/
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2720	SMNT-086S-1725W	Robertson, E.I. (1987). Gravity survey on Atafu Atoll, Tokelau Islands, Southwest Pacific Ocean. New Zealand Journal of Geology and Geophysics 30(2): 211-212.	https://earthref.org/ERR/2720/

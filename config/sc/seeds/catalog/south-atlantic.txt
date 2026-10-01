@@ -1,0 +1,13 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: South Atlantic (2 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	lat	lon	region	height	sc_id
+SMNT-063N-0226W	Seamount	Bank 284	Seamount	6.3	-22.6	South Atlantic	0	1752
+SMNT-327S-0153W	Seamount	Unnamed Shirshov 1	Seamount	-32.69	-15.34	South Atlantic	0	1749
+>>>>>>>>>>
+tab delimited	maps
+map	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Unnamed Seamount -- Predicted satellite bathymetry (2428)	SMNT-063N-0226W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-063N-0226W.std.180m.ss.map.jpg	180	693	773	2428
+Unnamed Seamount -- Predicted satellite bathymetry (2618)	SMNT-327S-0153W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-327S-0153W.std.180m.ss.map.jpg	180	901	981	2618

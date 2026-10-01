@@ -1,0 +1,135 @@
+tab delimited	contribution
+id	version	data_model_version	description
+43	1	1.0	Seamount Catalog example: Samoan Hotspot Trail
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	volcanic_activity	age	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	description	sc_id
+SMNT-133S-1722W	Taumatau Seamount		Seamount	Very Small	A1	-13.2565	-172.25083	Samoan Hotspot Trail	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct		2220	820	3040	869	1.23	0.07	0.87	0.08	1	32	Taumatau Seamount is located at 13° 15.4' S, 172° 15' W and is part of the Samoan Hotspot Trail on the Pacific Plate. The seamount is 2220 m high with the top at -820 m and the ocean bottom at -3040 m. It is very small with a volume of 869 km3. The seamount is relatively round with smooth edges and little elongation or irregularity. The azimuth is at approximately 75°.	2062
+SMNT-133S-1762W	Wallis Guyot		Guyot	Intermediate	B1	-13.3245	-176.19083	Samoan Hotspot Trail	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	1	3510	0	3510	8495	1.39	0.06	1.25	0.04	1	25	Wallis Guyot is located at 13° 19.4'S, 176° 11.4'W and is part of the Samoan Hotspot Trail on the Pacific Plate. It is 3510 m high with the top at sealevel and ocean bottom at -3510 m. The seamount is intermediate in size with a volume of 8494 km3. It is fairly round with little elongation and an azimuth of approximately 156°. The edges of the seamount are slightly irregular. Wallis has a well-developed barrier reef around it.	2080
+SMNT-139S-1718W	Upolu Island		Island	Very Large	C3	-13.90033	-171.8345	Samoan Hotspot Trail	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct		3865	0	3865	30673	2.43	0.10	1.46	0.08	1	47	Upolu Island is located at 13° 54' S, 171° 50.1' W and is part of the Samoan Hotspot Trail on the Pacific Plate. The Island is 3865 m tall from sealevel to the ocean bottom at -3865 m. It is very large with a volume of 30673 km3. It is moderately elongated in an east west direction with an azimuth of approximately 105°. The edges of the seamount are moderately irregular.	2078
+SMNT-142S-1691W	Vailulu'u Seamount	Rockne:Faafafina	Seamount	Small	B2	-14.216	-169.05767	Samoan Hotspot Trail	Pacific Plate	Hotspot Trail		Hydrothermally Active		4089	700	4789	3613	1.75	0.03	1.22	0.03	1	95	Vailulu'u Seamount is located at 14° 13.0' S, 169° 3.5' W and is part of the Samoan Hotspot region on the Pacific Plate. It is 4089 m high with the top at -700 m and the ocean bottom at -4789 m. The seamount is fairly small with a volume of 3613 km3. It is slightly elongated in an east, west direction with an azimuth of approximately 85°. The edges are slightly irregular and multiple rifts are radiating out from a single summit. Vailulu'u is connected to another seamount by a saddle to the west.	2079
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-133S-1722W	1708	69.6	322.7	24.5	18.9	1.296	62.0	64.5	0.961
+SMNT-133S-1722W	1930	74.7	401.6	26.9	21.4	1.254	60.5	71.7	0.843
+SMNT-133S-1722W	2152	79.3	461.7	27.7	24.0	1.154	61.1	76.5	0.799
+SMNT-133S-1762W	1404	159.4	907.2	45.3	34.3	1.320	130.4	108.3	1.204
+SMNT-133S-1762W	1755	157.1	1220.3	53.9	37.6	1.433	162.4	126.8	1.280
+SMNT-133S-1762W	2106	154.0	1561.1	59.3	41.9	1.415	182.1	143.2	1.271
+SMNT-139S-1718W	1546	105.9	2798.4	133.7	54.6	2.448	332.0	215.6	1.540
+SMNT-139S-1718W	1933	105.4	3399.2	145.7	62.7	2.325	343.6	234.1	1.468
+SMNT-139S-1718W	2319	105.2	4132.0	170.4	67.5	2.524	363.1	264.3	1.374
+SMNT-142S-1691W	2336	83.5	96.8	15.7	9.2	1.712	44.8	36.8	1.218
+SMNT-142S-1691W	2745	85.2	165.3	20.9	11.8	1.772	60.6	48.4	1.252
+SMNT-142S-1691W	3153	85.3	260.2	26.0	14.7	1.768	72.8	60.7	1.201
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Taumatau Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-133S-1722W	SMNT-133S-1722W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-133S-1722W.std.180m.mg.map.jpg	180	693	773	1696
+Taumatau Seamount -- Multibeam bathymetry	SMNT-133S-1722W	SMNT-133S-1722W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-133S-1722W.std.180m.mb.map.jpg	180	952	1033	1697
+Taumatau Seamount -- Predicted satellite bathymetry	SMNT-133S-1722W	SMNT-133S-1722W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-133S-1722W.std.180m.ss.map.jpg	180	693	773	1698
+Taumatau Seamount -- Residual bathymetry	SMNT-133S-1722W	SMNT-133S-1722W	Seamount	Residual bathymetry	Map:Grid	SMNT-133S-1722W.std.180m.rs.map.jpg	180	693	773	1699
+Wallis Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-133S-1762W	SMNT-133S-1762W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-133S-1762W.std.180m.mg.map.jpg	180	1108	1188	1702
+Wallis Guyot -- Multibeam bathymetry	SMNT-133S-1762W	SMNT-133S-1762W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-133S-1762W.std.180m.mb.map.jpg	180	1575	1655	1703
+Wallis Guyot -- Predicted satellite bathymetry	SMNT-133S-1762W	SMNT-133S-1762W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-133S-1762W.std.180m.ss.map.jpg	180	1108	1188	1704
+Wallis Guyot -- Residual bathymetry	SMNT-133S-1762W	SMNT-133S-1762W	Seamount	Residual bathymetry	Map:Grid	SMNT-133S-1762W.std.180m.rs.map.jpg	180	1108	1188	1705
+Upolu Island -- Multibeam data merged with predicted satellite bathymetry	SMNT-139S-1718W	SMNT-139S-1718W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-139S-1718W.std.180m.mg.map.jpg	180	1212	1292	1738
+Upolu Island -- Multibeam bathymetry	SMNT-139S-1718W	SMNT-139S-1718W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-139S-1718W.std.180m.mb.map.jpg	180	1730	1810	1739
+Upolu Island -- Predicted satellite bathymetry	SMNT-139S-1718W	SMNT-139S-1718W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-139S-1718W.std.180m.ss.map.jpg	180	1212	1292	1740
+Upolu Island -- Residual bathymetry	SMNT-139S-1718W	SMNT-139S-1718W	Seamount	Residual bathymetry	Map:Grid	SMNT-139S-1718W.std.180m.rs.map.jpg	180	1212	1292	1741
+Vailulu'u Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-142S-1691W	SMNT-142S-1691W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-142S-1691W.std.180m.mg.map.jpg	180	641	721	1750
+Vailulu'u Seamount -- Multibeam bathymetry	SMNT-142S-1691W	SMNT-142S-1691W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-142S-1691W.std.180m.mb.map.jpg	180	875	955	1751
+Vailulu'u Seamount -- Predicted satellite bathymetry	SMNT-142S-1691W	SMNT-142S-1691W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-142S-1691W.std.180m.ss.map.jpg	180	641	721	1752
+Vailulu'u Seamount -- Residual bathymetry	SMNT-142S-1691W	SMNT-142S-1691W	Seamount	Residual bathymetry	Map:Grid	SMNT-142S-1691W.std.180m.rs.map.jpg	180	641	721	1753
+American Samoa -- Multibeam data merged with predicted satellite bathymetry		SMNT-139S-1718W:SMNT-142S-1691W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-143S-1700W.std.210m.mg.map.jpg	210	1687	1205	1820
+American Samoa -- Multibeam bathymetry		SMNT-139S-1718W:SMNT-142S-1691W	Regional	Multibeam bathymetry	Map:Grid	REGION-143S-1700W.std.210m.mb.map.jpg	210	1687	1205	1821
+American Samoa -- Predicted satellite bathymetry		SMNT-139S-1718W:SMNT-142S-1691W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-143S-1700W.std.210m.ss.map.jpg	210	1687	1205	1822
+American Samoa -- Residual bathymetry		SMNT-139S-1718W:SMNT-142S-1691W	Regional	Residual bathymetry	Map:Grid	REGION-143S-1700W.std.210m.rs.map.jpg	210	1687	1205	1823
+Samoan Hotspot Trail -- Multibeam bathymetry		SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W:SMNT-142S-1691W	Regional	Multibeam bathymetry	Map:Grid	REGION-130S-1763W.std.1380m.mb.map.jpg	1380	5485	2419	1825
+Samoan Hotspot Trail -- Predicted satellite bathymetry		SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W:SMNT-142S-1691W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-130S-1763W.std.1380m.ss.map.jpg	1380	5485	2419	1826
+Samoan Hotspot Trail -- Tile 1 -- Multibeam data merged with predicted satellite bathymetry		SMNT-133S-1722W:SMNT-139S-1718W:SMNT-142S-1691W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-140S-1700W.std.360m.mg.map.jpg	360	2767	1983	1828
+Samoan Hotspot Trail -- Tile 1 -- Multibeam bathymetry		SMNT-133S-1722W:SMNT-139S-1718W:SMNT-142S-1691W	Regional	Multibeam bathymetry	Map:Grid	REGION-140S-1700W.std.360m.mb.map.jpg	360	2767	1983	1829
+Samoan Hotspot Trail -- Tile 1 -- Predicted satellite bathymetry		SMNT-133S-1722W:SMNT-139S-1718W:SMNT-142S-1691W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-140S-1700W.std.360m.ss.map.jpg	360	2767	1983	1830
+Samoan Hotspot Trail -- Tile 1 -- Residual bathymetry		SMNT-133S-1722W:SMNT-139S-1718W:SMNT-142S-1691W	Regional	Residual bathymetry	Map:Grid	REGION-140S-1700W.std.360m.rs.map.jpg	360	2767	1983	1831
+Samoan Hotspot Trail -- Tile 2 -- Multibeam data merged with predicted satellite bathymetry		SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-130S-1750W.std.360m.mg.map.jpg	360	2767	1983	1832
+Samoan Hotspot Trail -- Tile 2 -- Multibeam bathymetry		SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W	Regional	Multibeam bathymetry	Map:Grid	REGION-130S-1750W.std.360m.mb.map.jpg	360	2767	1983	1833
+Samoan Hotspot Trail -- Tile 2 -- Predicted satellite bathymetry		SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-130S-1750W.std.360m.ss.map.jpg	360	2767	1983	1834
+Samoan Hotspot Trail -- Tile 2 -- Residual bathymetry		SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W	Regional	Residual bathymetry	Map:Grid	REGION-130S-1750W.std.360m.rs.map.jpg	360	2767	1983	1835
+Samoan Hotspot Trail -- Tile 3 -- Multibeam data merged with predicted satellite bathymetry		SMNT-133S-1762W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-120S-1770W.std.360m.mg.map.jpg	360	2767	1983	1836
+Samoan Hotspot Trail -- Tile 3 -- Multibeam bathymetry		SMNT-133S-1762W	Regional	Multibeam bathymetry	Map:Grid	REGION-120S-1770W.std.360m.mb.map.jpg	360	2767	1983	1837
+Samoan Hotspot Trail -- Tile 3 -- Predicted satellite bathymetry		SMNT-133S-1762W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-120S-1770W.std.360m.ss.map.jpg	360	2767	1983	1838
+Samoan Hotspot Trail -- Tile 3 -- Residual bathymetry		SMNT-133S-1762W	Regional	Residual bathymetry	Map:Grid	REGION-120S-1770W.std.360m.rs.map.jpg	360	2767	1983	1839
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+DeepFreeze 2000 hydrocast data for Vailulu'u volcano -- SAM01 -- graphs, spreadsheet	SMNT-142S-1691W	150	https://earthref.org/ERDA/150/
+DeepFreeze 2000 hydrocast data for Vailulu'u volcano -- SAM02 -- graphs, spreadsheet	SMNT-142S-1691W	151	https://earthref.org/ERDA/151/
+DeepFreeze 2000 hydrocast data for Vailulu'u volcano -- SAM03 -- graphs, spreadsheet	SMNT-142S-1691W	152	https://earthref.org/ERDA/152/
+DeepFreeze 2000 hydrocast data for Vailulu'u volcano -- SAM04 -- graphs, spreadsheet	SMNT-142S-1691W	153	https://earthref.org/ERDA/153/
+DeepFreeze 2000 hydrocast data for Vailulu'u volcano -- SAM05 -- graphs, spreadsheet	SMNT-142S-1691W	154	https://earthref.org/ERDA/154/
+DeepFreeze 2000 hydrocast data for Vailulu'u volcano -- graphs, spreadsheet	SMNT-142S-1691W	155	https://earthref.org/ERDA/155/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM06 -- graphs, spreadsheet	SMNT-142S-1691W	156	https://earthref.org/ERDA/156/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM07 -- graphs, spreadsheet	SMNT-142S-1691W	157	https://earthref.org/ERDA/157/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM08 -- graphs, spreadsheet	SMNT-142S-1691W	158	https://earthref.org/ERDA/158/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM09 -- graphs, spreadsheet	SMNT-142S-1691W	159	https://earthref.org/ERDA/159/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM10 -- graphs, spreadsheet	SMNT-142S-1691W	160	https://earthref.org/ERDA/160/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM11 -- graphs, spreadsheet	SMNT-142S-1691W	161	https://earthref.org/ERDA/161/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM12 -- graphs, spreadsheet	SMNT-142S-1691W	162	https://earthref.org/ERDA/162/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM13 -- graphs, spreadsheet	SMNT-142S-1691W	163	https://earthref.org/ERDA/163/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM14 -- graphs, spreadsheet	SMNT-142S-1691W	164	https://earthref.org/ERDA/164/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM15 -- graphs, spreadsheet	SMNT-142S-1691W	165	https://earthref.org/ERDA/165/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM16 -- graphs, spreadsheet	SMNT-142S-1691W	166	https://earthref.org/ERDA/166/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM17 -- graphs, spreadsheet	SMNT-142S-1691W	167	https://earthref.org/ERDA/167/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM18 -- graphs, spreadsheet	SMNT-142S-1691W	168	https://earthref.org/ERDA/168/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM19 -- graphs, spreadsheet	SMNT-142S-1691W	169	https://earthref.org/ERDA/169/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM20 -- graphs, spreadsheet	SMNT-142S-1691W	170	https://earthref.org/ERDA/170/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM21 -- graphs, spreadsheet	SMNT-142S-1691W	171	https://earthref.org/ERDA/171/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM22 -- graphs, spreadsheet	SMNT-142S-1691W	172	https://earthref.org/ERDA/172/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM23 -- graphs, spreadsheet	SMNT-142S-1691W	173	https://earthref.org/ERDA/173/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM24 -- graphs, spreadsheet	SMNT-142S-1691W	174	https://earthref.org/ERDA/174/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM25 -- graphs, spreadsheet	SMNT-142S-1691W	175	https://earthref.org/ERDA/175/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM26 -- graphs, spreadsheet	SMNT-142S-1691W	176	https://earthref.org/ERDA/176/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM27 -- graphs, spreadsheet	SMNT-142S-1691W	177	https://earthref.org/ERDA/177/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM28 -- graphs, spreadsheet	SMNT-142S-1691W	178	https://earthref.org/ERDA/178/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- SAM29 -- graphs, spreadsheet	SMNT-142S-1691W	179	https://earthref.org/ERDA/179/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- NE Crater -- graphs, spreadsheet	SMNT-142S-1691W	180	https://earthref.org/ERDA/180/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- NW Crater -- graphs, spreadsheet	SMNT-142S-1691W	181	https://earthref.org/ERDA/181/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- Outside Crater -- graphs, spreadsheet	SMNT-142S-1691W	182	https://earthref.org/ERDA/182/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- graphs, spreadsheet	SMNT-142S-1691W	183	https://earthref.org/ERDA/183/
+DeepFreeze 2001 hydrocast data for Vailulu'u volcano -- Maps -- map	SMNT-142S-1691W	184	https://earthref.org/ERDA/184/
+Vailulu'u volcano statistics -- graphs, spreadsheet	SMNT-142S-1691W	185	https://earthref.org/ERDA/185/
+Vailulu'u volcano -- temperature time series spectrum analyses -- graphs, spreadsheet, text	SMNT-142S-1691W	186	https://earthref.org/ERDA/186/
+Vailulu'u volcano -- temperature time series log spreadsheet -- graphs, spreadsheet	SMNT-142S-1691W	187	https://earthref.org/ERDA/187/
+Vailulu'u volcano -- regional bathymetric map -- map	SMNT-142S-1691W	188	https://earthref.org/ERDA/188/
+Vailulu'u volcano -- local bathymetric map -- map	SMNT-142S-1691W	189	https://earthref.org/ERDA/189/
+Vailulu'u volcano -- 3D bathymetric map -- map	SMNT-142S-1691W	190	https://earthref.org/ERDA/190/
+Vailulu'u volcano -- 3D bathymetric crater map -- map	SMNT-142S-1691W	191	https://earthref.org/ERDA/191/
+Vailulu'u volcano Mn and 3He/4He geochemistry -- graphs, spreadsheet	SMNT-142S-1691W	192	https://earthref.org/ERDA/192/
+Eel City on Nafanua Cone in the Vailulu'u Crater -- Samoan Hotspot -- movie, video excerpt	SMNT-142S-1691W	590	https://earthref.org/ERDA/590/
+Vailulu'u Crater before the birth of the Nafanua volcano -- map	SMNT-142S-1691W	654	https://earthref.org/ERDA/654/
+Vailulu'u Crater after the birth of the Nafanua volcano -- map	SMNT-142S-1691W	655	https://earthref.org/ERDA/655/
+Vailulu'u Video -- movie	SMNT-142S-1691W	657	https://earthref.org/ERDA/657/
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+521	SMNT-142S-1691W	Hart, S.R., Staudigel, H., Koppers, A.A.P., Blusztajn, J., Baker, E.T., Workman, R., Jackson, M., Hauri, E., Kurz, M., Sims, K., Fornari, D., Saal, A. and Lyons, S. (2000). Vailulu'u undersea volcano: the new Samoa. Geochemistry, Geophysics, Geosystems 1.	https://earthref.org/ERR/521/
+1992	SMNT-142S-1691W	Konter, J.G., Staudigel, H., Hart, S.R. and Shearer, P.M. (2004). Seafloor seismic monitoring of an active submarine volcano:Local seismicity at Vailulu°u Seamount, Samoa. Geochemistry, Geophysics, Geosystems 5:	https://earthref.org/ERR/1992/
+2279	SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W	Brocher, T.M. (1985). On the age progression of the seamounts west of the Samoan Islands, SW Pacific. In: Investigations of the Northern Melanesian Borderland. Brocher, T.M. (Editors), Circum-Pacific Council for Energy and Mineral Resources, Houston. 3: 173-185.	https://earthref.org/ERR/2279/
+2516	SMNT-133S-1762W	Sinton, J.M., Johnson, K.T.M. and Price, R.C. (1985). Petrology and geochemistry of volcanic rocks from the Northern Melanesian Borderland. In: Investigations of the northern Melanesian Borderland. Brocher, T.M. (Editors), Circum-Pacific Council for Energy and Mineral Resources, Houston. 3: 35-65.	https://earthref.org/ERR/2516/
+2526	SMNT-139S-1718W	Palacz, Z.A. and Saunders, A.D. (1986). Coupled trace element and isotope enrichment in the Cook-Austral-Samoa islands, Southwest Pacific. Earth and Planetary Science Letters 79(3-4): 270-280. doi: 10.1016/0012-821X(86)90185-8.	https://earthref.org/ERR/2526/
+2555	SMNT-133S-1762W	Brocher, T.M. and Holmes, R. (1985). Tectonic and geochemical framework of the Northern Melanesian Borderland; an overview of the KK820316 Leg 2 objectives and results. In: Investigations of the northern Melanesian Borderland. Brocher, T.M. (Editors), Circum-Pacific Council for Energy and Mineral Resources, Houston. 3: 1-11.	https://earthref.org/ERR/2555/
+2565	SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W	Duncan, R.A. (1985). Radiometric ages from volcanic rocks along the New Hebrides-Samoa Lineament. In: Investigations of the northern Melanesian Borderland. Brocher, T.M. (Editors), Circum-Pacific Council for Energy and Mineral Resources, Houston. 3: 67-76.	https://earthref.org/ERR/2565/
+2572	SMNT-133S-1762W	Chaproniere, G.C.H. (1985). Late Tertiary and Quaternary foraminiferal biostratigraphy and paleobathymetry of cores and dredge samples from Cruise KK820316 Leg 2. In: Investigations of the northern Melanesian Borderland. Brocher, T.M. (Editors), Circum-Pacific Council for Energy and Mineral Resources, Houston. 3: 103-122.	https://earthref.org/ERR/2572/
+2594	SMNT-133S-1722W:SMNT-139S-1718W	Wright, E. and White, W.M. (1987). The origin of Samoa; new evidence from Sr, Nd, and Pb isotopes. Earth and Planetary Science Letters 81(2-3): 151-162. doi: 10.1016/0012-821X(87)90152-X.	https://earthref.org/ERR/2594/
+2606	SMNT-133S-1722W:SMNT-139S-1718W	Hill, P.J. and Tiffin, D.L. (1993). Geology, sediment patterns, and widespread deformation on the sea floor off Western Samoa revealed by wide-swath imagery. Geo-Marine Letters 13(2): 116-125.	https://earthref.org/ERR/2606/
+2607	SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W	Natland, J.H. (1980). The progression of volcanism in the Samoan linear volcanic chain. In: The Jackson Volume. Irving, A.J. and Dungan, M.A. (Editors), Kline Geology Laboratory, Yale University, New Haven. 280-A(2): 709-735.	https://earthref.org/ERR/2607/
+2609	SMNT-133S-1722W	Farley, K.A. (1995). Rapid cycling of subducted sediments into the Samoan mantle plume. Geology 23(6): 531-534.	https://earthref.org/ERR/2609/
+2610	SMNT-133S-1722W	Keating, B.H., Helsley, C.E. and Karogodina, I. (2000). Sonar studies of submarine mass wasting and volcanic structures off Savaii Island, Samoa. In: Landslides and Tsunamis. Keating, B.H., Waythomas, C.F. and Dawson, A.G. (Editors), Birkhaeuser Verlag, Basel, Switzerland. 157(6-8): 1,285-1,313.	https://earthref.org/ERR/2610/
+2614	SMNT-133S-1722W	Newman, S., Finkel, R.C. and MacDougall, J.D. (1984). Comparison of (super 230) Th- (super 238) U disequilibrium systematics in lavas from three hot spot regions; Hawaii, Prince Edward and Samoa. Geochimica et Cosmochimica Acta 48(2): 315-324. doi: 10.1016/0016-7037(84)90253-9.	https://earthref.org/ERR/2614/
+2615	SMNT-133S-1722W	Poreda, R.J. and Farley, K.A. (1992). Rare gases in Samoan xenoliths. Earth and Planetary Science Letters 113(1-2): 129-144. doi: 10.1016/0012-821X(92)90215-H.	https://earthref.org/ERR/2615/
+2617	SMNT-133S-1762W:SMNT-139S-1718W	Clouard, V. and Bonneville, A. (2001). Ages of seamounts, islands and plateaus on the Pacific plate. 1-42.	https://earthref.org/ERR/2617/
+2618	SMNT-133S-1762W:SMNT-139S-1718W	Keating, B.H. (1987). Summary of radiometric ages from the Pacific. In: Intergovernmental Oceanographic Comission technical series. UNESCO. 32.	https://earthref.org/ERR/2618/
+2620	SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W	Hart, S.R. (2004). Collaborative research: The Samoan Hotspot, Past and Present. In: Collaborative research: The Samoan Hotspot, Past and Present. Woods Hole Oceanographic Institution, Woods Hole, MA.	https://earthref.org/ERR/2620/
+2648	SMNT-133S-1722W:SMNT-133S-1762W:SMNT-139S-1718W:SMNT-142S-1691W	Hart, S., Coetzee, M., Workman, R., Blusztajn, J., Johnson, K., Sinton, J., Steinberger, B. and Hawkins, J. (2004). Genesis of the Western Samoa seamount province: age, geochemical fingerprint and tectonics. Earth and Planetary Science Letters 227(1-2): 37-56. doi: 10.1016/j.epsl.2004.08.005.	https://earthref.org/ERR/2648/
+81551	SMNT-133S-1722W:SMNT-139S-1718W:SMNT-142S-1691W	Workman, R.K., Hart, S.R., Jackson, M., Regelous, M., Farley, K.A., Blusztajn, J., Kurz, M. and Staudigel, H. (2004). Recycled metasomatized lithosphere as the origin of the Enriched Mantle II (EM2) end-member: Evidence from the Samoan Volcanic Chain. Geochemistry Geophysics Geosystems 5: doi: 10.1029/2003GC000623. issn: 1525-2027.	https://earthref.org/ERR/81551/

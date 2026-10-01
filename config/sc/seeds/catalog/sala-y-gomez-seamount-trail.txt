@@ -1,0 +1,827 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Sala y Gomez Seamount Trail (127 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	plate_age_min	plate_age_max	age	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	description	sc_id
+SMNT-239S-0860W	Guyot		Guyot	Small	B4	-23.89367	-86.043	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	24.9	26.4		2390	1190	3580	2381	2.66	0.16	1.29	0.07	1	20	Unnamed Seamount SMNT-239S-0860W is located at 23° 53.6' S, 273° 57.4' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2390 m high with the top at -1190 m and ocean bottom at -3580 m. The seamount is fairly small with a volume of 2381 km3. It is elongated in an east west direction with an azimuth of approximately 81°. The edges of the seamount are slightly irregular.	1932
+SMNT-240S-0847W	Alberta Guyot	Nasca 5	Guyot	Small	A2	-24.029	-84.69133	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	27.2	30.2		2795	0	2795	2189	1.72	0.16	1.06	0.02	1	0	Alberta Guyot is located at 25° 1.7' S, 275° 18.5' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2795 m high with the top at sealevel and ocean bottom at -2795 m. The seamount is fairly small with a volume of 2189 km3. It is slightly elongated in an southeast, northwest direction with an azimuth of approximately 135°. The edges of the seamount are smooth with little irregularity.	1690
+SMNT-242S-0850W	Seamount		Seamount	Very Small	A1	-24.17417	-84.95933	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	27.9	29.0		1720	1405	3125	569	1.24	0.03	1.00	0.00	1	0	Unnamed Seamount SMNT-242S-0850W is located at 24° 10.6' S, 275° 2.4' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1720 m high with the top at -1405 m and ocean bottom at -3125 m. The seamount is very small with a volume of 568 km3. It is fairly round with little elongation or irregularity. The azimuth is at approximately 98°.	1935
+SMNT-242S-0868W	Seamount		Seamount	Small	A5	-24.16833	-86.67333	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	24.4	26.4		2095	1680	3775	2038	3.24	0.28	0.96	0.09	1	18	Unnamed Seamount SMNT-242S-0868W is located at 24° 10.1' S, 273° 24.2' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1275 m high with the top at -1545 m and ocean bottom at -2820 m. The seamount is fairly small with a volume of 483 km3. it is very elongated in a northeast, southwest direction with an azimuth of approximately 76°. The edges of the seamount are relatively smooth.	1926
+SMNT-244S-0837W	Ridge		Ridge	Small	A5	-24.45833	-83.55983	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	31.3	33.1		3090	750	3840	3651	8.41	1.54	1.18	0.03	1	37	Unnamed Seamount SMNT-244S-0837W is located at 24° 27.5' S, 276° 26.4' E and is part of the Sala y Gomez region on the Nazca Plate. It is 3090 m high with the top at -750 m and ocean bottom at -3840 m. The seamount is fairly small with a volume of 3650 km3. it is very elongated in a southeast, northwest direction with an azimuth of approximately 114°. The edges of the seamount are relatively smooth.	1940
+SMNT-244S-1283W	Henderson Seamount		Seamount			-24.37	-128.32	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1851
+SMNT-245S-0846W	Seamount		Seamount			-24.45	-84.6	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1936
+SMNT-245S-0880W	Seamount		Seamount	Small	A5	-24.4855	-87.98617	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	23.3	24.5		2105	1555	3660	1230	3.32	0.13	1.05	0.04	2	0	Unnamed Seamount SMNT-245S-0880W is located at 24° 29.1' S, 272° 0.8' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2105 m high with the top at -1555 m and ocean bottom at -3660 m. The seamount is fairly small with a volume of 1230 km3. It is very elongated in a southeast, northwest direction with an azimuth of approximately 104°. The edges of the seamount are relatively smooth.	1924
+SMNT-246S-0877W	Guyot		Guyot	Very Small	A3	-24.6075	-87.67567	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	24.1	25.0		1905	1960	3865	563	2.46	0.07	0.75	0.06	1	0	Unnamed Seamount SMNT-245S-0880W is located at 24° 36.5' S, 272° 19.5' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1905 m high with the top at -1960 m and ocean bottom at -3865 m. The seamount is very small with a volume of 563 km3. It is moderately elongated in a east west direction with an azimuth of approximately 97°. The edges of the seamount are relatively smooth.	1925
+SMNT-247S-0826W	Seamount		Seamount	Small	E3	-24.63617	-82.5665	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	32.7	33.6		2580	670	3250	3588	2.16	0.22	1.92	0.28	1	37	Unnamed Seamount SMNT-247S-0826W is located at 24° 38.2' S, 277° 26' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2580 m high with the top at -670 m and ocean bottom at -3250 m. The seamount is fairly small with a volume of 3588 km3. It is moderately elongated in a southeast, northwest direction with an azimuth of approximately 162°. The edges of the seamount are very irregular.	1941
+SMNT-247S-0855W	Albert Seamount	Communard	Seamount			-24.71	-85.47	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1635
+SMNT-247S-0903W	Seamount		Seamount	Small	B2	-24.69367	-90.303	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	21.1	21.7		1275	2220	3495	1157	1.96	0.06	1.33	0.02	1	18	Unnamed Seamount SMNT-247S-0903W is located at 24° 41.6' S, 269° 41.8' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1275 m high with the top at -2220 m and ocean bottom at -3495 m. The seamount is fairly small with a volume of 1157 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 124°. The edges of the seamount are slightly irregular.	1919
+SMNT-247S-1105W	Trygon Seamount		Seamount			-24.7	-110.533	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1688
+SMNT-247S-1248W	Ducie Seamount		Seamount			-24.675	-124.8	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1850
+SMNT-248S-0849W	Seamount		Seamount	Small	A1	-24.757	-84.8415	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	30.2	30.6		2350	2720	5070	1418	1.33	0.02	1.00	0.01	1	0	Unnamed Seamount SMNT-248S-0849W is located at 24° 45.4' S, 275° 9.5' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2350 m high with the top at -2720 m and ocean bottom at -5070 m. The seamount is fairly small with a volume of 1418 km3. It is realtively round and smooth with little elongation or irregularity. The azimuth is at approximately 96°.	1934
+SMNT-248S-0947W	Seamount		Seamount	Intermediate	B4	-24.7925	-94.76567	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	17.9	18.5		2970	825	3795	8435	2.54	0.83	1.40	0.13	3	22	Unnamed Seamount SMNT-248S-0947W is located at 24° 47.6' S, 265° 14.1' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2970 m high with the top at -825 m and ocean bottom at -3795 m. The seamount is intermediate in size with a volume of 8435 km3. It is elongated in a southwest, northeast direction with an azimuth of approximately 206°. The edges of the seamount are slightly irregular.	1904
+SMNT-249S-0865W	Seamount		Seamount			-24.94	-86.5	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1927
+SMNT-250S-0885W	Amber Guyot	Yantarnaya	Guyot	Small	A3	-24.98533	-88.5615	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	23.1	25.3		2450	310	2760	1762	2.07	0.09	0.80	0.01	1	0	Amber Seamount is located at 24° 59.1' S, 271° 26.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2450 m high with the top at -310 m and ocean bottom at -2760 m. The seamount is fairly smalll with a volume of 1762 km3. It is moderately elongated in a east, west direction with an azimuth of approximately 95°. The edges of the seamount are fairly smooth with little irregularity.	1630
+SMNT-250S-0911W	Seamount		Seamount	Small	A3	-25.04817	-91.151	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	20.3	20.8		2565	395	2960	1506	2.14	0.25	0.94	0.05	1	5	Unnamed Seamount SMNT-250S-0911W is located at 25° 2.9' S, 268° 50.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1565 m high with the top at -395 m and ocean bottom at -2960 m. The seamount is fairly small with a volume of 1506 km3. It is moderately elongated in a east, west direction with an azimuth of approximately 96°. The edges of the seamount are relatively smooth.	1915
+SMNT-250S-0949W	Seamount		Seamount			-25.02	-94.87	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1826
+SMNT-250S-0962W	Seamount		Seamount	Small	B3	-24.9515	-96.26517	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	17.0	17.4		1810	1025	2835	1147	2.02	0.17	1.23	0.23	1	28	Unnamed Seamount SMNT-250S-0962W is located at 24° 57.1' S, 263° 44.1' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1810 m high with the top at -1025 m and ocean bottom at -2835 m. The seamount is fairly small with a volume of 1146 km3. It is moderately elongated in a northeast, southwest direction with an azimuth of approximately 62°. The seamount has slightly irregular edges.	1828
+SMNT-250S-0982W	Pillar Seamount	Stolbovaya	Seamount	Small	A5	-24.97933	-98.20433	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	15.7	16.2		3035	435	3470	2767	3.30	0.09	1.07	0.08	1	33	Pillar Seamount is located at 24° 58.7' S, 261° 47.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 3035 m high with the top at -435 m and ocean bottom at -3470 m. The seamount is fairly small with a volume of 2767 km3. It is very elongated in a northeast, southwest direction with an azimuth of approximately 67°. The edges of the seamount are fairly smooth with little irregularity.	1627
+SMNT-251S-0822W	Atoll		Atoll	Intermediate	B1	-25.12317	-82.17583	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	32.5	33.9		2775	315	3090	8120	1.21	0.10	1.39	0.16	2	44	Unnamed Seamount SMNT-251S-0822W is located at 25° 7.4' S, 277° 49.5' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2775 m high with the top at -315 m and ocean bottom at -3090 m. The seamount is intermediate in size with a volume of 8120 km3. It is fairly long with little elongation and an azimuth of approximately 181°. The edges of the seamount are slighty irregular.	1942
+SMNT-251S-0908W	Guyot		Guyot	Very Small	A1	-25.1345	-90.78217	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	20.8	21.0		2145	685	2830	631	1.47	0.10	1.09	0.03	1	28	Unnamed Seamount SMNT-251S-0908W is located at 25° 8.1' S, 269° 13.1' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2145 m high with the top at -685 m and ocean bottom at -2830 m. The seamount is very small with a volume of 631 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 117°.	1917
+SMNT-251S-0966W	Seamount		Seamount	Small	A1	-25.1105	-96.616	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	16.7	17.2		2460	1295	3755	3437	1.33	0.06	0.82	0.14	1	17	Unnamed Seamount SMNT-251S-0966W is located at 25° 6.6' S, 263° 23' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2460 m high with the top at -1295 m and ocean bottom at -3755 m. The seamount is fairly small with a volume of 3437 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 95°.	1901
+SMNT-251S-0974W	Cupole Seamount	Kupol	Seamount			-25.067	-97.433	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1628
+SMNT-251S-0988W	Seamount		Seamount	Small	A5	-25.10317	-98.76317	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	15.2	16.0		2650	130	2780	3081	4.18	0.13	1.15	0.07	1	37	Unnamed Seamount SMNT-251S-0988W is located at 24° 6.2' S, 261° 14.2' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2650 m high with the top at -130 m and ocean bottom at -2780 m. The seamount fairly small with a volume of 3081 km3. The seamount is very elongated in a east, west direction with an azimuth of approximately 100°. The edges of the seamount are realtively smooth.	1896
+SMNT-251S-0997W	Icthyologists Seamount		Seamount			-25.14	-99.7	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1622
+SMNT-251S-1001W	Seamount		Seamount	Small	A5	-25.1155	-100.11383	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	14.5	14.9		2095	675	2770	1029	3.33	0.12	0.77	0.05	1	24	Unnamed Seamount SMNT-251S-1001W is located at 25° 6.9' S, 259° 53.2' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2095 m high with the top at -675 m and ocean bottom at -2770 m. The seamount is fairly small with a volume of 1029 km3. The seamount is very elongated in a east, west direction with an azimuth of approximately 85°. The edges of the seamount are realtively smooth.	1894
+SMNT-252S-0894W	Seamount		Seamount	Very Small	A2	-25.17467	-89.43867	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	22.3	24.1		1655	1505	3160	893	1.73	0.05	0.83	0.07	1	0	Unnamed Seamount SMNT-252S-0894W is located at 25° 10.5' S, 270° 33.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1655 m high with the top at -1505 m and ocean bottom at -3160 m. The seamount is verey small with a volume of 893 km3. It is slightly elongated in a east, west direction with an azimuth of approximately 92°. The edges are relatively smooth.	1922
+SMNT-252S-0903W	Mayday Guyot	Pervomayskaya	Guyot	Small	A3	-25.1535	-90.30933	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	21.0	22.1		2255	495	2750	2510	2.40	0.04	1.02	0.01	1	7	Mayday Seamount is located at 25° 9.2' S, 269° 41.4' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2255 m high with the top at -495 m and ocean bottom at -2750 m. The seamount is fairly small with a volume of 2510 km3. It is moderately elongate in a southeast, northwest direction with an azimuth of approximately 101°. The edges of the seamount are fairly smooth with little irregularity.	1629
+SMNT-252S-1009W	Needle Seamount	Igolnaya	Seamount	Small	A4	-25.19283	-100.90367	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	14.0	14.4		2710	260	2970	2149	2.77	0.10	1.02	0.05	1	16	Needle Seamount is located at 25° 11.6' S, 259° 5.8' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2710 m high with the top at -260 m and ocean bottom at -2970 m. The seamount is fairly small with a volume of 2149 km3. It is elongated in a east, west direction with an azimuth of approximately 90°. The edges of the seamount are fairly smooth having little irregularity.	1625
+SMNT-253S-0851W	New Seamount	Novaya:Zernov	Seamount	Small	B1	-25.33983	-85.13767	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	29.5	29.9		2615	725	3340	1036	1.25	0.04	1.21	0.06	1	36	New Seamount is located at 25° 20.4' S, 274° 51.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2615 m high with the top at -725 m and ocean bottom at -3340 m. The seamount is fairly small with a volume of 1036 km3. It is relatively round with little elongation and an azimuth of approximately 157°. The edges of the seamount are slightly irregular.	1634
+SMNT-253S-0856W	Seamount		Seamount	Very Small	B2	-25.29217	-85.5785	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	28.9	29.3		2445	1105	3550	769	1.80	0.19	1.21	0.01	3	87	Unnamed Seamount SMNT-253S-0856W is located at 25° 17.5' S, 274° 40.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2445 m high with the top at -1105 m and ocean bottom at -3550 m. The seamount is very small with a volume of 769 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 116°. The edges are slightly irregular.	1933
+SMNT-253S-0916W	Seamount		Seamount			-25.31	-91.63	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1824
+SMNT-253S-0936W	Seamount		Seamount	Small	A2	-25.34167	-93.569	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	18.7	19.0		2530	755	3285	2083	1.70	0.03	1.03	0.00	1	0	Unnamed Seamount SMNT-253S-0936W is located at 25° 20.5' S, 266° 25.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2530 m high with the top at -755 m and ocean bottom at -3285 m. The seamount is fairly small with a volume of 2083 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 125°. The edges of the seamount are relatively smooth.	1908
+SMNT-254S-0818W	Guyot		Guyot	Small	C1	-25.40217	-81.8515	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	33.2	33.7		3235	20	3255	2501	1.25	0.03	1.46	0.08	1	37	Unnamed Seamount SMNT-254S-0818W is located at 25° 24.1' S, 278° 8.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 3235 m high with the top at -20 m and ocean bottom at -3255 m. The seamount is fairly small with a volume of 2501 km3. It is relatively round with little elongation and an azimuth of approximately 112°. The edges of the seamount are moderately irregular.	1943
+SMNT-254S-0913W	Seamount		Seamount	Very Small	A1	-25.3915	-91.2725	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	20.2	20.5		1845	930	2775	459	1.46	0.01	1.04	0.02	1	26	Unnamed Seamount SMNT-254S-0913W is located at 25° 23.5' S, 268° 43.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1845 m high with the top at -930 m and ocean bottom at -2775 m. The seamount is very small with a volume of 459 km3. It is fairly round and smooth with little elongation or irregularity. The azimuth is at approximately 76°.	1914
+SMNT-254S-0922W	Seamount		Seamount			-25.4	-92.2	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1912
+SMNT-255S-0842W	Seamount		Seamount	Small	B2	-25.46783	-84.19083	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	30.4	31.1		2630	595	3225	1544	1.56	0.04	1.31	0.04	1	60	Unnamed Seamount SMNT-255S-0842W is located at 25° 28.1' S, 275° 48.6' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2630 m high with the top at -595 m and ocean bottom at -3225 m. The seamount is fairly small with a volume of 1544 km3. It is slightly elongated in a east, west direction with an azimuth of approximately 80°. The edges are slightly irregular.	1815
+SMNT-255S-0873W	Zasosov Seamount		Seamount			-25.49167	-87.28333	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1348
+SMNT-255S-0892W	Guyot		Guyot	Small	B4	-25.54433	-89.21317	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	23.6	25.0		2830	65	2895	2634	2.69	0.11	1.30	0.05	1	37	Unnamed Seamount SMNT-255S-0892W is located at 25° 32.7' S, 270° 47.2' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2830 m high with the top at -65 m and ocean bottom at -2895 m. The seamount is fairly small with a volume of 2634 km3. It is elongated in an east, west direction with an azimuth of approximately 87°. The edges of the seamount are slightly irregular.	1923
+SMNT-255S-0903W	Seamount		Seamount	Very Small	A1	-25.51533	-90.3155	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	21.7	23.0		2175	1425	3600	848	1.21	0.01	1.00	0.00	1	7	Unnamed Seamount SMNT-255S-0903W is located at 25° 30.9' S, 269° 41.1' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2175 m high with the top at -1425 m and ocean bottom at -3600 m. The seamount is very small with a volume of 848 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 83°.	1920
+SMNT-255S-0930W	Seamount		Seamount	Small	A2	-25.546	-92.9925	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	19.1	19.3		2320	650	2970	1020	1.59	0.06	1.01	0.05	2	20	Unnamed Seamount SMNT-255S-0930W is located at 25° 32.9' S, 267° 0.5' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2320 m high with the top at -650 m and ocean bottom at -2970 m. The seamount is fairly small with a volume of 1020 km3. it is slightly elongated in an east, west direction with an azimuth of approximately 105°. The edges of the seamount are relatively smooth.	1825
+SMNT-255S-0977W	Seamount		Seamount			-25.5	-97.66	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1898
+SMNT-255S-0981W	Guyot		Guyot	Very Small	B3	-25.51267	-98.18383	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	15.8	16.0		1810	1585	3395	991	2.02	0.18	1.39	0.02	2	49	Unnamed Seamount SMNT-255S-0981W is located at 25° 30.8' S, 261° 49' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1810 m high with the top at -1585 m and ocean bottom at -3395 m. The seamount is very small with a volume of 991 km3. The seamount is moderately elongated in a northeast, southwest direction with an azimuth of approximately 55°. The edges of the seamount are slightly irregular.	1897
+SMNT-255S-0996W	Seamount		Seamount	Small	A3	-25.4665	-99.66933	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	14.8	15.2		1605	1365	2970	1151	2.32	0.04	1.03	0.00	1	6	Unnamed Seamount SMNT-255S-0996W is located at 25° 28' S, 260° 19.8' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1605 m high with the top at -1365 m and ocean bottom at -2970 m. The seamount is fairly small with a volume of 1151 km3. It is moderately elongated in a east, west direction with an azimuth of approximately 94°. The edges of the seamount are relatively smooth.	1895
+SMNT-256S-0869W	Western Seamount	Zapadnaya	Seamount	Very Small	C3	-25.5845	-86.87267	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	27.0	27.6		2640	515	3155	682	2.19	0.24	1.49	0.19	1	48	Western Seamount is located at 25° 35.1' S, 273° 7.6' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2640 m high with the top at -515 m and ocean bottom at -3155 m. The seamount is very small with a volume of 682 km3. It is moderately elongated in a southeast, northwest direction with an azimuth of approximately 109°. The edges of the seamount are moderately irregular.	1631
+SMNT-256S-0897W	Seamount		Seamount	Very Small	B3	-25.5765	-89.66533	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	23.5	24.0		2470	455	2925	895	2.40	0.42	1.29	0.06	1	66	Unnamed Seamount SMNT-256S-0897W is located at 25° 34.6' S, 270° 20.1' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2470 m high with the top at -455 m and ocean bottom at -2925 m. The seamount is very small with a volume of 895 km3. It is moderately elongated in a east west direction with an azimuth of approximately 89°. The edges of the seamount are slightly irregular.	1921
+SMNT-256S-0929W	Guyot		Guyot	Very Small	A3	-25.60867	-92.82983	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	19.2	19.4		2155	640	2795	844	2.10	0.09	0.98	0.03	1	26	Unnamed Seamount SMNT-256S-0929W is located at 25° 36.5' S, 267° 10.2' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2155 m high with the top at -640 m and ocean bottom at -2795 m. The seamount is very small with a volume of 844 km3. It is moderately elongated in a east, west direction with an azimuth of approximately 89°. The edges of the seamount are relatively smooth.	1910
+SMNT-256S-0991W	Guyot		Guyot	Small	A2	-25.5995	-99.05217	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	15.2	15.7		2310	435	2745	1667	1.73	0.13	1.14	0.01	2	36	Unnamed Seamount SMNT-256S-0991W is located at 25° 36' S, 260° 56.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2310 m high with the top at -435 m and ocean bottom at -2745 m. The seamount is fairly small with a volume of 1667 km3. It is slightly elongated in a northeast, southwest direction with an azimuth of approximately 62°. The edges of the seamount are relatively smooth.	1833
+SMNT-257S-0825W	Guyot		Guyot	Small	A3	-25.59167	-82.41217	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	32.1	33.3		2825	320	3145	2487	2.17	0.07	1.16	0.05	2	38	Unnamed Seamount SMNT-257S-0825W is located at 25° 35.5' S, 277° 35.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2825 m high with the top at -320 m and ocean bottom at -3145 m. The seamount is fairly small with a volume of 2487 km3. It is moderately elongated in a northeast, southwest direction with an azimuth of approximately 52°. The edges of the seamount are relatively smooth.	1813
+SMNT-257S-0829W	Guyot		Guyot	Small	B2	-25.69433	-82.928	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	31.4	32.7		3420	55	3475	4703	1.72	0.15	1.27	0.03	2	48	Unnamed Seamount SMNT-257S-0829W is located at 25° 41.7' S, 277° 4.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 3420 m high with the top at -55 m and ocean bottom at -3475 m. The seamount is fairly small with a volume of 4703 km3. It is slightly elongated in a northeast, southwest direction with an azimuth of approximately 62°. The edges of the seamount are slightly irregular.	1939
+SMNT-257S-0836W	Seamount		Seamount			-25.71	-83.6	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1938
+SMNT-257S-0855W	Shoal Guyot		Guyot	Small	C1	-25.63083	-85.43417	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	28.5	29.8		2825	60	2885	4610	1.31	0.00	1.42	0.07	1	19	Shoal Seamount is located at 25° 37.8' S, 274° 34' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2825 m high with the top at -60 m and ocean bottom at -2885 m. The seamount is fairly small with a volume of 4610 km3. It is relatively round with little elongation. The azimuth is at approximately 74°. The edges of the seamount are moderately irregular.	1819
+SMNT-257S-0866W	Baral Guyot		Guyot	Intermediate	B1	-25.76333	-86.62333	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	26.8	28.2		3460	0	3460	6490	1.47	0.03	1.34	0.14	1	22	Baral Seamount is located at 25° 45.8' S, 273° 22.6' E and is part of the Sala y Gomez region on the Nazca Plate. It is 3460 m high with the top at sealevel and ocean bottom at -3460 m. The seamount is intermediate in size with a volume of 6489 km3. The seamount is fairly round with very little elongation. The azimuth is at approximately 86°. The edges of the seamount are slightly irregular.	129
+SMNT-257S-0933W	Seamount		Seamount	Very Small	A2	-25.67983	-93.33467	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	18.8	19.0		1535	945	2480	387	1.97	0.10	1.13	0.06	1	34	Unnamed Seamount SMNT-257S-0933W is located at 25° 40.8' S, 266° 39.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1535 m high with the top at -945 m and ocean bottom at -2480 m. The seamount is very small with a volume of 387 km3. It is slightly elongated in a northeast, southwest direction with an azimuth of approximately 64°. The edges of the seamount are relatively smooth.	1909
+SMNT-257S-0936W	Seamount		Seamount	Very Small	A2	-25.69567	-93.5855	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	18.7	19.1		1750	1200	2950	291	1.55	0.22	1.10	0.02	1	39	Unnamed Seamount SMNT-257S-0936W is located at 25° 41.7' S, 266° 24.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1750 m high with the top at -1200 m and ocean bottom at -2950 m. The seamount is very small with a volume of 291 km3. It is slightly elongated in a east, west direction with an azimuth of approximately 112°. The edges of the seamount are relatively smooth.	1907
+SMNT-257S-0946W	Seamount		Seamount			-25.67	-94.6	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1905
+SMNT-257S-0949W	Seamount		Seamount	Small	A2	-25.73067	-94.943	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	17.8	18.6		2795	405	3200	2484	1.74	0.08	1.12	0.10	1	29	Unnamed Seamount SMNT-257S-0949W is located at 25° 43.8' S, 265° 3.4' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2795 m high with the top at -405 m and ocean bottom at -3200 m. The seamount is fairly small with a volume of 2484 km3. It is slighlty elongated in a northeast, southwest direction with an azimuth of approximately 55°. The edges of the seamount are relatively smooth.	1827
+SMNT-257S-1030W	Seamount		Seamount	Very Small	A2	-25.65383	-102.978	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	12.8	13.1		1750	900	2650	673	1.69	0.02	0.99	0.01	1	0	Unnamed Seamount SMNT-257S-1030W is located at 25° 39.2' S, 257° 1.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1750 m high with the top at -900 m and ocean bottom at -2650 m. The seamount is very small with a volume of 673 km3. It is slightly elongated in a east, west direction with an azimuth of approximately 80°. The edges of the seamount are relatively smooth.	1886
+SMNT-258S-0833W	Seamount		Seamount	Small	A1	-25.73533	-83.2845	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	31.2	32.0		2940	515	3455	2225	1.38	0.05	1.13	0.12	1	47	Unnamed Seamount SMNT-258S-0833W is located at 25° 44.1' S, 276° 42.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2940 m high with the top at -515 m and ocean bottom at -3455 m. The seamount is fairly small with a volume of 2225 km3. It is relatively round and smooth with little elongation or irregualrity. The azimuth is at approximately 105°.	1814
+SMNT-258S-0840W	Seamount		Seamount	Small	B2	-25.7925	-83.95233	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	30.5	31.2		2605	265	2870	1433	1.65	0.19	1.26	0.04	1	28	Unnamed Seamount SMNT-258S-0840W is located at 25° 47.6' S, 276° 2.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2605 m high with the top at -265 m and ocean bottom at -2870 m. The seamount is fairly small with a volume of 1433 km3. The seamount is slightly elongated in a southeast, northwest direction with an azimuth of approximately 164°. The edges of the seamount are slightly irregular.	1937
+SMNT-258S-0847W	Seamount	Nasca 7	Seamount	Small	A2	-25.84767	-84.66217	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	29.4	30.3		2755	180	2935	1892	1.93	0.39	0.96	0.05	1	0	Unnamed Seamount SMNT-258S-0847W is located at 25° 50.9' S, 275° 20.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2755 m high with the top at -180 m and ocean bottom at -2935 m. The seamount is fairly small with a volume of 1892 km3. It is slightly elongated in an east west direction with an azimuth of approximately 99°. The edges of the seamount are relatively smooth.	1691
+SMNT-258S-0862W	Seamount		Seamount			-25.8	-86.22	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1930
+SMNT-258S-0910W	Seamount		Seamount	Small	A3	-25.8435	-90.94883	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	21.6	22.4		3410	205	3615	2730	2.15	0.13	1.16	0.06	1	31	Unnamed Seamount SMNT-258S-0910W is located at 25° 50.6' S, 269° 3.1' E and is part of the Sala y Gomez region on the Nazca Plate. It is 3410 m high with the top at -205 m and ocean bottom at -3615 m. The seamount is fairly small with a volume of 2730 km3. It is moderately elongated in an east, west direction with an azimuth of approximately 96°. The edges of the seamount are relatively smooth.	1916
+SMNT-258S-0939W	Seamount		Seamount	Very Small	B1	-25.7585	-93.94183	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	18.5	18.9		2295	1030	3325	630	1.32	0.04	1.24	0.08	1	61	Unnamed Seamount SMNT-258S-0939W is located at 25° 45.5' S, 266° 3.5' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2295 m high with the top at -1030 m and ocean bottom at -3325 m. The seamount is very small with a volume of 629 km3. The seamount is fairly round but has an azimuth of approximately 65°. The edges of the seamount are slightly irregular.	1906
+SMNT-258S-0955W	Guyot		Guyot	Small	B4	-25.82283	-95.50083	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	17.3	18.3		2125	475	2600	2117	2.77	0.12	1.30	0.07	1	27	Unnamed Seamount SMNT-258S-0955W is located at 25° 49.4' S, 264° 29.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2125 m high with the top at -475 m and ocean bottom at -2600 m. The seamount is fairly small with a volume of 2117 km3. It is elongated in a northeast, southwest direction with an azimuth of approximately 77°. The edges of the seamount are slightly irregular.	1903
+SMNT-259S-0907W	Seamount		Seamount	Very Small	A1	-25.90383	-90.645	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	22.3	22.5		2880	815	3695	807	1.22	0.03	1.11	0.05	1	60	Unnamed Seamount SMNT-259S-0907W is located at 25° 54.2' S, 269° 21.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2880 m high with the top at -815 m and ocean bottom at -3695 m. The seamount is very small with a volume of 806 km3. It is fairly round and smooth with little elongation or irregualrity. The azimuth is at approximately 80°.	1918
+SMNT-259S-0960W	Seamount		Seamount	Small	A3	-25.911	-96.00083	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	17.2	17.9		2100	910	3010	1873	2.48	0.21	1.05	0.04	1	30	Unnamed Seamount SMNT-259S-0960W is located at 25° 54.7' S, 263° 60' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2100 m high with the top at -910 m and ocean bottom at -3010 m. The seamount is fairly small with a volume of 1873 km3. It is moderately elongated in an east, west direction with an azimuth of approximately 92°. The edges of the seamount are relatively smooth.	1902
+SMNT-259S-0996W	Seamount		Seamount	Very Small	A1	-25.85083	-99.59233	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	15.1	15.4		1345	1560	2905	189	1.24	0.03	1.11	0.11	1	42	Unnamed Seamount SMNT-259S-0996W is located at 25° 51' S, 260° 24.5' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1345 m high with the top at -1560 m and ocean bottom at -2905 m. The seamount is very small with a volume of 188 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 91°.	1834
+SMNT-260S-0844W	Dorofeev Guyot		Guyot			-25.95	-84.35	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											142
+SMNT-260S-0968W	Seamount		Seamount			-25.95	-96.76	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1900
+SMNT-260S-0970W	Seamount		Seamount			-25.97	-97.02	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1899
+SMNT-260S-1007W	Rock Seamount	Utes	Seamount	Large	D3	-25.85667	-100.68467	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	13.9	15.1		2785	270	3055	10849	2.02	0.05	1.61	0.15	4	8	Rock Seamount is located at 25° 51.4' S, 259° 18.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2785 m high with the top at -270 m and ocean bottom at -3055 m. The seamount is fairly large with a volume of 10849 km3. It is moderately elongated in an east, west direction with an azimuth of approximately 92°. The edges are irregular.	1626
+SMNT-260S-1022W	Seamount		Seamount	Small	A1	-25.996	-102.2335	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	13.5	13.7		2600	300	2900	1107	1.27	0.01	0.97	0.06	1	16	Unnamed Seamount SMNT-260S-1022W is located at 25° 59.8' S, 257° 46' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2600 m high with the top at -300 m and ocean bottom at -2900 m. The seamount is fairly small with a volume of 1106 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 93°.	1838
+SMNT-260S-1033W	Guyot		Guyot	Very Small	A1	-25.95567	-103.32633	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	12.8	12.9		1585	1465	3050	456	1.30	0.04	1.06	0.01	1	25	Unnamed Seamount SMNT-260S-1033W is located at 25° 57.6' S, 256° 40.4' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1585 m high with the top at -1465 m and ocean bottom at -3050 m. The seamount is very small with a volume of 456 km3. It is fairly round and smooth with little elongation or irregularity. The azimuth is at approximately 180°.	1839
+SMNT-261S-0860W	Seamount		Seamount			-26.05	-86.0	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1931
+SMNT-261S-1000W	Seamount		Seamount	Very Small	B1	-26.04483	-100.00533	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	15.0	15.1		2115	655	2770	506	1.24	0.33	1.32	0.10	1	52	Unnamed Seamount SMNT-261S-1000W is located at 26° 2.7' S, 259° 59.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2115 m high with the top at -655 m and ocean bottom at -2770 m. The seamount is very small with a volume of 506 km3. It is relatively round with little elongation and an azimuth of approximately 200°. The edges of the seamount are slightly irregular.	1893
+SMNT-261S-1013W	Seamount		Seamount	Small	A3	-26.069	-101.318	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	14.1	14.3		2370	1530	3900	1348	2.13	0.09	1.02	0.00	1	0	Unnamed SeamountSMNT-261S-1013W is located at 26° 4.1' S, 258° 40.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2370 m high with the top at -1530 m and ocean bottom at -3900 m. The seamount is small with a volume of 1348 km3. It is moderately elongated in a northeast, southwest direction with an azimuth of approximately 58°. The edges of the seamount are relatively smooth.	1892
+SMNT-261S-1024W	Seamount		Seamount			-26.06	-102.43	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1889
+SMNT-261S-1038W	Guyot		Guyot	Small	A1	-26.1285	-103.81967	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	12.5	12.6		2505	330	2835	1060	1.11	0.01	1.10	0.04	1	59	Unnamed Seamount SMNT-261S-1038W is located at 26° 7.7' S, 256° 10.8' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2505 m high with the top at -330 m and ocean bottom at -2835 m. The seamount is fairly small with a volume of 1060 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 86°.	1883
+SMNT-262S-0863W	Seamount		Seamount	Very Small	A2	-26.22117	-86.34	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	27.5	27.7		1680	1285	2965	279	1.71	0.02	1.13	0.06	1	48	Unnamed Seamount SMNT-262S-0863W is located at 26° 13.3' S, 273° 39.6' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1680 m high with the top at -1285 m and ocean bottom at -2965 m. The seamount is very small with a volume of 278 km3. It is slightly elongated in a east, west direction with an azimuth of approximately 80°. The edges of the seamount are relatively smooth.	1929
+SMNT-262S-0917W	Seamount		Seamount			-26.18	-91.673	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1913
+SMNT-262S-1030W	Seamount		Seamount	Very Small	B1	-26.17717	-102.963	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	13.0	13.1		2850	260	3110	929	1.28	0.01	1.31	0.04	1	89	Unnamed Seamount SMNT-262S-1030W is located at 26° 10.6' S, 257° 2.2' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2850 m high with the top at -260 m and ocean bottom at -3110 m. The seamount is very small with a volume of 929 km3. It is relatively round with little elongation and an azimuth of approximately 52°. The edges of the seamount are slightly irregular.	1885
+SMNT-262S-1036W	Seamount		Seamount	Very Small	A1	-26.19767	-103.60667	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	12.6	12.7		2060	740	2800	275	1.15	0.01	1.14	0.03	1	51	Unnamed Seamount SMNT-262S-1036W is located at 26° 11.9' S, 256° 23.6' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2060 m high with the top at -740 m and ocean bottom at -2800 m. The seamount is very small with a volume of 274 km3. It is fairly round and smooth with little elongation or irregularity. The azimuth is at approximately 66°.	1884
+SMNT-263S-1018W	Seamount		Seamount	Very Small	A2	-26.25267	-101.784	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	13.8	14.0		2320	705	3025	941	1.59	0.02	0.93	0.06	1	6	Unnamed Seamount SMNT-263S-1018W is located at 26° 15.2' S, 258° 13' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2320 m high with the top at -705 m and ocean bottom at -3025 m. The seamount is very small with a volume of 940 km3. It is slightly elongated in a northeast, southwest direction with an azimuth of approximately 72°. The edges of the seamount are relatively smooth.	1891
+SMNT-264S-1049W	Seamount		Seamount	Very Small	A1	-26.4135	-104.8575	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.8	11.9		2285	605	2890	747	1.50	0.13	1.13	0.04	1	52	Unnamed Seamount SMNT-264S-1049W is located at 26° 24.8' S, 255° 8.6' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2285 m high with the top at -605 m and ocean bottom at -2890 m. The seamount is very small with a volume of 747 km3. It is fairly round and smooth with little elongation or irregularity. The azimuth is at approximately 58°.	1880
+SMNT-264S-1059W	Seamount		Seamount	Very Small	B4	-26.4435	-105.89233	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.1	11.3		2415	455	2870	491	2.91	0.17	1.23	0.17	1	51	Unnamed Seamount SMNT-264S-1059W is located at 26° 26.6' S, 254° 6.5' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2415 m high with the top at -455 m and ocean bottom at -2870 m. The seamount is very small with a volume of 490 km3. It is elongated in a northeast, southwest direction with an azimuth of approximately 69°. The edges of the seamount are slightly irregular.	1871
+SMNT-264S-1065W	Seamount		Seamount	Small	C3	-26.37183	-106.551	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	10.4	11.0		2375	260	2635	1410	2.39	0.14	1.47	0.08	1	30	Unnamed Seamount SMNT-264S-1059W is located at 26° 22.3' S, 253° 26.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2375 m high with the top at -260 m and ocean bottom at -2635 m. The seamount is fairly small with a volume of 1409 km3. It is moderately elongated in an east, west direction with an azimuth of approximately 83°. The edges of the seamount have moderate irregularity.	1866
+SMNT-265S-0867W	Seamount		Seamount	Very Small	B1	-26.47083	-86.65967	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	26.9	27.2		2190	1020	3210	786	1.27	0.24	1.27	0.14	1	85	Unnamed Seamount SMNT-265S-0867W is located at 26° 28.3' S, 273° 20.4' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2190 m high with the top at -1020 m and ocean bottom at -3210 m. The seamount is very small with a volume of 786 km3. It is fairly round with little elongation and an azimuth of approximately 183°. The edges of the seamount are slightly irregular.	1928
+SMNT-265S-1053W	Sala y Gomez Guyot		Guyot	Intermediate	C4	-26.43983	-105.4035	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.1	11.9		3135	0	3135	5718	2.88	0.14	1.49	0.10	1	47	Sala y Gomez Island is located at 26° 26.4' S, 254° 35.8' E and is part of the Sala y Gomez region on the Nazca Plate. It is 3135 m high with the top at sealevel and ocean bottom at -3135 m. The seamount is intermediate in size with a volume of 5718 km3. It is elongated in an east, west direction with an azimuth of approximately 95°. The edges are moderately irregular.	1840
+SMNT-267S-1050W	Guyot		Guyot	Very Small	A2	-26.665	-104.95533	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.7	11.9		1930	690	2620	810	1.52	0.03	1.07	0.02	1	31	Unnamed Seamount SMNT-267S-1050W is located at 26° 39.9' S, 255° 2.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1930 m high with the top at -690 m and ocean bottom at -2620 m. The seamount is very small with a volume of 809 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 110°. The edges of the seamount are relatively smooth.	1878
+SMNT-267S-1062W	Seamount		Seamount	Small	A3	-26.66617	-106.2355	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	10.8	11.2		2260	215	2475	1005	2.36	0.13	1.09	0.04	1	36	Unnamed Seamount SMNT-267S-1062W is located at 26° 39.9' S, 253° 45.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2260 m high with the top at -215 m and ocean bottom at -2475 m. The seamount is fairly small with a volume of 809 km3. It is moderately elongated in a southeast, northwest direction with an azimuth of approximately 110°. The edges of the seamount are relatively smooth.	1841
+SMNT-268S-1059W	Guyot		Guyot	Very Small	B2	-26.76233	-105.91767	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.2	11.3		1830	1080	2910	847	1.53	0.12	1.37	0.07	1	37	Unnamed Seamount SMNT-268S-1059W is located at 26° 45.7' S, 254° 4.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1830 m high with the top at -1080 m and ocean bottom at -2910 m. The seamount is very small with a volume of 846 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 107°. The edges of the seamount are slightly irregular.	1872
+SMNT-269S-1008W	Seamount		Seamount			-26.9	-100.8	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1836
+SMNT-269S-1056W	Seamount		Seamount	Very Small	D3	-26.87417	-105.5965	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.3	11.6		1275	1545	2820	483	2.16	0.48	1.79	0.28	1	57	Unnamed Seamount SMNT-269S-1056W is located at 26° 52.4' S, 254° 24.2' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1275 m high with the top at -1545 m and ocean bottom at -2820 m. The seamount is very small with a volume of 483 km3. It is moderately elongated in a east west direction with an azimuth of approximately 93°. The edges of the seamount are irregular.	1875
+SMNT-269S-1069W	Seamount		Seamount	Very Small	A1	-26.8705	-106.91783	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	10.3	10.4		2000	950	2950	257	1.41	0.08	1.10	0.02	1	43	Unnamed Seamount SMNT-269S-1069W is located at 26° 52.2' S, 253° 4.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2000 m high with the top at -950 m and ocean bottom at -2950 m. The seamount is very small with a volume of 256 km3. It is fairly round and smooth with little elongation or irregularity. The azimuth is at approximately 81°.	1865
+SMNT-269S-1075W	Seamount		Seamount	Very Small	A1	-26.854	-107.52867	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	9.6	9.8		1505	1440	2945	571	1.20	0.02	1.11	0.05	1	31	Unnamed Seamount SMNT-269S-1075W is located at 26° 51.2' S, 252° 28.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1505 m high with the top at -1440 m and ocean bottom at -2945 m. The seamount is very small with a volume of 571 km3. It is fairly round and smooth with little elongation or irregularity. The azimuth is at approximately 67°.	1864
+SMNT-270S-1021W	Seamount		Seamount			-26.95	-102.08	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1890
+SMNT-270S-1030W	Seamount		Seamount			-27.03	-103.0	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1887
+SMNT-270S-1061W	Seamount		Seamount	Very Small	A1	-27.02683	-106.07133	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.1	11.2		1835	1245	3080	462	1.32	0.09	1.17	0.06	1	60	Unnamed Seamount SMNT-270S-1061W is located at 27° 1.6' S, 253° 55.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1835 m high with the top at -1245 m and ocean bottom at -3080 m. The seamount is very small with a volume of 462 km3. It is fairly round and smooth with little elongation or irregularity. The azimuth is at approximately 92°.	1870
+SMNT-270S-1103W	Pukao Seamount		Seamount	Small	A1	-26.93233	-110.249	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	6.4	6.6		2295	1670	3965	1260	1.10	0.05	1.03	0.02	1	0	Pukao Seamount is located at 26° 55.9' S, 249° 45.1' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2295 m high with the top at -1670 m and ocean bottom at -3965 m. The seamount is fairly small with a volume of 1260 km3. It is fairly round with little elongation and smooth edges. The azimuth is approximately 155°.	1118
+SMNT-270S-1108W	Guyot		Guyot	Very Small	A3	-27.02733	-110.77217	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	4.1	6.1		1355	1315	2670	291	2.21	0.25	1.02	0.07	1	6	Unnamed Seamount SMNT-270S-1108W is located at 27° 1.6' S, 249° 13.2' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1355 m high with the top at -1315 m and ocean bottom at -2670 m. The seamount is very small with a volume of 290 km3. It is moderately elongated in a east, west direction with an azimuth of approximately 86°. The edges of the seamount are relatively smooth.	1854
+SMNT-270S-1111W	Umu Seamount		Seamount	Very Small	C3	-26.9635	-111.00967	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	2.7	5.8		1495	1250	2745	797	2.19	0.21	1.43	0.14	1	13	Umu Seamount is located at 26° 57.8' S, 248° 59.4' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1495 m high with the top at -1250 m and ocean bottom at -2745 m. The seamount is very small with a volume of 796 km3. It is moderately elongated in a northeast, southwest direction with an azimuth of approximately 74°. The edges of the seamount are moderately irregular.	1853
+SMNT-271S-1024W	Seamount		Seamount			-27.1	-102.43	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1888
+SMNT-271S-1064W	Seamount		Seamount			-27.1	-106.42	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1867
+SMNT-271S-1094W	Easter Island Seamount		Seamount			-27.11	-109.36	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain			2	0											1844
+SMNT-271S-1097W	Guyot		Guyot	Very Small	A2	-27.10367	-109.684	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	7.0	7.4		1970	1045	3015	496	1.95	0.22	1.17	0.11	1	8	Unnamed Seamount SMNT-271S-1097W is located at 27° 6.2' S, 250° 19' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1970 m high with the top at -1045 m and ocean bottom at -3015 m. The seamount is very small with a volume of 496 km3. It is slightly elongated in an east, west direction with an azimuth of approximately 89°. The edges of the seamount are relatively smooth.	1857
+SMNT-273S-1040W	Seamount		Seamount			-27.28	-104.0	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1882
+SMNT-273S-1050W	Guyot		Guyot	Small	B2	-27.24433	-105.07117	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.6	11.9		2020	1105	3125	1671	1.64	0.05	1.27	0.14	1	24	Unnamed Seamount SMNT-273S-1050W is located at 27° 14.7' S, 254° 55.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 2020 m high with the top at -1105 m and ocean bottom at -3125 m. The seamount is fairly small with a volume of 1671 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 111°. The edges of the seamount are slightly irregular.	1877
+SMNT-273S-1085W	Guyot		Guyot	Very Small	B2	-27.2795	-108.48767	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	8.5	8.7		1370	1470	2840	231	1.70	0.10	1.39	0.12	1	73	Unnamed Seamount SMNT-273S-1085W is located at 27° 16.8' S, 251° 30.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1370 m high with the top at -1470 m and ocean bottom at -2840 m. The seamount is very small with a volume of 230 km3. It is slightly elongated in a southeast, northwest direction with an azimuth of approximately 159°. The edges of the seamount are slightly irregular.	1861
+SMNT-275S-1048W	Seamount		Seamount			-27.5	-104.8	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1881
+SMNT-275S-1079W	Seamount		Seamount	Very Small	A3	-27.51933	-107.88767	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	8.4	9.4		1395	1355	2750	396	2.18	0.12	1.04	0.01	1	39	Unnamed Seamount SMNT-275S-1079W is located at 27° 31.1' S, 252° 6.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1395 m high with the top at -1355 m and ocean bottom at -2750 m. The seamount is very small with a volume of 395 km3. It is moderately elongated in a southwest, northeast direction with an azimuth of approximately 207°. The edges of the seamount are relatively smooth.	1863
+SMNT-275S-1082W	Guyot		Guyot	Very Small	D2	-27.457	-108.17983	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	8.0	9.2		1355	1665	3020	601	2.00	0.25	1.68	0.15	1	59	Unnamed Seamount SMNT-275S-1082W is located at 27° 27.4' S, 251° 49.2' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1355 m high with the top at -1665 m and ocean bottom at -3020 m. The seamount is very small with a volume of 601 km3. It is slightly elongated in a southwest, northeast direction with an azimuth of approximately 219°. The edges of the seamount are irregular.	1862
+SMNT-276S-1054W	Seamount		Seamount	Small	A3	-27.55067	-105.3855	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.5	11.8		1870	1180	3050	1086	2.35	0.06	1.12	0.08	1	27	Unnamed Seamount SMNT-276S-1054W is located at 27° 33' S, 254° 36.9' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1870 m high with the top at -1180 m and ocean bottom at -3050 m. The seamount is fairly small with a volume of 1086 km3. It is moderately elongated in a southeast, northwest direction with an azimuth of approximately 132°. The edges of the seamount are relatively smooth.	1876
+SMNT-277S-1057W	Seamount		Seamount	Very Small	A1	-27.65417	-105.7155	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.4	11.4		1735	1185	2920	302	1.22	0.01	0.95	0.04	1	27	Unnamed Seamount SMNT-277S-1057W is located at 27° 39.2' S, 254° 17.1' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1735 m high with the top at -1185 m and ocean bottom at -2920 m. The seamount is very small with a volume of 302 km3. It is fairly round and smooth with little elongation or irregularity. The azimuth is at approximately 201°.	1874
+SMNT-277S-1064W	Seamount		Seamount	Very Small	A2	-27.6905	-106.38767	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.0	11.1		1970	940	2910	561	1.54	0.07	1.15	0.03	1	25	Unnamed Seamount SMNT-277S-1064W is located at 27° 41.1' S, 253° 36.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1970 m high with the top at -940 m and ocean bottom at -2910 m. The seamount is very small with a volume of 561 km3. It is slightly elongated in a southwest, northeast direction with an azimuth of approximately 212°. The edges of the seamount are relatively smooth.	1868
+SMNT-277S-1106W	Seamount		Seamount	Small	C2	-27.73433	-110.59517	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	2.2	3.7		1840	920	2760	1272	1.58	0.17	1.43	0.07	1	0	Unnamed Seamount SMNT-277S-1106W is located at 27° 44.1' S, 249° 24.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1840 m high with the top at -920 m and ocean bottom at -2760 m. The seamount is fairly small with a volume of 1271 km3. It is slightly elongated in a north, south direction with an azimuth of approximately 177°. The edges of the seamount are moderately irregular.	1855
+SMNT-278S-1059W	Guyot		Guyot	Very Small	A1	-27.80033	-105.92517	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	11.3	11.3		1295	1600	2895	183	1.32	0.02	1.03	0.01	1	40	Unnamed Seamount SMNT-278S-1059W is located at 27° 48' S, 254° 4.5' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1295 m high with the top at -1600 m and ocean bottom at -2895 m. The seamount is very small with a volume of 182 km3. It is relatively round and smooth with little elongation or irregularity. The azimuth is at approximately 55°.	1873
+SMNT-278S-1101W	Seamount		Seamount	Very Small	C5	-27.832	-110.13733	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	2.5	3.4		1280	1480	2760	933	3.54	1.13	1.55	0.26	2	6	Unnamed Seamount SMNT-278S-1101W is located at 27° 51.8' S, 249° 51.8' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1280 m high with the top at -1480 m and ocean bottom at -2760 m. The seamount is very small with a volume of 932 km3. It is very elongated in a east, west direction with an azimuth of approximately 94°. The edges of the seamount are moderately irregular.	1856
+SMNT-279S-1049W	Seamount		Seamount			-27.9	-104.93	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1879
+SMNT-279S-1094W	Seamount		Seamount			-27.94	-109.43	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1858
+SMNT-280S-1074W	Seamount		Seamount			-27.99	-107.43	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain				0											1842
+SMNT-280S-1092W	Seamount		Seamount	Very Small	A3	-27.97817	-109.18767	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	3.9	4.1		1170	1530	2700	201	2.09	0.11	1.06	0.01	1	37	Unnamed Seamount SMNT-280S-1092W is located at 27° 58.7' S, 250° 48.7' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1170 m high with the top at -1530 m and ocean bottom at -2700 m. The seamount is very small with a volume of 201 km3. It is moderately elongated in an east, west direction with an azimuth of approximately 92°. The edges of the seamount are relatively smooth.	1859
+SMNT-281S-1083W	Ridge		Ridge	Very Small	A5	-28.12383	-108.29517	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	4.6	5.4		1515	1330	2845	746	7.50	0.41	0.94	0.04	2	42	Unnamed Seamount SMNT-281S-1083W is located at 28° 7.4' S, 251° 42.3' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1515 m high with the top at -1330 m and ocean bottom at -2845 m. The seamount is very small with a volume of 746 km3. It is very elongated in a northeast, southwest direction with an azimuth of approximately 64°. The edges of the seamount are relatively smooth.	1860
+SMNT-283S-1070W	Seamount		Seamount	Very Small	A1	-28.25917	-106.977	Sala y Gomez Seamount Trail	Nazca Plate	Hotspot Trail	Abyssal Plain	6.4	6.5		1205	1840	3045	303	1.18	0.04	1.00	0.01	1	3	Unnamed Seamount SMNT-283S-1070W is located at 28° 15.5' S, 253° 1.4' E and is part of the Sala y Gomez region on the Nazca Plate. It is 1205 m high with the top at -1840 m and ocean bottom at -3045 m. The seamount is very small with a volume of 303 km3. It is fairly round and smooth with little elongation or irregularity. The azimuth is at approximately 90°.	1869
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-239S-0860W	2146	82.4	349.8	42.3	15.3	2.768	108.3	79.1	1.369
+SMNT-239S-0860W	2385	81.8	467.6	47.9	17.6	2.732	116.6	91.1	1.280
+SMNT-239S-0860W	2624	80.0	602.4	51.3	20.7	2.475	123.4	100.3	1.230
+SMNT-242S-0868W	2518	76.9	585.8	58.9	16.6	3.552	117.8	111.5	1.057
+SMNT-242S-0868W	2728	76.9	716.5	60.0	18.8	3.190	110.9	118.7	0.934
+SMNT-242S-0868W	2937	77.1	838.1	63.1	21.1	2.991	110.6	125.6	0.881
+SMNT-244S-0837W	1986	114.3	321.1	82.1	8.2	10.003	154.2	127.7	1.208
+SMNT-244S-0837W	2295	114.5	474.8	86.8	10.4	8.313	168.6	142.7	1.182
+SMNT-244S-0837W	2604	114.3	643.9	88.7	12.8	6.920	177.2	153.2	1.157
+SMNT-247S-0826W	1702	159.4	479.8	55.2	23.4	2.361	186.4	88.3	2.110
+SMNT-247S-0826W	1960	161.5	696.6	57.1	26.2	2.182	215.0	104.2	2.064
+SMNT-247S-0826W	2218	165.2	913.8	56.0	29.0	1.929	184.7	115.8	1.595
+SMNT-247S-0903W	2730	123.2	404.6	40.9	20.3	2.021	102.9	77.9	1.321
+SMNT-247S-0903W	2858	122.8	526.7	45.8	23.2	1.974	119.9	88.4	1.357
+SMNT-247S-0903W	2985	125.1	667.8	50.0	26.3	1.898	130.6	98.6	1.324
+SMNT-248S-0947W	2013	204.5	964.6	76.6	22.1	3.470	178.1	141.8	1.256
+SMNT-248S-0947W	2310	205.0	1298.9	78.8	34.7	2.267	206.3	143.7	1.436
+SMNT-248S-0947W	2607	208.5	1674.5	81.0	42.9	1.887	234.8	156.0	1.505
+SMNT-250S-0962W	1930	62.0	304.6	40.5	18.4	2.200	101.0	69.0	1.462
+SMNT-250S-0962W	2111	63.6	486.7	41.8	21.1	1.987	102.1	85.1	1.200
+SMNT-250S-0962W	2292	62.0	619.3	42.7	22.8	1.872	96.0	94.7	1.014
+SMNT-250S-0982W	1649	66.7	403.0	44.0	13.2	3.340	102.5	90.4	1.134
+SMNT-250S-0982W	1953	67.5	611.2	54.1	16.1	3.364	123.0	111.6	1.102
+SMNT-250S-0982W	2256	67.7	776.0	61.1	19.1	3.203	120.7	123.7	0.976
+SMNT-251S-0822W	1425	183.8	1723.5	58.4	44.1	1.325	233.7	149.3	1.565
+SMNT-251S-0822W	1703	184.0	2232.9	61.4	53.1	1.156	226.8	168.2	1.349
+SMNT-251S-0822W	1980	176.5	2583.3	67.5	58.0	1.163	226.5	180.9	1.252
+SMNT-251S-0908W	1543	116.0	98.1	14.1	10.4	1.351	39.8	35.7	1.114
+SMNT-251S-0908W	1758	119.8	143.0	17.6	11.7	1.499	46.1	43.7	1.056
+SMNT-251S-0908W	1972	114.1	199.3	21.6	13.9	1.553	57.2	51.9	1.103
+SMNT-251S-0966W	2525	93.2	1076.4	45.9	35.8	1.280	113.3	117.6	0.963
+SMNT-251S-0966W	2771	100.8	1319.6	50.0	37.8	1.325	108.9	130.7	0.833
+SMNT-251S-0966W	3017	91.8	1525.7	55.2	39.6	1.396	95.4	141.4	0.675
+SMNT-251S-0988W	1190	100.7	484.9	60.0	14.3	4.200	133.1	108.0	1.232
+SMNT-251S-0988W	1455	99.8	723.1	72.1	16.8	4.294	149.8	133.0	1.126
+SMNT-251S-0988W	1720	99.0	940.2	77.1	19.1	4.035	163.8	148.1	1.106
+SMNT-251S-1001W	1513	84.4	309.0	40.9	11.9	3.434	64.4	80.0	0.805
+SMNT-251S-1001W	1723	85.0	387.1	46.3	14.5	3.197	70.1	87.3	0.803
+SMNT-251S-1001W	1932	84.5	457.0	55.0	16.3	3.368	68.6	96.6	0.711
+SMNT-252S-0903W	1397	99.2	558.1	44.2	18.7	2.368	95.9	95.3	1.006
+SMNT-252S-0903W	1623	100.7	690.1	49.5	20.7	2.386	108.1	106.3	1.018
+SMNT-252S-0903W	1848	102.1	842.3	55.6	22.8	2.440	120.7	118.1	1.022
+SMNT-252S-1009W	1344	90.9	312.3	36.1	13.1	2.752	79.5	74.6	1.066
+SMNT-252S-1009W	1615	89.0	460.3	44.7	15.5	2.877	94.4	91.9	1.027
+SMNT-252S-1009W	1886	90.5	596.3	48.2	18.0	2.676	99.5	102.2	0.974
+SMNT-253S-0851W	1771	148.6	127.6	16.2	12.8	1.271	49.1	40.5	1.213
+SMNT-253S-0851W	2033	155.0	175.5	18.0	15.0	1.200	54.0	47.3	1.144
+SMNT-253S-0851W	2294	166.4	242.3	22.4	17.7	1.266	70.5	55.8	1.265
+SMNT-253S-0856W	2083	116.2	91.1	16.5	8.2	2.011	44.5	36.9	1.205
+SMNT-253S-0856W	2328	116.3	125.6	18.0	10.3	1.746	51.3	42.0	1.220
+SMNT-253S-0856W	2572	116.1	163.1	19.7	12.0	1.647	57.5	47.4	1.214
+SMNT-254S-0818W	1314	63.1	310.3	26.8	21.0	1.277	86.4	63.1	1.368
+SMNT-254S-0818W	1638	51.7	392.6	29.5	23.7	1.242	106.4	70.9	1.502
+SMNT-254S-0818W	1961	222.7	505.9	32.8	26.7	1.228	121.4	80.4	1.511
+SMNT-254S-0913W	1668	79.6	119.1	15.6	10.8	1.443	40.1	39.7	1.010
+SMNT-254S-0913W	1853	76.1	151.7	17.8	12.2	1.458	46.8	44.8	1.044
+SMNT-254S-0913W	2037	73.8	191.1	20.2	13.7	1.473	53.3	50.4	1.058
+SMNT-255S-0842W	1647	75.5	237.3	24.9	15.8	1.580	72.1	56.7	1.271
+SMNT-255S-0842W	1910	81.3	301.1	28.1	17.8	1.573	85.7	63.9	1.341
+SMNT-255S-0842W	2173	82.9	381.7	30.4	20.1	1.513	94.1	71.5	1.316
+SMNT-255S-0892W	1197	86.4	446.5	48.1	18.2	2.650	114.4	88.2	1.298
+SMNT-255S-0892W	1480	87.2	578.4	54.8	19.4	2.817	137.2	102.3	1.342
+SMNT-255S-0892W	1763	86.9	724.5	55.9	21.4	2.609	139.5	111.8	1.249
+SMNT-255S-0903W	2295	81.5	166.5	16.9	13.9	1.218	45.9	46.1	0.996
+SMNT-255S-0903W	2513	82.4	219.5	19.4	16.0	1.209	52.7	52.9	0.997
+SMNT-255S-0903W	2730	84.0	279.5	21.8	18.2	1.201	59.6	59.6	0.999
+SMNT-255S-0930W	1578	109.3	144.2	18.6	12.2	1.525	44.4	44.0	1.010
+SMNT-255S-0930W	1810	99.6	198.2	23.7	14.4	1.647	55.0	52.2	1.053
+SMNT-255S-0930W	2042	106.5	283.0	27.9	17.5	1.597	59.8	62.1	0.963
+SMNT-255S-0981W	2309	49.6	221.9	31.1	13.9	2.231	82.5	59.1	1.395
+SMNT-255S-0981W	2490	54.0	294.4	32.5	16.7	1.941	92.4	65.8	1.403
+SMNT-255S-0981W	2671	60.2	377.7	35.8	18.9	1.894	101.0	74.1	1.362
+SMNT-255S-0996W	2007	95.9	294.3	31.8	13.9	2.280	70.3	68.5	1.026
+SMNT-255S-0996W	2168	93.9	406.0	38.1	16.2	2.358	83.5	81.2	1.028
+SMNT-255S-0996W	2328	92.2	532.3	43.4	18.7	2.325	95.7	92.6	1.033
+SMNT-256S-0869W	1835	111.4	90.1	23.4	9.6	2.448	58.6	38.7	1.516
+SMNT-256S-0869W	2099	109.1	162.1	25.8	12.1	2.135	83.2	50.0	1.665
+SMNT-256S-0869W	2363	105.4	257.7	28.7	14.4	1.987	79.2	61.9	1.279
+SMNT-256S-0897W	1443	87.8	137.2	27.5	9.7	2.844	68.1	50.0	1.363
+SMNT-256S-0897W	1690	88.3	188.5	28.0	12.0	2.337	70.8	55.2	1.282
+SMNT-256S-0897W	1937	91.2	251.1	28.5	14.2	2.009	76.0	61.3	1.240
+SMNT-256S-0929W	1502	93.1	187.9	24.1	11.0	2.201	51.8	54.2	0.955
+SMNT-256S-0929W	1718	89.2	247.6	27.2	13.4	2.026	61.7	61.0	1.012
+SMNT-256S-0929W	1933	86.5	326.1	31.3	15.1	2.073	68.5	70.4	0.974
+SMNT-257S-0825W	1733	48.1	511.5	41.7	19.7	2.115	102.1	88.6	1.153
+SMNT-257S-0825W	2015	52.6	678.7	48.0	22.2	2.162	124.7	102.6	1.216
+SMNT-257S-0825W	2298	55.4	852.5	55.6	24.8	2.245	129.5	116.1	1.115
+SMNT-257S-0829W	1423	62.5	670.8	45.7	24.3	1.885	128.3	98.7	1.300
+SMNT-257S-0829W	1765	62.3	812.5	47.2	27.6	1.708	134.1	106.5	1.259
+SMNT-257S-0829W	2107	60.1	974.0	49.1	31.1	1.582	143.6	115.0	1.249
+SMNT-257S-0855W	1473	75.9	868.8	46.3	35.4	1.311	157.4	105.9	1.486
+SMNT-257S-0855W	1755	75.1	1157.1	52.0	39.6	1.315	174.6	122.3	1.428
+SMNT-257S-0855W	2038	72.2	1421.6	55.9	42.7	1.310	182.8	135.5	1.349
+SMNT-257S-0866W	1730	87.4	1066.2	52.0	36.3	1.434	167.2	118.6	1.410
+SMNT-257S-0866W	2076	84.9	1411.5	60.1	40.6	1.481	196.4	137.0	1.433
+SMNT-257S-0866W	2422	85.7	1762.4	65.6	44.1	1.490	180.9	153.2	1.180
+SMNT-257S-0949W	1523	49.6	301.4	27.8	16.8	1.655	67.5	64.5	1.047
+SMNT-257S-0949W	1803	59.1	447.3	37.4	20.5	1.822	98.6	80.0	1.232
+SMNT-257S-0949W	2082	55.2	610.1	40.5	23.2	1.749	99.5	92.7	1.073
+SMNT-258S-0833W	1691	46.0	418.6	30.9	21.6	1.431	92.8	74.3	1.250
+SMNT-258S-0833W	1985	45.8	545.3	33.9	24.8	1.366	95.6	84.3	1.134
+SMNT-258S-0833W	2279	221.8	659.0	35.5	26.7	1.331	92.8	92.4	1.004
+SMNT-258S-0840W	1568	165.1	311.4	33.4	18.1	1.842	81.5	66.9	1.218
+SMNT-258S-0840W	1828	164.4	427.5	35.0	21.5	1.629	97.7	76.6	1.276
+SMNT-258S-0840W	2089	163.6	543.7	37.1	25.2	1.472	110.3	85.0	1.298
+SMNT-258S-0910W	1569	92.3	299.7	32.0	14.1	2.268	80.4	69.1	1.165
+SMNT-258S-0910W	1910	96.5	423.8	37.2	17.1	2.182	98.8	81.3	1.215
+SMNT-258S-0910W	2251	99.4	580.9	41.3	20.5	2.013	101.7	93.2	1.091
+SMNT-258S-0939W	1948	69.5	118.6	16.0	12.5	1.276	51.6	39.0	1.322
+SMNT-258S-0939W	2178	63.9	169.4	18.9	14.2	1.329	56.7	46.8	1.212
+SMNT-258S-0939W	2407	62.8	225.9	21.9	16.2	1.353	63.7	54.2	1.176
+SMNT-258S-0955W	1325	76.4	538.7	52.5	18.4	2.848	136.3	99.1	1.375
+SMNT-258S-0955W	1538	77.6	672.5	56.9	20.0	2.839	140.4	110.6	1.270
+SMNT-258S-0955W	1750	77.8	818.0	59.7	22.6	2.636	149.4	119.1	1.254
+SMNT-259S-0907W	1967	72.0	87.9	12.4	10.3	1.210	35.5	33.5	1.061
+SMNT-259S-0907W	2255	81.2	132.2	15.5	12.4	1.249	46.0	41.1	1.119
+SMNT-259S-0907W	2543	89.5	182.9	17.7	14.9	1.188	55.5	48.2	1.151
+SMNT-259S-0960W	1750	91.7	399.6	39.4	14.7	2.678	90.1	83.7	1.077
+SMNT-259S-0960W	1960	91.4	509.5	43.1	17.3	2.488	92.3	92.4	0.999
+SMNT-259S-0960W	2170	92.6	618.3	45.6	20.2	2.261	106.7	99.1	1.077
+SMNT-259S-0996W	2233	94.9	69.7	11.5	9.5	1.205	36.1	29.8	1.211
+SMNT-259S-0996W	2367	94.9	95.9	13.2	10.6	1.246	40.0	35.0	1.143
+SMNT-259S-0996W	2502	84.2	127.4	15.5	12.2	1.268	40.1	40.4	0.991
+SMNT-260S-1007W	1384	93.2	1377.5	77.2	38.3	2.014	241.6	143.6	1.683
+SMNT-260S-1007W	1663	92.8	1832.3	80.8	40.7	1.985	283.1	165.1	1.715
+SMNT-260S-1007W	1941	90.4	2365.6	90.4	43.6	2.074	272.8	189.5	1.439
+SMNT-260S-1022W	1340	94.0	190.0	18.7	14.9	1.260	51.1	49.4	1.035
+SMNT-260S-1022W	1600	94.4	255.9	21.4	17.1	1.256	54.4	57.3	0.951
+SMNT-260S-1022W	1860	90.7	320.6	24.6	19.2	1.281	59.2	64.2	0.922
+SMNT-260S-1033W	2099	179.4	135.2	16.2	12.1	1.342	44.8	41.9	1.069
+SMNT-260S-1033W	2258	180.4	174.4	18.1	13.9	1.297	50.1	47.4	1.056
+SMNT-260S-1033W	2416	182.7	221.1	20.0	15.9	1.261	56.1	53.2	1.053
+SMNT-261S-1000W	1628	203.8	60.2	10.0	9.9	1.011	33.4	27.5	1.214
+SMNT-261S-1000W	1839	197.6	97.2	12.9	11.8	1.092	46.3	35.0	1.324
+SMNT-261S-1000W	2051	199.8	144.8	21.0	13.0	1.619	63.2	44.5	1.419
+SMNT-261S-1038W	1332	87.2	140.9	15.3	13.6	1.125	48.1	42.2	1.141
+SMNT-261S-1038W	1583	86.1	184.4	17.3	15.5	1.119	51.7	48.2	1.071
+SMNT-261S-1038W	1833	86.7	234.7	19.2	17.5	1.097	58.9	54.4	1.083
+SMNT-262S-0863W	1957	79.6	57.9	12.3	7.2	1.715	34.0	28.4	1.196
+SMNT-262S-0863W	2125	80.3	83.6	14.5	8.6	1.692	37.4	34.1	1.097
+SMNT-262S-0863W	2293	80.1	112.1	17.1	9.8	1.734	43.3	39.7	1.091
+SMNT-262S-1030W	1400	49.7	99.5	14.2	11.2	1.269	47.6	35.7	1.332
+SMNT-262S-1030W	1685	55.3	141.8	16.6	12.9	1.283	54.3	42.7	1.272
+SMNT-262S-1030W	1970	51.7	199.2	19.3	15.1	1.276	67.7	50.6	1.339
+SMNT-262S-1036W	1564	57.5	44.7	9.0	7.9	1.146	27.8	23.8	1.169
+SMNT-262S-1036W	1770	67.0	66.4	10.7	9.4	1.135	32.8	29.0	1.133
+SMNT-262S-1036W	1976	73.7	93.4	12.7	11.0	1.158	38.3	34.4	1.112
+SMNT-263S-1018W	1633	73.6	175.8	20.0	12.7	1.571	48.8	48.8	0.999
+SMNT-263S-1018W	1865	72.3	247.4	23.7	14.8	1.603	54.0	58.1	0.929
+SMNT-263S-1018W	2097	71.3	325.7	27.3	17.1	1.592	58.0	66.6	0.872
+SMNT-264S-1049W	1291	55.0	24.9	7.9	4.9	1.610	21.6	18.4	1.173
+SMNT-264S-1049W	1519	53.7	47.9	10.5	6.9	1.521	27.5	25.3	1.087
+SMNT-264S-1049W	1748	65.9	82.0	13.3	9.8	1.355	37.2	32.7	1.138
+SMNT-264S-1059W	1180	67.2	19.1	9.4	3.1	2.998	25.6	19.0	1.349
+SMNT-264S-1059W	1421	68.9	52.0	16.4	5.4	3.021	41.0	31.4	1.306
+SMNT-264S-1059W	1663	71.5	101.5	20.8	7.6	2.720	44.0	42.4	1.038
+SMNT-264S-1065W	1210	83.1	210.4	30.7	13.8	2.225	87.8	57.6	1.525
+SMNT-264S-1065W	1448	85.9	295.9	37.9	15.2	2.497	105.8	70.5	1.501
+SMNT-264S-1065W	1685	81.3	414.3	42.9	17.6	2.440	114.3	82.9	1.380
+SMNT-265S-0867W	1896	115.2	66.9	10.5	9.3	1.126	32.3	29.1	1.113
+SMNT-265S-0867W	2115	224.1	100.8	13.9	12.1	1.147	49.5	35.7	1.386
+SMNT-265S-0867W	2334	211.5	162.2	21.0	13.5	1.551	61.9	46.8	1.323
+SMNT-265S-1053W	1254	97.5	549.1	56.5	19.5	2.898	154.5	100.6	1.536
+SMNT-265S-1053W	1568	94.9	780.1	66.0	24.2	2.729	184.1	117.6	1.565
+SMNT-265S-1053W	1881	93.3	1065.3	77.7	25.9	3.004	194.8	141.8	1.374
+SMNT-267S-1050W	1462	109.2	147.7	18.3	11.8	1.555	46.9	44.7	1.050
+SMNT-267S-1050W	1655	109.9	200.5	21.0	14.0	1.502	56.2	51.8	1.087
+SMNT-267S-1050W	1848	112.4	259.3	23.8	15.8	1.504	62.9	58.9	1.068
+SMNT-267S-1062W	1345	84.8	176.8	26.2	11.9	2.206	60.1	52.6	1.143
+SMNT-267S-1062W	1571	87.7	282.7	34.1	14.0	2.428	73.7	68.3	1.079
+SMNT-267S-1062W	1797	88.1	391.2	39.5	16.2	2.432	85.4	80.4	1.062
+SMNT-268S-1059W	1629	52.0	83.4	13.9	9.5	1.460	42.9	33.2	1.291
+SMNT-268S-1059W	1812	46.7	135.4	17.6	12.0	1.468	59.2	42.4	1.397
+SMNT-268S-1059W	1995	223.7	195.5	23.3	13.9	1.672	73.4	52.0	1.411
+SMNT-269S-1056W	2055	91.4	49.5	17.2	9.3	1.840	55.8	26.7	2.091
+SMNT-269S-1056W	2183	97.8	91.8	20.3	10.5	1.927	63.7	36.7	1.737
+SMNT-269S-1056W	2310	90.2	145.8	30.7	11.4	2.707	78.3	50.7	1.545
+SMNT-269S-1069W	1750	82.6	40.2	9.6	6.4	1.497	26.0	23.2	1.124
+SMNT-269S-1069W	1950	81.5	61.3	11.3	8.1	1.397	31.1	28.3	1.099
+SMNT-269S-1069W	2150	80.1	87.2	13.0	9.8	1.331	36.4	33.6	1.084
+SMNT-269S-1075W	2042	72.2	166.4	16.9	14.2	1.191	48.9	46.0	1.062
+SMNT-269S-1075W	2193	68.3	223.9	19.8	16.8	1.176	58.2	53.3	1.092
+SMNT-269S-1075W	2343	60.5	290.4	23.1	18.9	1.222	70.8	60.9	1.163
+SMNT-270S-1061W	1979	87.1	54.8	10.0	8.2	1.227	29.4	26.5	1.113
+SMNT-270S-1061W	2163	91.7	80.4	13.0	9.7	1.335	37.9	32.3	1.173
+SMNT-270S-1061W	2346	99.1	112.6	16.1	11.5	1.407	47.3	38.4	1.231
+SMNT-270S-1108W	1938	85.0	82.9	15.8	8.0	1.966	37.9	35.0	1.082
+SMNT-270S-1108W	2074	86.3	119.6	19.6	8.9	2.198	43.9	43.3	1.016
+SMNT-270S-1108W	2209	88.1	168.5	24.6	10.0	2.459	50.4	53.0	0.952
+SMNT-270S-1111W	1848	75.2	149.5	27.2	13.7	1.993	72.2	47.2	1.530
+SMNT-270S-1111W	1998	75.9	241.0	34.7	16.1	2.163	91.2	61.1	1.492
+SMNT-270S-1111W	2147	73.1	323.2	39.3	16.3	2.416	92.2	73.0	1.263
+SMNT-273S-1050W	1711	122.5	94.1	14.9	9.4	1.586	40.1	35.8	1.122
+SMNT-273S-1050W	1913	105.8	152.6	20.9	12.5	1.677	64.5	46.0	1.403
+SMNT-273S-1050W	2115	106.1	248.2	27.1	16.4	1.658	75.5	58.5	1.290
+SMNT-273S-1085W	2155	213.6	41.5	13.9	7.7	1.805	30.3	24.3	1.246
+SMNT-273S-1085W	2292	219.4	64.7	15.0	9.1	1.648	43.2	29.9	1.446
+SMNT-273S-1085W	2429	46.6	90.4	16.5	10.1	1.631	51.9	35.2	1.473
+SMNT-275S-1079W	2053	207.9	158.1	22.6	10.1	2.244	52.2	50.0	1.044
+SMNT-275S-1079W	2192	207.7	210.0	26.8	11.9	2.244	60.9	57.6	1.056
+SMNT-275S-1079W	2332	206.7	266.1	29.5	14.4	2.041	65.1	63.3	1.028
+SMNT-275S-1082W	2207	215.2	152.2	20.5	11.8	1.741	83.5	46.2	1.806
+SMNT-275S-1082W	2343	221.6	212.0	28.7	12.8	2.248	100.0	57.9	1.727
+SMNT-275S-1082W	2478	221.4	285.6	30.5	15.2	2.010	99.3	65.4	1.519
+SMNT-276S-1054W	1928	131.6	270.5	30.6	13.4	2.284	72.0	65.7	1.096
+SMNT-276S-1054W	2115	132.1	357.1	35.3	15.0	2.349	80.8	76.1	1.062
+SMNT-276S-1054W	2302	134.4	479.5	43.1	17.9	2.405	107.1	88.8	1.206
+SMNT-277S-1057W	1879	203.2	76.9	11.8	9.6	1.227	30.6	31.3	0.977
+SMNT-277S-1057W	2053	200.6	99.4	13.4	11.0	1.215	32.3	35.6	0.908
+SMNT-277S-1057W	2226	201.6	123.0	15.1	12.4	1.217	37.9	39.6	0.958
+SMNT-277S-1064W	1728	213.9	59.5	11.8	8.1	1.455	33.3	28.1	1.188
+SMNT-277S-1064W	1925	214.4	97.0	15.4	9.7	1.577	40.8	36.3	1.124
+SMNT-277S-1064W	2122	207.9	143.5	18.4	11.6	1.587	50.4	44.2	1.141
+SMNT-278S-1059W	2118	56.7	69.5	11.6	8.7	1.329	30.8	30.0	1.028
+SMNT-278S-1059W	2248	54.8	87.9	13.1	9.9	1.328	35.1	33.7	1.039
+SMNT-278S-1059W	2377	54.6	108.2	14.3	11.0	1.298	38.4	37.4	1.029
+SMNT-278S-1101W	1992	93.8	138.3	34.3	7.9	4.365	82.8	58.6	1.413
+SMNT-278S-1101W	2120	95.0	205.6	39.2	9.8	3.991	95.1	69.0	1.380
+SMNT-278S-1101W	2248	93.5	298.2	43.7	19.4	2.252	127.1	68.7	1.849
+SMNT-280S-1092W	1998	95.2	70.3	15.4	7.0	2.208	35.4	33.2	1.066
+SMNT-280S-1092W	2115	92.6	92.6	16.9	8.2	2.075	39.5	37.5	1.054
+SMNT-280S-1092W	2232	89.1	117.6	18.7	9.4	1.996	43.8	41.9	1.047
+SMNT-281S-1083W	1936	63.9	147.7	46.7	6.1	7.707	76.4	76.9	0.994
+SMNT-281S-1083W	2088	65.0	241.3	58.0	7.5	7.760	90.8	98.6	0.920
+SMNT-281S-1083W	2239	65.7	328.8	65.1	9.3	7.030	101.1	110.2	0.917
+SMNT-283S-1070W	2322	90.2	80.0	11.9	9.7	1.222	31.9	31.9	0.997
+SMNT-283S-1070W	2443	91.3	114.3	14.0	11.9	1.178	38.2	38.1	1.003
+SMNT-283S-1070W	2563	91.4	155.7	16.3	14.1	1.150	45.0	44.4	1.013
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (832)		SMNT-239S-0860W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-239S-0860W.std.180m.mg.map.jpg	180	797	877	832
+Unnamed Guyot -- Multibeam bathymetry (833)		SMNT-239S-0860W	Regional	Multibeam bathymetry	Map:Grid	SMNT-239S-0860W.std.180m.mb.map.jpg	180	1108	1188	833
+Unnamed Guyot -- Predicted satellite bathymetry (834)		SMNT-239S-0860W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-239S-0860W.std.180m.ss.map.jpg	180	797	877	834
+Unnamed Guyot -- Residual bathymetry (835)		SMNT-239S-0860W	Regional	Residual bathymetry	Map:Grid	SMNT-239S-0860W.std.180m.rs.map.jpg	180	797	877	835
+Alberta Guyot -- Predicted satellite bathymetry	SMNT-240S-0847W	SMNT-240S-0847W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-240S-0847W.std.180m.ss.map.jpg	180	693	773	838
+Unnamed Seamount -- Multibeam bathymetry (842)		SMNT-242S-0850W	Regional	Multibeam bathymetry	Grid					842
+Unnamed Seamount -- Predicted satellite bathymetry (843)		SMNT-242S-0850W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-242S-0850W.std.180m.ss.map.jpg	180	693	773	843
+Unnamed Seamount -- Residual bathymetry (844)		SMNT-242S-0850W	Regional	Residual bathymetry	Grid					844
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (847)		SMNT-242S-0868W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-242S-0868W.std.180m.mg.map.jpg	180	693	773	847
+Unnamed Seamount -- Multibeam bathymetry (848)		SMNT-242S-0868W	Regional	Multibeam bathymetry	Map:Grid	SMNT-242S-0868W.std.180m.mb.map.jpg	180	952	1033	848
+Unnamed Seamount -- Predicted satellite bathymetry (849)		SMNT-242S-0868W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-242S-0868W.std.180m.ss.map.jpg	180	693	773	849
+Unnamed Seamount -- Residual bathymetry (850)		SMNT-242S-0868W	Regional	Residual bathymetry	Map:Grid	SMNT-242S-0868W.std.180m.rs.map.jpg	180	693	773	850
+Unnamed Ridge -- Multibeam data merged with predicted satellite bathymetry (853)		SMNT-244S-0837W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-244S-0837W.std.180m.mg.map.jpg	180	849	929	853
+Unnamed Ridge -- Multibeam bathymetry (854)		SMNT-244S-0837W	Regional	Multibeam bathymetry	Map:Grid	SMNT-244S-0837W.std.180m.mb.map.jpg	180	1186	1266	854
+Unnamed Ridge -- Predicted satellite bathymetry (855)		SMNT-244S-0837W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-244S-0837W.std.180m.ss.map.jpg	180	849	929	855
+Unnamed Ridge -- Residual bathymetry (856)		SMNT-244S-0837W	Regional	Residual bathymetry	Map:Grid	SMNT-244S-0837W.std.180m.rs.map.jpg	180	849	929	856
+Henderson Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-244S-1283W	SMNT-244S-1283W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-244S-1283W.std.180m.mg.map.jpg	180	693	773	859
+Henderson Seamount -- Multibeam bathymetry	SMNT-244S-1283W	SMNT-244S-1283W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-244S-1283W.std.180m.mb.map.jpg	180	952	1033	860
+Henderson Seamount -- Predicted satellite bathymetry	SMNT-244S-1283W	SMNT-244S-1283W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-244S-1283W.std.180m.ss.map.jpg	180	693	773	861
+Henderson Seamount -- Residual bathymetry	SMNT-244S-1283W	SMNT-244S-1283W	Seamount	Residual bathymetry	Map:Grid	SMNT-244S-1283W.std.180m.rs.map.jpg	180	693	773	862
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (863)		SMNT-245S-0846W	Regional	Multibeam merged with predicted satellite bathymetry	Grid					863
+Unnamed Seamount -- Multibeam bathymetry (864)		SMNT-245S-0846W	Regional	Multibeam bathymetry	Grid					864
+Unnamed Seamount -- Predicted satellite bathymetry (865)		SMNT-245S-0846W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-245S-0846W.std.180m.ss.map.jpg	180	693	773	865
+Unnamed Seamount -- Residual bathymetry (866)		SMNT-245S-0846W	Regional	Residual bathymetry	Grid					866
+Unnamed Seamount -- Multibeam bathymetry (870)		SMNT-245S-0880W	Regional	Multibeam bathymetry	Map:Grid	SMNT-245S-0880W.std.180m.mb.map.jpg	180	952	1033	870
+Unnamed Seamount -- Predicted satellite bathymetry (871)		SMNT-245S-0880W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-245S-0880W.std.180m.ss.map.jpg	180	693	773	871
+Unnamed Seamount -- Residual bathymetry (872)		SMNT-245S-0880W	Regional	Residual bathymetry	Map:Grid	SMNT-245S-0880W.std.180m.rs.map.jpg	180	693	773	872
+Unnamed Guyot -- Multibeam bathymetry (876)		SMNT-246S-0877W	Regional	Multibeam bathymetry	Grid					876
+Unnamed Guyot -- Predicted satellite bathymetry (877)		SMNT-246S-0877W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-246S-0877W.std.180m.ss.map.jpg	180	693	773	877
+Unnamed Guyot -- Residual bathymetry (878)		SMNT-246S-0877W	Regional	Residual bathymetry	Grid					878
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (881)		SMNT-247S-0826W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-247S-0826W.std.180m.mg.map.jpg	180	693	773	881
+Unnamed Seamount -- Multibeam bathymetry (882)		SMNT-247S-0826W	Regional	Multibeam bathymetry	Map:Grid	SMNT-247S-0826W.std.180m.mb.map.jpg	180	952	1033	882
+Unnamed Seamount -- Predicted satellite bathymetry (883)		SMNT-247S-0826W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-247S-0826W.std.180m.ss.map.jpg	180	693	773	883
+Unnamed Seamount -- Residual bathymetry (884)		SMNT-247S-0826W	Regional	Residual bathymetry	Map:Grid	SMNT-247S-0826W.std.180m.rs.map.jpg	180	693	773	884
+Albert Seamount -- Predicted satellite bathymetry	SMNT-247S-0855W	SMNT-247S-0855W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-247S-0855W.std.180m.ss.map.jpg	180	849	929	885
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (888)		SMNT-247S-0903W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-247S-0903W.std.180m.mg.map.jpg	180	849	929	888
+Unnamed Seamount -- Multibeam bathymetry (889)		SMNT-247S-0903W	Regional	Multibeam bathymetry	Map:Grid	SMNT-247S-0903W.std.180m.mb.map.jpg	180	1186	1266	889
+Unnamed Seamount -- Predicted satellite bathymetry (890)		SMNT-247S-0903W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-247S-0903W.std.180m.ss.map.jpg	180	849	929	890
+Unnamed Seamount -- Residual bathymetry (891)		SMNT-247S-0903W	Regional	Residual bathymetry	Map:Grid	SMNT-247S-0903W.std.180m.rs.map.jpg	180	849	929	891
+Trygon Seamount -- Predicted satellite bathymetry	SMNT-247S-1105W	SMNT-247S-1105W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-247S-1105W.std.180m.ss.map.jpg	180	641	721	894
+Ducie Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-247S-1248W	SMNT-247S-1248W	Seamount	Multibeam merged with predicted satellite bathymetry	Grid					895
+Ducie Seamount -- Multibeam bathymetry	SMNT-247S-1248W	SMNT-247S-1248W	Seamount	Multibeam bathymetry	Grid					896
+Ducie Seamount -- Predicted satellite bathymetry	SMNT-247S-1248W	SMNT-247S-1248W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-247S-1248W.std.180m.ss.map.jpg	180	589	670	897
+Ducie Seamount -- Residual bathymetry	SMNT-247S-1248W	SMNT-247S-1248W	Seamount	Residual bathymetry	Grid					898
+Unnamed Seamount -- Multibeam bathymetry (900)		SMNT-248S-0849W	Regional	Multibeam bathymetry	Grid					900
+Unnamed Seamount -- Predicted satellite bathymetry (901)		SMNT-248S-0849W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-248S-0849W.std.180m.ss.map.jpg	180	693	773	901
+Unnamed Seamount -- Residual bathymetry (902)		SMNT-248S-0849W	Regional	Residual bathymetry	Grid					902
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (905)		SMNT-248S-0947W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-248S-0947W.std.180m.mg.map.jpg	180	901	981	905
+Unnamed Seamount -- Multibeam bathymetry (906)		SMNT-248S-0947W	Regional	Multibeam bathymetry	Map:Grid	SMNT-248S-0947W.std.180m.mb.map.jpg	180	1264	1344	906
+Unnamed Seamount -- Predicted satellite bathymetry (907)		SMNT-248S-0947W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-248S-0947W.std.180m.ss.map.jpg	180	901	981	907
+Unnamed Seamount -- Residual bathymetry (908)		SMNT-248S-0947W	Regional	Residual bathymetry	Map:Grid	SMNT-248S-0947W.std.180m.rs.map.jpg	180	901	981	908
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (911)		SMNT-249S-0865W	Regional	Multibeam merged with predicted satellite bathymetry	Grid					911
+Unnamed Seamount -- Multibeam bathymetry (912)		SMNT-249S-0865W	Regional	Multibeam bathymetry	Grid					912
+Unnamed Seamount -- Predicted satellite bathymetry (913)		SMNT-249S-0865W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-249S-0865W.std.180m.ss.map.jpg	180	745	825	913
+Unnamed Seamount -- Residual bathymetry (914)		SMNT-249S-0865W	Regional	Residual bathymetry	Grid					914
+Amber Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-250S-0885W	SMNT-250S-0885W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-250S-0885W.std.180m.mg.map.jpg	180	1160	1240	917
+Amber Guyot -- Multibeam bathymetry	SMNT-250S-0885W	SMNT-250S-0885W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-250S-0885W.std.180m.mb.map.jpg	180	1652	1732	918
+Amber Guyot -- Predicted satellite bathymetry	SMNT-250S-0885W	SMNT-250S-0885W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-250S-0885W.std.180m.ss.map.jpg	180	1160	1240	919
+Amber Guyot -- Residual bathymetry	SMNT-250S-0885W	SMNT-250S-0885W	Seamount	Residual bathymetry	Map:Grid	SMNT-250S-0885W.std.180m.rs.map.jpg	180	1160	1240	920
+Unnamed Seamount -- Predicted satellite bathymetry (925)		SMNT-250S-0911W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-250S-0911W.std.180m.ss.map.jpg	180	797	877	925
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (929)		SMNT-250S-0949W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-250S-0949W.std.180m.mg.map.jpg	180	693	773	929
+Unnamed Seamount -- Multibeam bathymetry (930)		SMNT-250S-0949W	Regional	Multibeam bathymetry	Map:Grid	SMNT-250S-0949W.std.180m.mb.map.jpg	180	952	1033	930
+Unnamed Seamount -- Predicted satellite bathymetry (931)		SMNT-250S-0949W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-250S-0949W.std.180m.ss.map.jpg	180	693	773	931
+Unnamed Seamount -- Residual bathymetry (932)		SMNT-250S-0949W	Regional	Residual bathymetry	Map:Grid	SMNT-250S-0949W.std.180m.rs.map.jpg	180	693	773	932
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (935)		SMNT-250S-0962W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-250S-0962W.std.180m.mg.map.jpg	180	693	773	935
+Unnamed Seamount -- Multibeam bathymetry (936)		SMNT-250S-0962W	Regional	Multibeam bathymetry	Map:Grid	SMNT-250S-0962W.std.180m.mb.map.jpg	180	952	1033	936
+Unnamed Seamount -- Predicted satellite bathymetry (937)		SMNT-250S-0962W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-250S-0962W.std.180m.ss.map.jpg	180	693	773	937
+Unnamed Seamount -- Residual bathymetry (938)		SMNT-250S-0962W	Regional	Residual bathymetry	Map:Grid	SMNT-250S-0962W.std.180m.rs.map.jpg	180	693	773	938
+Pillar Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-250S-0982W	SMNT-250S-0982W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-250S-0982W.std.180m.mg.map.jpg	180	693	773	941
+Pillar Seamount -- Multibeam bathymetry	SMNT-250S-0982W	SMNT-250S-0982W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-250S-0982W.std.180m.mb.map.jpg	180	952	1033	942
+Pillar Seamount -- Predicted satellite bathymetry	SMNT-250S-0982W	SMNT-250S-0982W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-250S-0982W.std.180m.ss.map.jpg	180	693	773	943
+Pillar Seamount -- Residual bathymetry	SMNT-250S-0982W	SMNT-250S-0982W	Seamount	Residual bathymetry	Map:Grid	SMNT-250S-0982W.std.180m.rs.map.jpg	180	693	773	944
+Unnamed Atoll -- Multibeam data merged with predicted satellite bathymetry		SMNT-251S-0822W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-251S-0822W.std.180m.mg.map.jpg	180	952	1033	947
+Unnamed Atoll -- Multibeam bathymetry		SMNT-251S-0822W	Regional	Multibeam bathymetry	Map:Grid	SMNT-251S-0822W.std.180m.mb.map.jpg	180	1341	1421	948
+Unnamed Atoll -- Predicted satellite bathymetry		SMNT-251S-0822W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-251S-0822W.std.180m.ss.map.jpg	180	952	1033	949
+Unnamed Atoll -- Residual bathymetry		SMNT-251S-0822W	Regional	Residual bathymetry	Map:Grid	SMNT-251S-0822W.std.180m.rs.map.jpg	180	952	1033	950
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (953)		SMNT-251S-0908W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-251S-0908W.std.180m.mg.map.jpg	180	589	670	953
+Unnamed Guyot -- Multibeam bathymetry (954)		SMNT-251S-0908W	Regional	Multibeam bathymetry	Map:Grid	SMNT-251S-0908W.std.180m.mb.map.jpg	180	797	877	954
+Unnamed Guyot -- Predicted satellite bathymetry (955)		SMNT-251S-0908W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-251S-0908W.std.180m.ss.map.jpg	180	589	670	955
+Unnamed Guyot -- Residual bathymetry (956)		SMNT-251S-0908W	Regional	Residual bathymetry	Map:Grid	SMNT-251S-0908W.std.180m.rs.map.jpg	180	589	670	956
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (959)		SMNT-251S-0966W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-251S-0966W.std.180m.mg.map.jpg	180	693	773	959
+Unnamed Seamount -- Multibeam bathymetry (960)		SMNT-251S-0966W	Regional	Multibeam bathymetry	Map:Grid	SMNT-251S-0966W.std.180m.mb.map.jpg	180	952	1033	960
+Unnamed Seamount -- Predicted satellite bathymetry (961)		SMNT-251S-0966W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-251S-0966W.std.180m.ss.map.jpg	180	693	773	961
+Unnamed Seamount -- Residual bathymetry (962)		SMNT-251S-0966W	Regional	Residual bathymetry	Map:Grid	SMNT-251S-0966W.std.180m.rs.map.jpg	180	693	773	962
+Cupole Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-251S-0974W	SMNT-251S-0974W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-251S-0974W.std.180m.mg.map.jpg	180	1056	1136	965
+Cupole Seamount -- Multibeam bathymetry	SMNT-251S-0974W	SMNT-251S-0974W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-251S-0974W.std.180m.mb.map.jpg	180	1497	1577	966
+Cupole Seamount -- Predicted satellite bathymetry	SMNT-251S-0974W	SMNT-251S-0974W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-251S-0974W.std.180m.ss.map.jpg	180	1056	1136	967
+Cupole Seamount -- Residual bathymetry	SMNT-251S-0974W	SMNT-251S-0974W	Seamount	Residual bathymetry	Map:Grid	SMNT-251S-0974W.std.180m.rs.map.jpg	180	1056	1136	968
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (971)		SMNT-251S-0988W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-251S-0988W.std.180m.mg.map.jpg	180	693	773	971
+Unnamed Seamount -- Multibeam bathymetry (972)		SMNT-251S-0988W	Regional	Multibeam bathymetry	Map:Grid	SMNT-251S-0988W.std.180m.mb.map.jpg	180	952	1033	972
+Unnamed Seamount -- Predicted satellite bathymetry (973)		SMNT-251S-0988W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-251S-0988W.std.180m.ss.map.jpg	180	693	773	973
+Unnamed Seamount -- Residual bathymetry (974)		SMNT-251S-0988W	Regional	Residual bathymetry	Map:Grid	SMNT-251S-0988W.std.180m.rs.map.jpg	180	693	773	974
+Icthyologists Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-251S-0997W	SMNT-251S-0997W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-251S-0997W.std.180m.mg.map.jpg	180	1212	1292	977
+Icthyologists Seamount -- Multibeam bathymetry	SMNT-251S-0997W	SMNT-251S-0997W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-251S-0997W.std.180m.mb.map.jpg	180	1730	1810	978
+Icthyologists Seamount -- Predicted satellite bathymetry	SMNT-251S-0997W	SMNT-251S-0997W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-251S-0997W.std.180m.ss.map.jpg	180	1212	1292	979
+Icthyologists Seamount -- Residual bathymetry	SMNT-251S-0997W	SMNT-251S-0997W	Seamount	Residual bathymetry	Map:Grid	SMNT-251S-0997W.std.180m.rs.map.jpg	180	1212	1292	980
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (983)		SMNT-251S-1001W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-251S-1001W.std.180m.mg.map.jpg	180	693	773	983
+Unnamed Seamount -- Multibeam bathymetry (984)		SMNT-251S-1001W	Regional	Multibeam bathymetry	Map:Grid	SMNT-251S-1001W.std.180m.mb.map.jpg	180	952	1033	984
+Unnamed Seamount -- Predicted satellite bathymetry (985)		SMNT-251S-1001W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-251S-1001W.std.180m.ss.map.jpg	180	693	773	985
+Unnamed Seamount -- Residual bathymetry (986)		SMNT-251S-1001W	Regional	Residual bathymetry	Map:Grid	SMNT-251S-1001W.std.180m.rs.map.jpg	180	693	773	986
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (989)		SMNT-252S-0894W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-252S-0894W.std.180m.mg.map.jpg	180	693	773	989
+Unnamed Seamount -- Multibeam bathymetry (990)		SMNT-252S-0894W	Regional	Multibeam bathymetry	Map:Grid	SMNT-252S-0894W.std.180m.mb.map.jpg	180	952	1033	990
+Unnamed Seamount -- Predicted satellite bathymetry (991)		SMNT-252S-0894W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-252S-0894W.std.180m.ss.map.jpg	180	693	773	991
+Unnamed Seamount -- Residual bathymetry (992)		SMNT-252S-0894W	Regional	Residual bathymetry	Map:Grid	SMNT-252S-0894W.std.180m.rs.map.jpg	180	693	773	992
+Mayday Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-252S-0903W	SMNT-252S-0903W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-252S-0903W.std.180m.mg.map.jpg	180	952	1033	995
+Mayday Guyot -- Multibeam bathymetry	SMNT-252S-0903W	SMNT-252S-0903W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-252S-0903W.std.180m.mb.map.jpg	180	1341	1421	996
+Mayday Guyot -- Predicted satellite bathymetry	SMNT-252S-0903W	SMNT-252S-0903W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-252S-0903W.std.180m.ss.map.jpg	180	952	1033	997
+Mayday Guyot -- Residual bathymetry	SMNT-252S-0903W	SMNT-252S-0903W	Seamount	Residual bathymetry	Map:Grid	SMNT-252S-0903W.std.180m.rs.map.jpg	180	952	1033	998
+Needle Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-252S-1009W	SMNT-252S-1009W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-252S-1009W.std.180m.mg.map.jpg	180	849	929	1001
+Needle Seamount -- Multibeam bathymetry	SMNT-252S-1009W	SMNT-252S-1009W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-252S-1009W.std.180m.mb.map.jpg	180	1186	1266	1002
+Needle Seamount -- Predicted satellite bathymetry	SMNT-252S-1009W	SMNT-252S-1009W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-252S-1009W.std.180m.ss.map.jpg	180	849	929	1003
+Needle Seamount -- Residual bathymetry	SMNT-252S-1009W	SMNT-252S-1009W	Seamount	Residual bathymetry	Map:Grid	SMNT-252S-1009W.std.180m.rs.map.jpg	180	849	929	1004
+New Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-253S-0851W	SMNT-253S-0851W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-253S-0851W.std.180m.mg.map.jpg	180	693	773	1007
+New Seamount -- Multibeam bathymetry	SMNT-253S-0851W	SMNT-253S-0851W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-253S-0851W.std.180m.mb.map.jpg	180	952	1033	1008
+New Seamount -- Predicted satellite bathymetry	SMNT-253S-0851W	SMNT-253S-0851W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-253S-0851W.std.180m.ss.map.jpg	180	693	773	1009
+New Seamount -- Residual bathymetry	SMNT-253S-0851W	SMNT-253S-0851W	Seamount	Residual bathymetry	Map:Grid	SMNT-253S-0851W.std.180m.rs.map.jpg	180	693	773	1010
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1013)		SMNT-253S-0856W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-253S-0856W.std.180m.mg.map.jpg	180	589	670	1013
+Unnamed Seamount -- Multibeam bathymetry (1014)		SMNT-253S-0856W	Regional	Multibeam bathymetry	Map:Grid	SMNT-253S-0856W.std.180m.mb.map.jpg	180	797	877	1014
+Unnamed Seamount -- Predicted satellite bathymetry (1015)		SMNT-253S-0856W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-253S-0856W.std.180m.ss.map.jpg	180	589	670	1015
+Unnamed Seamount -- Residual bathymetry (1016)		SMNT-253S-0856W	Regional	Residual bathymetry	Map:Grid	SMNT-253S-0856W.std.180m.rs.map.jpg	180	589	670	1016
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1019)		SMNT-253S-0916W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-253S-0916W.std.180m.mg.map.jpg	180	693	773	1019
+Unnamed Seamount -- Multibeam bathymetry (1020)		SMNT-253S-0916W	Regional	Multibeam bathymetry	Map:Grid	SMNT-253S-0916W.std.180m.mb.map.jpg	180	952	1033	1020
+Unnamed Seamount -- Predicted satellite bathymetry (1021)		SMNT-253S-0916W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-253S-0916W.std.180m.ss.map.jpg	180	693	773	1021
+Unnamed Seamount -- Residual bathymetry (1022)		SMNT-253S-0916W	Regional	Residual bathymetry	Map:Grid	SMNT-253S-0916W.std.180m.rs.map.jpg	180	693	773	1022
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1025)		SMNT-253S-0936W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-253S-0936W.std.180m.mg.map.jpg	180	693	773	1025
+Unnamed Seamount -- Multibeam bathymetry (1026)		SMNT-253S-0936W	Regional	Multibeam bathymetry	Map:Grid	SMNT-253S-0936W.std.180m.mb.map.jpg	180	952	1033	1026
+Unnamed Seamount -- Predicted satellite bathymetry (1027)		SMNT-253S-0936W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-253S-0936W.std.180m.ss.map.jpg	180	693	773	1027
+Unnamed Seamount -- Residual bathymetry (1028)		SMNT-253S-0936W	Regional	Residual bathymetry	Map:Grid	SMNT-253S-0936W.std.180m.rs.map.jpg	180	693	773	1028
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1031)		SMNT-254S-0818W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-254S-0818W.std.180m.mg.map.jpg	180	693	773	1031
+Unnamed Guyot -- Multibeam bathymetry (1032)		SMNT-254S-0818W	Regional	Multibeam bathymetry	Map:Grid	SMNT-254S-0818W.std.180m.mb.map.jpg	180	952	1033	1032
+Unnamed Guyot -- Predicted satellite bathymetry (1033)		SMNT-254S-0818W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-254S-0818W.std.180m.ss.map.jpg	180	693	773	1033
+Unnamed Guyot -- Residual bathymetry (1034)		SMNT-254S-0818W	Regional	Residual bathymetry	Map:Grid	SMNT-254S-0818W.std.180m.rs.map.jpg	180	693	773	1034
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1037)		SMNT-254S-0913W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-254S-0913W.std.180m.mg.map.jpg	180	589	670	1037
+Unnamed Seamount -- Multibeam bathymetry (1038)		SMNT-254S-0913W	Regional	Multibeam bathymetry	Map:Grid	SMNT-254S-0913W.std.180m.mb.map.jpg	180	797	877	1038
+Unnamed Seamount -- Predicted satellite bathymetry (1039)		SMNT-254S-0913W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-254S-0913W.std.180m.ss.map.jpg	180	589	670	1039
+Unnamed Seamount -- Residual bathymetry (1040)		SMNT-254S-0913W	Regional	Residual bathymetry	Map:Grid	SMNT-254S-0913W.std.180m.rs.map.jpg	180	589	670	1040
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1043)		SMNT-254S-0922W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-254S-0922W.std.180m.mg.map.jpg	180	849	929	1043
+Unnamed Seamount -- Multibeam bathymetry (1044)		SMNT-254S-0922W	Regional	Multibeam bathymetry	Map:Grid	SMNT-254S-0922W.std.180m.mb.map.jpg	180	1186	1266	1044
+Unnamed Seamount -- Predicted satellite bathymetry (1045)		SMNT-254S-0922W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-254S-0922W.std.180m.ss.map.jpg	180	849	929	1045
+Unnamed Seamount -- Residual bathymetry (1046)		SMNT-254S-0922W	Regional	Residual bathymetry	Map:Grid	SMNT-254S-0922W.std.180m.rs.map.jpg	180	849	929	1046
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1049)		SMNT-255S-0842W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-255S-0842W.std.180m.mg.map.jpg	180	693	773	1049
+Unnamed Seamount -- Multibeam bathymetry (1050)		SMNT-255S-0842W	Regional	Multibeam bathymetry	Map:Grid	SMNT-255S-0842W.std.180m.mb.map.jpg	180	952	1033	1050
+Unnamed Seamount -- Predicted satellite bathymetry (1051)		SMNT-255S-0842W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-255S-0842W.std.180m.ss.map.jpg	180	693	773	1051
+Unnamed Seamount -- Residual bathymetry (1052)		SMNT-255S-0842W	Regional	Residual bathymetry	Map:Grid	SMNT-255S-0842W.std.180m.rs.map.jpg	180	693	773	1052
+Zasosov Seamount -- Predicted satellite bathymetry	SMNT-255S-0873W	SMNT-255S-0873W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-255S-0873W.std.180m.ss.map.jpg	180	901	981	1055
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1058)		SMNT-255S-0892W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-255S-0892W.std.180m.mg.map.jpg	180	849	929	1058
+Unnamed Guyot -- Multibeam bathymetry (1059)		SMNT-255S-0892W	Regional	Multibeam bathymetry	Map:Grid	SMNT-255S-0892W.std.180m.mb.map.jpg	180	1186	1266	1059
+Unnamed Guyot -- Predicted satellite bathymetry (1060)		SMNT-255S-0892W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-255S-0892W.std.180m.ss.map.jpg	180	849	929	1060
+Unnamed Guyot -- Residual bathymetry (1061)		SMNT-255S-0892W	Regional	Residual bathymetry	Map:Grid	SMNT-255S-0892W.std.180m.rs.map.jpg	180	849	929	1061
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1064)		SMNT-255S-0903W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-255S-0903W.std.180m.mg.map.jpg	180	693	773	1064
+Unnamed Seamount -- Multibeam bathymetry (1065)		SMNT-255S-0903W	Regional	Multibeam bathymetry	Map:Grid	SMNT-255S-0903W.std.180m.mb.map.jpg	180	952	1033	1065
+Unnamed Seamount -- Predicted satellite bathymetry (1066)		SMNT-255S-0903W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-255S-0903W.std.180m.ss.map.jpg	180	693	773	1066
+Unnamed Seamount -- Residual bathymetry (1067)		SMNT-255S-0903W	Regional	Residual bathymetry	Map:Grid	SMNT-255S-0903W.std.180m.rs.map.jpg	180	693	773	1067
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1070)		SMNT-255S-0930W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-255S-0930W.std.180m.mg.map.jpg	180	693	773	1070
+Unnamed Seamount -- Multibeam bathymetry (1071)		SMNT-255S-0930W	Regional	Multibeam bathymetry	Map:Grid	SMNT-255S-0930W.std.180m.mb.map.jpg	180	952	1033	1071
+Unnamed Seamount -- Predicted satellite bathymetry (1072)		SMNT-255S-0930W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-255S-0930W.std.180m.ss.map.jpg	180	693	773	1072
+Unnamed Seamount -- Residual bathymetry (1073)		SMNT-255S-0930W	Regional	Residual bathymetry	Map:Grid	SMNT-255S-0930W.std.180m.rs.map.jpg	180	693	773	1073
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1076)		SMNT-255S-0977W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-255S-0977W.std.180m.mg.map.jpg	180	693	773	1076
+Unnamed Seamount -- Multibeam bathymetry (1077)		SMNT-255S-0977W	Regional	Multibeam bathymetry	Map:Grid	SMNT-255S-0977W.std.180m.mb.map.jpg	180	952	1033	1077
+Unnamed Seamount -- Predicted satellite bathymetry (1078)		SMNT-255S-0977W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-255S-0977W.std.180m.ss.map.jpg	180	693	773	1078
+Unnamed Seamount -- Residual bathymetry (1079)		SMNT-255S-0977W	Regional	Residual bathymetry	Map:Grid	SMNT-255S-0977W.std.180m.rs.map.jpg	180	693	773	1079
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1082)		SMNT-255S-0981W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-255S-0981W.std.180m.mg.map.jpg	180	693	773	1082
+Unnamed Guyot -- Multibeam bathymetry (1083)		SMNT-255S-0981W	Regional	Multibeam bathymetry	Map:Grid	SMNT-255S-0981W.std.180m.mb.map.jpg	180	952	1033	1083
+Unnamed Guyot -- Predicted satellite bathymetry (1084)		SMNT-255S-0981W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-255S-0981W.std.180m.ss.map.jpg	180	693	773	1084
+Unnamed Guyot -- Residual bathymetry (1085)		SMNT-255S-0981W	Regional	Residual bathymetry	Map:Grid	SMNT-255S-0981W.std.180m.rs.map.jpg	180	693	773	1085
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1088)		SMNT-255S-0996W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-255S-0996W.std.180m.mg.map.jpg	180	693	773	1088
+Unnamed Seamount -- Multibeam bathymetry (1089)		SMNT-255S-0996W	Regional	Multibeam bathymetry	Map:Grid	SMNT-255S-0996W.std.180m.mb.map.jpg	180	952	1033	1089
+Unnamed Seamount -- Predicted satellite bathymetry (1090)		SMNT-255S-0996W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-255S-0996W.std.180m.ss.map.jpg	180	693	773	1090
+Unnamed Seamount -- Residual bathymetry (1091)		SMNT-255S-0996W	Regional	Residual bathymetry	Map:Grid	SMNT-255S-0996W.std.180m.rs.map.jpg	180	693	773	1091
+Western Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-256S-0869W	SMNT-256S-0869W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-256S-0869W.std.180m.mg.map.jpg	180	589	670	1094
+Western Seamount -- Multibeam bathymetry	SMNT-256S-0869W	SMNT-256S-0869W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-256S-0869W.std.180m.mb.map.jpg	180	797	877	1095
+Western Seamount -- Predicted satellite bathymetry	SMNT-256S-0869W	SMNT-256S-0869W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-256S-0869W.std.180m.ss.map.jpg	180	589	670	1096
+Western Seamount -- Residual bathymetry	SMNT-256S-0869W	SMNT-256S-0869W	Seamount	Residual bathymetry	Map:Grid	SMNT-256S-0869W.std.180m.rs.map.jpg	180	589	670	1097
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1100)		SMNT-256S-0897W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-256S-0897W.std.180m.mg.map.jpg	180	693	773	1100
+Unnamed Seamount -- Multibeam bathymetry (1101)		SMNT-256S-0897W	Regional	Multibeam bathymetry	Map:Grid	SMNT-256S-0897W.std.180m.mb.map.jpg	180	952	1033	1101
+Unnamed Seamount -- Predicted satellite bathymetry (1102)		SMNT-256S-0897W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-256S-0897W.std.180m.ss.map.jpg	180	693	773	1102
+Unnamed Seamount -- Residual bathymetry (1103)		SMNT-256S-0897W	Regional	Residual bathymetry	Map:Grid	SMNT-256S-0897W.std.180m.rs.map.jpg	180	693	773	1103
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1106)		SMNT-256S-0929W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-256S-0929W.std.180m.mg.map.jpg	180	693	773	1106
+Unnamed Guyot -- Multibeam bathymetry (1107)		SMNT-256S-0929W	Regional	Multibeam bathymetry	Map:Grid	SMNT-256S-0929W.std.180m.mb.map.jpg	180	952	1033	1107
+Unnamed Guyot -- Predicted satellite bathymetry (1108)		SMNT-256S-0929W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-256S-0929W.std.180m.ss.map.jpg	180	693	773	1108
+Unnamed Guyot -- Residual bathymetry (1109)		SMNT-256S-0929W	Regional	Residual bathymetry	Map:Grid	SMNT-256S-0929W.std.180m.rs.map.jpg	180	693	773	1109
+Unnamed Guyot -- Predicted satellite bathymetry (1114)		SMNT-256S-0991W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-256S-0991W.std.180m.ss.map.jpg	180	693	773	1114
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1118)		SMNT-257S-0825W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-257S-0825W.std.180m.mg.map.jpg	180	693	773	1118
+Unnamed Guyot -- Multibeam bathymetry (1119)		SMNT-257S-0825W	Regional	Multibeam bathymetry	Map:Grid	SMNT-257S-0825W.std.180m.mb.map.jpg	180	952	1033	1119
+Unnamed Guyot -- Predicted satellite bathymetry (1120)		SMNT-257S-0825W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-257S-0825W.std.180m.ss.map.jpg	180	693	773	1120
+Unnamed Guyot -- Residual bathymetry (1121)		SMNT-257S-0825W	Regional	Residual bathymetry	Map:Grid	SMNT-257S-0825W.std.180m.rs.map.jpg	180	693	773	1121
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1124)		SMNT-257S-0829W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-257S-0829W.std.180m.mg.map.jpg	180	849	929	1124
+Unnamed Guyot -- Multibeam bathymetry (1125)		SMNT-257S-0829W	Regional	Multibeam bathymetry	Map:Grid	SMNT-257S-0829W.std.180m.mb.map.jpg	180	1186	1266	1125
+Unnamed Guyot -- Predicted satellite bathymetry (1126)		SMNT-257S-0829W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-257S-0829W.std.180m.ss.map.jpg	180	849	929	1126
+Unnamed Guyot -- Residual bathymetry (1127)		SMNT-257S-0829W	Regional	Residual bathymetry	Map:Grid	SMNT-257S-0829W.std.180m.rs.map.jpg	180	849	929	1127
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1130)		SMNT-257S-0836W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-257S-0836W.std.180m.mg.map.jpg	180	693	773	1130
+Unnamed Seamount -- Multibeam bathymetry (1131)		SMNT-257S-0836W	Regional	Multibeam bathymetry	Map:Grid	SMNT-257S-0836W.std.180m.mb.map.jpg	180	952	1033	1131
+Unnamed Seamount -- Predicted satellite bathymetry (1132)		SMNT-257S-0836W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-257S-0836W.std.180m.ss.map.jpg	180	693	773	1132
+Unnamed Seamount -- Residual bathymetry (1133)		SMNT-257S-0836W	Regional	Residual bathymetry	Map:Grid	SMNT-257S-0836W.std.180m.rs.map.jpg	180	693	773	1133
+Shoal Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-257S-0855W	SMNT-257S-0855W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-257S-0855W.std.180m.mg.map.jpg	180	693	773	1136
+Shoal Guyot -- Multibeam bathymetry	SMNT-257S-0855W	SMNT-257S-0855W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-257S-0855W.std.180m.mb.map.jpg	180	952	1033	1137
+Shoal Guyot -- Predicted satellite bathymetry	SMNT-257S-0855W	SMNT-257S-0855W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-257S-0855W.std.180m.ss.map.jpg	180	693	773	1138
+Shoal Guyot -- Residual bathymetry	SMNT-257S-0855W	SMNT-257S-0855W	Seamount	Residual bathymetry	Map:Grid	SMNT-257S-0855W.std.180m.rs.map.jpg	180	693	773	1139
+Baral Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-257S-0866W	SMNT-257S-0866W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-257S-0866W.std.180m.mg.map.jpg	180	849	929	1142
+Baral Guyot -- Multibeam bathymetry	SMNT-257S-0866W	SMNT-257S-0866W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-257S-0866W.std.180m.mb.map.jpg	180	1186	1266	1143
+Baral Guyot -- Predicted satellite bathymetry	SMNT-257S-0866W	SMNT-257S-0866W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-257S-0866W.std.180m.ss.map.jpg	180	849	929	1144
+Baral Guyot -- Residual bathymetry	SMNT-257S-0866W	SMNT-257S-0866W	Seamount	Residual bathymetry	Map:Grid	SMNT-257S-0866W.std.180m.rs.map.jpg	180	849	929	1145
+Unnamed Seamount -- Predicted satellite bathymetry (1150)		SMNT-257S-0933W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-257S-0933W.std.180m.ss.map.jpg	180	693	773	1150
+Unnamed Seamount -- Predicted satellite bathymetry (1156)		SMNT-257S-0936W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-257S-0936W.std.180m.ss.map.jpg	180	589	670	1156
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1160)		SMNT-257S-0946W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-257S-0946W.std.180m.mg.map.jpg	180	693	773	1160
+Unnamed Seamount -- Multibeam bathymetry (1161)		SMNT-257S-0946W	Regional	Multibeam bathymetry	Map:Grid	SMNT-257S-0946W.std.180m.mb.map.jpg	180	952	1033	1161
+Unnamed Seamount -- Predicted satellite bathymetry (1162)		SMNT-257S-0946W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-257S-0946W.std.180m.ss.map.jpg	180	693	773	1162
+Unnamed Seamount -- Residual bathymetry (1163)		SMNT-257S-0946W	Regional	Residual bathymetry	Map:Grid	SMNT-257S-0946W.std.180m.rs.map.jpg	180	693	773	1163
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1166)		SMNT-257S-0949W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-257S-0949W.std.180m.mg.map.jpg	180	693	773	1166
+Unnamed Seamount -- Multibeam bathymetry (1167)		SMNT-257S-0949W	Regional	Multibeam bathymetry	Map:Grid	SMNT-257S-0949W.std.180m.mb.map.jpg	180	952	1033	1167
+Unnamed Seamount -- Predicted satellite bathymetry (1168)		SMNT-257S-0949W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-257S-0949W.std.180m.ss.map.jpg	180	693	773	1168
+Unnamed Seamount -- Residual bathymetry (1169)		SMNT-257S-0949W	Regional	Residual bathymetry	Map:Grid	SMNT-257S-0949W.std.180m.rs.map.jpg	180	693	773	1169
+Unnamed Seamount -- Predicted satellite bathymetry (1174)		SMNT-257S-1030W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-257S-1030W.std.180m.ss.map.jpg	180	693	773	1174
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1178)		SMNT-258S-0833W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-258S-0833W.std.180m.mg.map.jpg	180	693	773	1178
+Unnamed Seamount -- Multibeam bathymetry (1179)		SMNT-258S-0833W	Regional	Multibeam bathymetry	Map:Grid	SMNT-258S-0833W.std.180m.mb.map.jpg	180	952	1033	1179
+Unnamed Seamount -- Predicted satellite bathymetry (1180)		SMNT-258S-0833W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-258S-0833W.std.180m.ss.map.jpg	180	693	773	1180
+Unnamed Seamount -- Residual bathymetry (1181)		SMNT-258S-0833W	Regional	Residual bathymetry	Map:Grid	SMNT-258S-0833W.std.180m.rs.map.jpg	180	693	773	1181
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1184)		SMNT-258S-0840W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-258S-0840W.std.180m.mg.map.jpg	180	693	773	1184
+Unnamed Seamount -- Multibeam bathymetry (1185)		SMNT-258S-0840W	Regional	Multibeam bathymetry	Map:Grid	SMNT-258S-0840W.std.180m.mb.map.jpg	180	952	1033	1185
+Unnamed Seamount -- Predicted satellite bathymetry (1186)		SMNT-258S-0840W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-258S-0840W.std.180m.ss.map.jpg	180	693	773	1186
+Unnamed Seamount -- Residual bathymetry (1187)		SMNT-258S-0840W	Regional	Residual bathymetry	Map:Grid	SMNT-258S-0840W.std.180m.rs.map.jpg	180	693	773	1187
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1190)		SMNT-258S-0847W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-258S-0847W.std.180m.mg.map.jpg	180	1056	1136	1190
+Unnamed Seamount -- Multibeam bathymetry (1191)		SMNT-258S-0847W	Regional	Multibeam bathymetry	Map:Grid	SMNT-258S-0847W.std.180m.mb.map.jpg	180	1497	1577	1191
+Unnamed Seamount -- Predicted satellite bathymetry (1192)		SMNT-258S-0847W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-258S-0847W.std.180m.ss.map.jpg	180	1056	1136	1192
+Unnamed Seamount -- Residual bathymetry (1193)		SMNT-258S-0847W	Regional	Residual bathymetry	Map:Grid	SMNT-258S-0847W.std.180m.rs.map.jpg	180	1056	1136	1193
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1196)		SMNT-258S-0862W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-258S-0862W.std.180m.mg.map.jpg	180	693	773	1196
+Unnamed Seamount -- Multibeam bathymetry (1197)		SMNT-258S-0862W	Regional	Multibeam bathymetry	Map:Grid	SMNT-258S-0862W.std.180m.mb.map.jpg	180	952	1033	1197
+Unnamed Seamount -- Predicted satellite bathymetry (1198)		SMNT-258S-0862W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-258S-0862W.std.180m.ss.map.jpg	180	693	773	1198
+Unnamed Seamount -- Residual bathymetry (1199)		SMNT-258S-0862W	Regional	Residual bathymetry	Map:Grid	SMNT-258S-0862W.std.180m.rs.map.jpg	180	693	773	1199
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1202)		SMNT-258S-0910W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-258S-0910W.std.180m.mg.map.jpg	180	693	773	1202
+Unnamed Seamount -- Multibeam bathymetry (1203)		SMNT-258S-0910W	Regional	Multibeam bathymetry	Map:Grid	SMNT-258S-0910W.std.180m.mb.map.jpg	180	952	1033	1203
+Unnamed Seamount -- Predicted satellite bathymetry (1204)		SMNT-258S-0910W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-258S-0910W.std.180m.ss.map.jpg	180	693	773	1204
+Unnamed Seamount -- Residual bathymetry (1205)		SMNT-258S-0910W	Regional	Residual bathymetry	Map:Grid	SMNT-258S-0910W.std.180m.rs.map.jpg	180	693	773	1205
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1208)		SMNT-258S-0939W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-258S-0939W.std.180m.mg.map.jpg	180	589	670	1208
+Unnamed Seamount -- Multibeam bathymetry (1209)		SMNT-258S-0939W	Regional	Multibeam bathymetry	Map:Grid	SMNT-258S-0939W.std.180m.mb.map.jpg	180	797	877	1209
+Unnamed Seamount -- Predicted satellite bathymetry (1210)		SMNT-258S-0939W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-258S-0939W.std.180m.ss.map.jpg	180	589	670	1210
+Unnamed Seamount -- Residual bathymetry (1211)		SMNT-258S-0939W	Regional	Residual bathymetry	Map:Grid	SMNT-258S-0939W.std.180m.rs.map.jpg	180	589	670	1211
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1214)		SMNT-258S-0955W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-258S-0955W.std.180m.mg.map.jpg	180	797	877	1214
+Unnamed Guyot -- Multibeam bathymetry (1215)		SMNT-258S-0955W	Regional	Multibeam bathymetry	Map:Grid	SMNT-258S-0955W.std.180m.mb.map.jpg	180	1108	1188	1215
+Unnamed Guyot -- Predicted satellite bathymetry (1216)		SMNT-258S-0955W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-258S-0955W.std.180m.ss.map.jpg	180	797	877	1216
+Unnamed Guyot -- Residual bathymetry (1217)		SMNT-258S-0955W	Regional	Residual bathymetry	Map:Grid	SMNT-258S-0955W.std.180m.rs.map.jpg	180	797	877	1217
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1218)		SMNT-259S-0907W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-259S-0907W.std.180m.mg.map.jpg	180	589	670	1218
+Unnamed Seamount -- Multibeam bathymetry (1219)		SMNT-259S-0907W	Regional	Multibeam bathymetry	Map:Grid	SMNT-259S-0907W.std.180m.mb.map.jpg	180	797	877	1219
+Unnamed Seamount -- Predicted satellite bathymetry (1220)		SMNT-259S-0907W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-259S-0907W.std.180m.ss.map.jpg	180	589	670	1220
+Unnamed Seamount -- Residual bathymetry (1221)		SMNT-259S-0907W	Regional	Residual bathymetry	Map:Grid	SMNT-259S-0907W.std.180m.rs.map.jpg	180	589	670	1221
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1224)		SMNT-259S-0960W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-259S-0960W.std.180m.mg.map.jpg	180	693	773	1224
+Unnamed Seamount -- Multibeam bathymetry (1225)		SMNT-259S-0960W	Regional	Multibeam bathymetry	Map:Grid	SMNT-259S-0960W.std.180m.mb.map.jpg	180	952	1033	1225
+Unnamed Seamount -- Predicted satellite bathymetry (1226)		SMNT-259S-0960W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-259S-0960W.std.180m.ss.map.jpg	180	693	773	1226
+Unnamed Seamount -- Residual bathymetry (1227)		SMNT-259S-0960W	Regional	Residual bathymetry	Map:Grid	SMNT-259S-0960W.std.180m.rs.map.jpg	180	693	773	1227
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1228)		SMNT-259S-0996W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-259S-0996W.std.180m.mg.map.jpg	180	589	670	1228
+Unnamed Seamount -- Multibeam bathymetry (1229)		SMNT-259S-0996W	Regional	Multibeam bathymetry	Map:Grid	SMNT-259S-0996W.std.180m.mb.map.jpg	180	797	877	1229
+Unnamed Seamount -- Predicted satellite bathymetry (1230)		SMNT-259S-0996W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-259S-0996W.std.180m.ss.map.jpg	180	589	670	1230
+Unnamed Seamount -- Residual bathymetry (1231)		SMNT-259S-0996W	Regional	Residual bathymetry	Map:Grid	SMNT-259S-0996W.std.180m.rs.map.jpg	180	589	670	1231
+Dorofeev Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-260S-0844W	SMNT-260S-0844W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-260S-0844W.std.180m.mg.map.jpg	180	693	773	1234
+Dorofeev Guyot -- Multibeam bathymetry	SMNT-260S-0844W	SMNT-260S-0844W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-260S-0844W.std.180m.mb.map.jpg	180	952	1033	1235
+Dorofeev Guyot -- Predicted satellite bathymetry	SMNT-260S-0844W	SMNT-260S-0844W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-260S-0844W.std.180m.ss.map.jpg	180	693	773	1236
+Dorofeev Guyot -- Residual bathymetry	SMNT-260S-0844W	SMNT-260S-0844W	Seamount	Residual bathymetry	Map:Grid	SMNT-260S-0844W.std.180m.rs.map.jpg	180	693	773	1237
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1240)		SMNT-260S-0968W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-260S-0968W.std.180m.mg.map.jpg	180	589	670	1240
+Unnamed Seamount -- Multibeam bathymetry (1241)		SMNT-260S-0968W	Regional	Multibeam bathymetry	Map:Grid	SMNT-260S-0968W.std.180m.mb.map.jpg	180	797	877	1241
+Unnamed Seamount -- Predicted satellite bathymetry (1242)		SMNT-260S-0968W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-260S-0968W.std.180m.ss.map.jpg	180	589	670	1242
+Unnamed Seamount -- Residual bathymetry (1243)		SMNT-260S-0968W	Regional	Residual bathymetry	Map:Grid	SMNT-260S-0968W.std.180m.rs.map.jpg	180	589	670	1243
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1246)		SMNT-260S-0970W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-260S-0970W.std.180m.mg.map.jpg	180	693	773	1246
+Unnamed Seamount -- Multibeam bathymetry (1247)		SMNT-260S-0970W	Regional	Multibeam bathymetry	Map:Grid	SMNT-260S-0970W.std.180m.mb.map.jpg	180	952	1033	1247
+Unnamed Seamount -- Predicted satellite bathymetry (1248)		SMNT-260S-0970W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-260S-0970W.std.180m.ss.map.jpg	180	693	773	1248
+Unnamed Seamount -- Residual bathymetry (1249)		SMNT-260S-0970W	Regional	Residual bathymetry	Map:Grid	SMNT-260S-0970W.std.180m.rs.map.jpg	180	693	773	1249
+Rock Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-260S-1007W	SMNT-260S-1007W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-260S-1007W.std.180m.mg.map.jpg	180	952	1033	1252
+Rock Seamount -- Multibeam bathymetry	SMNT-260S-1007W	SMNT-260S-1007W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-260S-1007W.std.180m.mb.map.jpg	180	1341	1421	1253
+Rock Seamount -- Predicted satellite bathymetry	SMNT-260S-1007W	SMNT-260S-1007W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-260S-1007W.std.180m.ss.map.jpg	180	952	1033	1254
+Rock Seamount -- Residual bathymetry	SMNT-260S-1007W	SMNT-260S-1007W	Seamount	Residual bathymetry	Map:Grid	SMNT-260S-1007W.std.180m.rs.map.jpg	180	952	1033	1255
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1258)		SMNT-260S-1022W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-260S-1022W.std.180m.mg.map.jpg	180	693	773	1258
+Unnamed Seamount -- Multibeam bathymetry (1259)		SMNT-260S-1022W	Regional	Multibeam bathymetry	Map:Grid	SMNT-260S-1022W.std.180m.mb.map.jpg	180	952	1033	1259
+Unnamed Seamount -- Predicted satellite bathymetry (1260)		SMNT-260S-1022W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-260S-1022W.std.180m.ss.map.jpg	180	693	773	1260
+Unnamed Seamount -- Residual bathymetry (1261)		SMNT-260S-1022W	Regional	Residual bathymetry	Map:Grid	SMNT-260S-1022W.std.180m.rs.map.jpg	180	693	773	1261
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1264)		SMNT-260S-1033W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-260S-1033W.std.180m.mg.map.jpg	180	693	773	1264
+Unnamed Guyot -- Multibeam bathymetry (1265)		SMNT-260S-1033W	Regional	Multibeam bathymetry	Map:Grid	SMNT-260S-1033W.std.180m.mb.map.jpg	180	952	1033	1265
+Unnamed Guyot -- Predicted satellite bathymetry (1266)		SMNT-260S-1033W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-260S-1033W.std.180m.ss.map.jpg	180	693	773	1266
+Unnamed Guyot -- Residual bathymetry (1267)		SMNT-260S-1033W	Regional	Residual bathymetry	Map:Grid	SMNT-260S-1033W.std.180m.rs.map.jpg	180	693	773	1267
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1270)		SMNT-261S-0860W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-261S-0860W.std.180m.mg.map.jpg	180	589	670	1270
+Unnamed Seamount -- Multibeam bathymetry (1271)		SMNT-261S-0860W	Regional	Multibeam bathymetry	Map:Grid	SMNT-261S-0860W.std.180m.mb.map.jpg	180	797	877	1271
+Unnamed Seamount -- Predicted satellite bathymetry (1272)		SMNT-261S-0860W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-261S-0860W.std.180m.ss.map.jpg	180	589	670	1272
+Unnamed Seamount -- Residual bathymetry (1273)		SMNT-261S-0860W	Regional	Residual bathymetry	Map:Grid	SMNT-261S-0860W.std.180m.rs.map.jpg	180	589	670	1273
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1276)		SMNT-261S-1000W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-261S-1000W.std.180m.mg.map.jpg	180	693	773	1276
+Unnamed Seamount -- Multibeam bathymetry (1277)		SMNT-261S-1000W	Regional	Multibeam bathymetry	Map:Grid	SMNT-261S-1000W.std.180m.mb.map.jpg	180	952	1033	1277
+Unnamed Seamount -- Predicted satellite bathymetry (1278)		SMNT-261S-1000W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-261S-1000W.std.180m.ss.map.jpg	180	693	773	1278
+Unnamed Seamount -- Residual bathymetry (1279)		SMNT-261S-1000W	Regional	Residual bathymetry	Map:Grid	SMNT-261S-1000W.std.180m.rs.map.jpg	180	693	773	1279
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1280)		SMNT-261S-1013W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-261S-1013W.std.180m.mg.map.jpg	180	693	773	1280
+Unnamed Seamount -- Multibeam bathymetry (1281)		SMNT-261S-1013W	Regional	Multibeam bathymetry	Map:Grid	SMNT-261S-1013W.std.180m.mb.map.jpg	180	952	1033	1281
+Unnamed Seamount -- Predicted satellite bathymetry (1282)		SMNT-261S-1013W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-261S-1013W.std.180m.ss.map.jpg	180	693	773	1282
+Unnamed Seamount -- Residual bathymetry (1283)		SMNT-261S-1013W	Regional	Residual bathymetry	Map:Grid	SMNT-261S-1013W.std.180m.rs.map.jpg	180	693	773	1283
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1286)		SMNT-261S-1024W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-261S-1024W.std.180m.mg.map.jpg	180	693	773	1286
+Unnamed Seamount -- Multibeam bathymetry (1287)		SMNT-261S-1024W	Regional	Multibeam bathymetry	Map:Grid	SMNT-261S-1024W.std.180m.mb.map.jpg	180	952	1033	1287
+Unnamed Seamount -- Predicted satellite bathymetry (1288)		SMNT-261S-1024W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-261S-1024W.std.180m.ss.map.jpg	180	693	773	1288
+Unnamed Seamount -- Residual bathymetry (1289)		SMNT-261S-1024W	Regional	Residual bathymetry	Map:Grid	SMNT-261S-1024W.std.180m.rs.map.jpg	180	693	773	1289
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1292)		SMNT-261S-1038W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-261S-1038W.std.180m.mg.map.jpg	180	693	773	1292
+Unnamed Guyot -- Multibeam bathymetry (1293)		SMNT-261S-1038W	Regional	Multibeam bathymetry	Map:Grid	SMNT-261S-1038W.std.180m.mb.map.jpg	180	952	1033	1293
+Unnamed Guyot -- Predicted satellite bathymetry (1294)		SMNT-261S-1038W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-261S-1038W.std.180m.ss.map.jpg	180	693	773	1294
+Unnamed Guyot -- Residual bathymetry (1295)		SMNT-261S-1038W	Regional	Residual bathymetry	Map:Grid	SMNT-261S-1038W.std.180m.rs.map.jpg	180	693	773	1295
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1298)		SMNT-262S-0863W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-262S-0863W.std.180m.mg.map.jpg	180	589	670	1298
+Unnamed Seamount -- Multibeam bathymetry (1299)		SMNT-262S-0863W	Regional	Multibeam bathymetry	Map:Grid	SMNT-262S-0863W.std.180m.mb.map.jpg	180	797	877	1299
+Unnamed Seamount -- Predicted satellite bathymetry (1300)		SMNT-262S-0863W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-262S-0863W.std.180m.ss.map.jpg	180	589	670	1300
+Unnamed Seamount -- Residual bathymetry (1301)		SMNT-262S-0863W	Regional	Residual bathymetry	Map:Grid	SMNT-262S-0863W.std.180m.rs.map.jpg	180	589	670	1301
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1302)		SMNT-262S-0917W	Regional	Multibeam merged with predicted satellite bathymetry	Grid					1302
+Unnamed Seamount -- Multibeam bathymetry (1303)		SMNT-262S-0917W	Regional	Multibeam bathymetry	Grid					1303
+Unnamed Seamount -- Predicted satellite bathymetry (1304)		SMNT-262S-0917W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-262S-0917W.std.180m.ss.map.jpg	180	693	773	1304
+Unnamed Seamount -- Residual bathymetry (1305)		SMNT-262S-0917W	Regional	Residual bathymetry	Grid					1305
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1308)		SMNT-262S-1030W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-262S-1030W.std.180m.mg.map.jpg	180	693	773	1308
+Unnamed Seamount -- Multibeam bathymetry (1309)		SMNT-262S-1030W	Regional	Multibeam bathymetry	Map:Grid	SMNT-262S-1030W.std.180m.mb.map.jpg	180	952	1033	1309
+Unnamed Seamount -- Predicted satellite bathymetry (1310)		SMNT-262S-1030W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-262S-1030W.std.180m.ss.map.jpg	180	693	773	1310
+Unnamed Seamount -- Residual bathymetry (1311)		SMNT-262S-1030W	Regional	Residual bathymetry	Map:Grid	SMNT-262S-1030W.std.180m.rs.map.jpg	180	693	773	1311
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1314)		SMNT-262S-1036W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-262S-1036W.std.180m.mg.map.jpg	180	589	670	1314
+Unnamed Seamount -- Multibeam bathymetry (1315)		SMNT-262S-1036W	Regional	Multibeam bathymetry	Map:Grid	SMNT-262S-1036W.std.180m.mb.map.jpg	180	797	877	1315
+Unnamed Seamount -- Predicted satellite bathymetry (1316)		SMNT-262S-1036W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-262S-1036W.std.180m.ss.map.jpg	180	589	670	1316
+Unnamed Seamount -- Residual bathymetry (1317)		SMNT-262S-1036W	Regional	Residual bathymetry	Map:Grid	SMNT-262S-1036W.std.180m.rs.map.jpg	180	589	670	1317
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1320)		SMNT-263S-1018W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-263S-1018W.std.180m.mg.map.jpg	180	693	773	1320
+Unnamed Seamount -- Multibeam bathymetry (1321)		SMNT-263S-1018W	Regional	Multibeam bathymetry	Map:Grid	SMNT-263S-1018W.std.180m.mb.map.jpg	180	952	1033	1321
+Unnamed Seamount -- Predicted satellite bathymetry (1322)		SMNT-263S-1018W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-263S-1018W.std.180m.ss.map.jpg	180	693	773	1322
+Unnamed Seamount -- Residual bathymetry (1323)		SMNT-263S-1018W	Regional	Residual bathymetry	Map:Grid	SMNT-263S-1018W.std.180m.rs.map.jpg	180	693	773	1323
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1326)		SMNT-264S-1049W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-264S-1049W.std.180m.mg.map.jpg	180	693	773	1326
+Unnamed Seamount -- Multibeam bathymetry (1327)		SMNT-264S-1049W	Regional	Multibeam bathymetry	Map:Grid	SMNT-264S-1049W.std.180m.mb.map.jpg	180	952	1033	1327
+Unnamed Seamount -- Predicted satellite bathymetry (1328)		SMNT-264S-1049W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-264S-1049W.std.180m.ss.map.jpg	180	693	773	1328
+Unnamed Seamount -- Residual bathymetry (1329)		SMNT-264S-1049W	Regional	Residual bathymetry	Map:Grid	SMNT-264S-1049W.std.180m.rs.map.jpg	180	693	773	1329
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1332)		SMNT-264S-1059W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-264S-1059W.std.180m.mg.map.jpg	180	693	773	1332
+Unnamed Seamount -- Multibeam bathymetry (1333)		SMNT-264S-1059W	Regional	Multibeam bathymetry	Map:Grid	SMNT-264S-1059W.std.180m.mb.map.jpg	180	952	1033	1333
+Unnamed Seamount -- Predicted satellite bathymetry (1334)		SMNT-264S-1059W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-264S-1059W.std.180m.ss.map.jpg	180	693	773	1334
+Unnamed Seamount -- Residual bathymetry (1335)		SMNT-264S-1059W	Regional	Residual bathymetry	Map:Grid	SMNT-264S-1059W.std.180m.rs.map.jpg	180	693	773	1335
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1338)		SMNT-264S-1065W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-264S-1065W.std.180m.mg.map.jpg	180	693	773	1338
+Unnamed Seamount -- Multibeam bathymetry (1339)		SMNT-264S-1065W	Regional	Multibeam bathymetry	Map:Grid	SMNT-264S-1065W.std.180m.mb.map.jpg	180	952	1033	1339
+Unnamed Seamount -- Predicted satellite bathymetry (1340)		SMNT-264S-1065W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-264S-1065W.std.180m.ss.map.jpg	180	693	773	1340
+Unnamed Seamount -- Residual bathymetry (1341)		SMNT-264S-1065W	Regional	Residual bathymetry	Map:Grid	SMNT-264S-1065W.std.180m.rs.map.jpg	180	693	773	1341
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1344)		SMNT-265S-0867W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-265S-0867W.std.180m.mg.map.jpg	180	693	773	1344
+Unnamed Seamount -- Multibeam bathymetry (1345)		SMNT-265S-0867W	Regional	Multibeam bathymetry	Map:Grid	SMNT-265S-0867W.std.180m.mb.map.jpg	180	952	1033	1345
+Unnamed Seamount -- Predicted satellite bathymetry (1346)		SMNT-265S-0867W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-265S-0867W.std.180m.ss.map.jpg	180	693	773	1346
+Unnamed Seamount -- Residual bathymetry (1347)		SMNT-265S-0867W	Regional	Residual bathymetry	Map:Grid	SMNT-265S-0867W.std.180m.rs.map.jpg	180	693	773	1347
+Sala y Gomez Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-265S-1053W	SMNT-265S-1053W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-265S-1053W.std.180m.mg.map.jpg	180	849	929	1348
+Sala y Gomez Guyot -- Multibeam bathymetry	SMNT-265S-1053W	SMNT-265S-1053W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-265S-1053W.std.180m.mb.map.jpg	180	1186	1266	1349
+Sala y Gomez Guyot -- Predicted satellite bathymetry	SMNT-265S-1053W	SMNT-265S-1053W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-265S-1053W.std.180m.ss.map.jpg	180	849	929	1350
+Sala y Gomez Guyot -- Residual bathymetry	SMNT-265S-1053W	SMNT-265S-1053W	Seamount	Residual bathymetry	Map:Grid	SMNT-265S-1053W.std.180m.rs.map.jpg	180	849	929	1351
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1354)		SMNT-267S-1050W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-267S-1050W.std.180m.mg.map.jpg	180	693	773	1354
+Unnamed Guyot -- Multibeam bathymetry (1355)		SMNT-267S-1050W	Regional	Multibeam bathymetry	Map:Grid	SMNT-267S-1050W.std.180m.mb.map.jpg	180	952	1033	1355
+Unnamed Guyot -- Predicted satellite bathymetry (1356)		SMNT-267S-1050W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-267S-1050W.std.180m.ss.map.jpg	180	693	773	1356
+Unnamed Guyot -- Residual bathymetry (1357)		SMNT-267S-1050W	Regional	Residual bathymetry	Map:Grid	SMNT-267S-1050W.std.180m.rs.map.jpg	180	693	773	1357
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1360)		SMNT-267S-1062W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-267S-1062W.std.180m.mg.map.jpg	180	693	773	1360
+Unnamed Seamount -- Multibeam bathymetry (1361)		SMNT-267S-1062W	Regional	Multibeam bathymetry	Map:Grid	SMNT-267S-1062W.std.180m.mb.map.jpg	180	952	1033	1361
+Unnamed Seamount -- Predicted satellite bathymetry (1362)		SMNT-267S-1062W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-267S-1062W.std.180m.ss.map.jpg	180	693	773	1362
+Unnamed Seamount -- Residual bathymetry (1363)		SMNT-267S-1062W	Regional	Residual bathymetry	Map:Grid	SMNT-267S-1062W.std.180m.rs.map.jpg	180	693	773	1363
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1366)		SMNT-268S-1059W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-268S-1059W.std.180m.mg.map.jpg	180	693	773	1366
+Unnamed Guyot -- Multibeam bathymetry (1367)		SMNT-268S-1059W	Regional	Multibeam bathymetry	Map:Grid	SMNT-268S-1059W.std.180m.mb.map.jpg	180	952	1033	1367
+Unnamed Guyot -- Predicted satellite bathymetry (1368)		SMNT-268S-1059W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-268S-1059W.std.180m.ss.map.jpg	180	693	773	1368
+Unnamed Guyot -- Residual bathymetry (1369)		SMNT-268S-1059W	Regional	Residual bathymetry	Map:Grid	SMNT-268S-1059W.std.180m.rs.map.jpg	180	693	773	1369
+Unnamed Seamount -- Predicted satellite bathymetry (1372)		SMNT-269S-1008W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-269S-1008W.std.180m.ss.map.jpg	180	693	773	1372
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1373)		SMNT-269S-1056W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-269S-1056W.std.180m.mg.map.jpg	180	693	773	1373
+Unnamed Seamount -- Multibeam bathymetry (1374)		SMNT-269S-1056W	Regional	Multibeam bathymetry	Map:Grid	SMNT-269S-1056W.std.180m.mb.map.jpg	180	952	1033	1374
+Unnamed Seamount -- Predicted satellite bathymetry (1375)		SMNT-269S-1056W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-269S-1056W.std.180m.ss.map.jpg	180	693	773	1375
+Unnamed Seamount -- Residual bathymetry (1376)		SMNT-269S-1056W	Regional	Residual bathymetry	Map:Grid	SMNT-269S-1056W.std.180m.rs.map.jpg	180	693	773	1376
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1379)		SMNT-269S-1069W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-269S-1069W.std.180m.mg.map.jpg	180	589	670	1379
+Unnamed Seamount -- Multibeam bathymetry (1380)		SMNT-269S-1069W	Regional	Multibeam bathymetry	Map:Grid	SMNT-269S-1069W.std.180m.mb.map.jpg	180	797	877	1380
+Unnamed Seamount -- Predicted satellite bathymetry (1381)		SMNT-269S-1069W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-269S-1069W.std.180m.ss.map.jpg	180	589	670	1381
+Unnamed Seamount -- Residual bathymetry (1382)		SMNT-269S-1069W	Regional	Residual bathymetry	Map:Grid	SMNT-269S-1069W.std.180m.rs.map.jpg	180	589	670	1382
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1385)		SMNT-269S-1075W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-269S-1075W.std.180m.mg.map.jpg	180	693	773	1385
+Unnamed Seamount -- Multibeam bathymetry (1386)		SMNT-269S-1075W	Regional	Multibeam bathymetry	Map:Grid	SMNT-269S-1075W.std.180m.mb.map.jpg	180	952	1033	1386
+Unnamed Seamount -- Predicted satellite bathymetry (1387)		SMNT-269S-1075W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-269S-1075W.std.180m.ss.map.jpg	180	693	773	1387
+Unnamed Seamount -- Residual bathymetry (1388)		SMNT-269S-1075W	Regional	Residual bathymetry	Map:Grid	SMNT-269S-1075W.std.180m.rs.map.jpg	180	693	773	1388
+Unnamed Seamount -- Predicted satellite bathymetry (1391)		SMNT-270S-1021W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-270S-1021W.std.180m.ss.map.jpg	180	693	773	1391
+Unnamed Seamount -- Predicted satellite bathymetry (1394)		SMNT-270S-1030W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-270S-1030W.std.180m.ss.map.jpg	180	693	773	1394
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1397)		SMNT-270S-1061W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-270S-1061W.std.180m.mg.map.jpg	180	589	670	1397
+Unnamed Seamount -- Multibeam bathymetry (1398)		SMNT-270S-1061W	Regional	Multibeam bathymetry	Map:Grid	SMNT-270S-1061W.std.180m.mb.map.jpg	180	797	877	1398
+Unnamed Seamount -- Predicted satellite bathymetry (1399)		SMNT-270S-1061W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-270S-1061W.std.180m.ss.map.jpg	180	589	670	1399
+Unnamed Seamount -- Residual bathymetry (1400)		SMNT-270S-1061W	Regional	Residual bathymetry	Map:Grid	SMNT-270S-1061W.std.180m.rs.map.jpg	180	589	670	1400
+Pukao Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-270S-1103W	SMNT-270S-1103W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-270S-1103W.std.180m.mg.map.jpg	180	693	773	1403
+Pukao Seamount -- Multibeam bathymetry	SMNT-270S-1103W	SMNT-270S-1103W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-270S-1103W.std.180m.mb.map.jpg	180	952	1033	1404
+Pukao Seamount -- Predicted satellite bathymetry	SMNT-270S-1103W	SMNT-270S-1103W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-270S-1103W.std.180m.ss.map.jpg	180	693	773	1405
+Pukao Seamount -- Residual bathymetry	SMNT-270S-1103W	SMNT-270S-1103W	Seamount	Residual bathymetry	Map:Grid	SMNT-270S-1103W.std.180m.rs.map.jpg	180	693	773	1406
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1409)		SMNT-270S-1108W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-270S-1108W.std.180m.mg.map.jpg	180	693	773	1409
+Unnamed Guyot -- Multibeam bathymetry (1410)		SMNT-270S-1108W	Regional	Multibeam bathymetry	Map:Grid	SMNT-270S-1108W.std.180m.mb.map.jpg	180	952	1033	1410
+Unnamed Guyot -- Predicted satellite bathymetry (1411)		SMNT-270S-1108W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-270S-1108W.std.180m.ss.map.jpg	180	693	773	1411
+Unnamed Guyot -- Residual bathymetry (1412)		SMNT-270S-1108W	Regional	Residual bathymetry	Map:Grid	SMNT-270S-1108W.std.180m.rs.map.jpg	180	693	773	1412
+Umu Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-270S-1111W	SMNT-270S-1111W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-270S-1111W.std.180m.mg.map.jpg	180	693	773	1415
+Umu Seamount -- Multibeam bathymetry	SMNT-270S-1111W	SMNT-270S-1111W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-270S-1111W.std.180m.mb.map.jpg	180	952	1033	1416
+Umu Seamount -- Predicted satellite bathymetry	SMNT-270S-1111W	SMNT-270S-1111W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-270S-1111W.std.180m.ss.map.jpg	180	693	773	1417
+Umu Seamount -- Residual bathymetry	SMNT-270S-1111W	SMNT-270S-1111W	Seamount	Residual bathymetry	Map:Grid	SMNT-270S-1111W.std.180m.rs.map.jpg	180	693	773	1418
+Unnamed Seamount -- Predicted satellite bathymetry (1421)		SMNT-271S-1024W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-271S-1024W.std.180m.ss.map.jpg	180	693	773	1421
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1422)		SMNT-271S-1064W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-271S-1064W.std.180m.mg.map.jpg	180	693	773	1422
+Unnamed Seamount -- Multibeam bathymetry (1423)		SMNT-271S-1064W	Regional	Multibeam bathymetry	Map:Grid	SMNT-271S-1064W.std.180m.mb.map.jpg	180	952	1033	1423
+Unnamed Seamount -- Predicted satellite bathymetry (1424)		SMNT-271S-1064W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-271S-1064W.std.180m.ss.map.jpg	180	693	773	1424
+Unnamed Seamount -- Residual bathymetry (1425)		SMNT-271S-1064W	Regional	Residual bathymetry	Map:Grid	SMNT-271S-1064W.std.180m.rs.map.jpg	180	693	773	1425
+Easter Island Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-271S-1094W	SMNT-271S-1094W	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-271S-1094W.std.180m.mg.map.jpg	180	952	1033	1428
+Easter Island Seamount -- Multibeam bathymetry	SMNT-271S-1094W	SMNT-271S-1094W	Seamount	Multibeam bathymetry	Map:Grid	SMNT-271S-1094W.std.180m.mb.map.jpg	180	1341	1421	1429
+Easter Island Seamount -- Predicted satellite bathymetry	SMNT-271S-1094W	SMNT-271S-1094W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-271S-1094W.std.180m.ss.map.jpg	180	952	1033	1430
+Easter Island Seamount -- Residual bathymetry	SMNT-271S-1094W	SMNT-271S-1094W	Seamount	Residual bathymetry	Map:Grid	SMNT-271S-1094W.std.180m.rs.map.jpg	180	952	1033	1431
+Unnamed Guyot -- Predicted satellite bathymetry (1436)		SMNT-271S-1097W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-271S-1097W.std.180m.ss.map.jpg	180	693	773	1436
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1440)		SMNT-273S-1040W	Regional	Multibeam merged with predicted satellite bathymetry	Grid					1440
+Unnamed Seamount -- Multibeam bathymetry (1441)		SMNT-273S-1040W	Regional	Multibeam bathymetry	Grid					1441
+Unnamed Seamount -- Predicted satellite bathymetry (1442)		SMNT-273S-1040W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-273S-1040W.std.180m.ss.map.jpg	180	693	773	1442
+Unnamed Seamount -- Residual bathymetry (1443)		SMNT-273S-1040W	Regional	Residual bathymetry	Grid					1443
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1446)		SMNT-273S-1050W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-273S-1050W.std.180m.mg.map.jpg	180	693	773	1446
+Unnamed Guyot -- Multibeam bathymetry (1447)		SMNT-273S-1050W	Regional	Multibeam bathymetry	Map:Grid	SMNT-273S-1050W.std.180m.mb.map.jpg	180	952	1033	1447
+Unnamed Guyot -- Predicted satellite bathymetry (1448)		SMNT-273S-1050W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-273S-1050W.std.180m.ss.map.jpg	180	693	773	1448
+Unnamed Guyot -- Residual bathymetry (1449)		SMNT-273S-1050W	Regional	Residual bathymetry	Map:Grid	SMNT-273S-1050W.std.180m.rs.map.jpg	180	693	773	1449
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1452)		SMNT-273S-1085W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-273S-1085W.std.180m.mg.map.jpg	180	589	670	1452
+Unnamed Guyot -- Multibeam bathymetry (1453)		SMNT-273S-1085W	Regional	Multibeam bathymetry	Map:Grid	SMNT-273S-1085W.std.180m.mb.map.jpg	180	797	877	1453
+Unnamed Guyot -- Predicted satellite bathymetry (1454)		SMNT-273S-1085W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-273S-1085W.std.180m.ss.map.jpg	180	589	670	1454
+Unnamed Guyot -- Residual bathymetry (1455)		SMNT-273S-1085W	Regional	Residual bathymetry	Map:Grid	SMNT-273S-1085W.std.180m.rs.map.jpg	180	589	670	1455
+Unnamed Seamount -- Predicted satellite bathymetry (1458)		SMNT-275S-1048W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-275S-1048W.std.180m.ss.map.jpg	180	693	773	1458
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1459)		SMNT-275S-1079W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-275S-1079W.std.180m.mg.map.jpg	180	693	773	1459
+Unnamed Seamount -- Multibeam bathymetry (1460)		SMNT-275S-1079W	Regional	Multibeam bathymetry	Map:Grid	SMNT-275S-1079W.std.180m.mb.map.jpg	180	952	1033	1460
+Unnamed Seamount -- Predicted satellite bathymetry (1461)		SMNT-275S-1079W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-275S-1079W.std.180m.ss.map.jpg	180	693	773	1461
+Unnamed Seamount -- Residual bathymetry (1462)		SMNT-275S-1079W	Regional	Residual bathymetry	Map:Grid	SMNT-275S-1079W.std.180m.rs.map.jpg	180	693	773	1462
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1465)		SMNT-275S-1082W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-275S-1082W.std.180m.mg.map.jpg	180	693	773	1465
+Unnamed Guyot -- Multibeam bathymetry (1466)		SMNT-275S-1082W	Regional	Multibeam bathymetry	Map:Grid	SMNT-275S-1082W.std.180m.mb.map.jpg	180	952	1033	1466
+Unnamed Guyot -- Predicted satellite bathymetry (1467)		SMNT-275S-1082W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-275S-1082W.std.180m.ss.map.jpg	180	693	773	1467
+Unnamed Guyot -- Residual bathymetry (1468)		SMNT-275S-1082W	Regional	Residual bathymetry	Map:Grid	SMNT-275S-1082W.std.180m.rs.map.jpg	180	693	773	1468
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1471)		SMNT-276S-1054W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-276S-1054W.std.180m.mg.map.jpg	180	693	773	1471
+Unnamed Seamount -- Multibeam bathymetry (1472)		SMNT-276S-1054W	Regional	Multibeam bathymetry	Map:Grid	SMNT-276S-1054W.std.180m.mb.map.jpg	180	952	1033	1472
+Unnamed Seamount -- Predicted satellite bathymetry (1473)		SMNT-276S-1054W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-276S-1054W.std.180m.ss.map.jpg	180	693	773	1473
+Unnamed Seamount -- Residual bathymetry (1474)		SMNT-276S-1054W	Regional	Residual bathymetry	Map:Grid	SMNT-276S-1054W.std.180m.rs.map.jpg	180	693	773	1474
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1477)		SMNT-277S-1057W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-277S-1057W.std.180m.mg.map.jpg	180	589	670	1477
+Unnamed Seamount -- Multibeam bathymetry (1478)		SMNT-277S-1057W	Regional	Multibeam bathymetry	Map:Grid	SMNT-277S-1057W.std.180m.mb.map.jpg	180	797	877	1478
+Unnamed Seamount -- Predicted satellite bathymetry (1479)		SMNT-277S-1057W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-277S-1057W.std.180m.ss.map.jpg	180	589	670	1479
+Unnamed Seamount -- Residual bathymetry (1480)		SMNT-277S-1057W	Regional	Residual bathymetry	Map:Grid	SMNT-277S-1057W.std.180m.rs.map.jpg	180	589	670	1480
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1483)		SMNT-277S-1064W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-277S-1064W.std.180m.mg.map.jpg	180	589	670	1483
+Unnamed Seamount -- Multibeam bathymetry (1484)		SMNT-277S-1064W	Regional	Multibeam bathymetry	Map:Grid	SMNT-277S-1064W.std.180m.mb.map.jpg	180	797	877	1484
+Unnamed Seamount -- Predicted satellite bathymetry (1485)		SMNT-277S-1064W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-277S-1064W.std.180m.ss.map.jpg	180	589	670	1485
+Unnamed Seamount -- Residual bathymetry (1486)		SMNT-277S-1064W	Regional	Residual bathymetry	Map:Grid	SMNT-277S-1064W.std.180m.rs.map.jpg	180	589	670	1486
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1489)		SMNT-277S-1106W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-277S-1106W.std.180m.mg.map.jpg	180	693	773	1489
+Unnamed Seamount -- Multibeam bathymetry (1490)		SMNT-277S-1106W	Regional	Multibeam bathymetry	Map:Grid	SMNT-277S-1106W.std.180m.mb.map.jpg	180	952	1033	1490
+Unnamed Seamount -- Predicted satellite bathymetry (1491)		SMNT-277S-1106W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-277S-1106W.std.180m.ss.map.jpg	180	693	773	1491
+Unnamed Seamount -- Residual bathymetry (1492)		SMNT-277S-1106W	Regional	Residual bathymetry	Map:Grid	SMNT-277S-1106W.std.180m.rs.map.jpg	180	693	773	1492
+Unnamed Guyot -- Multibeam data merged with predicted satellite bathymetry (1493)		SMNT-278S-1059W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-278S-1059W.std.180m.mg.map.jpg	180	589	670	1493
+Unnamed Guyot -- Multibeam bathymetry (1494)		SMNT-278S-1059W	Regional	Multibeam bathymetry	Map:Grid	SMNT-278S-1059W.std.180m.mb.map.jpg	180	797	877	1494
+Unnamed Guyot -- Predicted satellite bathymetry (1495)		SMNT-278S-1059W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-278S-1059W.std.180m.ss.map.jpg	180	589	670	1495
+Unnamed Guyot -- Residual bathymetry (1496)		SMNT-278S-1059W	Regional	Residual bathymetry	Map:Grid	SMNT-278S-1059W.std.180m.rs.map.jpg	180	589	670	1496
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1499)		SMNT-278S-1101W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-278S-1101W.std.180m.mg.map.jpg	180	693	773	1499
+Unnamed Seamount -- Multibeam bathymetry (1500)		SMNT-278S-1101W	Regional	Multibeam bathymetry	Map:Grid	SMNT-278S-1101W.std.180m.mb.map.jpg	180	952	1033	1500
+Unnamed Seamount -- Predicted satellite bathymetry (1501)		SMNT-278S-1101W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-278S-1101W.std.180m.ss.map.jpg	180	693	773	1501
+Unnamed Seamount -- Residual bathymetry (1502)		SMNT-278S-1101W	Regional	Residual bathymetry	Map:Grid	SMNT-278S-1101W.std.180m.rs.map.jpg	180	693	773	1502
+Unnamed Seamount -- Predicted satellite bathymetry (1503)		SMNT-279S-1049W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-279S-1049W.std.180m.ss.map.jpg	180	693	773	1503
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1504)		SMNT-279S-1094W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-279S-1094W.std.180m.mg.map.jpg	180	693	773	1504
+Unnamed Seamount -- Multibeam bathymetry (1505)		SMNT-279S-1094W	Regional	Multibeam bathymetry	Map:Grid	SMNT-279S-1094W.std.180m.mb.map.jpg	180	952	1033	1505
+Unnamed Seamount -- Predicted satellite bathymetry (1506)		SMNT-279S-1094W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-279S-1094W.std.180m.ss.map.jpg	180	693	773	1506
+Unnamed Seamount -- Residual bathymetry (1507)		SMNT-279S-1094W	Regional	Residual bathymetry	Map:Grid	SMNT-279S-1094W.std.180m.rs.map.jpg	180	693	773	1507
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1510)		SMNT-280S-1074W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-280S-1074W.std.180m.mg.map.jpg	180	589	670	1510
+Unnamed Seamount -- Multibeam bathymetry (1511)		SMNT-280S-1074W	Regional	Multibeam bathymetry	Map:Grid	SMNT-280S-1074W.std.180m.mb.map.jpg	180	797	877	1511
+Unnamed Seamount -- Predicted satellite bathymetry (1512)		SMNT-280S-1074W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-280S-1074W.std.180m.ss.map.jpg	180	589	670	1512
+Unnamed Seamount -- Residual bathymetry (1513)		SMNT-280S-1074W	Regional	Residual bathymetry	Map:Grid	SMNT-280S-1074W.std.180m.rs.map.jpg	180	589	670	1513
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1516)		SMNT-280S-1092W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-280S-1092W.std.180m.mg.map.jpg	180	693	773	1516
+Unnamed Seamount -- Multibeam bathymetry (1517)		SMNT-280S-1092W	Regional	Multibeam bathymetry	Map:Grid	SMNT-280S-1092W.std.180m.mb.map.jpg	180	952	1033	1517
+Unnamed Seamount -- Predicted satellite bathymetry (1518)		SMNT-280S-1092W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-280S-1092W.std.180m.ss.map.jpg	180	693	773	1518
+Unnamed Seamount -- Residual bathymetry (1519)		SMNT-280S-1092W	Regional	Residual bathymetry	Map:Grid	SMNT-280S-1092W.std.180m.rs.map.jpg	180	693	773	1519
+Unnamed Ridge -- Multibeam data merged with predicted satellite bathymetry (1520)		SMNT-281S-1083W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-281S-1083W.std.180m.mg.map.jpg	180	693	773	1520
+Unnamed Ridge -- Multibeam bathymetry (1521)		SMNT-281S-1083W	Regional	Multibeam bathymetry	Map:Grid	SMNT-281S-1083W.std.180m.mb.map.jpg	180	952	1033	1521
+Unnamed Ridge -- Predicted satellite bathymetry (1522)		SMNT-281S-1083W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-281S-1083W.std.180m.ss.map.jpg	180	693	773	1522
+Unnamed Ridge -- Residual bathymetry (1523)		SMNT-281S-1083W	Regional	Residual bathymetry	Map:Grid	SMNT-281S-1083W.std.180m.rs.map.jpg	180	693	773	1523
+Unnamed Seamount -- Multibeam data merged with predicted satellite bathymetry (1526)		SMNT-283S-1070W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-283S-1070W.std.180m.mg.map.jpg	180	693	773	1526
+Unnamed Seamount -- Multibeam bathymetry (1527)		SMNT-283S-1070W	Regional	Multibeam bathymetry	Map:Grid	SMNT-283S-1070W.std.180m.mb.map.jpg	180	952	1033	1527
+Unnamed Seamount -- Predicted satellite bathymetry (1528)		SMNT-283S-1070W	Regional	Predicted satellite bathymetry	Map:Grid	SMNT-283S-1070W.std.180m.ss.map.jpg	180	693	773	1528
+Unnamed Seamount -- Residual bathymetry (1529)		SMNT-283S-1070W	Regional	Residual bathymetry	Map:Grid	SMNT-283S-1070W.std.180m.rs.map.jpg	180	693	773	1529
+Sala y Gomez Seamount Trail -- Multibeam data merged with predicted satellite bathymetry		SMNT-239S-0860W:SMNT-240S-0847W:SMNT-242S-0850W:SMNT-242S-0868W:SMNT-244S-0837W:SMNT-245S-0846W:SMNT-245S-0880W:SMNT-246S-0877W:SMNT-247S-0826W:SMNT-247S-0855W:SMNT-247S-0903W:SMNT-247S-1105W:SMNT-248S-0849W:SMNT-248S-0947W:SMNT-249S-0865W:SMNT-250S-0885W:SMNT-250S-0911W:SMNT-250S-0949W:SMNT-250S-0962W:SMNT-250S-0982W:SMNT-251S-0822W:SMNT-251S-0908W:SMNT-251S-0966W:SMNT-251S-0974W:SMNT-251S-0988W:SMNT-251S-0997W:SMNT-251S-1001W:SMNT-252S-0894W:SMNT-252S-0903W:SMNT-252S-1009W:SMNT-253S-0851W:SMNT-253S-0856W:SMNT-253S-0916W:SMNT-253S-0936W:SMNT-254S-0818W:SMNT-254S-0913W:SMNT-254S-0922W:SMNT-255S-0842W:SMNT-255S-0873W:SMNT-255S-0892W:SMNT-255S-0903W:SMNT-255S-0930W:SMNT-255S-0977W:SMNT-255S-0981W:SMNT-255S-0996W:SMNT-256S-0869W:SMNT-256S-0897W:SMNT-256S-0929W:SMNT-256S-0991W:SMNT-257S-0825W:SMNT-257S-0829W:SMNT-257S-0836W:SMNT-257S-0855W:SMNT-257S-0866W:SMNT-257S-0933W:SMNT-257S-0936W:SMNT-257S-0946W:SMNT-257S-0949W:SMNT-257S-1030W:SMNT-258S-0833W:SMNT-258S-0840W:SMNT-258S-0847W:SMNT-258S-0862W:SMNT-258S-0910W:SMNT-258S-0939W:SMNT-258S-0955W:SMNT-259S-0907W:SMNT-259S-0960W:SMNT-259S-0996W:SMNT-260S-0844W:SMNT-260S-0968W:SMNT-260S-0970W:SMNT-260S-1007W:SMNT-260S-1022W:SMNT-260S-1033W:SMNT-261S-0860W:SMNT-261S-1000W:SMNT-261S-1013W:SMNT-261S-1024W:SMNT-261S-1038W:SMNT-262S-0863W:SMNT-262S-0917W:SMNT-262S-1030W:SMNT-262S-1036W:SMNT-263S-1018W:SMNT-264S-1049W:SMNT-264S-1059W:SMNT-264S-1065W:SMNT-265S-0867W:SMNT-265S-1053W:SMNT-267S-1050W:SMNT-267S-1062W:SMNT-268S-1059W:SMNT-269S-1008W:SMNT-269S-1056W:SMNT-269S-1069W:SMNT-269S-1075W:SMNT-270S-1021W:SMNT-270S-1030W:SMNT-270S-1061W:SMNT-270S-1103W:SMNT-270S-1108W:SMNT-270S-1111W:SMNT-271S-1024W:SMNT-271S-1064W:SMNT-271S-1094W:SMNT-271S-1097W:SMNT-273S-1040W:SMNT-273S-1050W:SMNT-273S-1085W:SMNT-275S-1048W:SMNT-275S-1079W:SMNT-275S-1082W:SMNT-276S-1054W:SMNT-277S-1057W:SMNT-277S-1064W:SMNT-277S-1106W:SMNT-278S-1059W:SMNT-278S-1101W:SMNT-279S-1049W:SMNT-279S-1094W:SMNT-280S-1074W:SMNT-280S-1092W:SMNT-281S-1083W:SMNT-283S-1070W	Regional	Multibeam merged with predicted satellite bathymetry	Grid					1532
+Sala y Gomez Seamount Trail -- Multibeam bathymetry		SMNT-239S-0860W:SMNT-240S-0847W:SMNT-242S-0850W:SMNT-242S-0868W:SMNT-244S-0837W:SMNT-245S-0846W:SMNT-245S-0880W:SMNT-246S-0877W:SMNT-247S-0826W:SMNT-247S-0855W:SMNT-247S-0903W:SMNT-247S-1105W:SMNT-248S-0849W:SMNT-248S-0947W:SMNT-249S-0865W:SMNT-250S-0885W:SMNT-250S-0911W:SMNT-250S-0949W:SMNT-250S-0962W:SMNT-250S-0982W:SMNT-251S-0822W:SMNT-251S-0908W:SMNT-251S-0966W:SMNT-251S-0974W:SMNT-251S-0988W:SMNT-251S-0997W:SMNT-251S-1001W:SMNT-252S-0894W:SMNT-252S-0903W:SMNT-252S-1009W:SMNT-253S-0851W:SMNT-253S-0856W:SMNT-253S-0916W:SMNT-253S-0936W:SMNT-254S-0818W:SMNT-254S-0913W:SMNT-254S-0922W:SMNT-255S-0842W:SMNT-255S-0873W:SMNT-255S-0892W:SMNT-255S-0903W:SMNT-255S-0930W:SMNT-255S-0977W:SMNT-255S-0981W:SMNT-255S-0996W:SMNT-256S-0869W:SMNT-256S-0897W:SMNT-256S-0929W:SMNT-256S-0991W:SMNT-257S-0825W:SMNT-257S-0829W:SMNT-257S-0836W:SMNT-257S-0855W:SMNT-257S-0866W:SMNT-257S-0933W:SMNT-257S-0936W:SMNT-257S-0946W:SMNT-257S-0949W:SMNT-257S-1030W:SMNT-258S-0833W:SMNT-258S-0840W:SMNT-258S-0847W:SMNT-258S-0862W:SMNT-258S-0910W:SMNT-258S-0939W:SMNT-258S-0955W:SMNT-259S-0907W:SMNT-259S-0960W:SMNT-259S-0996W:SMNT-260S-0844W:SMNT-260S-0968W:SMNT-260S-0970W:SMNT-260S-1007W:SMNT-260S-1022W:SMNT-260S-1033W:SMNT-261S-0860W:SMNT-261S-1000W:SMNT-261S-1013W:SMNT-261S-1024W:SMNT-261S-1038W:SMNT-262S-0863W:SMNT-262S-0917W:SMNT-262S-1030W:SMNT-262S-1036W:SMNT-263S-1018W:SMNT-264S-1049W:SMNT-264S-1059W:SMNT-264S-1065W:SMNT-265S-0867W:SMNT-265S-1053W:SMNT-267S-1050W:SMNT-267S-1062W:SMNT-268S-1059W:SMNT-269S-1008W:SMNT-269S-1056W:SMNT-269S-1069W:SMNT-269S-1075W:SMNT-270S-1021W:SMNT-270S-1030W:SMNT-270S-1061W:SMNT-270S-1103W:SMNT-270S-1108W:SMNT-270S-1111W:SMNT-271S-1024W:SMNT-271S-1064W:SMNT-271S-1094W:SMNT-271S-1097W:SMNT-273S-1040W:SMNT-273S-1050W:SMNT-273S-1085W:SMNT-275S-1048W:SMNT-275S-1079W:SMNT-275S-1082W:SMNT-276S-1054W:SMNT-277S-1057W:SMNT-277S-1064W:SMNT-277S-1106W:SMNT-278S-1059W:SMNT-278S-1101W:SMNT-279S-1049W:SMNT-279S-1094W:SMNT-280S-1074W:SMNT-280S-1092W:SMNT-281S-1083W:SMNT-283S-1070W	Regional	Multibeam bathymetry	Grid					1533
+Sala y Gomez Seamount Trail -- Predicted satellite bathymetry		SMNT-239S-0860W:SMNT-240S-0847W:SMNT-242S-0850W:SMNT-242S-0868W:SMNT-244S-0837W:SMNT-245S-0846W:SMNT-245S-0880W:SMNT-246S-0877W:SMNT-247S-0826W:SMNT-247S-0855W:SMNT-247S-0903W:SMNT-247S-1105W:SMNT-248S-0849W:SMNT-248S-0947W:SMNT-249S-0865W:SMNT-250S-0885W:SMNT-250S-0911W:SMNT-250S-0949W:SMNT-250S-0962W:SMNT-250S-0982W:SMNT-251S-0822W:SMNT-251S-0908W:SMNT-251S-0966W:SMNT-251S-0974W:SMNT-251S-0988W:SMNT-251S-0997W:SMNT-251S-1001W:SMNT-252S-0894W:SMNT-252S-0903W:SMNT-252S-1009W:SMNT-253S-0851W:SMNT-253S-0856W:SMNT-253S-0916W:SMNT-253S-0936W:SMNT-254S-0818W:SMNT-254S-0913W:SMNT-254S-0922W:SMNT-255S-0842W:SMNT-255S-0873W:SMNT-255S-0892W:SMNT-255S-0903W:SMNT-255S-0930W:SMNT-255S-0977W:SMNT-255S-0981W:SMNT-255S-0996W:SMNT-256S-0869W:SMNT-256S-0897W:SMNT-256S-0929W:SMNT-256S-0991W:SMNT-257S-0825W:SMNT-257S-0829W:SMNT-257S-0836W:SMNT-257S-0855W:SMNT-257S-0866W:SMNT-257S-0933W:SMNT-257S-0936W:SMNT-257S-0946W:SMNT-257S-0949W:SMNT-257S-1030W:SMNT-258S-0833W:SMNT-258S-0840W:SMNT-258S-0847W:SMNT-258S-0862W:SMNT-258S-0910W:SMNT-258S-0939W:SMNT-258S-0955W:SMNT-259S-0907W:SMNT-259S-0960W:SMNT-259S-0996W:SMNT-260S-0844W:SMNT-260S-0968W:SMNT-260S-0970W:SMNT-260S-1007W:SMNT-260S-1022W:SMNT-260S-1033W:SMNT-261S-0860W:SMNT-261S-1000W:SMNT-261S-1013W:SMNT-261S-1024W:SMNT-261S-1038W:SMNT-262S-0863W:SMNT-262S-0917W:SMNT-262S-1030W:SMNT-262S-1036W:SMNT-263S-1018W:SMNT-264S-1049W:SMNT-264S-1059W:SMNT-264S-1065W:SMNT-265S-0867W:SMNT-265S-1053W:SMNT-267S-1050W:SMNT-267S-1062W:SMNT-268S-1059W:SMNT-269S-1008W:SMNT-269S-1056W:SMNT-269S-1069W:SMNT-269S-1075W:SMNT-270S-1021W:SMNT-270S-1030W:SMNT-270S-1061W:SMNT-270S-1103W:SMNT-270S-1108W:SMNT-270S-1111W:SMNT-271S-1024W:SMNT-271S-1064W:SMNT-271S-1094W:SMNT-271S-1097W:SMNT-273S-1040W:SMNT-273S-1050W:SMNT-273S-1085W:SMNT-275S-1048W:SMNT-275S-1079W:SMNT-275S-1082W:SMNT-276S-1054W:SMNT-277S-1057W:SMNT-277S-1064W:SMNT-277S-1106W:SMNT-278S-1059W:SMNT-278S-1101W:SMNT-279S-1049W:SMNT-279S-1094W:SMNT-280S-1074W:SMNT-280S-1092W:SMNT-281S-1083W:SMNT-283S-1070W	Regional	Predicted satellite bathymetry	Grid					1534
+Sala y Gomez Seamount Trail -- Residual bathymetry		SMNT-239S-0860W:SMNT-240S-0847W:SMNT-242S-0850W:SMNT-242S-0868W:SMNT-244S-0837W:SMNT-245S-0846W:SMNT-245S-0880W:SMNT-246S-0877W:SMNT-247S-0826W:SMNT-247S-0855W:SMNT-247S-0903W:SMNT-247S-1105W:SMNT-248S-0849W:SMNT-248S-0947W:SMNT-249S-0865W:SMNT-250S-0885W:SMNT-250S-0911W:SMNT-250S-0949W:SMNT-250S-0962W:SMNT-250S-0982W:SMNT-251S-0822W:SMNT-251S-0908W:SMNT-251S-0966W:SMNT-251S-0974W:SMNT-251S-0988W:SMNT-251S-0997W:SMNT-251S-1001W:SMNT-252S-0894W:SMNT-252S-0903W:SMNT-252S-1009W:SMNT-253S-0851W:SMNT-253S-0856W:SMNT-253S-0916W:SMNT-253S-0936W:SMNT-254S-0818W:SMNT-254S-0913W:SMNT-254S-0922W:SMNT-255S-0842W:SMNT-255S-0873W:SMNT-255S-0892W:SMNT-255S-0903W:SMNT-255S-0930W:SMNT-255S-0977W:SMNT-255S-0981W:SMNT-255S-0996W:SMNT-256S-0869W:SMNT-256S-0897W:SMNT-256S-0929W:SMNT-256S-0991W:SMNT-257S-0825W:SMNT-257S-0829W:SMNT-257S-0836W:SMNT-257S-0855W:SMNT-257S-0866W:SMNT-257S-0933W:SMNT-257S-0936W:SMNT-257S-0946W:SMNT-257S-0949W:SMNT-257S-1030W:SMNT-258S-0833W:SMNT-258S-0840W:SMNT-258S-0847W:SMNT-258S-0862W:SMNT-258S-0910W:SMNT-258S-0939W:SMNT-258S-0955W:SMNT-259S-0907W:SMNT-259S-0960W:SMNT-259S-0996W:SMNT-260S-0844W:SMNT-260S-0968W:SMNT-260S-0970W:SMNT-260S-1007W:SMNT-260S-1022W:SMNT-260S-1033W:SMNT-261S-0860W:SMNT-261S-1000W:SMNT-261S-1013W:SMNT-261S-1024W:SMNT-261S-1038W:SMNT-262S-0863W:SMNT-262S-0917W:SMNT-262S-1030W:SMNT-262S-1036W:SMNT-263S-1018W:SMNT-264S-1049W:SMNT-264S-1059W:SMNT-264S-1065W:SMNT-265S-0867W:SMNT-265S-1053W:SMNT-267S-1050W:SMNT-267S-1062W:SMNT-268S-1059W:SMNT-269S-1008W:SMNT-269S-1056W:SMNT-269S-1069W:SMNT-269S-1075W:SMNT-270S-1021W:SMNT-270S-1030W:SMNT-270S-1061W:SMNT-270S-1103W:SMNT-270S-1108W:SMNT-270S-1111W:SMNT-271S-1024W:SMNT-271S-1064W:SMNT-271S-1094W:SMNT-271S-1097W:SMNT-273S-1040W:SMNT-273S-1050W:SMNT-273S-1085W:SMNT-275S-1048W:SMNT-275S-1079W:SMNT-275S-1082W:SMNT-276S-1054W:SMNT-277S-1057W:SMNT-277S-1064W:SMNT-277S-1106W:SMNT-278S-1059W:SMNT-278S-1101W:SMNT-279S-1049W:SMNT-279S-1094W:SMNT-280S-1074W:SMNT-280S-1092W:SMNT-281S-1083W:SMNT-283S-1070W	Regional	Residual bathymetry	Grid					1535

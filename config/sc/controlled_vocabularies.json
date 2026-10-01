@@ -1,0 +1,167 @@
+{
+	"boolean": {
+		"label": "Boolean Flags",
+		"database_column": "(multiple_columns)",
+		"items": [
+			{
+				"item": "t",
+				"label": "True"
+			},
+			{
+				"item": "f",
+				"label": "False"
+			}
+		]
+	},
+	"sc_version": {
+		"label": "SC Versions",
+		"database_column": "data_model_version",
+		"items": [
+			{
+				"item": "1.0"
+			}
+		]
+	},
+	"seamount_type": {
+		"label": "Seamount Types",
+		"database_column": "seamount_type",
+		"items": [
+			{
+				"item": "Seamount"
+			},
+			{
+				"item": "Guyot"
+			},
+			{
+				"item": "Tablemount"
+			},
+			{
+				"item": "Knoll"
+			},
+			{
+				"item": "Hill"
+			},
+			{
+				"item": "Atoll"
+			},
+			{
+				"item": "Island"
+			},
+			{
+				"item": "Plateau"
+			},
+			{
+				"item": "Ridge"
+			},
+			{
+				"item": "Escarpment"
+			}
+		]
+	},
+	"size_class": {
+		"label": "Size Classes",
+		"database_column": "size_class",
+		"items": [
+			{
+				"item": "Very Small"
+			},
+			{
+				"item": "Small"
+			},
+			{
+				"item": "Intermediate"
+			},
+			{
+				"item": "Large"
+			},
+			{
+				"item": "Very Large"
+			}
+		]
+	},
+	"tectonic_setting": {
+		"label": "Tectonic Settings",
+		"database_column": "tectonic_setting",
+		"items": [
+			{
+				"item": "Hotspot Trail"
+			},
+			{
+				"item": "Plate Boundary"
+			}
+		]
+	},
+	"oceanic_province": {
+		"label": "Oceanic Provinces",
+		"database_column": "oceanic_province",
+		"items": [
+			{
+				"item": "Abyssal Plain"
+			},
+			{
+				"item": "Abyssal Plateau"
+			}
+		]
+	},
+	"volcanic_activity": {
+		"label": "Volcanic Activity",
+		"database_column": "volcanic_activity",
+		"items": [
+			{
+				"item": "Extinct"
+			},
+			{
+				"item": "Hydrothermally Active"
+			}
+		]
+	},
+	"scale": {
+		"label": "Map Scales",
+		"database_column": "scale",
+		"items": [
+			{
+				"item": "Seamount",
+				"label": "A map of one seamount"
+			},
+			{
+				"item": "Regional",
+				"label": "A map of a trail, tile or area covering several seamounts"
+			}
+		]
+	},
+	"bathymetry_type": {
+		"label": "Bathymetry Types",
+		"database_column": "data_type",
+		"items": [
+			{
+				"item": "Predicted satellite bathymetry"
+			},
+			{
+				"item": "Multibeam bathymetry"
+			},
+			{
+				"item": "Multibeam merged with predicted satellite bathymetry"
+			},
+			{
+				"item": "Residual bathymetry"
+			},
+			{
+				"item": "Predicted bathymetry Smith & Sandwell v8.2"
+			}
+		]
+	},
+	"map_product": {
+		"label": "Map Products",
+		"database_column": "products",
+		"items": [
+			{
+				"item": "Map",
+				"label": "A map image"
+			},
+			{
+				"item": "Grid",
+				"label": "A gridded bathymetry file"
+			}
+		]
+	}
+}

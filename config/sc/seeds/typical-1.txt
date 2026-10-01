@@ -1,0 +1,63 @@
+tab delimited	contribution
+id	version	data_model_version	description
+42	1	1.0	Seamount Catalog example: Gilberts Ridge
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	seamount_type	size_class	shape_class	lat	lon	region	plate	tectonic_setting	oceanic_province	volcanic_activity	plate_age_min	plate_age_max	height	summit_depth	base_depth	volume	elongation	elongation_sigma	irregularity	irregularity_sigma	n_summits	multibeam_coverage	description	sc_id
+SMNT-007N-1732E	Tofe Tolu Seamount	Seamount	Very Small	B3	0.7245	173.23683	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	135.8	136.2	2375	1395	3770	590	2.17	0.71	1.38	0.37	1	58	Tofe Tolu Seamount is located at 0° 43.4' N, 173° 14.1' E and is part of the Gilberts Ridge region on the Pacific Plate. The seamount is 2626 m high with the top at -1500 m and the ocean bottom at -4126 m. It has a volume of 578 km3 and is elongated in a north, south direction with an azimuth of approximately 144°. Two rifts can be seen radiating out to the northeast. The seamount is on the edge of a raised plateau, which it shares with Mauga Umi Seamount. The slopes on the western side and eastern edge of Tofe Tolu are effected by the plateau.	7
+SMNT-014N-1730E	Tarawa Guyot	Guyot	Large	A1	1.45167	173.006	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	136.8	139.4	3890	280	4170	10670	1.22	0.02	1.13	0.03	2	19	Tarawa Atoll is located at 1° 26.7' N, 173° 0.2' E and is part of the Gilberts Ridge region on the Pacific Plate. The atoll is elongated in a north south direction and has irregular edges. A salient ridge is seen to the southwest and the top of the atoll is relatively flat. The atoll is located in a cluster of seamounts and is connected by saddles to the north and south to other seamounts.	74
+SMNT-023S-1778E	Sakau Seamount	Seamount	Small	C5	-2.33683	177.82067	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	124.9	126.1	2490	2800	5290	2087	3.49	1.44	1.52	0.40	1	44	Sakau Seamount is located at 2° 20.0' S, 177° 49.1' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 2723 m high with the top at -2700 m and the ocean bottom at 5423 m. The seamount has a volume of 3270 km3 and is very elongated with an azimuth of approximately 132°. The edges of the seamount are irregular and two rifts were observed. The north side of the west trending rift is shallow and platform like. To the lower northeast, there is a saddle connecting the Sakau Seamount to an unnamed seamount. Dredge 24 was taken on the western rift.	21
+SMNT-025S-1791E	Seka Seamount	Seamount	Very Small	B1	-2.46333	179.09867	Gilberts Ridge	Pacific Plate	Hotspot Trail	Abyssal Plain	Extinct	124.3	124.5	2475	2590	5065	886	1.04	0.02	1.27	0.14	1	96	Seka Seamount is located at 2° 27.7' S, 179° 6.0' E and is part of the Gilberts Ridge region on the Pacific Plate. It is 2752 m high with the top at -2700 m and the ocean bottom at -5423 m. The seamount has a volume of 2281 km3 and is fairly round with little elongation or irregularity of the edges. The westward trending rift extends further than the measurement, and is very faint. Some volcanism appears to be present.	22
+>>>>>>>>>>
+tab delimited	contours
+seamount	depth	azimuth	area	length	width	elongation	contour_perimeter	ellipse_perimeter	irregularity
+SMNT-007N-1732E	2108	158.4	20.7	8.1	3.4	2.391	19.5	18.4	1.061
+SMNT-007N-1732E	2345	152.8	35.6	12.4	4.5	2.744	32.4	25.2	1.290
+SMNT-007N-1732E	2583	113.9	115.6	18.4	13.4	1.376	69.0	38.8	1.777
+SMNT-014N-1730E	1836	149.1	1314.9	49.4	40.2	1.229	151.7	129.6	1.171
+SMNT-014N-1730E	2225	139.3	1521.7	52.2	43.4	1.204	156.1	139.2	1.121
+SMNT-014N-1730E	2614	130.9	1751.9	57.1	46.1	1.238	165.5	149.6	1.106
+SMNT-023S-1778E	3547	131.6	144.8	51.5	10.0	5.133	67.6	63.9	1.058
+SMNT-023S-1778E	3796	134.2	241.6	40.1	13.8	2.913	117.8	66.8	1.762
+SMNT-023S-1778E	4045	130.0	374.7	44.1	18.1	2.435	136.6	78.8	1.734
+SMNT-025S-1791E	3580	214.6	36.6	7.7	7.4	1.036	30.8	21.5	1.437
+SMNT-025S-1791E	3828	165.7	63.7	9.3	9.2	1.012	33.9	28.3	1.198
+SMNT-025S-1791E	4075	84.8	94.8	11.7	11.0	1.060	40.6	34.5	1.177
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Tofe Tolu Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-007N-1732E	SMNT-007N-1732E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-007N-1732E.std.180m.mg.map.jpg	180	589	670	66
+Tofe Tolu Seamount -- Multibeam bathymetry	SMNT-007N-1732E	SMNT-007N-1732E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-007N-1732E.std.180m.mb.map.jpg	180	797	877	67
+Tofe Tolu Seamount -- Predicted satellite bathymetry	SMNT-007N-1732E	SMNT-007N-1732E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-007N-1732E.std.180m.ss.map.jpg	180	589	670	68
+Tofe Tolu Seamount -- Residual bathymetry	SMNT-007N-1732E	SMNT-007N-1732E	Seamount	Residual bathymetry	Map:Grid	SMNT-007N-1732E.std.180m.rs.map.jpg	180	589	670	69
+Tarawa Guyot -- Multibeam data merged with predicted satellite bathymetry	SMNT-014N-1730E	SMNT-014N-1730E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-014N-1730E.std.180m.mg.map.jpg	180	1004	1084	96
+Tarawa Guyot -- Multibeam bathymetry	SMNT-014N-1730E	SMNT-014N-1730E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-014N-1730E.std.180m.mb.map.jpg	180	1419	1499	97
+Tarawa Guyot -- Predicted satellite bathymetry	SMNT-014N-1730E	SMNT-014N-1730E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-014N-1730E.std.180m.ss.map.jpg	180	1004	1084	98
+Tarawa Guyot -- Residual bathymetry	SMNT-014N-1730E	SMNT-014N-1730E	Seamount	Residual bathymetry	Map:Grid	SMNT-014N-1730E.std.180m.rs.map.jpg	180	1004	1084	99
+Sakau Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-023S-1778E	SMNT-023S-1778E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-023S-1778E.std.180m.mg.map.jpg	180	693	773	156
+Sakau Seamount -- Multibeam bathymetry	SMNT-023S-1778E	SMNT-023S-1778E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-023S-1778E.std.180m.mb.map.jpg	180	952	1033	157
+Sakau Seamount -- Predicted satellite bathymetry	SMNT-023S-1778E	SMNT-023S-1778E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-023S-1778E.std.180m.ss.map.jpg	180	693	773	158
+Sakau Seamount -- Residual bathymetry	SMNT-023S-1778E	SMNT-023S-1778E	Seamount	Residual bathymetry	Map:Grid	SMNT-023S-1778E.std.180m.rs.map.jpg	180	693	773	159
+Seka Seamount -- Multibeam data merged with predicted satellite bathymetry	SMNT-025S-1791E	SMNT-025S-1791E	Seamount	Multibeam merged with predicted satellite bathymetry	Map:Grid	SMNT-025S-1791E.std.180m.mg.map.jpg	180	641	721	204
+Seka Seamount -- Multibeam bathymetry	SMNT-025S-1791E	SMNT-025S-1791E	Seamount	Multibeam bathymetry	Map:Grid	SMNT-025S-1791E.std.180m.mb.map.jpg	180	875	955	205
+Seka Seamount -- Predicted satellite bathymetry	SMNT-025S-1791E	SMNT-025S-1791E	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-025S-1791E.std.180m.ss.map.jpg	180	641	721	206
+Seka Seamount -- Residual bathymetry	SMNT-025S-1791E	SMNT-025S-1791E	Seamount	Residual bathymetry	Map:Grid	SMNT-025S-1791E.std.180m.rs.map.jpg	180	641	721	207
+Gilberts Ridge -- Multibeam data merged with predicted satellite bathymetry		SMNT-007N-1732E:SMNT-014N-1730E:SMNT-023S-1778E:SMNT-025S-1791E	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-024N-1746E.std.990m.mg.map.jpg	990	1981	2415	246
+Gilberts Ridge -- Multibeam bathymetry		SMNT-007N-1732E:SMNT-014N-1730E:SMNT-023S-1778E:SMNT-025S-1791E	Regional	Multibeam bathymetry	Map:Grid	REGION-024N-1746E.std.990m.mb.map.jpg	990	1981	2415	247
+Gilberts Ridge -- Predicted satellite bathymetry		SMNT-007N-1732E:SMNT-014N-1730E:SMNT-023S-1778E:SMNT-025S-1791E	Regional	Predicted satellite bathymetry	Map:Grid	REGION-024N-1746E.std.990m.ss.map.jpg	990	1981	2415	248
+Gilberts Ridge -- Residual bathymetry		SMNT-007N-1732E:SMNT-014N-1730E:SMNT-023S-1778E:SMNT-025S-1791E	Regional	Residual bathymetry	Map:Grid	REGION-024N-1746E.std.990m.rs.map.jpg	990	1981	2415	249
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-7-1 -- graphs, spreadsheet	SMNT-007N-1732E	447	https://earthref.org/ERDA/447/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-7-2 -- graphs, spreadsheet	SMNT-007N-1732E	448	https://earthref.org/ERDA/448/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-24-16 -- graphs, spreadsheet	SMNT-023S-1778E	453	https://earthref.org/ERDA/453/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-24-30 -- graphs, spreadsheet	SMNT-023S-1778E	454	https://earthref.org/ERDA/454/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-25-6 -- graphs, spreadsheet	SMNT-025S-1791E	455	https://earthref.org/ERDA/455/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-25-47 -- graphs, spreadsheet	SMNT-025S-1791E	456	https://earthref.org/ERDA/456/
+High resolution 40Ar/39Ar ages for the Gilberts Ridge: sample AVON2-25-48 -- graphs, spreadsheet	SMNT-025S-1791E	457	https://earthref.org/ERDA/457/
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2703	SMNT-014N-1730E	Falkland, A.C. and Woodroffe, C.D. (1997). Geology and hydrogeology of Tarawa and Christmas Island, Kiribati. 54: 577-610.	https://earthref.org/ERR/2703/
+2721	SMNT-014N-1730E	Neprochnov, Y.P., Moskalenko, V.N. and Shishkina, N.A. (1977). The structure of the sedimentary mantle and basement in the Gilbert Islands region. Oceanology 17(3): 308-310.	https://earthref.org/ERR/2721/

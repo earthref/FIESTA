@@ -13,7 +13,7 @@ from fiesta.services.seed import load_seed, local_file, require_local
 from fiesta.settings import Settings
 
 
-@pytest.mark.parametrize("node", ["magic", "cdr", "karar", "kdd", "erda", "osu-mgr"])
+@pytest.mark.parametrize("node", ["magic", "cdr", "karar", "kdd", "erda", "osu-mgr", "sc"])
 def test_seed_fixtures(node):
     config = Path(__file__).resolve().parents[2] / "config" / f"{node}.yaml"
     node = load_deployment(config).node_list[0]

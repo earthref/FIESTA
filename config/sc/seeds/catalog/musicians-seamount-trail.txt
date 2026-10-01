@@ -1,0 +1,85 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Musicians Seamount Trail (33 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	lat	lon	region	plate	tectonic_setting	height	sc_id
+SMNT-252N-1617W	Mendelssohn Seamount		Seamount	25.17	-161.71	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	991
+SMNT-257N-1602W	Schumann Seamount		Seamount	25.69	-160.22	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1182
+SMNT-259N-1579W	Prokofyev Seamount	Prokofiev	Seamount	25.85	-157.88333	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1114
+SMNT-262N-1620W	Chopin Seamount		Seamount	26.15	-161.98	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	632
+SMNT-266N-1612W	Haydn Seamount		Seamount	26.64	-161.24	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	803
+SMNT-269N-1601W	Gluck Seamount		Seamount	26.88	-160.08	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	778
+SMNT-272N-1607W	Sibelius Seamount		Seamount	27.23	-160.69	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1211
+SMNT-273N-1617W	Ravel Seamount		Seamount	27.26667	-161.66667	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1128
+SMNT-275N-1599W	Handel Seamount		Seamount	27.48	-159.88	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	797
+SMNT-276N-1602W	Scarlatti Seamount		Seamount	27.63	-160.23	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1175
+SMNT-279N-1621W	Grieg Seamount		Seamount	27.85	-162.05	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	787
+SMNT-287N-1618W	Mozart Seamount		Seamount	28.66	-161.75	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1027
+SMNT-287N-1626W	Paganini Seamount		Seamount	28.7	-162.62	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1074
+SMNT-290N-1621W	Liszt Seamount		Seamount	28.98333	-162.08333	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	946
+SMNT-294N-1621W	Tchaikovsky Seamount		Seamount	29.4	-162.12	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1261
+SMNT-303N-1621W	Debussy Seamount		Seamount	30.32	-162.07	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	678
+SMNT-304N-1639W	Musorgskiy Seamount	Mussorgski	Seamount	30.36	-163.88	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1033
+SMNT-305N-1614W	Dvorak Seamount		Seamount	30.51	-161.35	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	698
+SMNT-312N-1624W	Brahms Seamount		Seamount	31.17	-162.37	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	596
+SMNT-315N-1646W	Stravinskiy Seamount		Seamount	31.48333	-164.6	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1241
+SMNT-317N-1629W	Wagner Seamount		Seamount	31.73	-162.89	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1312
+SMNT-318N-1649W	Mahler Seamount		Seamount	31.78	-164.93	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	956
+SMNT-319N-1622W	Schubert Seamount		Seamount	31.93333	-162.15	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1181
+SMNT-322N-1630W	Rossini Seamount		Seamount	32.24	-163.0	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1147
+SMNT-322N-1636W	Verdi Seamount		Seamount	32.18	-163.6	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1303
+SMNT-323N-1600W	Donizetti Seamount		Seamount	32.32	-159.95	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	691
+SMNT-323N-1616W	Bizet Seamount		Seamount	32.29	-161.61	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	584
+SMNT-323N-1624W	Puccini Seamount		Seamount	32.25	-162.38	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1117
+SMNT-325N-1658W	Hammerstein Seamount		Seamount	32.495	-165.77	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	796
+SMNT-327N-1632W	Bellini Seamount		Seamount	32.69	-163.15	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	579
+SMNT-329N-1660W	Berlin Seamount		Seamount	32.86	-166.03	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	581
+SMNT-332N-1649W	Shostakovich Seamount		Seamount	33.24	-164.86	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1209
+SMNT-333N-1642W	Strauss Seamount		Seamount	33.3	-164.15	Musicians Seamount Trail	Pacific Plate	Hotspot Trail	0	1240
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Mendelssohn Seamount -- Predicted satellite bathymetry	SMNT-252N-1617W	SMNT-252N-1617W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-252N-1617W.std.180m.ss.map.jpg	180	693	773	776
+Schumann Seamount -- Predicted satellite bathymetry	SMNT-257N-1602W	SMNT-257N-1602W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-257N-1602W.std.180m.ss.map.jpg	180	693	773	777
+Prokofyev Seamount -- Predicted satellite bathymetry	SMNT-259N-1579W	SMNT-259N-1579W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-259N-1579W.std.180m.ss.map.jpg	180	693	773	778
+Chopin Seamount -- Predicted satellite bathymetry	SMNT-262N-1620W	SMNT-262N-1620W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-262N-1620W.std.180m.ss.map.jpg	180	693	773	779
+Haydn Seamount -- Predicted satellite bathymetry	SMNT-266N-1612W	SMNT-266N-1612W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-266N-1612W.std.180m.ss.map.jpg	180	693	773	780
+Gluck Seamount -- Predicted satellite bathymetry	SMNT-269N-1601W	SMNT-269N-1601W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-269N-1601W.std.180m.ss.map.jpg	180	693	773	781
+Sibelius Seamount -- Predicted satellite bathymetry	SMNT-272N-1607W	SMNT-272N-1607W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-272N-1607W.std.180m.ss.map.jpg	180	693	773	782
+Ravel Seamount -- Predicted satellite bathymetry	SMNT-273N-1617W	SMNT-273N-1617W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-273N-1617W.std.180m.ss.map.jpg	180	693	773	783
+Handel Seamount -- Predicted satellite bathymetry	SMNT-275N-1599W	SMNT-275N-1599W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-275N-1599W.std.180m.ss.map.jpg	180	589	670	784
+Scarlatti Seamount -- Predicted satellite bathymetry	SMNT-276N-1602W	SMNT-276N-1602W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-276N-1602W.std.180m.ss.map.jpg	180	693	773	785
+Grieg Seamount -- Predicted satellite bathymetry	SMNT-279N-1621W	SMNT-279N-1621W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-279N-1621W.std.180m.ss.map.jpg	180	693	773	786
+Mozart Seamount -- Predicted satellite bathymetry	SMNT-287N-1618W	SMNT-287N-1618W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-287N-1618W.std.180m.ss.map.jpg	180	693	773	787
+Paganini Seamount -- Predicted satellite bathymetry	SMNT-287N-1626W	SMNT-287N-1626W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-287N-1626W.std.180m.ss.map.jpg	180	693	773	788
+Liszt Seamount -- Predicted satellite bathymetry	SMNT-290N-1621W	SMNT-290N-1621W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-290N-1621W.std.180m.ss.map.jpg	180	693	773	789
+Tchaikovsky Seamount -- Predicted satellite bathymetry	SMNT-294N-1621W	SMNT-294N-1621W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-294N-1621W.std.180m.ss.map.jpg	180	641	721	790
+Debussy Seamount -- Predicted satellite bathymetry	SMNT-303N-1621W	SMNT-303N-1621W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-303N-1621W.std.180m.ss.map.jpg	180	693	773	792
+Musorgskiy Seamount -- Predicted satellite bathymetry	SMNT-304N-1639W	SMNT-304N-1639W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-304N-1639W.std.180m.ss.map.jpg	180	693	773	793
+Dvorak Seamount -- Predicted satellite bathymetry	SMNT-305N-1614W	SMNT-305N-1614W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-305N-1614W.std.180m.ss.map.jpg	180	641	721	794
+Brahms Seamount -- Predicted satellite bathymetry	SMNT-312N-1624W	SMNT-312N-1624W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-312N-1624W.std.180m.ss.map.jpg	180	693	773	795
+Stravinskiy Seamount -- Predicted satellite bathymetry	SMNT-315N-1646W	SMNT-315N-1646W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-315N-1646W.std.180m.ss.map.jpg	180	693	773	796
+Wagner Seamount -- Predicted satellite bathymetry	SMNT-317N-1629W	SMNT-317N-1629W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-317N-1629W.std.180m.ss.map.jpg	180	1056	1136	797
+Mahler Seamount -- Predicted satellite bathymetry	SMNT-318N-1649W	SMNT-318N-1649W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-318N-1649W.std.180m.ss.map.jpg	180	693	773	798
+Schubert Seamount -- Predicted satellite bathymetry	SMNT-319N-1622W	SMNT-319N-1622W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-319N-1622W.std.180m.ss.map.jpg	180	693	773	799
+Rossini Seamount -- Predicted satellite bathymetry	SMNT-322N-1630W	SMNT-322N-1630W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-322N-1630W.std.180m.ss.map.jpg	180	693	773	800
+Verdi Seamount -- Predicted satellite bathymetry	SMNT-322N-1636W	SMNT-322N-1636W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-322N-1636W.std.180m.ss.map.jpg	180	1212	1292	801
+Donizetti Seamount -- Predicted satellite bathymetry	SMNT-323N-1600W	SMNT-323N-1600W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-323N-1600W.std.180m.ss.map.jpg	180	589	670	802
+Bizet Seamount -- Predicted satellite bathymetry	SMNT-323N-1616W	SMNT-323N-1616W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-323N-1616W.std.180m.ss.map.jpg	180	693	773	803
+Puccini Seamount -- Predicted satellite bathymetry	SMNT-323N-1624W	SMNT-323N-1624W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-323N-1624W.std.180m.ss.map.jpg	180	693	773	804
+Hammerstein Seamount -- Predicted satellite bathymetry	SMNT-325N-1658W	SMNT-325N-1658W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-325N-1658W.std.180m.ss.map.jpg	180	693	773	805
+Bellini Seamount -- Predicted satellite bathymetry	SMNT-327N-1632W	SMNT-327N-1632W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-327N-1632W.std.180m.ss.map.jpg	180	589	670	806
+Berlin Seamount -- Predicted satellite bathymetry	SMNT-329N-1660W	SMNT-329N-1660W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-329N-1660W.std.180m.ss.map.jpg	180	693	773	807
+Shostakovich Seamount -- Predicted satellite bathymetry	SMNT-332N-1649W	SMNT-332N-1649W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-332N-1649W.std.180m.ss.map.jpg	180	901	981	808
+Strauss Seamount -- Predicted satellite bathymetry	SMNT-333N-1642W	SMNT-333N-1642W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-333N-1642W.std.180m.ss.map.jpg	180	693	773	809
+Musicians Seamount Trail -- Multibeam data merged with predicted satellite bathymetry		SMNT-252N-1617W:SMNT-257N-1602W:SMNT-259N-1579W:SMNT-262N-1620W:SMNT-266N-1612W:SMNT-269N-1601W:SMNT-272N-1607W:SMNT-273N-1617W:SMNT-275N-1599W:SMNT-276N-1602W:SMNT-279N-1621W:SMNT-287N-1618W:SMNT-287N-1626W:SMNT-290N-1621W:SMNT-294N-1621W:SMNT-303N-1621W:SMNT-304N-1639W:SMNT-305N-1614W:SMNT-312N-1624W:SMNT-315N-1646W:SMNT-317N-1629W:SMNT-318N-1649W:SMNT-319N-1622W:SMNT-322N-1630W:SMNT-322N-1636W:SMNT-323N-1600W:SMNT-323N-1616W:SMNT-323N-1624W:SMNT-325N-1658W:SMNT-327N-1632W:SMNT-329N-1660W:SMNT-332N-1649W:SMNT-333N-1642W	Regional	Multibeam merged with predicted satellite bathymetry	Map:Grid	REGION-293N-1610W.std.1110m.mg.map.jpg	1110	2275	2414	810
+Musicians Seamount Trail -- Multibeam bathymetry		SMNT-252N-1617W:SMNT-257N-1602W:SMNT-259N-1579W:SMNT-262N-1620W:SMNT-266N-1612W:SMNT-269N-1601W:SMNT-272N-1607W:SMNT-273N-1617W:SMNT-275N-1599W:SMNT-276N-1602W:SMNT-279N-1621W:SMNT-287N-1618W:SMNT-287N-1626W:SMNT-290N-1621W:SMNT-294N-1621W:SMNT-303N-1621W:SMNT-304N-1639W:SMNT-305N-1614W:SMNT-312N-1624W:SMNT-315N-1646W:SMNT-317N-1629W:SMNT-318N-1649W:SMNT-319N-1622W:SMNT-322N-1630W:SMNT-322N-1636W:SMNT-323N-1600W:SMNT-323N-1616W:SMNT-323N-1624W:SMNT-325N-1658W:SMNT-327N-1632W:SMNT-329N-1660W:SMNT-332N-1649W:SMNT-333N-1642W	Regional	Multibeam bathymetry	Map:Grid	REGION-293N-1610W.std.1110m.mb.map.jpg	1110	2275	2414	811
+Musicians Seamount Trail -- Predicted satellite bathymetry		SMNT-252N-1617W:SMNT-257N-1602W:SMNT-259N-1579W:SMNT-262N-1620W:SMNT-266N-1612W:SMNT-269N-1601W:SMNT-272N-1607W:SMNT-273N-1617W:SMNT-275N-1599W:SMNT-276N-1602W:SMNT-279N-1621W:SMNT-287N-1618W:SMNT-287N-1626W:SMNT-290N-1621W:SMNT-294N-1621W:SMNT-303N-1621W:SMNT-304N-1639W:SMNT-305N-1614W:SMNT-312N-1624W:SMNT-315N-1646W:SMNT-317N-1629W:SMNT-318N-1649W:SMNT-319N-1622W:SMNT-322N-1630W:SMNT-322N-1636W:SMNT-323N-1600W:SMNT-323N-1616W:SMNT-323N-1624W:SMNT-325N-1658W:SMNT-327N-1632W:SMNT-329N-1660W:SMNT-332N-1649W:SMNT-333N-1642W	Regional	Predicted satellite bathymetry	Map:Grid	REGION-293N-1610W.std.1110m.ss.map.jpg	1110	2275	2414	812
+Musicians Seamount Trail -- Residual bathymetry		SMNT-252N-1617W:SMNT-257N-1602W:SMNT-259N-1579W:SMNT-262N-1620W:SMNT-266N-1612W:SMNT-269N-1601W:SMNT-272N-1607W:SMNT-273N-1617W:SMNT-275N-1599W:SMNT-276N-1602W:SMNT-279N-1621W:SMNT-287N-1618W:SMNT-287N-1626W:SMNT-290N-1621W:SMNT-294N-1621W:SMNT-303N-1621W:SMNT-304N-1639W:SMNT-305N-1614W:SMNT-312N-1624W:SMNT-315N-1646W:SMNT-317N-1629W:SMNT-318N-1649W:SMNT-319N-1622W:SMNT-322N-1630W:SMNT-322N-1636W:SMNT-323N-1600W:SMNT-323N-1616W:SMNT-323N-1624W:SMNT-325N-1658W:SMNT-327N-1632W:SMNT-329N-1660W:SMNT-332N-1649W:SMNT-333N-1642W	Regional	Residual bathymetry	Map:Grid	REGION-293N-1610W.std.1110m.rs.map.jpg	1110	2275	2413	813
+>>>>>>>>>>
+tab delimited	references
+reference	seamounts	citation	url
+2165	SMNT-304N-1639W:SMNT-312N-1624W	Harrison, C.G., Jarrard, A.R.D., Vacquier, V. and Larson, R.L. (1975). Palaeomagnetim of Cretaceous Pacific seamounts. Geophysical Journal of the Royal Astronomical Society 42: 859-882.	https://earthref.org/ERR/2165/
+2302	SMNT-252N-1617W:SMNT-257N-1602W:SMNT-259N-1579W:SMNT-266N-1612W:SMNT-269N-1601W:SMNT-275N-1599W:SMNT-287N-1626W:SMNT-290N-1621W:SMNT-303N-1621W:SMNT-312N-1624W:SMNT-318N-1649W:SMNT-319N-1622W:SMNT-323N-1600W:SMNT-323N-1616W:SMNT-329N-1660W	Sager, W.W. and Pringle, M.S. (1987). Paleomagnetic constraints on the origin and evolution of the Musicians and South Hawaiian seamounts, Central Pacific Ocean. In: Seamounts, Islands and Atolls, Geophysical Monograph Series 43. Keating, B.H., Fryer, P., Batiza, R. and Boehlert, G.W. (Editors), American Geophysical Union, Washington, D.C.. 43: 133-162.	https://earthref.org/ERR/2302/
+37240	SMNT-252N-1617W:SMNT-257N-1602W:SMNT-266N-1612W:SMNT-290N-1621W:SMNT-318N-1649W	Sager, W.W. and Pringle, M.S. (1988). Mid-Cretaceous to early tertiary apparent polar wander path of the Pacific plate. Journal of Geophysical Research 93: doi: 10.1029/88JB00077. issn: 0148-0227.	https://earthref.org/ERR/37240/

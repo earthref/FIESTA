@@ -1,0 +1,15 @@
+tab delimited	contribution
+data_model_version	description	supplemental_links
+1.0	Seamount Catalog: Azores (1 seamounts), from the legacy EarthRef.org Seamount Catalog	{"Legacy Seamount Catalog": "https://earthref.org/SC/"}
+>>>>>>>>>>
+tab delimited	seamounts
+seamount	seamount_name	alternative_names	seamount_type	lat	lon	region	height	sc_id
+SMNT-373N-0247W	Formigas Hill	Dollabarata Reef	Hill	37.25	-24.74	Azores	0	223
+>>>>>>>>>>
+tab delimited	maps
+map	seamount	seamounts	scale	data_type	products	file_name	grid_spacing	image_width	image_height	sc_file_id
+Formigas Hill -- Predicted satellite bathymetry	SMNT-373N-0247W	SMNT-373N-0247W	Seamount	Predicted satellite bathymetry	Map:Grid	SMNT-373N-0247W.std.180m.ss.map.jpg	180	693	773	2538
+>>>>>>>>>>
+tab delimited	files
+file	seamounts	erda_id	url
+seamounts -- diagram, graphs, model cartoon, photograph, animation, movie, video excerpt, cross section, map, data compilation, database, spreadsheet, template, presentation, seminar, poster, lesson plan, teachers log, news letter, news release, news item, document, glossary item, field guide, report, text, white book, senior thesis, master thesis, PhD thesis, web link, executable file, program source code, unpublished data	SMNT-373N-0247W	1826	https://earthref.org/ERDA/1826/
