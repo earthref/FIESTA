@@ -81,15 +81,20 @@ const WHEEL_PIXELS_PER_DOUBLING = 250;
 // MapLibre leaves out tiles at the screen's edges.
 const POLE_FOV = 1;
 const DEGREES = 180 / Math.PI;
-const polarCamera = (sign: number, { offset, radius, orientation }: PolarView) => {
+// MapLibre loads one tile zoom across the globe, the Mercator zoom at the point
+// the camera looks at, which is far too low near the pole (z0 with the pole in
+// the middle). So the camera looks half the screen's short side further from
+// the pole than the middle, where the tiles the screen needs most detail in
+// are, and padding moves the picture back.
+const polarCamera = (sign: number, { offset, radius, orientation }: PolarView, size: Size) => {
   let [x, y] = offset;
   let r = Math.hypot(x, y);
   if (r < MIN_OFFSET) [x, y, r] = [0, MIN_OFFSET, MIN_OFFSET];
-  const camera = Math.min(r, MAX_OFFSET);
+  const camera = Math.min(r + Math.min(size.width, size.height) / 2 / radius, MAX_OFFSET);
   // The screen angle from the pole to the middle of the screen, as orientation.
   const angle = Math.atan2(x, y) * DEGREES;
-  // Past MAX_OFFSET, how far the point the camera looks at is short of the
-  // middle of the screen, in pixels: padding moves it off the middle by that.
+  // How far the point the camera looks at is short of the middle of the
+  // screen (or past it), in pixels: padding moves it off the middle by that.
   const [shiftX, shiftY] = [((r - camera) * radius * x) / r, ((r - camera) * radius * y) / r];
   // The camera is tilted toward the pole, which is then straight down the
   // screen until rolled round to the opposite side from the middle.
@@ -601,7 +606,10 @@ const MapLibreMap: FC<{
         radius: POLE_RADIUS * containerRef.current.clientHeight,
         orientation: orientation ?? 0,
       };
-      camera = polarCamera(sign, polar);
+      camera = polarCamera(sign, polar, {
+        width: containerRef.current.clientWidth,
+        height: containerRef.current.clientHeight,
+      });
     } else {
       const center = focusCenter(mode as "globe" | "flat", initialPoints);
       if (center) focused = focusKeyRef.current;
@@ -1197,7 +1205,7 @@ const MapLibreMap: FC<{
       const [x, y] = next.offset;
       const [r, max] = [Math.hypot(x, y), maxPolarOffset(next.radius, map.transform)];
       polar = r > max ? { ...next, offset: [(x * max) / r, (y * max) / r] } : next;
-      map.jumpTo(polarCamera(sign!, polar));
+      map.jumpTo(polarCamera(sign!, polar, map.transform));
     };
     let animation = 0;
     const animatePolar = (target: Partial<PolarView>, duration = 800) => {
@@ -1324,6 +1332,8 @@ const MapLibreMap: FC<{
       typeof ResizeObserver !== "undefined"
         ? new ResizeObserver(() => {
             map.resize();
+            // The pole views' camera depends on the screen's size.
+            if (polar) setPolar(polar);
             refit();
           })
         : null;
