@@ -380,7 +380,6 @@ export function zijderveldOption(
     xAxis: axis(range.x[0], range.x[1]),
     yAxis: axis(range.y[0], range.y[1]),
     tooltip,
-    dataZoom: large ? zoom : undefined,
     series: [
       ...fitLines,
       projection("Horizontal (N, E)", (v) => -v[1], RED, "circle", true),
@@ -396,11 +395,6 @@ export function zijderveldOption(
 
 // --- x/y plots -----------------------------------------------------------------------------
 
-const zoom = [
-  { type: "inside", xAxisIndex: 0, filterMode: "none" },
-  { type: "inside", yAxisIndex: 0, filterMode: "none" },
-];
-
 function xyAxis(name: string, extra: object = {}) {
   return {
     type: "value",
@@ -415,14 +409,13 @@ function xyAxis(name: string, extra: object = {}) {
   };
 }
 
-function xyOption(large: boolean, x: object, y: object, series: unknown[]): EChartsOption {
+function xyOption(x: object, y: object, series: unknown[]): EChartsOption {
   return {
     animation: false,
     grid: { left: 52, right: 16, top: 16, bottom: 42 },
     xAxis: x,
     yAxis: { ...y, nameGap: 40 },
     tooltip,
-    dataZoom: large ? zoom : undefined,
     series,
   } as EChartsOption;
 }
@@ -446,7 +439,6 @@ export function demagOption(_size: Size, specimen: DemagSpecimen, large: boolean
   const max = Math.max(...index.map((i) => steps.m[i])) || 1;
   const unit = kind === "AF" ? "mT" : kind === "MW" ? "W" : "°C";
   return xyOption(
-    large,
     xyAxis(`Treatment (${unit})`, { min: 0 }),
     xyAxis(`M / Mmax (Mmax ${nf(max)} ${specimen.unit})`, { min: 0 }),
     [
@@ -577,7 +569,6 @@ export function araiOption(_size: Size, specimen: AraiSpecimen, large: boolean):
     });
   }
   return xyOption(
-    large,
     xyAxis("pTRM gained / NRM₀", { min: 0 }),
     xyAxis("NRM remaining / NRM₀", { min: 0 }),
     series,
@@ -599,19 +590,17 @@ export function deremagOption(_size: Size, specimen: AraiSpecimen, large: boolea
       tip: `<b>${steps.order[i] === "NRM" ? "NRM" : `${nf(t)} °C`}</b><br/>${name} ${nf(values[i])}`,
     })),
   });
-  return xyOption(
-    large,
-    xyAxis("Temperature (°C)", { min: 0 }),
-    xyAxis("Fraction of NRM₀", { min: 0 }),
-    [curve("NRM remaining", steps.y, RED, "circle"), curve("pTRM gained", steps.x, BLUE, "rect")],
-  );
+  return xyOption(xyAxis("Temperature (°C)", { min: 0 }), xyAxis("Fraction of NRM₀", { min: 0 }), [
+    curve("NRM remaining", steps.y, RED, "circle"),
+    curve("pTRM gained", steps.x, BLUE, "rect"),
+  ]);
 }
 
 /** Moment against applied field, with lines through the origin (pmagplotlib.plot_hys). */
 export function hysteresisOption(_size: Size, loop: HystLoop, large: boolean): EChartsOption {
   const [f0, f1] = [Math.min(...loop.field), Math.max(...loop.field)];
   const [m0, m1] = [Math.min(...loop.m), Math.max(...loop.m)];
-  return xyOption(large, xyAxis("Field (mT)"), xyAxis(`M (${loop.unit})`), [
+  return xyOption(xyAxis("Field (mT)"), xyAxis(`M (${loop.unit})`), [
     {
       type: "line",
       data: [[f0, 0], [f1, 0], "-", [0, m0], [0, m1]],

@@ -328,6 +328,8 @@ function PlotGrid({ type, items }: { type: PlotType; items: PlotItem[] }) {
       {current >= 0 ? (
         <ExpandedPlot
           item={shown[current]}
+          // Nets and Zijderveld plots keep one scale on both axes.
+          zoom={type === "eqarea" || type === "zijd" ? "square" : "xy"}
           coord={coordOf(shown[current])}
           preferred={coord}
           position={`${current + 1} of ${shown.length}`}
@@ -456,6 +458,7 @@ function PlotNote({ item, coord, preferred }: { item: PlotItem; coord: Coord; pr
 
 function ExpandedPlot({
   item,
+  zoom,
   coord,
   preferred,
   position,
@@ -463,6 +466,7 @@ function ExpandedPlot({
   onStep,
 }: {
   item: PlotItem;
+  zoom: "xy" | "square";
   coord: Coord;
   preferred: Coord;
   position: string;
@@ -495,10 +499,18 @@ function ExpandedPlot({
           </button>
         </span>
       </header>
-      <EChart build={build} height={LARGE_HEIGHT} label={`${item.title} plot`} />
+      {/* Keyed by plot, so stepping to the next one starts at its full view. */}
+      <EChart
+        key={item.key}
+        build={build}
+        height={LARGE_HEIGHT}
+        zoom={zoom}
+        label={`${item.title} plot`}
+      />
       <PlotNote item={item} coord={coord} preferred={preferred} />
       <p className="px-3 pb-2 text-[11px] text-gray-400">
-        Hover a point for its values; scroll or pinch to zoom where the plot allows.
+        Hover a point for its values; the plot's toolbar zooms (a box, or the wheel), pans and
+        resets the axes.
       </p>
     </section>
   );
