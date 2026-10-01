@@ -201,7 +201,9 @@ async def process_contribution(session: AsyncSession, node: NodeConfig, contribu
     await session.commit()
 
 
-async def index_parsed(node, contribution, contributor, parsed, reference=None):
+async def index_parsed(node, contribution, contributor, parsed, reference=None, prune=True):
+    """Index a contribution's docs; `prune=False` for an index being rebuilt
+    (it has no older docs to delete)."""
     from fiesta.plugins import active_plugins
 
     meta = contribution_meta(contribution, contributor, reference)
@@ -209,7 +211,9 @@ async def index_parsed(node, contribution, contributor, parsed, reference=None):
     for plugin in active_plugins(node):
         docs.extend(plugin.derive_docs(node, parsed, meta))
     await ensure_index(get_opensearch(), node.search_index)
-    await index_contribution_docs(get_opensearch(), node.search_index, contribution.id, docs)
+    await index_contribution_docs(
+        get_opensearch(), node.search_index, contribution.id, docs, prune=prune
+    )
 
 
 async def latest_validation(session: AsyncSession, contribution_id: int) -> ValidationResult | None:
