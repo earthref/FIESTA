@@ -325,7 +325,9 @@ grid (below): its header's sort, newest first on ties.
 
 **Summary grid.** Each search level in `GET /config` carries `columns`, its
 Summaries grid in order: `{key, cell, label, width, column?, subtitle_column?,
-format?, sortable, filterable}`. `cell` names the tile (`citation`, `name`,
+format?, sortable, filterable}`. `cell` names the tile (`record` — citation, then
+title or the record's name, then date and contributor, one column filtered on
+all of them; the default first column —, `citation`, `name`,
 `contributed`, `download`, `links`, `counts`, `map`, `plot`, `geo`, `geology`,
 `age`, `intensity`, `method_codes`, `citations`, or `field` / `title` for a
 `column` of the level's summary block); `key` is the column (field/title) or the

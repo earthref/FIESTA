@@ -37,9 +37,7 @@ _GEOGRAPHIC = [
 # The default tiles, in the legacy result card's order; download and links
 # exist only on contribution records.
 DEFAULT_CELLS = [
-    "citation",
-    "name",
-    "contributed",
+    "record",
     "download",
     "links",
     "counts",
@@ -102,6 +100,18 @@ def _defaults(
     """A tile's default header label, width, sort and filter fields."""
     table = level.table
     match col.cell:
+        case "record":
+            # Citation, name and contributed in one column: the level's record
+            # ("Contribution", "Site"), sorted like its first line that differs
+            # per level (citation, or the record's name), filtered on all three.
+            parts = [
+                _defaults(node, level, GridColumn(cell=cell), columns)
+                for cell in ("citation", "name", "contributed")
+            ]
+            filters = list(dict.fromkeys(f for part in parts for f in part[3]))
+            sort = parts[0][2] if table == "contribution" else parts[1][2]
+            label = "Contribution" if table == "contribution" else _singular(level.name)
+            return label, 260, sort, filters
         case "citation":
             return (
                 "Citation",
@@ -140,7 +150,7 @@ def _defaults(
         case "links":
             return "Links", 200, Sort([f"{_CONTRIBUTION}.id"], "long"), [f"{_REFERENCE}.doi"]
         case "counts":
-            return "Counts", 135, None, []
+            return "Counts", 160, None, []
         case "map":
             return "Map", 100, None, []
         case "plot":

@@ -30,6 +30,11 @@ import { TagInput } from "./filters-editor";
 const TILES: { cell: GridCellKind; label: string; hint: string }[] = [
   { cell: "field", label: "Data column", hint: "One column of the level's rows: Label: value" },
   { cell: "title", label: "Title", hint: "A column in bold over an optional subtitle column" },
+  {
+    cell: "record",
+    label: "Record",
+    hint: "Citation, then title (or the record's name), then date and contributor; filters on all",
+  },
   { cell: "citation", label: "Citation", hint: "The contribution's citation and version" },
   { cell: "name", label: "Name", hint: "Reference title, or the record's name breadcrumb" },
   { cell: "contributed", label: "Contributed", hint: "Date contributed and contributor" },
@@ -50,9 +55,7 @@ const TILE_LABEL = Object.fromEntries(TILES.map((t) => [t.cell, t.label]));
 // The default tiles (fiesta.search.grid.DEFAULT_CELLS): what a level without
 // columns shows; download and links only on contributions.
 const DEFAULT_CELLS: GridCellKind[] = [
-  "citation",
-  "name",
-  "contributed",
+  "record",
   "download",
   "links",
   "counts",

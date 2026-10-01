@@ -60,6 +60,7 @@ class NodeIdentity(BaseModel):
 
 
 GridCell = Literal[
+    "record",
     "citation",
     "name",
     "contributed",
@@ -82,8 +83,9 @@ GridCell = Literal[
 class GridColumn(BaseModel):
     """One column of a search level's summary grid.
 
-    `cell` names the tile the column shows: a built-in summary tile (citation,
-    name, contributed, download, links, counts, map, plot, geo, geology, age,
+    `cell` names the tile the column shows: a built-in summary tile (record,
+    which stacks citation, name and contributed in one column; citation, name,
+    contributed, download, links, counts, map, plot, geo, geology, age,
     intensity, method_codes, citations), `field` (one column of the level's
     summary block, "Label: value") or `title` (a column in bold over an optional
     `subtitle_column`). Each tile has a default header label, width, sort and

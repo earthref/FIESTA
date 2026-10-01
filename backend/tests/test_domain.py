@@ -784,12 +784,27 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
 
     # No `columns`: the default tiles; download and links only on contributions.
     contributions, sites = magic_node.search.levels[0], magic_node.search.levels[2]
-    keys = [c.key for c in level_columns(magic_node, contributions)]
-    assert keys[:5] == ["citation", "name", "contributed", "download", "links"]
+    columns = level_columns(magic_node, contributions)
+    assert [c.key for c in columns[:3]] == ["record", "download", "links"]
+    # The record column: citation, title and contributed, filtered on all three.
+    assert columns[0].label == "Contribution"
+    assert columns[0].sort.fields == ["summary.contribution._reference.citation.raw"]
+    assert columns[0].filter_fields == [
+        "summary.contribution._reference.citation",
+        "summary.contribution._reference.title",
+        "summary.contribution._contributor",
+    ]
     by_key = {c.key: c for c in level_columns(magic_node, sites)}
-    assert "download" not in by_key and by_key["name"].label == "Site"
-    # The breadcrumb filters on the site's ancestors' names too.
-    assert by_key["name"].filter_fields == ["summary._all.location", "summary._all.site"]
+    assert "download" not in by_key and by_key["record"].label == "Site"
+    # On a site it sorts by the site's name; its breadcrumb filters on the
+    # site's ancestors' names too.
+    assert by_key["record"].sort.fields == ["summary.sites.site.raw"]
+    assert by_key["record"].filter_fields == [
+        "summary.contribution._reference.citation",
+        "summary._all.location",
+        "summary._all.site",
+        "summary.contribution._contributor",
+    ]
     assert by_key["map"].sort is None and not by_key["map"].filter_fields
     # Summary values are strings, so a numeric column sorts by script.
     (script, tie) = sort_clauses(by_key["age"], "desc")
