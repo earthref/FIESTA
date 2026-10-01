@@ -65,7 +65,7 @@ const WHEEL_STEP = 1.2;
  * With `zoom`, a toolbar switches dragging between select, box zoom and pan,
  * the wheel zooms about the cursor (ctrl/⌘ + wheel while selecting, so the page
  * still scrolls), and reset returns to the full view. It zooms by overriding the
- * axes' min/max (which `build` must give as numbers) in their own space, so a log
+ * axes' min/max (from `build`'s, or the range echarts chose) in their own space, so a log
  * axis zooms and pans by decades, which echarts' dataZoom does not do. "x" zooms
  * only the x axis; "square" keeps both axes at one scale (a stereonet). The view
  * survives rebuilds and resets when an axis's type, name or limits change.
@@ -99,12 +99,13 @@ export function EChart({
   const base = useRef<{ x?: BaseAxis; y?: BaseAxis; key?: string }>({});
   const view = useRef<View>({});
 
-  // The full range of an axis, or its zoomed window.
+  // The full range of an axis, or its zoomed window; an axis `build` leaves to
+  // echarts to scale shows the range echarts chose.
   const windowOf = (a: AxisKey): Range | undefined => {
     const b = base.current[a];
     if (view.current[a]) return view.current[a];
     if (typeof b?.min === "number" && typeof b.max === "number") return [b.min, b.max];
-    return undefined;
+    return chartRef.current ? shownRange(chartRef.current, a) : undefined;
   };
 
   const axisOption = (a: AxisKey) => {
@@ -115,8 +116,9 @@ export function EChart({
     return w
       ? { min: w[0], max: w[1], axisLabel: { showMinLabel: false, showMaxLabel: false } }
       : {
-          min: b.min,
-          max: b.max,
+          // null, not undefined: a merge skips undefined, leaving the zoomed limit.
+          min: b.min ?? null,
+          max: b.max ?? null,
           axisLabel: {
             showMinLabel: b.axisLabel?.showMinLabel,
             showMaxLabel: b.axisLabel?.showMaxLabel,
@@ -360,6 +362,19 @@ export function EChart({
 }
 
 /** A log axis zooms and pans in log10 space, a value axis linearly. */
+type AxisScale = { axis?: { scale: { getExtent(): number[] } } };
+
+/** The range an axis shows, as echarts scaled it (its model isn't in the public types). */
+function shownRange(chart: echarts.ECharts, a: AxisKey): Range | undefined {
+  const model = (
+    chart as unknown as { getModel(): { getComponent(type: string, i: number): AxisScale | null } }
+  ).getModel();
+  const extent = model?.getComponent(`${a}Axis`, 0)?.axis?.scale.getExtent();
+  return extent && Number.isFinite(extent[0]) && Number.isFinite(extent[1])
+    ? [extent[0], extent[1]]
+    : undefined;
+}
+
 function transform(axis?: BaseAxis): [(v: number) => number, (v: number) => number] {
   return axis?.type === "log" ? [Math.log10, (v) => 10 ** v] : [(v) => v, (v) => v];
 }
