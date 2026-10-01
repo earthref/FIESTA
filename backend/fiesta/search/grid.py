@@ -150,7 +150,7 @@ def _defaults(
         case "links":
             return "Links", 200, Sort([f"{_CONTRIBUTION}.id"], "long"), [f"{_REFERENCE}.doi"]
         case "counts":
-            return "Counts", 135, None, []
+            return "Counts", 160, None, []
         case "map":
             return "Map", 100, None, []
         case "plot":
