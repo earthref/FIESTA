@@ -55,11 +55,15 @@ async def rebuild_node(session, node):
             except (ParseError, UnicodeDecodeError):
                 continue
             reference = await references.lookup(session, c.reference_doi)
-            await index_parsed(target_node, c, contributor, parsed, reference)
+            await index_parsed(target_node, c, contributor, parsed, reference, prune=False)
             indexed += 1
+        await client.indices.refresh(index=target)
         actions = []
-        if await client.indices.exists_alias(name=alias):
-            old = await client.indices.get_alias(name=alias)
+        # Looked up among the node's own indices: the production `fiesta` role
+        # may not look an alias up across the cluster (a 403).
+        own = f"{alias}*"
+        if await client.indices.exists_alias(index=own, name=alias):
+            old = await client.indices.get_alias(index=own, name=alias)
             actions += [{"remove": {"index": index, "alias": alias}} for index in old]
         elif await client.indices.exists(index=alias):
             # Legacy installs used a concrete index under the alias name.
