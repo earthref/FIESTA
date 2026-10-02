@@ -1,0 +1,31 @@
+# Scheduled operations, run by `fiesta ops-worker` (MARFIK3) on the `ops`
+# procrastinate queue. Format and rules: backend/fiesta/ops/config.py and
+# docs/ops-scheduler.md. Times are UTC. Not a node: this directory is not a
+# node tree, and no node may be called `ops`.
+
+fiesta-ops: 1
+
+slack:
+  # Channel ID (right-click the channel > View channel details) of the MARFIK
+  # monitor channel in the EarthRef Slack workspace; the bot must be invited to
+  # it. Empty: status messages are logged by the ops worker instead of posted.
+  # The bot token is FIESTA_SLACK_BOT_TOKEN in the ops worker's environment.
+  channel: ""
+
+watchdog:
+  cron: "*/15 * * * *"   # missed-run check, in the ops worker
+  realert: 24h           # repeat an alert this often while a schedule stays overdue
+
+schedules:
+  # OSU-MGR OpenSearch incremental update (github.com/osu-mgr/osu-mgr-pipeline).
+  # Listing the ~1.4M S3 objects alone takes ~7 min; the lock keeps it from
+  # ever running concurrently with itself. The pipeline reads its own .env.
+  - name: osu-mgr-incremental
+    node: osu-mgr
+    description: OSU-MGR OpenSearch incremental update (S3 changes in the last 72h)
+    cron: "0 10 * * *"
+    command: [.venv/bin/python, osu_mgr_pipeline.py, --incremental, --since, 72h]
+    cwd: /srv/osu-mgr-pipeline   # operator to confirm the checkout path on MARFIK3
+    timeout: 2h
+    notify: both
+    expected_interval: 26h

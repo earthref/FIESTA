@@ -9,13 +9,19 @@ stack (or the equivalent services in your orchestrator).
 |---|---|---|
 | API (every node under `/v2/{node}/...`) | `config/fiesta.yaml` | `uvicorn fiesta.apps.api:create_app --factory` |
 | Worker | `config/fiesta.yaml` | `fiesta worker` |
+| Ops worker (scheduled operations, one per deployment, MARFIK3) | `config/ops/schedules.yaml` | `fiesta ops-worker` |
 
 The worker also runs the outbox (indexing) and fetches reference DOIs' metadata
 from `api.crossref.org` and `api.datacite.org`, so its host needs outbound HTTPS
 to both; `fiesta enrich-references` backfills every contribution's DOI (and
 `--refresh` fetches every known DOI again).
 
-Both run from the same `backend/` image; the role is just the command. One API
+The worker listens on every node's queue plus `default`, never on `ops`: the
+ops worker runs the scheduled sync jobs (the OSU-MGR OpenSearch update first)
+from that queue on its own host and reports to Slack. See
+[docs/ops-scheduler.md](docs/ops-scheduler.md).
+
+All run from the same `backend/` image; the role is just the command. One API
 process serves every node listed in `config/fiesta.yaml`; `FIESTA_NODE`
 (comma-separated keys/slugs, empty = all) narrows the set a process serves.
 
@@ -86,8 +92,9 @@ Local compose databases created before this layout have their tables in
 Infrastructure/secrets come from `FIESTA_*` env vars (see
 `backend/fiesta/settings.py`): `FIESTA_DATABASE_URL`, `FIESTA_OPENSEARCH_URL`,
 `FIESTA_S3_ENDPOINT/ACCESS_KEY/SECRET_KEY`, `FIESTA_SECRET_KEY`,
-`FIESTA_SMTP_*`, `FIESTA_CORS_ORIGINS`. Everything node-specific lives in the
-YAML, not in env vars.
+`FIESTA_SMTP_*`, `FIESTA_CORS_ORIGINS`, and for the ops worker and its
+watchdog `FIESTA_SLACK_BOT_TOKEN` (optionally `FIESTA_OPS_CONFIG_FILE`).
+Everything node-specific lives in the YAML, not in env vars.
 
 Run `fiesta init` once per deploy (idempotent): applies Alembic migrations,
 the procrastinate schema, and ensures the bucket + search index exist.

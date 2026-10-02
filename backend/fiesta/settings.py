@@ -120,7 +120,17 @@ class Settings(BaseSettings):
     # API owns the hostname (api.earthref.org).
     root_path: str = ""
 
-    @field_validator("s3_endpoint", "s3_bucket", "opensearch_ca_certs", mode="before")
+    # Scheduled operations (`fiesta ops-worker`, see docs/ops-scheduler.md).
+    # The schedules file; empty means `ops/schedules.yaml` beside config_file.
+    ops_config_file: Path | None = None
+    # Slack bot token (xoxb-..., scope chat:write) the ops worker and the
+    # missed-run watchdog post with; the channel is in the schedules file.
+    # Empty: messages are logged instead of posted.
+    slack_bot_token: str = ""
+
+    @field_validator(
+        "s3_endpoint", "s3_bucket", "opensearch_ca_certs", "ops_config_file", mode="before"
+    )
     @classmethod
     def _empty_is_none(cls, value):
         """FIESTA_S3_ENDPOINT= (empty) in an env file means "unset"."""
