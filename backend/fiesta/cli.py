@@ -3,8 +3,11 @@
 fiesta init          apply DB migrations + procrastinate schema, ensure bucket/index
 fiesta create-user   create an account (--admin for admins)
 fiesta rebuild       rebuild search from Postgres and immutable bucket objects
-fiesta worker        run the procrastinate job worker
+fiesta worker        run the procrastinate job worker (node queues + default)
 fiesta enrich-references   fetch every reference DOI's publication metadata
+fiesta ops-worker    run scheduled operations (config/ops/schedules.yaml, `ops` queue)
+fiesta ops-status    last run of every schedule; ops-run NAME defers one now
+fiesta ops-watchdog  check for missed scheduled runs (--post reports them to Slack)
 """
 
 import asyncio
@@ -160,23 +163,27 @@ def worker(concurrency: int = 4) -> None:
     """Run the procrastinate worker for every enabled node.
 
     Listens to each node's own queue (contribution processing) plus the shared
-    "default" queue (emails, node configuration publication). Without
-    FIESTA_NODE it listens on every queue, so a node published in the admin
-    UI is processed without a restart."""
-    import fiesta.jobs.tasks  # noqa: F401 — register tasks
-    from fiesta.jobs.app import get_job_app
-    from fiesta.nodeconfig import get_deployment
-
-    deployment = get_deployment()
-    nodes = deployment.node_list
-    queues = [n.node.slug for n in nodes] + ["default"] if get_settings().node.strip() else None
-    typer.echo(f"worker listening on queues: {queues or 'all'}")
+    "default" queue (emails, node configuration publication) -- an explicit
+    list, never every queue, so it leaves the "ops" queue to `fiesta
+    ops-worker`. Without FIESTA_NODE it re-reads the published nodes and
+    restarts itself on a longer list when a node published in the admin UI
+    adds a queue (see fiesta.jobs.worker)."""
     import subprocess
     import sys
 
+    import fiesta.jobs.tasks  # noqa: F401 — register tasks
+    from fiesta.jobs.app import get_job_app
+    from fiesta.jobs.worker import run_main_worker
+
     process = subprocess.Popen([sys.executable, "-m", "fiesta.cli", "outbox-worker"])
     try:
-        get_job_app().run_worker(concurrency=concurrency, queues=queues)
+        asyncio.run(
+            run_main_worker(
+                get_job_app(),
+                concurrency=concurrency,
+                on_start=lambda queues: typer.echo(f"worker listening on queues: {queues}"),
+            )
+        )
     finally:
         process.terminate()
         try:
@@ -531,6 +538,184 @@ def stamp_ids_command(apply: bool = False):
             typer.echo(f"{node.node.slug}: {json.dumps(report)}")
 
     asyncio.run(run())
+
+
+def _ops_logging() -> None:
+    """Job output, Slack fallbacks and procrastinate's own log at INFO (the
+    ops worker's stdout is the journal on a systemd host)."""
+    import logging
+
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
+
+
+def _ops_config():
+    from fiesta.ops.config import load_ops_config
+
+    try:
+        return load_ops_config()
+    except (OSError, ValueError) as exc:
+        typer.echo(f"schedules file: {exc}", err=True)
+        raise typer.Exit(2) from exc
+
+
+@app.command("ops-worker")
+def ops_worker(
+    concurrency: int = typer.Option(2, help="schedules that may run at the same time"),
+    graceful_timeout: float = typer.Option(
+        30, help="seconds a stop waits for running jobs before stopping them"
+    ),
+):
+    """Run scheduled operations: defer every enabled schedule in the schedules
+    file (FIESTA_OPS_CONFIG_FILE, default config/ops/schedules.yaml) when its
+    cron fires, run them from the `ops` queue, and report to Slack. The only
+    process that defers ops jobs; run exactly one (see docs/ops-scheduler.md)."""
+    from fiesta.jobs.queues import OPS_QUEUE
+    from fiesta.nodeconfig import load_deployment
+    from fiesta.ops.app import build_ops_app
+    from fiesta.ops.config import ops_config_path
+
+    _ops_logging()
+    config = _ops_config()
+    try:
+        slugs = {n.node.slug for n in load_deployment(only=None).node_list}
+        for name in config.unknown_nodes(slugs):
+            typer.echo(f"warning: schedule {name!r} names a node not in the deployment", err=True)
+    except (OSError, ValueError) as exc:
+        typer.echo(f"warning: deployment not loaded, node names unchecked: {exc}", err=True)
+    if not (get_settings().slack_bot_token and config.slack.channel):
+        typer.echo("Slack not configured (token or channel): status is logged only", err=True)
+    typer.echo(f"ops worker: {ops_config_path()}")
+    for s in config.schedules:
+        state = "enabled" if s.enabled else "disabled"
+        typer.echo(f"  {s.name:<28} {s.cron:<16} UTC  {state}")
+    job_app = build_ops_app(config, periodic=True)
+    job_app.run_worker(
+        queues=[OPS_QUEUE],
+        concurrency=concurrency,
+        name="ops",
+        shutdown_graceful_timeout=graceful_timeout,
+    )
+
+
+@app.command("ops-status")
+def ops_status():
+    """The last run of every schedule (from procrastinate's job tables)."""
+    from datetime import UTC, datetime
+
+    from fiesta.ops.history import schedule_states
+    from fiesta.ops.slack import format_duration
+    from fiesta.ops.watchdog import deadline_for
+
+    config = _ops_config()
+    states = asyncio.run(schedule_states())
+    now = datetime.now(UTC)
+
+    def when(moment):
+        return moment.astimezone(UTC).strftime("%Y-%m-%d %H:%M") if moment else "-"
+
+    header = (
+        f"{'SCHEDULE':<26} {'CRON (UTC)':<14} {'LAST START':<17} {'STATUS':<10} "
+        f"{'DURATION':<9} {'LAST SUCCESS':<17} WATCHDOG"
+    )
+    typer.echo(header)
+    for s in config.schedules:
+        state = states.get(s.name)
+        deadline = deadline_for(s, state)
+        if not s.enabled:
+            watch = "disabled"
+        elif deadline is None:
+            watch = "no runs yet"
+        elif now >= deadline:
+            watch = f"OVERDUE since {when(deadline)}"
+        else:
+            watch = f"ok until {when(deadline)}"
+        duration = state.duration if state else None
+        typer.echo(
+            f"{s.name:<26} {s.cron:<14} {when(state and state.started_at):<17} "
+            f"{(state.status if state else '-'):<10} "
+            f"{(format_duration(duration) if duration is not None else '-'):<9} "
+            f"{when(state and state.last_success_at):<17} {watch}"
+        )
+    for name in sorted(set(states) - {s.name for s in config.schedules}):
+        typer.echo(f"{name:<26} (not in the schedules file; last status {states[name].status})")
+
+
+@app.command("ops-run")
+def ops_run(name: str):
+    """Defer one schedule now (it runs on the ops worker, under the schedule's
+    lock, and reports to Slack like a scheduled run)."""
+    from procrastinate.exceptions import AlreadyEnqueued
+
+    from fiesta.ops.app import build_ops_app
+    from fiesta.ops.history import RUN_TASK
+
+    config = _ops_config()
+    try:
+        schedule = config.schedule(name)
+    except KeyError as exc:
+        names = ", ".join(s.name for s in config.schedules)
+        typer.echo(f"no schedule {name!r} (have: {names})", err=True)
+        raise typer.Exit(2) from exc
+    job_app = build_ops_app(config, periodic=False)
+
+    async def run():
+        async with job_app.open_async():
+            return (
+                await job_app.tasks[RUN_TASK]
+                .configure(lock=schedule.lock_key, queueing_lock=schedule.lock_key)
+                .defer_async(name=schedule.name, trigger="manual")
+            )
+
+    try:
+        job_id = asyncio.run(run())
+    except AlreadyEnqueued as exc:
+        typer.echo(f"{name}: a run is already waiting in the queue", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(f"{name}: deferred as job {job_id} on the ops queue")
+
+
+@app.command("ops-watchdog")
+def ops_watchdog(
+    post: bool = typer.Option(False, help="post missed runs to Slack (else just print)"),
+    every: float = typer.Option(
+        0,
+        help="seconds between runs of this check (a timer's period): posts only on the "
+        "first check after a deadline and every `watchdog.realert` after; 0 posts every time",
+    ),
+):
+    """Check every schedule for a missed run; exit 1 if any is overdue. Run it
+    from another host's timer with --post --every 3600 so a dead ops worker
+    is noticed (the ops worker's own check cannot report its own death)."""
+    import time
+    from datetime import UTC, datetime
+
+    from fiesta.ops.app import check_missed_runs
+    from fiesta.ops.slack import SlackNotifier, host_label
+
+    _ops_logging()
+    config = _ops_config()
+    now_ts = time.time()
+    if every > 0:
+        now_ts -= now_ts % every  # align, so the alert window holds exactly one check
+    overdue = asyncio.run(
+        check_missed_runs(
+            config,
+            SlackNotifier.from_config(config.slack),
+            now=datetime.fromtimestamp(now_ts, UTC),
+            tick=every,
+            host=host_label(),
+            post=post,
+        )
+    )
+    for item in overdue:
+        typer.echo(
+            f"OVERDUE {item.schedule.name} since {item.deadline.astimezone(UTC):%Y-%m-%d %H:%M} UTC"
+        )
+    if not overdue:
+        typer.echo("no missed runs")
+    raise typer.Exit(1 if overdue else 0)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-09-24
+Last updated: 2026-10-01
 
 ## A — Decisions
 
@@ -195,9 +195,12 @@ Last updated: 2026-09-24
       beside the API's, restarted by `deploy-fiesta.sh` after `fiesta init`:
       `ExecStart=/srv/fiesta/current/backend/.venv/bin/fiesta worker`,
       `WorkingDirectory=/srv/fiesta/current/backend`, the API's `EnvironmentFile`,
-      `FIESTA_CONFIG_FILE=../config/fiesta.yaml`, no `FIESTA_NODE` (every queue),
-      `Restart=always` (paths as the API's unit has them; these are inferred from
-      the release layout, not read off the host). It starts the outbox poller itself.
+      `FIESTA_CONFIG_FILE=../config/fiesta.yaml`, no `FIESTA_NODE` (every node's
+      queue plus `default`; since 2026-10-01 never `ops`, which belongs to the
+      MARFIK3 ops worker, and a node published in the admin UI is picked up by an
+      in-process restart, not by listening on all queues), `Restart=always`
+      (paths as the API's unit has them; these are inferred from the release
+      layout, not read off the host). It starts the outbox poller itself.
 - [ ] **Allow outbound HTTPS from the worker host** to `api.crossref.org` and
       `api.datacite.org`. Crossref's polite pool identifies us by
       `FIESTA_SMTP_FROM`; set it to an address someone reads if Crossref ever
@@ -248,6 +251,125 @@ Last updated: 2026-09-24
 - [ ] **Decide when FIESTA serves `/SC/`.** `publish.web` is false in
   `config/sc.yaml` because the legacy CGI catalog still answers at
   `earthref.org/SC/`; flip it at that node's cutover.
+
+## 2026-10-01 — Scheduled operations on MARFIK3
+
+`fiesta ops-worker` runs the jobs in `config/ops/schedules.yaml` (first:
+`osu-mgr-incremental`, daily 10:00 UTC) and posts ✅/❌ to the MARFIK monitor
+channel; see [ops-scheduler.md](ops-scheduler.md). Nothing runs until these are
+done. Paths below (`/srv/fiesta-ops`, `/etc/fiesta`, user `fiesta`) are
+suggestions; keep whatever MARFIK3 already uses and adjust the units to match.
+
+- [ ] **Create the Slack app in the EarthRef workspace.** api.slack.com/apps →
+      Create New App (from scratch) in the EarthRef workspace, e.g. "FIESTA ops";
+      OAuth & Permissions → Bot Token Scopes: `chat:write` only; Install to
+      Workspace; copy the Bot User OAuth Token (`xoxb-…`). In the EarthRef
+      workspace's MARFIK monitor channel run `/invite @FIESTA ops` (without the
+      invite every post fails with `not_in_channel`, which the ops worker logs).
+      Put the channel's ID (channel details → bottom of the About tab, `C…`) in
+      `config/ops/schedules.yaml` as `slack.channel` via a PR; until then the
+      worker only logs its messages. Secret name: `FIESTA_SLACK_BOT_TOKEN`.
+- [ ] **Check out and sync FIESTA on MARFIK3** (the ops worker reads
+      `config/ops/schedules.yaml` and `config/fiesta.yaml` from it):
+      `git clone https://github.com/earthref/FIESTA /srv/fiesta-ops/FIESTA`,
+      then `cd /srv/fiesta-ops/FIESTA/backend && uv sync --frozen`. Nothing
+      deploys it yet: after a merge that changes `backend/` or the schedules
+      file, `git pull && uv sync --frozen && systemctl restart fiesta-ops-worker`
+      (or extend the deploy workflow to MARFIK3 later).
+- [ ] **Check out and sync osu-mgr-pipeline on MARFIK3** at the schedule's
+      `cwd` (confirm `/srv/osu-mgr-pipeline` or change `cwd` in the schedules
+      file): `git clone https://github.com/osu-mgr/osu-mgr-pipeline
+      /srv/osu-mgr-pipeline && cd /srv/osu-mgr-pipeline && uv sync` (the command
+      runs `.venv/bin/python`), then its `.env` with the OpenSearch and AWS/S3
+      credentials it uses today (the pipeline loads it itself; FIESTA's
+      variables are not passed to it). Check by hand once, as the service user:
+      `.venv/bin/python osu_mgr_pipeline.py --incremental --since 72h --dry-run`.
+      It must never run concurrently with itself, so stop any other cron or
+      manual schedule for it once this one is live.
+- [ ] **Env file `/etc/fiesta/ops-worker.env`** (owner root, group `fiesta`,
+      mode 0640):
+
+      ```
+      FIESTA_DATABASE_URL=<same value as the FIESTA API's: the database whose procrastinate tables the jobs live in>
+      FIESTA_SLACK_BOT_TOKEN=xoxb-…
+      ```
+- [ ] **Network access from MARFIK3**: FIESTA's Postgres (host and port of
+      `FIESTA_DATABASE_URL`, plus any `pg_hba`/security-group rule for MARFIK3's
+      address), the OpenSearch cluster and S3 (`s3.amazonaws.com` and the
+      bucket's regional endpoint) for the pipeline, and `slack.com:443`.
+- [ ] **systemd unit for the ops worker on MARFIK3**, modelled on the
+      fiesta-ct worker unit above; `/etc/systemd/system/fiesta-ops-worker.service`:
+
+      ```ini
+      [Unit]
+      Description=FIESTA ops worker (scheduled operations, ops queue)
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      User=fiesta
+      Group=fiesta
+      WorkingDirectory=/srv/fiesta-ops/FIESTA/backend
+      EnvironmentFile=/etc/fiesta/ops-worker.env
+      Environment=FIESTA_CONFIG_FILE=../config/fiesta.yaml
+      ExecStart=/srv/fiesta-ops/FIESTA/backend/.venv/bin/fiesta ops-worker
+      Restart=always
+      RestartSec=10
+      # a stop gives running jobs 30 s (--graceful-timeout), then stops their
+      # process groups and reports them interrupted; the cgroup kill is the backstop
+      KillMode=control-group
+      TimeoutStopSec=120
+
+      [Install]
+      WantedBy=multi-user.target
+      ```
+
+      `systemctl daemon-reload && systemctl enable --now fiesta-ops-worker`;
+      `journalctl -u fiesta-ops-worker -f` shows each job's output. Then
+      `fiesta ops-run osu-mgr-incremental` (same directory and env) to see a
+      ✅ in the channel, and `fiesta ops-status` for the history. Run only one
+      ops worker.
+- [ ] **Missed-run timer on fiesta-ct** (a dead MARFIK3 cannot report itself).
+      Needs `FIESTA_SLACK_BOT_TOKEN` in the env file it uses, `slack.com:443`
+      from fiesta-ct, and the same `FIESTA_DATABASE_URL` as the ops worker (if
+      fiesta-ct's API uses a different database, point this unit at the ops
+      worker's). `/etc/systemd/system/fiesta-ops-watchdog.service`:
+
+      ```ini
+      [Unit]
+      Description=FIESTA missed-run check for scheduled operations
+
+      [Service]
+      Type=oneshot
+      User=<the API unit's user>
+      WorkingDirectory=/srv/fiesta/current/backend
+      EnvironmentFile=<the API unit's env file>
+      Environment=FIESTA_CONFIG_FILE=../config/fiesta.yaml
+      ExecStart=/srv/fiesta/current/backend/.venv/bin/fiesta ops-watchdog --post --every 3600
+      # exit 1 means "something is overdue" and was posted to Slack
+      SuccessExitStatus=1
+      ```
+
+      and `fiesta-ops-watchdog.timer`:
+
+      ```ini
+      [Unit]
+      Description=Hourly FIESTA missed-run check
+
+      [Timer]
+      OnCalendar=hourly
+      AccuracySec=1min
+
+      [Install]
+      WantedBy=timers.target
+      ```
+
+      `systemctl enable --now fiesta-ops-watchdog.timer`.
+- [ ] **Optional, in osu-mgr-pipeline:** have `--incremental` write a JSON
+      object of its counts (cruises reprocessed, docs indexed, warnings) to the
+      path in `FIESTA_OPS_SUMMARY_JSON`, or print it as its last stdout line, so
+      the ✅ message carries them. Without it the message has only the duration.
 
 ## Done
 

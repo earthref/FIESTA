@@ -58,6 +58,16 @@ class NodeIdentity(BaseModel):
     logo: str | None = None  # path under config/<slug>/assets/ (the portal home's node cards)
     links: NodeLinks = NodeLinks()
 
+    @field_validator("slug")
+    @classmethod
+    def _not_a_reserved_queue(cls, value: str) -> str:
+        """The slug names the node's job queue; `default` and `ops` are taken."""
+        from fiesta.jobs.queues import RESERVED_QUEUES
+
+        if value in RESERVED_QUEUES:
+            raise ValueError(f"node slug {value!r} is reserved (job queue name)")
+        return value
+
 
 GridCell = Literal[
     "record",
