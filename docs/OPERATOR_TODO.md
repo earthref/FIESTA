@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-10-01
+Last updated: 2026-10-22
 
 ## A — Decisions
 
@@ -370,6 +370,60 @@ suggestions; keep whatever MARFIK3 already uses and adjust the units to match.
       object of its counts (cruises reprocessed, docs indexed, warnings) to the
       path in `FIESTA_OPS_SUMMARY_JSON`, or print it as its last stdout line, so
       the ✅ message carries them. Without it the message has only the duration.
+
+## 2026-10-22 — Self-hosted runners vs. fork PRs
+
+FIESTA, MagIC, CDR, KArAr and KDD are public, and the `marfik-deploy` (org
+level, MARFIK) and `fiesta-ct` runners are self-hosted. No deploy.yml has a
+`pull_request` trigger, but that does not protect the runners: GitHub runs the
+workflow files *from the PR*, so a fork PR can add
+`.github/workflows/x.yml` with `on: pull_request` and
+`runs-on: [self-hosted, marfik-deploy]`, and it runs on MARFIK. Today only a
+first-time contributor's PR waits for approval (every repo's fork-PR policy is
+`first_time_contributors`). Do the first item on each runner host; the rest
+are layers on top.
+
+- [ ] **Install the pre-job guard on MARFIK (and on fiesta-ct).** It refuses
+      every job whose workflow is not on an allowlist of
+      `<repo>/.github/workflows/deploy.yml@refs/heads/<branch>` refs; a fork PR's
+      ref is `…@refs/pull/<n>/merge`, so it can never match. As root, with
+      `<runner dir>` the directory holding the runner's `config.sh` and `.env`:
+      `install -o root -g root -m 0755 scripts/runner-job-guard.sh /etc/github-runner/job-guard.sh`
+      (from a FIESTA checkout after this PR merges), then
+      `/etc/github-runner/allowed-workflows` (root-owned, 0644 — the runner
+      user must be able to read it but not change it). On MARFIK:
+
+      ```
+      earthref/MagIC/.github/workflows/deploy.yml@refs/heads/main
+      earthref/MagIC/.github/workflows/deploy.yml@refs/heads/dev
+      earthref/CDR/.github/workflows/deploy.yml@refs/heads/main
+      earthref/CDR/.github/workflows/deploy.yml@refs/heads/dev
+      earthref/KArAr/.github/workflows/deploy.yml@refs/heads/main
+      earthref/KDD/.github/workflows/deploy.yml@refs/heads/main
+      ```
+
+      On fiesta-ct: `earthref/FIESTA/.github/workflows/deploy.yml@refs/heads/main`.
+      Then append
+      `ACTIONS_RUNNER_HOOK_JOB_STARTED=/etc/github-runner/job-guard.sh` to
+      `<runner dir>/.env` and restart the runner service
+      (`sudo ./svc.sh stop && sudo ./svc.sh start` in `<runner dir>`). Check it
+      by re-running the last successful `Deploy` on each repo: its "Set up
+      runner" step shows the hook and the deploy proceeds. A refused job fails
+      with `runner-job-guard: refusing job: …` in that step. A new deploying
+      workflow or branch needs a line here first.
+- [ ] **Require approval for all outside contributors' workflows** on FIESTA,
+      MagIC, CDR, KArAr and KDD (each repo → Settings → Actions → General →
+      "Approval for running fork pull request workflows from contributors" →
+      "Require approval for all external contributors"; or
+      `gh api -X PUT repos/earthref/<repo>/actions/permissions/fork-pr-contributor-approval -f approval_policy=all_external_contributors`).
+      Claude's attempt on 2026-10-22 was blocked by its permission settings.
+      Never approve a fork PR's run without reading its `.github/` changes.
+- [ ] **Restrict the `marfik-deploy` runner's group** (org admin: github.com/
+      organizations/earthref/settings/actions/runner-groups). Put the runner in
+      its own group with Repository access = MagIC, CDR, KArAr, KDD only, and,
+      if the plan offers it, Workflow access = the `deploy.yml@refs/heads/main`
+      / `@refs/heads/dev` refs above. The `admin:org` scope Claude's `gh` token
+      lacks is needed to read or change this.
 
 ## Done
 
