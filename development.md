@@ -249,6 +249,13 @@ The viewer can read shared
 workspace contributions but cannot edit them. Repeated seeds preserve developer
 edits and settings. No production credentials, MARFIK, or AWS are needed.
 
+`make import-public NODE=magic IDS="20818 20848"` copies real public contributions
+from `dev.earthref.org` (`ARGS="--source https://…"` for another FIESTA deployment)
+with their IDs, versions and DOIs, owned by Local Developer; `ARGS=--versions` also
+imports each ID's earlier published versions. Re-running is a no-op, and it also
+needs no credentials. Seed fixtures take the lowest free IDs, so import IDs that small
+(e.g. `NODE=karar IDS=3`) before `make seed`, or after a `make clean`.
+
 `make test-phase-m` builds and runs all-node seed, revision and migration checks in
 an isolated Docker network without external runtime connectivity. Image/dependency
 downloads occur during setup. See [Phase M operations](docs/phase-m.md).
