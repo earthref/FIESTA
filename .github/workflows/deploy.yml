@@ -6,9 +6,12 @@ name: Deploy
 # pull_request trigger: this repo is public and the runner is self-hosted on
 # the deploy host, so a workflow from a fork PR would execute untrusted code
 # next to production credentials. workflow_run fires in the base repo's
-# context, and the `branches` filter keeps it to CI runs whose head branch is
-# main, i.e. pushes by accounts with write access. workflow_dispatch stays
-# for manual rollouts.
+# context. The `branches` filter alone is not enough: it matches the head
+# branch NAME, so a fork PR from a branch called `main` passes it. The job's
+# `if` also requires the CI run to be a push to this repository, i.e. by an
+# account with write access. workflow_dispatch stays for manual rollouts.
+# On the host, scripts/runner-job-guard.sh refuses any job whose workflow is
+# not this file on main (a fork PR can add its own self-hosted workflow).
 on:
   workflow_run:
     workflows: [CI]
@@ -24,7 +27,12 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository
+      )
     runs-on: [self-hosted, fiesta-deploy]
     timeout-minutes: 30
     steps:
@@ -33,4 +41,6 @@ jobs:
       # ruff + pytest + the frontend type-check/build before anything is
       # swapped, and rolls back if a node fails its health check.
       - name: Pull, test, build, swap
-        run: /srv/fiesta/bin/deploy-fiesta.sh "${{ github.event.workflow_run.head_branch || github.ref_name }}"
+        env:
+          BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+        run: /srv/fiesta/bin/deploy-fiesta.sh "$BRANCH"
