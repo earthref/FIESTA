@@ -146,6 +146,11 @@ fix: ## Auto-fix lint issues (ruff --fix + biome --write)
 seed: ## Seed the enabled nodes with config-defined local fixtures (preserves edits)
 	$(COMPOSE_OPS) run --rm api fiesta seed
 
+.PHONY: import-public
+import-public: ## Copy public contributions into local dev: make import-public NODE=magic IDS="20818 20848" [ARGS=--versions]
+	@test -n "$(NODE)" -a -n "$(IDS)" || { echo 'usage: make import-public NODE=magic IDS="20818 20848" [ARGS=--versions]'; exit 2; }
+	$(COMPOSE_OPS) run --rm api fiesta import-public $(NODE) $(IDS) $(ARGS)
+
 .PHONY: test-phase-m
 test-phase-m: ## Run all-node seeds and migration/revision integration tests without external services
 	docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml run --build --rm tests

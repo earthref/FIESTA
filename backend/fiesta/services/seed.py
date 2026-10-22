@@ -78,26 +78,32 @@ async def settle_seed_events(node, keys):
             await asyncio.sleep(0.1)
 
 
+async def ensure_accounts(session, manifest):
+    """The manifest's local accounts by key, created when missing (never updated)."""
+    users = {}
+    for account in manifest["accounts"]:
+        user = (
+            await session.execute(select(User).where(User.email == account["email"]))
+        ).scalar_one_or_none()
+        if user is None:
+            user = User(
+                email=account["email"],
+                name=account["name"],
+                password_hash=hash_password(account["password"]),
+                settings=account.get("settings", {}),
+            )
+            session.add(user)
+            await session.flush()
+        users[account["key"]] = user
+    return users
+
+
 async def seed_node(node):
     require_local()
     root, manifest = load_seed(node)
     created = skipped = 0
     async with get_sessionmaker(node.node.slug)() as session:
-        users = {}
-        for account in manifest["accounts"]:
-            user = (
-                await session.execute(select(User).where(User.email == account["email"]))
-            ).scalar_one_or_none()
-            if user is None:
-                user = User(
-                    email=account["email"],
-                    name=account["name"],
-                    password_hash=hash_password(account["password"]),
-                    settings=account.get("settings", {}),
-                )
-                session.add(user)
-                await session.flush()
-            users[account["key"]] = user
+        users = await ensure_accounts(session, manifest)
         owner = users[manifest["workspace"]["owner"]]
         workspace = (
             await session.execute(

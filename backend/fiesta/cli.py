@@ -4,6 +4,7 @@ fiesta init          apply DB migrations + procrastinate schema, ensure bucket/i
 fiesta create-user   create an account (--admin for admins)
 fiesta rebuild       rebuild search from Postgres and immutable bucket objects
 fiesta worker        run the procrastinate job worker (node queues + default)
+fiesta import-public NODE ID...   copy public contributions into local development
 fiesta enrich-references   fetch every reference DOI's publication metadata
 fiesta ops-worker    run scheduled operations (config/ops/schedules.yaml, `ops` queue)
 fiesta ops-status    last run of every schedule; ops-run NAME defers one now
@@ -271,6 +272,43 @@ def seed():
             await get_opensearch().close()
 
     asyncio.run(run())
+
+
+@app.command("import-public")
+def import_public_command(
+    node: str,
+    ids: list[str],
+    source: str = typer.Option(
+        None, help="FIESTA deployment serving /v2/{node}/... [default: https://dev.earthref.org]"
+    ),
+    versions: bool = typer.Option(False, help="also import each ID's earlier published versions"),
+):
+    """Copy public contributions (IDs, versions, DOIs) from SOURCE into local
+    development as the seed workspace owner; refuses remote infrastructure.
+    IDS are space- or comma-separated."""
+    from fiesta.nodeconfig import get_deployment
+    from fiesta.services.public_import import import_public
+    from fiesta.services.seed import require_local
+
+    require_local()
+    try:
+        ids = [int(i) for arg in ids for i in arg.split(",") if i.strip()]
+    except ValueError as exc:
+        raise typer.BadParameter(f"IDS must be integers: {exc}") from exc
+    target = get_deployment().node_for(node)
+
+    async def run():
+        from fiesta.search.client import get_opensearch
+
+        try:
+            return await import_public(target, ids, source=source, versions=versions)
+        finally:
+            await get_opensearch().close()
+
+    result = asyncio.run(run())
+    typer.echo(json.dumps(result, indent=2))
+    if result["errors"]:
+        raise typer.Exit(1)
 
 
 @app.command("sync-legacy")
