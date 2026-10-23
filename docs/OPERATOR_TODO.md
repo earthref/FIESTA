@@ -424,10 +424,15 @@ are layers on top.
       if the plan offers it, Workflow access = the `deploy.yml@refs/heads/main`
       / `@refs/heads/dev` refs above. The `admin:org` scope Claude's `gh` token
       lacks is needed to read or change this.
+      The earthref org is on GitHub Free (checked 2026-10-22), which as far as
+      Claude knows has only the Default runner group and no workflow
+      restriction; the pre-job guard covers the same risk until a plan change.
 
 ## Done
 
-_(none yet)_
+- [x] **Branch protection and Actions token on FIESTA** (2026-10-22): ruleset
+      "Protect main" (PR + 1 approval + `CI` + `check-labels`, admin bypass PR-only),
+      default `GITHUB_TOKEN` read-only, workflows cannot approve PRs.
 ## Phase M — live migration and recovery gates
 
 - [ ] Supply and verify each node's full source inventory (public/private buckets,

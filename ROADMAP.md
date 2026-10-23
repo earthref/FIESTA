@@ -411,7 +411,10 @@ Every item here starts with a human decision (hosting, credentials, DNS).
 
 - [ ] Router tests without a compose stack (fake S3 + in-memory search, or a
       testcontainers job in CI) so `make test` covers what only `make e2e` does today.
-- [ ] Branch protection on `main` with the `CI` job required.
+- [x] Branch protection on `main` (2026-10-22): ruleset "Protect main" requires a PR,
+      one approval and green `CI` + `check-labels`; repository admins bypass through a
+      PR only (`gh pr merge --admin`). The default Actions token is read-only and
+      workflows cannot approve PRs.
 - [ ] Dependabot PRs: merge on green CI, batch the actions bumps.
 
 ## Parked, with reasons
