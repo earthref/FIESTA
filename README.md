@@ -36,9 +36,16 @@ Postgres backups plus the bucket. See [Phase M operations](docs/phase-m.md).
 ## Quick start
 
 ```sh
-cp .env.example .env          # FIESTA_NODE=all (every node)  or a list: magic,karar,erda
+cp .env.example .env          # optional: FIESTA_NODE (default every node, or a list: magic,karar,erda), ports
 make up                       # infra + one API + one worker + one frontend for every listed node
+make seed                     # demo accounts and example contributions for every listed node
 ```
+
+Everything runs in local Docker containers: no MARFIK, AWS or production
+credentials, and no EarthRef account. After `make seed`,
+http://localhost:8080/MagIC/ signs you in as Local Developer
+(`developer@example.test`, a super admin). See [CONTRIBUTING.md](CONTRIBUTING.md)
+to make a change.
 
 Run `make` for all targets (tests, linting, e2e, rebuild, local dev servers).
 Multiple nodes run side by side sharing Postgres/OpenSearch/RustFS — each node
@@ -61,9 +68,12 @@ running nodes to this frontend and every other node to earthref.org.
 - RustFS (S3) console: http://localhost:9001/rustfs/console/ · Mailpit (dev email): http://localhost:8025
 - Base paths and the multi-node layout in a deployment: see [development.md](development.md).
 
-Create an account in the UI (or `docker compose run --rm api fiesta
-create-user you@example.org "Your Name"`), upload a contribution text file in
-the private workspace, validate, publish, and it becomes searchable.
+Each node gets a private draft with revision history, an invalid draft, and
+public examples that are searchable at once. Upload a contribution text file in
+the private workspace, validate, publish, and it becomes searchable too. Sign in
+as `viewer@example.test` (password `local-fiesta-only`) to test sharing.
+`make import-public NODE=magic IDS="20818"` adds real public contributions from
+dev.earthref.org. `make user EMAIL=… NAME=…` creates another account.
 
 ## Layout
 

@@ -3,6 +3,7 @@ accounts:
 - key: owner
   email: developer@example.test
   name: Local Developer
+  admin: true
   password: local-fiesta-only
   settings:
     theme: system

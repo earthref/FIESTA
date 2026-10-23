@@ -79,7 +79,9 @@ async def settle_seed_events(node, keys):
 
 
 async def ensure_accounts(session, manifest):
-    """The manifest's local accounts by key, created when missing (never updated)."""
+    """The manifest's local accounts by key, created when missing. An existing account
+    is never updated, except that `admin: true` grants super admin to a stack seeded
+    before the flag existed (it is never revoked)."""
     users = {}
     for account in manifest["accounts"]:
         user = (
@@ -91,9 +93,12 @@ async def ensure_accounts(session, manifest):
                 name=account["name"],
                 password_hash=hash_password(account["password"]),
                 settings=account.get("settings", {}),
+                is_admin=bool(account.get("admin")),
             )
             session.add(user)
             await session.flush()
+        elif account.get("admin") and not user.is_admin:
+            user.is_admin = True
         users[account["key"]] = user
     return users
 
