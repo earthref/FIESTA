@@ -1,10 +1,5 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: Security Contact
-    about: Please report security vulnerabilities to security@tiangolo.com
-  - name: Question or Problem
-    about: Ask a question or ask about a problem in GitHub Discussions.
-    url: https://github.com/fastapi/full-stack-fastapi-template/discussions/categories/questions
-  - name: Feature Request
-    about: To suggest an idea or ask about a feature, please start with a question saying what you would like to achieve. There might be a way to do it already.
-    url: https://github.com/fastapi/full-stack-fastapi-template/discussions/categories/questions
+  - name: Report a security vulnerability
+    about: Report it privately through GitHub's private vulnerability reporting, not in a public issue.
+    url: https://github.com/earthref/FIESTA/security/advisories/new

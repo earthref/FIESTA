@@ -99,6 +99,7 @@ services:
     image: axllent/mailpit:latest
     ports:
       - "${MAILPIT_WEB_PORT:-8025}:8025" # web UI
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP, for a host-run API/worker (make backend-dev)
     healthcheck:
       test: ["CMD", "/mailpit", "readyz"]
       interval: 10s

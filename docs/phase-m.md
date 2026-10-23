@@ -17,13 +17,14 @@ routers are also available on the multi-node API under `/v2/{repository}`.
 No MARFIK, AWS, production credentials or live account is needed. Seed commands
 refuse production mode, nonlocal endpoints and database URL connection overrides.
 Docker sets `FIESTA_ENVIRONMENT=development` and a shared `fiesta-local` bucket.
-Host-run developers must explicitly select development mode and local endpoints.
+Host-run processes need the same: `make backend-dev`, `make worker-dev` and
+`make fiesta` (without `ENV_FILE`) set development mode and the local endpoints.
 
 Each node YAML selects `development.seed_manifest`, resolved relative to that YAML.
 Fixtures live under `config/<node>/seeds/`. The two local logins are
 `developer@example.test` and `viewer@example.test`, both with password
-`local-fiesta-only`. The owner can edit; the viewer can inspect shared workspace
-contributions. Each node includes a private draft with revision history, two
+`local-fiesta-only`. The owner can edit and is a super admin (`admin: true`); the
+viewer can inspect shared workspace contributions. Each node includes a private draft with revision history, two
 independent typical public examples (`typical-1`, `typical-2`), and an `all-fields`
 public example with a populated value for every column of every table in the
 latest data model. MagIC also has two public pole examples with different ages,

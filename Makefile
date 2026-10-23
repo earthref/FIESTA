@@ -94,12 +94,27 @@ rebuild: ## Rebuild search from Postgres + immutable revision files (all nodes)
 
 .PHONY: infra
 infra: ## Start only the infrastructure (postgres, opensearch, rustfs, mailpit)
-	$(COMPOSE) up -d postgres opensearch rustfs mailpit
+	$(COMPOSE) up -d --wait postgres opensearch rustfs mailpit
+
+# The host-run API and worker (and `make fiesta` without ENV_FILE) get what
+# docker-compose.yml gives the containers, pointed at the host ports `make infra`
+# publishes (overridable in .env), so they share the compose stack's data and
+# local login and seeding work. With ENV_FILE, `make fiesta` reads only that file.
+HOST_DEV := backend-dev worker-dev $(if $(OPS_ENV_FILE),,fiesta)
+$(HOST_DEV): export FIESTA_ENVIRONMENT := development
+$(HOST_DEV): export FIESTA_S3_BUCKET := fiesta-local
+$(HOST_DEV): export FIESTA_DATABASE_URL := postgresql+asyncpg://fiesta:$(or $(POSTGRES_PASSWORD),fiesta)@localhost:$(or $(POSTGRES_PORT),5432)/fiesta
+$(HOST_DEV): export FIESTA_OPENSEARCH_URL := http://localhost:$(or $(OPENSEARCH_PORT),9200)
+$(HOST_DEV): export FIESTA_S3_ENDPOINT := http://localhost:$(or $(RUSTFS_API_PORT),9000)
+$(HOST_DEV): export FIESTA_S3_ACCESS_KEY := $(or $(RUSTFS_ACCESS_KEY),fiesta)
+$(HOST_DEV): export FIESTA_S3_SECRET_KEY := $(or $(RUSTFS_SECRET_KEY),fiesta-secret)
+$(HOST_DEV): export FIESTA_SECRET_KEY := $(or $(FIESTA_SECRET_KEY),dev-only-change-me)
+$(HOST_DEV): export FIESTA_SMTP_PORT := $(or $(MAILPIT_SMTP_PORT),1025)
 
 .PHONY: backend-dev
-backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :8000)
+backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :API_PORT, default 8000)
 	cd backend && uv sync && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) \
-		uv run sh -c "fiesta init && uvicorn fiesta.apps.api:create_app --factory --reload"
+		uv run sh -c "fiesta init && uvicorn fiesta.apps.api:create_app --factory --reload --port $(or $(API_PORT),8000)"
 
 .PHONY: fiesta
 fiesta: ## Run the CLI on the host: make fiesta ARGS="legacy-inventory karar --out ../migration/karar" [ENV_FILE=.env.prod] [NODE=karar] [CMD=python]
@@ -111,8 +126,9 @@ worker-dev: ## Run the job worker locally (every node in FIESTA_NODE)
 	cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) uv run fiesta worker
 
 .PHONY: frontend-dev
-frontend-dev: ## Run the Vite dev server on :5173 for every node in FIESTA_NODE (/<Key>/; proxies /v2 to localhost:8000)
-	cd frontend && npm install && FIESTA_NODES=$(FIESTA_NODE) npm run dev
+frontend-dev: ## Run the Vite dev server on :5173 for every node in FIESTA_NODE (/<Key>/; proxies /v2 to localhost:API_PORT)
+	cd frontend && npm install && FIESTA_NODES=$(FIESTA_NODE) \
+		VITE_API_TARGET=$${VITE_API_TARGET:-http://localhost:$(or $(API_PORT),8000)} npm run dev
 
 ## ---- Tests & linting --------------------------------------------------------
 

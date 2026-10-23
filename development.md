@@ -85,6 +85,31 @@ served nodes are `fiesta-env.js`'s list in the multi-node layout, else the
 config route's `deployment_nodes`; on a production host (any host in the
 portal list) every link stays on production.
 
+## Seed data and local login
+
+`make up` starts Docker infrastructure, the API, the worker and the frontend;
+`make seed` then loads, for every node in `FIESTA_NODE`, the manifest its YAML
+selects under `development.seed_manifest` (`config/<node>/seeds/`). On page load, local development
+automatically signs in as Local Developer (`developer@example.test`) once seeded;
+the account is a super admin (`admin: true` in the manifests), so `/admin` works.
+Sign-out lasts until the next page refresh. An existing valid login is preserved;
+you can sign in as `viewer@example.test`, password `local-fiesta-only`, to test sharing.
+Automatic login is disabled outside development mode or with remote infrastructure.
+The viewer can read shared
+workspace contributions but cannot edit them. Repeated seeds preserve developer
+edits and settings. No production credentials, MARFIK, or AWS are needed.
+
+`make import-public NODE=magic IDS="20818 20848"` copies real public contributions
+from `dev.earthref.org` (`ARGS="--source https://…"` for another FIESTA deployment)
+with their IDs, versions and DOIs, owned by Local Developer; `ARGS=--versions` also
+imports each ID's earlier published versions. Re-running is a no-op, and it also
+needs no credentials. Seed fixtures take the lowest free IDs, so import IDs that small
+(e.g. `NODE=karar IDS=3`) before `make seed`, or after a `make clean`.
+
+`make test-phase-m` builds and runs all-node seed, revision and migration checks in
+an isolated Docker network without external runtime connectivity. Image/dependency
+downloads occur during setup. See [Phase M operations](docs/phase-m.md).
+
 ## Base paths and the multi-node layout
 
 The SPA is built for one **build base** — Vite's `base`, `/` by default —
@@ -121,19 +146,33 @@ npm run build` builds one node under a prefix; `make frontend-dev` (or
 ## Backend only (against the compose infra)
 
 ```sh
-docker compose up -d postgres opensearch rustfs mailpit
-cd backend
-uv sync
-export FIESTA_CONFIG_FILE=../config/fiesta.yaml
+make backend-dev                        # make infra (waits until healthy) + fiesta init + uvicorn --reload on API_PORT
+make worker-dev                         # in another shell
+make fiesta ARGS=seed                   # the seed, run on the host (or `make seed` in a container)
+make frontend-dev                       # optional: Vite on :5173, proxied to the host-run API
+```
+
+These targets give the host processes what `docker-compose.yml` gives the
+containers: `FIESTA_ENVIRONMENT=development`, the shared `fiesta-local` bucket,
+and the infrastructure's host ports and credentials from `.env`
+(`POSTGRES_PORT`, `OPENSEARCH_PORT`, `RUSTFS_API_PORT`, `MAILPIT_SMTP_PORT`, …).
+So the host-run API reads the same data as `make up`, local login works, and the
+seed's local-only guard passes. `make fiesta` does the same unless `ENV_FILE` is
+given on the command line, when it reads only that file. Run by hand, the
+equivalent is:
+
+```sh
+cd backend && uv sync
+export FIESTA_ENVIRONMENT=development FIESTA_CONFIG_FILE=../config/fiesta.yaml
 export FIESTA_NODE=magic                 # comma-separated list, or unset for all nodes
+export FIESTA_S3_BUCKET=fiesta-local     # plus FIESTA_DATABASE_URL etc. if you moved the ports
 uv run fiesta init                      # migrations + job schema + bucket + index (per node)
 uv run uvicorn fiesta.apps.api:create_app --factory --reload   # http://localhost:8000/v2/docs
 uv run fiesta worker                    # in another shell
 ```
 
-`make backend-dev` / `make worker-dev` wrap the same commands. Point
-`FIESTA_CONFIG_FILE` at a single node YAML (e.g. `../config/magic.yaml`) to run
-that node as a one-node deployment instead.
+Point `FIESTA_CONFIG_FILE` at a single node YAML (e.g. `../config/magic.yaml`)
+to run that node as a one-node deployment instead.
 
 Tests and linting:
 
@@ -234,28 +273,3 @@ uv run fiesta create-user EMAIL NAME [--admin]
 uv run fiesta rebuild --yes   # rebuild search from Postgres + revision files
 uv run fiesta worker          # run the job worker
 ```
-
-
-## Offline Phase M development
-
-`make up FIESTA_NODE=magic,cdr` starts Docker infrastructure, the API, the worker
-and a frontend per node. `make seed FIESTA_NODE=magic,cdr` loads the manifests selected by each
-node YAML under `development.seed_manifest`. On page load, local development
-automatically signs in as Local Developer (`developer@example.test`) once seeded.
-Sign-out lasts until the next page refresh. An existing valid login is preserved;
-you can sign in as `viewer@example.test`, password `local-fiesta-only`, to test sharing.
-Automatic login is disabled outside development mode or with remote infrastructure.
-The viewer can read shared
-workspace contributions but cannot edit them. Repeated seeds preserve developer
-edits and settings. No production credentials, MARFIK, or AWS are needed.
-
-`make import-public NODE=magic IDS="20818 20848"` copies real public contributions
-from `dev.earthref.org` (`ARGS="--source https://…"` for another FIESTA deployment)
-with their IDs, versions and DOIs, owned by Local Developer; `ARGS=--versions` also
-imports each ID's earlier published versions. Re-running is a no-op, and it also
-needs no credentials. Seed fixtures take the lowest free IDs, so import IDs that small
-(e.g. `NODE=karar IDS=3`) before `make seed`, or after a `make clean`.
-
-`make test-phase-m` builds and runs all-node seed, revision and migration checks in
-an isolated Docker network without external runtime connectivity. Image/dependency
-downloads occur during setup. See [Phase M operations](docs/phase-m.md).

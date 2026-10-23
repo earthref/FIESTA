@@ -24,6 +24,10 @@ def test_seed_fixtures(node):
                 raw = local_file(root, rev["files"][rev["canonical"]]).read_text()
                 assert validate_contribution(node, parse_text(raw)).is_valid
 
+    accounts = {account["email"]: account for account in manifest["accounts"]}
+    assert accounts["developer@example.test"].get("admin"), "the local developer is a super admin"
+    assert not accounts["viewer@example.test"].get("admin")
+
     items = {item["key"]: item for item in manifest["contributions"]}
     assert not items["draft"].get("published")
     for key in ("typical-1", "typical-2", "all-fields"):

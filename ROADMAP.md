@@ -106,7 +106,8 @@ Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend
 
 ## Phase B — Contributor dev experience
 
-- [ ] **B1 `fiesta seed`.** Implement with M0: per-node YAML selects checked-in
+- [x] **B1 `fiesta seed`.** (Shipped with M0; verified from a fresh clone with no `.env`
+      2026-10-12, all seven nodes; the developer account is a super admin since 2026-10-22.) Implement with M0: per-node YAML selects checked-in
       seed manifests and fixtures, including demo accounts and representative
       contribution histories. `make seed` waits for processing so search works
       immediately. Idempotent; no MARFIK or AWS connection required.
@@ -115,7 +116,10 @@ Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend
       Needs the live API to allow the localhost Vite origin in CORS — **BLOCKED
       (operator)** until a FIESTA API is live (Phase E); until then the target is the
       local seeded API.
-- [ ] **B3 Docs for contributors.** `development.md` rewritten around the two
+- [x] **B3 Docs for contributors.** (2026-10-22: CONTRIBUTING.md — fork, `make up` +
+      `make seed`, rules, checks, PR flow; README quick start seeds; development.md
+      seed section moved up and host-run targets documented. The frontend-only
+      workflow against the live API waits on B2.) `development.md` rewritten around the two
       workflows (frontend-only vs. backend); a short CONTRIBUTING.md pointing at it,
       `make` targets, and the PR flow.
 - [ ] **B4 Port conflicts.** `.env.example` documents the override pattern; consider
