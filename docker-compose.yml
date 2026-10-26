@@ -29,6 +29,9 @@ x-backend-env: &backend-env
   FIESTA_ENVIRONMENT: development
   FIESTA_CONFIG_FILE: /config/fiesta.yaml
   FIESTA_NODE: ${FIESTA_NODE:-magic}
+  # Local stacks take contributions (upload, publish); `source` or
+  # `public,kdd=source` mirrors a node's data source instead (docs/data-sources.md).
+  FIESTA_CONTRIBUTIONS_MODE: ${FIESTA_CONTRIBUTIONS_MODE:-public}
   FIESTA_S3_BUCKET: fiesta-local
   FIESTA_DATABASE_URL: postgresql+asyncpg://fiesta:${POSTGRES_PASSWORD:-fiesta}@postgres:5432/fiesta
   FIESTA_OPENSEARCH_URL: http://opensearch:9200

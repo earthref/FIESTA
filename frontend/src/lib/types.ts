@@ -136,6 +136,9 @@ export interface NodeConfig {
   hidden_nodes?: string[];
   /** False when production does not serve this node's web app (node YAML `publish.web`). */
   web_published?: boolean;
+  /** "source": contributions are made at the node's data source (`links.website`
+   * until the cutover) and synced here, so the SPA offers no upload. */
+  contributions_mode?: "public" | "source";
 }
 
 export interface HealthStatus {

@@ -438,6 +438,17 @@ Shared workspaces: owners control membership, editors save, viewers read.
 | DELETE | `/v2/{repository}/workspaces/{workspace_id}/members/{user_id}` | | 204 (owner only) |
 | PUT | `/v2/{repository}/workspaces/{workspace_id}/contributions/{contribution_id}` | | `{workspace_id}` (assign an owned contribution) |
 
+### Data-source sync (`/v2/{repository}/source`, node admin)
+
+A node in data-source mode (`FIESTA_CONTRIBUTIONS_MODE`, `contributions_mode` in
+its config) refuses every write under `private/contributions` with a 409 and is
+fed by its sync script instead. Details: [data-sources.md](data-sources.md).
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/v2/{repository}/source` | | `{node, mode, source_id, checkpoints: {"<id>": "<fingerprint>"}}` |
+| PUT | `/v2/{repository}/source/records/{id}` | multipart: `record` (SourceRecord JSON), `owner` (optional account JSON), files as `<revision key>/<name>` parts | `{id, status: "applied"\|"unchanged", fingerprint, bytes}`; 409 in public mode or when the record cannot apply |
+
 ### Plugins (`/v2/{repository}/plugins/{name}/...`)
 
 Each plugin router mounts once per plugin. A request to a node that does not

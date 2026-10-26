@@ -14,7 +14,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from fiesta.apps.deps import NodeDep, SessionDep
-from fiesta.apps.routers import admin, auth, basemap, config, private, search, v1, workspaces
+from fiesta.apps.routers import (
+    admin,
+    auth,
+    basemap,
+    config,
+    private,
+    search,
+    source,
+    v1,
+    workspaces,
+)
 from fiesta.nodeconfig import get_deployment
 from fiesta.search.client import get_opensearch
 from fiesta.services import node_config
@@ -102,7 +112,7 @@ def create_app() -> FastAPI:
     app.include_router(basemap.router, prefix="/v2")
     # Before the /v2/{repository} routers: "admin" is a reserved node slug.
     app.include_router(admin.router, prefix="/v2/admin")
-    for router in (config.router, search.router, private.router, workspaces.router):
+    for router in (config.router, search.router, private.router, workspaces.router, source.router):
         app.include_router(router, prefix="/v2/{repository}")
 
     # Plugin routes: every known plugin is mounted once, guarded per request

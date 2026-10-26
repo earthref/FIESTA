@@ -83,186 +83,209 @@ async def sync_inventory(node, path, *, apply=False):
         "bytes": 0,
     }
     source = Storage(inventory.source_bucket) if inventory.source_bucket else None
+
+    async def load(revision, name, entry):
+        file_source = Storage(entry.bucket) if entry.bucket else source
+        if file_source:
+            return await file_source.get_bytes(entry.source, entry.version_id)
+        return local_file(root, entry.source).read_bytes()
+
     # Records apply in version order, so a dry run accepts a parent that this same
     # inventory will import; an apply still requires the parent row to exist.
     inventory_ids = {r.id for r in inventory.records}
     for record in sorted(inventory.records, key=lambda r: (r.version, r.id)):
         try:
-            source_id = f"{inventory.source_id}:{record.id}"
-            record_hash = fingerprint(record.model_dump(mode="json"))
-            async with get_sessionmaker(node.node.slug)() as session:
-                # One importer per source record; also serializes initial missing-row imports.
-                await session.execute(
-                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
-                    {"key": f"{node.node.slug}:{source_id}"},
-                )
-                checkpoint = await session.get(LegacyImport, source_id)
-                c = await session.get(Contribution, record.id, with_for_update=True)
-                if checkpoint and checkpoint.fingerprint == record_hash:
-                    report["unchanged"] += 1
-                    continue
-                if c and (not checkpoint or checkpoint.contribution_id != c.id):
-                    raise ValueError("destination ID already belongs to a different contribution")
-                if checkpoint and c.head_revision != checkpoint.revision_id:
-                    raise ValueError("destination has FIESTA edits; refusing to overwrite")
-                if (
-                    c
-                    and (
-                        await session.execute(
-                            select(AuditEvent).where(
-                                AuditEvent.contribution_id == c.id,
-                                AuditEvent.created_at > checkpoint.updated_at,
-                                AuditEvent.operation.not_in(
-                                    ["import", "legacy-metadata", "stamp-ids"]
-                                ),
-                            )
-                        )
-                    ).first()
-                ):
-                    raise ValueError("destination workflow changed since import")
-                owner = (
-                    await session.execute(select(User).where(User.email == record.owner_email))
-                ).scalar_one_or_none()
-                if owner is None:
-                    raise ValueError("owner mapping missing; contribution quarantined from import")
-                if (
-                    record.previous_id
-                    and not (not apply and record.previous_id in inventory_ids)
-                    and await session.get(Contribution, record.previous_id) is None
-                ):
-                    raise ValueError("previous published version must be imported first")
-                contents = []
-                for rev in record.revisions:
-                    if rev.canonical not in rev.files:
-                        raise ValueError("canonical file missing from source revision")
-                    files = {}
-                    for name, entry in rev.files.items():
-                        file_source = Storage(entry.bucket) if entry.bucket else source
-                        raw = (
-                            (await file_source.get_bytes(entry.source, entry.version_id))
-                            if file_source
-                            else local_file(root, entry.source).read_bytes()
-                        )
-                        if digest(raw) != entry.sha256:
-                            raise ValueError(f"source checksum mismatch: {entry.source}")
-                        report["bytes"] += len(raw)
-                        files[name] = raw
-                    contents.append(files)
-                report["planned"] += 1
-                if not apply:
-                    continue
-                dmv = (
-                    record.data_model_version
-                    if record.data_model_version in node.data_model.versions
-                    else node.data_model.latest
-                )
-                if c is None:
-                    c = Contribution(
-                        id=record.id,
-                        node=node.node.slug,
-                        contributor_id=owner.id,
-                        data_model_version=dmv,
-                        created_at=record.created_at,
-                    )
-                    session.add(c)
-                    await session.flush()
-                c.deleted_at = None
-                for source_rev, files in zip(record.revisions, contents, strict=True):
-                    key = "import:" + fingerprint(
-                        {"source": source_id, "revision": source_rev.model_dump(mode="json")}
-                    )
-                    existing = (
-                        await session.execute(
-                            select(Revision).where(
-                                Revision.contribution_id == c.id, Revision.request_key == key
-                            )
-                        )
-                    ).scalar_one_or_none()
-                    if existing:
-                        continue
-                    prior = (
-                        await session.get(Revision, c.head_revision) if c.head_revision else None
-                    )
-                    removed = list(set(prior.snapshot["files"]) - set(files)) if prior else []
-                    await save_revision(
-                        session,
-                        node,
-                        c,
-                        owner.id,
-                        expected_revision=c.head_revision,
-                        request_key=key,
-                        files=files,
-                        remove=removed,
-                        canonical=source_rev.canonical,
-                        reference_doi=source_rev.reference_doi or "",
-                        operation="import",
-                        allow_published=True,
-                        source_timestamp=source_rev.timestamp,
-                    )
-
-                c.contributor_id = owner.id
-                c.data_model_version = dmv
-                c.version = record.version
-                c.previous_id = record.previous_id
-                c.is_activated = record.published and not record.deleted
-                c.is_latest = record.latest
-                c.activated_at = record.activated_at
-                if record.published:
-                    c.published_revision = c.head_revision
-                if record.private_key:
-                    # Legacy MagIC shares one private key across a version chain, but
-                    # the column is unique: the key follows the newest version and any
-                    # other holder is issued a fresh one (a superseded version is public,
-                    # so nothing loses access).
-                    key = uuid.UUID(record.private_key)
-                    holder = (
-                        await session.execute(
-                            select(Contribution).where(
-                                Contribution.private_key == key, Contribution.id != c.id
-                            )
-                        )
-                    ).scalar_one_or_none()
-                    if holder is None:
-                        c.private_key = key
-                    elif (holder.version, holder.id) < (record.version, record.id):
-                        holder.private_key = uuid.uuid4()
-                        await session.flush()
-                        c.private_key = key
-                if record.deleted:
-                    c.deleted_at = datetime.now(UTC)
-                now = datetime.now(UTC)
-                session.add(
-                    AuditEvent(
-                        contribution_id=c.id,
-                        actor_id=owner.id,
-                        operation="legacy-metadata",
-                        details=record.model_dump(mode="json"),
-                    )
-                )
-                if checkpoint is None:
-                    checkpoint = LegacyImport(
-                        source_id=source_id, contribution_id=c.id, fingerprint=record_hash
-                    )
-                    session.add(checkpoint)
-                checkpoint.fingerprint = record_hash
-                checkpoint.revision_id = c.head_revision
-                checkpoint.updated_at = now
-                enqueue(session, c)
-                await Storage.for_node(node).put_json(
-                    f"migration/{inventory.source_id}/{record.id}/{record_hash}.json",
-                    record.model_dump(mode="json"),
-                )
-                # Keep generated IDs clear of imported public identifiers.
-                await session.execute(
-                    text(
-                        "SELECT setval(pg_get_serial_sequence(:table, 'id'), "
-                        "GREATEST((SELECT COALESCE(MAX(id),1) FROM "
-                        f'"{node.node.slug}".contributions), 1))'
-                    ),
-                    {"table": f'"{node.node.slug}".contributions'},
-                )
-                await session.commit()
-                report["applied"] += 1
+            status, size = await import_record(
+                node, inventory.source_id, record, load, apply=apply, pending_ids=inventory_ids
+            )
         except Exception as exc:
             report["errors"].append({"id": record.id, "error": str(exc)})
+            continue
+        report["bytes"] += size
+        if status == "unchanged":
+            report["unchanged"] += 1
+            continue
+        report["planned"] += 1
+        if status == "applied":
+            report["applied"] += 1
     return report
+
+
+def record_fingerprint(record: SourceRecord) -> str:
+    """The checkpoint value of a source record: an unchanged record is skipped."""
+    return fingerprint(record.model_dump(mode="json"))
+
+
+async def import_record(node, source_id, record, load, *, apply=True, pending_ids=frozenset()):
+    """Import one source record of SOURCE_ID (the source's checkpoint namespace)
+    into NODE, keeping its ID, version chain and timestamps. LOAD(revision, name,
+    entry) returns a file's bytes, checked against its sha256. PENDING_IDS are
+    records a dry run may treat as already imported parents.
+
+    Returns ("unchanged" | "planned" | "applied", bytes read); raises ValueError
+    when the record cannot be imported (the message says why)."""
+    source_key = f"{source_id}:{record.id}"
+    record_hash = record_fingerprint(record)
+    size = 0
+    async with get_sessionmaker(node.node.slug)() as session:
+        # One importer per source record; also serializes initial missing-row imports.
+        await session.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+            {"key": f"{node.node.slug}:{source_key}"},
+        )
+        checkpoint = await session.get(LegacyImport, source_key)
+        c = await session.get(Contribution, record.id, with_for_update=True)
+        if checkpoint and checkpoint.fingerprint == record_hash:
+            return "unchanged", 0
+        if c and (not checkpoint or checkpoint.contribution_id != c.id):
+            raise ValueError("destination ID already belongs to a different contribution")
+        if checkpoint and c.head_revision != checkpoint.revision_id:
+            raise ValueError("destination has FIESTA edits; refusing to overwrite")
+        if (
+            c
+            and (
+                await session.execute(
+                    select(AuditEvent).where(
+                        AuditEvent.contribution_id == c.id,
+                        AuditEvent.created_at > checkpoint.updated_at,
+                        AuditEvent.operation.not_in(["import", "legacy-metadata", "stamp-ids"]),
+                    )
+                )
+            ).first()
+        ):
+            raise ValueError("destination workflow changed since import")
+        owner = (
+            await session.execute(select(User).where(User.email == record.owner_email))
+        ).scalar_one_or_none()
+        if owner is None:
+            raise ValueError("owner mapping missing; contribution quarantined from import")
+        if (
+            record.previous_id
+            and not (not apply and record.previous_id in pending_ids)
+            and await session.get(Contribution, record.previous_id) is None
+        ):
+            raise ValueError("previous published version must be imported first")
+        contents = []
+        for rev in record.revisions:
+            if rev.canonical not in rev.files:
+                raise ValueError("canonical file missing from source revision")
+            files = {}
+            for name, entry in rev.files.items():
+                raw = await load(rev, name, entry)
+                if digest(raw) != entry.sha256:
+                    raise ValueError(f"source checksum mismatch: {entry.source}")
+                size += len(raw)
+                files[name] = raw
+            contents.append(files)
+        if not apply:
+            return "planned", size
+        dmv = (
+            record.data_model_version
+            if record.data_model_version in node.data_model.versions
+            else node.data_model.latest
+        )
+        if c is None:
+            c = Contribution(
+                id=record.id,
+                node=node.node.slug,
+                contributor_id=owner.id,
+                data_model_version=dmv,
+                created_at=record.created_at,
+            )
+            session.add(c)
+            await session.flush()
+        c.deleted_at = None
+        for source_rev, files in zip(record.revisions, contents, strict=True):
+            key = "import:" + fingerprint(
+                {"source": source_key, "revision": source_rev.model_dump(mode="json")}
+            )
+            existing = (
+                await session.execute(
+                    select(Revision).where(
+                        Revision.contribution_id == c.id, Revision.request_key == key
+                    )
+                )
+            ).scalar_one_or_none()
+            if existing:
+                continue
+            prior = await session.get(Revision, c.head_revision) if c.head_revision else None
+            removed = list(set(prior.snapshot["files"]) - set(files)) if prior else []
+            await save_revision(
+                session,
+                node,
+                c,
+                owner.id,
+                expected_revision=c.head_revision,
+                request_key=key,
+                files=files,
+                remove=removed,
+                canonical=source_rev.canonical,
+                reference_doi=source_rev.reference_doi or "",
+                operation="import",
+                allow_published=True,
+                source_timestamp=source_rev.timestamp,
+            )
+
+        c.contributor_id = owner.id
+        c.data_model_version = dmv
+        c.version = record.version
+        c.previous_id = record.previous_id
+        c.is_activated = record.published and not record.deleted
+        c.is_latest = record.latest
+        c.activated_at = record.activated_at
+        if record.published:
+            c.published_revision = c.head_revision
+        if record.private_key:
+            # Legacy MagIC shares one private key across a version chain, but
+            # the column is unique: the key follows the newest version and any
+            # other holder is issued a fresh one (a superseded version is public,
+            # so nothing loses access).
+            key = uuid.UUID(record.private_key)
+            holder = (
+                await session.execute(
+                    select(Contribution).where(
+                        Contribution.private_key == key, Contribution.id != c.id
+                    )
+                )
+            ).scalar_one_or_none()
+            if holder is None:
+                c.private_key = key
+            elif (holder.version, holder.id) < (record.version, record.id):
+                holder.private_key = uuid.uuid4()
+                await session.flush()
+                c.private_key = key
+        if record.deleted:
+            c.deleted_at = datetime.now(UTC)
+        now = datetime.now(UTC)
+        session.add(
+            AuditEvent(
+                contribution_id=c.id,
+                actor_id=owner.id,
+                operation="legacy-metadata",
+                details=record.model_dump(mode="json"),
+            )
+        )
+        if checkpoint is None:
+            checkpoint = LegacyImport(
+                source_id=source_key, contribution_id=c.id, fingerprint=record_hash
+            )
+            session.add(checkpoint)
+        checkpoint.fingerprint = record_hash
+        checkpoint.revision_id = c.head_revision
+        checkpoint.updated_at = now
+        enqueue(session, c)
+        await Storage.for_node(node).put_json(
+            f"migration/{source_id}/{record.id}/{record_hash}.json",
+            record.model_dump(mode="json"),
+        )
+        # Keep generated IDs clear of imported public identifiers.
+        await session.execute(
+            text(
+                "SELECT setval(pg_get_serial_sequence(:table, 'id'), "
+                "GREATEST((SELECT COALESCE(MAX(id),1) FROM "
+                f'"{node.node.slug}".contributions), 1))'
+            ),
+            {"table": f'"{node.node.slug}".contributions'},
+        )
+        await session.commit()
+    return "applied", size

@@ -36,6 +36,26 @@ def request_node(request: Request) -> NodeConfig:
 NodeDep = Annotated[NodeConfig, Depends(request_node)]
 
 
+def source_mode_message(node: NodeConfig) -> str | None:
+    """Why NODE refuses contributions from users, or None when it takes them:
+    in data-source mode they are made at the source and synced here."""
+    if node.contributions_mode != "source":
+        return None
+    where = f" at {node.node.links.website}" if node.node.links.website else " at its source"
+    return (
+        f"{node.node.key} contributions are synced from its data source; "
+        f"contribute{where} until the cutover to FIESTA"
+    )
+
+
+def require_public_contributions(request: Request, node: NodeDep) -> None:
+    """Router dependency: reads pass, writes are refused in data-source mode."""
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return
+    if message := source_mode_message(node):
+        raise HTTPException(status.HTTP_409_CONFLICT, message)
+
+
 async def get_current_user(
     session: SessionDep,
     token: Annotated[str | None, Depends(oauth2_scheme)],

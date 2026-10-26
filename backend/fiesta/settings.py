@@ -42,6 +42,25 @@ _LIBPQ_ONLY = {
 }
 
 
+CONTRIBUTIONS_MODES = ("public", "source")
+
+
+def parse_contributions_mode(value: str) -> tuple[str, dict[str, str]]:
+    """`source,karar=public` -> ("source", {"karar": "public"})."""
+    default, nodes = "public", {}
+    for part in (p.strip().lower() for p in value.split(",")):
+        if not part:
+            continue
+        slug, _, mode = part.rpartition("=")
+        if mode not in CONTRIBUTIONS_MODES:
+            raise ValueError(f"contributions mode {mode!r}: use one of {CONTRIBUTIONS_MODES}")
+        if slug:
+            nodes[slug.strip()] = mode
+        else:
+            default = mode
+    return default, nodes
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="FIESTA_", env_file=".env", extra="ignore")
 
@@ -127,6 +146,24 @@ class Settings(BaseSettings):
     # missed-run watchdog post with; the channel is in the schedules file.
     # Empty: messages are logged instead of posted.
     slack_bot_token: str = ""
+
+    # Where each node's contributions come from (docs/data-sources.md).
+    # "public": people contribute through FIESTA (upload, publish, new
+    # versions). "source": FIESTA mirrors the node's data source (until the
+    # cutover, its Meteor app): user writes are refused and a node admin's sync
+    # script writes through /v2/{node}/source. A comma-separated list, a mode
+    # for every node plus `<slug>=<mode>` exceptions: `source,karar=public`.
+    contributions_mode: str = "public"
+
+    @field_validator("contributions_mode")
+    @classmethod
+    def _contributions_mode(cls, value: str) -> str:
+        parse_contributions_mode(value)
+        return value
+
+    def contributions_mode_for(self, slug: str) -> str:
+        default, nodes = parse_contributions_mode(self.contributions_mode)
+        return nodes.get(slug.lower(), default)
 
     @field_validator(
         "s3_endpoint", "s3_bucket", "opensearch_ca_certs", "ops_config_file", mode="before"

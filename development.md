@@ -106,6 +106,12 @@ imports each ID's earlier published versions. Re-running is a no-op, and it also
 needs no credentials. Seed fixtures take the lowest free IDs, so import IDs that small
 (e.g. `NODE=karar IDS=3`) before `make seed`, or after a `make clean`.
 
+A local stack runs every node in **public contributions** mode (upload, publish,
+new versions). To try a node in **data-source** mode, as deployments run until the
+cutover from Meteor, set `FIESTA_CONTRIBUTIONS_MODE=public,kdd=source` in `.env`
+(or on the `make up` line): the SPA stops offering uploads for KdD and
+`sources/kdd.py` can sync it from Meteor KdD. See [docs/data-sources.md](docs/data-sources.md).
+
 `make test-phase-m` builds and runs all-node seed, revision and migration checks in
 an isolated Docker network without external runtime connectivity. Image/dependency
 downloads occur during setup. See [Phase M operations](docs/phase-m.md).

@@ -40,7 +40,7 @@ jobs:
         working-directory: backend
 
       - name: Lint
-        run: uv run ruff check .
+        run: uv run ruff check . ../sources
         working-directory: backend
 
       - name: Test

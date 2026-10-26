@@ -2,11 +2,11 @@
 
 import uuid
 
-from fastapi import APIRouter, Header, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, Response, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from fiesta.apps.deps import CurrentUser, NodeDep, SessionDep
+from fiesta.apps.deps import CurrentUser, NodeDep, SessionDep, require_public_contributions
 from fiesta.apps.schemas import ContributionOut, JobOut, ReferenceIn, ValidationOut
 from fiesta.db.models import Contribution, ContributionStatus, Revision, User
 from fiesta.jobs import tasks
@@ -14,7 +14,12 @@ from fiesta.services import contributions as svc
 from fiesta.services.access import can_access
 from fiesta.services.revisions import locked, revision_file, save_revision, snapshot_for
 
-router = APIRouter(prefix="/private/contributions", tags=["private"])
+# In data-source mode a node's contributions are read here but made at the source.
+router = APIRouter(
+    prefix="/private/contributions",
+    tags=["private"],
+    dependencies=[Depends(require_public_contributions)],
+)
 
 
 async def _own_contribution(
