@@ -13,6 +13,7 @@ fiesta ops-watchdog  check for missed scheduled runs (--post reports them to Sla
 
 import asyncio
 import json
+from typing import Annotated
 
 import typer
 
@@ -103,31 +104,40 @@ def create_user(
     name: str,
     password: str = typer.Option(..., prompt=True, hide_input=True),
     admin: bool = False,
+    node_admin: Annotated[
+        list[str] | None,
+        typer.Option("--node-admin", help="make the account an admin of this node (repeatable)"),
+    ] = None,
 ) -> None:
-    """Create an account."""
+    """Create an account (an existing one only gains the --node-admin roles)."""
 
     email = email.strip().lower()
 
     async def run() -> None:
         from sqlalchemy import func, select
 
-        from fiesta.db.models import User
+        from fiesta.db.models import NodeAdmin, User
         from fiesta.db.session import get_sessionmaker
         from fiesta.security import hash_password
 
         async with get_sessionmaker(None)() as session:
-            existing = (
+            user = (
                 await session.execute(select(User).where(func.lower(User.email) == email))
             ).scalar_one_or_none()
-            if existing:
-                typer.echo(f"user {email} already exists (id {existing.id})")
-                return
-            user = User(
-                email=email, name=name, password_hash=hash_password(password), is_admin=admin
-            )
-            session.add(user)
+            if user:
+                typer.echo(f"user {email} already exists (id {user.id})")
+            else:
+                user = User(
+                    email=email, name=name, password_hash=hash_password(password), is_admin=admin
+                )
+                session.add(user)
+                await session.flush()
+                typer.echo(f"created user {email} (id {user.id})")
+            for slug in node_admin or []:
+                if await session.get(NodeAdmin, (user.id, slug)) is None:
+                    session.add(NodeAdmin(user_id=user.id, node=slug))
+                    typer.echo(f"  {slug} node admin")
             await session.commit()
-            typer.echo(f"created user {email} (id {user.id})")
 
     asyncio.run(run())
 
