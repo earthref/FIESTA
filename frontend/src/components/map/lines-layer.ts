@@ -1,4 +1,4 @@
-import type maplibregl from "maplibre-gl";
+import type * as maplibregl from "maplibre-gl";
 
 // Lines drawn over the basemap on every view, including past Web Mercator's
 // ±85.05°, where MapLibre's own line layers (from GeoJSON tiles) move them to
@@ -236,12 +236,6 @@ ${VERTEX_SOURCE}`;
     // GL objects are created and changed only in render(): MapLibre caches GL
     // state and resets its cache just around that call.
     onAdd(m, context) {
-      // MapLibre 5 renders with WebGL2; the lines are skipped otherwise.
-      if (
-        typeof WebGL2RenderingContext === "undefined" ||
-        !(context instanceof WebGL2RenderingContext)
-      )
-        return;
       map = m;
       gl = context;
     },

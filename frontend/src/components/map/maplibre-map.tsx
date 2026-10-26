@@ -1,4 +1,5 @@
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { type FC, useEffect, useRef } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
@@ -19,7 +20,12 @@ import {
   pointKey,
   sphericalCentroid,
 } from "./map-points";
+import { isOccluded, mapSize } from "./map-view";
 import { createPolarCapsLayer } from "./polar-caps";
+
+// MapLibre 6 can't find its worker inside a bundle: Vite bundles it as an
+// asset under the build base, and this is its URL.
+maplibregl.setWorkerUrl(workerUrl);
 
 // MapLibre has only Web Mercator and globe projections, so the flat view is
 // Mercator (to ±85°). On the globe, the polar caps past ±85° are drawn by a
@@ -847,20 +853,14 @@ const MapLibreMap: FC<{
     // The camera that fits the points, if asked for.
     const fitCamera = (points: MapPoint[]) => {
       // Not until the container has its size (a modal may still be laying out).
-      if (
-        !fit ||
-        sign ||
-        map.transform.width <= 4 * FIT_PADDING ||
-        map.transform.height <= 4 * FIT_PADDING
-      )
-        return undefined;
-      if (globe)
-        return globeFitCamera(points, map.transform.width, map.transform.height) ?? undefined;
+      const { width, height } = mapSize(map);
+      if (!fit || sign || width <= 4 * FIT_PADDING || height <= 4 * FIT_PADDING) return undefined;
+      if (globe) return globeFitCamera(points, width, height) ?? undefined;
       const extent = pointsExtent(points);
       const full = extent && map.cameraForBounds(extent, { padding: FIT_PADDING });
       if (!extent || full?.zoom === undefined) return undefined;
       // Fitted in the middle quarter of the map, for a small spread.
-      const [x, y] = [(3 * map.transform.width) / 8, (3 * map.transform.height) / 8];
+      const [x, y] = [(3 * width) / 8, (3 * height) / 8];
       const quarter = map.cameraForBounds(extent, {
         padding: { top: y, bottom: y, left: x, right: x },
       });
@@ -908,7 +908,7 @@ const MapLibreMap: FC<{
           const size = 2 * pointRadius + 2;
           element.style.cssText = `${MARKER_STYLE};width:${size}px;height:${size}px;background:${color}`;
           // Hidden behind the globe, but still under the pointer there.
-          const hidden = () => map.transform.isLocationOccluded(new maplibregl.LngLat(lon, lat));
+          const hidden = () => isOccluded(map, { lng: lon, lat });
           element.addEventListener("mouseenter", () => {
             if (hidden()) return;
             overMarker = true;
@@ -1071,9 +1071,7 @@ const MapLibreMap: FC<{
             lat0 + ((lat1 - lat0) * i) / OUTLINE_SAMPLES,
           ];
           const point =
-            globe && map.transform.isLocationOccluded(new maplibregl.LngLat(lon, lat))
-              ? null
-              : map.project([lon, lat]);
+            globe && isOccluded(map, { lng: lon, lat }) ? null : map.project([lon, lat]);
           if (point && previous && distanceToSegment(x, y, previous, point) <= AREA_GRAB_PX)
             return true;
           previous = point;
@@ -1132,7 +1130,7 @@ const MapLibreMap: FC<{
     // reach. Its outline is sampled, as it curves on the globe, and a pole
     // within it takes in every longitude.
     const viewArea = (): Area => {
-      const { width, height } = map.transform;
+      const { width, height } = mapSize(map);
       const [x0, y0, x1, y1] = [width / 4, height / 4, (width * 3) / 4, (height * 3) / 4];
       const middle = map.unproject([width / 2, height / 2]);
       const samples = [0, 1, 2, 3, 4, 5, 6, 7, 8]
@@ -1155,7 +1153,7 @@ const MapLibreMap: FC<{
         Math.max(...lats),
       ];
       const poleInView = (lat: number) => {
-        if (!globe || map.transform.isLocationOccluded(new maplibregl.LngLat(0, lat))) return false;
+        if (!globe || isOccluded(map, { lng: 0, lat })) return false;
         const { x, y } = map.project([0, lat]);
         return x >= x0 && x <= x1 && y >= y0 && y <= y1;
       };
@@ -1173,7 +1171,7 @@ const MapLibreMap: FC<{
       if (!target || target === zoomedTo || sign) return;
       zoomedTo = target;
       const [west, south, east, north] = target;
-      const { width, height } = map.transform;
+      const { width, height } = mapSize(map);
       const camera = map.cameraForBounds(
         [
           [west, Math.max(south, -MERCATOR_LAT)],
@@ -1203,9 +1201,10 @@ const MapLibreMap: FC<{
     // about the middle of the screen.
     const setPolar = (next: PolarView) => {
       const [x, y] = next.offset;
-      const [r, max] = [Math.hypot(x, y), maxPolarOffset(next.radius, map.transform)];
+      const size = mapSize(map);
+      const [r, max] = [Math.hypot(x, y), maxPolarOffset(next.radius, size)];
       polar = r > max ? { ...next, offset: [(x * max) / r, (y * max) / r] } : next;
-      map.jumpTo(polarCamera(sign!, polar, map.transform));
+      map.jumpTo(polarCamera(sign!, polar, size));
     };
     let animation = 0;
     const animatePolar = (target: Partial<PolarView>, duration = 800) => {
