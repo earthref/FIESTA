@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-10-25
+Last updated: 2026-10-26
 
 ## A — Decisions
 
@@ -434,17 +434,14 @@ are layers on top.
 ## 2026-10-25 — Contribution modes and the KdD data source
 
 Nodes now run in public-contributions or data-source mode
-([data-sources.md](data-sources.md)). The code defaults to `public`; until the
-Meteor cutover a deployment should mirror its sources instead. The KdD sync
-(`sources/kdd.py`, schedule `kdd-source`, disabled) was tested on a local stack
-reading Meteor KdD. Synced records are parsed and indexed by the node's worker,
-so the "Run `fiesta worker` as a service on fiesta-ct" item above applies here too.
+([data-sources.md](data-sources.md)). Since 2026-10-26 `config/fiesta.yaml` says
+`source`, so dev mirrors every node and refuses uploads with no env change (when a
+node cuts over: `source,karar=public` there, or `FIESTA_CONTRIBUTIONS_MODE` on a
+host). Each node's sync schedule is on its admin page's **Data source** tab
+(`legacy.sync`, off by default); that tab also shows the last runs. Synced
+records are parsed and indexed by the node's worker, so the "Run `fiesta worker`
+as a service on fiesta-ct" item above applies here too.
 
-- [ ] **Set `FIESTA_CONTRIBUTIONS_MODE=source`** in the fiesta-ct env file the API
-      and worker units read, then restart the API. dev.earthref.org then mirrors
-      every node and answers uploads and edits with a 409 pointing at the Meteor
-      app (`links.website`); the SPA shows that notice instead of the upload button.
-      When a node cuts over, add an exception: `source,karar=public`.
 - [ ] **Create the KdD sync account on dev**: a dedicated account (e.g. a `sources@`
       address you control), made a KdD node admin in `/admin` — not a super admin.
       Its email and password go only in the MARFIK3 env file below.
@@ -459,9 +456,12 @@ so the "Run `fiesta worker` as a service on fiesta-ct" item above applies here t
 - [ ] **Run it once by hand on MARFIK3**, as the service user from
       `/srv/fiesta-ops/FIESTA/backend` with that env file loaded:
       `.venv/bin/python ../sources/kdd.py --state-dir /var/lib/fiesta-ops/sources/kdd --dry-run`,
-      then without `--dry-run`. Expect 8 applied and 256 quarantined until the KdD
-      ownership decision (§A). Then tell Claude, which flips `enabled: true` on
-      `kdd-source` in `config/ops/schedules.yaml` (hourly at :20).
+      then without `--dry-run` (both read `/etc/fiesta/source-kdd.env`, e.g. via
+      `set -a; . /etc/fiesta/source-kdd.env; set +a`). Expect 0 applied once
+      Claude's first dev run has landed, 256 quarantined until the KdD ownership
+      decision (§A). Then on `/KdD/admin/nodes/kdd?section=source` tick "Sync on a
+      schedule", Save to Draft and publish; the ops worker picks it up within a
+      minute, no restart.
 - [ ] **Check the dev reverse proxy's request body limit** for
       `PUT /v2/*/source/records/*` (multipart). KdD files are tens of KB; MagIC's
       reach hundreds of MB when its source sync follows.

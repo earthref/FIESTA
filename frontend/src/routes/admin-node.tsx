@@ -11,6 +11,7 @@ import { FiltersEditor } from "../components/admin/filters-editor";
 import { GridEditor } from "../components/admin/grid-editor";
 import { PagesEditor } from "../components/admin/pages-editor";
 import { PluginsEditor } from "../components/admin/plugins-editor";
+import { SourceEditor } from "../components/admin/source-editor";
 import { VocabularyEditor } from "../components/admin/vocabulary-editor";
 import { ErrorMessage } from "../components/error-message";
 import { Badge } from "../components/ui/badge";
@@ -50,6 +51,7 @@ type Section =
   | "plugins"
   | "data-models"
   | "vocabularies"
+  | "source"
   | "files"
   | "admins"
   | "history";
@@ -62,6 +64,7 @@ const SECTIONS: { key: Section; label: string }[] = [
   { key: "plugins", label: "Plugins" },
   { key: "data-models", label: "Data Models" },
   { key: "vocabularies", label: "Vocabularies" },
+  { key: "source", label: "Data Source" },
   { key: "files", label: "Files" },
   { key: "admins", label: "Admins" },
   { key: "history", label: "History" },
@@ -848,7 +851,9 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
         }
       />
       {section === "settings" && <SettingsSection node={n} superAdmin={superAdmin} />}
-      {["pages", "filters", "grid", "plugins", "data-models", "vocabularies"].includes(section) &&
+      {["pages", "filters", "grid", "plugins", "data-models", "vocabularies", "source"].includes(
+        section,
+      ) &&
         (settings.data ? (
           section === "pages" ? (
             <PagesEditor
@@ -874,6 +879,12 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
               settings={settings.data.settings}
               settingsLock={lockOf(settings.data)}
               plugins={n.plugins ?? []}
+            />
+          ) : section === "source" ? (
+            <SourceEditor
+              slug={slug}
+              settings={settings.data.settings}
+              settingsLock={lockOf(settings.data)}
             />
           ) : section === "data-models" ? (
             <DataModelEditor

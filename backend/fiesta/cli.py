@@ -13,6 +13,7 @@ fiesta ops-watchdog  check for missed scheduled runs (--post reports them to Sla
 
 import asyncio
 import json
+from typing import Annotated
 
 import typer
 
@@ -103,31 +104,40 @@ def create_user(
     name: str,
     password: str = typer.Option(..., prompt=True, hide_input=True),
     admin: bool = False,
+    node_admin: Annotated[
+        list[str] | None,
+        typer.Option("--node-admin", help="make the account an admin of this node (repeatable)"),
+    ] = None,
 ) -> None:
-    """Create an account."""
+    """Create an account (an existing one only gains the --node-admin roles)."""
 
     email = email.strip().lower()
 
     async def run() -> None:
         from sqlalchemy import func, select
 
-        from fiesta.db.models import User
+        from fiesta.db.models import NodeAdmin, User
         from fiesta.db.session import get_sessionmaker
         from fiesta.security import hash_password
 
         async with get_sessionmaker(None)() as session:
-            existing = (
+            user = (
                 await session.execute(select(User).where(func.lower(User.email) == email))
             ).scalar_one_or_none()
-            if existing:
-                typer.echo(f"user {email} already exists (id {existing.id})")
-                return
-            user = User(
-                email=email, name=name, password_hash=hash_password(password), is_admin=admin
-            )
-            session.add(user)
+            if user:
+                typer.echo(f"user {email} already exists (id {user.id})")
+            else:
+                user = User(
+                    email=email, name=name, password_hash=hash_password(password), is_admin=admin
+                )
+                session.add(user)
+                await session.flush()
+                typer.echo(f"created user {email} (id {user.id})")
+            for slug in node_admin or []:
+                if await session.get(NodeAdmin, (user.id, slug)) is None:
+                    session.add(NodeAdmin(user_id=user.id, node=slug))
+                    typer.echo(f"  {slug} node admin")
             await session.commit()
-            typer.echo(f"created user {email} (id {user.id})")
 
     asyncio.run(run())
 
@@ -598,6 +608,27 @@ def _ops_config():
         raise typer.Exit(2) from exc
 
 
+def _effective_ops_config():
+    """The schedules file plus the nodes' source schedules (published config)."""
+    from fiesta.ops.worker import effective_config
+
+    config = _ops_config()
+
+    async def run():
+        from fiesta.db.session import get_engine
+
+        try:
+            return await effective_config(config)
+        finally:
+            await get_engine().dispose()
+
+    try:
+        return asyncio.run(run())
+    except Exception as exc:  # noqa: BLE001 - the file's schedules still work
+        typer.echo(f"warning: node source schedules not loaded: {exc}", err=True)
+        return config
+
+
 @app.command("ops-worker")
 def ops_worker(
     concurrency: int = typer.Option(2, help="schedules that may run at the same time"),
@@ -609,10 +640,9 @@ def ops_worker(
     file (FIESTA_OPS_CONFIG_FILE, default config/ops/schedules.yaml) when its
     cron fires, run them from the `ops` queue, and report to Slack. The only
     process that defers ops jobs; run exactly one (see docs/ops-scheduler.md)."""
-    from fiesta.jobs.queues import OPS_QUEUE
     from fiesta.nodeconfig import load_deployment
-    from fiesta.ops.app import build_ops_app
     from fiesta.ops.config import ops_config_path
+    from fiesta.ops.worker import run_ops_worker
 
     _ops_logging()
     config = _ops_config()
@@ -624,16 +654,20 @@ def ops_worker(
         typer.echo(f"warning: deployment not loaded, node names unchecked: {exc}", err=True)
     if not (get_settings().slack_bot_token and config.slack.channel):
         typer.echo("Slack not configured (token or channel): status is logged only", err=True)
-    typer.echo(f"ops worker: {ops_config_path()}")
-    for s in config.schedules:
-        state = "enabled" if s.enabled else "disabled"
-        typer.echo(f"  {s.name:<28} {s.cron:<16} UTC  {state}")
-    job_app = build_ops_app(config, periodic=True)
-    job_app.run_worker(
-        queues=[OPS_QUEUE],
-        concurrency=concurrency,
-        name="ops",
-        shutdown_graceful_timeout=graceful_timeout,
+    typer.echo(f"ops worker: {ops_config_path()} + node source schedules")
+
+    def started(effective) -> None:
+        for s in effective.schedules:
+            state = "enabled" if s.enabled else "disabled"
+            typer.echo(f"  {s.name:<28} {s.cron:<16} UTC  {state}")
+
+    asyncio.run(
+        run_ops_worker(
+            config,
+            concurrency=concurrency,
+            graceful_timeout=graceful_timeout,
+            on_start=started,
+        )
     )
 
 
@@ -646,7 +680,7 @@ def ops_status():
     from fiesta.ops.slack import format_duration
     from fiesta.ops.watchdog import deadline_for
 
-    config = _ops_config()
+    config = _effective_ops_config()
     states = asyncio.run(schedule_states())
     now = datetime.now(UTC)
 
@@ -689,7 +723,7 @@ def ops_run(name: str):
     from fiesta.ops.app import build_ops_app
     from fiesta.ops.history import RUN_TASK
 
-    config = _ops_config()
+    config = _effective_ops_config()
     try:
         schedule = config.schedule(name)
     except KeyError as exc:
@@ -733,7 +767,7 @@ def ops_watchdog(
     from fiesta.ops.slack import SlackNotifier, host_label
 
     _ops_logging()
-    config = _ops_config()
+    config = _effective_ops_config()
     now_ts = time.time()
     if every > 0:
         now_ts -= now_ts % every  # align, so the alert window holds exactly one check

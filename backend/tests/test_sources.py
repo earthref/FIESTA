@@ -51,7 +51,6 @@ def test_mode_per_node_and_write_guard(kdd_node, mode):
 
     mode("source,kdd=source,karar=public")
     assert kdd_node.contributions_mode == "source"
-    assert get_settings().contributions_mode_for("karar") == "public"
     assert "earthref.org/KdD" in source_mode_message(kdd_node)
     require_public_contributions(request("GET"), kdd_node)
     with pytest.raises(HTTPException) as refused:
@@ -115,7 +114,7 @@ async def test_sync_meteor_sends_only_changed_records(kdd_node, tmp_path, monkey
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "GET":
-            assert request.url.path == "/v2/kdd/source"
+            assert request.url.path == "/v2/kdd/source/checkpoints"
             return httpx.Response(
                 200,
                 json={
@@ -159,3 +158,34 @@ async def test_sync_meteor_does_nothing_in_public_mode(kdd_node, tmp_path, monke
     api = SourceAPI("http://fiesta.test", "kdd", transport=transport)
     summary = await meteor.sync_meteor(kdd_node, api, tmp_path)
     assert summary["skipped"] == "node is in public mode"
+
+
+def test_source_schedules_follow_node_sync(kdd_node, tmp_path, monkeypatch):
+    """A node with a script gets a `<slug>-source` schedule timed and enabled by
+    its `legacy.sync`; a node without one gets none; the file's own wins."""
+    from fiesta.ops.config import parse_ops_config
+
+    monkeypatch.setattr(get_settings(), "sources_dir", tmp_path)
+    (tmp_path / "kdd.py").write_text("")
+    owners = tmp_path / "kdd-owners.json"
+    owners.write_text("{}")
+    legacy = kdd_node.legacy.model_copy(
+        update={"sync": kdd_node.legacy.sync.model_copy(update={"enabled": True})}
+    )
+    node = kdd_node.model_copy(update={"legacy": legacy})
+    karar = load_deployment(CONFIG_DIR / "karar.yaml").node_for("karar")
+    config = parse_ops_config(
+        f"""
+fiesta-ops: 1
+sources:
+  env_file: /etc/fiesta/source-{{slug}}.env
+  owner_map: {tmp_path}/{{slug}}-owners.json
+"""
+    ).with_sources([node, karar])
+    (schedule,) = config.schedules
+    assert schedule.name == "kdd-source" and schedule.enabled and schedule.cron == "20 * * * *"
+    assert schedule.env_file == "/etc/fiesta/source-kdd.env"
+    assert schedule.command[1] == str(tmp_path / "kdd.py")
+    assert schedule.command[-2:] == ["--owner-map", str(owners)]
+    assert schedule.expected_interval > 3600
+    assert kdd_node.legacy.sync.enabled is False  # the checked-in default

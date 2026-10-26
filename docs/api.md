@@ -446,7 +446,10 @@ fed by its sync script instead. Details: [data-sources.md](data-sources.md).
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/source` | | `{node, mode, source_id, checkpoints: {"<id>": "<fingerprint>"}}` |
+| GET | `/v2/{repository}/source` | | `{node, mode, source_id, kind, script, sync, synced, schedule, runs}` (the admin page's Data source tab) |
+| GET | `/v2/{repository}/source/checkpoints` | | `{node, mode, source_id, checkpoints: {"<id>": "<fingerprint>"}}` |
+| POST | `/v2/{repository}/source/runs` | `{started_at, finished_at, ok, trigger, summary}` | 201 (a sync script's run report) |
+| POST | `/v2/{repository}/source/run` | | `{job_id, schedule}` (202; queued on the ops worker) |
 | PUT | `/v2/{repository}/source/records/{id}` | multipart: `record` (SourceRecord JSON), `owner` (optional account JSON), files as `<revision key>/<name>` parts | `{id, status: "applied"\|"unchanged", fingerprint, bytes}`; 409 in public mode or when the record cannot apply |
 
 ### Plugins (`/v2/{repository}/plugins/{name}/...`)
