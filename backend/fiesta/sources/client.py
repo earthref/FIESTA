@@ -43,9 +43,18 @@ class SourceAPI:
 
     async def state(self) -> dict:
         """{"mode", "source_id", "checkpoints": {"<id>": "<fingerprint>"}}."""
-        response = await self.http.get(f"/{self.node}/source")
+        response = await self.http.get(f"/{self.node}/source/checkpoints")
         _raise_for(response)
         return response.json()
+
+    async def report_run(self, report: dict) -> None:
+        """{started_at, finished_at, ok, trigger, summary}: shown on the admin page."""
+        response = await self.http.post(
+            f"/{self.node}/source/runs",
+            content=json.dumps(report, default=str),
+            headers={"Content-Type": "application/json"},
+        )
+        _raise_for(response)
 
     async def put_record(
         self, record: SourceRecord, files: dict[str, bytes], owner: dict | None = None

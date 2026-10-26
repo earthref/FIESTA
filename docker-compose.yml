@@ -115,6 +115,7 @@ services:
     environment: *backend-env
     volumes:
       - ./config:/config:ro
+      - ./sources:/sources:ro # the data-source scripts the admin page lists
     # FIESTA_REMOTE (docker-compose.remote.yml): never migrate a shared database.
     command: >-
       sh -c "{ [ $${FIESTA_REMOTE:-0} = 1 ] || fiesta init; } &&

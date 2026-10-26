@@ -994,9 +994,23 @@ async def test_source_mode_sync_routes(monkeypatch):
         first = await put(b"tab\tcontribution\nid\n1\n", "legacy")
         assert first.status_code == 200, first.text
         assert first.json()["status"] == "applied"
-        state = (await client.get("/v2/kdd/source")).json()
+        state = (await client.get("/v2/kdd/source/checkpoints")).json()
         assert state["mode"] == "source" and state["source_id"] == "legacy-kdd"
         assert state["checkpoints"][str(cid)] == first.json()["fingerprint"]
+        reported = await client.post(
+            "/v2/kdd/source/runs",
+            json={
+                "started_at": "2026-10-26T00:00:00Z",
+                "finished_at": "2026-10-26T00:01:00Z",
+                "ok": True,
+                "summary": {"applied": 1, "marker": owner},
+            },
+        )
+        assert reported.status_code == 201, reported.text
+        status = (await client.get("/v2/kdd/source")).json()
+        assert status["mode"] == "source" and status["synced"] >= 1
+        assert status["schedule"]["name"] == "kdd-source"
+        assert status["runs"][0]["summary"]["marker"] == owner
         again = await put(b"tab\tcontribution\nid\n1\n", "legacy")
         assert again.json()["status"] == "unchanged"
         changed = await put(b"tab\tcontribution\nid\n2\n", "legacy-2")

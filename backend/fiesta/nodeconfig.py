@@ -249,11 +249,7 @@ class BodiesConfig(BaseModel):
         if value in (None, ""):
             return None
         return next(
-            (
-                self.values[v.strip()]
-                for v in str(value).split(":")
-                if v.strip() in self.values
-            ),
+            (self.values[v.strip()] for v in str(value).split(":") if v.strip() in self.values),
             None,
         )
 
@@ -382,6 +378,24 @@ class DevelopmentConfig(BaseModel):
     seed_manifest: str | None = None
 
 
+class SourceSyncConfig(BaseModel):
+    """When the ops worker runs the node's `sources/<slug>.py` (data-source mode;
+    docs/data-sources.md). Edited on the admin node page's Data source tab."""
+
+    enabled: bool = False
+    cron: str = "20 * * * *"  # UTC
+
+    @field_validator("cron")
+    @classmethod
+    def _cron(cls, value: str) -> str:
+        from croniter import croniter
+
+        value = " ".join(value.split())
+        if not croniter.is_valid(value):
+            raise ValueError(f"invalid cron expression {value!r}")
+        return value
+
+
 class LegacySourceConfig(BaseModel):
     """Where this node's contributions live on the legacy platform.
 
@@ -428,6 +442,8 @@ class LegacySourceConfig(BaseModel):
     # Operator-designated steward account for published records that still have no
     # owner after the maps above (never applied to private contributions).
     default_owner: str | None = None
+    # The scheduled sync of this source into a data-source-mode node.
+    sync: SourceSyncConfig = Field(default_factory=SourceSyncConfig)
 
     @model_validator(mode="after")
     def _check_kind(self) -> "LegacySourceConfig":
@@ -655,8 +671,20 @@ class NodeConfig(BaseModel):
     @property
     def contributions_mode(self) -> str:
         """ "public" (people contribute here) or "source" (synced from its data
-        source) in this deployment: FIESTA_CONTRIBUTIONS_MODE."""
-        return get_settings().contributions_mode_for(self.node.slug)
+        source) in this deployment: FIESTA_CONTRIBUTIONS_MODE, else the
+        deployment file's `api.contributions_mode`, else public."""
+        from fiesta.settings import parse_contributions_mode
+
+        value = get_settings().contributions_mode or get_deployment().contributions_mode
+        default, nodes = parse_contributions_mode(value)
+        return nodes.get(self.node.slug.lower(), default)
+
+    @property
+    def source_script(self) -> Path | None:
+        """This node's data-source sync script, `sources/<slug>.py`, if the
+        checkout has one."""
+        script = get_settings().sources_path / f"{self.node.slug}.py"
+        return script if script.is_file() else None
 
     @property
     def storage_prefix(self) -> str:
@@ -718,6 +746,8 @@ class Deployment(BaseModel):
 
     title: str = "EarthRef FIESTA API"
     nodes: dict[str, NodeConfig]
+    # `api.contributions_mode` (FIESTA_CONTRIBUTIONS_MODE overrides it).
+    contributions_mode: str = "public"
 
     def node_for(self, repository: str) -> NodeConfig:
         """Resolve the `{repository}` path segment: node key or slug, any case."""
@@ -768,7 +798,11 @@ def load_deployment(path: Path | None = None, only: list[str] | None = None) -> 
         if unknown := wanted - known:
             raise ValueError(f"{path}: FIESTA_NODE names unknown node(s) {sorted(unknown)}")
         nodes = {k: n for k, n in nodes.items() if k in wanted or n.node.slug.lower() in wanted}
-    return Deployment(title=api.get("title", "EarthRef FIESTA API"), nodes=nodes)
+    return Deployment(
+        title=api.get("title", "EarthRef FIESTA API"),
+        contributions_mode=api.get("contributions_mode") or "public",
+        nodes=nodes,
+    )
 
 
 _current: Deployment | None = None

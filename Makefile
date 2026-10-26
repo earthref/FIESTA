@@ -113,7 +113,7 @@ $(HOST_DEV): export FIESTA_SMTP_PORT := $(or $(MAILPIT_SMTP_PORT),1025)
 
 .PHONY: backend-dev
 backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :API_PORT, default 8000)
-	cd backend && uv sync && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) \
+	cd backend && uv sync && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) FIESTA_CONTRIBUTIONS_MODE=$(or $(FIESTA_CONTRIBUTIONS_MODE),public) \
 		uv run sh -c "fiesta init && uvicorn fiesta.apps.api:create_app --factory --reload --port $(or $(API_PORT),8000)"
 
 .PHONY: fiesta
@@ -123,7 +123,7 @@ fiesta: ## Run the CLI on the host: make fiesta ARGS="legacy-inventory karar --o
 
 .PHONY: worker-dev
 worker-dev: ## Run the job worker locally (every node in FIESTA_NODE)
-	cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) uv run fiesta worker
+	cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) FIESTA_CONTRIBUTIONS_MODE=$(or $(FIESTA_CONTRIBUTIONS_MODE),public) uv run fiesta worker
 
 .PHONY: frontend-dev
 frontend-dev: ## Run the Vite dev server on :5173 for every node in FIESTA_NODE (/<Key>/; proxies /v2 to localhost:API_PORT)

@@ -791,7 +791,7 @@ async def load_published(session) -> Deployment:
         nodes[node.node.key.lower()] = node
     if wanted := _wanted():
         nodes = {k: n for k, n in nodes.items() if k in wanted or n.node.slug.lower() in wanted}
-    return Deployment(title=base.title, nodes=nodes)
+    return Deployment(title=base.title, contributions_mode=base.contributions_mode, nodes=nodes)
 
 
 async def refresh_deployment(force: bool = False) -> Deployment:

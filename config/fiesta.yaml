@@ -9,6 +9,11 @@ deployment: api
 
 api:
   title: EarthRef FIESTA API
+  # Where contributions come from (docs/data-sources.md). Until the cutover from
+  # Meteor a deployment mirrors each node's data source (`sources/<slug>.py`)
+  # and takes no uploads; `source,karar=public` once KArAr cuts over.
+  # FIESTA_CONTRIBUTIONS_MODE overrides it: local stacks and tests run `public`.
+  contributions_mode: source
   nodes:
     - magic.yaml
     - kdd.yaml
