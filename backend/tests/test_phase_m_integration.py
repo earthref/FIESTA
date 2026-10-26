@@ -922,3 +922,104 @@ async def test_v1_legacy_contract_roundtrip():
 
     await get_opensearch().close()
     await get_engine().dispose()
+
+
+@pytest.mark.asyncio
+async def test_source_mode_sync_routes(monkeypatch):
+    """In data-source mode users cannot create contributions, and a node admin's
+    sync writes records through /v2/{node}/source keeping their IDs: a re-sent
+    record is unchanged, a changed one is a new revision of the same ID, and a
+    missing owner account is created. Public mode refuses the sync."""
+    import hashlib
+
+    from fiesta.apps.api import create_app
+    from fiesta.db.models import Contribution, Revision, User
+    from fiesta.db.session import get_engine, get_sessionmaker
+    from fiesta.search.client import get_opensearch
+    from fiesta.services.seed import require_local
+    from fiesta.settings import get_settings
+
+    require_local()
+    get_opensearch.cache_clear()
+    get_engine.cache_clear()
+    get_sessionmaker.cache_clear()
+    monkeypatch.setattr(get_settings(), "contributions_mode", "public,kdd=source")
+    app = create_app()
+    cid = 9_000_000 + uuid.uuid4().int % 900_000
+    owner = f"source-{uuid.uuid4().hex[:8]}@example.test"
+    name = f"kdd_contribution_{cid}.txt"
+
+    def record(body: bytes, key: str) -> dict:
+        return {
+            "id": cid,
+            "owner_email": owner,
+            "published": True,
+            "created_at": "2020-01-01T00:00:00+00:00",
+            "activated_at": "2020-01-02T00:00:00+00:00",
+            "revisions": [
+                {
+                    "key": key,
+                    "timestamp": "2020-01-02T00:00:00+00:00",
+                    "canonical": name,
+                    "files": {name: {"source": name, "sha256": hashlib.sha256(body).hexdigest()}},
+                }
+            ],
+        }
+
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://local"
+        ) as client,
+    ):
+        login = await client.post(
+            "/v2/auth/login",
+            data={"username": "developer@example.test", "password": "local-fiesta-only"},
+        )
+        client.headers["Authorization"] = "Bearer " + login.json()["access_token"]
+        assert (await client.get("/v2/kdd/config")).json()["contributions_mode"] == "source"
+        refused = await client.post("/v2/kdd/private/contributions")
+        assert refused.status_code == 409 and "earthref.org/KdD" in refused.text
+
+        async def put(body: bytes, key: str) -> httpx.Response:
+            return await client.put(
+                f"/v2/kdd/source/records/{cid}",
+                data={
+                    "record": json.dumps(record(body, key)),
+                    "owner": json.dumps({"email": owner, "name": "Source Owner"}),
+                },
+                files=[(f"{key}/{name}", (name, body))],
+            )
+
+        first = await put(b"tab\tcontribution\nid\n1\n", "legacy")
+        assert first.status_code == 200, first.text
+        assert first.json()["status"] == "applied"
+        state = (await client.get("/v2/kdd/source")).json()
+        assert state["mode"] == "source" and state["source_id"] == "legacy-kdd"
+        assert state["checkpoints"][str(cid)] == first.json()["fingerprint"]
+        again = await put(b"tab\tcontribution\nid\n1\n", "legacy")
+        assert again.json()["status"] == "unchanged"
+        changed = await put(b"tab\tcontribution\nid\n2\n", "legacy-2")
+        assert changed.json()["status"] == "applied", changed.text
+        missing = await client.put(
+            f"/v2/kdd/source/records/{cid}",
+            data={"record": json.dumps(record(b"other", "legacy-3"))},
+        )
+        assert missing.status_code == 409 and "missing" in missing.text
+
+        async with get_sessionmaker("kdd")() as session:
+            contribution = await session.get(Contribution, cid)
+            assert contribution.is_activated
+            user = await session.get(User, contribution.contributor_id)
+            assert user.email == owner and user.password_hash is None
+            revisions = (
+                await session.execute(select(Revision).where(Revision.contribution_id == cid))
+            ).scalars()
+            assert len(list(revisions)) == 2
+
+        monkeypatch.setattr(get_settings(), "contributions_mode", "public")
+        public = await put(b"tab\tcontribution\nid\n3\n", "legacy-4")
+        assert public.status_code == 409 and "public mode" in public.text
+
+    await get_opensearch().close()
+    await get_engine().dispose()

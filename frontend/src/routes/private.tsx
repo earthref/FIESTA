@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ContributionEditor } from "../components/contribution-editor";
 import { ErrorMessage } from "../components/error-message";
 import { useLoginModal } from "../components/login-modal";
+import { SourceModeNotice } from "../components/source-mode-notice";
 import { SummaryGrid } from "../components/summary-grid";
 import { Button } from "../components/ui/button";
 import { Icon } from "../components/ui/icon";
@@ -610,6 +611,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
 export function PrivateWorkspacePage() {
   const { user, isLoading: authLoading } = useAuth();
   const { openLogin } = useLoginModal();
+  const { data: config } = useNodeConfig();
   const [showPreparation, setShowPreparation] = useState(true);
   const [showPublished, setShowPublished] = useState(true);
 
@@ -657,14 +659,17 @@ export function PrivateWorkspacePage() {
 
   return (
     <div>
+      <SourceModeNotice config={config} />
       <div className="mb-5 flex flex-wrap items-center" style={{ gap: "0 1em" }}>
-        <Link
-          to="/upload"
-          className="inline-flex items-center gap-1 rounded-sm bg-node px-3.5 py-2 text-[13px] font-medium text-white hover:bg-node-dark focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-2"
-          style={{ margin: "0 0 0.5em" }}
-        >
-          <Icon name="plus" size="small" /> Upload Data Into Your Private Workspace
-        </Link>
+        {config?.contributions_mode !== "source" && (
+          <Link
+            to="/upload"
+            className="inline-flex items-center gap-1 rounded-sm bg-node px-3.5 py-2 text-[13px] font-medium text-white hover:bg-node-dark focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-2"
+            style={{ margin: "0 0 0.5em" }}
+          >
+            <Icon name="plus" size="small" /> Upload Data Into Your Private Workspace
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => setShowPreparation(!showPreparation)}

@@ -653,6 +653,12 @@ class NodeConfig(BaseModel):
         return self.publish.web or get_settings().environment == "development"
 
     @property
+    def contributions_mode(self) -> str:
+        """ "public" (people contribute here) or "source" (synced from its data
+        source) in this deployment: FIESTA_CONTRIBUTIONS_MODE."""
+        return get_settings().contributions_mode_for(self.node.slug)
+
+    @property
     def storage_prefix(self) -> str:
         """Key prefix inside the bucket: "<slug>/" in a shared bucket, else ""."""
         return f"{self.node.slug}/" if get_settings().s3_bucket else ""
@@ -696,6 +702,9 @@ class NodeConfig(BaseModel):
             "features": self.features.model_dump(),
             "publish": self.publish.model_dump(),
             "web_published": self.serves_web,
+            # "source": contributions are made at the data source (links.website
+            # until the cutover) and synced here; the SPA offers no upload.
+            "contributions_mode": self.contributions_mode,
             "has_method_codes": self.vocabularies.method_codes is not None,
             "doi_prefix": self.doi.prefix,
         }

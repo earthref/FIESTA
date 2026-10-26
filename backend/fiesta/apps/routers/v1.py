@@ -43,7 +43,7 @@ from sqlalchemy import func, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.routing import get_route_path
 
-from fiesta.apps.deps import NodeDep, SessionDep
+from fiesta.apps.deps import NodeDep, SessionDep, source_mode_message
 from fiesta.db.models import Contribution, User
 from fiesta.domain.parse import ParsedContribution, ParseError, export_text, parse_text
 from fiesta.domain.validate import (
@@ -757,6 +757,8 @@ async def private_search(
 async def private_create(session: SessionDep, node: NodeDep, user: LegacyUser):
     if user is None:
         return errors(401, NOT_RECOGNIZED)
+    if message := source_mode_message(node):
+        return errors(409, message)
     contribution = Contribution(
         node=node.node.slug, contributor_id=user.id, data_model_version=node.data_model.latest
     )
@@ -800,6 +802,8 @@ async def _ingest(
         return errors(401, NOT_RECOGNIZED)
     if not files:
         return errors(400, "At least one file is required.")
+    if message := source_mode_message(node):
+        return errors(409, message)
     contribution, accessible = await _owned(session, node, user, contribution_id, write=True)
     if contribution is None:
         return Response(status_code=204)
@@ -874,6 +878,8 @@ async def private_delete(
 ):
     if user is None:
         return errors(401, NOT_RECOGNIZED)
+    if message := source_mode_message(node):
+        return errors(409, message)
     contribution, accessible = await _owned(session, node, user, id, write=True)
     if contribution is None or not accessible:
         return {"rowsDeleted": 0}

@@ -29,3 +29,25 @@ schedules:
     timeout: 2h
     notify: both
     expected_interval: 26h
+
+  # KdD data source: Meteor KdD -> FIESTA KdD through the API's /v2/kdd/source
+  # (docs/data-sources.md). Does nothing while the API serves KdD in public
+  # mode. The env file holds the Meteor read credentials (FIESTA_OPENSEARCH_URL,
+  # FIESTA_S3_*), the API (FIESTA_SOURCE_API) and the KdD node admin it signs in
+  # as (FIESTA_SOURCE_EMAIL / _PASSWORD); never FIESTA_DATABASE_URL. Disabled
+  # until the operator has run it once by hand (OPERATOR_TODO).
+  - name: kdd-source
+    node: kdd
+    description: Sync KdD contributions from Meteor KdD (data-source mode)
+    enabled: false
+    cron: "20 * * * *"
+    command: [.venv/bin/python, ../sources/kdd.py, --state-dir, /var/lib/fiesta-ops/sources/kdd]
+    cwd: /srv/fiesta-ops/FIESTA/backend
+    env_file: /etc/fiesta/source-kdd.env
+    env:
+      FIESTA_CONFIG_FILE: ../config/fiesta.yaml
+      FIESTA_NODE_CONFIG_SOURCE: files
+    timeout: 30m
+    notify: failure
+    expected_interval: 3h
+    summary_keys: [applied, unchanged, quarantined, errors]

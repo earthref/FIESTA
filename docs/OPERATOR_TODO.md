@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-10-22
+Last updated: 2026-10-25
 
 ## A — Decisions
 
@@ -23,7 +23,10 @@ Last updated: 2026-10-22
       `{"owner_names": {"Roger Nielsen": "<that account's email>"}}` in the gitignored
       `migration/kdd/owner_map.json` (`legacy-inventory --owner-map`; owner emails never
       go in checked-in config) so all 264 import; otherwise only the 8 with handles do.
-      Unblocks: KdD import (M5).
+      Since 2026-10-25 the scheduled KdD sync (`sources/kdd.py`) takes the same file as
+      `--owner-map` (on MARFIK3, outside the repo); until then it quarantines those 256
+      on every run (local test 2026-10-25: 264 read, 8 applied, 256 quarantined).
+      Unblocks: KdD import (M5), a complete KdD mirror.
 - [x] **Which CDR is real.** Decided 2026-09-28: import `cdr-3` only (665 contributions,
       bulk-loaded 2025-09-16, what the legacy search page shows). The 58 contributions in
       the `cdr` alias (`cdr-2`, model 1.0, ids overlapping with different content) are left
@@ -427,6 +430,41 @@ are layers on top.
       The earthref org is on GitHub Free (checked 2026-10-22), which as far as
       Claude knows has only the Default runner group and no workflow
       restriction; the pre-job guard covers the same risk until a plan change.
+
+## 2026-10-25 — Contribution modes and the KdD data source
+
+Nodes now run in public-contributions or data-source mode
+([data-sources.md](data-sources.md)). The code defaults to `public`; until the
+Meteor cutover a deployment should mirror its sources instead. The KdD sync
+(`sources/kdd.py`, schedule `kdd-source`, disabled) was tested on a local stack
+reading Meteor KdD. Synced records are parsed and indexed by the node's worker,
+so the "Run `fiesta worker` as a service on fiesta-ct" item above applies here too.
+
+- [ ] **Set `FIESTA_CONTRIBUTIONS_MODE=source`** in the fiesta-ct env file the API
+      and worker units read, then restart the API. dev.earthref.org then mirrors
+      every node and answers uploads and edits with a 409 pointing at the Meteor
+      app (`links.website`); the SPA shows that notice instead of the upload button.
+      When a node cuts over, add an exception: `source,karar=public`.
+- [ ] **Create the KdD sync account on dev**: a dedicated account (e.g. a `sources@`
+      address you control), made a KdD node admin in `/admin` — not a super admin.
+      Its email and password go only in the MARFIK3 env file below.
+- [ ] **`/etc/fiesta/source-kdd.env` on MARFIK3** (root:fiesta, 0640), the
+      `kdd-source` schedule's `env_file`: `FIESTA_SOURCE_API=https://dev.earthref.org`,
+      `FIESTA_SOURCE_EMAIL`, `FIESTA_SOURCE_PASSWORD` (the account above),
+      `FIESTA_OPENSEARCH_URL` with read access to the legacy `kdd` and `er_users`
+      indices, `FIESTA_S3_ACCESS_KEY` / `FIESTA_S3_SECRET_KEY` / `FIESTA_S3_REGION`
+      that can read `kdd-activated-contributions`, and `FIESTA_S3_ENDPOINT=` (empty,
+      AWS). Never `FIESTA_DATABASE_URL`: the script writes only through the API.
+      Create `/var/lib/fiesta-ops/sources/kdd` owned by the ops service user.
+- [ ] **Run it once by hand on MARFIK3**, as the service user from
+      `/srv/fiesta-ops/FIESTA/backend` with that env file loaded:
+      `.venv/bin/python ../sources/kdd.py --state-dir /var/lib/fiesta-ops/sources/kdd --dry-run`,
+      then without `--dry-run`. Expect 8 applied and 256 quarantined until the KdD
+      ownership decision (§A). Then tell Claude, which flips `enabled: true` on
+      `kdd-source` in `config/ops/schedules.yaml` (hourly at :20).
+- [ ] **Check the dev reverse proxy's request body limit** for
+      `PUT /v2/*/source/records/*` (multipart). KdD files are tens of KB; MagIC's
+      reach hundreds of MB when its source sync follows.
 
 ## Done
 

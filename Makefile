@@ -150,12 +150,12 @@ e2e: ## End-to-end workflow test against a running `make up FIESTA_NODE=magic` s
 
 .PHONY: lint
 lint: ## Lint everything (ruff + biome)
-	cd backend && uv run ruff check .
+	cd backend && uv run ruff check . ../sources
 	cd frontend && npx biome check .
 
 .PHONY: fix
 fix: ## Auto-fix lint issues (ruff --fix + biome --write)
-	cd backend && uv run ruff check --fix .
+	cd backend && uv run ruff check --fix . ../sources
 	cd frontend && npx biome check --write .
 
 .PHONY: seed
