@@ -382,11 +382,12 @@ level, MARFIK) and `fiesta-ct` runners are self-hosted. No deploy.yml has a
 workflow files *from the PR*, so a fork PR can add
 `.github/workflows/x.yml` with `on: pull_request` and
 `runs-on: [self-hosted, marfik-deploy]`, and it runs on MARFIK. Today only a
-first-time contributor's PR waits for approval (every repo's fork-PR policy is
-`first_time_contributors`). Do the first item on each runner host; the rest
-are layers on top.
+first-time contributor's PR waits for approval (MagIC, CDR, KArAr and KDD are
+still `first_time_contributors`; FIESTA requires approval for every external
+contributor since 2026-10-26). fiesta-ct has the guard (2026-10-26, see Done);
+MARFIK still needs it, and the rest are layers on top.
 
-- [ ] **Install the pre-job guard on MARFIK (and on fiesta-ct).** It refuses
+- [ ] **Install the pre-job guard on MARFIK** (done on fiesta-ct). It refuses
       every job whose workflow is not on an allowlist of
       `<repo>/.github/workflows/deploy.yml@refs/heads/<branch>` refs; a fork PR's
       ref is `…@refs/pull/<n>/merge`, so it can never match. As root, with
@@ -414,8 +415,8 @@ are layers on top.
       runner" step shows the hook and the deploy proceeds. A refused job fails
       with `runner-job-guard: refusing job: …` in that step. A new deploying
       workflow or branch needs a line here first.
-- [ ] **Require approval for all outside contributors' workflows** on FIESTA,
-      MagIC, CDR, KArAr and KDD (each repo → Settings → Actions → General →
+- [ ] **Require approval for all outside contributors' workflows** on MagIC,
+      CDR, KArAr and KDD (FIESTA done 2026-10-26; each repo → Settings → Actions → General →
       "Approval for running fork pull request workflows from contributors" →
       "Require approval for all external contributors"; or
       `gh api -X PUT repos/earthref/<repo>/actions/permissions/fork-pr-contributor-approval -f approval_policy=all_external_contributors`).
@@ -471,6 +472,17 @@ as a service on fiesta-ct" item above applies here too.
 - [x] **Branch protection and Actions token on FIESTA** (2026-10-22): ruleset
       "Protect main" (PR + 1 approval + `CI` + `check-labels`, admin bypass PR-only),
       default `GITHUB_TOKEN` read-only, workflows cannot approve PRs.
+- [x] **Pre-job guard on fiesta-ct** (2026-10-26): `scripts/runner-job-guard.sh`
+      installed as `/etc/github-runner/job-guard.sh`, allowlist
+      `earthref/FIESTA/.github/workflows/deploy.yml@refs/heads/main`, wired via
+      `ACTIONS_RUNNER_HOOK_JOB_STARTED`; the runner refuses every other workflow.
+- [x] **Fork-PR approval on FIESTA** (2026-10-26): `all_external_contributors`
+      (verified via the API), so every fork PR's CI waits for a maintainer.
+- [x] **Write collaborators on FIESTA** (decided 2026-10-26): njarboe,
+      Swanson-Hysell and osu-argon keep write access; new developers work from
+      forks (CONTRIBUTING.md). `main` is protected by the ruleset above; the
+      runner guard covers workflows they push on other branches.
+
 ## Phase M — live migration and recovery gates
 
 - [ ] Supply and verify each node's full source inventory (public/private buckets,
