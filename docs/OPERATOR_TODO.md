@@ -45,6 +45,30 @@ Last updated: 2026-10-26
       as −180..180 where 1.0 allows 0..360; contribution 88 has no `lat`/`lon`. Decide
       per cause: fill values (a new version of each contribution), relax the rule in the
       model, or leave them flagged. Unblocks: nothing; CDR data quality only.
+- [ ] **CDR: OSU-MGR XRF left out of legacy `cdr-3`.** On 2026-10-28 the public XRF
+      scans of 46 OSU-MGR cores (164,572 rows) were added to `cdr-3`: appended to 28
+      existing contributions and 18 new ones (ids 666–683). Four cores were held back:
+      SLOR1909 1PU/3PU/4PU (cdr-3 #590–592), whose existing MST `mbs_corrected` is in
+      cm (−104..264) while the XRF is in m, and SLM1801/1UW, which has no OSU-MGR
+      section records and so no down-core depth. Decide: convert SLOR1909's MST depths
+      to m, or the XRF to cm, then add them; give 1UW section tops in OSU-MGR. Also, 235
+      more cores (691 files) have XRF under moratorium, to add as each one lifts.
+      Unblocks: complete XRF in CDR.
+- [ ] **CDR: cdr-3 #88 (HE0006/2JC) publishes XRF that OSU-MGR holds under
+      moratorium.** All ten of 2JC's XRF files are in `_moratorium_files` in the
+      `osu-mgr` index, yet cdr-3 shows 14,022 XRF rows publicly. Either the moratorium
+      ended and OSU-MGR was not updated, or CDR is publishing embargoed data. Ask the
+      OSU-MGR curators. Unblocks: CDR going live in FIESTA.
+- [ ] **CDR 1.0 lacks most XRF element columns.** The OSU-MGR scans carry `al`, `si`,
+      `p`, `s`, `v`, `cr`, `ba`, `la`, `ce`, `pr`, `nd` and, on some cruises, `ag`,
+      `as`, `bi`, `cd`, `co`, `mo`, `sb`, `sc`, `se`, `sn`, `th`, `u`, none in
+      `config/cdr/data_models/1.0.json`, so FIESTA's CDR import will flag them. Adding
+      columns is allowed; approve adding them before the cdr-3 import. Unblocks:
+      valid XRF rows in FIESTA CDR.
+- [ ] **Rotate the `fiesta` OpenSearch password.** It is hard-coded in
+      `osu-mgr/osu-mgr-pipeline` (`osu_mgr_to_cdr_pipeline.py`, `OPENSEARCH_HOST`,
+      committed; private repo). Move it to that repo's `.env` (already loaded) and
+      rotate it on MARFIK, then update FIESTA's `.env.prod`. Unblocks: nothing; security.
 - [ ] **MagIC contributions with no owner account.** 40 legacy handles (66 contributions)
       match no `er_users` account — deleted account ids such as `user8928` (11 records) and
       `user10068` (4), plus two records with the literal handle `undefined`. Map them with
