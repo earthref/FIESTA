@@ -8,10 +8,11 @@ S3 at `<bucket>/<id>/<slug>_contribution_<id>.txt`. Accounts live in the shared
 
 This module only reads: it writes `inventory.json` (the `fiesta sync-legacy`
 contract), `owners.json` (handle → verified account fields) and `hashes.json` (a
-cache of object checksums keyed by ETag and size, so a re-run only downloads
-changed objects) to a local directory for review. Ownership is resolved through
-`er_users`, never guessed; contributions whose handle has no account are reported
-and left out of the inventory.
+cache of object checksums keyed by ETag and size, and of table exports keyed by
+the contribution document's sequence number, so a re-run only downloads changed
+objects and re-exports changed documents) to a local directory for review.
+Ownership is resolved through `er_users`, never guessed; contributions whose
+handle has no account are reported and left out of the inventory.
 """
 
 import asyncio
@@ -92,24 +93,34 @@ def export_tables(tables: dict, model: dict, data_model_version: str | None = No
 
 
 async def scan_contributions(client, index: str):
-    """Yield the `summary.contribution` of every contribution document in the index.
+    """Yield `(source, doc_version)` for every contribution document in the index:
+    its `summary.contribution`, and `<primary term>:<seq no>`, which changes on
+    any write to the document (None if the cluster does not say).
 
     Tables are not fetched here (a MagIC contribution can be hundreds of MB);
-    `fetch_tables` loads them per id only when no S3 object exists.
+    `fetch_tables` loads them per id only when no S3 object exists and the
+    document changed since its last export.
     """
-    body = {"query": {"term": {"type": "contribution"}}, "_source": ["summary.contribution"]}
-    async for source in _scroll(client, index, body):
-        yield source
+    body = {
+        "query": {"term": {"type": "contribution"}},
+        "_source": ["summary.contribution"],
+        "seq_no_primary_term": True,
+    }
+    async for hit in _scroll(client, index, body, hits=True):
+        version = None
+        if hit.get("_seq_no") is not None and hit.get("_primary_term") is not None:
+            version = f"{hit['_primary_term']}:{hit['_seq_no']}"
+        yield hit["_source"], version
 
 
-async def _scroll(client, index: str, body: dict):
-    """Yield the `_source` of every document matching `body` in the index."""
+async def _scroll(client, index: str, body: dict, *, hits: bool = False):
+    """Yield the `_source` (HITS: the whole hit) of every document matching `body`."""
     resp = await client.search(index=index, scroll="10m", size=200, body=body, request_timeout=300)
     scroll_id = resp.get("_scroll_id")
     try:
-        while hits := resp["hits"]["hits"]:
-            for hit in hits:
-                yield hit["_source"]
+        while page := resp["hits"]["hits"]:
+            for hit in page:
+                yield hit if hits else hit["_source"]
             if not scroll_id:
                 return
             resp = await client.scroll(scroll_id=scroll_id, scroll="10m", request_timeout=300)
@@ -228,10 +239,9 @@ class HashCache:
             self.dirty = 0
 
 
-async def _head(bucket: str, key: str) -> tuple[str, int] | None:
+async def _head(s3, bucket: str, key: str) -> tuple[str, int] | None:
     try:
-        async with Storage(bucket).client() as s3:
-            head = await s3.head_object(Bucket=bucket, Key=key)
+        head = await s3.head_object(Bucket=bucket, Key=key)
     except ClientError as exc:
         if exc.response.get("Error", {}).get("Code") in _MISSING:
             return None
@@ -239,13 +249,12 @@ async def _head(bucket: str, key: str) -> tuple[str, int] | None:
     return head.get("ETag", "").strip('"'), int(head.get("ContentLength", 0))
 
 
-async def _hash_object(bucket: str, key: str) -> str:
+async def _hash_object(s3, bucket: str, key: str) -> str:
     """sha256 of an object streamed in chunks (never the whole body in memory)."""
     h = hashlib.sha256()
-    async with Storage(bucket).client() as s3:
-        obj = await s3.get_object(Bucket=bucket, Key=key)
-        async for chunk in obj["Body"].iter_chunks(8 * 1024 * 1024):
-            h.update(chunk)
+    obj = await s3.get_object(Bucket=bucket, Key=key)
+    async for chunk in obj["Body"].iter_chunks(8 * 1024 * 1024):
+        h.update(chunk)
     return h.hexdigest()
 
 
@@ -292,6 +301,7 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
         "from_s3": 0,
         "from_index": 0,
         "cached_hashes": 0,
+        "cached_exports": 0,
         "orphaned_previous": 0,
         "owners": 0,
         "errors": [],
@@ -299,9 +309,10 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
     owners: dict[str, dict] = {}
     unresolved: set[str] = set()
     summaries: dict[int, dict] = {}
+    doc_versions: dict[int, str | None] = {}
 
     # 1. Scan summaries (small) and resolve owners once per handle.
-    async for doc in scan_contributions(client, cfg.index):
+    async for doc, doc_version in scan_contributions(client, cfg.index):
         summary = (doc.get("summary") or {}).get("contribution") or {}
         try:
             cid = int(summary["id"])
@@ -310,6 +321,7 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
             continue
         report["contributions"] += 1
         summaries[cid] = summary
+        doc_versions[cid] = doc_version
         handle = _handle_for(cfg, cid, summary)
         if handle and handle not in owners and handle not in unresolved:
             if handle.startswith("override:"):
@@ -322,17 +334,19 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
             else:
                 unresolved.add(handle)
 
-    # 2. Files: checksum the S3 object (cached by ETag+size) or export the tables.
+    # 2. Files: checksum the S3 object (cached by ETag+size) or export the tables
+    #    (cached by the document's version and the export's data model).
     semaphore = asyncio.Semaphore(concurrency)
     lock = asyncio.Lock()
+    export_model = cfg.data_model_version or node.data_model.latest
 
-    async def resolve_file(cid: int) -> dict | Exception:
+    async def resolve_file(cid: int, s3: dict) -> dict | Exception:
         canonical = cfg.canonical.format(slug=node.node.slug, id=cid)
         key = f"{cid}/{canonical}"
         async with semaphore:
             try:
                 for bucket in cfg.buckets:
-                    head = await _head(bucket, key)
+                    head = await _head(s3[bucket], bucket, key)
                     if head is None:
                         continue
                     etag, size = head
@@ -343,7 +357,7 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
                         async with lock:
                             report["cached_hashes"] += 1
                     else:
-                        sha = await _hash_object(bucket, key)
+                        sha = await _hash_object(s3[bucket], bucket, key)
                         async with lock:
                             cache.put(bucket, key, etag, size, sha)
                     return {
@@ -351,16 +365,31 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
                         "entry": {"source": key, "bucket": bucket, "sha256": sha},
                         "origin": "from_s3",
                     }
+                local = out_dir / "files" / str(cid) / canonical
+                source = f"files/{cid}/{canonical}"
+                export_key = f"index:{cfg.index}"
+                stamp = f"{doc_versions[cid]}|{export_model}"
+                sha = cache.get(export_key, source, stamp, 0) if doc_versions[cid] else None
+                if sha and local.is_file() and digest(local.read_bytes()) == sha:
+                    async with lock:
+                        report["cached_exports"] += 1
+                    return {
+                        "canonical": canonical,
+                        "entry": {"source": source, "sha256": sha},
+                        "origin": "from_index",
+                    }
                 tables = await fetch_tables(client, cfg.index, cid) or {}
                 if not isinstance(tables, dict) or not tables:
                     raise ValueError("no S3 object and no indexed tables")
                 text = export_tables(tables, model, cfg.data_model_version).encode()
-                local = out_dir / "files" / str(cid) / canonical
                 local.parent.mkdir(parents=True, exist_ok=True)
                 local.write_bytes(text)
+                if doc_versions[cid]:
+                    async with lock:
+                        cache.put(export_key, source, stamp, 0, digest(text))
                 return {
                     "canonical": canonical,
-                    "entry": {"source": f"files/{cid}/{canonical}", "sha256": digest(text)},
+                    "entry": {"source": source, "sha256": digest(text)},
                     "origin": "from_index",
                 }
             except Exception as exc:  # noqa: BLE001 — reported per contribution
@@ -369,9 +398,9 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
     ids = sorted(summaries)
     done = 0
 
-    async def tracked(cid: int):
+    async def tracked(cid: int, s3: dict):
         nonlocal done
-        result = await resolve_file(cid)
+        result = await resolve_file(cid, s3)
         done += 1
         if done % 250 == 0 or done == len(ids):
             print(
@@ -379,7 +408,12 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
             )
         return result
 
-    resolved = dict(zip(ids, await asyncio.gather(*(tracked(cid) for cid in ids)), strict=True))
+    # One client (and connection pool) per bucket for the whole run: a client
+    # per request costs a TLS handshake each, which dominated an unchanged run.
+    async with contextlib.AsyncExitStack() as stack:
+        s3 = {b: await stack.enter_async_context(Storage(b).client()) for b in cfg.buckets}
+        results = await asyncio.gather(*(tracked(cid, s3) for cid in ids))
+    resolved = dict(zip(ids, results, strict=True))
     cache.save()
 
     # 3. Assemble records.
