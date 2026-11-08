@@ -42,9 +42,15 @@ export function rangesFor(ranges: string[], filters: SearchFilter[]): string[] {
   return ranges.filter((entry) => fields.has(parseRange(entry).field));
 }
 
+/**
+ * Legacy `ui small labeled input`: white inputs joined to gray Semantic
+ * labels ("to", the unit), outer corners rounded, inner ones square.
+ */
 const rangeInputClass =
-  "w-20 min-w-0 rounded-sm border border-gray-300 px-1.5 py-1 text-[12px] " +
-  "placeholder:text-[#AAAAAA] focus:border-node focus:outline-hidden";
+  "min-w-[20px] flex-1 basis-0 border border-[rgba(34,36,38,0.15)] bg-white px-[0.75em] py-[0.45em] " +
+  "text-[12px] text-[rgba(0,0,0,0.87)] placeholder:text-[#AAAAAA] focus:border-[#85B7D9] focus:outline-hidden";
+const rangeLabelClass =
+  "flex shrink-0 items-center bg-[#E8E8E8] px-[0.833em] text-[12px] font-bold text-[rgba(0,0,0,0.6)]";
 
 /** Legacy `styles.filter`: each block padded, 1px #D4D4D5 divider. */
 const blockStyle = { padding: "0.25em 1em 0.5em", borderBottom: "1px solid #D4D4D5" };
@@ -76,7 +82,7 @@ export function RangeFilter({
   return (
     <div style={blockStyle}>
       <div className="mb-1 text-[13px] font-bold">{label}</div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-stretch">
         <label className="sr-only" htmlFor={`range-${field}-gte`}>
           {label} minimum
         </label>
@@ -88,9 +94,9 @@ export function RangeFilter({
           max={filter.max ?? undefined}
           value={current.gte}
           onChange={(event) => update(event.target.value, current.lte)}
-          className={rangeInputClass}
+          className={`${rangeInputClass} rounded-l-[0.2857rem]`}
         />
-        <span className="text-[12px] text-gray-500">to</span>
+        <span className={rangeLabelClass}>to</span>
         <label className="sr-only" htmlFor={`range-${field}-lte`}>
           {label} maximum
         </label>
@@ -102,9 +108,11 @@ export function RangeFilter({
           max={filter.max ?? undefined}
           value={current.lte}
           onChange={(event) => update(current.gte, event.target.value)}
-          className={rangeInputClass}
+          className={`${rangeInputClass} ${filter.unit ? "" : "rounded-r-[0.2857rem]"}`}
         />
-        {filter.unit && <span className="text-[12px] text-gray-500">{filter.unit}</span>}
+        {filter.unit && (
+          <span className={`${rangeLabelClass} rounded-r-[0.2857rem]`}>{filter.unit}</span>
+        )}
       </div>
     </div>
   );
@@ -146,7 +154,7 @@ export function BboxFilter({
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className={rangeInputClass}
+        className={`${rangeInputClass} rounded-[0.2857rem]`}
       />
     </label>
   );
