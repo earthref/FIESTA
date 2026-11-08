@@ -63,12 +63,15 @@ source's read credentials and a node admin account, never FIESTA's database.
 The shared parts are in `backend/fiesta/sources/`: `client.SourceAPI` (the API
 above) and `meteor` (a legacy Meteor node: its OpenSearch index and S3 archive
 bucket, read with the `fiesta legacy-inventory` reader into a state directory
-whose hash cache keeps unchanged S3 objects from being downloaded again).
+whose hash cache keeps unchanged S3 objects from being downloaded again, and
+contributions with no S3 object, exported from their indexed tables, from being
+fetched and exported again while their document's `_seq_no` is unchanged).
 A node-specific fix-up of the source records belongs in the node's script.
 
 | Script | Source | Status |
 |---|---|---|
 | `sources/kdd.py` | Meteor KdD: index `kdd`, bucket `kdd-activated-contributions` | first; schedule `kdd-source`, off until `legacy.sync.enabled` |
+| `sources/magic.py` | Meteor MagIC: index `magic`, buckets `magic-activated-contributions`, `magic-contributions`, `magic-private-contributions` | schedule `magic-source`, on, hourly at :40; continues from the `legacy-magic` bulk import |
 
 Run one by hand from the repository root (`make fiesta` runs it in `backend/`
 with that env file's legacy read credentials):

@@ -189,3 +189,22 @@ sources:
     assert schedule.command[-2:] == ["--owner-map", str(owners)]
     assert schedule.expected_interval > 3600
     assert kdd_node.legacy.sync.enabled is False  # the checked-in default
+
+
+def test_checked_in_source_scripts_are_scheduled(monkeypatch):
+    """Every `sources/<slug>.py` is a served node with a Meteor `legacy:` block,
+    so the ops worker gives it a schedule; MagIC's is on, hourly."""
+    from fiesta.ops.config import parse_ops_config
+
+    sources = CONFIG_DIR.parent / "sources"
+    monkeypatch.setattr(get_settings(), "sources_dir", sources)
+    scripts = sorted(p.stem for p in sources.glob("*.py"))
+    assert {"kdd", "magic"} <= set(scripts)
+    nodes = [load_deployment(CONFIG_DIR / "fiesta.yaml").node_for(s) for s in scripts]
+    assert all(n.legacy is not None and n.legacy.kind == "meteor" for n in nodes)
+    config = parse_ops_config("fiesta-ops: 1\n").with_sources(nodes)
+    schedules = {s.name: s for s in config.schedules}
+    assert set(schedules) == {f"{s}-source" for s in scripts}
+    magic = schedules["magic-source"]
+    assert magic.enabled and magic.cron == "40 * * * *"
+    assert magic.command[1] == str(sources / "magic.py")

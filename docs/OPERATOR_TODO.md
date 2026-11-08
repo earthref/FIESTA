@@ -491,6 +491,39 @@ as a service on fiesta-ct" item above applies here too.
       `PUT /v2/*/source/records/*` (multipart). KdD files are tens of KB; MagIC's
       reach hundreds of MB when its source sync follows.
 
+## 2026-11-07 — MagIC data source, hourly
+
+`sources/magic.py` keeps dev MagIC in step with Meteor MagIC. Its schedule
+`magic-source` is already on in git (`legacy.sync`: `enabled: true`, `40 * * * *`),
+so it starts with the MARFIK3 ops worker (§2026-10-01) as soon as the env file
+below exists; untick "Sync on a schedule" on `/MagIC/admin/nodes/magic?section=source`
+to pause it. Synced records still need the fiesta-ct worker (§2026-09-28), or
+dev must be drained by hand. A read-only comparison on 2026-11-07 found 7,614 of
+the 7,658 bulk-imported records unchanged, 40 new contributions and 35 changed,
+so the first run sends about 75 records.
+
+- [ ] **Make the sync account a MagIC node admin** on dev (the KdD sync account
+      above can be reused; node admin, not super admin).
+- [ ] **`/etc/fiesta/source-magic.env` on MARFIK3** (root:fiesta, 0640): the same
+      variables as `source-kdd.env`, with OpenSearch read on `magic` and `er_users`
+      and S3 read on `magic-activated-contributions`, `magic-contributions` and
+      `magic-private-contributions`. Create `/var/lib/fiesta-ops/sources/magic`
+      owned by the ops service user. Optional: copy this machine's
+      `.claude/worktrees/karar-legacy-sync/migration/magic/hashes.json` into it,
+      or the first run downloads ~2.5 GB from S3 just to hash it.
+- [ ] **Run it once by hand on MARFIK3** (as for KdD):
+      `.venv/bin/python ../sources/magic.py --state-dir /var/lib/fiesta-ops/sources/magic --dry-run`,
+      then without `--dry-run`. Expect about 75 `planned`, then `applied`, and
+      `missing_from_source: 9`. Then check `fiesta verify-index` for MagIC once
+      the outbox has drained.
+- [ ] **Decide what an `er_users` email change means** (§A). 30 MagIC
+      contributions changed owner email in `er_users` since September (17 from
+      one fsu.edu address to tufts.edu, 11 from a ucsd.edu address to an
+      unrelated gmail.com one, 2 others). The importer matches owners by
+      email, so the sync moves them to an account for the new address (created
+      without a password if missing) and leaves the old FIESTA account as it is.
+      Either accept that or merge the accounts before the first run.
+
 ## Done
 
 - [x] **Branch protection and Actions token on FIESTA** (2026-10-22): ruleset
