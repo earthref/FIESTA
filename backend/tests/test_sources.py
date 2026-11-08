@@ -197,6 +197,8 @@ def test_checked_in_source_scripts_are_scheduled(monkeypatch):
     from fiesta.ops.config import parse_ops_config
 
     sources = CONFIG_DIR.parent / "sources"
+    if not sources.is_dir():  # the Phase M image carries config/ but not sources/
+        pytest.skip("no sources/ in this checkout")
     monkeypatch.setattr(get_settings(), "sources_dir", sources)
     scripts = sorted(p.stem for p in sources.glob("*.py"))
     assert {"kdd", "magic"} <= set(scripts)
