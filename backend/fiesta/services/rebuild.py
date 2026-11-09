@@ -99,6 +99,7 @@ async def verify_index(session, node, *, fix=False):
             index=index,
             query={"query": {"term": {"type": "contribution"}}},
             _source=["summary.contribution.id"],
+            clear_scroll=False,  # the restricted role may not clear scrolls; it expires
         )
     }
     live = {
