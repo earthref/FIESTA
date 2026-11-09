@@ -1,4 +1,4 @@
-import { keepPreviousData, useInfiniteQuery, useQueries } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import {
   type CSSProperties,
@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { ColumnFilterMenu } from "../components/column-filter-menu";
 import { ContributionModal } from "../components/contribution-modal";
 import { ErrorMessage } from "../components/error-message";
 import { type Area, areaToBbox, parseArea } from "../components/map/map-points";
@@ -19,12 +20,14 @@ import { RowsTable } from "../components/rows-table";
 import {
   applicableFilters,
   BboxFilter,
+  FacetSection,
   filterLabel,
   GeospatialFilter,
   RangeFilter,
   rangesFor,
 } from "../components/search-filters";
 import {
+  ColumnTextFilter,
   formatGridFilters,
   type GridSort,
   parseGridFilters,
@@ -41,20 +44,12 @@ import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
 import type {
   FacetBucket,
+  GridColumn,
   SearchFilter,
   SearchLevel,
   SearchPage as SearchPageData,
 } from "../lib/types";
-import {
-  abbreviateNumber,
-  cx,
-  facetTitle,
-  formatNumber,
-  getQueryToken,
-  parseQueryTokens,
-  titleCase,
-  toggleQueryToken,
-} from "../lib/utils";
+import { cx, formatNumber, getQueryToken, parseQueryTokens, toggleQueryToken } from "../lib/utils";
 import { type PluginSubTabContext, pluginFiltersPanel, pluginSubTabs } from "../plugins";
 
 const PAGE_SIZE = 10;
@@ -178,200 +173,57 @@ function searchRequestParams(
   };
 }
 
-// --- Facet accordion section (legacy SearchFiltersBuckets) -----------------------
+// --- Summary grid column menus ---------------------------------------------------
 
-function FilterRow({
-  bucket,
-  active,
-  highlight,
-  onToggle,
-}: {
-  bucket: FacetBucket;
-  active: boolean;
-  highlight?: string;
-  onToggle: () => void;
-}) {
-  const label = bucket.key;
-  const at = highlight ? label.toLowerCase().indexOf(highlight.toLowerCase()) : -1;
-  return (
-    <label className="flex cursor-pointer" style={{ marginBottom: "0.25em" }}>
-      <span className="flex shrink-0 items-start" style={{ minWidth: 22, maxWidth: 22 }}>
-        <input
-          type="checkbox"
-          checked={active}
-          onChange={onToggle}
-          className="mt-[1px] h-[17px] w-[17px] cursor-pointer rounded-sm border-gray-300 accent-node"
-        />
-      </span>
-      <span
-        className={cx("min-w-0 grow whitespace-normal break-words", active && "font-bold")}
-        style={{ marginRight: "0.5em" }}
-      >
-        {at >= 0 && highlight ? (
-          <>
-            {label.slice(0, at)}
-            <mark className="bg-yellow-200">{label.slice(at, at + highlight.length)}</mark>
-            {label.slice(at + highlight.length)}
-          </>
-        ) : (
-          label
-        )}
-      </span>
-      <span
-        className="inline-block shrink-0 self-start rounded-full border bg-white text-center font-bold"
-        style={{
-          borderColor: SEGMENT_BORDER,
-          color: "rgba(0,0,0,.87)",
-          fontSize: 11,
-          lineHeight: "0.7em",
-          padding: "0.5em",
-          minWidth: "2em",
-          minHeight: "2em",
-        }}
-      >
-        {abbreviateNumber(bucket.doc_count)}
-      </span>
-    </label>
-  );
-}
-
-function FacetSection({
-  facet,
-  label,
-  buckets,
-  loading,
+/**
+ * A grid column's facet lists: the sidebar's FacetSection, counted for the
+ * search as it stands (`facet=<column>`, fetched once the menu opens).
+ */
+function ColumnFacets({
+  table,
+  facets,
+  labels,
+  params,
   q,
   onToggle,
 }: {
-  facet: string;
-  label?: string;
-  buckets: FacetBucket[];
-  loading: boolean;
+  table: string;
+  facets: string[];
+  labels: Record<string, string>;
+  params: ReturnType<typeof searchRequestParams>;
   q: string;
   onToggle: (facet: string, value: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [find, setFind] = useState("");
-  const title = label ?? facetTitle(facet);
-  const itemsName = titleCase(facet);
-
-  // Active values may come from another level and no longer be in the
-  // buckets: the legacy component prepends them with a zero count.
-  const activeKeys = parseQueryTokens(q)
-    .tokens.filter(([field]) => field === facet)
-    .map(([, value]) => value);
-  const activeSet = new Set(activeKeys);
-  const active = activeKeys.map(
-    (key) => buckets.find((bucket) => bucket.key === key) ?? { key, doc_count: 0 },
-  );
-  const needle = find.trim().toLowerCase();
-  const matched = needle
-    ? buckets.filter(
-        (bucket) => !activeSet.has(bucket.key) && bucket.key.toLowerCase().includes(needle),
-      )
-    : [];
-  const matchedSet = new Set(matched.map((bucket) => bucket.key));
-  const inactive = buckets.filter(
-    (bucket) => !activeSet.has(bucket.key) && !matchedSet.has(bucket.key),
-  );
-
+  const counts = useQuery({
+    queryKey: ["search-column-facets", table, facets, params],
+    queryFn: () =>
+      api<SearchPageData>(`/search/${table}`, { params: { ...params, facet: facets } }),
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  });
   return (
-    <div
-      className="text-[13px]"
-      style={{
-        padding: "0.25em 1em 0.5em",
-        borderBottom: "1px solid #D4D4D5",
-        color: "rgba(0,0,0,.87)",
-      }}
-    >
-      {/* Title: caret + bold name, then the active filters (always visible) */}
-      <div style={{ padding: "0.5em 0 0", lineHeight: "1.4285em" }}>
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          className="flex w-full cursor-pointer items-center text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
-          style={{ marginBottom: "0.25em" }}
-        >
-          <span
-            aria-hidden="true"
-            className="inline-flex shrink-0 items-center justify-center"
-            style={{ width: "1.25em", height: "1.25em", marginRight: "0.25rem" }}
-          >
-            <Icon
-              name="caret-right"
-              className={cx("transition-transform", open && "rotate-90")}
-              style={{ width: "1.15em", height: "1.15em" }}
-            />
-          </span>
-          <span className="grow whitespace-normal font-bold" style={{ marginRight: "0.5em" }}>
-            {title}
-          </span>
-        </button>
-        {active.map((bucket) => (
-          <FilterRow
-            key={bucket.key}
-            bucket={bucket}
-            active
-            onToggle={() => onToggle(facet, bucket.key)}
-          />
-        ))}
-      </div>
-      {open && (
-        <div style={{ paddingTop: 0 }}>
-          <input
-            type="text"
-            value={find}
-            onChange={(event) => setFind(event.target.value)}
-            placeholder={`Find ${itemsName}`}
-            aria-label={`Find ${itemsName}`}
-            className="w-full rounded-sm border border-gray-300 bg-white px-[0.8em] py-[0.5em] text-[13px] placeholder:text-[#AAAAAA] focus:border-node focus:outline-hidden"
-            style={{ marginBottom: "0.25em" }}
-          />
-          {needle && matched.length === 0 && (
-            <div className="text-center">
-              <b>No Matches</b>
-            </div>
-          )}
-          {matched.map((bucket) => (
-            <FilterRow
-              key={bucket.key}
-              bucket={bucket}
-              active={false}
-              highlight={find.trim()}
-              onToggle={() => onToggle(facet, bucket.key)}
-            />
-          ))}
-          <hr
-            style={{
-              margin: "1em 0",
-              border: 0,
-              borderTop: `1px solid ${SEGMENT_BORDER}`,
-              borderBottom: "1px solid rgba(255,255,255,.1)",
-            }}
-          />
-          {loading && (
-            <div className="text-center">
-              <Spinner /> Loading ...
-            </div>
-          )}
-          {!loading && inactive.length === 0 && (
-            <div className="text-center">
-              <b>No {itemsName}</b>
-            </div>
-          )}
-          {inactive.map((bucket) => (
-            <FilterRow
-              key={bucket.key}
-              bucket={bucket}
-              active={false}
-              onToggle={() => onToggle(facet, bucket.key)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    <>
+      {facets.map((facet) => (
+        <FacetSection
+          key={facet}
+          facet={facet}
+          label={labels[facet]}
+          buckets={counts.data?.aggregations?.[facet] ?? []}
+          loading={counts.isPending}
+          q={q}
+          onToggle={onToggle}
+          defaultOpen={facets.length === 1}
+        />
+      ))}
+    </>
   );
+}
+
+/** The search box's string without the given fields' tokens. */
+function queryWithout(q: string, fields: string[]): string {
+  const { tokens, freeText } = parseQueryTokens(q);
+  const kept = tokens.filter(([field]) => !fields.includes(field));
+  return [freeText, ...kept.map(([f, v]) => `${f}:"${v}"`)].filter(Boolean).join(" ");
 }
 
 // --- Rows view ----------------------------------------------------------------
@@ -576,8 +428,11 @@ export function SearchPage() {
   const facetFields = filters.filter((f) => f.type === "facet").map((f) => f.field ?? "");
   const activeRanges = rangesFor(ranges, filters);
   const activeBbox = filters.some((f) => f.type === "bbox") ? bbox : undefined;
+  // The grid columns' facet lists filter through the same tokens.
+  const columnFacetFields = (level?.columns ?? []).flatMap((column) => column.facets);
+  const clearedFacets = [...facetFields, ...columnFacetFields];
   const hasFacetFilters =
-    parseQueryTokens(q).tokens.filter(([field]) => facetFields.includes(field)).length > 0;
+    parseQueryTokens(q).tokens.filter(([field]) => clearedFacets.includes(field)).length > 0;
   // A plugin view renders from its own fetch; keep its ranges out of the level query.
   const queryRanges = activeTab?.render ? undefined : activeRanges;
   const queryBbox = activeTab?.render ? undefined : (areaBbox(level) ?? activeBbox);
@@ -673,13 +528,12 @@ export function SearchPage() {
     return () => observer.disconnect();
   }, [autoLoad, hasNextPage, isFetchingNextPage, fetchNextPage, hits.length]);
 
-  // Clear every visible control: facet tokens, ranges and the bbox it shows.
+  // Clear every visible control: facet tokens (the sidebar's and the grid
+  // columns'), ranges and the bbox it shows.
   const clearFilters = () => {
-    const { tokens, freeText } = parseQueryTokens(q);
-    const kept = tokens.filter(([field]) => !facetFields.includes(field));
     const keptRanges = ranges.filter((entry) => !activeRanges.includes(entry));
     setSearch({
-      q: [freeText, ...kept.map(([f, v]) => `${f}:"${v}"`)].filter(Boolean).join(" "),
+      q: queryWithout(q, clearedFacets),
       ranges: keptRanges,
       filter: [],
       bbox: activeBbox ? undefined : bbox,
@@ -729,6 +583,69 @@ export function SearchPage() {
     setSearch({ sort: next ? `${next.key}:${next.order}` : undefined });
   const onGridFilter = (key: string, text: string) =>
     setSearch({ filter: formatGridFilters({ ...gridFilters, [key]: text }) });
+
+  // A column header's filter icon: its facet lists (the sidebar's, sharing
+  // its tokens and labels), else a text box, and on the map tile the area.
+  const facetLabels = Object.fromEntries(
+    (config.filters ?? [])
+      .filter((f) => f.type === "facet" && f.field && f.label)
+      .map((f) => [f.field ?? "", f.label ?? ""]),
+  );
+  const columnFacetParams = searchRequestParams(
+    q,
+    1,
+    0,
+    true,
+    queryRanges,
+    queryBbox,
+    undefined,
+    gridFilterList,
+  );
+  const queryTokens = parseQueryTokens(q).tokens;
+  const columnFilterMenu = (column: GridColumn) => {
+    const geospatial = column.geospatial && !!level.geo;
+    if (column.facets.length === 0 && !column.filterable && !geospatial) return null;
+    const text = column.filterable ? (gridFilters[column.key] ?? "") : "";
+    const active =
+      queryTokens.filter(([field]) => column.facets.includes(field)).length +
+      (text.trim() ? 1 : 0) +
+      (geospatial && area ? 1 : 0);
+    const clear = () =>
+      setSearch({
+        q: queryWithout(q, column.facets),
+        filter: formatGridFilters({ ...gridFilters, [column.key]: "" }),
+        ...(geospatial ? { area: undefined } : {}),
+      });
+    return (
+      <ColumnFilterMenu label={column.label} active={active} onClear={clear}>
+        {column.facets.length > 0 && (
+          <ColumnFacets
+            table={level.table}
+            facets={column.facets}
+            labels={facetLabels}
+            params={columnFacetParams}
+            q={q}
+            onToggle={(name, value) => setSearch({ q: toggleQueryToken(q, name, value) })}
+          />
+        )}
+        {column.filterable && (
+          <ColumnTextFilter
+            column={column}
+            value={text}
+            onChange={(next) => onGridFilter(column.key, next)}
+          />
+        )}
+        {geospatial && (
+          <GeospatialFilter
+            area={area}
+            onRequest={requestArea}
+            onShow={showArea}
+            onRemove={() => setArea(null)}
+          />
+        )}
+      </ColumnFilterMenu>
+    );
+  };
 
   return (
     <div className="magic-search">
@@ -1101,8 +1018,7 @@ export function SearchPage() {
                           privateKey={privateKey}
                           sort={gridSort}
                           onSort={onGridSort}
-                          filters={gridFilters}
-                          onFilter={onGridFilter}
+                          filterMenu={columnFilterMenu}
                           footer={isFetchingNextPage && <LoadingItem divider={false} />}
                         />
                       </div>

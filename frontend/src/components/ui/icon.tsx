@@ -53,6 +53,7 @@ const PATHS = {
   "chart-line":
     "M3 3h2v16h16v2H3V3Zm16.3 4.7-5.3 5.3-3-3-4.3 4.3-1.4-1.4 5.7-5.7 3 3 3.9-3.9 1.4 1.4Z",
   sidebar: "M3 5h18v2H3V5Zm0 6h18v2H3v-2Zm0 6h18v2H3v-2Z",
+  filter: "M3 4h18l-7 8.2V19l-4 2v-8.8L3 4Z",
 } as const;
 
 export type IconName = keyof typeof PATHS;

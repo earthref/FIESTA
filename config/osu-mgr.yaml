@@ -41,12 +41,12 @@ search:
       count_field: summary.cruises._n_results
       columns:
         - { cell: title, column: cruise, subtitle_column: place }
-        - { column: cruise_name, label: Cruise Name, width: 220 }
+        - { column: cruise_name, label: Cruise Name, width: 220, facets: [] }
         - { column: rv_name, label: Research Vessel, width: 160 }
         - { column: pi, label: PI, width: 150 }
         - { column: pi_institution, label: Institution, width: 180 }
         - { column: collection, label: Collection, width: 150 }
-        - { column: accession_date, label: Accessioned, width: 110 }
+        - { column: accession_date, label: Accessioned, width: 110, facets: [] }
         - { cell: citation }
         - { cell: contributed }
     - name: Cores
@@ -60,7 +60,7 @@ search:
         - { column: lat, label: Latitude, width: 100 }
         - { column: lon, label: Longitude, width: 100 }
         - { column: water_depth, label: Water Depth, width: 110 }
-        - { column: start_date, label: Collected, width: 110 }
+        - { column: start_date, label: Collected, width: 110, facets: [] }
         - { column: area, label: Area, width: 160 }
         - { cell: citation }
         - { cell: contributed }
@@ -73,8 +73,8 @@ search:
         - { column: depth_top, label: Depth Top (cm), width: 120 }
         - { column: depth_bottom, label: Depth Bottom (cm), width: 140 }
         - { column: length, label: Length (cm), width: 110 }
-        - { column: igsn, label: IGSN, width: 180 }
-        - { column: storage_location, label: Storage, width: 180 }
+        - { column: igsn, label: IGSN, width: 180, facets: [] }
+        - { column: storage_location, label: Storage, width: 180, facets: [] }
         - { cell: citation }
         - { cell: contributed }
     - name: Dives
@@ -88,7 +88,7 @@ search:
         - { column: lat, label: Latitude, width: 100 }
         - { column: lon, label: Longitude, width: 100 }
         - { column: water_depth, label: Water Depth, width: 110 }
-        - { column: start_date, label: Collected, width: 110 }
+        - { column: start_date, label: Collected, width: 110, facets: [] }
         - { column: area, label: Area, width: 160 }
         - { cell: citation }
         - { cell: contributed }
@@ -100,9 +100,9 @@ search:
         - { column: texture, label: Principal Texture, width: 200 }
         - { column: material, label: Material, width: 110 }
         - { column: weight, label: Weight (kg), width: 110 }
-        - { column: igsn, label: IGSN, width: 180 }
+        - { column: igsn, label: IGSN, width: 180, facets: [] }
         - { column: sesar_resource_type, label: SESAR Type, width: 150 }
-        - { column: storage_location, label: Storage, width: 180 }
+        - { column: storage_location, label: Storage, width: 180, facets: [] }
         - { cell: citation }
         - { cell: contributed }
     - name: Files
@@ -111,7 +111,7 @@ search:
       columns:
         - { cell: title, column: file, subtitle_column: description }
         - { column: file_type, label: File Type, width: 170 }
-        - { column: osu_id, label: OSU-ID, width: 200 }
+        - { column: osu_id, label: OSU-ID, width: 200, facets: [] }
         - { column: media_type, label: Media Type, width: 160 }
         - { column: size_bytes, label: File Size, width: 110, format: bytes }
         - { column: moratorium, label: Moratorium, width: 110 }

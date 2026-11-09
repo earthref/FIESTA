@@ -213,7 +213,7 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet or a facet of the level's grid columns, else 422), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
@@ -334,7 +334,7 @@ grid (below): its header's sort, newest first on ties.
 
 **Summary grid.** Each search level in `GET /config` carries `columns`, its
 Summaries grid in order: `{key, cell, label, width, column?, subtitle_column?,
-format?, sortable, filterable}`. `cell` names the tile (`record` — citation, then
+format?, sortable, filterable, facets, geospatial}`. `cell` names the tile (`record` — citation, then
 title or the record's name, then date and contributor, one column filtered on
 all of them; the default first column —, `citation`, `name`,
 `contributed`, `download`, `links`, `counts`, `map`, `plot`, `geo`, `geology`,
@@ -347,7 +347,16 @@ column sorts on a `.raw` keyword (numbers — data-model `Number` columns, age,
 intensity — by a script that parses the string values; timestamp and id on
 their typed fields). `filter=<key>:<text>` keeps the records whose filterable
 column's text fields hold every typed word as a prefix (`simple_query_string`,
-lenient); an unknown or unsortable/unfilterable key is a 422.
+lenient); an unknown or unsortable/unfilterable key is a 422. A column's header
+filter menu lists its `facets` (summary._all columns: geo → the geologic and
+geographic columns, geology → classes / types / lithologies, method_codes,
+citations, and a `field` column whose data-model type is String or List → that
+column) with the sidebar's checkbox lists: they filter through `<column>:"<value>"`
+query tokens and are counted with `facet=<column>`. `filterable` (a text box,
+`filter=`) is set only for a column without facets, or one configured with
+`filter_fields`; `facets: []` in the YAML turns a column back into a text box.
+`geospatial` marks the map tile of a level with positions, whose menu holds the
+Map tab's area.
 
 **Reference metadata.** `summary.contribution._reference` is the publication
 behind a contribution's reference DOI (the `reference` column of its
