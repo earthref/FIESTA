@@ -189,9 +189,15 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
   matches any of them), each row capped at 105px. A sticky header
   names the columns; a sortable column sorts the search on a click (ascending,
   descending, back to the dropdown's order; the dropdown shows the header sort
-  while it applies), a filterable one has a filter box (`filter=<column>:<text>`,
-  which also narrows the Rows and Map views and is cleared by Clear Filters and
-  by switching levels). Columns, headers, widths, sorting and filtering are set
+  while it applies), a filterable one has a filter icon after its label (as on
+  osu-mgr.org's result tables, 2026-11-09): a badge counts its applied filters,
+  and a click opens a menu (header with the column's name and Clear, Close at
+  the foot) of the sidebar's own controls — the column's facet lists (checkboxes
+  with counts and a Find box, the same `<column>:"<value>"` tokens as the
+  sidebar, one list opened, several collapsed), a "Contains" text box for a
+  column without facets (`filter=<column>:<text>`, which also narrows the Rows
+  and Map views and is cleared by switching levels), and on the map tile the
+  Geospatial area. Clear Filters clears them all. Columns, headers, widths, sorting and filtering are set
   per level in the node YAML (`search.levels[].columns`) and the admin Summary
   Grid tab; a level without them shows the default tiles. The expand caret is
   gone (the modal below replaced it); a count ("2 Locations") opens the

@@ -99,9 +99,11 @@ class GridColumn(BaseModel):
     intensity, method_codes, citations), `field` (one column of the level's
     summary block, "Label: value") or `title` (a column in bold over an optional
     `subtitle_column`). Each tile has a default header label, width, sort and
-    filter (fiesta.search.grid); `sortable` / `filterable` switch them off, and
-    `sort_field` (a `.raw` keyword path, or with `numeric` any string path) and
-    `filter_fields` (text paths) replace them.
+    filters (fiesta.search.grid); `sortable` / `filterable` switch them off, and
+    `sort_field` (a `.raw` keyword path, or with `numeric` any string path),
+    `filter_fields` (text paths) and `facets` replace them. The header's filter
+    menu offers the `facets` (summary._all columns) as the sidebar's checkbox
+    lists, a text box over the `filter_fields`, and on a map tile the area.
     """
 
     cell: GridCell = "field"
@@ -115,6 +117,7 @@ class GridColumn(BaseModel):
     sort_field: str | None = None
     numeric: bool | None = None
     filter_fields: list[str] | None = None
+    facets: list[str] | None = None
 
     @model_validator(mode="after")
     def _check(self) -> "GridColumn":
@@ -125,6 +128,8 @@ class GridColumn(BaseModel):
         paths = [self.sort_field or "summary.", *(self.filter_fields or [])]
         if bad := [p for p in paths if not p.startswith("summary.")]:
             raise ValueError(f"grid sort/filter fields must be summary.* paths: {bad}")
+        if bad := [f for f in self.facets or [] if not re.fullmatch(r"\w+", f)]:
+            raise ValueError(f"grid facets are column names: {bad}")
         return self
 
     @property

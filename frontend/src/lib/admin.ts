@@ -196,6 +196,7 @@ export interface SettingsColumn {
   sort_field?: string;
   numeric?: boolean;
   filter_fields?: string[];
+  facets?: string[];
 }
 
 /** A `pages` entry as written in the YAML. */
