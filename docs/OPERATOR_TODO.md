@@ -502,8 +502,11 @@ dev must be drained by hand. A read-only comparison on 2026-11-07 found 7,614 of
 the 7,658 bulk-imported records unchanged, 40 new contributions and 35 changed,
 so the first run sends about 75 records.
 
-- [ ] **Make the sync account a MagIC node admin** on dev (the KdD sync account
-      above can be reused; node admin, not super admin).
+- [x] **Make the sync account a MagIC node admin** on dev (2026-11-09):
+      `source-sync@earthref.org` ("FIESTA sync", id 5423) is a node admin of every
+      served node (magic, kdd, cdr, karar, erda, osu-mgr, sc), not a super admin.
+      Its password is in the main checkout's gitignored `migration/kdd/source-sync.env`;
+      use the same values in `/etc/fiesta/source-<slug>.env` on MARFIK3.
 - [ ] **`/etc/fiesta/source-magic.env` on MARFIK3** (root:fiesta, 0640): the same
       variables as `source-kdd.env`, with OpenSearch read on `magic` and `er_users`
       and S3 read on `magic-activated-contributions`, `magic-contributions` and
@@ -513,10 +516,13 @@ so the first run sends about 75 records.
       or the first run downloads ~2.5 GB from S3 just to hash it.
 - [ ] **Run it once by hand on MARFIK3** (as for KdD):
       `.venv/bin/python ../sources/magic.py --state-dir /var/lib/fiesta-ops/sources/magic --dry-run`,
-      then without `--dry-run`. Expect about 75 `planned`, then `applied`, and
-      `missing_from_source: 9`. Then check `fiesta verify-index` for MagIC once
-      the outbox has drained.
-- [ ] **Decide what an `er_users` email change means** (§A). 30 MagIC
+      then without `--dry-run`. Dev was caught up from the laptop on 2026-11-09
+      (77 applied, 74 quarantined, `missing_from_source: 9`, errors 19014 and 19020:
+      no S3 object and no indexed tables in Meteor), so expect only what changed
+      since, but a cold state dir still takes ~30 min. The script exits 1 while
+      those two errors stand.
+- [x] **Decide what an `er_users` email change means** (§A; 2026-11-09: follow
+      the new email, applied in the laptop run). 30 MagIC
       contributions changed owner email in `er_users` since September (17 from
       one fsu.edu address to tufts.edu, 11 from a ucsd.edu address to an
       unrelated gmail.com one, 2 others). The importer matches owners by
