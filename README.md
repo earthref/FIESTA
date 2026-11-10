@@ -42,9 +42,9 @@ make seed                     # demo accounts, private drafts, and each listed n
 ```
 
 Everything runs in local Docker containers: no MARFIK, AWS or production
-credentials, and no EarthRef account. After `make seed`,
-http://localhost:8080/MagIC/ signs you in as Local Developer
-(`developer@example.test`, a super admin). See [CONTRIBUTING.md](CONTRIBUTING.md)
+credentials, and no EarthRef account. http://localhost:8080/MagIC/ signs you
+in as Local Developer (`developer@example.test`, a super admin) as soon as the
+stack is up; `make seed` adds the data. See [CONTRIBUTING.md](CONTRIBUTING.md)
 to make a change.
 
 Run `make` for all targets (tests, linting, e2e, rebuild, local dev servers).

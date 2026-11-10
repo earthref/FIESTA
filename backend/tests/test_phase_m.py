@@ -12,6 +12,8 @@ from fiesta.services.revisions import safe_name
 from fiesta.services.seed import load_seed, local_file, require_local
 from fiesta.settings import Settings
 
+DEPLOYMENT = Path(__file__).resolve().parents[2] / "config" / "fiesta.yaml"
+
 
 @pytest.mark.parametrize("node", ["magic", "cdr", "karar", "kdd", "erda", "osu-mgr", "sc"])
 def test_seed_fixtures(node):
@@ -119,10 +121,13 @@ async def test_local_login_refuses_nonlocal_environments(monkeypatch, overrides)
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("seeded", [False, True])
-async def test_local_login_uses_seeded_developer(monkeypatch, seeded):
+async def test_local_login_signs_in_developer(monkeypatch, seeded):
+    """Local login signs in Local Developer, creating the manifest's accounts first
+    on a stack `make seed` has not touched."""
     from types import SimpleNamespace
     from unittest.mock import AsyncMock, Mock
 
+    from fiesta import nodeconfig
     from fiesta.apps.routers.auth import local_login
     from fiesta.security import decode_access_token
     from fiesta.services import seed
@@ -130,12 +135,27 @@ async def test_local_login_uses_seeded_developer(monkeypatch, seeded):
     monkeypatch.setattr(
         seed, "get_settings", lambda: Settings(_env_file=None, environment="development")
     )
-    result = Mock()
-    result.scalar_one_or_none.return_value = SimpleNamespace(id=123) if seeded else None
+    monkeypatch.setattr(nodeconfig, "get_deployment", lambda: load_deployment(DEPLOYMENT))
+    created = []
+
+    async def ensure_accounts(session, manifest):
+        created.extend(account["email"] for account in manifest["accounts"])
+
+    monkeypatch.setattr(seed, "ensure_accounts", ensure_accounts)
+
+    def result(user):
+        value = Mock()
+        value.scalar_one_or_none.return_value = user
+        return value
+
+    developer = SimpleNamespace(id=123)
     session = AsyncMock()
-    session.execute.return_value = result
+    lookups = [result(developer)] if seeded else [result(None), result(developer)]
+    session.execute.side_effect = lookups
     token = await local_login(session)
+    assert decode_access_token(token.access_token) == 123
     if seeded:
-        assert decode_access_token(token.access_token) == 123
+        assert not created and not session.commit.called
     else:
-        assert token is None
+        assert {"developer@example.test", "viewer@example.test"} <= set(created)
+        session.commit.assert_awaited_once()
