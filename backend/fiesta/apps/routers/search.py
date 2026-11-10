@@ -13,11 +13,17 @@ from fiesta.apps.schemas import MapPoints, SearchPage, SearchValues
 from fiesta.db.models import Contribution
 from fiesta.nodeconfig import MapColor
 from fiesta.search.client import get_opensearch
-from fiesta.search.grid import filter_clause, level_columns, sort_clauses
+from fiesta.search.grid import (
+    ROW_SORT_PREFIX,
+    filter_clause,
+    level_columns,
+    row_sort_clauses,
+    sort_clauses,
+)
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services.access import constrain_search
 from fiesta.services.contributions import load_file
-from fiesta.services.history import row_stats, versions
+from fiesta.services.history import row_stats, table_page, versions
 
 logger = logging.getLogger(__name__)
 
@@ -48,15 +54,21 @@ def _grid_columns(node, table: str) -> dict:
 
 
 def _grid_sort(node, table: str, sort: str | None) -> str | list | None:
-    """A named SORT_OPTIONS key, or `<column>:asc|desc` on a sortable grid
-    column of the level (its header's sort)."""
+    """A named SORT_OPTIONS key, `<column>:asc|desc` on a sortable grid
+    column of the level (its header's sort), or `rows.<column>:asc|desc` on a
+    raw row column (the Rows grid's header sort)."""
     if sort is None or sort in SORT_OPTIONS:
         return sort
     key, _, order = sort.rpartition(":")
+    if key.startswith(ROW_SORT_PREFIX) and order in ("asc", "desc"):
+        clauses = row_sort_clauses(node, table, key.removeprefix(ROW_SORT_PREFIX), order)
+        if clauses is not None:
+            return clauses
     column = _grid_columns(node, table).get(key)
     if column is None or column.sort is None or order not in ("asc", "desc"):
         raise HTTPException(
-            422, f"sort must be one of {sorted(SORT_OPTIONS)} or <sortable column>:asc|desc"
+            422, f"sort must be one of {sorted(SORT_OPTIONS)}, <sortable column>:asc|desc"
+            " or rows.<column>:asc|desc"
         )
     return sort_clauses(column, order)
 
@@ -689,6 +701,37 @@ async def get_row_stats(
     rows that differ from the previous published version."""
     contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
     return await row_stats(session, node, contribution)
+
+
+@router.get("/contributions/{contribution_id}/tables/{table}")
+async def get_table_page(
+    session: SessionDep,
+    node: NodeDep,
+    contribution_id: int,
+    table: str,
+    private_key: str | None = None,
+    sort: str | None = None,
+    size: int = Query(100, ge=1, le=1000),
+    from_: int = Query(0, ge=0, alias="from"),
+) -> dict:
+    """One page of a data-model table of the contribution's file, in file
+    order or sorted (`sort=<column>:asc|desc`) over the whole table, each row
+    with its validation issues per cell (the modal's level tabs)."""
+    contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    if not contribution.filename:
+        raise HTTPException(404, "this contribution has no file")
+    # A file without the table (an older data model's names) has no rows.
+    if table not in node.load_data_model(node.data_model.latest)["tables"]:
+        raise HTTPException(404, f"{table!r} is not a table of the data model")
+    parsed_sort = None
+    if sort:
+        column, _, order = sort.rpartition(":")
+        if not column or order not in ("asc", "desc"):
+            raise HTTPException(422, "sort must be <column>:asc|desc")
+        parsed_sort = (column, order)
+    return await table_page(
+        session, node, contribution, table, sort=parsed_sort, offset=from_, size=size
+    )
 
 
 @router.get("/contributions/{contribution_id}/download")

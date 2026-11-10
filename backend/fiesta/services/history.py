@@ -142,3 +142,118 @@ async def row_stats(
         "previous": {"id": previous.id, "version": previous.version} if previous else None,
         "tables": tables,
     }
+
+
+# --- One table of the file, sorted and paged (the contribution modal's level tabs) ---
+
+# Recently viewed files' parsed tables, and the row orders sorted on them.
+_TABLES: OrderedDict[tuple, dict[str, Any]] = OrderedDict()
+_TABLES_SIZE = 4
+
+
+async def _parsed_tables(node: NodeConfig, contribution: Contribution) -> dict[str, Any]:
+    key = _file_key(node, contribution)
+    entry = _TABLES.get(key)
+    if entry is None:
+        raw = await load_file(node, contribution.id, contribution.filename)
+        parsed = await asyncio.to_thread(parse_text, raw.decode("utf-8", errors="replace"))
+        entry = {"tables": parsed.tables, "orders": {}}
+        _TABLES[key] = entry
+        while len(_TABLES) > _TABLES_SIZE:
+            _TABLES.popitem(last=False)
+    _TABLES.move_to_end(key)
+    return entry
+
+
+def _as_number(value: str) -> float | None:
+    try:
+        number = float(value)
+    except ValueError:
+        return None
+    return None if number != number else number  # NaN sorts as text
+
+
+def sorted_order(
+    rows: list[dict[str, str]], column: str, descending: bool, numeric: bool
+) -> list[int]:
+    """Row positions ordered by `column`: numerically when the data model says
+    Number or every value parses as one (any other values after the numbers),
+    otherwise as case-folded text; empty cells last either way, file order on
+    ties."""
+    values = [(row.get(column) or "").strip() for row in rows]
+    filled = [i for i, value in enumerate(values) if value]
+    empty = [i for i, value in enumerate(values) if not value]
+    numbers = {i: _as_number(values[i]) for i in filled}
+    if numeric or all(n is not None for n in numbers.values()):
+        number_rows = [i for i in filled if numbers[i] is not None]
+        text_rows = [i for i in filled if numbers[i] is None]
+        number_rows.sort(key=lambda i: numbers[i], reverse=descending)
+    else:
+        number_rows, text_rows = [], filled
+    text_rows.sort(key=lambda i: values[i].casefold(), reverse=descending)
+    return number_rows + text_rows + empty
+
+
+def _issues_by_row(report, table: str) -> tuple[dict[int, dict], dict[str, dict]]:
+    """The table's validation issues per 1-based row and column ("" for an
+    issue on the whole row), and per column for issues naming no row; an
+    error wins over a warning on the same cell."""
+    rows: dict[int, dict[str, dict]] = {}
+    columns: dict[str, dict] = {}
+    if report is None:
+        return rows, columns
+    for severity, issues in (("error", report.errors), ("warning", report.warnings)):
+        for issue in issues or []:
+            row, column = issue.get("row"), issue.get("column") or ""
+            if issue.get("table") != table or (row is None and not column):
+                continue
+            target = columns if row is None else rows.setdefault(row, {})
+            cell = target.setdefault(column, {"severity": severity, "messages": []})
+            if (message := issue.get("message")) and message not in cell["messages"]:
+                cell["messages"].append(message)
+    return rows, columns
+
+
+async def table_page(
+    session: AsyncSession,
+    node: NodeConfig,
+    contribution: Contribution,
+    table: str,
+    *,
+    sort: tuple[str, str] | None,
+    offset: int,
+    size: int,
+) -> dict[str, Any]:
+    """One page of a table of the contribution's current file. Each row has
+    its 1-based position in the file's table (`row`, what validation issues
+    name) and the issues on its cells; `columns` are in first-seen order and
+    `column_issues` are those naming a column but no row. `sort` is
+    (column, "asc"|"desc") over every row of the table, not just the page."""
+    entry = await _parsed_tables(node, contribution)
+    rows: list[dict[str, str]] = entry["tables"].get(table, [])
+    columns = list(dict.fromkeys(column for row in rows for column in row))
+    if sort is not None and sort[0] in columns:
+        column, order = sort
+        positions = entry["orders"].get((table, column, order))
+        if positions is None:
+            try:
+                model = node.load_data_model(contribution.data_model_version)
+            except KeyError:
+                model = node.load_data_model(node.data_model.latest)
+            kind = model["tables"].get(table, {}).get("columns", {}).get(column, {}).get("type")
+            positions = await asyncio.to_thread(
+                sorted_order, rows, column, order == "desc", kind == "Number"
+            )
+            entry["orders"][(table, column, order)] = positions
+        page = positions[offset : offset + size]
+    else:
+        page = list(range(offset, min(offset + size, len(rows))))
+    report = await latest_validation(session, contribution.id)
+    by_row, by_column = _issues_by_row(report, table)
+    return {
+        "total": len(rows),
+        "columns": columns,
+        "validated": report is not None,
+        "column_issues": by_column,
+        "rows": [{"row": i + 1, "values": rows[i], "issues": by_row.get(i + 1, {})} for i in page],
+    }

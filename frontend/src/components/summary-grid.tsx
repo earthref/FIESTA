@@ -1,6 +1,16 @@
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { GridColumn, SearchLevel, SearchResult } from "../lib/types";
 import { cx } from "../lib/utils";
+import { useVirtualRows } from "../lib/virtual-rows";
 import { contributionId, SummaryCell } from "./result-item";
 import { Icon } from "./ui/icon";
 
@@ -34,6 +44,16 @@ export function formatGridFilters(filters: Record<string, string>): string[] {
 const BORDER = "1px solid var(--er-line)";
 // Space after each column: 1em of the 13px cells (the legacy cells' right margin).
 const GAP = 13;
+
+/** A click on a link, button or form control inside a row is its own, as is
+ * the end of a text selection. */
+export function isRowClick(event: MouseEvent | KeyboardEvent): boolean {
+  const target = event.target as HTMLElement;
+  if (target.closest("a, button, input, select, textarea, label, summary, [role=button]")) {
+    return false;
+  }
+  return !(event.type === "click" && window.getSelection()?.toString());
+}
 
 const cellStyle: CSSProperties = {
   boxSizing: "border-box",
@@ -148,7 +168,9 @@ function HeaderCell({
  * header. With `onSort` a sortable column's header sorts the search; with
  * `filterMenu` a column may have a filter icon opening its filters (the search
  * page's ColumnFilterMenu). Without them (home page, private workspace) the
- * header only labels the tiles.
+ * header only labels the tiles. With `scrollRef` (the element the grid
+ * scrolls in) only the rows in view and `overscan` above and below are in the
+ * DOM. With `onOpen` a row is clickable: it highlights and opens its record.
  */
 export function SummaryGrid({
   level,
@@ -159,6 +181,9 @@ export function SummaryGrid({
   onSort,
   filterMenu,
   footer,
+  scrollRef,
+  overscan = 10,
+  onOpen,
 }: {
   level: SearchLevel;
   hits: SearchResult[];
@@ -170,8 +195,30 @@ export function SummaryGrid({
   filterMenu?: (column: GridColumn) => ReactNode;
   /** Rendered under the rows (loading placeholder, messages). */
   footer?: ReactNode;
+  scrollRef?: RefObject<HTMLElement | null>;
+  overscan?: number;
+  onOpen?: (doc: SearchResult) => void;
 }) {
   const columns = level.columns ?? [];
+  // The row last opened, highlighted (a new search replaces the records).
+  const [selected, setSelected] = useState<SearchResult | null>(null);
+  const { bodyRef, indexes, measure, padTop, padBottom } = useVirtualRows({
+    count: hits.length,
+    scrollRef,
+    // A one-line row; taller tiles (plots, maps) are measured.
+    estimateSize: 41,
+    overscan,
+  });
+  const open = (doc: SearchResult) => {
+    setSelected(doc);
+    onOpen?.(doc);
+  };
+  const spacer = (height: number) =>
+    height > 0 && (
+      <tr>
+        <td colSpan={columns.length} style={{ height, padding: 0 }} />
+      </tr>
+    );
   const width = columns.reduce((total, column) => total + column.width + GAP, 0);
   return (
     <>
@@ -206,27 +253,56 @@ export function SummaryGrid({
             </tr>
           </thead>
         )}
-        <tbody>
-          {hits.map((doc, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: sub-contribution hits can share a contribution id; pages are append-only
-            <tr key={`${contributionId(doc) ?? "hit"}-${index}`}>
-              {columns.map((column) => (
-                <td
-                  key={column.key}
-                  style={{
-                    ...cellStyle,
-                    paddingTop: "0.75em",
-                    paddingBottom: "0.75em",
-                    borderBottom: index < hits.length - 1 || footer ? BORDER : undefined,
-                  }}
-                >
-                  <div style={{ maxHeight: 105, overflow: "hidden" }}>
-                    <SummaryCell column={column} doc={doc} level={level} privateKey={privateKey} />
-                  </div>
-                </td>
-              ))}
-            </tr>
-          ))}
+        <tbody ref={bodyRef}>
+          {spacer(padTop)}
+          {indexes.map((index) => {
+            const doc = hits[index];
+            return (
+              <tr
+                // Sub-contribution hits can share a contribution id; pages are append-only.
+                key={`${contributionId(doc) ?? "hit"}-${index}`}
+                data-index={index}
+                ref={measure}
+                tabIndex={onOpen ? 0 : undefined}
+                aria-selected={onOpen ? selected === doc : undefined}
+                onClick={onOpen && ((event) => isRowClick(event) && open(doc))}
+                onKeyDown={
+                  onOpen &&
+                  ((event) => {
+                    if (event.key === "Enter" && event.target === event.currentTarget) open(doc);
+                  })
+                }
+                className={cx(
+                  onOpen &&
+                    "cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-node",
+                  onOpen && selected !== doc && "hover:bg-gray-50",
+                  selected === doc && "bg-node-soft",
+                )}
+              >
+                {columns.map((column) => (
+                  <td
+                    key={column.key}
+                    style={{
+                      ...cellStyle,
+                      paddingTop: "0.75em",
+                      paddingBottom: "0.75em",
+                      borderBottom: index < hits.length - 1 || footer ? BORDER : undefined,
+                    }}
+                  >
+                    <div style={{ maxHeight: 105, overflow: "hidden" }}>
+                      <SummaryCell
+                        column={column}
+                        doc={doc}
+                        level={level}
+                        privateKey={privateKey}
+                      />
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+          {spacer(padBottom)}
         </tbody>
       </table>
       {footer}

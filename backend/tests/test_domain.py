@@ -1602,6 +1602,56 @@ def test_issue_rows_counts_distinct_rows_per_table():
     assert issue_rows(issues) == {"sites": 2}
 
 
+def test_rows_grid_sort_clauses(magic_node):
+    from fiesta.search.grid import row_sort_clauses
+
+    # A data-model Number sorts by script over the record's _all values and
+    # its merged row; text on the keywords, missing last.
+    (script, tie) = row_sort_clauses(magic_node, "sites", "lat", "asc")
+    assert script["_script"]["script"]["params"]["fields"] == [
+        "summary._all.lat.raw",
+        "summary.sites.lat.raw",
+    ]
+    assert tie["summary.contribution.timestamp"]["order"] == "desc"
+    first = row_sort_clauses(magic_node, "sites", "site", "desc")[0]
+    assert first == {
+        "summary._all.site.raw": {"order": "desc", "unmapped_type": "keyword", "missing": "_last"}
+    }
+    assert row_sort_clauses(magic_node, "sites", "lat; drop", "asc") is None
+
+
+def test_table_sorted_order_and_issues():
+    from types import SimpleNamespace
+
+    from fiesta.services.history import _issues_by_row, sorted_order
+
+    rows = [{"v": "10"}, {"v": ""}, {"v": "9"}, {"v": "b"}, {"v": "A"}, {"v": "9"}]
+    # Numeric (data model Number): numbers, then text, then empty; ties keep file order.
+    assert sorted_order(rows, "v", False, True) == [2, 5, 0, 4, 3, 1]
+    assert sorted_order(rows, "v", True, True) == [0, 2, 5, 3, 4, 1]
+    # Text: case-folded, "10" < "9".
+    assert sorted_order(rows, "v", False, False) == [0, 2, 5, 4, 3, 1]
+    # All numbers sort numerically even without the data model's type.
+    assert sorted_order([{"v": "10"}, {"v": "9"}], "v", False, False) == [1, 0]
+
+    report = SimpleNamespace(
+        errors=[
+            {"table": "sites", "row": 2, "column": "lat", "message": "bad lat"},
+            {"table": "sites", "row": None, "column": "age", "message": "missing column"},
+            {"table": "samples", "row": 1, "column": "lat", "message": "other table"},
+        ],
+        warnings=[
+            {"table": "sites", "row": 2, "column": "lat", "message": "also odd"},
+            {"table": "sites", "row": 3, "column": None, "message": "whole row"},
+        ],
+    )
+    by_row, by_column = _issues_by_row(report, "sites")
+    assert by_row[2]["lat"] == {"severity": "error", "messages": ["bad lat", "also odd"]}
+    assert by_row[3][""] == {"severity": "warning", "messages": ["whole row"]}
+    assert by_column == {"age": {"severity": "error", "messages": ["missing column"]}}
+    assert _issues_by_row(None, "sites") == ({}, {})
+
+
 def test_changed_rows_ignores_order_blanks_and_stamped_ids():
     previous = ParsedContribution(
         tables={

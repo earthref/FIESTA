@@ -205,7 +205,21 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
   contribution's modal at that level's tab. The home page's recent
   contributions and the private workspace's contribution use the same grid
   without sort/filter controls; the portal home shows each node's row without
-  a header.
+  a header. On the search page (2026-11-10) the grid scrolls virtually (only the
+  rows in view and a page of 10 above and below are in the DOM, rows measured
+  as they render), and a click anywhere on a row outside its links and buttons
+  (or Enter on a focused row) highlights it and opens its contribution's modal
+  at that level's tab.
+- **Rows grids** (2026-11-10), on the search page's Rows view and the modal's
+  level tabs, scroll virtually too (25 rows above and below the view) and
+  their headers sort (ascending, descending, back). Both sorts are
+  server-side: on the search page `sort=rows.<column>:…` orders every matching
+  record by its rows' values (a record's rows stay together, ordered within);
+  in the modal the API sorts the contribution's whole table. The modal's rows
+  come from the file (`/contributions/{id}/tables/{table}`) with their row
+  numbers, and cells with validation issues take the online editor's colors
+  (errors red, warnings amber, the messages as a tooltip; a whole-row issue
+  tints the row); more load as the last row scrolls into view.
 - **Contribution modal** (2026-09-27) replaces the legacy expand caret, the
   map and plot modals and the contribution page, after osu-mgr.org's record
   modal: clicking a card's header, its map thumbnail or a plot (the plateau

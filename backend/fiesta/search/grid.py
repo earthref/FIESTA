@@ -274,21 +274,25 @@ def public_columns(node: NodeConfig, level: SearchLevel) -> list[dict]:
 
 # Numeric sort over string values: the smallest (ascending) or largest
 # (descending) value of the fields that parses as a number; a record with none
-# sorts last either way.
+# sorts last either way. No `continue`: Painless fails to compile one inside a
+# catch block ("label is null"), which made every numeric header sort a 500.
 _NUMBER_SCRIPT = """
 boolean asc = params.asc; boolean hit = false;
 double best = asc ? Double.MAX_VALUE : -Double.MAX_VALUE;
 for (String f : params.fields) {
-  if (!doc.containsKey(f)) continue;
-  for (def v : doc[f]) {
-    double d;
-    if (v instanceof Number) { d = ((Number) v).doubleValue(); }
-    else {
-      try { d = Double.parseDouble(v.toString().trim()); }
-      catch (NumberFormatException e) { continue; }
+  if (doc.containsKey(f)) {
+    for (def v : doc[f]) {
+      double d = 0; boolean parsed = true;
+      if (v instanceof Number) { d = ((Number) v).doubleValue(); }
+      else {
+        try { d = Double.parseDouble(v.toString().trim()); }
+        catch (NumberFormatException e) { parsed = false; }
+      }
+      if (parsed) {
+        hit = true;
+        best = asc ? Math.min(best, d) : Math.max(best, d);
+      }
     }
-    hit = true;
-    best = asc ? Math.min(best, d) : Math.max(best, d);
   }
 }
 return hit ? best : (asc ? Double.MAX_VALUE : -Double.MAX_VALUE);
@@ -317,6 +321,36 @@ def sort_clauses(column: ResolvedColumn, order: Literal["asc", "desc"]) -> list:
         {f: {"order": order, "unmapped_type": sort.type, "missing": "_last"}} for f in sort.fields
     ]
     return [*clauses, tie]
+
+
+ROW_SORT_PREFIX = "rows."
+_ROW_COLUMN = re.compile(r"^[A-Za-z0-9_]+$")
+
+
+def row_sort_clauses(
+    node: NodeConfig, table: str, column: str, order: Literal["asc", "desc"]
+) -> list | None:
+    """OpenSearch sort clauses for a Rows grid header (`sort=rows.<column>:…`):
+    records by their rows' smallest (ascending) or largest (descending) value
+    of the column, numerically for a data-model Number. Raw rows are not
+    indexed, so this reads the record's `summary._all` values and, for the ID
+    columns `_all` leaves out, its merged `summary.<table>` row. None for a
+    name that is not a column."""
+    if not _ROW_COLUMN.match(column):
+        return None
+    tables = node.load_data_model(node.data_model.latest)["tables"]
+    kind = tables.get(table, {}).get("columns", {}).get(column, {}).get("type")
+    fields = [f"summary._all.{column}.raw", f"summary.{table}.{column}.raw"]
+    return sort_clauses(
+        ResolvedColumn(
+            key=column,
+            cell="field",
+            label=column,
+            width=0,
+            sort=Sort(fields, "number" if kind == "Number" else "keyword"),
+        ),
+        order,
+    )
 
 
 _SPECIAL = re.compile(r'([+\-=&|><!(){}\[\]^"~*?:\\/|])')
