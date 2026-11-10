@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
-import { lazy, type ReactNode, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { nodeUrl, siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
@@ -11,6 +11,7 @@ import type {
   SearchLevel,
   SearchPage,
   SearchResult,
+  TablePage,
 } from "../lib/types";
 import { cx, formatNumber, getPath, singularize } from "../lib/utils";
 import { type ContributionTab, pluginContributionTabs, type TabCountQuery } from "../plugins";
@@ -19,7 +20,8 @@ import { bodiesOf } from "./map/bodies";
 import { BodyButtons, useBody } from "./map/map-mode";
 import { type ApiMapPoint, type MapPoint, toMapPoint } from "./map/map-points";
 import { citationOf, DefinitionTable, firstString, formatDateLL } from "./result-item";
-import { RowsTable } from "./rows-table";
+import { type GridRow, RowsGrid } from "./rows-table";
+import type { GridSort } from "./summary-grid";
 import { Icon } from "./ui/icon";
 import { PageSpinner, Spinner } from "./ui/spinner";
 
@@ -773,41 +775,70 @@ function LevelPanel({
   id: string;
   privateKey?: string;
 }) {
-  const rows = useInfiniteQuery({
-    queryKey: ["contribution-rows", id, level.table, privateKey],
+  // A header sort orders the whole table, server-side.
+  const [sort, setSort] = useState<GridSort | undefined>();
+  const scroller = useRef<HTMLDivElement>(null);
+  const table = useInfiniteQuery({
+    queryKey: ["contribution-table", id, level.table, privateKey, sort?.key, sort?.order],
     queryFn: ({ pageParam }) =>
-      api<SearchPage>(`/search/${level.table}`, {
-        params: { ...scope(id, privateKey), size: PAGE_SIZE, from: pageParam || undefined },
+      api<TablePage>(`/contributions/${id}/tables/${level.table}`, {
+        params: {
+          private_key: privateKey || undefined,
+          sort: sort ? `${sort.key}:${sort.order}` : undefined,
+          size: PAGE_SIZE,
+          from: pageParam || undefined,
+        },
       }),
     initialPageParam: 0,
     getNextPageParam: (last, pages) => {
-      const loaded = pages.reduce((n, page) => n + page.results.length, 0);
-      return loaded < last.total && last.results.length > 0 ? loaded : undefined;
+      const loaded = pages.reduce((n, page) => n + page.rows.length, 0);
+      return loaded < last.total && last.rows.length > 0 ? loaded : undefined;
     },
     placeholderData: keepPreviousData,
   });
-  const hits = useMemo(() => rows.data?.pages.flatMap((page) => page.results) ?? [], [rows.data]);
-  const total = rows.data?.pages[0]?.total ?? 0;
+  const first = table.data?.pages[0];
+  const rows = useMemo<GridRow[]>(
+    () =>
+      table.data?.pages.flatMap((page) =>
+        page.rows.map((row) => ({
+          key: String(row.row),
+          // The row's place in the file's table, what validation names.
+          label: formatNumber(row.row),
+          values: row.values,
+          issues: row.issues,
+        })),
+      ) ?? [],
+    [table.data],
+  );
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = table;
 
-  if (rows.isPending) return <PageSpinner label={`Loading ${level.name.toLowerCase()}…`} />;
-  if (rows.error) return <ErrorMessage error={rows.error} className="m-4" />;
+  if (table.isPending) return <PageSpinner label={`Loading ${level.name.toLowerCase()}…`} />;
+  if (table.error) return <ErrorMessage error={table.error} className="m-4" />;
   return (
-    <div className="p-4 sm:p-6">
-      <RowsTable results={hits} />
-      {rows.hasNextPage && (
-        <div className="flex justify-center pt-3">
-          <button
-            type="button"
-            disabled={rows.isFetchingNextPage}
-            onClick={() => rows.fetchNextPage()}
-            className="rounded-sm border border-gray-300 bg-surface px-3 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
-          >
-            {rows.isFetchingNextPage
-              ? "Loading…"
-              : `Load More (showing ${formatNumber(hits.length)} of ${formatNumber(total)})`}
-          </button>
-        </div>
-      )}
+    <div ref={scroller} className="h-full overflow-auto px-4 pb-4 sm:px-6 sm:pb-6">
+      <RowsGrid
+        rows={rows}
+        columns={first?.columns ?? []}
+        columnIssues={first?.column_issues}
+        sort={sort}
+        onSort={(next) => {
+          setSort(next);
+          scroller.current?.scrollTo({ top: 0 });
+        }}
+        scrollRef={scroller}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+        }}
+        footer={
+          isFetchingNextPage && (
+            <p className="py-3 text-center text-[13px] text-gray-500">
+              Loading more (showing {formatNumber(rows.length)} of {formatNumber(first?.total ?? 0)}
+              )…
+            </p>
+          )
+        }
+        empty={`No ${level.name.toLowerCase()} rows in this contribution's file.`}
+      />
     </div>
   );
 }

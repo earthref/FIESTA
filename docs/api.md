@@ -220,6 +220,7 @@ needs `publish.api`.
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 | GET | `/v2/{repository}/contributions/{id}/versions` | `private_key?` | the `previous_id` chain, oldest first: every published version plus this one — `[{id, version, data_model_version, timestamp, contributor, is_activated, is_latest}]` |
 | GET | `/v2/{repository}/contributions/{id}/rows` | `private_key?` | per-table row stats — `{validated, previous: {id, version} \| null, tables: {<table>: {errors?, warnings?, changed?, removed?}}}`: distinct rows the current revision's validation flagged, and rows added/edited (`changed`) or dropped (`removed`) since the previous published version, ignoring the stamped `row_id`/`contribution_id` (the contribution modal's level-tab badges) |
+| GET | `/v2/{repository}/contributions/{id}/tables/{table}` | `private_key?`, `sort?` (`<column>:asc\|desc`), `from?`, `size?` (≤1000, default 100) | one page of a data-model table of the contribution's current file, in file order or sorted over the whole table (numbers numerically, blanks last) — `{total, columns, validated, column_issues: {<column>: {severity, messages}}, rows: [{row, values, issues: {<column> \| "": {severity: error\|warning, messages}}}]}`; `row` is the 1-based position in the file's table that validation issues name, `""` an issue on the whole row (the contribution modal's level tabs; 404 for a table not in the data model, no rows for a file without it) |
 
 ```json
 SearchPage = {
@@ -330,7 +331,12 @@ newest), `recent` / `recent_asc` (contribution timestamp), `published` /
 `published_asc` (`_reference.year`), `cited` (`_reference.n_citations`),
 `citation_az` / `citation_za` (`_reference.citation`), `id_desc` / `id_asc`.
 It may instead be `<column>:asc|desc`, a sortable column of the level's summary
-grid (below): its header's sort, newest first on ties.
+grid (below): its header's sort, newest first on ties. Or `rows.<column>:asc|desc`,
+the Rows grid's header sort on a raw row column: raw rows are not indexed, so it
+orders the records by their rows' smallest (ascending) or largest (descending)
+value of the column (`summary._all.<column>`, then the merged
+`summary.<table>.<column>`; numerically for a data-model Number), and the SPA
+orders each record's rows the same way — a record's rows stay together.
 
 **Summary grid.** Each search level in `GET /config` carries `columns`, its
 Summaries grid in order: `{key, cell, label, width, column?, subtitle_column?,

@@ -250,6 +250,22 @@ export interface ContributionRowStats {
   >;
 }
 
+/** Validation issues on one cell (or, keyed "", a whole row or column). */
+export interface CellIssue {
+  severity: "error" | "warning";
+  messages: string[];
+}
+
+/** One page of a table of a contribution's file
+ * (`/contributions/{id}/tables/{table}`). */
+export interface TablePage {
+  total: number;
+  columns: string[];
+  validated: boolean;
+  column_issues: Record<string, CellIssue>;
+  rows: { row: number; values: Record<string, string>; issues: Record<string, CellIssue> }[];
+}
+
 export interface ValidationIssue {
   table: string;
   row: number | null;

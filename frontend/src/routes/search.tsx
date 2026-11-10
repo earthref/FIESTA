@@ -16,7 +16,7 @@ import { ErrorMessage } from "../components/error-message";
 import { type Area, areaToBbox, parseArea } from "../components/map/map-points";
 import { type AreaRequest, SearchMap } from "../components/map/search-map";
 import { contributionId, ResultDivider } from "../components/result-item";
-import { RowsTable } from "../components/rows-table";
+import { columnsOf, RowsGrid, rowsOfHits } from "../components/rows-table";
 import {
   applicableFilters,
   BboxFilter,
@@ -54,6 +54,8 @@ import { cx, formatNumber, getQueryToken, parseQueryTokens, toggleQueryToken } f
 import { type PluginSubTabContext, pluginFiltersPanel, pluginSubTabs } from "../plugins";
 
 const PAGE_SIZE = 10;
+/** The Rows grid's header sort names a raw row column: `rows.<column>:asc|desc`. */
+const ROWS_SORT = "rows.";
 const routeApi = getRouteApi("/search");
 const TAB_BORDER = "var(--er-edge)";
 /** Legacy `styles.activeTab` on the level tabs and the Filters tab. */
@@ -286,8 +288,15 @@ export function SearchPage() {
   // has not picked a sort, otherwise newest first.
   const sort = search.sort ?? (hasFreeText ? RELEVANCE_OPTION.value : SORT_OPTIONS[0].value);
   // The Summaries grid's header sort ("<column>:asc|desc") and column filters,
-  // both on this level's columns.
-  const gridSort = parseGridSort(search.sort);
+  // both on this level's columns; the Rows grid's ("rows.<column>:asc|desc")
+  // on a raw row column. Either sorts the search itself, every match.
+  const { headerSort, gridSort, rowsSort } = useMemo(() => {
+    const header = parseGridSort(search.sort);
+    const rows = header?.key.startsWith(ROWS_SORT)
+      ? { ...header, key: header.key.slice(ROWS_SORT.length) }
+      : undefined;
+    return { headerSort: header, gridSort: rows ? undefined : header, rowsSort: rows };
+  }, [search.sort]);
   const gridFilterList = useMemo(() => search.filter ?? [], [search.filter]);
   const gridFilters = useMemo(() => parseGridFilters(gridFilterList), [gridFilterList]);
 
@@ -477,6 +486,8 @@ export function SearchPage() {
     [results.data],
   );
   const total = results.data?.pages[0]?.total ?? 0;
+  const gridRows = useMemo(() => rowsOfHits(hits, rowsSort), [hits, rowsSort]);
+  const gridRowColumns = useMemo(() => columnsOf(gridRows), [gridRows]);
   // Each sub-tab's count (undefined while loading, null for none): the
   // records (Summaries), their rows, those on the map, a plugin view's docs.
   const subTabCount = (tab: SubTab): number | null | undefined => {
@@ -583,11 +594,21 @@ export function SearchPage() {
           },
         ]
       : []),
+    ...(rowsSort
+      ? [
+          {
+            value: sort,
+            label: `${rowsSort.key} ${rowsSort.order === "asc" ? "Ascending" : "Descending"}`,
+          },
+        ]
+      : []),
     ...(hasFreeText ? [RELEVANCE_OPTION] : []),
     ...SORT_OPTIONS,
   ];
   const onGridSort = (next: GridSort | undefined) =>
     setSearch({ sort: next ? `${next.key}:${next.order}` : undefined });
+  const onRowsSort = (next: GridSort | undefined) =>
+    setSearch({ sort: next ? `${ROWS_SORT}${next.key}:${next.order}` : undefined });
   const onGridFilter = (key: string, text: string) =>
     setSearch({ filter: formatGridFilters({ ...gridFilters, [key]: text }) });
 
@@ -672,7 +693,7 @@ export function SearchPage() {
                   filter: [],
                   bbox: undefined,
                   // A header sort names this level's columns.
-                  sort: gridSort ? undefined : search.sort,
+                  sort: headerSort ? undefined : search.sort,
                 })
               }
               className={cx(
@@ -1027,10 +1048,27 @@ export function SearchPage() {
                           onSort={onGridSort}
                           filterMenu={columnFilterMenu}
                           footer={isFetchingNextPage && <LoadingItem divider={false} />}
+                          scrollRef={scrollerRef}
+                          overscan={PAGE_SIZE}
+                          onOpen={(doc) => {
+                            const id = contributionId(doc);
+                            if (id) openContribution(id, level.table);
+                          }}
                         />
                       </div>
                     )}
-                    {activeTab?.name === "Rows" && <RowsTable results={hits} />}
+                    {activeTab?.name === "Rows" && (
+                      <div style={{ marginBottom: "1em" }}>
+                        <RowsGrid
+                          rows={gridRows}
+                          columns={gridRowColumns}
+                          sort={rowsSort}
+                          onSort={onRowsSort}
+                          scrollRef={scrollerRef}
+                          footer={isFetchingNextPage && <LoadingItem divider={false} />}
+                        />
+                      </div>
+                    )}
                     {activeTab?.render && (
                       <div>
                         {activeTab.render({
