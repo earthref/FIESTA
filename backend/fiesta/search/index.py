@@ -43,6 +43,15 @@ INDEX_BODY = {
                 }
             },
             {
+                # Geometry a plugin computes for the UI to draw (e.g. a pole's
+                # uncertainty ring): kept in _source, never indexed or searched.
+                "unindexed_geometry": {
+                    "match": "_geometry",
+                    "match_mapping_type": "object",
+                    "mapping": {"type": "object", "enabled": False},
+                }
+            },
+            {
                 "strings_with_raw": {
                     "match_mapping_type": "string",
                     "mapping": {
