@@ -103,6 +103,35 @@ async def ensure_accounts(session, manifest):
     return users
 
 
+LOCAL_DEVELOPER = "developer@example.test"
+
+
+async def ensure_local_accounts(session):
+    """Local Developer, after creating the seed manifest's accounts if the stack has
+    not been seeded, so local login works straight after `make up`. The accounts come
+    from the first node with a seed manifest (they are shared by every node); None
+    when no node has one. The caller has checked require_local()."""
+    from sqlalchemy.exc import IntegrityError
+
+    from fiesta.nodeconfig import get_deployment
+
+    def developer():
+        return session.execute(select(User).where(User.email == LOCAL_DEVELOPER))
+
+    if user := (await developer()).scalar_one_or_none():
+        return user
+    node = next((n for n in get_deployment().node_list if n.development.seed_manifest), None)
+    if node is None:
+        return None
+    _, manifest = load_seed(node)
+    try:
+        await ensure_accounts(session, manifest)
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()  # Another page load created them first.
+    return (await developer()).scalar_one_or_none()
+
+
 PUBLIC_COUNT = 50
 
 

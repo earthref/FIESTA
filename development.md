@@ -101,7 +101,8 @@ import), `ARGS="--public 10"` overrides both, `ARGS="--source https://…"` read
 `ARGS=--fixtures` loads the manifest's hand-made public examples instead,
 offline; the phase-m integration test uses that mode. Re-running the seed
 fetches only contributions published on the source since the last run. On page load, local development
-automatically signs in as Local Developer (`developer@example.test`) once seeded;
+automatically signs in as Local Developer (`developer@example.test`), creating
+the manifest's two accounts first if `make seed` has not run yet;
 the account is a super admin (`admin: true` in the manifests), so `/admin` works.
 Sign-out lasts until the next page refresh. An existing valid login is preserved;
 you can sign in as `viewer@example.test`, password `local-fiesta-only`, to test sharing.

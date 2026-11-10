@@ -51,18 +51,17 @@ async def me(user: CurrentUser) -> UserOut:
 
 @router.post("/local-login", response_model=TokenOut | None)
 async def local_login(session: SessionDep) -> TokenOut | None:
-    """Sign in the seeded developer only against local development infrastructure."""
-    from fiesta.services.seed import require_local
+    """Sign in Local Developer only against local development infrastructure,
+    creating the seed manifest's accounts first on a stack not yet seeded."""
+    from fiesta.services.seed import ensure_local_accounts, require_local
 
     try:
         require_local()
     except ValueError:
         return None
-    user = (
-        await session.execute(select(User).where(User.email == "developer@example.test"))
-    ).scalar_one_or_none()
+    user = await ensure_local_accounts(session)
     if user is None:
-        return None  # `make seed` has not been run yet.
+        return None  # No node in this deployment has a seed manifest.
     return TokenOut(access_token=create_access_token(user.id))
 
 
