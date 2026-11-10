@@ -298,14 +298,16 @@ export function SearchPage() {
   useEffect(() => setInput(q), [q]);
 
   // Independent scroll regions: compute the available height so the page body
-  // does not scroll (legacy onWindowResize; footer ≈ 60px).
+  // does not scroll (legacy onWindowResize). The fixed footer's height comes
+  // from --footer-h (set by Footer), so a footer that wraps taller on a narrow
+  // viewport no longer covers the bottom of the results.
   const regionRef = useRef<HTMLDivElement>(null);
-  const [regionHeight, setRegionHeight] = useState<number>();
+  const [regionHeight, setRegionHeight] = useState<string>();
   useEffect(() => {
     const update = () => {
       if (!regionRef.current) return;
       const top = regionRef.current.getBoundingClientRect().top;
-      setRegionHeight(Math.max(300, window.innerHeight - top - 79));
+      setRegionHeight(`max(300px, calc(100vh - ${top}px - var(--footer-h, 48px) - 31px))`);
     };
     update();
     window.addEventListener("resize", update);

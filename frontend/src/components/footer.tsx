@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { assetUrl, PORTAL } from "../lib/base";
 import { inkColor, useNodeConfig } from "../lib/config";
 import { PORTALS } from "../lib/portals";
@@ -32,8 +33,30 @@ const earthrefColor = inkColor(PORTALS[0]?.color ?? "#006600");
 export function Footer() {
   const { data: config } = useNodeConfig();
 
+  // The fixed footer wraps to more lines as the viewport narrows; publish its
+  // height as --footer-h so the page padding and the search page's scroll
+  // regions clear it. 0 below `sm`, where the footer is in normal flow.
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const update = () => {
+      const fixed = getComputedStyle(el).position === "fixed";
+      root.style.setProperty("--footer-h", `${fixed ? el.offsetHeight : 0}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--footer-h");
+    };
+  }, []);
+
   return (
     <footer
+      ref={ref}
       className="bg-bar sm:fixed sm:inset-x-0 sm:bottom-0 sm:z-40"
       style={{
         fontSize: "0.92857143rem",
