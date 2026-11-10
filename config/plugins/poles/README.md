@@ -24,7 +24,11 @@ outline (the doc's ring) in its age colour, drawn by a custom WebGL line
 layer that, unlike
 MapLibre's GeoJSON lines, reaches past ±85° (core
 `frontend/src/components/map/lines-layer.ts`); also the contribution modal's
-Poles tab. The Age / A95 / Geospatial filters are `search.filters` entries.
+Poles tab. Above the map, the selected pole (the first, until another is
+picked) is a one-row Summaries grid: the core tiles (record, the location's
+map, geography, geology, method codes, citations, all read from the doc's
+location row) and the plugin's own via `gridCell` (the pole on a map
+thumbnail with its ring, pole statistics, age, direction). The Age / A95 / Geospatial filters are `search.filters` entries.
 
 Options: `display_columns`, `base_level`, `after_sub_tab`, `age_color`,
 `plate_boundary_color`.
@@ -34,7 +38,7 @@ API: `GET /v2/{node}/plugins/poles/plate-boundaries`.
 | File | What |
 |---|---|
 | `plugin.py` | `PolesPlugin`: options, derived `poles` docs and their PmagPy uncertainty rings, the plate-boundaries route |
-| `index.tsx` | the UI module: result items, the Locations sub-tab, the contribution modal's Poles tab |
+| `index.tsx` | the UI module: the selected pole's card and its grid tiles, the Locations sub-tab, the contribution modal's Poles tab |
 | `poles-map.tsx`, `poles-data.ts` | the map views; reading poles and their rings from the docs, age colours, plate-boundary rings split at the date line |
 | `test_poles.py` | derived docs, the rings (α95 radius, dp/dm orientation, date line, malformed values) and the sub-tab wiring |
 | `globe-spec.md` | the map views' spec and its deviations from the legacy globe |

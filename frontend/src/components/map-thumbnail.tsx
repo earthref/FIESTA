@@ -1,4 +1,4 @@
-import { geoOrthographic } from "d3-geo";
+import { geoOrthographic, geoPath } from "d3-geo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiUrl } from "../lib/base";
 import { mapDim, useTheme } from "../lib/theme";
@@ -14,7 +14,8 @@ import { type Body, bodiesOf, isBody } from "./map/bodies";
  * the Esri Ocean basemap that the search page's Map tab uses (as
  * osu-mgr.org's result thumbnails are). Replaces the legacy
  * `svg_map_thumbnail.jsx` globe of 110m countries coloured by climate.
- * Markers on the Moon are drawn on its globe instead.
+ * Markers on the Moon are drawn on its globe instead. A plugin may colour
+ * its markers and add outlines (`rings`, e.g. a pole's uncertainty ellipse).
  */
 
 export interface MapMarker {
@@ -22,6 +23,14 @@ export interface MapMarker {
   lon: number;
   // The planetary body it is on, when not Earth.
   body?: Exclude<Body, "earth">;
+  // Its fill, when not the default marker colour.
+  color?: string;
+}
+
+/** An outline drawn under the markers: a closed [lon, lat] ring. */
+export interface MapRing {
+  points: [number, number][];
+  color: string;
 }
 
 // Each body's basemap as one low-resolution image of the whole body, shared
@@ -97,6 +106,7 @@ function sphericalCentroid(markers: MapMarker[]): [number, number] {
 function drawThumbnail(
   canvas: HTMLCanvasElement,
   markers: MapMarker[],
+  rings: MapRing[],
   width: number,
   height: number,
   image: ImageData | null,
@@ -151,13 +161,28 @@ function drawThumbnail(
     }
   }
 
+  // The rings, clipped to the near hemisphere by the projection, each over a
+  // white halo so it reads on any basemap colour.
+  const path = geoPath(projection, context);
+  for (const ring of rings) {
+    for (const [color, lineWidth] of [
+      ["rgba(255,255,255,0.8)", 3],
+      [ring.color, 1.5],
+    ] as const) {
+      context.beginPath();
+      path({ type: "LineString", coordinates: ring.points });
+      context.strokeStyle = color;
+      context.lineWidth = lineWidth * scale;
+      context.stroke();
+    }
+  }
+
   // Slightly smaller markers when there are many, so they don't merge into
   // a single blob at thumbnail scale.
   const markerRadius = (markers.length > 20 ? 2 : 3) * scale;
-  context.fillStyle = MARKER_COLOR;
   context.strokeStyle = "#ffffff";
   context.lineWidth = scale;
-  for (const { lat, lon } of markers) {
+  for (const { lat, lon, color } of markers) {
     // Skip markers on the far hemisphere rather than drawing them through the globe.
     const cosAngle =
       Math.sin(lat * RAD) * Math.sin(centerLat * RAD) +
@@ -167,6 +192,7 @@ function drawThumbnail(
     if (!at) continue;
     context.beginPath();
     context.arc(at[0], at[1], markerRadius, 0, 2 * Math.PI);
+    context.fillStyle = color ?? MARKER_COLOR;
     context.fill();
     context.stroke();
   }
@@ -179,14 +205,21 @@ function drawThumbnail(
   context.stroke();
 }
 
+const NO_RINGS: MapRing[] = [];
+
 export function MapThumbnail({
   markers,
+  rings = NO_RINGS,
   width = 100,
   height = 100,
+  label,
 }: {
   markers: MapMarker[];
+  rings?: MapRing[];
   width?: number;
   height?: number;
+  /** Its accessible name (default: the result locations). */
+  label?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { theme } = useTheme();
@@ -212,16 +245,19 @@ export function MapThumbnail({
 
   useEffect(() => {
     if (canvasRef.current && image !== undefined) {
-      drawThumbnail(canvasRef.current, shown, width, height, image, body, mapDim(theme));
+      drawThumbnail(canvasRef.current, shown, rings, width, height, image, body, mapDim(theme));
     }
-  }, [shown, width, height, image, body, theme]);
+  }, [shown, rings, width, height, image, body, theme]);
 
   return (
     <canvas
       ref={canvasRef}
       role="img"
       aria-label={
-        body === "earth" ? "Map of the result locations" : "Map of the result locations on the Moon"
+        label ??
+        (body === "earth"
+          ? "Map of the result locations"
+          : "Map of the result locations on the Moon")
       }
       style={{ display: "block", width, height }}
     />
