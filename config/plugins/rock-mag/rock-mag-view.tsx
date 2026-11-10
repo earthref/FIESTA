@@ -10,7 +10,6 @@ import {
   COLOR_BY,
   type ColorBy,
   DAY_BOUNDARIES,
-  equalArea,
   type Group,
   groupSpecimens,
   PARAMS,
@@ -941,17 +940,18 @@ function StereonetPanel({ groups, specimens, selected, open }: PanelProps) {
   const axes = useMemo(() => {
     const series: Record<string, unknown>[] = [];
     let plotted = 0;
-    const total = specimens.filter((s) => s.v1_dec !== undefined).length;
+    const total = specimens.filter((s) => s.v1_x !== undefined).length;
     const layer = (g: Group, members: Specimen[], opacity: number) => {
       for (const [axisKey, symbol, name] of [
         ["v1", "rect", "V1 (maximum)"],
         ["v3", "circle", "V3 (minimum)"],
       ] as const) {
+        // Projected by the backend (PmagPy's pmag.dimap); dec/inc are for the tooltip.
         const data = members.flatMap((s) => {
-          const dec = s[`${axisKey}_dec`];
-          const inc = s[`${axisKey}_inc`];
-          if (dec === undefined || inc === undefined) return [];
-          return [[...equalArea(dec, inc), dec, inc, s.index]];
+          const x = s[`${axisKey}_x`];
+          const y = s[`${axisKey}_y`];
+          if (x === undefined || y === undefined) return [];
+          return [[x, y, s[`${axisKey}_dec`], s[`${axisKey}_inc`], s.index]];
         });
         plotted += data.length;
         series.push({
@@ -1075,7 +1075,8 @@ function StereonetPanel({ groups, specimens, selected, open }: PanelProps) {
           className="flex items-center justify-center text-center text-gray-500"
           style={{ height: CHART_HEIGHT }}
         >
-          No anisotropy axes match: they come from specimens' eigenparameters (aniso_v1, aniso_v3).
+          No anisotropy axes match: they come from specimens' eigenparameters (aniso_v1, aniso_v3)
+          or their geographic or tilt-corrected tensors (aniso_s).
         </p>
       )}
     </Panel>

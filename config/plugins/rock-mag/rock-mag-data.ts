@@ -23,7 +23,11 @@ export type ParamKey =
   | "v1_dec"
   | "v1_inc"
   | "v3_dec"
-  | "v3_inc";
+  | "v3_inc"
+  | "v1_x"
+  | "v1_y"
+  | "v3_x"
+  | "v3_y";
 
 export interface Param {
   key: ParamKey;
@@ -57,7 +61,11 @@ export const PARAMS: Param[] = [
 export const paramOf = (key: ParamKey) => PARAMS.find((p) => p.key === key) as Param;
 export const axisName = (p: Param) => (p.unit ? `${p.label} (${p.unit})` : p.label);
 
-const NUMERIC: ParamKey[] = [...PARAMS.map((p) => p.key), "v1_dec", "v1_inc", "v3_dec", "v3_inc"];
+const AXES: ParamKey[] = ["v1_dec", "v1_inc", "v3_dec", "v3_inc"];
+/** The axes on a unit lower-hemisphere equal-area net (x east, y north),
+ * projected by the backend with PmagPy's pmag.dimap: the stereonet only draws. */
+const PROJECTED: ParamKey[] = ["v1_x", "v1_y", "v3_x", "v3_y"];
+const NUMERIC: ParamKey[] = [...PARAMS.map((p) => p.key), ...AXES, ...PROJECTED];
 
 // What a row holds besides the numbers, and the summary paths they come from.
 const TEXT = {
@@ -185,17 +193,6 @@ export function quantile(sorted: number[], q: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
 }
 
-/** Lower-hemisphere equal-area (Schmidt) projection of an axis, in unit-circle
- * coordinates (x east, y north); axes are undirected, so an upward one is
- * plotted as its lower-hemisphere opposite. */
-export function equalArea(dec: number, inc: number): [number, number] {
-  let [d, i] = [dec, inc];
-  if (i < 0) [d, i] = [d + 180, -i];
-  const rad = Math.PI / 180;
-  const r = Math.sqrt(1 - Math.sin(i * rad));
-  return [r * Math.sin(d * rad), r * Math.cos(d * rad)];
-}
-
 // --- CSV -----------------------------------------------------------------------------
 
 const CSV_COLUMNS: [string, (s: Specimen) => unknown][] = [
@@ -204,7 +201,10 @@ const CSV_COLUMNS: [string, (s: Specimen) => unknown][] = [
   ["lithology", (s) => s.lithology],
   ["geologic_class", (s) => s.geologicClass],
   ["geologic_type", (s) => s.geologicType],
-  ...NUMERIC.map((key) => [key, (s: Specimen) => s[key]] as [string, (s: Specimen) => unknown]),
+  // The parameters and axes; the projected coordinates are only for drawing.
+  ...[...PARAMS.map((p) => p.key), ...AXES].map(
+    (key) => [key, (s: Specimen) => s[key]] as [string, (s: Specimen) => unknown],
+  ),
 ];
 
 export function specimensCsv(specimens: Specimen[]): string {

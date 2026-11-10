@@ -10,6 +10,14 @@ row only has their parts. The frontend surfaces `rock_mag` as a sub-tab of the
 Specimens level (Day plot, squareness–coercivity, Jelinek, stereonet and
 distributions) and reads the numbers through GET /search/rock_mag/values.
 
+The paleomagnetic geometry is PmagPy's (`pmagpy.pmag`): an `aniso_s` tensor's
+eigenvalues and V1/V3 axes come from `pmag.doseigs`, and every V1/V3 axis is
+projected onto the lower-hemisphere equal-area net by `pmag.dimap`, stored as
+`v1_x`/`v1_y`/`v3_x`/`v3_y` so the stereonet only draws. PmagPy has no
+function for the rest, which stays here: P′, T, L and F (Jelinek 1981), the
+eigenparameter parsing, the hysteresis ratios, the mT-vs-T heuristic and the
+grouping of a specimen's rows into results.
+
 Many legacy contributions recorded coercivities and MDFs in mT where the data
 model says tesla; a field column whose median over the contribution is above
 1 T is read as mT (see field_units).
@@ -23,6 +31,8 @@ levels.
 import math
 from typing import Any
 
+import numpy as np
+from pmagpy import pmag
 from pydantic import Field
 
 from fiesta.domain.parse import ParsedContribution
@@ -62,6 +72,12 @@ FIELDS = {
     "v1_inc": "Inclination of the maximum anisotropy axis",
     "v3_dec": "Declination of the minimum anisotropy axis",
     "v3_inc": "Inclination of the minimum anisotropy axis",
+    # The axes on a unit lower-hemisphere equal-area net (pmag.dimap), so the
+    # stereonet only draws them.
+    "v1_x": "Equal-area x (east) of the maximum anisotropy axis",
+    "v1_y": "Equal-area y (north) of the maximum anisotropy axis",
+    "v3_x": "Equal-area x (east) of the minimum anisotropy axis",
+    "v3_y": "Equal-area y (north) of the minimum anisotropy axis",
 }
 
 KELVIN = 273.15
@@ -106,31 +122,61 @@ def _eigenvector(row: dict, column: str) -> tuple[float, float, float] | None:
     return values[0], values[1], values[2]  # type: ignore[return-value]
 
 
-def symmetric_eigenvalues(s: list[float]) -> list[float] | None:
-    """Eigenvalues, largest first, of the symmetric tensor MagIC stores as
-    `aniso_s` (s11, s22, s33, s12, s23, s13), by Jacobi rotations."""
-    if len(s) != 6:
+def _tensor(row: dict) -> list[float] | None:
+    """The six finite elements of a row's `aniso_s` (s11:s22:s33:s12:s23:s13)."""
+    parts = [to_float(p) for p in str(row.get("aniso_s") or "").split(":")]
+    if len(parts) != 6 or any(v is None or not math.isfinite(v) for v in parts):
         return None
-    a = [[s[0], s[3], s[5]], [s[3], s[1], s[4]], [s[5], s[4], s[2]]]
-    for _ in range(50):
-        p, q = max(((0, 1), (0, 2), (1, 2)), key=lambda pq: abs(a[pq[0]][pq[1]]))
-        if abs(a[p][q]) < 1e-15:
-            break
-        theta = (a[q][q] - a[p][p]) / (2 * a[p][q])
-        t = math.copysign(1, theta) / (abs(theta) + math.sqrt(theta * theta + 1))
-        c = 1 / math.sqrt(t * t + 1)
-        sn = t * c
-        for k in range(3):
-            akp, akq = a[k][p], a[k][q]
-            a[k][p], a[k][q] = c * akp - sn * akq, sn * akp + c * akq
-        for k in range(3):
-            apk, aqk = a[p][k], a[q][k]
-            a[p][k], a[q][k] = c * apk - sn * aqk, sn * apk + c * aqk
-    return sorted((a[i][i] for i in range(3)), reverse=True)
+    return parts  # type: ignore[return-value]
+
+
+# Two eigenvalues closer than this (relative to k1) are one: their axes are
+# undefined (a prolate tensor has no V3, an oblate one no V1).
+DEGENERATE = 1e-6
+
+
+def tensor_eigen(
+    s: list[float],
+) -> tuple[list[float], list[tuple[float, float] | None]] | None:
+    """Eigenvalues (k1 ≥ k2 ≥ k3, normalized to unit trace) and the V1, V2,
+    V3 directions (dec, inc, lower hemisphere) of an `aniso_s` tensor, by
+    PmagPy's `pmag.doseigs` (s2a, tauV, cart2dir). An axis is None where its
+    eigenvalue equals a neighbour's. None for a tensor without a positive
+    trace (not a susceptibility) or one PmagPy cannot decompose."""
+    if len(s) != 6 or s[0] + s[1] + s[2] <= 0:
+        return None
+    try:
+        with np.errstate(all="ignore"):  # s2a's float32 overflow raises below, no warning
+            tau, directions = pmag.doseigs(s)
+        k1, k2, k3 = (complex(t).real for t in tau)  # tauV's are complex
+        axes = [(float(d) % 360, float(i)) for d, i in directions]
+    except Exception:  # PmagPy raises on whatever it cannot decompose
+        return None
+    # tauV leaves k2 at 0 when it equals k1 or k3; the unit trace gives it back.
+    if not k3 <= k2 <= k1:
+        k2 = 1 - k1 - k3
+    if not all(math.isfinite(v) for v in (k1, k2, k3, *(x for axis in axes for x in axis))):
+        return None
+    defined = [k1 - k2 > DEGENERATE * k1, True, k2 - k3 > DEGENERATE * k1]
+    return [k1, k2, k3], [axis if ok else None for axis, ok in zip(axes, defined, strict=True)]
+
+
+def equal_area(dec: float, inc: float) -> tuple[float, float] | None:
+    """(x east, y north) of an axis on a unit lower-hemisphere equal-area net,
+    by PmagPy's `pmag.dimap`. Axes are undirected: an upward one is plotted
+    as its lower-hemisphere opposite, as `pmag.doseigs` gives tensor axes."""
+    if inc < 0:
+        dec, inc = dec + 180, -inc
+    try:
+        x, y = (float(v) for v in pmag.dimap(dec % 360, inc))
+    except Exception:  # PmagPy raises on input it cannot project
+        return None
+    return (x, y) if math.isfinite(x) and math.isfinite(y) else None
 
 
 def anisotropy_shape(k1: float, k2: float, k3: float) -> dict[str, float]:
-    """P, P′, T, L and F of eigenvalues k1 ≥ k2 ≥ k3 > 0 (Jelinek 1981)."""
+    """P, P′, T, L and F of eigenvalues k1 ≥ k2 ≥ k3 > 0 (Jelinek 1981);
+    PmagPy has no function for P′, T, L or F."""
     n1, n2, n3 = math.log(k1), math.log(k2), math.log(k3)
     mean = (n1 + n2 + n3) / 3
     shape = {
@@ -222,19 +268,15 @@ def rock_mag_values(row: dict, units: dict[str, float] | None = None) -> dict[st
     if temp is not None and 0 < temp < 2000:
         values["tc"] = temp - KELVIN
 
-    # Anisotropy: eigenvalues from the eigenparameters, else the tensor; the
-    # axes only from the eigenparameters (the tensor may be in specimen
-    # coordinates).
+    # Anisotropy: eigenvalues from the eigenparameters, else from the tensor
+    # by PmagPy.
     axes = [_eigenvector(row, f"aniso_v{i}") for i in (1, 2, 3)]
+    tensor = None if all(axes) else _tensor(row)
+    eigen = tensor_eigen(tensor) if tensor else None
     if all(axes):
         eigenvalues = sorted((axis[0] for axis in axes), reverse=True)  # type: ignore[index]
     else:
-        tensor = [to_float(v) for v in str(row.get("aniso_s") or "").split(":")]
-        eigenvalues = (
-            symmetric_eigenvalues(tensor)  # type: ignore[arg-type]
-            if len(tensor) == 6 and all(v is not None and math.isfinite(v) for v in tensor)
-            else None
-        )
+        eigenvalues = eigen[0] if eigen else None
     if eigenvalues and eigenvalues[2] > 0:
         values.update(anisotropy_shape(*eigenvalues))
     else:
@@ -243,11 +285,20 @@ def rock_mag_values(row: dict, units: dict[str, float] | None = None) -> dict[st
                 values[key] = value
     # Axes in specimen coordinates (tilt correction -1) aren't directions in
     # the world: only geographic (0) and tilt-corrected (100) ones are kept.
-    in_world = _num(row, "aniso_tilt_correction") != -1
-    for key, axis in (("v1", axes[0]), ("v3", axes[2])):
-        if in_world and axis and -90 <= axis[2] <= 90:
-            values[f"{key}_dec"] = axis[1] % 360
-            values[f"{key}_inc"] = axis[2]
+    # An eigenparameter axis counts as in the world unless it says -1; the
+    # tensor's only when it says 0 or 100 (PmagPy reads a blank as -1).
+    tilt = _num(row, "aniso_tilt_correction")
+    for key, given, derived in (("v1", axes[0], 0), ("v3", axes[2], 2)):
+        if given and tilt != -1 and -90 <= given[2] <= 90:
+            dec, inc = given[1] % 360, given[2]
+        elif not given and eigen and eigen[1][derived] and tilt in (0, 100):
+            dec, inc = eigen[1][derived]  # type: ignore[misc]
+        else:
+            continue
+        values[f"{key}_dec"] = dec
+        values[f"{key}_inc"] = inc
+        if (xy := equal_area(dec, inc)) is not None:
+            values[f"{key}_x"], values[f"{key}_y"] = xy
 
     # JSON numbers with a fraction, so OpenSearch maps each field as a float.
     return {key: float(value) for key, value in values.items()}
