@@ -34,9 +34,10 @@ search:
     - { type: facet, field: method_codes }
   # Samples on another planetary body, by their location_type: they and their
   # specimens, ... are mapped on that body's globe, not Earth's.
+  # Martian is left out: those samples are meteorites, mapped where found.
   bodies:
     column: location_type
-    values: { Lunar: moon, Martian: mars }
+    values: { Lunar: moon }
 
 storage:
   bucket: karar

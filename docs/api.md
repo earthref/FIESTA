@@ -53,7 +53,7 @@ Two schemes are accepted; the private routes take either.
 | PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in the seeded `developer@example.test` only against local dev infrastructure |
 | GET | `/v2/basemap/{world\|arctic}` | — | JPEG: Esri Ocean as a 1024×512 plate carrée world image (blank past ±85.05°) and its Arctic band; fetched from Esri once a day and cached in the API process, for the result thumbnails |
-| GET | `/v2/basemap/{moon\|mars}` | — | JPEG: the Moon (LROC WAC) and Mars (Viking MDIM 2.1 colour) as 1024×512 plate carrée images, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on those bodies |
+| GET | `/v2/basemap/moon` | — | JPEG: the Moon (LROC WAC) as a 1024×512 plate carrée image, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on the Moon |
 | GET | `/v2/basemap/undersea-features` | — | GeoJSON `FeatureCollection` of the IHO-IOC GEBCO Gazetteer of Undersea Feature Names (NOAA NCEI's feature service), each `{name, kind: point\|line\|area}` with areas reduced to their middle point; fetched once a day and cached, for the Map tab's labels |
 
 `UserOut = {id, email, name, orcid: string|null, is_admin: bool, admin_nodes: string[]}` —
@@ -163,7 +163,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "map_colors": [
     {"label": "Age", "field": "age", "unit": "Ma", "scale": 1000000.0, "log": true, "tables": ["locations", "sites"]}
   ],
-  "bodies": ["mars", "moon"],
+  "bodies": ["moon"],
   "pages": [{"slug": "about", "title": "About", "menu": "left", "icon": null}],
   "features": {"plugins": ["poles"]},
   "publish": {"api": true, "web": true},
@@ -185,7 +185,7 @@ Map tab's "Color by" menu offers (as `color_by` on `/search/{table}/points`) on
 the levels whose table is in `tables`; `field` is a column or a `summary.*`
 path, and a value / `scale` is what the legend shows. `bodies` are the planetary
 bodies besides Earth the node YAML's `search.bodies` can put a record on (empty
-for most nodes), for the Map tab's Earth / Moon / Mars buttons. `pages` are the content
+for most nodes), for the Map tab's Earth / Moon buttons. `pages` are the content
 pages in menu order.
 
 Each active plugin's `frontend_config` is built from its options: the node
@@ -252,7 +252,7 @@ MapPoints = {
 to 50,000 (`truncated` past that), for the search page's Map tab: `id` is the
 contribution, `name` the row's own key column (`sites` → `site`; absent at the
 contribution level), `body` the planetary body a point on another one is on
-(`moon`, `mars`; absent on Earth). A doc with several positions (a
+(`moon`; absent on Earth). A doc with several positions (a
 contribution; an area such as a location, mapped at its sites' and samples'
 positions rather than drawn as its box) gives a point per position it carries
 (only those inside `bbox`, when one is given: a `bbox` is on Earth, so it
@@ -303,7 +303,7 @@ specimen's `sample`), so a geospatial filter narrows every level. A level is
 contribution doc carries every distinct position of its records (up to 500),
 so it matches an area that holds any of them. A row on another planetary body — one whose column named by the
 node YAML's `search.bodies` (MagIC and KArAr: `location_type`) has a value it
-maps to a body (`Lunar` → `moon`, `Martian` → `mars`), and every row below it —
+maps to a body (`Lunar` → `moon`; `Martian` is not one: MagIC's and KArAr's Martian samples are meteorites, found on Earth), and every row below it —
 has its position as `summary._all._body_point` (`{lat, lon, body}`; a list on
 the contribution doc) instead, so Earth's area filters and location
 aggregations leave it out; `mapped_total` counts either.

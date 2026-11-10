@@ -83,9 +83,10 @@ search:
     - { label: Mass Susceptibility, field: susc_chi_mass, unit: m³/kg, log: true }
   # Locations on another planetary body, by their location_type: they and
   # their sites, samples, ... are mapped on that body's globe, not Earth's.
+  # Martian is left out: those samples are meteorites, mapped where found.
   bodies:
     column: location_type
-    values: { Lunar: moon, Martian: mars }
+    values: { Lunar: moon }
 
 storage:
   bucket: magic
