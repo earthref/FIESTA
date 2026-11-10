@@ -1,21 +1,20 @@
 // echarts options for each PmagPy plot type, drawn as PmagPy draws them
 // (pmagplotlib: plot_eq/plot_di, plot_zij, plot_mag, plot_arai, plot_np, plot_hys).
+// Every position comes from the API, where PmagPy computes it.
 
 import type { EChartsOption } from "@/components/echart";
-import {
-  type AraiSpecimen,
-  type Coord,
-  circleRuns,
-  type DemagSpecimen,
-  type Direction,
-  type DirectionSet,
-  dir2cart,
-  directionsIn,
-  equalArea,
-  type HystLoop,
-  nf,
-  stepLabel,
+import type {
+  AraiSpecimen,
+  Coord,
+  DemagSpecimen,
+  Direction,
+  DirectionSet,
+  HystLoop,
+  Net,
+  Run,
+  XY,
 } from "./pmag-plots-data";
+import { nf, stepLabel } from "./pmag-plots-data";
 
 export interface Size {
   width: number;
@@ -75,29 +74,13 @@ function textMarks(marks: { text: string; at: [number, number]; position: string
   }));
 }
 
+/** Polylines as one echarts line series' data, "-" breaking between them. */
+const strokes = (lines: XY[][]) => lines.flatMap((line): (XY | string)[] => [...line, "-"]);
+
 // --- equal area ----------------------------------------------------------------------------
 
-const RIM = Array.from({ length: 181 }, (_, i) => {
-  const a = (i * 2 * Math.PI) / 180;
-  return [Math.sin(a), Math.cos(a)];
-});
-
-/** The net: its rim, 10° ticks on the rim and the axes, and a center cross. */
-function netSeries() {
-  const ticks: (number[] | string)[] = [];
-  for (let az = 0; az < 360; az += 10) {
-    const [x, y] = equalArea(az, 0);
-    ticks.push([x, y], [x * 0.96, y * 0.96], "-");
-  }
-  for (const az of [0, 90, 180, 270])
-    for (let inc = 10; inc < 90; inc += 10) {
-      const [x, y] = equalArea(az, inc);
-      const [dx, dy] = [
-        0.02 * Math.cos((az * Math.PI) / 180),
-        -0.02 * Math.sin((az * Math.PI) / 180),
-      ];
-      ticks.push([x - dx, y - dy], [x + dx, y + dy], "-");
-    }
+/** The net: its rim, its ticks and crosses, and North. */
+function netSeries(net: Net) {
   const line = (data: unknown[], width = 1) => ({
     type: "line",
     data,
@@ -107,14 +90,13 @@ function netSeries() {
     tooltip: { show: false },
   });
   return [
-    line(RIM),
-    line(ticks, 0.8),
-    line([[-0.03, 0], [0.03, 0], "-", [0, -0.03], [0, 0.03]]),
+    line(net.rim),
+    line(strokes(net.ticks), 0.8),
     ...textMarks([{ text: "N", at: [0, 1.02], position: "top" }]),
   ];
 }
 
-function netOption(size: Size, series: unknown[]): EChartsOption {
+function netOption(size: Size, net: Net, series: unknown[]): EChartsOption {
   const axis = {
     type: "value",
     min: -1.02,
@@ -130,7 +112,7 @@ function netOption(size: Size, series: unknown[]): EChartsOption {
     xAxis: axis,
     yAxis: axis,
     tooltip,
-    series: [...netSeries(), ...series],
+    series: [...netSeries(net), ...series],
   } as EChartsOption;
 }
 
@@ -140,7 +122,7 @@ const dirTip = (title: string, dec: number, inc: number, extra: string[] = []) =
 /** Points on the net: lower hemisphere filled, upper open (pmagplotlib.plot_di). */
 function directionPoints(
   name: string,
-  points: { dec: number; inc: number; tip: string; bad?: boolean }[],
+  points: { xy: XY; inc: number; tip: string; bad?: boolean }[],
   color: string,
   symbol = "circle",
   symbolSize = 7,
@@ -151,8 +133,8 @@ function directionPoints(
     symbol,
     symbolSize,
     z: 3,
-    data: points.map(({ dec, inc, tip, bad }) => ({
-      value: equalArea(dec, inc),
+    data: points.map(({ xy, inc, tip, bad }) => ({
+      value: xy,
       tip,
       ...(bad && { symbol: "diamond" }),
       itemStyle:
@@ -163,9 +145,9 @@ function directionPoints(
   };
 }
 
-/** A circle about a direction: solid on the lower hemisphere, dashed on the upper. */
-function circleSeries(dec: number, inc: number, radius: number, color: string, width = 1) {
-  return circleRuns(dec, inc, radius).map((run) => ({
+/** A circle on the net: solid on the lower hemisphere, dashed on the upper. */
+function circleSeries(runs: Run[] | undefined, color: string, width = 1) {
+  return (runs ?? []).map((run) => ({
     type: "line",
     data: run.points,
     silent: true,
@@ -182,16 +164,10 @@ function meanSeries(mean: NonNullable<DirectionSet["mean"]>, title = "Fisher mea
     ...(mean.k !== undefined ? [`k ${nf(mean.k)}`] : []),
   ];
   return [
-    ...(mean.a95 !== undefined ? circleSeries(mean.dec, mean.inc, mean.a95, RED, 1.5) : []),
+    ...circleSeries(mean.circle, RED, 1.5),
     directionPoints(
       title,
-      [
-        {
-          dec: mean.dec,
-          inc: mean.inc,
-          tip: dirTip(title, mean.dec, mean.inc, extra),
-        },
-      ],
+      [{ xy: mean.xy, inc: mean.inc, tip: dirTip(title, mean.dec, mean.inc, extra) }],
       RED,
       "triangle",
       12,
@@ -200,19 +176,19 @@ function meanSeries(mean: NonNullable<DirectionSet["mean"]>, title = "Fisher mea
 }
 
 /** Interpreted directions of a site, sample or specimen group. */
-export function directionSetOption(size: Size, set: DirectionSet): EChartsOption {
-  const lines = set.dirs.filter((d) => !d.plane);
+export function directionSetOption(size: Size, set: DirectionSet, net: Net): EChartsOption {
+  const lines = set.dirs.filter((d) => !d.plane && d.xy);
   const planes = set.dirs.filter((d) => d.plane);
   const tip = (d: Direction) =>
     dirTip(d.name, d.dec, d.inc, [
       ...(d.comp ? [escapeHtml(d.comp)] : []),
       ...(d.a95 !== undefined ? [`α95 ${nf(d.a95)}°`] : []),
     ]);
-  return netOption(size, [
-    ...planes.flatMap((d) => circleSeries(d.dec, d.inc, 90, PURPLE)),
+  return netOption(size, net, [
+    ...planes.flatMap((d) => circleSeries(d.circle, PURPLE)),
     directionPoints(
       "Directions",
-      lines.map((d) => ({ dec: d.dec, inc: d.inc, tip: tip(d) })),
+      lines.map((d) => ({ xy: d.xy as XY, inc: d.inc, tip: tip(d) })),
       BLUE,
       "circle",
       size.width > 400 ? 8 : 6,
@@ -223,12 +199,17 @@ export function directionSetOption(size: Size, set: DirectionSet): EChartsOption
 
 /** A specimen's demagnetization steps on the net, joined in order, with its
  * interpretations in this coordinate system (pmagplotlib.plot_eq in zeq_magic). */
-export function stepsNetOption(size: Size, specimen: DemagSpecimen, coord: Coord): EChartsOption {
-  const dirs = directionsIn(specimen, coord);
-  if (!dirs) return netOption(size, []);
+export function stepsNetOption(
+  size: Size,
+  specimen: DemagSpecimen,
+  coord: Coord,
+  net: Net,
+): EChartsOption {
+  const dirs = specimen.coords[coord];
+  if (!dirs) return netOption(size, net, []);
   const { steps } = specimen;
   const points = dirs.dec.map((dec, i) => ({
-    dec,
+    xy: [dirs.x[i], dirs.y[i]] as XY,
     inc: dirs.inc[i],
     bad: steps.bad[i] === 1,
     tip: dirTip(stepLabel(steps.kind[i], steps.value[i]), dec, dirs.inc[i], [
@@ -237,10 +218,10 @@ export function stepsNetOption(size: Size, specimen: DemagSpecimen, coord: Coord
     ]),
   }));
   const fits = specimen.fits.filter((fit) => fit.coord === coord);
-  return netOption(size, [
+  return netOption(size, net, [
     {
       type: "line",
-      data: points.map((p) => equalArea(p.dec, p.inc)),
+      data: points.map((p) => p.xy),
       silent: true,
       symbol: "none",
       lineStyle: { color: NET, width: 1 },
@@ -249,22 +230,18 @@ export function stepsNetOption(size: Size, specimen: DemagSpecimen, coord: Coord
     // Fits first, so the steps they summarize stay on top.
     ...fits.flatMap((fit): unknown[] =>
       fit.type === "plane"
-        ? circleSeries(fit.dec, fit.inc, 90, PURPLE, 1.5)
-        : [
-            directionPoints(
-              fit.comp || "Fit",
-              [
-                {
-                  dec: fit.dec,
-                  inc: fit.inc,
-                  tip: dirTip(fitTitle(fit), fit.dec, fit.inc),
-                },
-              ],
-              RED,
-              "diamond",
-              14,
-            ),
-          ],
+        ? circleSeries(fit.circle, PURPLE, 1.5)
+        : fit.xy
+          ? [
+              directionPoints(
+                fit.comp || "Fit",
+                [{ xy: fit.xy, inc: fit.inc, tip: dirTip(fitTitle(fit), fit.dec, fit.inc) }],
+                RED,
+                "diamond",
+                14,
+              ),
+            ]
+          : [],
     ),
     directionPoints("Steps", points, BLUE, "circle", size.width > 400 ? 8 : 6),
   ]);
@@ -290,11 +267,12 @@ export function zijderveldOption(
   coord: Coord,
   large: boolean,
 ): EChartsOption {
-  const dirs = directionsIn(specimen, coord) ?? specimen.steps;
+  const dirs = specimen.coords[coord] ?? specimen.coords.s;
+  if (!dirs) return {};
   const { steps } = specimen;
-  const vectors = dirs.dec.map((dec, i) => dir2cart(dec, dirs.inc[i], steps.m[i]));
-  const xs = [0, ...vectors.map((v) => v[0])];
-  const ys = [0, ...vectors.flatMap((v) => [-v[1], -v[2]])];
+  const vectors = dirs.n.map((n, i) => [n, dirs.e[i], dirs.d[i]]);
+  const xs = [0, ...dirs.n];
+  const ys = [0, ...dirs.e.map((e) => -e), ...dirs.d.map((d) => -d)];
   const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
   const span = Math.max(x1 - x0, y1 - y0) * 1.12 || 1;
   const [cx, cy] = [(x0 + x1) / 2, (y0 + y1) / 2];
@@ -337,33 +315,20 @@ export function zijderveldOption(
   });
 
   const fitLines = specimen.fits
-    .filter((fit) => fit.coord === coord && fit.type === "line")
-    .flatMap((fit) => {
-      const chosen = vectors.filter((_, i) => {
-        const value = steps.value[i];
-        return (
-          !steps.bad[i] &&
-          value !== null &&
-          (fit.min === null || value >= fit.min - 1e-6) &&
-          (fit.max === null || value <= fit.max + 1e-6)
-        );
-      });
-      if (chosen.length < 2) return [];
-      const c = [0, 1, 2].map((k) => chosen.reduce((sum, v) => sum + v[k], 0) / chosen.length);
-      const d = dir2cart(fit.dec, fit.inc, span);
-      const ends = [-1, 1].map((sign) => c.map((value, k) => value + sign * d[k]));
-      return [
+    .filter((fit) => fit.coord === coord && fit.zijd)
+    .flatMap((fit) =>
+      [
         { pick: (v: number[]) => -v[1], color: RED },
         { pick: (v: number[]) => -v[2], color: BLUE },
       ].map(({ pick, color }) => ({
         type: "line",
         silent: true,
         symbol: "none",
-        data: ends.map((v) => [v[0], pick(v)]),
+        data: (fit.zijd ?? []).map((v) => [v[0], pick(v)]),
         lineStyle: { color, width: 1, type: "dashed", opacity: 0.8 },
         tooltip: { show: false },
-      }));
-    });
+      })),
+    );
 
   const axis = (min: number, max: number) => ({
     type: "value",
@@ -437,7 +402,7 @@ export function demagOption(_size: Size, specimen: DemagSpecimen, large: boolean
     (k === kind || k === "NRM") && steps.value[i] !== null ? [i] : [],
   );
   const max = Math.max(...index.map((i) => steps.m[i])) || 1;
-  const unit = kind === "AF" ? "mT" : kind === "MW" ? "W" : "°C";
+  const unit = kind === "AF" ? "mT" : kind === "MW" ? "J" : "°C";
   return xyOption(
     xyAxis(`Treatment (${unit})`, { min: 0 }),
     xyAxis(`M / Mmax (Mmax ${nf(max)} ${specimen.unit})`, { min: 0 }),
@@ -498,12 +463,15 @@ export function araiOption(_size: Size, specimen: AraiSpecimen, large: boolean):
         : [],
     ),
   });
+  // A check joins the step it follows to itself, and itself to the step it
+  // repeats (at the same NRM remaining).
   const checkLines: (number[] | string)[] = [];
   checks.t.forEach((t, i) => {
     const from = at.get(checks.t_from[i]);
     const original = at.get(t);
-    if (from) checkLines.push(from, [checks.x[i], checks.y[i]]);
-    if (original) checkLines.push([checks.x[i], original[1]]);
+    if (from) checkLines.push(from);
+    checkLines.push([checks.x[i], checks.y[i]]);
+    if (original) checkLines.push(original);
     checkLines.push("-");
   });
   const series: unknown[] = [
@@ -546,22 +514,14 @@ export function araiOption(_size: Size, specimen: AraiSpecimen, large: boolean):
       itemStyle: { color: PURPLE },
       data: tails.t.map((t, i) => ({
         value: [tails.x[i], tails.y[i]],
-        tip: `<b>pTRM tail check at ${nf(t)} °C</b><br/>NRM remaining ${nf(tails.y[i])}`,
+        tip: `<b>pTRM tail check at ${nf(t)} °C</b><br/>tail − zero-field ${nf(tails.y[i])}`,
       })),
     },
   ];
-  if (fit?.b !== undefined && fit.x_mean !== undefined && fit.y_mean !== undefined) {
-    const { b, x_mean: xm, y_mean: ym } = fit;
-    const chosen = steps.x.filter(
-      (_, i) =>
-        (fit.min === null || steps.t[i] >= fit.min - 0.5) &&
-        (fit.max === null || steps.t[i] <= fit.max + 0.5),
-    );
-    const [lo, hi] = [Math.min(...chosen), Math.max(...chosen)];
-    const pad = (hi - lo) * 0.08;
+  if (fit?.line) {
     series.unshift({
       type: "line",
-      data: [lo - pad, hi + pad].map((x) => [x, ym + b * (x - xm)]),
+      data: fit.line,
       silent: true,
       symbol: "none",
       lineStyle: { color: "#333", width: 1.5, type: "dashed" },
@@ -570,7 +530,8 @@ export function araiOption(_size: Size, specimen: AraiSpecimen, large: boolean):
   }
   return xyOption(
     xyAxis("pTRM gained / NRM₀", { min: 0 }),
-    xyAxis("NRM remaining / NRM₀", { min: 0 }),
+    // A tail check's difference can fall below zero; then the axis follows it.
+    xyAxis("NRM remaining / NRM₀", tails.y.some((y) => y < 0) ? {} : { min: 0 }),
     series,
   );
 }

@@ -3,16 +3,28 @@
 The legacy MagIC site showed each contribution's PmagPy plots as cached PNGs
 (`make_magic_plots.py`: equal area, Zijderveld, demagnetization, Arai,
 deremagnetization, ...). This plugin serves the same plots' data instead, so
-the contribution view draws them interactively: the measurements are grouped
-and paired here, with the few PmagPy (pmag.py) calculations the plots need
-ported alongside (dir2cart / cart2dir, dogeo, dotilt, fisher_mean, and the
-zero-field/in-field pairing of sortarai), and the frontend projects them.
+the contribution view draws them interactively, and PmagPy (`pmagpy.pmag`)
+does the science: `find_dmag_rec` reads the demagnetization steps,
+`dogeo_V` / `dotilt_V` rotate them, `dir2cart` gives the Zijderveld
+components, `fisher_mean` averages directions, `sortarai` pairs the Thellier
+steps and `int_pars` fits the Arai slope, and `dimap_V` / `circ` place every
+direction, α95 circle and plane on the equal-area net, split into lower and
+upper hemisphere as `pmagplotlib.plot_di` / `plot_circ` split them. The
+frontend only draws the coordinates it is sent.
+
+What stays here is what PmagPy has no function for: grouping the tables by
+the specimen → sample → site → location hierarchy, choosing each specimen's
+rows (PmagPy's scripts filter whole files the same way), cleaning legacy rows
+PmagPy would raise on (blank treatments, moments or directions), restoring
+hysteresis `sequence` numbers that lost their trailing zeros, and shaping
+the compact payload.
 
 Every contribution with something to plot gets one `pmag_plots` search doc
 whose `summary.pmag_plots` block counts the plots of each type, so the
 contribution view shows the tabs and their counts without reading the file;
-the plot data itself (GET /contributions/{id}/{kind}) is computed from the
-file on demand and cached per contribution revision.
+the counts take the same row selection without calling PmagPy. The plot
+data itself (GET /contributions/{id}/{kind}) is computed from the file on
+demand and cached per contribution revision.
 """
 
 import asyncio
@@ -21,7 +33,9 @@ from collections import OrderedDict
 from functools import lru_cache
 from typing import Any, Literal
 
+import numpy as np
 from fastapi import APIRouter
+from pmagpy import pmag
 from pydantic import Field
 
 from fiesta.apps.deps import NodeDep, SessionDep
@@ -40,16 +54,23 @@ PlotType = Literal["eqarea", "zijd", "demag", "arai", "deremag", "hyst"]
 Kind = Literal["demag", "eqarea", "arai", "hyst"]
 
 KELVIN = 273  # as PmagPy converts: MagIC records 100 °C as 373 K
-# Measurement method codes of a demagnetization step, and the step's kind.
-DEMAG_STEPS = {"LT-NO": "NRM", "LT-AF-Z": "AF", "LT-T-Z": "T", "LT-M-Z": "MW", "LT-LT-Z": "LT"}
-# Thellier-type paleointensity steps.
+# The demagnetization steps pmag.find_dmag_rec reads, and each one's kind
+# (when a row has several, the last one listed sets its treatment, as there).
+DEMAG_STEPS = {"LT-NO": "NRM", "LT-AF-Z": "AF", "LT-T-Z": "T", "LT-M-Z": "MW"}
+# Thellier-type paleointensity steps (pmag.sortarai).
 PI_STEPS = {"LT-NO", "LT-T-Z", "LT-T-I", "LT-PTRM-I", "LT-PTRM-MD"}
 # Experiments whose steps reuse those codes but are not demagnetization or
-# paleointensity (anisotropy, cooling rate, acquisition, hysteresis, ...).
+# paleointensity (anisotropy, cooling rate, acquisition, hysteresis, ...): a
+# superset of find_dmag_rec's excluded protocols.
 OTHER_EXPERIMENTS = ("LP-AN", "LP-CR", "LP-TRM", "LP-ARM", "LP-IRM", "LP-HYS", "LP-X")
 MOMENT_COLUMNS = {"magn_moment": "Am²", "magn_volume": "A/m", "magn_mass": "Am²/kg"}
 # dir_tilt_correction -> coordinate system: specimen, geographic, tilt-corrected.
 COORDINATES = {-1: "s", 0: "g", 100: "t"}
+# Points on a plane's great circle and on an α95 circle (pmag.circ draws
+# 201): chords of 4° and 6° around the circle, each well under a pixel from
+# the curve on the largest plot.
+GREAT_CIRCLE_POINTS = 91
+SMALL_CIRCLE_POINTS = 61
 
 
 class PmagPlotsOptions(PluginOptions):
@@ -59,77 +80,34 @@ class PmagPlotsOptions(PluginOptions):
     )
 
 
-# --- pmag.py ports ------------------------------------------------------------------------
-
-
-def dir2cart(dec: float, inc: float, m: float = 1.0) -> tuple[float, float, float]:
-    d, i = math.radians(dec), math.radians(inc)
-    return (m * math.cos(d) * math.cos(i), m * math.sin(d) * math.cos(i), m * math.sin(i))
-
-
-def cart2dir(x: float, y: float, z: float) -> tuple[float, float, float]:
-    r = math.sqrt(x * x + y * y + z * z)
-    if r == 0:
-        return 0.0, 0.0, 0.0
-    return math.degrees(math.atan2(y, x)) % 360, math.degrees(math.asin(z / r)), r
-
-
-def dogeo(dec: float, inc: float, az: float, pl: float) -> tuple[float, float]:
-    """Specimen to geographic coordinates, from the sample's azimuth and plunge
-    of its X direction (pmag.dogeo)."""
-    x = dir2cart(dec, inc)
-    a1, a2, a3 = dir2cart(az, pl), dir2cart(az + 90, 0), dir2cart(az - 180, 90 - pl)
-    d, i, _ = cart2dir(*(a1[k] * x[0] + a2[k] * x[1] + a3[k] * x[2] for k in range(3)))
-    return d, i
-
-
-def dotilt(dec: float, inc: float, bed_az: float, bed_dip: float) -> tuple[float, float]:
-    """Geographic to tilt-corrected coordinates (pmag.dotilt); `bed_az` is the
-    dip direction."""
-    x = dir2cart(dec, inc)
-    sa, ca = -math.sin(math.radians(bed_az)), math.cos(math.radians(bed_az))
-    cdp, sdp = math.cos(math.radians(bed_dip)), math.sin(math.radians(bed_dip))
-    xc = x[0] * (sa * sa + ca * ca * cdp) + x[1] * (ca * sa * (1 - cdp)) + x[2] * sdp * ca
-    yc = x[0] * ca * sa * (1 - cdp) + x[1] * (ca * ca + sa * sa * cdp) - x[2] * sa * sdp
-    zc = x[0] * ca * sdp - x[1] * sdp * sa - x[2] * cdp
-    d, i, _ = cart2dir(xc, yc, -zc)
-    return d, i
-
-
-def fisher_mean(directions: list[tuple[float, float]]) -> dict | None:
-    """Fisher (1953) mean of unit directions: dec, inc, n, r, k and α95 (pmag.fisher_mean)."""
-    n = len(directions)
-    if n < 2:
-        return None
-    sums = [0.0, 0.0, 0.0]
-    for dec, inc in directions:
-        for k, v in enumerate(dir2cart(dec, inc)):
-            sums[k] += v
-    dec, inc, r = cart2dir(*sums)
-    mean: dict[str, Any] = {"dec": _r(dec), "inc": _r(inc), "n": n, "r": _r(r, 4)}
-    if n - r > 1e-10:
-        mean["k"] = _r((n - 1) / (n - r), 1)
-        cos_a95 = 1 - (n - r) / r * (20 ** (1 / (n - 1)) - 1)
-        if -1 <= cos_a95 <= 1:
-            mean["a95"] = _r(math.degrees(math.acos(cos_a95)))
-    return mean
-
-
 # --- helpers ------------------------------------------------------------------------------
 
 
 def _r(value: float, digits: int = 2) -> float:
-    return round(value, digits)
+    return round(float(value), digits)
 
 
-def _sig(value: float) -> float:
-    """Five significant figures: moments span many decades."""
-    return float(f"{value:.5g}")
+def _sig(value: float, figures: int = 5) -> float:
+    """Significant figures: moments span many decades."""
+    return float(f"{float(value):.{figures}g}")
+
+
+def _finite(value: Any) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
 
 
 def _num(row: dict, column: str) -> float | None:
     value = to_float(row.get(column))
     return value if value is not None and math.isfinite(value) else None
+
+
+def _num_or(row: dict, column: str, default: Any) -> Any:
+    value = _num(row, column)
+    return default if value is None else value
 
 
 def _codes(row: dict) -> frozenset[str]:
@@ -188,16 +166,6 @@ def _millitesla(tesla: float | None) -> float | None:
     if tesla is None:
         return None
     return _r(tesla if abs(tesla) > 1 else tesla * 1e3, 2)
-
-
-def _step_value(kind: str, row: dict) -> float | None:
-    if kind == "AF":
-        return _millitesla(_num(row, "treat_ac_field"))
-    if kind in ("T", "LT"):
-        return _celsius(_num(row, "treat_temp"))
-    if kind == "MW":
-        return _num(row, "treat_mw_power")
-    return 0.0  # NRM
 
 
 def _step_unit_value(value: float | None, unit: str | None) -> float | None:
@@ -268,19 +236,97 @@ def _by_specimen(rows: list[dict]) -> dict[str, list[dict]]:
     return groups
 
 
+class _Records(list):
+    """A specimen's measurement records for PmagPy's data model 3 functions,
+    which take a DataFrame only to call `.to_dict("records")` on it; building
+    one per specimen would cost more than the science."""
+
+    def to_dict(self, orient: str = "records") -> list[dict]:
+        return [dict(record) for record in self]
+
+
+# --- the equal-area net (pmag.dimap_V, pmag.circ) ------------------------------------------
+
+
+def _xy(decs, incs) -> list[list[float]]:
+    """Equal-area positions (pmag.dimap_V): x east, y north, radius 1 on the
+    horizontal; upper-hemisphere directions at their own azimuth, as PmagPy
+    plots them (drawn open). A vertical direction is the centre."""
+    if len(decs) == 0:
+        return []
+    with np.errstate(all="ignore"):
+        xy = pmag.dimap_V(np.asarray(decs, dtype=float), np.asarray(incs, dtype=float))
+    xy = np.nan_to_num(np.atleast_2d(xy), nan=0.0)
+    return [[round(float(x), 3), round(float(y), 3)] for x, y in xy]
+
+
+def _circle(dec: float, inc: float, radius: float) -> list[dict]:
+    """A small circle of `radius`° about a direction (90° gives the great
+    circle of a plane from its pole, pmag.circ), as runs of projected points
+    on one hemisphere each; pmagplotlib.plot_circ puts a point with I < 0 on
+    the upper one. Each run starts where the last ended, so the circle stays
+    joined."""
+    points = GREAT_CIRCLE_POINTS if radius >= 90 else SMALL_CIRCLE_POINTS
+    with np.errstate(all="ignore"):
+        decs, incs = pmag.circ(dec, inc, radius, points)
+    runs: list[dict] = []
+    for point, i in zip(_xy(decs, incs), incs, strict=True):
+        lower = bool(i >= 0)
+        if runs and runs[-1]["lower"] == lower:
+            runs[-1]["points"].append(point)
+        else:
+            joined = [runs[-1]["points"][-1], point] if runs else [point]
+            runs.append({"lower": lower, "points": joined})
+    if len(runs) > 1 and runs[0]["lower"] == runs[-1]["lower"]:
+        # pmag.circ ends where it starts: the last run carries on into the first.
+        runs[-1]["points"] += runs.pop(0)["points"][1:]
+    return runs
+
+
+@lru_cache(maxsize=1)
+def net() -> dict[str, list]:
+    """The net as pmagplotlib.plot_net draws it: the rim, a tick from 0 to 3°
+    every 10° around it, and a cross every 10° of inclination along the four
+    axes (the centre's included)."""
+    rim = _xy(np.arange(0, 361.0), np.zeros(361))
+    ticks = [[a, b] for a, *_, b in (_xy([d] * 4, range(4)) for d in range(0, 360, 10))]
+    half = 0.02
+    for dec, top in ((0, 100), (90, 90), (180, 90), (270, 90)):
+        for x, y in _xy([dec] * len(range(10, top, 10)), range(10, top, 10)):
+            ticks.append([[round(x - half, 3), y], [round(x + half, 3), y]])
+            ticks.append([[x, round(y - half, 3)], [x, round(y + half, 3)]])
+    return {"rim": rim, "ticks": ticks}
+
+
 # --- demagnetization (Zijderveld, demagnetization, measurement-level equal area) ----------
 
 
-def _demag_rows(rows: list[dict]) -> list[dict]:
-    """A specimen's directional demagnetization steps: those of its
-    non-paleointensity experiments, or else the zero-field steps of its
-    paleointensity experiment (as thellier_magic plots them), NRM first."""
+def _demag_kind(codes: frozenset[str]) -> str | None:
+    kinds = [kind for code, kind in DEMAG_STEPS.items() if code in codes]
+    return kinds[-1] if kinds else None
+
+
+def _demag_rows(rows: list[dict]) -> tuple[list[dict], str] | None:
+    """A specimen's directional demagnetization steps and the moment column:
+    those of its non-paleointensity experiments, or else the zero-field steps
+    of its paleointensity experiment (as thellier_magic plots them), NRM
+    first, without pTRM checks (as zeq_magic leaves them out) and without the
+    rows pmag.find_dmag_rec would raise on."""
     steps = []
     for row in rows:
         codes = _codes(row)
-        if not codes & DEMAG_STEPS.keys() or _any_prefix(codes, OTHER_EXPERIMENTS):
+        kind = _demag_kind(codes)
+        if kind is None or _any_prefix(codes, OTHER_EXPERIMENTS + ("LT-PTRM",)):
             continue
         if _num(row, "dir_dec") is None or _num(row, "dir_inc") is None:
+            continue
+        # A step without its treatment (find_dmag_rec raises on a blank
+        # temperature and plots a blank field at 0 mT) is left out.
+        if kind == "T" and _num(row, "treat_temp") is None:
+            continue
+        if kind == "AF" and _num(row, "treat_ac_field") is None:
+            continue
+        if kind == "MW" and None in (_num(row, "treat_mw_power"), _num(row, "treat_mw_time")):
             continue
         steps.append(row)
     pi = [r for r in steps if _any_prefix(_codes(r), ("LP-PI",))]
@@ -289,10 +335,102 @@ def _demag_rows(rows: list[dict]) -> list[dict]:
     chosen = plain if any("LT-NO" not in _codes(r) for r in plain) else pi
     if not any("LT-NO" in _codes(r) for r in chosen):
         chosen = [r for r in steps if "LT-NO" in _codes(r)][:1] + chosen
-    return chosen
+    column = _moment_column(chosen)
+    if column is None:
+        return None
+    chosen = [r for r in chosen if _num(r, column) is not None]
+    return (chosen, column) if len(chosen) >= 2 else None
 
 
-def demag_specimens(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[dict]:
+def _dmag_block(rows: list[dict], column: str) -> tuple[list[list], str] | None:
+    """pmag.find_dmag_rec over a specimen's chosen rows: one
+    [treatment, dec, inc, moment, ZI, flag, instrument] per row, with the
+    treatment in T, K or J and the units found."""
+    records = [
+        {
+            "specimen": "s",
+            "method_codes": row.get("method_codes") or "",
+            # A blank NRM temperature is the room temperature PmagPy assumes.
+            "treat_temp": _num_or(row, "treat_temp", KELVIN if "LT-NO" in _codes(row) else ""),
+            "treat_ac_field": _num_or(row, "treat_ac_field", ""),
+            "treat_mw_power": _num_or(row, "treat_mw_power", ""),
+            "treat_mw_time": _num_or(row, "treat_mw_time", ""),
+            "dir_dec": _num(row, "dir_dec"),
+            "dir_inc": _num(row, "dir_inc"),
+            column: _num(row, column),
+            "flag": "b" if (row.get("quality") or "g") == "b" else "g",
+        }
+        for row in rows
+    ]
+    try:
+        block, units = pmag.find_dmag_rec("s", _Records(records), version=3)
+    except (TypeError, ValueError, KeyError):
+        return None
+    if len(block) != len(rows) or any(b[1] == "" or b[2] == "" or b[3] == "" for b in block):
+        return None
+    return block, units
+
+
+def _step_value(kind: str, treatment: float, units: str) -> float | None:
+    """A find_dmag_rec treatment in the plots' units: mT, °C, J. It records
+    an AF run's room-temperature NRM as 0 and a thermal run's 0 as 273 K."""
+    if kind == "AF":
+        return _millitesla(treatment)
+    if kind == "T":
+        return _celsius(treatment) if treatment >= KELVIN else 0.0
+    if kind == "MW":
+        return _r(treatment, 2)
+    return _celsius(treatment) if units == "K" and treatment >= KELVIN else 0.0  # NRM
+
+
+def _coords_block(decs, incs, relative) -> dict[str, list[float]]:
+    """A specimen's steps in one coordinate system: direction, equal-area
+    position, and the north, east and down components (pmag.dir2cart) the
+    Zijderveld plot projects, over the NRM as pmagplotlib.plot_zij
+    normalizes them."""
+    cart = np.atleast_2d(pmag.dir2cart(np.column_stack([decs, incs, relative])))
+    xy = _xy(decs, incs)
+    return {
+        "dec": [_r(d, 1) for d in decs],
+        "inc": [_r(i, 1) for i in incs],
+        "x": [p[0] for p in xy],
+        "y": [p[1] for p in xy],
+        "n": [_r(v, 4) for v in cart[:, 0]],
+        "e": [_r(v, 4) for v in cart[:, 1]],
+        "d": [_r(v, 4) for v in cart[:, 2]],
+    }
+
+
+def _fit_geometry(fit: dict, coords: dict, values: list, bad: list) -> None:
+    """What a fit draws in its coordinate system: a line's or mean's point
+    on the net, a plane's great circle, and a line's dashed Zijderveld line
+    through the steps it spans, along its direction."""
+    if fit["type"] == "plane":
+        fit["circle"] = _circle(fit["dec"], fit["inc"], 90)
+        return
+    fit["xy"] = _xy([fit["dec"]], [fit["inc"]])[0]
+    block = coords.get(fit["coord"])
+    if fit["type"] != "line" or block is None:
+        return
+    vectors = np.column_stack([block["n"], block["e"], block["d"]])
+    chosen = [
+        k
+        for k, value in enumerate(values)
+        if not bad[k]
+        and value is not None
+        and (fit["min"] is None or value >= fit["min"] - 1e-6)
+        and (fit["max"] is None or value <= fit["max"] + 1e-6)
+    ]
+    if len(chosen) < 2:
+        return
+    centre = vectors[chosen].mean(axis=0)
+    # Long enough to cross the plot, which clips it.
+    length = 3 * float(np.linalg.norm(vectors, axis=1).max())
+    direction = np.asarray(pmag.dir2cart([fit["dec"], fit["inc"], length]), dtype=float)
+    fit["zijd"] = [[_r(v, 4) for v in centre + sign * direction] for sign in (-1, 1)]
+
+
+def _fits_of(parsed: ParsedContribution) -> dict[str, list[dict]]:
     fits_of: dict[str, list[dict]] = {}
     for row in parsed.tables.get("specimens", []):
         dec, inc = _num(row, "dir_dec"), _num(row, "dir_inc")
@@ -310,55 +448,92 @@ def demag_specimens(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[d
             "mad": _num(row, "dir_mad_free"),
         }
         fits_of.setdefault(row["specimen"], []).append(fit)
+    return fits_of
 
+
+def demag_specimen(rows: list[dict], orientation: dict | None, fits: list[dict]) -> dict | None:
+    selected = _demag_rows(rows)
+    if selected is None:
+        return None
+    steps, column = selected
+    found = _dmag_block(steps, column)
+    if found is None:
+        return None
+    block, units = found
+    kinds = [_demag_kind(_codes(r)) or "NRM" for r in steps]
+    decs = np.array([b[1] for b in block], dtype=float)
+    incs = np.array([b[2] for b in block], dtype=float)
+    moments = np.array([b[3] for b in block], dtype=float)
+    values = [_step_value(k, float(b[0]), units) for k, b in zip(kinds, block, strict=True)]
+    bad = [int(b[5] == "b") for b in block]
+    relative = moments / (moments[0] or moments.max() or 1)
+    coords = {"s": _coords_block(decs, incs, relative)}
+    if orientation:
+        n = len(decs)
+        az, pl = orientation["azimuth"], orientation["dip"]
+        gdecs, gincs = pmag.dogeo_V(np.column_stack([decs, incs, [az] * n, [pl] * n]))
+        coords["g"] = _coords_block(gdecs, gincs, relative)
+        if "bed_dip" in orientation and "bed_dip_direction" in orientation:
+            bed_az, bed_dip = orientation["bed_dip_direction"], orientation["bed_dip"]
+            tdecs, tincs = pmag.dotilt_V(
+                np.column_stack([gdecs, gincs, [bed_az] * n, [bed_dip] * n])
+            )
+            coords["t"] = _coords_block(tdecs, tincs, relative)
+    fits = [dict(fit) for fit in fits]
+    for fit in fits:
+        _fit_geometry(fit, coords, values, bad)
+    return {
+        "unit": MOMENT_COLUMNS[column],
+        "steps": {
+            "kind": kinds,
+            "value": values,
+            "m": [_sig(m) for m in moments],
+            "bad": bad,
+        },
+        "coords": coords,
+        "fits": fits,
+    }
+
+
+def demag_specimens(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[dict]:
+    fits_of = _fits_of(parsed)
     specimens = []
     for specimen, rows in _by_specimen(parsed.tables.get("measurements", [])).items():
-        steps = _demag_rows(rows)
-        column = _moment_column(steps)
-        if column is None:
-            continue
-        steps = [r for r in steps if _num(r, column) is not None]
-        if len(steps) < 2:
-            continue
-        kinds = [DEMAG_STEPS[next(c for c in _codes(r) if c in DEMAG_STEPS)] for r in steps]
-        decs = [_num(r, "dir_dec") or 0.0 for r in steps]
-        incs = [_num(r, "dir_inc") or 0.0 for r in steps]
-        item: dict[str, Any] = {
-            **hierarchy.of_specimen(specimen),
-            "unit": MOMENT_COLUMNS[column],
-            "steps": {
-                "kind": kinds,
-                "value": [_step_value(k, r) for k, r in zip(kinds, steps, strict=True)],
-                "dec": [_r(d) for d in decs],
-                "inc": [_r(i) for i in incs],
-                "m": [_sig(_num(r, column) or 0.0) for r in steps],
-                "bad": [int((r.get("quality") or "g") == "b") for r in steps],
-            },
-            "fits": fits_of.get(specimen, []),
-        }
-        orientation = hierarchy.orientation.get(item["sample"])
-        if orientation:
-            geo = [
-                dogeo(d, i, orientation["azimuth"], orientation["dip"])
-                for d, i in zip(decs, incs, strict=True)
-            ]
-            item["geo"] = {"dec": [_r(d) for d, _ in geo], "inc": [_r(i) for _, i in geo]}
-            if "bed_dip" in orientation and "bed_dip_direction" in orientation:
-                tilt = [
-                    dotilt(d, i, orientation["bed_dip_direction"], orientation["bed_dip"])
-                    for d, i in geo
-                ]
-                item["tilt"] = {"dec": [_r(d) for d, _ in tilt], "inc": [_r(i) for _, i in tilt]}
-        specimens.append(item)
+        where = hierarchy.of_specimen(specimen)
+        item = demag_specimen(
+            rows, hierarchy.orientation.get(where["sample"]), fits_of.get(specimen, [])
+        )
+        if item:
+            specimens.append({**where, **item})
     return specimens
 
 
 # --- equal area of interpreted directions --------------------------------------------------
 
 
+def fisher_mean(directions: list[tuple[float, float]]) -> dict | None:
+    """pmag.fisher_mean of two or more directions: dec, inc, n, r, k and α95
+    (180° when the directions are too scattered for a cone)."""
+    if len(directions) < 2:
+        return None
+    pars = pmag.fisher_mean([[dec, inc] for dec, inc in directions])
+    mean: dict[str, Any] = {
+        "dec": _r(pars["dec"]),
+        "inc": _r(pars["inc"]),
+        "n": int(pars["n"]),
+        "r": _r(pars["r"], 4),
+    }
+    if (k := _finite(pars.get("k"))) is not None:
+        mean["k"] = _r(k, 1)
+    if (a95 := _finite(pars.get("alpha95"))) is not None:
+        mean["a95"] = _r(a95)
+    return mean
+
+
 def _direction_sets(rows: list[dict], name_column: str) -> dict[str, dict]:
     """Directions by coordinate system, each set with its Fisher mean (of the
-    lines; planes are drawn as great circles and left out of the mean)."""
+    lines; planes are drawn as great circles and left out of the mean), and
+    where each is drawn on the net."""
     sets: dict[str, dict] = {}
     for row in rows:
         dec, inc = _num(row, "dir_dec"), _num(row, "dir_inc")
@@ -369,151 +544,235 @@ def _direction_sets(rows: list[dict], name_column: str) -> dict[str, dict]:
             direction["a95"] = a95
         if _fit_type(_codes(row)) == "plane":
             direction["plane"] = True
+            direction["circle"] = _circle(dec, inc, 90)
+        else:
+            direction["xy"] = _xy([dec], [inc])[0]
         if comp := row.get("dir_comp") or row.get("dir_comp_name"):
             direction["comp"] = comp
         sets.setdefault(_coordinate(row), {"dirs": []})["dirs"].append(direction)
     for entry in sets.values():
         lines = [(d["dec"], d["inc"]) for d in entry["dirs"] if not d.get("plane")]
         if mean := fisher_mean(lines):
+            mean["xy"] = _xy([mean["dec"]], [mean["inc"]])[0]
+            if 0 < mean.get("a95", 0) < 180:
+                mean["circle"] = _circle(mean["dec"], mean["inc"], mean["a95"])
             entry["mean"] = mean
     return sets
 
 
-def eqarea_plots(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[dict]:
-    """Interpreted directions, one plot per group: the sites of each location,
-    and the samples and the specimens of each site."""
-    plots = []
-
-    def add(level: str, group_level: str, groups: dict[str, list[dict]], name_column: str):
-        for group, rows in sorted(groups.items()):
-            if sets := _direction_sets(rows, name_column):
-                plots.append(
-                    {"level": level, "group_level": group_level, "name": group, "sets": sets}
-                )
-
+def _direction_groups(parsed: ParsedContribution, hierarchy: _Hierarchy):
+    """(level, group level, group name, rows, name column) of each equal-area
+    plot: the sites of each location, and the samples and the specimens of
+    each site."""
     sites: dict[str, list[dict]] = {}
     for row in parsed.tables.get("sites", []):
         sites.setdefault(row.get("location") or "", []).append(row)
-    add("Sites", "location", sites, "site")
     samples: dict[str, list[dict]] = {}
     for row in parsed.tables.get("samples", []):
         samples.setdefault(row.get("site") or "", []).append(row)
-    add("Samples", "site", samples, "sample")
     specimens: dict[str, list[dict]] = {}
     for row in parsed.tables.get("specimens", []):
         site = hierarchy.site_of.get(row.get("sample") or "", "")
         specimens.setdefault(site, []).append(row)
-    add("Specimens", "site", specimens, "specimen")
+    for level, group_level, groups, name_column in (
+        ("Sites", "location", sites, "site"),
+        ("Samples", "site", samples, "sample"),
+        ("Specimens", "site", specimens, "specimen"),
+    ):
+        for group, rows in sorted(groups.items()):
+            yield level, group_level, group, rows, name_column
+
+
+def _has_direction(rows: list[dict]) -> bool:
+    return any(_num(r, "dir_dec") is not None and _num(r, "dir_inc") is not None for r in rows)
+
+
+def eqarea_plots(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[dict]:
+    """Interpreted directions, one plot per group."""
+    plots = []
+    for level, group_level, group, rows, name_column in _direction_groups(parsed, hierarchy):
+        if sets := _direction_sets(rows, name_column):
+            plots.append({"level": level, "group_level": group_level, "name": group, "sets": sets})
     return plots
 
 
 # --- Thellier-type paleointensity (Arai, deremagnetization) --------------------------------
 
 
-def _norm(v: tuple[float, float, float]) -> float:
-    return math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
-
-
-def _minus(a: tuple[float, float, float], b: tuple[float, float, float]):
-    return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
-
-
-def arai_specimen(rows: list[dict], interpretation: dict | None) -> dict | None:
-    """Pair a specimen's zero-field and in-field steps at each temperature
-    (pmag.sortarai): NRM remaining |Z| against pTRM gained |I − Z|, both over
-    the NRM; pTRM checks against the zero-field step before them; tail
-    checks against the pTRM gained at their temperature."""
-    rows = [
+def _arai_rows(rows: list[dict]) -> tuple[list[dict], str] | None:
+    """A specimen's Thellier steps, as thellier_magic selects them (rows of
+    an LP-PI-TRM experiment, so not the anisotropy or cooling-rate steps that
+    reuse LT-T-I), its NRM first, cleaned of what pmag.sortarai would raise
+    on or misread: rows without a temperature, direction or moment, NRMs
+    after the first, tail checks without a zero-field step at their
+    temperature, and a pTRM check with no step before it."""
+    pi = [
         r
         for r in rows
         if _codes(r) & PI_STEPS
-        and ("LT-NO" in _codes(r) or _any_prefix(_codes(r), ("LP-PI",)))
+        and _any_prefix(_codes(r), ("LP-PI-TRM",))
         and not _any_prefix(_codes(r), OTHER_EXPERIMENTS)
     ]
-    column = _moment_column(rows)
+    if not any("LT-NO" in _codes(r) for r in pi):
+        pi = [r for r in rows if "LT-NO" in _codes(r)][:1] + pi
+    column = _moment_column(pi)
     if column is None:
         return None
-    zero: dict[float, tuple[int, tuple]] = {}
-    infield: dict[float, tuple[int, tuple]] = {}
-    order: dict[float, str] = {}
-    checks: list[tuple[float, tuple, float | None]] = []
-    tails: list[tuple[float, tuple]] = []
-    nrm = None
-    lab_field = None
-    last_zero: float | None = None
-    for index, row in enumerate(rows):
-        dec, inc, m = _num(row, "dir_dec"), _num(row, "dir_inc"), _num(row, column)
-        temp = _celsius(_num(row, "treat_temp"))
-        if dec is None or inc is None or m is None or temp is None:
+    clean = []
+    for row in pi:
+        nrm = "LT-NO" in _codes(row)
+        if any(_num(row, c) is None for c in ("dir_dec", "dir_inc", column)):
             continue
-        vector = dir2cart(dec, inc, m)
-        codes = _codes(row)
-        if "LP-PI-TRM-IZ" in codes:
-            order[temp] = "IZ"
-        elif "LP-PI-TRM-ZI" in codes:
-            order[temp] = "ZI"
-        if "LT-NO" in codes:
-            nrm = nrm or vector
-            zero.setdefault(temp, (index, vector))
-            last_zero = temp
-        elif "LT-T-Z" in codes:
-            zero.setdefault(temp, (index, vector))
-            last_zero = temp
-        elif "LT-T-I" in codes:
-            infield.setdefault(temp, (index, vector))
-            if lab_field is None and (field := _num(row, "treat_dc_field")) is not None:
-                lab_field = field * 1e6
-        elif "LT-PTRM-I" in codes:
-            checks.append((temp, vector, last_zero))
-        elif "LT-PTRM-MD" in codes:
-            tails.append((temp, vector))
-    if not zero or not infield:
+        # A blank NRM temperature is the room temperature PmagPy assumes.
+        if _num(row, "treat_temp") is None and not nrm:
+            continue
+        if nrm and any("LT-NO" in _codes(r) for r in clean):
+            continue
+        clean.append(row)
+    zero = {_temp(r) for r in clean if _codes(r) & {"LT-NO", "LT-T-Z"}}
+    clean = [r for r in clean if not ("LT-PTRM-MD" in _codes(r) and _temp(r) not in zero)]
+    # sortarai's baseline for a pTRM check is the record before it.
+    while clean and "LT-PTRM-I" in _codes(clean[0]):
+        clean.pop(0)
+    return clean, column
+
+
+def _temp(row: dict) -> float:
+    """A cleaned Thellier row's temperature in K (an NRM's room temperature
+    when blank)."""
+    return _num_or(row, "treat_temp", float(KELVIN))
+
+
+def _in_field(codes: frozenset[str]) -> bool:
+    """An in-field step as sortarai takes one."""
+    return "LT-T-I" in codes and "LP-PI-TRM" in codes and "LP-TRM" not in codes
+
+
+def _arai_temperatures(rows: list[dict]) -> list[float]:
+    """The temperatures sortarai pairs (its first_Z): the NRM's 273 K, then
+    each in-field step's that has a zero-field step, in in-field order."""
+    zero = {_temp(r) for r in rows if _codes(r) & {"LT-NO", "LT-T-Z"}}
+    temps = [float(KELVIN)] if any("LT-NO" in _codes(r) for r in rows) else []
+    for row in rows:
+        if _in_field(_codes(row)) and (temp := _temp(row)) in zero:
+            temps.append(temp)
+    return list(dict.fromkeys(temps))
+
+
+def _sortarai(rows: list[dict], column: str):
+    """pmag.sortarai(..., version=3) over a specimen's cleaned rows."""
+    records = [
+        {
+            "specimen": "s",
+            "method_codes": r.get("method_codes") or "",
+            "treat_temp": _temp(r),
+            "dir_dec": _num(r, "dir_dec"),
+            "dir_inc": _num(r, "dir_inc"),
+            column: _num(r, column),
+            # Only the lab field's direction (sortarai's gamma check) needs these.
+            "treat_dc_field": _num_or(r, "treat_dc_field", math.nan),
+            "treat_dc_field_phi": _num_or(r, "treat_dc_field_phi", 0.0),
+            "treat_dc_field_theta": _num_or(r, "treat_dc_field_theta", 0.0),
+        }
+        for r in rows
+    ]
+    try:
+        with np.errstate(all="ignore"):
+            return pmag.sortarai(_Records(records), "s", 0, version=3)
+    except (TypeError, ValueError, KeyError, IndexError, ZeroDivisionError):
         return None
-    nrm0 = _norm(nrm) if nrm else _norm(zero[min(zero)][1])
-    if nrm0 == 0:
+
+
+def arai_specimen(rows: list[dict], interpretation: dict | None) -> dict | None:
+    """A specimen's Arai plot as pmagplotlib.plot_arai draws sortarai's
+    pairing: NRM remaining (each first zero-field step) against pTRM gained
+    (|in-field − zero-field|), both over the NRM; pTRM checks (|check − the
+    record before it|) at the NRM remaining of their temperature; tail checks
+    (|tail| − |zero-field|) at the pTRM gained of theirs."""
+    selected = _arai_rows(rows)
+    if selected is None or len(_arai_temperatures(selected[0])) < 2:
         return None
+    clean, column = selected
+    result = _sortarai(clean, column)
+    if result is None:
+        return None
+    (first_z, first_i, ptrm_check, ptrm_tail, *_), field = result
+    if not first_z or not _finite(first_z[0][3]):
+        return None
+    nrm0 = float(first_z[0][3])
+    has_nrm = any("LT-NO" in _codes(r) for r in clean)
+
+    def first(block: list, temp: float) -> list | None:
+        # plot_arai's lookups: the first record at that temperature.
+        return next((rec for rec in block if rec[0] == temp), None)
 
     points: dict[float, tuple[float, float]] = {}
     steps: dict[str, list] = {"t": [], "x": [], "y": [], "order": []}
-    for temp in sorted(zero):
-        z_index, z = zero[temp]
-        if temp in infield:
-            i_index, i = infield[temp]
-            x = _norm(_minus(i, z)) / nrm0
-            step_order = order.get(temp) or ("ZI" if z_index < i_index else "IZ")
-        elif nrm and z is nrm:
-            x, step_order = 0.0, "NRM"
-        else:
+    for k, z in enumerate(first_z):
+        temp = float(z[0])
+        i = first(first_i, temp)
+        if temp in points or i is None:
             continue
-        y = _norm(z) / nrm0
+        x, y = float(i[3]) / nrm0, float(z[3]) / nrm0
         points[temp] = (x, y)
-        for key, value in (("t", temp), ("x", _r(x, 5)), ("y", _r(y, 5)), ("order", step_order)):
+        order = "NRM" if k == 0 and has_nrm else "ZI" if z[4] == 1 else "IZ"
+        for key, value in (
+            ("t", _celsius(temp)),
+            ("x", _r(x, 5)),
+            ("y", _r(y, 5)),
+            ("order", order),
+        ):
             steps[key].append(value)
     if len(steps["t"]) < 2:
         return None
 
+    # sortarai's pTRM-check baseline is the record before the first check at
+    # that temperature.
+    before: dict[float, float] = {}
+    # plot_arai finds a check's NRM remaining among the paired steps (and
+    # takes the last one when none is at its temperature): a zero-field step
+    # with no in-field partner serves instead.
+    remaining: dict[float, float] = {}
+    for k, row in enumerate(clean):
+        temp = _temp(row)
+        if "LT-PTRM-I" in _codes(row):
+            before.setdefault(temp, _temp(clean[k - 1]))
+        elif "LT-T-Z" in _codes(row):
+            remaining.setdefault(temp, _num(row, column) or 0.0)
     ptrm_checks: dict[str, list] = {"t": [], "t_from": [], "x": [], "y": []}
-    for temp, vector, before in checks:
-        if before is None or before not in zero:
+    for check in ptrm_check:
+        temp = float(check[0])
+        z = first(first_z, temp)
+        y = float(z[3]) if z is not None else remaining.get(temp)
+        if y is None or _celsius(temp) in ptrm_checks["t"]:
             continue
-        z = zero[before][1]
         for key, value in (
-            ("t", temp),
-            ("t_from", before),
-            ("x", _r(_norm(_minus(vector, z)) / nrm0, 5)),
-            ("y", _r(_norm(z) / nrm0, 5)),
+            ("t", _celsius(temp)),
+            ("t_from", _celsius(before.get(temp, temp))),
+            ("x", _r(float(check[3]) / nrm0, 5)),
+            ("y", _r(y / nrm0, 5)),
         ):
             ptrm_checks[key].append(value)
     tail_checks: dict[str, list] = {"t": [], "x": [], "y": []}
-    for temp, vector in tails:
-        if temp in points:
-            for key, value in (
-                ("t", temp),
-                ("x", _r(points[temp][0], 5)),
-                ("y", _r(_norm(vector) / nrm0, 5)),
-            ):
-                tail_checks[key].append(value)
+    for tail in ptrm_tail:
+        temp = float(tail[0])
+        i = first(first_i, temp)
+        if i is None or _celsius(temp) in tail_checks["t"]:
+            continue
+        for key, value in (
+            ("t", _celsius(temp)),
+            ("x", _r(float(i[3]) / nrm0, 5)),
+            ("y", _r(float(tail[3]) / nrm0, 5)),
+        ):
+            tail_checks[key].append(value)
 
+    # sortarai's lab field is its first in-field step's; a blank one there
+    # takes the next step's.
+    lab_field = _finite(field)
+    if lab_field is None:
+        fields = (_num(r, "treat_dc_field") for r in clean if _in_field(_codes(r)))
+        lab_field = next((f for f in fields if f is not None), None)
+    lab_field = lab_field * 1e6 if lab_field is not None else None
     item: dict[str, Any] = {
         "unit": MOMENT_COLUMNS[column],
         "nrm0": _sig(nrm0),
@@ -523,17 +782,19 @@ def arai_specimen(rows: list[dict], interpretation: dict | None) -> dict | None:
         "tail_checks": tail_checks,
     }
     if interpretation:
-        item["fit"] = _arai_fit(points, interpretation, lab_field)
+        vds = float(pmag.dovds([[z[1], z[2], z[3] / nrm0] for z in first_z]))
+        item["fit"] = _arai_fit(points, interpretation, lab_field, vds)
     return item
 
 
 def _arai_fit(
-    points: dict[float, tuple[float, float]], row: dict, lab_field: float | None
-) -> dict | None:
+    points: dict[float, tuple[float, float]], row: dict, lab_field: float | None, vds: float
+) -> dict:
     """The published interpretation's temperature bounds, intensity and the
-    correction factors it applied, with the Arai slope over those steps (Coe
-    et al. 1978: b = −√(Σδy²/Σδx²)) and the intensity it gives, corrected by
-    the same factors."""
+    correction factors it applied, with pmag.int_pars over those steps (the
+    York slope b and its σ, f, g, q; three steps or more, as PmagPy needs),
+    the line it draws, and the intensity |b|·Blab corrected by the same
+    factors."""
     unit = row.get("meas_step_unit") or "K"
     low = _step_unit_value(_num(row, "meas_step_min"), unit)
     high = _step_unit_value(_num(row, "meas_step_max"), unit)
@@ -551,29 +812,47 @@ def _arai_fit(
     }
     if low is None or high is None:
         return fit
-    chosen = [xy for t, xy in points.items() if low - 0.5 <= t <= high + 0.5]
-    if len(chosen) < 2:
+    chosen = [xy for t, xy in points.items() if low - 0.5 <= t - KELVIN <= high + 0.5]
+    xs, ys = [x for x, _ in chosen], [y for _, y in chosen]
+    if len(chosen) < 3 or max(xs) == min(xs):
         return fit
-    n = len(chosen)
-    mx = sum(x for x, _ in chosen) / n
-    my = sum(y for _, y in chosen) / n
-    sxx = sum((x - mx) ** 2 for x, _ in chosen)
-    syy = sum((y - my) ** 2 for _, y in chosen)
-    sxy = sum((x - mx) * (y - my) for x, y in chosen)
-    if sxx == 0:
+    try:
+        with np.errstate(all="ignore"):
+            pars, error = pmag.int_pars(xs, ys, vds, version=3)
+    except ZeroDivisionError:
         return fit
-    b = math.copysign(math.sqrt(syy / sxx), sxy)
-    fit.update({"n": n, "b": _r(b, 5), "x_mean": _r(mx, 5), "y_mean": _r(my, 5)})
+    b = _finite(pars.get("int_b"))
+    if error or b is None:
+        return fit
+    fit.update({"n": len(chosen), "b": _r(b, 5)})
+    for key, name, digits in (
+        ("b_sigma", "int_b_sigma", 5),
+        ("f", "int_f", 3),
+        ("g", "int_g", 3),
+        ("q", "int_q", 2),
+    ):
+        if (value := _finite(pars.get(name))) is not None:
+            fit[key] = _r(value, digits)
+    x_mean, y_mean = sum(xs) / len(xs), sum(ys) / len(ys)
+    pad = (max(xs) - min(xs)) * 0.08
+    fit["line"] = [
+        [_r(x, 5), _r(y_mean + b * (x - x_mean), 5)] for x in (min(xs) - pad, max(xs) + pad)
+    ]
     if lab_field is not None:
         fit["int_calc"] = _r(abs(b) * lab_field * math.prod(corrections.values()), 2)
     return fit
 
 
-def arai_specimens(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[dict]:
+def _interpretations(parsed: ParsedContribution) -> dict[str, dict]:
     interpretations: dict[str, dict] = {}
     for row in parsed.tables.get("specimens", []):
         if row.get("specimen") and _num(row, "int_abs") is not None:
             interpretations.setdefault(row["specimen"], row)
+    return interpretations
+
+
+def arai_specimens(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[dict]:
+    interpretations = _interpretations(parsed)
     specimens = []
     for specimen, rows in _by_specimen(parsed.tables.get("measurements", [])).items():
         item = arai_specimen(rows, interpretations.get(specimen))
@@ -585,7 +864,7 @@ def arai_specimens(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[di
 # --- hysteresis loops ----------------------------------------------------------------------
 
 
-def hysteresis_loops(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[dict]:
+def _hysteresis_groups(parsed: ParsedContribution):
     loops: dict[tuple[str, str], list[dict]] = {}
     for row in parsed.tables.get("measurements", []):
         if (
@@ -594,14 +873,20 @@ def hysteresis_loops(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[
             and _num(row, "meas_field_dc") is not None
         ):
             loops.setdefault((row["specimen"], row.get("experiment") or ""), []).append(row)
-    items = []
     for (specimen, experiment), rows in loops.items():
         column = _moment_column(rows)
         if column is None:
             continue
         rows = [r for r in _by_sequence(rows) if _num(r, column) is not None]
-        if len(rows) < 10:
-            continue
+        if len(rows) >= 10:
+            yield specimen, experiment, column, rows
+
+
+def hysteresis_loops(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[dict]:
+    """Each loop's moments against the applied field, in `sequence` order
+    (PmagPy's plot_hys draws the loop as measured; nothing to compute)."""
+    items = []
+    for specimen, experiment, column, rows in _hysteresis_groups(parsed):
         fields = [_num(r, "meas_field_dc") or 0.0 for r in rows]
         # Fields over 5 T are loops recorded in mT.
         scale = 1 if max(abs(f) for f in fields) > 5 else 1e3
@@ -620,6 +905,17 @@ def hysteresis_loops(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[
 # --- all together --------------------------------------------------------------------------
 
 
+def _counts(demag: int, eqarea: int, arai: int, hyst: int) -> dict[str, int]:
+    return {
+        "eqarea": eqarea + demag,
+        "zijd": demag,
+        "demag": demag,
+        "arai": arai,
+        "deremag": arai,
+        "hyst": hyst,
+    }
+
+
 def compute_plots(parsed: ParsedContribution) -> dict[str, Any]:
     """Every kind of plot data for a contribution, and the count of each plot type."""
     hierarchy = _Hierarchy(parsed)
@@ -628,19 +924,28 @@ def compute_plots(parsed: ParsedContribution) -> dict[str, Any]:
     arai = arai_specimens(parsed, hierarchy)
     hyst = hysteresis_loops(parsed, hierarchy)
     return {
-        "demag": {"specimens": demag},
-        "eqarea": {"plots": eqarea},
+        "demag": {"net": net(), "specimens": demag},
+        "eqarea": {"net": net(), "plots": eqarea},
         "arai": {"specimens": arai},
         "hyst": {"loops": hyst},
-        "counts": {
-            "eqarea": len(eqarea) + len(demag),
-            "zijd": len(demag),
-            "demag": len(demag),
-            "arai": len(arai),
-            "deremag": len(arai),
-            "hyst": len(hyst),
-        },
+        "counts": _counts(len(demag), len(eqarea), len(arai), len(hyst)),
     }
+
+
+def compute_counts(parsed: ParsedContribution) -> dict[str, int]:
+    """The count of each plot type from the same row selection as
+    compute_plots, without the PmagPy calls (search indexing runs this for
+    every contribution)."""
+    hierarchy = _Hierarchy(parsed)
+    by_specimen = _by_specimen(parsed.tables.get("measurements", []))
+    demag = sum(_demag_rows(rows) is not None for rows in by_specimen.values())
+    eqarea = sum(_has_direction(g[3]) for g in _direction_groups(parsed, hierarchy))
+    arai = 0
+    for rows in by_specimen.values():
+        selected = _arai_rows(rows)
+        arai += selected is not None and len(_arai_temperatures(selected[0])) >= 2
+    hyst = sum(1 for _ in _hysteresis_groups(parsed))
+    return _counts(demag, eqarea, arai, hyst)
 
 
 # Recently computed contributions, by node, id and revision: a contribution's
@@ -670,7 +975,7 @@ class PmagPlotsPlugin(FiestaPlugin):
     def derive_docs(
         self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
     ) -> list[dict]:
-        counts = compute_plots(parsed)["counts"]
+        counts = compute_counts(parsed)
         if not any(counts.values()):
             return []
         return [
@@ -692,9 +997,10 @@ class PmagPlotsPlugin(FiestaPlugin):
             private_key: str | None = None,
         ) -> dict:
             """One kind of plot data for a contribution: `demag` (steps per
-            specimen, with their fits), `eqarea` (interpreted directions per
-            location or site, with Fisher means), `arai` (paired Thellier steps
-            per specimen) or `hyst` (hysteresis loops)."""
+            specimen in each coordinate system, with their fits), `eqarea`
+            (interpreted directions per location or site, with Fisher means),
+            both with the equal-area net and every position on it; `arai`
+            (paired Thellier steps per specimen) or `hyst` (hysteresis loops)."""
             contribution = await load_visible_contribution(
                 session, node, contribution_id, private_key
             )
