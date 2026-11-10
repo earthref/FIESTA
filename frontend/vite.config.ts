@@ -1,6 +1,18 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+
+// The node plugins live outside this package, one folder each with their
+// backend half (docs/plugins.md): ../config/plugins here, /config/plugins in
+// the Docker images (which put this package at /app). Plugin files import
+// core code as "@/..." and their packages from this package's node_modules
+// (`dedupe` resolves every dependency from here, not from the importer's
+// directory, where there is none).
+const src = fileURLToPath(new URL("./src", import.meta.url));
+const pluginsDir = fileURLToPath(new URL("../config/plugins", import.meta.url));
+const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
 
 // Base path the SPA is served under: "/" (default) or a node prefix such as
 // "/MagIC/" when several nodes share one hostname. Normalized to always carry
@@ -51,7 +63,12 @@ export default defineConfig({
     "import.meta.env.VITE_API_URL": JSON.stringify(apiUrl),
   },
   plugins: [react(), tailwindcss(), fiestaEnv()],
+  resolve: {
+    alias: { "@/": `${src}/`, "@plugins/": `${pluginsDir}/` },
+    dedupe: Object.keys(pkg.dependencies ?? {}),
+  },
   server: {
+    fs: { allow: [fileURLToPath(new URL(".", import.meta.url)), pluginsDir] },
     proxy: {
       [`${base}v2`]: {
         target: process.env.VITE_API_TARGET || "http://localhost:8000",

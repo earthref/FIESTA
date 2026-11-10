@@ -1,0 +1,2 @@
+# The plugins lint as backend code (make lint runs ruff from backend/ over them).
+extend = "../../backend/pyproject.toml"

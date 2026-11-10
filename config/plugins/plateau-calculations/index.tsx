@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { ErrorMessage } from "../../components/error-message";
-import { Cell, contributionId, NoDataCell } from "../../components/result-item";
-import { PageSpinner, Spinner } from "../../components/ui/spinner";
-import { api } from "../../lib/api";
-import { useOpenContribution } from "../../lib/contribution-modal";
-import type { NodeConfig, SearchPage, SearchResult } from "../../lib/types";
-import { getPath } from "../../lib/utils";
-import type { PluginGridCellProps, PluginModule } from "../index";
+import { ErrorMessage } from "@/components/error-message";
+import { Cell, contributionId, NoDataCell } from "@/components/result-item";
+import { PageSpinner, Spinner } from "@/components/ui/spinner";
+import { api } from "@/lib/api";
+import { useOpenContribution } from "@/lib/contribution-modal";
+import type { NodeConfig, SearchPage, SearchResult } from "@/lib/types";
+import { getPath } from "@/lib/utils";
+import type { PluginGridCellProps, PluginModule } from "@/plugins";
 
 interface AgeStep {
   step: number | string;
@@ -337,7 +337,7 @@ function plateauTable(config: NodeConfig): string | undefined {
   return config.search_levels.find((level) => names.includes(level.name))?.table;
 }
 
-export const plateauPlugin: PluginModule = {
+const plateauPlugin: PluginModule = {
   contributionTabs(config) {
     const table = plateauTable(config);
     if (!table) return [];
@@ -371,3 +371,5 @@ export const plateauPlugin: PluginModule = {
     );
   },
 };
+
+export default plateauPlugin;

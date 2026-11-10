@@ -12,6 +12,9 @@ CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
 os.environ.setdefault("FIESTA_NODE_CONFIG_SOURCE", "files")
 # config/fiesta.yaml mirrors data sources until the cutover; tests contribute.
 os.environ.setdefault("FIESTA_CONTRIBUTIONS_MODE", "public")
+# The plugins stay this checkout's even where a test points FIESTA_CONFIG_FILE
+# at a temporary copy of a node's tree.
+os.environ.setdefault("FIESTA_PLUGINS_DIR", str(CONFIG_DIR / "plugins"))
 
 
 @pytest.fixture(scope="session")

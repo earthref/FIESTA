@@ -2,7 +2,7 @@
 
 > **Superseded 2026-09-28 (deliberate deviation).** The pair of echarts-gl
 > globes (view + antipode) was replaced by the search map's MapLibre views
-> (globe, Mercator, north and south pole; `plugins/poles/poles-map.tsx`): the
+> (globe, Mercator, north and south pole; `poles-map.tsx`): the
 > pole views show normal and reversed poles without an antipodal globe. Kept
 > from this spec: the detail bar, the side panel (displayed poles, ellipse
 > toggle, age legend), the age colouring (now the YAML's `age_color`), the

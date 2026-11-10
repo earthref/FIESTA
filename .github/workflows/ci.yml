@@ -40,7 +40,7 @@ jobs:
         working-directory: backend
 
       - name: Lint
-        run: uv run ruff check . ../sources
+        run: uv run ruff check . ../sources ../config/plugins
         working-directory: backend
 
       - name: Test
@@ -64,7 +64,7 @@ jobs:
         working-directory: frontend
 
       - name: Lint
-        run: npx biome check .
+        run: npx biome check . ../config/plugins
         working-directory: frontend
 
       # `npm run build` is tsc (type-check) followed by the production build.

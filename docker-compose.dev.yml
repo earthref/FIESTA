@@ -51,6 +51,8 @@ services:
     volumes:
       - ./frontend:/app
       - node-modules:/app/node_modules
+      # The plugins' UI, at the ../config/plugins vite.config.ts expects.
+      - ./config/plugins:/config/plugins:ro
     # Healthy once Vite answers; `make up` passes --wait so it returns only then.
     # The first start includes `npm install` into the empty volume (~30 s), so
     # allow several minutes. 127.0.0.1, not localhost: Vite binds IPv4 only.

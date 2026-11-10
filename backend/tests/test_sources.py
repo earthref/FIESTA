@@ -1,15 +1,17 @@
 """Contribution modes and the data-source sync client (no infrastructure)."""
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
-from conftest import CONFIG_DIR
 
 from fiesta.nodeconfig import load_deployment
 from fiesta.services.legacy import SourceRecord, record_fingerprint
 from fiesta.settings import get_settings, parse_contributions_mode
 from fiesta.sources.client import SourceAPI
+
+CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
 
 
 @pytest.fixture(scope="session")

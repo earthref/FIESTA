@@ -201,7 +201,7 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
       still need a pass at phone width.
 - [x] **D4 Poles globe** — replaced 2026-09-28 by the MapLibre views with plate
       boundaries and a95 / dp-dm outlines (deviations at the top of
-      `docs/poles-globe-spec.md`). A Rock Magnetism view (`rock-mag` plugin) shipped
+      `config/plugins/poles/globe-spec.md`). A Rock Magnetism view (`rock-mag` plugin) shipped
       alongside it on the Specimens level.
 
 ## Phase M — Data migration and redesign — **IN PROGRESS**

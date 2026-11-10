@@ -1,18 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ErrorMessage } from "../../components/error-message";
-import { Cell, NoDataCell, ResultCardFrame } from "../../components/result-item";
-import { Icon } from "../../components/ui/icon";
-import { PageSpinner } from "../../components/ui/spinner";
-import { api } from "../../lib/api";
+import { ErrorMessage } from "@/components/error-message";
+import { Cell, NoDataCell, ResultCardFrame } from "@/components/result-item";
+import { Icon } from "@/components/ui/icon";
+import { PageSpinner } from "@/components/ui/spinner";
+import { api } from "@/lib/api";
 import type {
   NodeConfig,
   SearchLevel,
   SearchPage as SearchPageData,
   SearchResult,
-} from "../../lib/types";
-import { cx, getPath } from "../../lib/utils";
-import type { PluginModule, PluginSubTabContext } from "../index";
+} from "@/lib/types";
+import { cx, getPath } from "@/lib/utils";
+import type { PluginModule, PluginSubTabContext } from "@/plugins";
 import {
   type AgeColors,
   DEFAULT_AGE_COLORS,
@@ -392,7 +392,7 @@ function PolesMapView({
 
 // --- Plugin module -------------------------------------------------------------------
 
-export const polesPlugin: PluginModule = {
+const polesPlugin: PluginModule = {
   // Legacy home page: a full-width "Poles / View" tiny card under the primary cards.
   homeCards(config) {
     const pconfig = polesConfig(config);
@@ -442,3 +442,5 @@ export const polesPlugin: PluginModule = {
     ];
   },
 };
+
+export default polesPlugin;

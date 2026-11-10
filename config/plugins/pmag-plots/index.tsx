@@ -1,9 +1,9 @@
 import { lazy, Suspense } from "react";
-import { PageSpinner } from "../../components/ui/spinner";
-import { api } from "../../lib/api";
-import type { NodeConfig, SearchPage } from "../../lib/types";
-import { getPath } from "../../lib/utils";
-import type { PluginModule } from "../index";
+import { PageSpinner } from "@/components/ui/spinner";
+import { api } from "@/lib/api";
+import type { NodeConfig, SearchPage } from "@/lib/types";
+import { getPath } from "@/lib/utils";
+import type { PluginModule } from "@/plugins";
 import { PLOTS, type PlotType } from "./pmag-plots-data";
 
 // echarts and the plot builders live in a lazily loaded chunk.
@@ -18,7 +18,7 @@ function pmagPlotsConfig(config: NodeConfig): PmagPlotsConfig {
   return (config.plugins["pmag-plots"] ?? {}) as PmagPlotsConfig;
 }
 
-export const pmagPlotsPlugin: PluginModule = {
+const pmagPlotsPlugin: PluginModule = {
   // One tab per plot type (the legacy PmagPy plot types), each counted from
   // the contribution's `pmag_plots` document, fetched once for all of them.
   contributionTabs(config) {
@@ -50,3 +50,5 @@ export const pmagPlotsPlugin: PluginModule = {
     }));
   },
 };
+
+export default pmagPlotsPlugin;
