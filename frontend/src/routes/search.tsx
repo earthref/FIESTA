@@ -26,6 +26,7 @@ import {
   RangeFilter,
   rangesFor,
 } from "../components/search-filters";
+import { isSourceMode } from "../components/source-mode-notice";
 import {
   ColumnTextFilter,
   formatGridFilters,
@@ -679,7 +680,7 @@ export function SearchPage() {
             </button>
           );
         })}
-        {user && (
+        {user && !isSourceMode(config) && (
           <div className="ml-auto flex items-center self-center" style={{ paddingRight: 0 }}>
             <Link
               to="/private"

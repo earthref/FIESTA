@@ -312,6 +312,8 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 
 `client/modules/magic/components/private_contributions.jsx`
 
+**Deviation (data-source mode, 2026-11-09):** while a node's `contributions_mode` is `source` the API refuses every write, so the SPA hides the private workspace: `/private` and `/upload` show only the source-mode notice, and the home page's Upload Tool and Private Workspace cards, the search page's Private Workspace button and the portal bar's user-name link to `/private` are left out (the name stays as plain text). They return unchanged at the cutover to `public`.
+
 ```
 ui list (margin:0)
   [+ Upload Data…]  [📄 New Contribution]  [✎ In Preparation (n)]  [☑ Published (n)]   ← floated buttons

@@ -7,6 +7,7 @@ import { useNodeConfig } from "../lib/config";
 import { EARTHREF, FIESTA_PORTAL, PORTALS, portalUrl } from "../lib/portals";
 import { useLoginModal } from "./login-modal";
 import { MobileDrawer } from "./mobile-drawer";
+import { isSourceMode } from "./source-mode-notice";
 import { Icon } from "./ui/icon";
 
 /**
@@ -131,15 +132,27 @@ export function PortalBar() {
                   Admin
                 </Link>
               )}
-              <Link
-                to="/private"
-                className={itemClass}
-                style={{ ...itemStyle, color: "var(--node-color)" }}
-                title={user.email}
-              >
-                <Icon name="user" style={{ marginRight: "0.35714286em" }} />
-                {user.name}
-              </Link>
+              {isSourceMode(config) ? (
+                // No private workspace while the node mirrors its source.
+                <span
+                  className={itemClass}
+                  style={{ ...itemStyle, color: "var(--node-color)" }}
+                  title={user.email}
+                >
+                  <Icon name="user" style={{ marginRight: "0.35714286em" }} />
+                  {user.name}
+                </span>
+              ) : (
+                <Link
+                  to="/private"
+                  className={itemClass}
+                  style={{ ...itemStyle, color: "var(--node-color)" }}
+                  title={user.email}
+                >
+                  <Icon name="user" style={{ marginRight: "0.35714286em" }} />
+                  {user.name}
+                </Link>
+              )}
             </>
           ) : (
             <button
