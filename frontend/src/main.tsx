@@ -33,7 +33,9 @@ window.addEventListener("vite:preloadError", (event) => {
     if (Date.now() - last < 10_000) return;
     sessionStorage.setItem(key, String(Date.now()));
   } catch {
-    // Storage blocked: still reload; a missing chunk then fails visibly next time.
+    // Storage blocked: the guard can't survive a reload, so a genuinely missing
+    // chunk would reload forever; let the import fail visibly instead.
+    return;
   }
   event.preventDefault();
   window.location.reload();
