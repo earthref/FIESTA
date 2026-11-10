@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { EChart, type EChartsOption } from "../../components/echart";
-import { ErrorMessage } from "../../components/error-message";
-import { PageSpinner } from "../../components/ui/spinner";
-import { api } from "../../lib/api";
-import { cx } from "../../lib/utils";
+import { EChart, type EChartsOption } from "@/components/echart";
+import { ErrorMessage } from "@/components/error-message";
+import { PageSpinner } from "@/components/ui/spinner";
+import { api } from "@/lib/api";
+import { cx } from "@/lib/utils";
 import {
   araiOption,
   demagOption,

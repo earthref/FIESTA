@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* The node plugins' UI lives outside src/ (docs/plugins.md). */
+@source "../../config/plugins";
 
 /*
   Node branding colors are CSS-var-backed: applyNodeTheme() sets --node-color

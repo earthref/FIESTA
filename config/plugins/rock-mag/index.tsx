@@ -1,8 +1,8 @@
 import { lazy, Suspense } from "react";
-import { PageSpinner } from "../../components/ui/spinner";
-import { useOpenContribution } from "../../lib/contribution-modal";
-import type { NodeConfig } from "../../lib/types";
-import type { PluginModule, PluginSubTabContext } from "../index";
+import { PageSpinner } from "@/components/ui/spinner";
+import { useOpenContribution } from "@/lib/contribution-modal";
+import type { NodeConfig } from "@/lib/types";
+import type { PluginModule, PluginSubTabContext } from "@/plugins";
 
 // echarts lives in a lazily loaded chunk so other views never pay for it.
 const RockMagView = lazy(() => import("./rock-mag-view"));
@@ -32,7 +32,7 @@ function RockMagSubTab({ query, ranges, bbox }: PluginSubTabContext) {
   );
 }
 
-export const rockMagPlugin: PluginModule = {
+const rockMagPlugin: PluginModule = {
   // A "Rock Magnetism / View" card beside the Poles one on the home page.
   homeCards(config) {
     const rconfig = rockMagConfig(config);
@@ -76,3 +76,5 @@ export const rockMagPlugin: PluginModule = {
     ];
   },
 };
+
+export default rockMagPlugin;

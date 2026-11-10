@@ -1,4 +1,4 @@
-// Types of the pmag-plots API (backend/fiesta/plugins/pmag_plots.py) and the
+// Types of the pmag-plots API (plugin.py, beside this file) and the
 // geometry the plots share.
 
 export type PlotType = "eqarea" | "zijd" | "demag" | "arai" | "deremag" | "hyst";

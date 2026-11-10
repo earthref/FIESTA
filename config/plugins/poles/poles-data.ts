@@ -1,5 +1,5 @@
-import type { SearchResult } from "../../lib/types";
-import { getPath } from "../../lib/utils";
+import type { SearchResult } from "@/lib/types";
+import { getPath } from "@/lib/utils";
 
 export interface Pole {
   lat: number;

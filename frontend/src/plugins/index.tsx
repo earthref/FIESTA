@@ -1,10 +1,8 @@
+// The plugin UI contract and registry. Each plugin's UI lives with the rest of
+// the plugin in config/plugins/<name>/ (docs/plugins.md): its index.tsx
+// default-exports a PluginModule and imports core code as "@/..." (src/).
 import type { ReactNode } from "react";
 import type { GridColumn, NodeConfig, SearchLevel, SearchResult } from "../lib/types";
-import { depthPlotPlugin } from "./depth-plot";
-import { plateauPlugin } from "./plateau-calculations";
-import { pmagPlotsPlugin } from "./pmag-plots";
-import { polesPlugin } from "./poles";
-import { rockMagPlugin } from "./rock-mag";
 
 export interface PluginGridCellProps {
   /** The summary grid column being rendered (its `cell` names the tile). */
@@ -103,14 +101,19 @@ export interface PluginModule {
   contributionTabs?: (config: NodeConfig) => ContributionTab[];
 }
 
-/** All known plugin modules; activation is strictly by key presence in config.plugins. */
-export const PLUGINS: Record<string, PluginModule> = {
-  poles: polesPlugin,
-  "rock-mag": rockMagPlugin,
-  "depth-plot": depthPlotPlugin,
-  "plateau-calculations": plateauPlugin,
-  "pmag-plots": pmagPlotsPlugin,
-};
+const MODULES = import.meta.glob<PluginModule>("@plugins/*/index.tsx", {
+  eager: true,
+  import: "default",
+});
+
+/** All known plugin modules, keyed by folder name (the backend plugin's
+ * `name`); activation is strictly by key presence in config.plugins. */
+export const PLUGINS: Record<string, PluginModule> = Object.fromEntries(
+  Object.entries(MODULES).map(([path, module]) => [
+    path.replace(/\/index\.tsx$/, "").replace(/^.*\//, ""),
+    module,
+  ]),
+);
 
 export function activePlugins(config: NodeConfig | undefined): PluginModule[] {
   if (!config) return [];

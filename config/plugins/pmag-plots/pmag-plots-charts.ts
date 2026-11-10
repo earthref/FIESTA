@@ -1,7 +1,7 @@
 // echarts options for each PmagPy plot type, drawn as PmagPy draws them
 // (pmagplotlib: plot_eq/plot_di, plot_zij, plot_mag, plot_arai, plot_np, plot_hys).
 
-import type { EChartsOption } from "../../components/echart";
+import type { EChartsOption } from "@/components/echart";
 import {
   type AraiSpecimen,
   type Coord,

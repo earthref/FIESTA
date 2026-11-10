@@ -159,6 +159,9 @@ class Settings(BaseSettings):
     # The per-node sync scripts (`<slug>.py`); empty: `sources/` beside the
     # directory holding config_file.
     sources_dir: Path | None = None
+    # The node plugins, one folder each (`<name>/plugin.py` + its UI, tests and
+    # README); empty: `plugins/` beside config_file (docs/plugins.md).
+    plugins_dir: Path | None = None
 
     @field_validator("contributions_mode")
     @classmethod
@@ -170,12 +173,17 @@ class Settings(BaseSettings):
     def sources_path(self) -> Path:
         return (self.sources_dir or self.config_file.resolve().parent.parent / "sources").resolve()
 
+    @property
+    def plugins_path(self) -> Path:
+        return (self.plugins_dir or self.config_file.resolve().parent / "plugins").resolve()
+
     @field_validator(
         "s3_endpoint",
         "s3_bucket",
         "opensearch_ca_certs",
         "ops_config_file",
         "sources_dir",
+        "plugins_dir",
         mode="before",
     )
     @classmethod

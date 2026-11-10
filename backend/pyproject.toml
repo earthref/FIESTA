@@ -50,6 +50,11 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC"]
 
+[tool.ruff.lint.isort]
+# fiesta.plugins.<name> lives in config/plugins/<name>/plugin.py, which ruff's
+# source-tree lookup does not see.
+known-first-party = ["fiesta"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["tests", "../config/plugins"]

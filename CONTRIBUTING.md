@@ -54,8 +54,9 @@ matter:
 - **A node is configuration, not a code branch.** Node-specific identity,
   vocabularies, data models and features live in `config/<node>.yaml` and
   `config/<node>/`. Never write `if node == "magic"` in core code.
-- **Node-specific science is a plugin** (`backend/fiesta/plugins/`,
-  `frontend/src/plugins/`); see [docs/plugins.md](docs/plugins.md).
+- **Node-specific science is a plugin**, one folder per plugin with its
+  backend, UI, tests and docs (`config/plugins/<name>/`); see
+  [docs/plugins.md](docs/plugins.md).
 - **`/v1` is a frozen legacy API.** New endpoints go under `/v2`; see
   [docs/api.md](docs/api.md).
 - **Legacy UI behaviour is a spec** ([docs/legacy-ux-spec.md](docs/legacy-ux-spec.md)).

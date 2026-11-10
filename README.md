@@ -79,6 +79,7 @@ dev.earthref.org. `make user EMAIL=… NAME=…` creates another account.
 
 ```
 config/         fiesta.yaml + per-node YAMLs, data models / vocabularies (JSON)
+config/plugins/ node plugins, one folder each: backend, UI, tests, docs (docs/plugins.md)
 backend/        Python package `fiesta` (the FastAPI app, worker, CLI)
 frontend/       SPA (one build serves any node)
 docs/api.md     API contract
