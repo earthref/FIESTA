@@ -110,6 +110,7 @@ $(HOST_DEV): export FIESTA_S3_ACCESS_KEY := $(or $(RUSTFS_ACCESS_KEY),fiesta)
 $(HOST_DEV): export FIESTA_S3_SECRET_KEY := $(or $(RUSTFS_SECRET_KEY),fiesta-secret)
 $(HOST_DEV): export FIESTA_SECRET_KEY := $(or $(FIESTA_SECRET_KEY),dev-only-change-me)
 $(HOST_DEV): export FIESTA_SMTP_PORT := $(or $(MAILPIT_SMTP_PORT),1025)
+$(HOST_DEV): export FIESTA_SEED_PUBLIC := $(or $(FIESTA_SEED_PUBLIC),50)
 
 .PHONY: backend-dev
 backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :API_PORT, default 8000)
@@ -159,7 +160,7 @@ fix: ## Auto-fix lint issues (ruff --fix + biome --write)
 	cd frontend && npx biome check --write . ../config/plugins
 
 .PHONY: seed
-seed: ## Seed the enabled nodes: demo accounts, private fixtures, dev.earthref.org's 50 newest public contributions not yet local [ARGS="--public 10" | --source URL | --fixtures]
+seed: ## Seed the enabled nodes: demo accounts, private fixtures, dev.earthref.org's 50 (FIESTA_SEED_PUBLIC) newest public contributions not yet local [ARGS="--public 10" | --source URL | --fixtures]
 	$(COMPOSE_OPS) run --rm api fiesta seed $(ARGS)
 
 .PHONY: import-public
