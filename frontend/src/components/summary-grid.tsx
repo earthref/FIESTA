@@ -170,7 +170,10 @@ function HeaderCell({
  * page's ColumnFilterMenu). Without them (home page, private workspace) the
  * header only labels the tiles. With `scrollRef` (the element the grid
  * scrolls in) only the rows in view and `overscan` above and below are in the
- * DOM. With `onOpen` a row is clickable: it highlights and opens its record.
+ * DOM; `hits` may then be sparse (one entry per match, undefined until its
+ * page arrives: a placeholder row), and `onRange` hears the rendered indexes
+ * so their pages can be fetched. With `onOpen` a row is clickable: it
+ * highlights and opens its record.
  */
 export function SummaryGrid({
   level,
@@ -184,9 +187,10 @@ export function SummaryGrid({
   scrollRef,
   overscan = 10,
   onOpen,
+  onRange,
 }: {
   level: SearchLevel;
-  hits: SearchResult[];
+  hits: (SearchResult | undefined)[];
   privateKey?: string;
   header?: boolean;
   sort?: GridSort;
@@ -198,27 +202,29 @@ export function SummaryGrid({
   scrollRef?: RefObject<HTMLElement | null>;
   overscan?: number;
   onOpen?: (doc: SearchResult) => void;
+  onRange?: (start: number, end: number) => void;
 }) {
   const columns = level.columns ?? [];
   // The row last opened, highlighted (a new search replaces the records).
   const [selected, setSelected] = useState<SearchResult | null>(null);
-  const { bodyRef, indexes, measure, padTop, padBottom } = useVirtualRows({
+  // A row with a thumbnail tile is its 105px cap tall; otherwise one line.
+  const estimate = columns.some((c) => c.cell === "map" || c.cell === "plot") ? 129 : 41;
+  const { startRef, indexes, measure, padTop, padBottom } = useVirtualRows({
     count: hits.length,
     scrollRef,
-    // A one-line row; taller tiles (plots, maps) are measured.
-    estimateSize: 41,
+    estimateSize: () => estimate,
     overscan,
+    onRange,
   });
   const open = (doc: SearchResult) => {
     setSelected(doc);
     onOpen?.(doc);
   };
-  const spacer = (height: number) =>
-    height > 0 && (
-      <tr>
-        <td colSpan={columns.length} style={{ height, padding: 0 }} />
-      </tr>
-    );
+  const spacer = (height: number, ref?: typeof startRef) => (
+    <tr ref={ref}>
+      <td colSpan={columns.length} style={{ height, padding: 0 }} />
+    </tr>
+  );
   const width = columns.reduce((total, column) => total + column.width + 2 * GAP, 0);
   return (
     <>
@@ -254,13 +260,27 @@ export function SummaryGrid({
             </tr>
           </thead>
         )}
-        <tbody ref={bodyRef}>
-          {spacer(padTop)}
+        <tbody>
+          {spacer(padTop, startRef)}
           {indexes.map((index) => {
             const doc = hits[index];
+            const divider = index < hits.length - 1 || footer ? BORDER : undefined;
+            if (!doc) {
+              return (
+                <tr key={`loading-${index}`} data-index={index} ref={measure} aria-busy="true">
+                  <td
+                    colSpan={columns.length}
+                    style={{ height: estimate, padding: "0.75em 0", borderBottom: divider }}
+                  >
+                    <div className="h-3 w-1/3 animate-pulse rounded-sm bg-gray-100" />
+                    <div className="mt-2 h-3 w-1/2 animate-pulse rounded-sm bg-gray-100" />
+                  </td>
+                </tr>
+              );
+            }
             return (
               <tr
-                // Sub-contribution hits can share a contribution id; pages are append-only.
+                // Sub-contribution hits can share a contribution id.
                 key={`${contributionId(doc) ?? "hit"}-${index}`}
                 data-index={index}
                 ref={measure}
@@ -287,7 +307,7 @@ export function SummaryGrid({
                       ...cellStyle,
                       paddingTop: "0.75em",
                       paddingBottom: "0.75em",
-                      borderBottom: index < hits.length - 1 || footer ? BORDER : undefined,
+                      borderBottom: divider,
                     }}
                   >
                     <div style={{ maxHeight: 105, overflow: "hidden" }}>
@@ -303,7 +323,7 @@ export function SummaryGrid({
               </tr>
             );
           })}
-          {spacer(padBottom)}
+          {padBottom > 0 && spacer(padBottom)}
         </tbody>
       </table>
       {footer}

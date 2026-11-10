@@ -1,4 +1,4 @@
-import { keepPreviousData, useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import {
   type CSSProperties,
@@ -16,7 +16,7 @@ import { ErrorMessage } from "../components/error-message";
 import { type Area, areaToBbox, parseArea } from "../components/map/map-points";
 import { type AreaRequest, SearchMap } from "../components/map/search-map";
 import { contributionId, ResultDivider } from "../components/result-item";
-import { columnsOf, RowsGrid, rowsOfHits } from "../components/rows-table";
+import { columnsOf, RowsGrid, rowsOfHit } from "../components/rows-table";
 import {
   applicableFilters,
   BboxFilter,
@@ -43,17 +43,24 @@ import { useAuth } from "../lib/auth";
 import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
+import { usePagedItems } from "../lib/paged";
 import type {
   FacetBucket,
   GridColumn,
   SearchFilter,
   SearchLevel,
   SearchPage as SearchPageData,
+  SearchResult,
 } from "../lib/types";
 import { cx, formatNumber, getQueryToken, parseQueryTokens, toggleQueryToken } from "../lib/utils";
 import { type PluginSubTabContext, pluginFiltersPanel, pluginSubTabs } from "../plugins";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
+/** OpenSearch's max_result_window: `from` + `size` past it is refused, so the
+ * grids scroll through the first 10,000 records of a search. */
+const MAX_RESULTS = 10_000;
+const pageTotal = (page: SearchPageData) => page.total;
+const pageResults = (page: SearchPageData) => page.results;
 /** The Rows grid's header sort names a raw row column: `rows.<column>:asc|desc`. */
 const ROWS_SORT = "rows.";
 const routeApi = getRouteApi("/search");
@@ -453,52 +460,58 @@ export function SearchPage() {
   const queryRanges = activeTab?.render ? undefined : activeRanges;
   const queryBbox = activeTab?.render ? undefined : (areaBbox(level) ?? activeBbox);
 
-  const results = useInfiniteQuery({
-    queryKey: ["search", level?.table, q, sort, queryRanges, queryBbox, gridFilterList],
-    queryFn: ({ pageParam }) =>
+  // The grids are sized to every match (up to MAX_RESULTS) and fetch the
+  // pages under their visible rows; page 0 carries the facets and totals.
+  const searchKey = ["search", level?.table, q, sort, queryRanges, queryBbox, gridFilterList];
+  const paged = usePagedItems({
+    queryKey: searchKey,
+    pageSize: PAGE_SIZE,
+    fetchPage: (page) =>
       api<SearchPageData>(`/search/${level?.table}`, {
         params: {
           ...searchRequestParams(
             q,
             PAGE_SIZE,
-            pageParam,
-            true,
+            page * PAGE_SIZE,
+            page === 0,
             queryRanges,
             queryBbox,
             sort,
             gridFilterList,
           ),
           // The Rows and Map sub-tabs' counts, with the first page.
-          totals: pageParam === 0 || undefined,
+          totals: page === 0 || undefined,
         },
       }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      const loaded = allPages.reduce((total, page) => total + page.results.length, 0);
-      return loaded < lastPage.total && lastPage.results.length > 0 ? loaded : undefined;
-    },
+    totalOf: pageTotal,
+    itemsOf: pageResults,
+    limit: MAX_RESULTS,
     enabled: !!level,
-    placeholderData: keepPreviousData,
   });
-
+  const results = paged.first;
+  // The records loaded so far (plugin views, the download link).
   const hits = useMemo(
-    () => results.data?.pages.flatMap((page) => page.results) ?? [],
-    [results.data],
+    () => paged.items.filter((hit): hit is SearchResult => hit !== undefined),
+    [paged.items],
   );
-  const total = results.data?.pages[0]?.total ?? 0;
-  const gridRows = useMemo(() => rowsOfHits(hits, rowsSort), [hits, rowsSort]);
-  const gridRowColumns = useMemo(() => columnsOf(gridRows), [gridRows]);
+  const total = results.data?.total ?? 0;
+  const rowItems = useMemo(
+    () => paged.items.map((hit, h) => hit && rowsOfHit(hit, h, rowsSort)),
+    [paged.items, rowsSort],
+  );
+  const gridRowColumns = useMemo(() => columnsOf(rowItems), [rowItems]);
+  const rowsPerRecord = total > 0 && results.data?.rows_total ? results.data.rows_total / total : 1;
   // Each sub-tab's count (undefined while loading, null for none): the
   // records (Summaries), their rows, those on the map, a plugin view's docs.
   const subTabCount = (tab: SubTab): number | null | undefined => {
-    const first = results.isPending ? undefined : results.data?.pages[0];
+    const first = results.isPending ? undefined : results.data;
     if (tab.name === "Summaries") return first?.total;
     if (tab.name === "Rows") return first && (first.rows_total ?? first.total);
     if (tab.name === "Map") return first && (first.mapped_total ?? null);
     const index = countedTabs.indexOf(tab);
     return index < 0 ? null : pluginCounts[index]?.data?.total;
   };
-  const aggregations = results.data?.pages[0]?.aggregations ?? null;
+  const aggregations = results.data?.aggregations ?? null;
   // The sidebar's facet counts follow the sub-tab: records (Summaries), their
   // rows, those on the map, or a plugin view's own docs. A value with none
   // drops out (an active one stays, at zero).
@@ -523,28 +536,13 @@ export function SearchPage() {
   const topContributionId =
     level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
 
-  // Infinite scroll (legacy InfiniteScroller): load the next page when the
-  // sentinel at the end of the list scrolls within 50px of the view. The
-  // observer is re-armed after every page so a still-visible sentinel keeps
-  // loading until the view is full.
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = results;
-  const autoLoad = !activeTab?.render;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: hits.length re-arms the observer after each page loads
+  // A new search starts at the top of its grid.
+  const searchKeyText = JSON.stringify(searchKey);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the key's text is the change
   useEffect(() => {
-    const root = scrollerRef.current;
-    const target = sentinelRef.current;
-    if (!root || !target || !autoLoad || !hasNextPage) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting) && !isFetchingNextPage) fetchNextPage();
-      },
-      { root, rootMargin: "0px 0px 50px 0px" },
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [autoLoad, hasNextPage, isFetchingNextPage, fetchNextPage, hits.length]);
+    scrollerRef.current?.scrollTo({ top: 0 });
+  }, [searchKeyText]);
 
   // Clear every visible control: facet tokens (the sidebar's and the grid
   // columns'), ranges and the bbox it shows.
@@ -607,6 +605,12 @@ export function SearchPage() {
   ];
   const onGridSort = (next: GridSort | undefined) =>
     setSearch({ sort: next ? `${next.key}:${next.order}` : undefined });
+  const windowNote = paged.matched > MAX_RESULTS && (
+    <p className="py-4 text-center text-[13px] text-gray-500">
+      Showing the first {formatNumber(MAX_RESULTS)} of {formatNumber(paged.matched)} records. Narrow
+      the search or change the sort to reach the rest.
+    </p>
+  );
   const onRowsSort = (next: GridSort | undefined) =>
     setSearch({ sort: next ? `${ROWS_SORT}${next.key}:${next.order}` : undefined });
   const onGridFilter = (key: string, text: string) =>
@@ -1043,14 +1047,15 @@ export function SearchPage() {
                       <div style={{ margin: "0 -1em 1em" }}>
                         <SummaryGrid
                           level={level}
-                          hits={hits}
+                          hits={paged.items}
                           privateKey={privateKey}
                           sort={gridSort}
                           onSort={onGridSort}
                           filterMenu={columnFilterMenu}
-                          footer={isFetchingNextPage && <LoadingItem divider={false} />}
+                          footer={windowNote}
                           scrollRef={scrollerRef}
-                          overscan={PAGE_SIZE}
+                          overscan={10}
+                          onRange={paged.onRange}
                           onOpen={(doc) => {
                             const id = contributionId(doc);
                             if (id) openContribution(id, level.table);
@@ -1061,12 +1066,14 @@ export function SearchPage() {
                     {activeTab?.name === "Rows" && (
                       <div style={{ marginBottom: "1em" }}>
                         <RowsGrid
-                          rows={gridRows}
+                          items={rowItems}
                           columns={gridRowColumns}
+                          estimateRows={rowsPerRecord}
                           sort={rowsSort}
                           onSort={onRowsSort}
                           scrollRef={scrollerRef}
-                          footer={isFetchingNextPage && <LoadingItem divider={false} />}
+                          onRange={paged.onRange}
+                          footer={windowNote}
                         />
                       </div>
                     )}
@@ -1084,21 +1091,7 @@ export function SearchPage() {
                       </div>
                     )}
 
-                    {hits.length === 0 && <NoItemsMessage />}
-
-                    {/* Infinite-scroll sentinel; the button is the no-observer fallback */}
-                    <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
-                    {autoLoad && hasNextPage && !isFetchingNextPage && (
-                      <div className="flex justify-center pb-4">
-                        <button
-                          type="button"
-                          onClick={() => fetchNextPage()}
-                          className="rounded-sm border border-gray-300 bg-surface px-3 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
-                        >
-                          Load More (showing {hits.length} of {formatNumber(total)})
-                        </button>
-                      </div>
-                    )}
+                    {total === 0 && <NoItemsMessage />}
                   </>
                 )}
               </div>

@@ -1,9 +1,10 @@
-import { keepPreviousData, useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { lazy, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { nodeUrl, siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
+import { usePagedItems } from "../lib/paged";
 import type {
   ContributionRowStats,
   ContributionVersion,
@@ -768,6 +769,19 @@ function VersionsTable({
 
 // --- Level tabs: the contribution's rows at that level ---------------------------------
 
+const tableTotal = (page: TablePage) => page.total;
+/** A file table's rows as grid items, one row each, labelled with its row in
+ * the file (what validation names). */
+const tableItems = (page: TablePage): GridRow[][] =>
+  page.rows.map((row) => [
+    {
+      key: String(row.row),
+      label: formatNumber(row.row),
+      values: row.values,
+      issues: row.issues,
+    },
+  ]);
+
 function LevelPanel({
   level,
   id,
@@ -780,47 +794,34 @@ function LevelPanel({
   // A header sort orders the whole table, server-side.
   const [sort, setSort] = useState<GridSort | undefined>();
   const scroller = useRef<HTMLDivElement>(null);
-  const table = useInfiniteQuery({
+  // The grid is sized to the whole table and fetches the pages it shows.
+  const table = usePagedItems({
     queryKey: ["contribution-table", id, level.table, privateKey, sort?.key, sort?.order],
-    queryFn: ({ pageParam }) =>
+    pageSize: PAGE_SIZE,
+    fetchPage: (page) =>
       api<TablePage>(`/contributions/${id}/tables/${level.table}`, {
         params: {
           private_key: privateKey || undefined,
           sort: sort ? `${sort.key}:${sort.order}` : undefined,
           size: PAGE_SIZE,
-          from: pageParam || undefined,
+          from: page * PAGE_SIZE || undefined,
         },
       }),
-    initialPageParam: 0,
-    getNextPageParam: (last, pages) => {
-      const loaded = pages.reduce((n, page) => n + page.rows.length, 0);
-      return loaded < last.total && last.rows.length > 0 ? loaded : undefined;
-    },
-    placeholderData: keepPreviousData,
+    totalOf: tableTotal,
+    itemsOf: tableItems,
   });
-  const first = table.data?.pages[0];
-  const rows = useMemo<GridRow[]>(
-    () =>
-      table.data?.pages.flatMap((page) =>
-        page.rows.map((row) => ({
-          key: String(row.row),
-          // The row's place in the file's table, what validation names.
-          label: formatNumber(row.row),
-          values: row.values,
-          issues: row.issues,
-        })),
-      ) ?? [],
-    [table.data],
-  );
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = table;
+  const first = table.first.data;
 
-  if (table.isPending) return <PageSpinner label={`Loading ${level.name.toLowerCase()}…`} />;
-  if (table.error) return <ErrorMessage error={table.error} className="m-4" />;
+  if (table.first.isPending) {
+    return <PageSpinner label={`Loading ${level.name.toLowerCase()}…`} />;
+  }
+  if (table.first.error) return <ErrorMessage error={table.first.error} className="m-4" />;
   return (
     <div ref={scroller} className="h-full overflow-auto px-4 pb-4 sm:px-6 sm:pb-6">
       <RowsGrid
-        rows={rows}
+        items={table.items}
         columns={first?.columns ?? []}
+        labelled
         columnIssues={first?.column_issues}
         sort={sort}
         onSort={(next) => {
@@ -828,17 +829,7 @@ function LevelPanel({
           scroller.current?.scrollTo({ top: 0 });
         }}
         scrollRef={scroller}
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        footer={
-          isFetchingNextPage && (
-            <p className="py-3 text-center text-[13px] text-gray-500">
-              Loading more (showing {formatNumber(rows.length)} of {formatNumber(first?.total ?? 0)}
-              )…
-            </p>
-          )
-        }
+        onRange={table.onRange}
         empty={`No ${level.name.toLowerCase()} rows in this contribution's file.`}
       />
     </div>

@@ -1,4 +1,4 @@
-import { type ReactNode, type RefObject, useEffect, useRef } from "react";
+import { type ReactNode, type RefObject, useMemo } from "react";
 import type { CellIssue, SearchResult } from "../lib/types";
 import { cx } from "../lib/utils";
 import { useVirtualRows } from "../lib/virtual-rows";
@@ -45,31 +45,34 @@ function compareCells(a: unknown, b: unknown): number {
 }
 
 /**
- * Search hits' raw rows, each hit's rows in order. The search sorts the hits
- * by a `rows.<column>` sort (on their rows' smallest or largest value), so
- * with `sort` each hit's own rows are ordered the same way (blanks last).
+ * A search hit's raw rows. The search sorts the hits by a `rows.<column>`
+ * sort (on their rows' smallest or largest value), so with `sort` the hit's
+ * own rows are ordered the same way (blanks last).
  */
-export function rowsOfHits(hits: SearchResult[], sort?: GridSort): GridRow[] {
-  return hits.flatMap((hit, h) => {
-    const rows = Array.isArray(hit.rows) ? (hit.rows as Record<string, unknown>[]) : [];
-    const ordered = sort
-      ? [...rows].sort((a, b) => {
-          const blankA = isBlank(a?.[sort.key]);
-          const blankB = isBlank(b?.[sort.key]);
-          if (blankA || blankB) return Number(blankA) - Number(blankB);
-          const order = compareCells(a[sort.key], b[sort.key]);
-          return sort.order === "asc" ? order : -order;
-        })
-      : rows;
-    return ordered.map((values, i) => ({ key: `${h}-${i}`, values: values ?? {} }));
-  });
+export function rowsOfHit(hit: SearchResult, h: number, sort?: GridSort): GridRow[] {
+  const rows = Array.isArray(hit.rows) ? (hit.rows as Record<string, unknown>[]) : [];
+  const ordered = sort
+    ? [...rows].sort((a, b) => {
+        const blankA = isBlank(a?.[sort.key]);
+        const blankB = isBlank(b?.[sort.key]);
+        if (blankA || blankB) return Number(blankA) - Number(blankB);
+        const order = compareCells(a[sort.key], b[sort.key]);
+        return sort.order === "asc" ? order : -order;
+      })
+    : rows;
+  return ordered.map((values, i) => ({ key: `${h}-${i}`, values: values ?? {} }));
 }
 
-/** The rows' columns in first-seen order. */
-export function columnsOf(rows: GridRow[]): string[] {
+/** The loaded rows' columns in first-seen order (from the first 200 rows). */
+export function columnsOf(items: (GridRow[] | undefined)[]): string[] {
   const keys = new Set<string>();
-  for (const row of rows.slice(0, 200)) {
-    for (const key of Object.keys(row.values)) keys.add(key);
+  let seen = 0;
+  for (const item of items) {
+    if (!item) continue;
+    for (const row of item) {
+      for (const key of Object.keys(row.values)) keys.add(key);
+      if (++seen >= 200) return [...keys];
+    }
   }
   return [...keys];
 }
@@ -129,64 +132,98 @@ function SortHeader({
   );
 }
 
+/** Fixed column widths from the header and the first loaded rows' values, so
+ * the columns hold still while rows scroll in and out. */
+function columnWidths(columns: string[], items: (GridRow[] | undefined)[]): number[] {
+  const longest = columns.map((column) => column.length * 1.1 + 2);
+  let seen = 0;
+  outer: for (const item of items) {
+    if (!item) continue;
+    for (const row of item) {
+      columns.forEach((column, i) => {
+        longest[i] = Math.max(longest[i], display(row.values[column]).length);
+      });
+      if (++seen >= 200) break outer;
+    }
+  }
+  // ~7.5px a character at 14px, the cell's 24px padding, within 60–360px.
+  return longest.map((chars) => Math.min(360, Math.max(60, Math.ceil(chars * 7.5) + 24)));
+}
+
+/** A row's height (one line of 14px text and its padding). */
+const ROW_HEIGHT = 37;
+
 /**
  * Raw rows as one grid (the search page's Rows view, the contribution
- * modal's level tabs): a sticky header whose columns sort with `onSort`, and,
- * with `scrollRef` (the element it scrolls in), only the rows in view and
- * `overscan` above and below in the DOM; `onEndReached` asks for the next
- * page once the last row renders. Cells with validation issues take the
- * online editor's colors, with the messages as their tooltip.
+ * modal's level tabs): a sticky header whose columns sort with `onSort`.
+ * `items` are the grid's records, each its rows (a search hit's rows, or one
+ * row of a file's table), and may be sparse: undefined until its page
+ * arrives, shown as a placeholder `estimateRows` rows tall. With `scrollRef`
+ * (the element it scrolls in) only the items in view and `overscan` above
+ * and below are in the DOM, and `onRange` hears their indexes so their pages
+ * can be fetched. Cells with validation issues take the online editor's
+ * colors, with the messages as their tooltip; a long value is cut short with
+ * the whole of it as the tooltip.
  */
 export function RowsGrid({
-  rows,
+  items,
   columns,
+  labelled = false,
+  estimateRows = 1,
   sort,
   onSort,
   columnIssues,
   scrollRef,
   overscan = 25,
-  onEndReached,
+  onRange,
   footer,
   empty = "No row data for these results.",
 }: {
-  rows: GridRow[];
+  items: (GridRow[] | undefined)[];
   columns: string[];
+  /** A leading column of the rows' labels (their row in the file). */
+  labelled?: boolean;
+  estimateRows?: number;
   sort?: GridSort;
   onSort?: (sort: GridSort | undefined) => void;
   columnIssues?: Record<string, CellIssue>;
   scrollRef?: RefObject<HTMLElement | null>;
   overscan?: number;
-  onEndReached?: () => void;
+  onRange?: (start: number, end: number) => void;
   footer?: ReactNode;
   empty?: ReactNode;
 }) {
-  const labelled = rows.some((row) => row.label !== undefined);
-  const { bodyRef, indexes, measure, padTop, padBottom } = useVirtualRows({
-    count: rows.length,
+  const placeholder = Math.max(1, Math.round(estimateRows)) * ROW_HEIGHT;
+  const { startRef, indexes, measure, padTop, padBottom } = useVirtualRows({
+    count: items.length,
     scrollRef,
-    estimateSize: 37,
+    estimateSize: (index) => (items[index]?.length || Math.max(1, estimateRows)) * ROW_HEIGHT,
     overscan,
+    onRange,
   });
-  const lastIndex = indexes[indexes.length - 1];
-  const endReached = useRef(onEndReached);
-  endReached.current = onEndReached;
-  useEffect(() => {
-    if (lastIndex !== undefined && lastIndex >= rows.length - 1) endReached.current?.();
-  }, [lastIndex, rows.length]);
+  // Widths settle once the first rows arrive; later pages keep them.
+  const loaded = items.some(Boolean);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: measured from the first rows only
+  const widths = useMemo(() => columnWidths(columns, items), [columns, loaded]);
 
-  if (rows.length === 0) {
+  if (items.length === 0) {
     return <p className="py-8 text-center text-[13px] text-gray-500">{empty}</p>;
   }
   const span = columns.length + (labelled ? 1 : 0);
-  const spacer = (height: number) =>
-    height > 0 && (
-      <tr>
-        <td colSpan={span} style={{ height, padding: 0 }} />
-      </tr>
-    );
+  const labelWidth = 64;
+  const width = widths.reduce((total, w) => total + w, labelled ? labelWidth : 0);
   return (
     <>
-      <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
+      <table
+        className="border-separate border-spacing-0 text-left text-sm"
+        style={{ tableLayout: "fixed", width: `max(${width}px, 100%)` }}
+      >
+        <colgroup>
+          {labelled && <col style={{ width: labelWidth }} />}
+          {widths.map((w, i) => (
+            <col key={columns[i]} style={{ width: w }} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             {labelled && (
@@ -205,51 +242,79 @@ export function RowsGrid({
             ))}
           </tr>
         </thead>
-        <tbody ref={bodyRef}>
-          {spacer(padTop)}
-          {indexes.map((index) => {
-            const row = rows[index];
-            const rowIssue = row.issues?.[""];
-            return (
-              <tr
-                key={row.key}
-                data-index={index}
-                ref={measure}
-                className="hover:bg-gray-50/60"
-                title={rowIssue && issueTitle(rowIssue)}
-              >
-                {labelled && (
-                  <td
-                    className={cx(
-                      TD,
-                      "border-b border-gray-100 text-right text-xs text-gray-500 tabular-nums",
-                      rowIssue && ISSUE_CLASS[rowIssue.severity],
-                    )}
-                  >
-                    {row.label}
-                  </td>
-                )}
-                {columns.map((column) => {
-                  const issue = row.issues?.[column] ?? rowIssue;
-                  return (
-                    <td
-                      key={column}
-                      title={issue && issueTitle(issue)}
-                      className={cx(
-                        TD,
-                        "border-b border-gray-100",
-                        issue && ISSUE_CLASS[issue.severity],
-                      )}
-                    >
-                      {display(row.values[column])}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-          {spacer(padBottom)}
+        <tbody ref={startRef}>
+          <tr>
+            <td colSpan={span} style={{ height: padTop, padding: 0 }} />
+          </tr>
         </tbody>
+        {indexes.map((index) => {
+          const item = items[index];
+          if (!item) {
+            return (
+              <tbody key={`loading-${index}`} data-index={index} ref={measure} aria-busy="true">
+                <tr>
+                  <td
+                    colSpan={span}
+                    className="border-b border-gray-100 px-3 align-top"
+                    style={{ height: placeholder }}
+                  >
+                    <div className="mt-3 h-3 w-1/3 animate-pulse rounded-sm bg-gray-100" />
+                  </td>
+                </tr>
+              </tbody>
+            );
+          }
+          return (
+            <tbody key={`item-${index}`} data-index={index} ref={measure}>
+              {item.map((row) => {
+                const rowIssue = row.issues?.[""];
+                return (
+                  <tr
+                    key={row.key}
+                    className="hover:bg-gray-50/60"
+                    title={rowIssue && issueTitle(rowIssue)}
+                  >
+                    {labelled && (
+                      <td
+                        className={cx(
+                          TD,
+                          "border-b border-gray-100 text-right text-xs text-gray-500 tabular-nums",
+                          rowIssue && ISSUE_CLASS[rowIssue.severity],
+                        )}
+                      >
+                        {row.label}
+                      </td>
+                    )}
+                    {columns.map((column) => {
+                      const issue = row.issues?.[column] ?? rowIssue;
+                      const text = display(row.values[column]);
+                      return (
+                        <td
+                          key={column}
+                          title={issue ? issueTitle(issue) : text.length > 40 ? text : undefined}
+                          className={cx(
+                            TD,
+                            "overflow-hidden text-ellipsis border-b border-gray-100",
+                            issue && ISSUE_CLASS[issue.severity],
+                          )}
+                        >
+                          {text}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          );
+        })}
+        {padBottom > 0 && (
+          <tbody>
+            <tr>
+              <td colSpan={span} style={{ height: padBottom, padding: 0 }} />
+            </tr>
+          </tbody>
+        )}
       </table>
       {footer}
     </>
