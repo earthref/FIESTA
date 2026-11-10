@@ -305,7 +305,8 @@ export function EChart({
   const shown = brush ? tools : tools.filter(([m]) => m !== "select");
 
   return (
-    <div className="group relative">
+    // Canvas colors are fixed (legacy plot styling), so the chart stays light in dark mode.
+    <div className="er-light group relative">
       <div
         ref={divRef}
         style={{ height, width: "100%" }}
@@ -324,7 +325,7 @@ export function EChart({
           role="toolbar"
           aria-label={`${label}: tools`}
           className={cx(
-            "absolute top-0 right-1 flex gap-px rounded-sm border border-gray-200 bg-white/90 p-px text-[12px] text-gray-600 transition-opacity",
+            "absolute top-0 right-1 flex gap-px rounded-sm border border-gray-200 bg-surface/90 p-px text-[12px] text-gray-600 transition-opacity",
             "opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100",
             (zoomed || mode !== (brush ? "select" : null)) && "opacity-100",
           )}

@@ -142,7 +142,7 @@ function ColorLegend({
             width: 14,
             height: 150,
             background: `linear-gradient(to bottom, ${colors.old}, ${colors.young})`,
-            border: "1px solid #D4D4D5",
+            border: "1px solid var(--er-edge)",
           }}
           aria-hidden="true"
         />
@@ -195,10 +195,10 @@ function SidePanel({
   hasAges: boolean;
   colors: AgeColors;
 }) {
-  const section = "border-b border-[#D4D4D5]";
-  const heading = "mb-1 text-[13px] font-bold text-[rgba(0,0,0,0.87)]";
+  const section = "border-b border-edge";
+  const heading = "mb-1 text-[13px] font-bold text-ink";
   return (
-    <aside className="w-[180px] shrink-0 overflow-y-auto border-l border-[#D4D4D5] bg-white">
+    <aside className="w-[180px] shrink-0 overflow-y-auto border-l border-edge bg-surface">
       <div className={section} style={{ padding: "0.25em 1em 0.5em" }}>
         <h5 className={heading}>Displayed Poles</h5>
         <label className="sr-only" htmlFor="poles-max">
@@ -224,7 +224,9 @@ function SidePanel({
             onClick={() => setShowEllipses(true)}
             className={cx(
               "flex-1 rounded-sm px-2 py-1 text-[12px] font-medium",
-              showEllipses ? "bg-node text-white" : "border border-gray-300 bg-white text-gray-600",
+              showEllipses
+                ? "bg-node text-white"
+                : "border border-gray-300 bg-surface text-gray-600",
             )}
           >
             Show
@@ -236,7 +238,7 @@ function SidePanel({
               "flex-1 rounded-sm px-2 py-1 text-[12px] font-medium",
               !showEllipses
                 ? "bg-node text-white"
-                : "border border-gray-300 bg-white text-gray-600",
+                : "border border-gray-300 bg-surface text-gray-600",
             )}
           >
             Hide
@@ -340,7 +342,7 @@ function PolesMapView({
     <div className="flex flex-col" style={{ height: 680 }}>
       {/* Row 1 — detail card bar */}
       <div
-        className="flex items-center gap-[10px] border-b border-[#D4D4D5] bg-white"
+        className="flex items-center gap-[10px] border-b border-edge bg-surface"
         style={{ height: 194.5, padding: 10 }}
       >
         {chevronButton("left", !canPrev, () => setSelected(Math.max(0, (selected ?? 0) - 1)))}

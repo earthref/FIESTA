@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { PORTAL } from "../lib/base";
-import { useNodeConfig } from "../lib/config";
+import { inkColor, useNodeConfig } from "../lib/config";
 import { EARTHREF, PORTALS, portalUrl } from "../lib/portals";
 import { type NodeMenuItem, nodeMenuItems } from "./node-menu";
 import { Icon } from "./ui/icon";
@@ -45,7 +45,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
     const className =
       "flex items-center gap-2 rounded-sm px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 " +
       "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node " +
-      "[&.active]:font-semibold [&.active]:text-node";
+      "[&.active]:font-semibold [&.active]:text-node-ink";
     return item.href ? (
       <a
         key={item.key}
@@ -55,7 +55,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
         className={className}
         onClick={onClose}
       >
-        {item.icon && <Icon name={item.icon} size="small" className="text-[#555555]" />}
+        {item.icon && <Icon name={item.icon} size="small" className="text-ink-secondary" />}
         {item.label}
       </a>
     ) : (
@@ -66,7 +66,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
         activeOptions={item.exact ? { exact: true } : undefined}
         onClick={onClose}
       >
-        {item.icon && <Icon name={item.icon} size="small" className="text-[#555555]" />}
+        {item.icon && <Icon name={item.icon} size="small" className="text-ink-secondary" />}
         {item.label}
       </Link>
     );
@@ -78,7 +78,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
       <button
         type="button"
         aria-label="Close menu"
-        className="absolute inset-0 cursor-default bg-gray-900/40"
+        className="absolute inset-0 cursor-default bg-backdrop"
         onClick={onClose}
         tabIndex={-1}
       />
@@ -88,7 +88,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
         aria-modal="true"
         aria-label="Navigation menu"
         tabIndex={-1}
-        className="absolute inset-y-0 left-0 flex w-[280px] max-w-[85vw] flex-col overflow-y-auto bg-white shadow-xl outline-none"
+        className="absolute inset-y-0 left-0 flex w-[280px] max-w-[85vw] flex-col overflow-y-auto bg-surface shadow-xl outline-none"
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-3 py-2">
           <span className="text-sm font-semibold text-gray-900">Menu</span>
@@ -108,7 +108,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
             const active = PORTAL ? portal === EARTHREF : portal.label === config?.key;
             const className =
               "rounded-sm px-3 py-1.5 text-sm hover:bg-gray-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node";
-            const style = { color: portal.color, fontWeight: active ? 700 : 500 };
+            const style = { color: inkColor(portal.color), fontWeight: active ? 700 : 500 };
             return active ? (
               <Link key={portal.label} to="/" className={className} style={style} onClick={onClose}>
                 {portal.label}

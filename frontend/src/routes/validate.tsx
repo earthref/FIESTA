@@ -10,7 +10,7 @@ export function ValidatePage() {
       <h1 className="mb-1 text-xl font-semibold text-gray-900">Validate a file</h1>
       <p className="mb-5 text-sm text-gray-600">
         Validation runs inside your{" "}
-        <Link to="/private" className="text-node underline">
+        <Link to="/private" className="text-node-ink underline">
           private workspace
         </Link>
         : the file below is uploaded as a private contribution (never published), parsed against the{" "}

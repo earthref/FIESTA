@@ -114,7 +114,7 @@ function CoreTracks({ core, defs }: { core: CoreData; defs: SeriesDef[] }) {
     .filter((entry) => entry.points.length > 0);
 
   if (series.length === 0) {
-    return <p className="text-[13px] text-[#AAAAAA]">No plottable series for {core.name}.</p>;
+    return <p className="text-[13px] text-ink-faint">No plottable series for {core.name}.</p>;
   }
 
   const depths = series.flatMap((entry) => entry.points.map((point) => point.depth));
@@ -135,7 +135,7 @@ function CoreTracks({ core, defs }: { core: CoreData; defs: SeriesDef[] }) {
         height={height}
         role="img"
         aria-label={`Depth plot for ${core.name}`}
-        className="bg-white"
+        className="er-light bg-surface"
       >
         {/* Shared depth axis (increasing downward) */}
         <line
@@ -248,7 +248,7 @@ function ContributionDepthPlots({
       {query.isPending && <PageSpinner label={`Loading measurements for ${id}…`} />}
       {query.error && <ErrorMessage error={query.error} />}
       {query.data !== undefined && cores.length === 0 && (
-        <p className="text-[13px] text-[#AAAAAA]">No depth measurements available.</p>
+        <p className="text-[13px] text-ink-faint">No depth measurements available.</p>
       )}
       <div className="flex flex-wrap gap-6">
         {cores.map((core) => (

@@ -79,7 +79,7 @@ function IssueGroup({
         {table}
         <span
           className={cx(
-            "inline-block min-w-[3em] rounded-full border bg-white px-2 py-0.5 text-center text-xs font-medium",
+            "inline-block min-w-[3em] rounded-full border bg-surface px-2 py-0.5 text-center text-xs font-medium",
             tone === "danger" ? "border-red-300 text-red-700" : "border-amber-300 text-amber-700",
           )}
         >
@@ -140,7 +140,7 @@ function ValidationModal({
               Validation passed successfully!
             </p>
           ) : (
-            <p className="rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-[#9F3A38]">
+            <p className="rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-error-ink">
               {result.errors.length} Validation Error{result.errors.length === 1 ? "" : "s"}
             </p>
           )}
@@ -307,12 +307,12 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
       {/* 1. Inverted node-color top attached segment */}
       <div
         className="flex flex-wrap items-center rounded-t-sm bg-node text-white"
-        style={{ ...segmentBleed, padding: "0.5em", border: "1px solid rgba(34,36,38,.15)" }}
+        style={{ ...segmentBleed, padding: "0.5em", border: "1px solid var(--er-line)" }}
       >
         <div className="flex min-w-0" style={{ flex: "1 1 auto" }}>
           <label
             htmlFor={`name-${contribution.id}`}
-            className="flex items-center whitespace-nowrap rounded-l-sm bg-[#e8e8e8] px-[0.8em] text-[12px] font-bold text-gray-700"
+            className="flex items-center whitespace-nowrap rounded-l-sm bg-panel-strong px-[0.8em] text-[12px] font-bold text-gray-700"
           >
             Private Contribution Name
           </label>
@@ -320,7 +320,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
             id={`name-${contribution.id}`}
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="min-w-0 flex-1 bg-white px-2 py-1 text-[13px] text-gray-900 focus:outline-hidden"
+            className="min-w-0 flex-1 bg-surface px-2 py-1 text-[13px] text-gray-900 focus:outline-hidden"
             style={{ borderRadius: 0 }}
           />
           <button
@@ -339,7 +339,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
               type="button"
               onClick={() => setShareOpen(true)}
               disabled={busy || !contribution.private_key}
-              className="rounded-sm bg-white/95 px-2.5 py-1 text-[12px] font-medium text-gray-800 hover:bg-white disabled:opacity-50"
+              className="rounded-sm bg-surface/95 px-2.5 py-1 text-[12px] font-medium text-gray-800 hover:bg-surface disabled:opacity-50"
               style={{ margin: "0 0 0 0.5em" }}
             >
               Share
@@ -348,7 +348,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
               type="button"
               onClick={() => setDeleteOpen(true)}
               disabled={busy}
-              className="rounded-sm bg-white/95 px-2.5 py-1 text-[12px] font-medium text-gray-800 hover:bg-white disabled:opacity-50"
+              className="rounded-sm bg-surface/95 px-2.5 py-1 text-[12px] font-medium text-gray-800 hover:bg-surface disabled:opacity-50"
               style={{ margin: "0 0 0 0.5em" }}
             >
               Delete
@@ -359,11 +359,11 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
 
       {/* 2. DOI + status/actions: ui attached secondary segment */}
       <div
-        className="flex flex-wrap items-center bg-[#f3f4f5]"
+        className="flex flex-wrap items-center bg-panel-hover"
         style={{
           ...segmentBleed,
           padding: "0.5em",
-          border: "1px solid rgba(34,36,38,.15)",
+          border: "1px solid var(--er-line)",
           borderTop: "none",
         }}
       >
@@ -379,7 +379,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
             htmlFor={`doi-${contribution.id}`}
             className={cx(
               "flex items-center whitespace-nowrap rounded-l-sm px-[0.8em] text-[12px] font-bold",
-              doiMissing ? "bg-red-600 text-white" : "bg-[#e8e8e8] text-gray-700",
+              doiMissing ? "bg-red-600 text-white" : "bg-panel-strong text-gray-700",
             )}
           >
             DOI
@@ -397,7 +397,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
           <button
             type="submit"
             disabled={busy || doi.trim() === (contribution.reference_doi ?? "")}
-            className="rounded-r-sm border border-l-0 border-gray-300 bg-white px-2.5 py-1 text-[12px] font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-r-sm border border-l-0 border-gray-300 bg-surface px-2.5 py-1 text-[12px] font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {doiMutation.isPending ? "Saving…" : "Save"}
           </button>
@@ -415,7 +415,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
             <button
               type="button"
               onClick={() => setResultsOpen(true)}
-              className="ml-2 text-[12px] text-node underline hover:opacity-80"
+              className="ml-2 text-[12px] text-node-ink underline hover:opacity-80"
             >
               validation results
             </button>
@@ -436,7 +436,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
                 type="button"
                 disabled={busy}
                 onClick={() => deactivateMutation.mutate()}
-                className="ml-2 rounded-sm border border-gray-300 bg-white px-2.5 py-1 text-[12px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="ml-2 rounded-sm border border-gray-300 bg-surface px-2.5 py-1 text-[12px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 {deactivateMutation.isPending ? "Deactivating…" : "Deactivate"}
               </button>
@@ -464,18 +464,18 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
       </div>
 
       {actionError !== null && (
-        <div style={{ ...segmentBleed, border: "1px solid rgba(34,36,38,.15)", borderTop: "none" }}>
+        <div style={{ ...segmentBleed, border: "1px solid var(--er-line)", borderTop: "none" }}>
           <ErrorMessage error={actionError} />
         </div>
       )}
 
       {/* 3. Bottom attached segment wrapping the collapsed result card */}
       <div
-        className="rounded-b-sm bg-white"
+        className="rounded-b-sm bg-surface"
         style={{
           ...segmentBleed,
           padding: "1px 1em 0",
-          border: "1px solid rgba(34,36,38,.15)",
+          border: "1px solid var(--er-line)",
           borderTop: "none",
         }}
       >
@@ -564,7 +564,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
             </>
           }
         >
-          <p className="text-sm font-medium text-[#9F3A38]">
+          <p className="text-sm font-medium text-error-ink">
             Warning! You cannot undo this delete.
           </p>
         </Modal>
@@ -656,7 +656,7 @@ export function PrivateWorkspacePage() {
   );
 
   const countLabelStyle = {
-    color: "#0C0C0C",
+    color: "var(--er-ink-heading)",
     margin: "-1em -0.5em -1em 0.5em",
     minWidth: "4em",
     padding: "0.5em",
@@ -667,7 +667,7 @@ export function PrivateWorkspacePage() {
       "inline-flex items-center rounded-sm text-[13px] font-medium focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
       active
         ? "bg-node text-white hover:bg-node-dark"
-        : "border border-gray-300 bg-white text-gray-500 hover:bg-gray-50",
+        : "border border-gray-300 bg-surface text-gray-500 hover:bg-gray-50",
     );
 
   return (
@@ -690,7 +690,7 @@ export function PrivateWorkspacePage() {
           <Icon name="edit" size="small" />
           &nbsp;In Preparation
           <span
-            className="inline-block rounded-full border border-gray-300 bg-white text-center text-[11px] font-medium"
+            className="inline-block rounded-full border border-gray-300 bg-surface text-center text-[11px] font-medium"
             style={countLabelStyle}
           >
             {preparationCount}
@@ -706,7 +706,7 @@ export function PrivateWorkspacePage() {
           <Icon name="check" size="small" />
           &nbsp;Published
           <span
-            className="inline-block rounded-full border border-gray-300 bg-white text-center text-[11px] font-medium"
+            className="inline-block rounded-full border border-gray-300 bg-surface text-center text-[11px] font-medium"
             style={countLabelStyle}
           >
             {publishedCount}

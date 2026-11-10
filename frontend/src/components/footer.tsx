@@ -1,17 +1,17 @@
 import { assetUrl, PORTAL } from "../lib/base";
-import { useNodeConfig } from "../lib/config";
+import { inkColor, useNodeConfig } from "../lib/config";
 import { PORTALS } from "../lib/portals";
 import { Icon } from "./ui/icon";
 
 /** `ui header <color>` at 1rem: bold, node-colored inline link. */
-const headerLink = "font-bold text-node hover:underline";
+const headerLink = "font-bold text-node-ink hover:underline";
 
 /** `ui button compact basic <color>` with inline margin .5em 1em (layout.jsx). */
 function basicButtonStyle(color: string) {
   return {
     color,
     boxShadow: `0 0 0 1px ${color} inset`,
-    background: "#fff",
+    background: "var(--er-surface)",
     fontSize: "1rem",
     fontWeight: 400,
     lineHeight: "1em",
@@ -21,7 +21,7 @@ function basicButtonStyle(color: string) {
   } as const;
 }
 
-const earthrefColor = PORTALS[0]?.color ?? "#006600";
+const earthrefColor = inkColor(PORTALS[0]?.color ?? "#006600");
 
 /**
  * Legacy `ui bottom fixed small menu footer` (layout.jsx:117-160, layout.less):
@@ -34,13 +34,13 @@ export function Footer() {
 
   return (
     <footer
-      className="bg-[#F8F8F8] sm:fixed sm:inset-x-0 sm:bottom-0 sm:z-40"
+      className="bg-bar sm:fixed sm:inset-x-0 sm:bottom-0 sm:z-40"
       style={{
         fontSize: "0.92857143rem",
         minHeight: "2.85714286em",
-        borderTop: "1px solid rgba(34,36,38,.15)",
-        boxShadow: "0 1px 2px 0 rgba(34,36,38,.15)",
-        color: "rgba(0,0,0,.87)",
+        borderTop: "1px solid var(--er-line)",
+        boxShadow: "0 1px 2px 0 var(--er-line)",
+        color: "var(--er-ink)",
       }}
     >
       <div
@@ -83,7 +83,7 @@ export function Footer() {
           <a
             href={`mailto:webmaster@earthref.org?subject=[${(!PORTAL && config?.key) || "FIESTA"} Help]`}
             className="inline-block self-center text-center sm:whitespace-nowrap"
-            style={basicButtonStyle("var(--node-color)")}
+            style={basicButtonStyle("var(--node-ink)")}
           >
             <Icon
               name="mail"

@@ -274,7 +274,9 @@ export function DataModelEditor({
               type="button"
               onClick={() => setTable(name)}
               className={`block w-full rounded-sm px-2 py-1 text-left ${
-                name === table ? "bg-node-soft font-semibold text-node-dark" : "hover:bg-gray-100"
+                name === table
+                  ? "bg-node-soft font-semibold text-node-ink-strong"
+                  : "hover:bg-gray-100"
               }`}
             >
               {t.label ?? name}

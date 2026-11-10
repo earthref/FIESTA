@@ -31,7 +31,7 @@ export function NodeHeader() {
           <Link
             to="/"
             aria-label={`${config?.key ?? "Node"} home`}
-            className="float-left block bg-white text-center align-middle font-serif font-bold text-node hover:bg-gray-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+            className="float-left block bg-surface text-center align-middle font-serif font-bold text-node-ink hover:bg-gray-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
             style={{
               fontSize: "2.75em",
               width: "1.5em",
@@ -39,7 +39,7 @@ export function NodeHeader() {
               minHeight: "1.5em",
               lineHeight: "1.5em",
               margin: "0 0.25em 0 0",
-              border: "1px solid rgba(34,36,38,.15)",
+              border: "1px solid var(--er-line)",
               boxShadow: "0 0 0 1px var(--node-color) inset",
               borderRadius: "0.28571429rem",
             }}
@@ -49,13 +49,13 @@ export function NodeHeader() {
         )}
         <Link to="/" className="block min-w-0 overflow-hidden focus-visible:outline-hidden">
           <h1
-            className="m-0 truncate font-bold text-[rgba(0,0,0,0.87)]"
+            className="m-0 truncate font-bold text-ink"
             style={{ fontSize: "2rem", lineHeight: "1.28571429em" }}
           >
             {config?.title}
           </h1>
           <h4
-            className="m-0 line-clamp-2 font-bold text-[rgba(0,0,0,0.87)]"
+            className="m-0 line-clamp-2 font-bold text-ink"
             style={{ fontSize: "1.07142857rem", lineHeight: "1.28571429em" }}
           >
             {config?.subtitle}

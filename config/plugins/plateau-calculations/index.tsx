@@ -119,7 +119,7 @@ function AgeSpectrum({
       height={height}
       role="img"
       aria-label="Age spectrum plot"
-      className="bg-white"
+      className="er-light bg-surface"
     >
       {data.plateau && (
         <rect
@@ -285,7 +285,7 @@ function PlateauPanel({
       {query.isPending ? (
         <Spinner />
       ) : query.error || !query.data || query.data.age_data.length === 0 ? (
-        <p className="text-[13px] text-[#AAAAAA]">No age data for this experiment.</p>
+        <p className="text-[13px] text-ink-faint">No age data for this experiment.</p>
       ) : (
         <>
           <div className="overflow-x-auto">

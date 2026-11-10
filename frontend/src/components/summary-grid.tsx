@@ -31,7 +31,7 @@ export function formatGridFilters(filters: Record<string, string>): string[] {
     .map(([key, text]) => `${key}:${text}`);
 }
 
-const BORDER = "1px solid rgba(34,36,38,.15)";
+const BORDER = "1px solid var(--er-line)";
 // Space after each column: 1em of the 13px cells (the legacy cells' right margin).
 const GAP = 13;
 
@@ -65,7 +65,7 @@ export function ColumnTextFilter({
     return () => window.clearTimeout(timer);
   }, [text, value]);
   return (
-    <div style={{ padding: "0.5em 1em", borderBottom: "1px solid #D4D4D5" }}>
+    <div style={{ padding: "0.5em 1em", borderBottom: "1px solid var(--er-edge)" }}>
       <div className="mb-1 font-bold">Contains</div>
       <input
         type="search"
@@ -76,7 +76,7 @@ export function ColumnTextFilter({
         }}
         placeholder={`Filter ${column.label}`}
         aria-label={`Filter by ${column.label}`}
-        className="w-full rounded-sm border border-gray-300 bg-white px-[0.8em] py-[0.5em] text-[13px] placeholder:text-[#AAAAAA] focus:border-node focus:outline-hidden"
+        className="w-full rounded-sm border border-gray-300 bg-surface px-[0.8em] py-[0.5em] text-[13px] placeholder:text-ink-faint focus:border-node focus:outline-hidden"
       />
     </div>
   );
@@ -108,8 +108,8 @@ function HeaderCell({
         onClick={() => onSort(next())}
         title={`Sort by ${column.label}`}
         className={cx(
-          "flex min-w-0 cursor-pointer items-center gap-1 text-left font-bold hover:text-node focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
-          active && "text-node",
+          "flex min-w-0 cursor-pointer items-center gap-1 text-left font-bold hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
+          active && "text-node-ink",
         )}
       >
         <span className="truncate">{column.label}</span>
@@ -126,12 +126,12 @@ function HeaderCell({
     <th
       scope="col"
       aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : undefined}
-      className="sticky top-0 z-10 bg-white font-normal"
+      className="sticky top-0 z-10 bg-surface font-normal"
       style={{
         ...cellStyle,
         paddingTop: "0.5em",
         paddingBottom: "0.5em",
-        boxShadow: "inset 0 -1px 0 rgba(34,36,38,.15)",
+        boxShadow: "inset 0 -1px 0 var(--er-line)",
       }}
     >
       <div className="flex items-center gap-0.5">
@@ -183,7 +183,7 @@ export function SummaryGrid({
           borderCollapse: "separate",
           borderSpacing: 0,
           lineHeight: "16px",
-          color: "rgba(0,0,0,.87)",
+          color: "var(--er-ink)",
         }}
       >
         <colgroup>

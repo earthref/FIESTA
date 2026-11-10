@@ -28,7 +28,7 @@ export function UploadPage() {
           <>
             {" "}
             You will need to{" "}
-            <button type="button" onClick={openLogin} className="text-node underline">
+            <button type="button" onClick={openLogin} className="text-node-ink underline">
               log in
             </button>{" "}
             to upload.

@@ -16,7 +16,7 @@ export function SourceModeNotice({ config }: { config?: NodeConfig }) {
       {website ? (
         <>
           at{" "}
-          <a href={website} className="text-node underline">
+          <a href={website} className="text-node-ink underline">
             {website.replace(/^https?:\/\//, "")}
           </a>
         </>

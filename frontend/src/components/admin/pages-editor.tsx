@@ -200,7 +200,7 @@ export function PagesEditor({
                   type="button"
                   onClick={() => setSelected(page.slug)}
                   className={`min-w-0 flex-1 px-1 py-1 text-left ${
-                    page.slug === selected ? "font-semibold text-node-dark" : ""
+                    page.slug === selected ? "font-semibold text-node-ink-strong" : ""
                   }`}
                 >
                   <span className="truncate">{page.title || page.slug}</span>
@@ -403,7 +403,7 @@ function PageHtml({
             Preview (as the page renders it)
           </p>
           <div
-            className="er-content text-sm text-[#555555]"
+            className="er-content text-sm text-ink-secondary"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: rendered through sanitizeHtml (DOMPurify)
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
           />

@@ -11,7 +11,34 @@
   --color-node: var(--node-color);
   --color-node-soft: var(--node-color-soft);
   --color-node-dark: var(--node-color-dark);
+  /* Node color as text: the brand color in light mode, lightened in dark. */
+  --color-node-ink: var(--node-ink);
+  --color-node-ink-strong: var(--node-ink-strong);
+
+  /* Theme tokens (values below, per color scheme). The light values are the
+     legacy Semantic UI colors these classes replaced, so light mode is
+     unchanged. */
+  --color-surface: var(--er-surface);
+  --color-ink: var(--er-ink);
+  --color-ink-strong: var(--er-ink-strong);
+  --color-ink-muted: var(--er-ink-muted);
+  --color-ink-secondary: var(--er-ink-secondary);
+  --color-ink-faint: var(--er-ink-faint);
+  --color-ink-heading: var(--er-ink-heading);
+  --color-line: var(--er-line);
+  --color-edge: var(--er-edge);
+  --color-panel: var(--er-panel);
+  --color-panel-strong: var(--er-panel-strong);
+  --color-panel-soft: var(--er-panel-soft);
+  --color-bar: var(--er-bar);
+  --color-panel-hover: var(--er-panel-hover);
+  --color-shade: var(--er-shade);
+  --color-error-ink: var(--er-error-ink);
+  --color-backdrop: var(--er-backdrop);
 }
+
+/* `dark:` utilities follow the theme toggle (html.dark), not only the OS. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /*
   The default border color changed to `currentcolor` in Tailwind CSS v4; keep
@@ -37,12 +64,12 @@
   }
   body {
     line-height: 1.4285em;
-    color: rgba(0, 0, 0, 0.87);
+    color: var(--er-ink);
   }
 
   /* Legacy injected per-portal anchor color (page.jsx:16-20). */
   a {
-    color: var(--node-color);
+    color: var(--node-ink);
   }
 }
 
@@ -51,7 +78,7 @@
 .er-content :is(h1, h2, h3, h4) {
   margin: 1em 0 0.5em;
   font-weight: 600;
-  color: #111827;
+  color: var(--er-content-heading);
 }
 .er-content h1 {
   font-size: 1.25rem;
@@ -59,7 +86,7 @@
 .er-content h2 {
   font-size: 1.125rem;
   padding-bottom: 0.25em;
-  border-bottom: 1px solid rgba(34, 36, 38, 0.15);
+  border-bottom: 1px solid var(--er-line);
 }
 .er-content h3 {
   font-size: 1rem;
@@ -80,7 +107,7 @@
   padding-left: 1.5em;
 }
 .er-content a {
-  color: var(--node-color);
+  color: var(--node-ink);
 }
 .er-content a:hover {
   text-decoration: underline;
@@ -90,19 +117,19 @@
 }
 .er-content :is(th, td) {
   padding: 0.25em 0.5em;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--er-content-rule);
 }
 .er-content hr {
   margin: 1.5em 0;
-  border-top: 1px solid rgba(34, 36, 38, 0.15);
+  border-top: 1px solid var(--er-line);
 }
 .er-content pre {
   margin: 0 0 1em;
   padding: 0.75em;
   overflow-x: auto;
   font-size: 0.85em;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--er-content-code);
+  border: 1px solid var(--er-content-rule);
   border-radius: 0.25rem;
 }
 /* Layout classes page HTML may use (Tailwind does not scan config/). */
@@ -127,12 +154,12 @@
 }
 .er-content .er-people strong {
   display: block;
-  color: rgba(0, 0, 0, 0.87);
+  color: var(--er-ink);
 }
 .er-content .er-people small {
   display: block;
   font-size: 0.9em;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--er-ink-muted);
 }
 /* Logos: a centered wrapping row of bordered tiles, an optional caption below. */
 .er-content .er-logos {
@@ -148,9 +175,9 @@
   justify-content: space-between;
   width: 8rem;
   padding: 0.75rem 0.75rem 0;
-  border: 1px solid rgba(34, 36, 38, 0.15);
+  border: 1px solid var(--er-line);
   border-radius: 0.3125rem;
-  box-shadow: 0 1px 2px 0 rgba(34, 36, 38, 0.15);
+  box-shadow: 0 1px 2px 0 var(--er-line);
   overflow: hidden;
 }
 .er-content .er-logos img {
@@ -166,7 +193,7 @@
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: #e8e8e8;
+  background: var(--er-panel-strong);
 }
 /* Media: an image beside its text, one row per <section>. */
 .er-content .er-media section {
@@ -189,13 +216,143 @@
 }
 
 :root {
-  /* Overridden at bootstrap from GET /api/config (config.color). */
+  /* Overridden at bootstrap from GET /api/config (config.color) by
+     applyNodeTheme(), with the same light-dark() pairs as nodeColorVars(). */
   --node-color: #4b5563;
-  --node-color-soft: color-mix(in srgb, #4b5563 8%, white);
+  --node-color-soft: light-dark(
+    color-mix(in srgb, #4b5563 8%, white),
+    color-mix(in srgb, #4b5563 22%, #181a1f)
+  );
   --node-color-dark: color-mix(in srgb, #4b5563 85%, black);
-  --node-color-light: color-mix(in srgb, #4b5563 80%, white);
+  --node-color-light: light-dark(
+    color-mix(in srgb, #4b5563 80%, white),
+    color-mix(in srgb, #4b5563 70%, white)
+  );
+  --node-ink: light-dark(#4b5563, color-mix(in srgb, #4b5563 55%, white));
+  --node-ink-strong: light-dark(
+    color-mix(in srgb, #4b5563 85%, black),
+    color-mix(in srgb, #4b5563 40%, white)
+  );
+}
+
+/*
+  Color schemes. Light is the default; html.dark (set before first paint by
+  the inline script in index.html, toggled from the portal bar, see
+  src/lib/theme.ts) switches the tokens and remaps the palettes the markup
+  uses: gray is mirrored around a dark surface, and the pale tints/dark text
+  shades of red, amber, green and yellow swap roles. `.er-light` keeps a
+  subtree light in dark mode (plots, whose canvas colors are fixed).
+*/
+:root,
+.er-light {
+  color-scheme: light;
+  --er-surface: #fff;
+  --er-ink: rgba(0, 0, 0, 0.87);
+  --er-ink-strong: rgba(0, 0, 0, 0.95);
+  --er-ink-muted: rgba(0, 0, 0, 0.6);
+  --er-ink-secondary: #555555;
+  --er-ink-faint: #aaaaaa;
+  --er-ink-heading: #0c0c0c;
+  --er-line: rgba(34, 36, 38, 0.15);
+  --er-edge: #d4d4d5;
+  --er-panel: #f0f0f0;
+  --er-panel-strong: #e8e8e8;
+  --er-panel-soft: #f8f8f9;
+  --er-bar: #f8f8f8;
+  --er-content-heading: #111827;
+  --er-content-rule: #e5e7eb;
+  --er-content-code: #f9fafb;
+  --er-panel-hover: #f3f4f5;
+  --er-shade: #000;
+  --er-error-ink: #9f3a38;
+  --er-warning-bg: #fffaf3;
+  --er-warning-ink: #573a08;
+  --er-warning-line: #c9ba9b;
+  /* Semantic UI `black` (basic black buttons) and the search input's border. */
+  --er-inverse: #1b1c1d;
+  --er-input-line: #888888;
+  /* Tailwind gray-900 at 40%, the modal backdrop. */
+  --er-backdrop: color-mix(in oklab, oklch(21% 0.034 264.665) 40%, transparent);
+}
+
+.dark {
+  color-scheme: dark;
+  --er-surface: #181a1f;
+  --er-ink: rgba(255, 255, 255, 0.87);
+  --er-ink-strong: rgba(255, 255, 255, 0.95);
+  --er-ink-muted: rgba(255, 255, 255, 0.6);
+  --er-ink-secondary: #b0b3b8;
+  --er-ink-faint: #7a7e85;
+  --er-ink-heading: #f2f2f2;
+  --er-line: rgba(255, 255, 255, 0.15);
+  --er-edge: #3a3d44;
+  --er-panel: #262930;
+  --er-panel-strong: #2d3038;
+  --er-panel-soft: #22252b;
+  --er-bar: #1f2126;
+  --er-content-heading: #eceef1;
+  --er-content-rule: #30333b;
+  --er-content-code: #1e2026;
+  --er-panel-hover: #2a2d33;
+  --er-shade: #fff;
+  --er-error-ink: #f08c8a;
+  --er-warning-bg: #2b2416;
+  --er-warning-ink: #f0d9a8;
+  --er-warning-line: #6b5a33;
+  --er-inverse: #e8e8e8;
+  --er-input-line: #5f646e;
+  --er-backdrop: rgba(0, 0, 0, 0.6);
+
+  --color-gray-50: #1e2026;
+  --color-gray-100: #24272e;
+  --color-gray-200: #30333b;
+  --color-gray-300: #40444d;
+  --color-gray-400: #5f646e;
+  --color-gray-500: #868b94;
+  --color-gray-600: #a4a9b1;
+  --color-gray-700: #c4c8ce;
+  --color-gray-800: #dcdfe3;
+  --color-gray-900: #eceef1;
+  --color-gray-950: #f6f7f9;
+
+  /* Tints (backgrounds, borders) mix the 500 shade into the surface; the
+     dark text shades take the light ones' values. 400-600 stay as they are. */
+  --color-red-50: color-mix(in oklab, oklch(63.7% 0.237 25.331) 14%, #181a1f);
+  --color-red-100: color-mix(in oklab, oklch(63.7% 0.237 25.331) 22%, #181a1f);
+  --color-red-200: color-mix(in oklab, oklch(63.7% 0.237 25.331) 32%, #181a1f);
+  --color-red-300: color-mix(in oklab, oklch(63.7% 0.237 25.331) 45%, #181a1f);
+  --color-red-700: oklch(80.8% 0.114 19.571);
+  --color-red-800: oklch(88.5% 0.062 18.334);
+  --color-amber-50: color-mix(in oklab, oklch(76.9% 0.188 70.08) 12%, #181a1f);
+  --color-amber-100: color-mix(in oklab, oklch(76.9% 0.188 70.08) 20%, #181a1f);
+  --color-amber-300: color-mix(in oklab, oklch(76.9% 0.188 70.08) 40%, #181a1f);
+  --color-amber-700: oklch(87.9% 0.169 91.605);
+  --color-amber-800: oklch(92.4% 0.12 95.746);
+  --color-green-50: color-mix(in oklab, oklch(72.3% 0.219 149.579) 12%, #181a1f);
+  --color-green-100: color-mix(in oklab, oklch(72.3% 0.219 149.579) 20%, #181a1f);
+  --color-green-300: color-mix(in oklab, oklch(72.3% 0.219 149.579) 40%, #181a1f);
+  --color-green-700: oklch(87.1% 0.15 154.449);
+  --color-green-800: oklch(92.5% 0.084 155.995);
+  --color-yellow-200: color-mix(in oklab, oklch(79.5% 0.184 86.047) 35%, #181a1f);
+}
+
+/* Restore Tailwind's own palette values inside a light island. */
+.dark .er-light {
+  --color-gray-50: oklch(98.5% 0.002 247.839);
+  --color-gray-100: oklch(96.7% 0.003 264.542);
+  --color-gray-200: oklch(92.8% 0.006 264.531);
+  --color-gray-300: oklch(87.2% 0.01 258.338);
+  --color-gray-400: oklch(70.7% 0.022 261.325);
+  --color-gray-500: oklch(55.1% 0.027 264.364);
+  --color-gray-600: oklch(44.6% 0.03 256.802);
+  --color-gray-700: oklch(37.3% 0.034 259.733);
+  --color-gray-800: oklch(27.8% 0.033 256.848);
+  --color-gray-900: oklch(21% 0.034 264.665);
+  --color-gray-950: oklch(13% 0.028 261.692);
+  background-color: var(--er-surface);
+  color: var(--er-ink);
 }
 
 body {
-  @apply bg-white antialiased;
+  @apply bg-surface antialiased;
 }

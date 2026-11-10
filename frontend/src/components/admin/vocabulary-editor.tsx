@@ -188,7 +188,7 @@ export function VocabularyEditor({ slug, settings }: { slug: string; settings: N
                 onClick={() => select(name)}
                 className={`block w-full rounded-sm px-2 py-1 text-left ${
                   name === selected
-                    ? "bg-node-soft font-semibold text-node-dark"
+                    ? "bg-node-soft font-semibold text-node-ink-strong"
                     : "hover:bg-gray-100"
                 }`}
               >

@@ -30,7 +30,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: ModalPro
       <button
         type="button"
         aria-label="Close dialog"
-        className="absolute inset-0 cursor-default bg-gray-900/40"
+        className="absolute inset-0 cursor-default bg-backdrop"
         onClick={onClose}
         tabIndex={-1}
       />
@@ -41,7 +41,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: ModalPro
         aria-label={title}
         tabIndex={-1}
         className={cx(
-          "relative m-0 flex max-h-[85vh] w-full flex-col rounded-lg border-0 bg-white p-0 shadow-xl outline-hidden",
+          "relative m-0 flex max-h-[85vh] w-full flex-col rounded-lg border-0 bg-surface p-0 shadow-xl outline-hidden",
           wide ? "max-w-3xl" : "max-w-lg",
         )}
       >

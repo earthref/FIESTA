@@ -428,7 +428,7 @@ export function TagInput({
               <button
                 type="button"
                 aria-label={`Remove ${value}`}
-                className="ml-0.5 text-node-dark hover:text-red-700"
+                className="ml-0.5 text-node-ink-strong hover:text-red-700"
                 onClick={() => onChange(values.filter((v) => v !== value))}
               >
                 ×

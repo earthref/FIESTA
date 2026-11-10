@@ -50,6 +50,7 @@ CSS facts:
 - After logo/title: `ui divider` unless a `menu` prop supplied (`page.jsx:31`). Optional section header `<Header size='medium' dividing>` (`page.jsx:33`).
 - Anchor color injected inline per portal: `a, a:hover { color:#800080 }` for MagIC (`page.jsx:16-20`).
 - `#react-root` height 100%; `.layout.pushable` `overflow-y:scroll` (`layout.less:4-11`).
+- **FIESTA addition (2026-11-10): dark mode.** Legacy has none. A sun/moon icon item, first in the portal bar's right menu (before Log In / Log Out), toggles it. The choice is saved per browser (`localStorage["fiesta-theme"]`, shared by every node on the origin); without one the OS `prefers-color-scheme` applies. Light mode is the spec above, pixel for pixel. The hard-coded Semantic UI colors are theme tokens (`bg-surface`, `text-ink*`, `border-line`/`border-edge`, `bg-panel*`, `bg-bar`, CSS `var(--er-*)`; `frontend/src/index.css`) whose light values are the legacy ones, and `html.dark` swaps them and mirrors the gray palette. Node colors used as text are lightened (`text-node-ink`, `inkColor()`). Plots (ECharts canvases, the plugins' SVG charts) keep their light styling on a light `.er-light` island; map basemap tiles are unchanged.
 
 ---
 

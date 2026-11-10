@@ -202,7 +202,7 @@ function PrimitiveList({
               <button
                 type="button"
                 aria-label={`Remove ${item}`}
-                className="ml-0.5 text-node-dark hover:text-red-700"
+                className="ml-0.5 text-node-ink-strong hover:text-red-700"
                 onClick={() => onChange(items.filter((_, i) => i !== index))}
               >
                 ×

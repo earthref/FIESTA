@@ -26,7 +26,7 @@ export function useSavedMode(key: string, fallback: Mode = "globe") {
 export const mapButtonClass = (active: boolean) =>
   active
     ? "border-node bg-node text-white"
-    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50";
+    : "border-gray-300 bg-surface text-gray-700 hover:bg-gray-50";
 
 /** Each option's records, when known: shown in its button unless 0, when the
  * button is disabled with `emptyTitle(option)` as its tooltip. */
@@ -63,7 +63,7 @@ function ButtonGroup<T extends string>({
             className={`border px-2 py-1 font-bold ${mapButtonClass(value === option)} ${
               index === 0 ? "rounded-l-sm" : "-ml-px"
             } ${index === options.length - 1 ? "rounded-r-sm" : ""} ${
-              empty ? "cursor-not-allowed opacity-50 hover:bg-white" : ""
+              empty ? "cursor-not-allowed opacity-50 hover:bg-surface" : ""
             }`}
           >
             {label}

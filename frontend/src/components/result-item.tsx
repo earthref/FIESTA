@@ -61,7 +61,7 @@ function ContributionLink({
         event.preventDefault();
         open(id, "contribution");
       }}
-      className="text-node hover:underline"
+      className="text-node-ink hover:underline"
     >
       {children}
     </a>
@@ -183,7 +183,7 @@ export function NoDataCell({
 }) {
   return (
     <div
-      className="shrink-0 overflow-hidden text-ellipsis text-center text-[#AAAAAA]"
+      className="shrink-0 overflow-hidden text-ellipsis text-center text-ink-faint"
       style={{ ...cellBase, minWidth: width, maxWidth: width }}
     >
       <br />
@@ -236,7 +236,7 @@ export function ResultDivider() {
       style={{
         margin: "0.5em 0 1em",
         border: 0,
-        borderTop: "1px solid rgba(34,36,38,.15)",
+        borderTop: "1px solid var(--er-line)",
         borderBottom: "1px solid rgba(255,255,255,.1)",
       }}
     />
@@ -271,7 +271,7 @@ export function ResultCardFrame({
         className="group flex w-full cursor-pointer items-stretch text-left text-[13px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
         style={{ paddingBottom: "0.5em" }}
       >
-        <span className="whitespace-nowrap font-bold group-hover:text-node">
+        <span className="whitespace-nowrap font-bold group-hover:text-node-ink">
           {citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown")}
           {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
         </span>
@@ -412,7 +412,7 @@ function OpenCell({
       type="button"
       onClick={() => id && openContribution(id, table)}
       title="Open this contribution"
-      className="block shrink-0 cursor-pointer self-start overflow-hidden text-left hover:text-node focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+      className="block shrink-0 cursor-pointer self-start overflow-hidden text-left hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
       style={{ ...cellBase, minWidth: width, maxWidth: width }}
     >
       {children}
@@ -541,7 +541,7 @@ function BuiltinCell({
           <Clamped lines={2}>
             <NameText doc={doc} level={level} levels={config.search_levels} />
           </Clamped>
-          <Clamped lines={2} className="text-[rgba(0,0,0,.6)]">
+          <Clamped lines={2} className="text-ink-muted">
             <ContributedText doc={doc} />
           </Clamped>
         </OpenCell>
@@ -580,7 +580,7 @@ function BuiltinCell({
           <a
             href={nodeApiUrl(`/contributions/${id}/download${keyParam}`)}
             download
-            className="inline-block w-full bg-white text-center font-bold text-node hover:bg-node-soft"
+            className="inline-block w-full bg-surface text-center font-bold text-node-ink hover:bg-node-soft"
             style={{
               padding: "20px 0",
               height: 100,
@@ -620,12 +620,12 @@ function BuiltinCell({
                     href={`https://dx.doi.org/${config.doi_prefix}/${id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-node hover:underline"
+                    className="text-node-ink hover:underline"
                   >
                     {config.doi_prefix}/{id}
                   </a>
                 ) : (
-                  <span className="text-[#AAAAAA]">Queued For Creation</span>
+                  <span className="text-ink-faint">Queued For Creation</span>
                 )}
               </p>
             </>
@@ -638,7 +638,7 @@ function BuiltinCell({
                   href={`https://dx.doi.org/${publicationDoi}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-node hover:underline"
+                  className="text-node-ink hover:underline"
                 >
                   {publicationDoi}
                 </a>
@@ -666,7 +666,7 @@ function BuiltinCell({
               {counts.map(({ entry, count }) => {
                 const open = () => id && openContribution(id, entry.table);
                 return (
-                  <tr key={entry.name} className="hover:text-node">
+                  <tr key={entry.name} className="hover:text-node-ink">
                     <td className="text-right" style={{ padding: 1 }}>
                       <button type="button" tabIndex={-1} onClick={open} className="cursor-pointer">
                         {abbreviateNumber(count)}
@@ -713,7 +713,7 @@ function BuiltinCell({
     case "plot":
       return (
         <div
-          className="shrink-0 overflow-hidden text-ellipsis text-center text-[#AAAAAA]"
+          className="shrink-0 overflow-hidden text-ellipsis text-center text-ink-faint"
           style={{
             boxSizing: "content-box",
             minWidth: width - 2,

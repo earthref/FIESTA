@@ -14,7 +14,7 @@ import type { HomeCard, HomeNews, NodeConfig, SearchPage } from "../lib/types";
 import { cx } from "../lib/utils";
 import { pluginHomeCards } from "../plugins";
 
-const RULE = "rgba(34,36,38,.15)";
+const RULE = "var(--er-line)";
 
 /** `h2.ui.horizontal.divider.header` (measured): 24px/700 on a 24px line,
  * margin calc(2rem − .14em) 0 1rem (the first one has no bottom margin),
@@ -38,7 +38,7 @@ export function DividerHeader({
       style={{
         fontSize: "1.71428571rem",
         lineHeight: "1em",
-        color: "rgba(0,0,0,.87)",
+        color: "var(--er-ink)",
         marginBottom: first ? 0 : "1rem",
         gap: "1em",
       }}
@@ -171,7 +171,7 @@ export function NewsItem({
           fontSize: "1.28571429em",
           lineHeight: "1.28571429em",
           margin: first || source ? "0 0 1rem" : "calc(2rem - 0.14285714em) 0 1rem",
-          color: "rgba(0,0,0,.87)",
+          color: "var(--er-ink)",
           textAlign: "left",
         }}
       >
@@ -307,7 +307,7 @@ export function HomePage() {
             <>
               <p style={{ margin: "1em 0" }}>No news yet.</p>
               <p style={{ margin: "0 0 1em" }}>
-                <Link to="/contact" className="text-node hover:underline">
+                <Link to="/contact" className="text-node-ink hover:underline">
                   Contact the {config.key} team
                 </Link>
               </p>

@@ -59,7 +59,7 @@ export function RootLayout() {
         <h1 className="mb-3 text-lg font-semibold">{config.key}</h1>
         <p className="text-sm text-gray-600">
           {config.key} is not published on the web yet. Visit{" "}
-          <a href="https://earthref.org/" className="font-medium text-node hover:underline">
+          <a href="https://earthref.org/" className="font-medium text-node-ink hover:underline">
             EarthRef.org
           </a>{" "}
           for the published repositories.
@@ -70,7 +70,7 @@ export function RootLayout() {
 
   return (
     <LoginModalProvider>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-surface">
         <PortalBar />
         {/* layout-content: padding-top/bottom 4em clears the fixed bars (layout.less:41-44) */}
         <div className="pt-[4em] sm:pb-[4em]">

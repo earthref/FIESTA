@@ -31,7 +31,7 @@ export function ContentPage() {
         <ErrorMessage error={content.error} />
       ) : content.data ? (
         <div
-          className="er-content text-sm text-[#555555]"
+          className="er-content text-sm text-ink-secondary"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: admin-authored HTML, sanitized by DOMPurify
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.data.html) }}
         />

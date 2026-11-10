@@ -5,7 +5,7 @@ type Variant = "default" | "node" | "success" | "warning" | "danger" | "muted";
 
 const variants: Record<Variant, string> = {
   default: "bg-gray-100 text-gray-700",
-  node: "bg-node-soft text-node-dark",
+  node: "bg-node-soft text-node-ink-strong",
   success: "bg-green-100 text-green-800",
   warning: "bg-amber-100 text-amber-800",
   danger: "bg-red-100 text-red-800",

@@ -23,14 +23,41 @@ export function useNodeConfig() {
   return scoped ? ({ ...query, data: scoped } as typeof query) : query;
 }
 
+/** The CSS custom properties derived from a node color (src/index.css :root).
+ * Each is a light-dark() pair, so it follows the color scheme where it is used:
+ * dark mode lightens the node color as text and tints the dark surface. */
+export function nodeColorVars(color: string): Record<string, string> {
+  return {
+    ...nodeColorBase(color),
+    "--node-ink": inkColor(color),
+  };
+}
+
+/** A brand color used as text or an outline: itself in light mode, lightened
+ * in dark mode so it stays legible on the dark surface. */
+export function inkColor(color: string): string {
+  return `light-dark(${color}, color-mix(in srgb, ${color} 55%, white))`;
+}
+
+function nodeColorBase(color: string): Record<string, string> {
+  const mix = (percent: number, other: string) =>
+    `color-mix(in srgb, ${color} ${percent}%, ${other})`;
+  return {
+    "--node-color": color,
+    "--node-color-soft": `light-dark(${mix(8, "white")}, ${mix(22, "#181a1f")})`,
+    "--node-color-dark": mix(85, "black"),
+    "--node-color-light": `light-dark(${mix(80, "white")}, ${mix(70, "white")})`,
+    "--node-ink-strong": `light-dark(${mix(85, "black")}, ${mix(40, "white")})`,
+  };
+}
+
 /** Apply runtime branding: CSS custom properties, document title, and the
  * node's letter logo as the favicon. */
 export function applyNodeTheme(config: Pick<NodeConfig, "key" | "color" | "title">): void {
   const root = document.documentElement;
-  root.style.setProperty("--node-color", config.color);
-  root.style.setProperty("--node-color-soft", `color-mix(in srgb, ${config.color} 8%, white)`);
-  root.style.setProperty("--node-color-dark", `color-mix(in srgb, ${config.color} 85%, black)`);
-  root.style.setProperty("--node-color-light", `color-mix(in srgb, ${config.color} 80%, white)`);
+  for (const [name, value] of Object.entries(nodeColorVars(config.color))) {
+    root.style.setProperty(name, value);
+  }
   document.title = config.title;
   setNodeFavicon(config.key, config.color);
 }

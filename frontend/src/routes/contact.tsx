@@ -18,7 +18,7 @@ export function ContactPage() {
             </p>
             <a
               href="mailto:webmaster@earthref.org"
-              className="mt-1 inline-block text-sm font-medium text-node hover:underline"
+              className="mt-1 inline-block text-sm font-medium text-node-ink hover:underline"
             >
               webmaster@earthref.org
             </a>
@@ -37,7 +37,7 @@ export function ContactPage() {
                 href={config.links.github_issues}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-1 inline-block break-all text-sm font-medium text-node hover:underline"
+                className="mt-1 inline-block break-all text-sm font-medium text-node-ink hover:underline"
               >
                 {config.links.github_issues}
               </a>
@@ -54,7 +54,7 @@ export function ContactPage() {
                 href={config.links.website}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm font-medium text-node hover:underline"
+                className="text-sm font-medium text-node-ink hover:underline"
               >
                 {config.links.website}
               </a>
