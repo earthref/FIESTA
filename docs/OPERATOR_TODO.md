@@ -127,6 +127,21 @@ Last updated: 2026-11-10
       `make fiesta ENV_FILE=.env.prod ARGS="sync-legacy-users magic"` and again with
       `--apply`. Re-run until cutover to pick up legacy password changes (legacy wins).
 
+## 2026-11-10 — Poles, Rock Magnetism and PmagPy plots computed by PmagPy
+
+- [ ] **Rebuild MagIC's search index on dev** once the "plugins on PmagPy" PR has
+  deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`; one
+  rebuild also covers the Martian item below). The rebuild recreates the index, which
+  is the only way it gets the new `_geometry` mapping (stored, never indexed). Pole
+  docs then carry their α95 / dp-dm rings, and `rock_mag` docs carry the projected
+  V1/V3 axes and the axes derived from `aniso_s` tensors. Until the rebuild, the poles
+  map draws points with no outlines, and the Rock Magnetism stereonet shows its empty
+  message. Production needs the same rebuild at cutover.
+- [ ] **Decide: anisotropy axes from eigenparameters when `aniso_tilt_correction` is
+  blank.** FIESTA keeps them (treats blank as geographic). PmagPy's `aniso_magic`
+  treats blank as specimen coordinates (−1), which would drop the axes of every
+  legacy row that leaves the column blank. Tensor-derived axes already follow PmagPy.
+
 ## 2026-11-10 — Martian records back on Earth
 
 - [ ] **Rebuild the magic and karar search indexes on dev** once the "remove the Mars
