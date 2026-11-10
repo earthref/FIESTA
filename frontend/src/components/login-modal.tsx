@@ -72,7 +72,7 @@ function LoginModalDialog({ onClose }: { onClose: () => void }) {
         <>
           <a
             href="mailto:webmaster@earthref.org"
-            className="mr-auto inline-flex items-center rounded-md border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="mr-auto inline-flex items-center rounded-md border border-gray-300 bg-surface px-3.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Having Trouble? Email Us
           </a>
@@ -162,7 +162,7 @@ function LoginModalDialog({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={() => setMode(mode === "login" ? "register" : "login")}
-              className="text-sm text-node hover:underline"
+              className="text-sm text-node-ink hover:underline"
             >
               {mode === "login"
                 ? "No account yet? Register with your email"

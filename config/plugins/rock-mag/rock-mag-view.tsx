@@ -160,7 +160,7 @@ export default function RockMagView({
         <button
           type="button"
           onClick={() => downloadCsv(specimens)}
-          className="rounded-sm border border-gray-300 bg-white px-2 py-1 font-bold text-gray-700 hover:bg-gray-50"
+          className="rounded-sm border border-gray-300 bg-surface px-2 py-1 font-bold text-gray-700 hover:bg-gray-50"
         >
           Download CSV
         </button>
@@ -237,7 +237,7 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 rounded-sm border border-gray-300 bg-white">
+    <section className="min-w-0 rounded-sm border border-gray-300 bg-surface">
       <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-gray-200 px-3 py-2">
         <h4 className="text-[14px] font-bold text-gray-900">{title}</h4>
         {subtitle && <span className="text-[12px] text-gray-500">{subtitle}</span>}
@@ -1098,7 +1098,7 @@ function SelectionTable({
 }) {
   const cell = "border-b border-gray-200 px-2 py-1 text-left whitespace-nowrap";
   return (
-    <section className="rounded-sm border border-gray-300 bg-white">
+    <section className="rounded-sm border border-gray-300 bg-surface">
       <header className="flex flex-wrap items-center gap-3 border-b border-gray-200 px-3 py-2">
         <h4 className="text-[14px] font-bold text-gray-900">
           {specimens.length.toLocaleString()} selected specimens
@@ -1144,7 +1144,7 @@ function SelectionTable({
                     <button
                       type="button"
                       onClick={() => onOpen(s.contribution as string)}
-                      className="text-node hover:underline"
+                      className="text-node-ink hover:underline"
                     >
                       {s.contribution}
                     </button>

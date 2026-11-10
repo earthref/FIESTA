@@ -502,7 +502,7 @@ function FilesSection({ node }: { node: AdminNode }) {
               onClick={() => setSelected(f.path)}
               className={cx(
                 "flex w-full items-center gap-1 rounded-sm px-2 py-1 text-left font-mono text-xs",
-                f.path === selected ? "bg-node-soft text-node-dark" : "hover:bg-gray-100",
+                f.path === selected ? "bg-node-soft text-node-ink-strong" : "hover:bg-gray-100",
               )}
             >
               <span className="truncate">{f.path}</span>
@@ -530,7 +530,7 @@ function FilesSection({ node }: { node: AdminNode }) {
           >
             New File
           </Button>
-          <label className="inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium hover:bg-gray-50">
+          <label className="inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-surface px-2.5 py-1 text-xs font-medium hover:bg-gray-50">
             Upload…
             <input
               type="file"
@@ -822,7 +822,7 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
   const superAdmin = !!config.data?.is_super_admin;
   return (
     <div className="pb-10">
-      <Link to="/admin" search={{ tab: "nodes" }} className="text-sm text-node underline">
+      <Link to="/admin" search={{ tab: "nodes" }} className="text-sm text-node-ink underline">
         ← Admin Settings
       </Link>
       <h1 className="mt-1 flex flex-wrap items-baseline gap-2 text-xl font-semibold text-gray-900">

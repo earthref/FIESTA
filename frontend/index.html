@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FIESTA</title>
+    <!-- Color scheme before first paint: the saved choice (src/lib/theme.ts), else the OS. -->
+    <script>
+      (() => {
+        try {
+          const theme = localStorage.getItem("fiesta-theme");
+          const system = matchMedia("(prefers-color-scheme: dark)").matches;
+          if (theme === "dark" || (theme !== "light" && system)) {
+            document.documentElement.classList.add("dark");
+          }
+        } catch {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

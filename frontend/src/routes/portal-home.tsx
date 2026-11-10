@@ -7,7 +7,7 @@ import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { apiUrl, NODES, nodeSiteUrl } from "../lib/base";
-import { NodeConfigScope } from "../lib/config";
+import { inkColor, NodeConfigScope, nodeColorVars } from "../lib/config";
 import type { NodeConfig, SearchPage, SearchResult } from "../lib/types";
 import { getPath } from "../lib/utils";
 import { DividerHeader, NewsItem, Rule, threeCard, threeCardClass, threeCards } from "./home";
@@ -15,14 +15,9 @@ import { DividerHeader, NewsItem, Rule, threeCard, threeCardClass, threeCards } 
 /** Recent contributions listed across every node. */
 const RECENT = 7;
 
-/** Scope the node color variables (text-node, the card outline) to one node. */
+/** Scope the node color variables (text-node-ink, the card outline) to one node. */
 function nodeColorStyle(color: string): CSSProperties {
-  return {
-    "--node-color": color,
-    "--node-color-soft": `color-mix(in srgb, ${color} 8%, white)`,
-    "--node-color-dark": `color-mix(in srgb, ${color} 85%, black)`,
-    "--node-color-light": `color-mix(in srgb, ${color} 80%, white)`,
-  } as CSSProperties;
+  return nodeColorVars(color) as CSSProperties;
 }
 
 function timestampOf(doc: SearchResult): number {
@@ -51,7 +46,7 @@ function RecentItem({ config, doc }: NodeRecent) {
       <div style={nodeColorStyle(config.color)}>
         <a
           href={nodeSiteUrl(config.key)}
-          className="block text-[13px] font-bold text-node hover:underline"
+          className="block text-[13px] font-bold text-node-ink hover:underline"
           style={{ margin: "0 0 0.5em" }}
         >
           {config.key}
@@ -183,7 +178,11 @@ export function PortalHomePage() {
                   <a
                     href={nodeSiteUrl(config.key)}
                     className="block font-bold hover:underline"
-                    style={{ color: config.color, margin: "0 0 0.25rem", textAlign: "left" }}
+                    style={{
+                      color: inkColor(config.color),
+                      margin: "0 0 0.25rem",
+                      textAlign: "left",
+                    }}
                   >
                     {config.key}
                   </a>

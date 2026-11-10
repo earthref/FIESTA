@@ -57,7 +57,7 @@ export function Tabs<T extends string>({
           className={cx(
             "-mb-px border-b-2 px-3 py-2 text-sm",
             tab.key === active
-              ? "border-node font-semibold text-node"
+              ? "border-node font-semibold text-node-ink"
               : "border-transparent text-gray-600 hover:text-gray-900",
           )}
         >

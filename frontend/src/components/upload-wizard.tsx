@@ -16,7 +16,7 @@ import { Spinner } from "./ui/spinner";
 type Step = 1 | 2 | 3;
 type Phase = "idle" | "creating" | "uploading" | "processing" | "done" | "error";
 
-const SEGMENT_BORDER = "rgba(34,36,38,.15)";
+const SEGMENT_BORDER = "var(--er-line)";
 
 const stepDefs: { step: Step; icon: IconName; title: string; description: string }[] = [
   {
@@ -33,7 +33,7 @@ const stepDefs: { step: Step; icon: IconName; title: string; description: string
 function StepsBar({ current }: { current: Step }) {
   return (
     <ol
-      className="flex flex-col rounded-t-sm bg-white sm:flex-row"
+      className="flex flex-col rounded-t-sm bg-surface sm:flex-row"
       style={{
         width: "calc(100% + 2px)",
         marginLeft: -1,
@@ -53,11 +53,11 @@ function StepsBar({ current }: { current: Step }) {
             style={{
               minHeight: "8em",
               borderLeft: index > 0 ? `1px solid ${SEGMENT_BORDER}` : "none",
-              color: disabled ? "rgba(40,40,40,.3)" : "rgba(0,0,0,.87)",
-              background: active ? "#fff" : "transparent",
+              color: disabled ? "rgba(40,40,40,.3)" : "var(--er-ink)",
+              background: active ? "var(--er-surface)" : "transparent",
             }}
           >
-            <span aria-hidden="true" className="leading-none text-[#555555]">
+            <span aria-hidden="true" className="leading-none text-ink-secondary">
               <Icon name={def.icon} size="big" />
             </span>
             <span className="text-left">
@@ -70,7 +70,7 @@ function StepsBar({ current }: { current: Step }) {
             {active && (
               <span
                 aria-hidden="true"
-                className="absolute left-1/2 hidden bg-white sm:block"
+                className="absolute left-1/2 hidden bg-surface sm:block"
                 style={{
                   top: "calc(100% + 1px)",
                   width: "1.14em",
@@ -191,7 +191,7 @@ export function UploadWizard() {
       <StepsBar current={step} />
       {/* ui attached message container (bg white) */}
       <div
-        className="rounded-b-sm bg-white"
+        className="rounded-b-sm bg-surface"
         style={{
           width: "calc(100% + 2px)",
           margin: "0 0 0 -1px",
@@ -220,7 +220,7 @@ export function UploadWizard() {
               style={{ gridTemplateColumns: "1fr auto 1fr" }}
             >
               <span className="flex flex-col items-center gap-2">
-                <Icon name="folder-open" size="huge" className="text-node" />
+                <Icon name="folder-open" size="huge" className="text-node-ink" />
                 <span className="block text-[1.07rem] font-bold text-gray-800">
                   Click and select
                 </span>
@@ -237,7 +237,7 @@ export function UploadWizard() {
                 <span className="h-10 w-px bg-gray-300" />
               </span>
               <span className="flex flex-col items-center gap-2">
-                <Icon name="external" size="huge" className="text-node" />
+                <Icon name="external" size="huge" className="text-node-ink" />
                 <span className="block text-[1.07rem] font-bold text-gray-800">
                   Drag and drop files
                 </span>

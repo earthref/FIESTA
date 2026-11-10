@@ -103,7 +103,7 @@ function usePoints(
  * color of records without one. */
 function ColorLegend({ scale, option }: { scale: ColorScale | null; option: MapColorOption }) {
   return (
-    <div className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-white/90 px-2 py-1.5 text-xs text-gray-700 shadow">
+    <div className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-surface/90 px-2 py-1.5 text-xs text-gray-700 shadow">
       <div className="font-bold">
         {option.label}
         {option.log && <span className="font-normal text-gray-500"> (log scale)</span>}
@@ -350,7 +350,7 @@ export function SearchMap({
             <select
               value={colorOption?.field ?? ""}
               onChange={(event) => setColorBy(event.target.value)}
-              className="rounded-sm border border-gray-300 bg-white px-1.5 py-1 font-normal"
+              className="rounded-sm border border-gray-300 bg-surface px-1.5 py-1 font-normal"
             >
               <option value="">None</option>
               {colorOptions.map((o) => (
@@ -386,8 +386,8 @@ export function SearchMap({
           <ColorLegend scale={scale} option={colorOption} />
         )}
         {showLoading ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/40">
-            <span className="flex items-center gap-2 rounded-sm bg-white/90 px-3 py-1.5 text-sm shadow">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/40">
+            <span className="flex items-center gap-2 rounded-sm bg-surface/90 px-3 py-1.5 text-sm shadow">
               <Spinner />
               Loading…
             </span>
@@ -396,7 +396,7 @@ export function SearchMap({
           !inArea.isFetching &&
           points.length === 0 && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="rounded-sm bg-white/90 px-3 py-1.5 text-sm text-gray-500 shadow">
+              <span className="rounded-sm bg-surface/90 px-3 py-1.5 text-sm text-gray-500 shadow">
                 {inArea.error
                   ? "The map's records could not be loaded"
                   : "No mapped locations match this search"}

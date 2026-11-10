@@ -106,6 +106,12 @@ both resolve from `frontend/` (Vite's `resolve.dedupe` and the tsconfig
 `frontend/package.json`. Tailwind scans the folder (`@source` in
 `src/index.css`).
 
+Colors follow the light/dark theme through tokens, not literals: `bg-surface`
+(not `bg-white`), `text-ink`/`-muted`/`-faint`, `border-line`/`border-edge`,
+`bg-panel`, and the gray palette, which dark mode remaps; `text-node-ink` for
+node-colored text. A plot with fixed colors (an SVG chart, a canvas) carries
+`className="er-light"` so it stays light in dark mode; `EChart` already does.
+
 ## The plugins
 
 | Plugin | Node | What |

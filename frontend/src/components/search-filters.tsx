@@ -12,7 +12,7 @@ import { type Area, formatArea } from "./map/map-points";
 import { Icon } from "./ui/icon";
 import { Spinner } from "./ui/spinner";
 
-const SEGMENT_BORDER = "rgba(34,36,38,.15)";
+const SEGMENT_BORDER = "var(--er-line)";
 
 /** The filters shown for a level + result view. */
 export function applicableFilters(
@@ -51,13 +51,13 @@ export function rangesFor(ranges: string[], filters: SearchFilter[]): string[] {
  * labels ("to", the unit), outer corners rounded, inner ones square.
  */
 const rangeInputClass =
-  "min-w-[20px] flex-1 basis-0 border border-[rgba(34,36,38,0.15)] bg-white px-[0.75em] py-[0.45em] " +
-  "text-[12px] text-[rgba(0,0,0,0.87)] placeholder:text-[#AAAAAA] focus:border-[#85B7D9] focus:outline-hidden";
+  "min-w-[20px] flex-1 basis-0 border border-line bg-surface px-[0.75em] py-[0.45em] " +
+  "text-[12px] text-ink placeholder:text-ink-faint focus:border-[#85B7D9] focus:outline-hidden";
 const rangeLabelClass =
-  "flex shrink-0 items-center bg-[#E8E8E8] px-[0.833em] text-[12px] font-bold text-[rgba(0,0,0,0.6)]";
+  "flex shrink-0 items-center bg-panel-strong px-[0.833em] text-[12px] font-bold text-ink-muted";
 
 /** Legacy `styles.filter`: each block padded, 1px #D4D4D5 divider. */
-const blockStyle = { padding: "0.25em 1em 0.5em", borderBottom: "1px solid #D4D4D5" };
+const blockStyle = { padding: "0.25em 1em 0.5em", borderBottom: "1px solid var(--er-edge)" };
 
 export function RangeFilter({
   filter,
@@ -213,7 +213,7 @@ export function GeospatialFilter({
           <button
             type="button"
             onClick={onShow}
-            className="mt-0.5 cursor-pointer text-node hover:underline"
+            className="mt-0.5 cursor-pointer text-node-ink hover:underline"
           >
             Show on the map
           </button>
@@ -261,10 +261,10 @@ export function FilterRow({
         )}
       </span>
       <span
-        className="inline-block shrink-0 self-start rounded-full border bg-white text-center font-bold"
+        className="inline-block shrink-0 self-start rounded-full border bg-surface text-center font-bold"
         style={{
           borderColor: SEGMENT_BORDER,
-          color: "rgba(0,0,0,.87)",
+          color: "var(--er-ink)",
           fontSize: 11,
           lineHeight: "0.7em",
           padding: "0.5em",
@@ -330,8 +330,8 @@ export function FacetSection({
       className="text-[13px]"
       style={{
         padding: "0.25em 1em 0.5em",
-        borderBottom: "1px solid #D4D4D5",
-        color: "rgba(0,0,0,.87)",
+        borderBottom: "1px solid var(--er-edge)",
+        color: "var(--er-ink)",
       }}
     >
       {/* Title: caret + bold name, then the active filters (always visible) */}
@@ -375,7 +375,7 @@ export function FacetSection({
             onChange={(event) => setFind(event.target.value)}
             placeholder={`Find ${itemsName}`}
             aria-label={`Find ${itemsName}`}
-            className="w-full rounded-sm border border-gray-300 bg-white px-[0.8em] py-[0.5em] text-[13px] placeholder:text-[#AAAAAA] focus:border-node focus:outline-hidden"
+            className="w-full rounded-sm border border-gray-300 bg-surface px-[0.8em] py-[0.5em] text-[13px] placeholder:text-ink-faint focus:border-node focus:outline-hidden"
             style={{ marginBottom: "0.25em" }}
           />
           {needle && matched.length === 0 && (

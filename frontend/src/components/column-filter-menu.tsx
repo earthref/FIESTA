@@ -83,8 +83,8 @@ export function ColumnFilterMenu({
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         className={cx(
-          "inline-flex shrink-0 cursor-pointer items-center gap-0.5 rounded-sm px-1 py-0.5 hover:bg-[#F0F0F0] hover:text-node focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
-          active || isOpen ? "text-node" : "text-[#AAAAAA]",
+          "inline-flex shrink-0 cursor-pointer items-center gap-0.5 rounded-sm px-1 py-0.5 hover:bg-panel hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
+          active || isOpen ? "text-node-ink" : "text-ink-faint",
         )}
       >
         <Icon name="filter" style={{ width: "0.85em", height: "0.85em" }} />
@@ -104,32 +104,32 @@ export function ColumnFilterMenu({
             role="dialog"
             aria-label={`${label} filters`}
             tabIndex={-1}
-            className="fixed z-50 flex flex-col rounded-sm border border-[#D4D4D5] bg-white text-[13px] font-normal text-[rgba(0,0,0,.87)] shadow-lg focus:outline-hidden"
+            className="fixed z-50 flex flex-col rounded-sm border border-edge bg-surface text-[13px] font-normal text-ink shadow-lg focus:outline-hidden"
             style={{ ...position, width: MENU_WIDTH, maxHeight: "min(70vh, 560px)" }}
           >
             <div
-              className="flex items-center justify-between bg-[#F0F0F0]"
-              style={{ padding: "0.5em 1em", borderBottom: "1px solid #D4D4D5" }}
+              className="flex items-center justify-between bg-panel"
+              style={{ padding: "0.5em 1em", borderBottom: "1px solid var(--er-edge)" }}
             >
               <span className="font-bold">{label}</span>
               <button
                 type="button"
                 onClick={onClear}
                 disabled={!active}
-                className="cursor-pointer rounded-sm border border-[rgba(34,36,38,.15)] bg-white px-2 py-0.5 text-[12px] hover:bg-[#F0F0F0] disabled:cursor-default disabled:opacity-45"
+                className="cursor-pointer rounded-sm border border-line bg-surface px-2 py-0.5 text-[12px] hover:bg-panel disabled:cursor-default disabled:opacity-45"
               >
                 Clear
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto whitespace-normal">{children}</div>
-            <div style={{ padding: "0.5em 1em", borderTop: "1px solid #D4D4D5" }}>
+            <div style={{ padding: "0.5em 1em", borderTop: "1px solid var(--er-edge)" }}>
               <button
                 type="button"
                 onClick={() => {
                   setPosition(null);
                   buttonRef.current?.focus();
                 }}
-                className="w-full cursor-pointer rounded-sm border border-[rgba(34,36,38,.15)] bg-white py-1 text-[12px] hover:bg-[#F0F0F0]"
+                className="w-full cursor-pointer rounded-sm border border-line bg-surface py-1 text-[12px] hover:bg-panel"
               >
                 Close
               </button>

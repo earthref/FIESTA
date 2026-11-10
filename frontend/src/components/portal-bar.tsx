@@ -3,8 +3,9 @@ import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { isAnyAdmin, isNodeAdmin } from "../lib/admin";
 import { useAuth } from "../lib/auth";
 import { PORTAL } from "../lib/base";
-import { useNodeConfig } from "../lib/config";
+import { inkColor, useNodeConfig } from "../lib/config";
 import { EARTHREF, FIESTA_PORTAL, PORTALS, portalUrl } from "../lib/portals";
+import { useTheme } from "../lib/theme";
 import { useLoginModal } from "./login-modal";
 import { MobileDrawer } from "./mobile-drawer";
 import { isSourceMode } from "./source-mode-notice";
@@ -19,8 +20,8 @@ import { Icon } from "./ui/icon";
  * 1024px; wide screens show the full portal bar instead, so it is hidden there.
  */
 const itemClass =
-  "flex items-center self-end whitespace-nowrap text-[rgba(0,0,0,0.87)] " +
-  "hover:bg-[rgba(0,0,0,0.05)] hover:text-[rgba(0,0,0,0.95)] focus-visible:outline-hidden " +
+  "flex items-center self-end whitespace-nowrap text-ink " +
+  "hover:bg-shade/5 hover:text-ink-strong focus-visible:outline-hidden " +
   "focus-visible:ring-2 focus-visible:ring-node";
 
 const itemStyle: CSSProperties = {
@@ -40,6 +41,7 @@ export function PortalBar() {
   const { user, logout } = useAuth();
   const { openLogin } = useLoginModal();
   const navigate = useNavigate();
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
@@ -53,8 +55,8 @@ export function PortalBar() {
 
   return (
     <div
-      className="fixed inset-x-0 top-0 z-40 bg-[#F8F8F8]"
-      style={{ borderBottom: "2px solid rgba(34,36,38,.15)", minHeight: 40 }}
+      className="fixed inset-x-0 top-0 z-40 bg-bar"
+      style={{ borderBottom: "2px solid var(--er-line)", minHeight: 40 }}
     >
       <div className="flex items-stretch" style={{ minHeight: 38 }}>
         {/* Sidebar button (legacy `a.item.sidebar-button` with `i.sidebar.icon`), narrow only */}
@@ -73,7 +75,7 @@ export function PortalBar() {
         <Link
           to="/"
           className={`${itemClass} font-bold lg:hidden`}
-          style={{ ...itemStyle, color: (config ?? FIESTA_PORTAL).color }}
+          style={{ ...itemStyle, color: inkColor((config ?? FIESTA_PORTAL).color) }}
         >
           {(config ?? FIESTA_PORTAL).key}
         </Link>
@@ -84,7 +86,7 @@ export function PortalBar() {
             const active = PORTAL ? portal === EARTHREF : portal.label === config?.key;
             const style = {
               ...itemStyle,
-              ...(active ? { color: portal.color, borderBottomColor: portal.color } : {}),
+              ...(active ? { color: inkColor(portal.color), borderBottomColor: portal.color } : {}),
             };
             return active ? (
               <Link key={portal.label} to="/" className={itemClass} style={style}>
@@ -105,6 +107,16 @@ export function PortalBar() {
 
         {/* User / login menu (always visible, right) */}
         <div className="ml-auto flex shrink-0 items-stretch">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className={itemClass}
+            style={itemStyle}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Light mode" : "Dark mode"}
+          >
+            <Icon name={theme === "dark" ? "sun" : "moon"} />
+          </button>
           {user ? (
             <>
               <button
@@ -136,7 +148,7 @@ export function PortalBar() {
                 // No private workspace while the node mirrors its source.
                 <span
                   className={itemClass}
-                  style={{ ...itemStyle, color: "var(--node-color)" }}
+                  style={{ ...itemStyle, color: "var(--node-ink)" }}
                   title={user.email}
                 >
                   <Icon name="user" style={{ marginRight: "0.35714286em" }} />
@@ -146,7 +158,7 @@ export function PortalBar() {
                 <Link
                   to="/private"
                   className={itemClass}
-                  style={{ ...itemStyle, color: "var(--node-color)" }}
+                  style={{ ...itemStyle, color: "var(--node-ink)" }}
                   title={user.email}
                 >
                   <Icon name="user" style={{ marginRight: "0.35714286em" }} />
@@ -159,7 +171,7 @@ export function PortalBar() {
               type="button"
               onClick={openLogin}
               className={itemClass}
-              style={{ ...itemStyle, color: "var(--node-color)" }}
+              style={{ ...itemStyle, color: "var(--node-ink)" }}
             >
               <Icon name="user" style={{ marginRight: "0.35714286em" }} />
               <span className="hidden sm:inline">Log In / Register</span>

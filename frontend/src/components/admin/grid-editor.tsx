@@ -197,7 +197,7 @@ export function GridEditor({
             className={cx(
               "rounded-md border px-2.5 py-1",
               index === levelIndex
-                ? "border-node bg-node-soft font-semibold text-node-dark"
+                ? "border-node bg-node-soft font-semibold text-node-ink-strong"
                 : "border-gray-300 hover:bg-gray-50",
             )}
           >

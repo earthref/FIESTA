@@ -10,7 +10,7 @@ import type { DataModel, DataModelColumn, DataModelTable } from "../lib/types";
 import { cx, formatDate } from "../lib/utils";
 
 const routeApi = getRouteApi("/data-models/$version");
-const TAB_BORDER = "#d4d4d5";
+const TAB_BORDER = "var(--er-edge)";
 
 /** /data-models redirects to the node's latest data model version. */
 export function DataModelsIndex() {
@@ -74,7 +74,7 @@ function StatusLabel({ badge }: { badge: StatusBadge }) {
       className="rounded-sm text-[11px]"
       style={{
         backgroundColor: badge.background,
-        color: badge.color ?? "rgba(0,0,0,0.6)",
+        color: badge.color ?? "var(--er-ink-muted)",
         fontWeight: "normal",
         padding: "0.4em",
       }}
@@ -101,8 +101,13 @@ function previousColumnText(entry: { table: string; column: string } | string): 
 function CountBadge({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="inline-block rounded-full border border-gray-300 bg-white text-center text-[11px]"
-      style={{ color: "#0C0C0C", minWidth: "3.5em", padding: "0.3em 0.5em", lineHeight: 1 }}
+      className="inline-block rounded-full border border-gray-300 bg-surface text-center text-[11px]"
+      style={{
+        color: "var(--er-ink-heading)",
+        minWidth: "3.5em",
+        padding: "0.3em 0.5em",
+        lineHeight: 1,
+      }}
     >
       {children}
     </span>
@@ -278,8 +283,8 @@ function GroupSection({
         className="flex w-full items-center text-left text-[13px] font-bold text-gray-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
         style={{
           padding: "0.5em 0.5em",
-          background: "#aaaaaa",
-          boxShadow: "inset 0px -5px 35px 15px white",
+          background: "var(--er-ink-faint)",
+          boxShadow: "inset 0px -5px 35px 15px var(--er-surface)",
         }}
       >
         <span
@@ -466,17 +471,14 @@ export function DataModelPage() {
               to="/data-models/$version"
               params={{ version: entry }}
               search={{ q: search.q }}
-              className={cx(
-                "flex items-center text-[13px]",
-                !active && "hover:bg-[rgba(0,0,0,0.03)]",
-              )}
+              className={cx("flex items-center text-[13px]", !active && "hover:bg-shade/3")}
               style={{
                 padding: "0.92857143em 1.42857143em",
-                color: "rgba(0,0,0,.87)",
+                color: "var(--er-ink)",
                 fontWeight: active ? 700 : 400,
-                background: active ? "#fff" : "transparent",
+                background: active ? "var(--er-surface)" : "transparent",
                 border: `1px solid ${active ? TAB_BORDER : "transparent"}`,
-                borderBottomColor: active ? "#fff" : "transparent",
+                borderBottomColor: active ? "var(--er-surface)" : "transparent",
                 borderTopLeftRadius: 4,
                 borderTopRightRadius: 4,
                 marginBottom: -1,
@@ -485,9 +487,9 @@ export function DataModelPage() {
               {entry}
               {active && filter && (
                 <span
-                  className="inline-block rounded-full border border-gray-300 bg-white text-center text-[11px]"
+                  className="inline-block rounded-full border border-gray-300 bg-surface text-center text-[11px]"
                   style={{
-                    color: "#0C0C0C",
+                    color: "var(--er-ink-heading)",
                     margin: "-1em -0.5em -1em 0.5em",
                     minWidth: "4em",
                     padding: "0.5em",
@@ -512,7 +514,7 @@ export function DataModelPage() {
             onChange={(event) =>
               navigate({ search: { q: event.target.value || undefined }, replace: true })
             }
-            className="border-0 bg-transparent text-sm placeholder:text-[#AAAAAA] focus:outline-hidden"
+            className="border-0 bg-transparent text-sm placeholder:text-ink-faint focus:outline-hidden"
             style={{ minWidth: 200, borderRadius: 0, padding: "0.5em 0" }}
           />
           {filter ? (
@@ -520,12 +522,12 @@ export function DataModelPage() {
               type="button"
               onClick={() => navigate({ search: { q: undefined }, replace: true })}
               aria-label="Clear column search"
-              className="px-2 text-sm font-bold text-node hover:opacity-70"
+              className="px-2 text-sm font-bold text-node-ink hover:opacity-70"
             >
               <Icon name="close" size="small" />
             </button>
           ) : (
-            <span aria-hidden="true" className="px-2 text-sm text-node">
+            <span aria-hidden="true" className="px-2 text-sm text-node-ink">
               <Icon name="search" size="small" />
             </span>
           )}
@@ -534,7 +536,7 @@ export function DataModelPage() {
 
       {/* Bottom attached segment (joined under the tab row, min-height 200px) */}
       <div
-        className="bg-white"
+        className="bg-surface"
         style={{
           border: `1px solid ${TAB_BORDER}`,
           borderTop: "none",
@@ -562,7 +564,7 @@ export function DataModelPage() {
                 <button
                   type="button"
                   onClick={downloadJson}
-                  className="inline-flex items-center gap-1 text-node hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+                  className="inline-flex items-center gap-1 text-node-ink hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
                 >
                   <Icon name="download" size="small" /> Download as .json
                 </button>
@@ -571,7 +573,7 @@ export function DataModelPage() {
 
             {/* ui styled fluid accordion: bordered rounded box, mt 1em, no shadow */}
             <div
-              className="bg-white"
+              className="bg-surface"
               style={{
                 border: `1px solid ${TAB_BORDER}`,
                 borderRadius: "0.28571429rem",
@@ -591,7 +593,7 @@ export function DataModelPage() {
                 />
               ))}
               {shownTables.length === 0 && (
-                <p className="px-4 py-6 text-center text-[13px] font-medium text-[#9F3A38]">
+                <p className="px-4 py-6 text-center text-[13px] font-medium text-error-ink">
                   No columns match your search.
                 </p>
               )}

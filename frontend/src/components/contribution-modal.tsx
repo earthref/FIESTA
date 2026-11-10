@@ -75,7 +75,7 @@ function rowFlags(stats: ContributionRowStats | undefined, table: string): Flag[
       key: "changed",
       text: changed ? formatNumber(changed) : `−${formatNumber(removed)}`,
       title: `${parts.join(", ")} ${since}`,
-      className: "border border-node bg-white text-node",
+      className: "border border-node bg-surface text-node-ink",
     });
   }
   return flags;
@@ -142,13 +142,13 @@ export function ContributionModal({
         aria-label="Close"
         tabIndex={-1}
         onClick={onClose}
-        className="absolute inset-0 cursor-default bg-gray-900/40 backdrop-blur-sm"
+        className="absolute inset-0 cursor-default bg-backdrop backdrop-blur-sm"
       />
       <dialog
         open
         aria-modal="true"
         aria-label={`Contribution ${id}`}
-        className="relative m-0 flex h-[calc(100vh-1rem)] w-full max-w-7xl flex-col overflow-hidden rounded-lg border-0 bg-white p-0 text-left shadow-2xl sm:h-[calc(100vh-4rem)]"
+        className="relative m-0 flex h-[calc(100vh-1rem)] w-full max-w-7xl flex-col overflow-hidden rounded-lg border-0 bg-surface p-0 text-left shadow-2xl sm:h-[calc(100vh-4rem)]"
       >
         {config && docQuery.data ? (
           <ModalBody
@@ -209,7 +209,7 @@ function ModalHeader({
   return (
     <div className="flex shrink-0 items-start gap-3 border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
       <div className="min-w-0 flex-1">
-        <h2 className="m-0 text-xl font-bold text-node">
+        <h2 className="m-0 text-xl font-bold text-node-ink">
           {config?.key} Contribution {id}
           {version !== undefined && version !== null && (
             <span className="ml-2 align-middle text-[13px] font-normal text-gray-500">
@@ -471,7 +471,7 @@ function TabList({
                     className={cx(
                       "flex w-full items-center justify-between gap-3 border-l-4 py-2 pr-3 pl-3 text-left text-[13px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-inset",
                       active
-                        ? "border-node bg-node-soft font-bold text-node"
+                        ? "border-node bg-node-soft font-bold text-node-ink"
                         : "border-transparent text-gray-700 hover:bg-gray-50",
                     )}
                   >
@@ -492,7 +492,7 @@ function TabList({
           id="contribution-tab"
           value={current.key}
           onChange={(event) => onSelect(event.target.value)}
-          className="w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-[13px] font-bold"
+          className="w-full rounded-sm border border-gray-300 bg-surface px-2 py-1.5 text-[13px] font-bold"
         >
           {tabs.map((entry) => (
             <option key={entry.key} value={entry.key}>
@@ -523,7 +523,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="text-node hover:underline">
+    <a href={href} target="_blank" rel="noreferrer" className="text-node-ink hover:underline">
       {children}
     </a>
   );
@@ -580,7 +580,7 @@ function ContributionPanel({
                     {config.doi_prefix}/{id}
                   </ExternalLink>
                 ) : (
-                  <span className="text-[#AAAAAA]">Queued For Creation</span>
+                  <span className="text-ink-faint">Queued For Creation</span>
                 )}
               </dd>
             </>
@@ -723,7 +723,7 @@ function VersionsTable({
                   <button
                     type="button"
                     onClick={() => open(row.id, "contribution")}
-                    className="cursor-pointer text-node hover:underline"
+                    className="cursor-pointer text-node-ink hover:underline"
                   >
                     {row.id}
                   </button>
@@ -736,10 +736,10 @@ function VersionsTable({
                       {config.doi_prefix}/{row.id}
                     </ExternalLink>
                   ) : (
-                    <span className="text-[#AAAAAA]">Queued For Creation</span>
+                    <span className="text-ink-faint">Queued For Creation</span>
                   )
                 ) : (
-                  <span className="text-[#AAAAAA]">—</span>
+                  <span className="text-ink-faint">—</span>
                 )}
               </td>
               <td className={cell}>{row.dataModel || "—"}</td>
@@ -749,7 +749,7 @@ function VersionsTable({
                 <a
                   href={nodeUrl(`/contributions/${row.id}/download${keyQuery}`)}
                   download
-                  className="inline-flex items-center gap-1 font-normal text-node hover:underline"
+                  className="inline-flex items-center gap-1 font-normal text-node-ink hover:underline"
                 >
                   <Icon name="download" size="small" /> txt
                 </a>
@@ -800,7 +800,7 @@ function LevelPanel({
             type="button"
             disabled={rows.isFetchingNextPage}
             onClick={() => rows.fetchNextPage()}
-            className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
+            className="rounded-sm border border-gray-300 bg-surface px-3 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
           >
             {rows.isFetchingNextPage
               ? "Loading…"
@@ -860,7 +860,7 @@ function MapPanel({
                       "border px-2 py-1 font-bold",
                       active
                         ? "border-node bg-node text-white"
-                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50",
+                        : "border-gray-300 bg-surface text-gray-700 hover:bg-gray-50",
                       index === 0 ? "rounded-l-sm" : "-ml-px",
                       index === layers.length - 1 && "rounded-r-sm",
                     )}

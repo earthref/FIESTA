@@ -81,8 +81,8 @@ export function IconButton({
     "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
     wide ? "w-full" : "h-full",
     small
-      ? "bg-transparent hover:bg-[#f8f8f9] active:bg-[#f0f0f0] hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]"
-      : "bg-[#f8f8f9] hover:bg-[#f0f0f0] active:bg-transparent shadow-[inset_0_0_0_1px_var(--node-color)] hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]",
+      ? "bg-transparent hover:bg-panel-soft active:bg-panel hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]"
+      : "bg-panel-soft hover:bg-panel active:bg-transparent shadow-[inset_0_0_0_1px_var(--node-color)] hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]",
   );
   const style: CSSProperties = {
     fontSize: cardFont,
@@ -101,14 +101,14 @@ export function IconButton({
       )}
       {!image && icon && (
         <span
-          className="relative inline-block text-[#555555]"
+          className="relative inline-block text-ink-secondary"
           style={{ fontSize: iconPx, lineHeight: 1, marginBottom: "0.5rem" }}
         >
           <SemanticIcon name={icon} style={{ display: "block", verticalAlign: "top" }} />
           {cornerIcon && (
             <span
               aria-hidden="true"
-              className="absolute text-node"
+              className="absolute text-node-ink"
               style={{ right: 0, bottom: 0, fontSize: cornerPx, lineHeight: 1 }}
             >
               <SemanticIcon
@@ -121,7 +121,7 @@ export function IconButton({
         </span>
       )}
       <div
-        className="font-bold text-node"
+        className="font-bold text-node-ink"
         style={{
           fontSize: `${titleSize}em`,
           lineHeight: "1.28571429em",
@@ -131,7 +131,7 @@ export function IconButton({
         {typeof title === "string" ? titleLines(title) : title}
       </div>
       {subtitle && (
-        <div className="text-[#555555]" style={{ fontSize: "1em", lineHeight: 1.2 }}>
+        <div className="text-ink-secondary" style={{ fontSize: "1em", lineHeight: 1.2 }}>
           {subtitle}
         </div>
       )}

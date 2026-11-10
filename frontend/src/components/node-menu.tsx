@@ -12,9 +12,9 @@ import { Icon, type IconName } from "./ui/icon";
  * text) when active. Icons are 1em with margin-right .357em.
  */
 const itemClass =
-  "flex items-center self-end whitespace-nowrap text-[rgba(0,0,0,0.87)] " +
-  "hover:text-[rgba(0,0,0,0.95)] focus-visible:outline-hidden focus-visible:ring-2 " +
-  "focus-visible:ring-node [&.active]:border-node [&.active]:font-bold [&.active]:text-node";
+  "flex items-center self-end whitespace-nowrap text-ink " +
+  "hover:text-ink-strong focus-visible:outline-hidden focus-visible:ring-2 " +
+  "focus-visible:ring-node [&.active]:border-node [&.active]:font-bold [&.active]:text-node-ink";
 
 const itemStyle: CSSProperties = {
   padding: "0.5em 1em",
@@ -108,7 +108,7 @@ export function NodeMenu() {
             fontSize: "0.92857143rem",
             minHeight: "2.85714286em",
             margin: "0.25em 0 1.25em",
-            borderBottom: "2px solid rgba(34,36,38,.15)",
+            borderBottom: "2px solid var(--er-line)",
           }}
         >
           <div className="flex">{left.map(renderItem)}</div>

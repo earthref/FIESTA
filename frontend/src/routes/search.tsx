@@ -55,11 +55,11 @@ import { type PluginSubTabContext, pluginFiltersPanel, pluginSubTabs } from "../
 
 const PAGE_SIZE = 10;
 const routeApi = getRouteApi("/search");
-const TAB_BORDER = "#d4d4d5";
+const TAB_BORDER = "var(--er-edge)";
 /** Legacy `styles.activeTab` on the level tabs and the Filters tab. */
-const ACTIVE_TAB_BG = "#F0F0F0";
-const SEGMENT_BORDER = "rgba(34,36,38,.15)";
-const SEGMENT_BG = "#F0F0F0";
+const ACTIVE_TAB_BG = "var(--er-panel)";
+const SEGMENT_BORDER = "var(--er-line)";
+const SEGMENT_BG = "var(--er-panel)";
 /** `.ui.basic.button` look: transparent/white, 1px inset shadow, weight 400. */
 function basicButtonStyle(color: string): CSSProperties {
   return {
@@ -87,7 +87,11 @@ const RELEVANCE_OPTION = { value: "relevance", label: "Most Relevant First" };
 /** Semantic tabular menu item: the row has only a bottom border; the active
  * tab is a top/left/right-bordered, top-rounded item overlapping it by 1px.
  * Inactive items are node-colored links (legacy `styles.a`). */
-function tabItemStyle(active: boolean, small = false, activeBg = "#fff"): CSSProperties {
+function tabItemStyle(
+  active: boolean,
+  small = false,
+  activeBg = "var(--er-surface)",
+): CSSProperties {
   const sideColor = active ? TAB_BORDER : "transparent";
   const sidePad = small ? "1.14285714em" : "1.42857143em";
   return {
@@ -99,7 +103,7 @@ function tabItemStyle(active: boolean, small = false, activeBg = "#fff"): CSSPro
     paddingRight: sidePad,
     paddingBottom: active && !small ? "calc(0.92857143em + 1px)" : "0.92857143em",
     paddingLeft: sidePad,
-    color: active ? "rgba(0,0,0,.95)" : "var(--node-color)",
+    color: active ? "var(--er-ink-strong)" : "var(--node-ink)",
     fontWeight: active ? 700 : 400,
     background: active ? activeBg : "transparent",
     borderTop: `1px solid ${sideColor}`,
@@ -117,9 +121,9 @@ function tabItemStyle(active: boolean, small = false, activeBg = "#fff"): CSSPro
 function CountLabel({ children }: { children: ReactNode }) {
   return (
     <span
-      className="inline-block rounded-full border bg-white text-center font-bold"
+      className="inline-block rounded-full border bg-surface text-center font-bold"
       style={{
-        color: "#0C0C0C",
+        color: "var(--er-ink-heading)",
         borderColor: SEGMENT_BORDER,
         margin: "-1em -1em -1em 0.5em",
         minWidth: "4em",
@@ -138,7 +142,7 @@ function CountLabel({ children }: { children: ReactNode }) {
 function compactButtonClass(active: boolean): string {
   return cx(
     "flex items-center whitespace-nowrap rounded-sm",
-    active ? "bg-node font-bold text-white hover:bg-node-dark" : "cursor-default bg-white",
+    active ? "bg-node font-bold text-white hover:bg-node-dark" : "cursor-default bg-surface",
   );
 }
 function compactButtonStyle(active: boolean): CSSProperties {
@@ -147,8 +151,8 @@ function compactButtonStyle(active: boolean): CSSProperties {
     lineHeight: "1em",
     padding: "0.5em",
     margin: "-0.5em 0",
-    ...(active ? {} : { ...basicButtonStyle("rgba(0,0,0,.6)"), opacity: 0.45 }),
-    ...(active ? {} : { boxShadow: "0 0 0 1px rgba(34,36,38,.15) inset" }),
+    ...(active ? {} : { ...basicButtonStyle("var(--er-ink-muted)"), opacity: 0.45 }),
+    ...(active ? {} : { boxShadow: "0 0 0 1px var(--er-line) inset" }),
   };
 }
 
@@ -248,9 +252,9 @@ function NoItemsMessage() {
       <div
         className="rounded-sm"
         style={{
-          background: "#fffaf3",
-          color: "#573a08",
-          boxShadow: "0 0 0 1px #c9ba9b inset",
+          background: "var(--er-warning-bg)",
+          color: "var(--er-warning-ink)",
+          boxShadow: "0 0 0 1px var(--er-warning-line) inset",
           padding: "1em 1.5em",
         }}
       >
@@ -671,7 +675,7 @@ export function SearchPage() {
               }
               className={cx(
                 "flex items-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
-                !active && "cursor-pointer hover:text-node-dark",
+                !active && "cursor-pointer hover:text-node-ink-strong",
               )}
               style={tabItemStyle(active, false, ACTIVE_TAB_BG)}
             >
@@ -697,7 +701,7 @@ export function SearchPage() {
       <div
         style={{
           background: SEGMENT_BG,
-          color: "rgba(0,0,0,.6)",
+          color: "var(--er-ink-muted)",
           border: `1px solid ${SEGMENT_BORDER}`,
           borderTop: "none",
           padding: 0,
@@ -726,12 +730,12 @@ export function SearchPage() {
               placeholder='e.g. metamorphic "field intensity" -precambrian'
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              className="min-w-0 bg-white placeholder:text-[#AAAAAA] focus:outline-hidden"
+              className="min-w-0 bg-surface placeholder:text-ink-faint focus:outline-hidden"
               style={{
                 fontSize: "1rem",
                 lineHeight: "1.21428571em",
                 padding: "0.67857143em 1em",
-                border: "1px solid #888888",
+                border: "1px solid var(--er-input-line)",
                 borderLeft: "none",
                 borderRight: "none",
                 flex: 1,
@@ -740,9 +744,9 @@ export function SearchPage() {
             <button
               type="submit"
               disabled={!input.trim() && !q}
-              className="flex items-center whitespace-nowrap bg-white disabled:cursor-default disabled:opacity-45"
+              className="flex items-center whitespace-nowrap bg-surface disabled:cursor-default disabled:opacity-45"
               style={{
-                ...basicButtonStyle("#1b1c1d"),
+                ...basicButtonStyle("var(--er-inverse)"),
                 borderRadius: 0,
                 fontSize: "1rem",
                 padding: "0.78571429em 1.5em",
@@ -759,9 +763,9 @@ export function SearchPage() {
                 setInput("");
                 setSearch({ q: "" });
               }}
-              className="flex items-center whitespace-nowrap bg-white disabled:cursor-default disabled:opacity-45"
+              className="flex items-center whitespace-nowrap bg-surface disabled:cursor-default disabled:opacity-45"
               style={{
-                ...basicButtonStyle("#1b1c1d"),
+                ...basicButtonStyle("var(--er-inverse)"),
                 borderRadius: "0 0.28571429rem 0.28571429rem 0",
                 fontSize: "1rem",
                 padding: "0.78571429em 1.5em",
@@ -779,9 +783,9 @@ export function SearchPage() {
               <a
                 href={nodeUrl(`/contributions/${topContributionId}/download`)}
                 download
-                className="flex items-center self-start whitespace-nowrap bg-white hover:bg-node-soft"
+                className="flex items-center self-start whitespace-nowrap bg-surface hover:bg-node-soft"
                 style={{
-                  ...basicButtonStyle("var(--node-color)"),
+                  ...basicButtonStyle("var(--node-ink)"),
                   margin: "1em 1em 0 0",
                   fontSize: "1rem",
                   padding: "0.78571429em 1.5em",
@@ -800,9 +804,9 @@ export function SearchPage() {
                     ? "No results to download"
                     : "Switch to the Contributions level to download results"
                 }
-                className="flex items-center self-start whitespace-nowrap bg-white"
+                className="flex items-center self-start whitespace-nowrap bg-surface"
                 style={{
-                  ...basicButtonStyle("var(--node-color)"),
+                  ...basicButtonStyle("var(--node-ink)"),
                   opacity: 0.45,
                   margin: "1em 1em 0 0",
                   cursor: "default",
@@ -902,7 +906,7 @@ export function SearchPage() {
                     ),
                   )}
                   {filters.length === 0 && !level.geo && (
-                    <p className="px-[1em] py-3 text-[12px] text-[#AAAAAA]">
+                    <p className="px-[1em] py-3 text-[12px] text-ink-faint">
                       No filters for this view.
                     </p>
                   )}
@@ -927,7 +931,7 @@ export function SearchPage() {
                     onClick={() => setView(tab.name)}
                     className={cx(
                       "flex items-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
-                      !active && "cursor-pointer hover:text-node-dark",
+                      !active && "cursor-pointer hover:text-node-ink-strong",
                     )}
                     style={tabItemStyle(active, true)}
                   >
@@ -974,7 +978,7 @@ export function SearchPage() {
 
             {activeTab?.name === "Map" ? (
               <div
-                className="min-h-0 flex-1 bg-white"
+                className="min-h-0 flex-1 bg-surface"
                 style={{ borderLeft: `1px solid ${TAB_BORDER}`, padding: "0 1em" }}
               >
                 <SearchMap
@@ -995,7 +999,7 @@ export function SearchPage() {
               /* View container: border-left 1px #d4d4d5, white, independent scroll */
               <div
                 ref={scrollerRef}
-                className="flex-1 overflow-y-scroll bg-white"
+                className="flex-1 overflow-y-scroll bg-surface"
                 style={{ borderLeft: `1px solid ${TAB_BORDER}`, padding: "0 1em" }}
               >
                 {results.error && <ErrorMessage error={results.error} className="my-3" />}
@@ -1048,7 +1052,7 @@ export function SearchPage() {
                         <button
                           type="button"
                           onClick={() => fetchNextPage()}
-                          className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
+                          className="rounded-sm border border-gray-300 bg-surface px-3 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
                         >
                           Load More (showing {hits.length} of {formatNumber(total)})
                         </button>

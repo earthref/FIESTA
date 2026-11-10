@@ -358,7 +358,7 @@ function PlotGrid({ type, items }: { type: PlotType; items: PlotItem[] }) {
               <button
                 type="button"
                 onClick={() => setVisible((n) => n + PAGE)}
-                className="rounded-sm border border-gray-300 bg-white px-3 py-1 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
+                className="rounded-sm border border-gray-300 bg-surface px-3 py-1 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
               >
                 Show {Math.min(PAGE, shown.length - visible)} more of {shown.length - visible}
               </button>
@@ -395,7 +395,7 @@ function Choices<T extends string>({
               "border-l border-gray-300 px-2 py-0.5 first:border-l-0",
               option.value === value
                 ? "bg-node font-bold text-white"
-                : "bg-white text-gray-700 hover:bg-gray-50",
+                : "bg-surface text-gray-700 hover:bg-gray-50",
             )}
           >
             {option.label}
@@ -426,12 +426,12 @@ function PlotCard({
 }) {
   const build = useCallback((size: Size) => item.build(size, coord, false), [item, coord]);
   return (
-    <section className="min-w-0 rounded-sm border border-gray-300 bg-white">
+    <section className="min-w-0 rounded-sm border border-gray-300 bg-surface">
       <header className="flex items-baseline gap-2 border-b border-gray-200 px-3 py-1.5">
         <button
           type="button"
           onClick={onExpand}
-          className="truncate text-left text-[13px] font-bold text-node hover:underline"
+          className="truncate text-left text-[13px] font-bold text-node-ink hover:underline"
           title="Enlarge"
         >
           {item.title}
@@ -475,9 +475,9 @@ function ExpandedPlot({
 }) {
   const build = useCallback((size: Size) => item.build(size, coord, true), [item, coord]);
   const button =
-    "rounded-sm border border-gray-300 bg-white px-2 py-0.5 text-[13px] text-gray-700 hover:bg-gray-50";
+    "rounded-sm border border-gray-300 bg-surface px-2 py-0.5 text-[13px] text-gray-700 hover:bg-gray-50";
   return (
-    <section className="rounded-sm border border-gray-300 bg-white">
+    <section className="rounded-sm border border-gray-300 bg-surface">
       <header className="flex flex-wrap items-center gap-2 border-b border-gray-200 px-3 py-2">
         <button type="button" onClick={onBack} className={button}>
           ← All plots
