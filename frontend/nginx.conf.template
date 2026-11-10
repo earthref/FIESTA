@@ -51,7 +51,11 @@ server {
     }
 
     # SPA history fallback: every other path under the base serves the app shell.
+    # The shell names the current hashed chunks, so browsers must revalidate it
+    # (no heuristic caching from Last-Modified) or a stale copy points at chunks
+    # a deploy removed.
     location ${BASE_PATH} {
+        add_header Cache-Control "no-cache";
         try_files $uri $uri/ ${BASE_PATH}index.html;
     }
 }

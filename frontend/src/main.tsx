@@ -23,6 +23,24 @@ if (!rootElement) throw new Error("Missing #root element");
 // Multi-node layout: a URL outside every node prefix loads under the default node.
 if (REDIRECT) window.location.replace(REDIRECT);
 
+// A deploy swaps the release directory, so a tab opened before it still runs the
+// old bundle and its lazy chunks (plugin views) 404. Reload once to pick up the
+// new build; the timestamp guard stops a loop if the chunk is genuinely missing.
+window.addEventListener("vite:preloadError", (event) => {
+  const key = "fiesta:chunk-reload";
+  try {
+    const last = Number(sessionStorage.getItem(key) ?? 0);
+    if (Date.now() - last < 10_000) return;
+    sessionStorage.setItem(key, String(Date.now()));
+  } catch {
+    // Storage blocked: the guard can't survive a reload, so a genuinely missing
+    // chunk would reload forever; let the import fail visibly instead.
+    return;
+  }
+  event.preventDefault();
+  window.location.reload();
+});
+
 const root = createRoot(rootElement);
 initializeLocalLogin().then(() =>
   root.render(

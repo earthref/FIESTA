@@ -540,6 +540,20 @@ so the first run sends about 75 records.
       without a password if missing) and leaves the old FIESTA account as it is.
       Either accept that or merge the accounts before the first run.
 
+## 2026-10-26 — SPA shell caching on fiesta-ct
+
+- [ ] **Send `Cache-Control: no-cache` for the SPA shell on dev.earthref.org.**
+      The host nginx on `fiesta-ct` (not in this repo) serves `/<Node>/` HTML
+      with only `Last-Modified`/`ETag`, so browsers may heuristically cache
+      `index.html` for hours, and after a deploy a stale shell points at
+      hashed chunks the release swap removed ("Failed to fetch dynamically
+      imported module"). In each node's SPA-fallback location add
+      `add_header Cache-Control "no-cache";` (as `frontend/nginx.conf.template`
+      now does); keep `assets/` at `public, immutable`. Optional: have
+      `deploy-fiesta.sh` copy the previous release's `assets/` into the new one
+      so tabs open across a deploy keep working without a reload. After:
+      `curl -sI https://dev.earthref.org/MagIC/search` shows `no-cache`.
+
 ## Done
 
 - [x] **Branch protection and Actions token on FIESTA** (2026-10-22): ruleset
