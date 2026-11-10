@@ -159,8 +159,8 @@ fix: ## Auto-fix lint issues (ruff --fix + biome --write)
 	cd frontend && npx biome check --write . ../config/plugins
 
 .PHONY: seed
-seed: ## Seed the enabled nodes with config-defined local fixtures (preserves edits)
-	$(COMPOSE_OPS) run --rm api fiesta seed
+seed: ## Seed the enabled nodes: demo accounts, private fixtures, dev.earthref.org's 50 newest public contributions not yet local [ARGS="--public 10" | --source URL | --fixtures]
+	$(COMPOSE_OPS) run --rm api fiesta seed $(ARGS)
 
 .PHONY: import-public
 import-public: ## Copy public contributions into local dev: make import-public NODE=magic IDS="20818 20848" [ARGS=--versions]

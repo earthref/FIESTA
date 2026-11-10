@@ -24,7 +24,13 @@ Each node YAML selects `development.seed_manifest`, resolved relative to that YA
 Fixtures live under `config/<node>/seeds/`. The two local logins are
 `developer@example.test` and `viewer@example.test`, both with password
 `local-fiesta-only`. The owner can edit and is a super admin (`admin: true`); the
-viewer can inspect shared workspace contributions. Each node includes a private draft with revision history, two
+viewer can inspect shared workspace contributions. `make seed` loads only the
+manifest's accounts, workspace and unpublished fixtures (the private draft and
+the invalid draft), after it imports the node's 50 most recent public contributions
+from dev.earthref.org that are not already local (`fiesta.services.public_import`;
+`--public N`, `--source URL`). `fiesta seed --fixtures` loads the whole manifest
+below instead and imports nothing; the offline `make test-phase-m` uses it.
+The manifest includes a private draft with revision history, two
 independent typical public examples (`typical-1`, `typical-2`), and an `all-fields`
 public example with a populated value for every column of every table in the
 latest data model. MagIC also has two public pole examples with different ages,

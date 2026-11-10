@@ -43,13 +43,15 @@ async def build_inventory(
     versions=False,
     local_ids=frozenset(),
     imported_ids=frozenset(),
+    skip_local=False,
 ):
     """Write OUT_DIR/inventory.json and the canonical file of each public ID (with
     VERSIONS, also the earlier published versions of its chain). LOCAL_IDS are the
-    destination's contributions; IMPORTED_IDS those earlier runs from SOURCE made."""
+    destination's contributions; IMPORTED_IDS those earlier runs from SOURCE made.
+    With SKIP_LOCAL, an ID already local is counted under `skipped`, not fetched."""
     api = f"{source.rstrip('/')}/v2/{slug}/contributions"
     out_dir = Path(out_dir)
-    report = {"records": 0, "bytes": 0, "errors": []}
+    report = {"records": 0, "bytes": 0, "skipped": 0, "errors": []}
     previous = {}  # target ID -> the version before it in its public chain
     for cid in dict.fromkeys(ids):
         response = await http.get(f"{api}/{cid}/versions")
@@ -63,6 +65,9 @@ async def build_inventory(
             previous.setdefault(chain[i], chain[i - 1] if i else None)
     fetched = {}
     for cid in previous:
+        if skip_local and cid in local_ids:
+            report["skipped"] += 1
+            continue
         if cid in local_ids and cid not in imported_ids:
             report["errors"].append(
                 {
@@ -120,8 +125,38 @@ async def build_inventory(
     return report
 
 
-async def import_public(node, ids, *, source=None, versions=False):
-    """Import public IDs from SOURCE as the node's seed workspace owner, then process them."""
+async def recent_public_ids(slug, count, *, source, http):
+    """The IDs of SOURCE's COUNT most recently published public contributions of SLUG
+    (latest versions, newest first); none when SOURCE does not serve SLUG."""
+    response = await http.get(
+        f"{source.rstrip('/')}/v2/{slug}/search/contribution",
+        params={"size": count, "sort": "recent"},
+    )
+    if response.status_code == 404:
+        return []
+    response.raise_for_status()
+    return [r["summary"]["contribution"]["id"] for r in response.json()["results"]]
+
+
+async def import_recent(node, count, *, source=None):
+    """Import SOURCE's COUNT most recent public contributions of NODE that the node
+    does not already have (`fiesta seed`)."""
+    import httpx
+
+    source = source or DEFAULT_SOURCE
+    try:
+        async with httpx.AsyncClient(timeout=60, follow_redirects=True) as http:
+            ids = await recent_public_ids(node.node.slug, count, source=source, http=http)
+    except httpx.HTTPError as exc:
+        return {"records": 0, "errors": [{"error": f"listing {source}: {exc!r}"}]}
+    if not ids:
+        return {"records": 0, "errors": [], "note": f"no public contributions on {source}"}
+    return await import_public(node, ids, source=source, skip_local=True)
+
+
+async def import_public(node, ids, *, source=None, versions=False, skip_local=False):
+    """Import public IDs from SOURCE as the node's seed workspace owner, then process
+    them. With SKIP_LOCAL, IDs the node already has are left alone."""
     import httpx
 
     from fiesta.services.outbox import drain
@@ -158,6 +193,7 @@ async def import_public(node, ids, *, source=None, versions=False):
                 versions=versions,
                 local_ids=local_ids,
                 imported_ids=imported_ids,
+                skip_local=skip_local,
             )
         if report["records"]:
             synced = await sync_inventory(node, f"{tmp}/inventory.json", apply=True)

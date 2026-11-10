@@ -110,7 +110,10 @@ Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend
       2026-10-12, all seven nodes; the developer account is a super admin since 2026-10-22.) Implement with M0: per-node YAML selects checked-in
       seed manifests and fixtures, including demo accounts and representative
       contribution histories. `make seed` waits for processing so search works
-      immediately. Idempotent; no MARFIK or AWS connection required.
+      immediately. Idempotent; no MARFIK or AWS connection required. 2026-11-09:
+      the public examples come from dev.earthref.org instead (each node's 50 most
+      recent public contributions not already local); the hand-made ones load
+      only with `fiesta seed --fixtures`, which the offline phase-m test uses.
 - [ ] **B2 Frontend-only mode against live data.** `FIESTA_NODE=magic
       VITE_API_URL=https://api.earthref.org make frontend-dev` with an EarthRef login.
       Needs the live API to allow the localhost Vite origin in CORS — **BLOCKED
