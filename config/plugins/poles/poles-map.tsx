@@ -22,7 +22,8 @@ interface PolesMapProps {
 /**
  * The poles on the search map's MapLibre views (globe, Mercator, and a globe
  * over either pole, where most poles crowd), with the plate boundaries and
- * each pole's a95 uncertainty ellipse in its age colour. Replaces the legacy
+ * each pole's uncertainty outline in its age colour (its a95 circle or dp/dm
+ * ellipse, a ring the backend computed with PmagPy). Replaces the legacy
  * pair of echarts-gl globes (view + antipode): the pole views show both
  * hemispheres' poles without one.
  */
