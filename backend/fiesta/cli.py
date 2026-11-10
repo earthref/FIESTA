@@ -265,7 +265,10 @@ def outbox_worker():
 @app.command()
 def seed(
     public: int = typer.Option(
-        50, min=0, help="import this many of SOURCE's most recent public contributions per node"
+        50,
+        min=0,
+        envvar="FIESTA_SEED_PUBLIC",
+        help="import this many of SOURCE's most recent public contributions per node",
     ),
     source: str = typer.Option(
         None, help="FIESTA deployment serving /v2/{node}/... [default: https://dev.earthref.org]"

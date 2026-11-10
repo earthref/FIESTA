@@ -95,8 +95,9 @@ draft) from the manifest the node's YAML selects under `development.seed_manifes
 contributions from `dev.earthref.org` that the stack does not have yet; they keep
 their public IDs, versions and DOIs and are owned by Local Developer. A node
 dev.earthref.org has no public data for (today every node but MagIC and KArAr)
-gets no public contributions. `ARGS="--public 10"` changes the count (`0` skips
-the import), `ARGS="--source https://…"` reads another FIESTA deployment, and
+gets no public contributions. `FIESTA_SEED_PUBLIC=10` in `.env` changes the
+default count (`make seed FIESTA_SEED_PUBLIC=10` for one run; `0` skips the
+import), `ARGS="--public 10"` overrides both, `ARGS="--source https://…"` reads another FIESTA deployment, and
 `ARGS=--fixtures` loads the manifest's hand-made public examples instead,
 offline; the phase-m integration test uses that mode. Re-running the seed
 fetches only contributions published on the source since the last run. On page load, local development
