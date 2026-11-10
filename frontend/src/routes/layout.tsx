@@ -72,8 +72,9 @@ export function RootLayout() {
     <LoginModalProvider>
       <div className="min-h-screen bg-surface">
         <PortalBar />
-        {/* layout-content: padding-top/bottom 4em clears the fixed bars (layout.less:41-44) */}
-        <div className="pt-[4em] sm:pb-[4em]">
+        {/* layout-content: padding-top 4em clears the fixed bar (layout.less:41-44); the
+            bottom tracks the fixed footer's measured height, which grows as it wraps. */}
+        <div className="pt-[4em] sm:pb-[calc(var(--footer-h,3.5em)_+_0.5em)]">
           {/* Every page uses the legacy `.full-width` layout variant (padding 0 2em). */}
           <NodeHeader />
           {!PORTAL && <NodeMenu />}
