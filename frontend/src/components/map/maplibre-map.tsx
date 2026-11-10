@@ -1,6 +1,7 @@
 import * as maplibregl from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { type FC, useEffect, useRef } from "react";
+import { mapDim, useTheme } from "../../lib/theme";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   MERCATOR_LAT,
@@ -580,6 +581,11 @@ const MapLibreMap: FC<{
   linesRef.current = lines || [];
   // The lines' layer, once the style has loaded.
   const linesLayerRef = useRef<LinesLayer | null>(null);
+  // Dark mode's dimming of the imagery; applied to the map once the style has loaded.
+  const { theme } = useTheme();
+  const dimRef = useRef(mapDim(theme));
+  dimRef.current = mapDim(theme);
+  const applyDimRef = useRef<(() => void) | null>(null);
 
   // Before the map's rebuild below, which opens on these points (a new body's).
   useEffect(() => {
@@ -664,6 +670,13 @@ const MapLibreMap: FC<{
         layers: [
           { id: "background", type: "background", paint: { "background-color": "#000000" } },
           { id: "basemap", type: "raster", source: "basemap" },
+          // Dark mode dims the imagery under it (the basemap, the polar caps);
+          // labels and data are drawn above it, undimmed.
+          {
+            id: "dim",
+            type: "background",
+            paint: { "background-color": "#000000", "background-opacity": dimRef.current },
+          },
           ...(bodyLabels
             ? [
                 {
@@ -956,8 +969,10 @@ const MapLibreMap: FC<{
     // (isStyleLoaded() is also false while tiles load, so it can't gate these.)
     map.on("load", () => {
       if (globe) {
-        map.addLayer(createPolarCapsLayer("polar-caps", basemap.caps), "context-points");
+        map.addLayer(createPolarCapsLayer("polar-caps", basemap.caps), "dim");
       }
+      applyDimRef.current = () => map.setPaintProperty("dim", "background-opacity", dimRef.current);
+      applyDimRef.current();
       loadLabels().then(addLabels);
       setPointsRef.current = setPoints;
       setPoints();
@@ -1341,6 +1356,7 @@ const MapLibreMap: FC<{
       cancelAnimationFrame(animation);
       observer?.disconnect();
       tooltip.dispose();
+      applyDimRef.current = null;
       setPointsRef.current = null;
       syncAreaRef.current = null;
       setContextRef.current = null;
@@ -1377,6 +1393,11 @@ const MapLibreMap: FC<{
   useEffect(() => {
     linesLayerRef.current?.setLines(lines || []);
   }, [lines]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the dim reaches the map through dimRef
+  useEffect(() => {
+    applyDimRef.current?.();
+  }, [theme]);
 
   return (
     <div className="relative w-full h-full bg-black">
