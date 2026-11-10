@@ -1,14 +1,20 @@
 """The pmag-plots plugin: PmagPy's science in the plot data, the payload's
 geometry, the row cleaning that keeps PmagPy from raising, and the counts."""
 
+import asyncio
+import gzip
+import json
+
 import pytest
 from pmagpy import pmag
 
 from fiesta.domain.parse import parse_text
 from fiesta.plugins.pmag_plots import (
+    KINDS,
     PmagPlotsPlugin,
     _by_sequence,
     _circle,
+    _Plots,
     _xy,
     arai_specimen,
     compute_counts,
@@ -440,3 +446,49 @@ def test_pmag_plots_derived_doc_counts(magic_node):
     assert doc["summary"]["pmag_plots"]["arai"] == 1
     no_plots = parse_text(NO_MEASUREMENTS_TEXT)
     assert PmagPlotsPlugin().derive_docs(magic_node, no_plots, {"id": 99}) == []
+
+
+@pytest.mark.asyncio
+async def test_pmag_plots_cache_computes_each_kind_once_and_warms_the_rest():
+    reads = 0
+
+    async def read() -> bytes:
+        nonlocal reads
+        reads += 1
+        return PMAG_TEXT.encode()
+
+    plots = _Plots(read)
+    # Two tabs asking at once share one computation.
+    first, second = await asyncio.gather(plots.get("arai"), plots.get("arai"))
+    assert first is second
+    body, gzipped = first
+    expected = json.loads(json.dumps(compute_plots(parse_text(PMAG_TEXT))["arai"]))
+    assert json.loads(body) == expected
+    assert gzip.decompress(gzipped) == body
+    # The other kinds are computed in the background from the same read, and
+    # the parsed file is then let go.
+    await plots._warming
+    assert reads == 1
+    assert set(plots._kinds) == set(KINDS)
+    assert plots._source is None
+    assert (await plots.get("hyst")) is plots._kinds["hyst"].result()
+
+
+@pytest.mark.asyncio
+async def test_pmag_plots_cache_retries_a_failed_read():
+    calls = 0
+
+    async def read() -> bytes:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise OSError("bucket unavailable")
+        return PMAG_TEXT.encode()
+
+    plots = _Plots(read)
+    with pytest.raises(OSError):
+        await plots.get("demag")
+    body, _ = await plots.get("demag")
+    assert json.loads(body)["specimens"]
+    await plots._warming
+    assert calls == 2
