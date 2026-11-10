@@ -206,20 +206,26 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
   contributions and the private workspace's contribution use the same grid
   without sort/filter controls; the portal home shows each node's row without
   a header. On the search page (2026-11-10) the grid scrolls virtually (only the
-  rows in view and a page of 10 above and below are in the DOM, rows measured
-  as they render), and a click anywhere on a row outside its links and buttons
+  rows in view and 10 above and below are in the DOM, rows measured as they
+  render). The scrollbar spans every match (up to OpenSearch's 10,000-result
+  window, with a note under the grid past it): the legacy Load More and
+  infinite scroll are gone, and the pages of 20 under the view are fetched
+  once scrolling settles, placeholder rows standing in until they arrive. A
+  click anywhere on a row outside its links and buttons
   (or Enter on a focused row) highlights it and opens its contribution's modal
   at that level's tab.
 - **Rows grids** (2026-11-10), on the search page's Rows view and the modal's
-  level tabs, scroll virtually too (25 rows above and below the view) and
-  their headers sort (ascending, descending, back). Both sorts are
+  level tabs, scroll virtually the same way (25 records above and below the
+  view; the modal's scrollbar spans the whole table, no window), with fixed
+  column widths set from the first rows, and their headers sort (ascending,
+  descending, back). Both sorts are
   server-side: on the search page `sort=rows.<column>:…` orders every matching
   record by its rows' values (a record's rows stay together, ordered within);
   in the modal the API sorts the contribution's whole table. The modal's rows
   come from the file (`/contributions/{id}/tables/{table}`) with their row
   numbers, and cells with validation issues take the online editor's colors
   (errors red, warnings amber, the messages as a tooltip; a whole-row issue
-  tints the row); more load as the last row scrolls into view.
+  tints the row).
 - **Contribution modal** (2026-09-27) replaces the legacy expand caret, the
   map and plot modals and the contribution page, after osu-mgr.org's record
   modal: clicking a card's header, its map thumbnail or a plot (the plateau
