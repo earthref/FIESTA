@@ -34,3 +34,12 @@ export function sanitizeHtml(html: string): string {
   // The HTML profile: no scripts, styles, forms, iframes or event handlers.
   return purifier.sanitize(html, { USE_PROFILES: { html: true }, ADD_ATTR: ["target"] });
 }
+
+// Contributor-supplied text (reference titles from Crossref, "<sup>40</sup>Ar/<sup>39</sup>Ar")
+// may carry inline markup. Only text formatting survives, with no attributes and
+// no links: these strings are rendered inside buttons and one-line headers.
+const INLINE_TAGS = ["b", "strong", "i", "em", "u", "sub", "sup", "small", "br", "span"];
+
+export function sanitizeInlineHtml(html: string): string {
+  return purifier.sanitize(html, { ALLOWED_TAGS: INLINE_TAGS, ALLOWED_ATTR: [] });
+}
