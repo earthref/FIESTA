@@ -42,7 +42,7 @@ export function formatGridFilters(filters: Record<string, string>): string[] {
 }
 
 const BORDER = "1px solid var(--er-line)";
-// Space after each column: 1em of the 13px cells (the legacy cells' right margin).
+// Padding on each side of a cell: 1em of the 13px cells (the legacy cells' right margin).
 const GAP = 13;
 
 /** A click on a link, button or form control inside a row is its own, as is
@@ -57,7 +57,7 @@ export function isRowClick(event: MouseEvent | KeyboardEvent): boolean {
 
 const cellStyle: CSSProperties = {
   boxSizing: "border-box",
-  padding: `0 ${GAP}px 0 0`,
+  padding: `0 ${GAP}px`,
   verticalAlign: "top",
   textAlign: "left",
 };
@@ -219,14 +219,15 @@ export function SummaryGrid({
         <td colSpan={columns.length} style={{ height, padding: 0 }} />
       </tr>
     );
-  const width = columns.reduce((total, column) => total + column.width + GAP, 0);
+  const width = columns.reduce((total, column) => total + column.width + 2 * GAP, 0);
   return (
     <>
       <table
         className="text-[13px]"
         style={{
           tableLayout: "fixed",
-          width,
+          // Rows span the container; narrower columns than that share the extra.
+          width: `max(${width}px, 100%)`,
           borderCollapse: "separate",
           borderSpacing: 0,
           lineHeight: "16px",
@@ -235,7 +236,7 @@ export function SummaryGrid({
       >
         <colgroup>
           {columns.map((column) => (
-            <col key={column.key} style={{ width: column.width + GAP }} />
+            <col key={column.key} style={{ width: column.width + 2 * GAP }} />
           ))}
         </colgroup>
         {header && (

@@ -851,7 +851,7 @@ export function SearchPage() {
           style={{
             marginTop: "1em",
             height: regionHeight ?? "100%",
-            width: "calc(100% - 10px)",
+            width: "100%",
           }}
         >
           {/* Sidebar: fixed 275px */}
@@ -1039,7 +1039,8 @@ export function SearchPage() {
                 {results.data && (
                   <>
                     {activeTab?.name === "Summaries" && (
-                      <div style={{ marginBottom: "1em" }}>
+                      // Rows run edge to edge of the view; the cells carry the padding.
+                      <div style={{ margin: "0 -1em 1em" }}>
                         <SummaryGrid
                           level={level}
                           hits={hits}
