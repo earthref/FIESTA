@@ -1,14 +1,20 @@
-"""The pmag-plots plugin: the PmagPy ports, plot data and derived counts."""
+"""The pmag-plots plugin: PmagPy's science in the plot data, the payload's
+geometry, the row cleaning that keeps PmagPy from raising, and the counts."""
 
 import pytest
+from pmagpy import pmag
 
 from fiesta.domain.parse import parse_text
 from fiesta.plugins.pmag_plots import (
     PmagPlotsPlugin,
     _by_sequence,
+    _circle,
+    _xy,
+    arai_specimen,
+    compute_counts,
     compute_plots,
-    dogeo,
     fisher_mean,
+    net,
 )
 
 
@@ -20,6 +26,117 @@ def _table(name: str, rows: list[dict]) -> str:
 
 
 PI = "LP-PI-TRM:LP-PI-BT-IZZI"
+THELLIER = [
+    # IZZI Thellier: NRM (0, 0, 1) and pTRM gained along north, on one line of
+    # slope -1.5 — 100 °C ZI, 200 °C IZ, 300 °C ZI; a pTRM check at 100 °C
+    # after the 200 °C step, a tail check at 100 °C.
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-NO:{PI}",
+        "sequence": 4,
+        "treat_temp": 273,
+        "dir_dec": 0,
+        "dir_inc": 90,
+        "magn_moment": 1.0,
+    },
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-T-Z:{PI}:LP-PI-TRM-ZI",
+        "sequence": 5,
+        "treat_temp": 373,
+        "dir_dec": 0,
+        "dir_inc": 90,
+        "magn_moment": 0.8,
+    },
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-T-I:{PI}:LP-PI-TRM-ZI",
+        "sequence": 6,
+        "treat_temp": 373,
+        "treat_dc_field": 4e-05,
+        "dir_dec": 0,
+        "dir_inc": 82.8750,
+        "magn_moment": 0.806226,
+    },
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-T-I:{PI}:LP-PI-TRM-IZ",
+        "sequence": 7,
+        "treat_temp": 473,
+        "treat_dc_field": 4e-05,
+        "dir_dec": 0,
+        "dir_inc": 59.0362,
+        "magn_moment": 0.583095,
+    },
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-T-Z:{PI}:LP-PI-TRM-IZ",
+        "sequence": 8,
+        "treat_temp": 473,
+        "dir_dec": 0,
+        "dir_inc": 90,
+        "magn_moment": 0.5,
+    },
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-PTRM-I:{PI}",
+        "sequence": 9,
+        "treat_temp": 373,
+        "dir_dec": 0,
+        "dir_inc": 78.6901,
+        "magn_moment": 0.509902,
+    },
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-T-Z:{PI}:LP-PI-TRM-ZI",
+        "sequence": 10,
+        "treat_temp": 573,
+        "dir_dec": 0,
+        "dir_inc": 90,
+        "magn_moment": 0.2,
+    },
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-T-I:{PI}:LP-PI-TRM-ZI",
+        "sequence": 11,
+        "treat_temp": 573,
+        "treat_dc_field": 4e-05,
+        "dir_dec": 0,
+        "dir_inc": 21.8014,
+        "magn_moment": 0.538516,
+    },
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-PTRM-MD:{PI}",
+        "sequence": 12,
+        "treat_temp": 373,
+        "dir_dec": 0,
+        "dir_inc": 90,
+        "magn_moment": 0.82,
+    },
+    # Malformed legacy rows PmagPy would raise on or misread: a blank
+    # temperature and direction, a tail check with no zero-field step.
+    {"specimen": "S1", "method_codes": f"LT-T-I:{PI}", "sequence": 13, "magn_moment": 0.3},
+    {
+        "specimen": "S1",
+        "method_codes": f"LT-PTRM-MD:{PI}",
+        "sequence": 14,
+        "treat_temp": 673,
+        "dir_dec": 0,
+        "dir_inc": 90,
+        "magn_moment": 0.1,
+    },
+    # Anisotropy steps reuse LT-T-I and stay out of the Arai plot.
+    {
+        "specimen": "S1",
+        "method_codes": "LT-T-I:LP-AN-TRM",
+        "sequence": 15,
+        "treat_temp": 473,
+        "dir_dec": 90,
+        "dir_inc": 0,
+        "magn_moment": 9.0,
+    },
+]
 PMAG_TEXT = "\n>>>>>>>>>>\n".join(
     [
         _table("contribution", [{"id": 7, "version": 1, "data_model_version": "3.0"}]),
@@ -61,12 +178,32 @@ PMAG_TEXT = "\n>>>>>>>>>>\n".join(
             "specimens",
             [
                 {"specimen": "D1", "sample": "D"},
+                # A best-fit line over the NRM to 20 mT, and a vertical E–W plane.
+                {
+                    "specimen": "D1",
+                    "sample": "D",
+                    "method_codes": "DE-BFL",
+                    "dir_dec": 0,
+                    "dir_inc": 30,
+                    "dir_tilt_correction": -1,
+                    "meas_step_min": 0,
+                    "meas_step_max": 0.02,
+                    "meas_step_unit": "T",
+                },
+                {
+                    "specimen": "D1",
+                    "sample": "D",
+                    "method_codes": "DE-BFP",
+                    "dir_dec": 0,
+                    "dir_inc": 0,
+                    "dir_tilt_correction": -1,
+                },
                 {
                     "specimen": "S1",
                     "sample": "S",
                     "int_abs": 6e-05,
                     "meas_step_min": 373,
-                    "meas_step_max": 473,
+                    "meas_step_max": 573,
                     "meas_step_unit": "K",
                 },
             ],
@@ -103,74 +240,23 @@ PMAG_TEXT = "\n>>>>>>>>>>\n".join(
                     "magn_moment": 0.25,
                     "quality": "b",
                 },
-                # IZZI Thellier: NRM (0, 0, 1); 100 °C ZI; 200 °C IZ; a pTRM check at 100 °C.
+                # Without a moment, and without a field: left out.
                 {
-                    "specimen": "S1",
-                    "method_codes": f"LT-NO:{PI}",
-                    "sequence": 4,
-                    "treat_temp": 273,
+                    "specimen": "D1",
+                    "method_codes": "LT-AF-Z:LP-DIR-AF",
+                    "treat_ac_field": 0.03,
                     "dir_dec": 0,
-                    "dir_inc": 90,
-                    "magn_moment": 1.0,
+                    "dir_inc": 30,
                 },
                 {
-                    "specimen": "S1",
-                    "method_codes": f"LT-T-Z:{PI}",
-                    "sequence": 5,
-                    "treat_temp": 373,
+                    "specimen": "D1",
+                    "method_codes": "LT-AF-Z:LP-DIR-AF",
                     "dir_dec": 0,
-                    "dir_inc": 90,
-                    "magn_moment": 0.8,
-                },
-                {
-                    "specimen": "S1",
-                    "method_codes": f"LT-T-I:{PI}",
-                    "sequence": 6,
-                    "treat_temp": 373,
-                    "treat_dc_field": 4e-05,
-                    "dir_dec": 0,
-                    "dir_inc": 82.8750,
-                    "magn_moment": 0.806226,
-                },
-                {
-                    "specimen": "S1",
-                    "method_codes": f"LT-T-I:{PI}",
-                    "sequence": 7,
-                    "treat_temp": 473,
-                    "treat_dc_field": 4e-05,
-                    "dir_dec": 0,
-                    "dir_inc": 59.0362,
-                    "magn_moment": 0.583095,
-                },
-                {
-                    "specimen": "S1",
-                    "method_codes": f"LT-T-Z:{PI}",
-                    "sequence": 8,
-                    "treat_temp": 473,
-                    "dir_dec": 0,
-                    "dir_inc": 90,
-                    "magn_moment": 0.5,
-                },
-                {
-                    "specimen": "S1",
-                    "method_codes": f"LT-PTRM-I:{PI}",
-                    "sequence": 9,
-                    "treat_temp": 373,
-                    "dir_dec": 0,
-                    "dir_inc": 78.6901,
-                    "magn_moment": 0.509902,
-                },
-                # Anisotropy steps reuse LT-T-I and stay out of the Arai plot.
-                {
-                    "specimen": "S1",
-                    "method_codes": "LT-T-I:LP-AN-TRM",
-                    "sequence": 10,
-                    "treat_temp": 473,
-                    "dir_dec": 90,
-                    "dir_inc": 0,
-                    "magn_moment": 9.0,
+                    "dir_inc": 30,
+                    "magn_moment": 0.1,
                 },
             ]
+            + THELLIER
             + [
                 # Listed from -1 T up, measured (`sequence`) from +1 T down.
                 {
@@ -188,61 +274,139 @@ PMAG_TEXT = "\n>>>>>>>>>>\n".join(
 )
 
 
-def test_pmag_plots_ports_match_pmagpy():
-    # With the sample's X axis pointing east and level, specimen north is east.
-    dec, inc = dogeo(0, 30, 90, 0)
-    assert (dec, inc) == (pytest.approx(90), pytest.approx(30))
+def test_pmag_plots_geometry_is_pmagpy():
+    # pmag.dimap: north up, east right, radius 1 on the horizontal; the
+    # vertical, up or down, at the centre.
+    assert _xy([0, 90, 180], [0, 0, 0]) == [[0, 1], [1, 0], [0, -1]]
+    assert _xy([0, 0], [90, -90]) == [[0, 0], [0, 0]]
+    (x, y), *_ = _xy([45], [30])
+    assert (x, y) == pytest.approx(pmag.dimap(45, 30), abs=1e-3)
+
     mean = fisher_mean([(10, 40), (20, 50)])
-    assert mean is not None and mean["n"] == 2 and 10 < mean["dec"] < 20
+    expected = pmag.fisher_mean([[10, 40], [20, 50]])
+    assert mean is not None and mean["n"] == 2
+    assert (mean["dec"], mean["inc"], mean["a95"]) == pytest.approx(
+        (expected["dec"], expected["inc"], expected["alpha95"]), abs=0.01
+    )
     assert fisher_mean([(10, 40)]) is None
+
+    # A vertical east–west plane: half lower hemisphere, half upper, joined.
+    runs = _circle(0, 0, 90)
+    assert sorted(run["lower"] for run in runs) == [False, True]
+    assert runs[0]["points"][-1] == runs[1]["points"][0]
+    assert all(x * x + y * y <= 1.0001 for run in runs for x, y in run["points"])
+
+    grid = net()
+    assert len(grid["rim"]) == 361 and grid["rim"][0] == [0, 1]
+    # 36 rim ticks, and a cross (two strokes) every 10° on the four axes.
+    assert len(grid["ticks"]) == 36 + 2 * (9 + 3 * 8)
 
 
 def test_pmag_plots_counts_and_data():
-    plots = compute_plots(parse_text(PMAG_TEXT))
+    parsed = parse_text(PMAG_TEXT)
+    plots = compute_plots(parsed)
     assert plots["counts"] == {
-        "eqarea": 3,  # the sites of L, and both specimens' demagnetization steps
+        "eqarea": 4,  # the sites of L, D1's interpretations, both specimens' steps
         "zijd": 2,
         "demag": 2,
         "arai": 1,
         "deremag": 1,
         "hyst": 1,
     }
+    assert compute_counts(parsed) == plots["counts"]
 
     demag = {s["specimen"]: s for s in plots["demag"]["specimens"]}
+    assert plots["demag"]["net"] is net()
     d1 = demag["D1"]
     assert (d1["site"], d1["location"]) == ("A", "L")
     assert d1["steps"]["kind"] == ["NRM", "AF", "AF"]
     assert d1["steps"]["value"] == [0.0, 10.0, 20.0]
     assert d1["steps"]["bad"] == [0, 0, 1]
-    assert d1["geo"]["dec"] == [90.0, 90.0, 90.0]
-    assert d1["tilt"]["dec"] == [90.0, 90.0, 90.0]
+    specimen = d1["coords"]["s"]
+    assert specimen["x"] == [0, 0, 0] and specimen["y"] == pytest.approx([0.707] * 3, abs=1e-3)
+    # North, east, down over the NRM (pmagplotlib.plot_zij).
+    assert (specimen["n"][0], specimen["e"][0], specimen["d"][0]) == pytest.approx(
+        (0.866, 0, 0.5), abs=1e-3
+    )
+    assert specimen["n"][1] == pytest.approx(0.433, abs=1e-3)
+    # The sample's X axis points east and level: specimen north is east.
+    assert d1["coords"]["g"]["dec"] == [90.0, 90.0, 90.0]
+    assert d1["coords"]["g"]["x"] == pytest.approx([0.707] * 3, abs=1e-3)
+    assert d1["coords"]["t"]["dec"] == [90.0, 90.0, 90.0]
+    line, plane = d1["fits"]
+    assert line["xy"] == pytest.approx([0, 0.707], abs=1e-3)
+    # Through the NRM and 10 mT steps (20 mT is flagged bad), along 0°/30°.
+    (n0, e0, d0), (n1, e1, d1_) = line["zijd"]
+    assert e0 == e1 == 0 and (d1_ - d0) / (n1 - n0) == pytest.approx(0.577, abs=1e-3)
+    assert len(plane["circle"]) == 2 and "zijd" not in plane
     # A Thellier specimen's zero-field steps are its demagnetization.
-    assert demag["S1"]["steps"]["value"] == [0.0, 100.0, 200.0]
-    assert "geo" not in demag["S1"]
+    assert demag["S1"]["steps"]["value"] == [0.0, 100.0, 200.0, 300.0]
+    assert set(demag["S1"]["coords"]) == {"s"}
 
-    (sites,) = plots["eqarea"]["plots"]
+    sites, d1_dirs = plots["eqarea"]["plots"][:2]
     assert (sites["level"], sites["name"]) == ("Sites", "L")
     assert [d["name"] for d in sites["sets"]["g"]["dirs"]] == ["A", "B"]
-    assert sites["sets"]["g"]["mean"]["n"] == 2
+    mean = sites["sets"]["g"]["mean"]
+    assert mean["n"] == 2 and len(mean["xy"]) == 2
+    assert mean["circle"] and all(run["lower"] for run in mean["circle"])
+    assert (d1_dirs["level"], d1_dirs["name"]) == ("Specimens", "A")
+    line_dir, plane_dir = d1_dirs["sets"]["s"]["dirs"]
+    assert "xy" in line_dir and plane_dir["plane"] and plane_dir["circle"]
 
     (arai,) = plots["arai"]["specimens"]
     assert arai["lab_field"] == 40.0
-    assert arai["steps"]["t"] == [0.0, 100.0, 200.0]
-    assert arai["steps"]["order"] == ["NRM", "ZI", "IZ"]
-    assert arai["steps"]["x"] == pytest.approx([0, 0.1, 0.3], abs=1e-3)
-    assert arai["steps"]["y"] == pytest.approx([1, 0.8, 0.5], abs=1e-3)
+    assert arai["steps"]["t"] == [0.0, 100.0, 200.0, 300.0]
+    assert arai["steps"]["order"] == ["NRM", "ZI", "IZ", "ZI"]
+    assert arai["steps"]["x"] == pytest.approx([0, 0.1, 0.3, 0.5], abs=1e-3)
+    assert arai["steps"]["y"] == pytest.approx([1, 0.8, 0.5, 0.2], abs=1e-3)
     checks = arai["ptrm_checks"]
+    # The check against the record before it (200 °C), at the NRM remaining
+    # of its own temperature (pmagplotlib.plot_arai).
     assert (checks["t"], checks["t_from"]) == ([100.0], [200.0])
     assert checks["x"] == pytest.approx([0.1], abs=1e-3)
-    assert checks["y"] == pytest.approx([0.5], abs=1e-3)
+    assert checks["y"] == pytest.approx([0.8], abs=1e-3)
+    # |tail| − |zero-field| at the pTRM gained of its temperature.
+    tails = arai["tail_checks"]
+    assert tails["t"] == [100.0]
+    assert (tails["x"], tails["y"]) == (pytest.approx([0.1], abs=1e-3), [0.02])
     fit = arai["fit"]
-    assert fit["b"] == pytest.approx(-1.5, abs=1e-2)
+    assert fit["n"] == 3
+    assert fit["b"] == pytest.approx(-1.5, abs=1e-3)
+    assert fit["b_sigma"] == pytest.approx(0, abs=1e-3)
     assert fit["int_calc"] == pytest.approx(60, abs=0.5)
     assert fit["int_abs"] == 60.0
+    (x0, y0), (x1, y1) = fit["line"]
+    assert x0 < 0.1 < 0.5 < x1 and (y1 - y0) / (x1 - x0) == pytest.approx(-1.5, abs=1e-3)
 
     (loop,) = plots["hyst"]["loops"]
     assert loop["unit"] == "Am²/kg"
     assert loop["field"][0] == 1000.0 and loop["field"][-1] == -1000.0 and len(loop["m"]) == 21
+
+
+def test_pmag_plots_arai_needs_three_steps_for_a_slope_and_survives_bad_rows():
+    def measurements(rows: list[dict]) -> list[dict]:
+        return parse_text(_table("measurements", rows)).tables["measurements"]
+
+    rows = measurements([r for r in THELLIER if r.get("treat_temp") != 573])
+    interpretation = {
+        "int_abs": "6e-05",
+        "meas_step_min": "373",
+        "meas_step_max": "473",
+        "meas_step_unit": "K",
+    }
+    item = arai_specimen(rows, interpretation)
+    assert item is not None and item["steps"]["t"] == [0.0, 100.0, 200.0]
+    # pmag.int_pars fits three steps or more.
+    assert "b" not in item["fit"] and item["fit"]["int_abs"] == 60.0
+    junk = [
+        {"specimen": "S9", "method_codes": f"LT-NO:{PI}", "magn_moment": "1"},
+        {"specimen": "S9", "method_codes": f"LT-T-I:{PI}", "treat_temp": "x", "dir_dec": "0"},
+    ]
+    assert arai_specimen(measurements(junk), None) is None
+    # A blank NRM temperature is room temperature, as PmagPy assumes.
+    blank_nrm = [{**r, "treat_temp": ""} if r["sequence"] == 4 else r for r in THELLIER]
+    item = arai_specimen(measurements(blank_nrm), None)
+    assert item is not None and item["steps"]["t"] == [0.0, 100.0, 200.0, 300.0]
 
 
 def test_pmag_plots_sequence_order_repairs_lost_zeros():

@@ -6,8 +6,8 @@
 > pole views show normal and reversed poles without an antipodal globe. Kept
 > from this spec: the detail bar, the side panel (displayed poles, ellipse
 > toggle, age legend), the age colouring (now the YAML's `age_color`), the
-> plate boundaries and the a95 ellipse math. Added: dp/dm ovals for poles
-> without an a95. Dropped: the earth-relief texture (the basemap replaces
+> plate boundaries and the a95 circle (now computed by PmagPy, below). Added:
+> dp/dm ellipses for poles without an a95. Dropped: the earth-relief texture (the basemap replaces
 > it; `/plugins/poles/base-texture` is gone) and centring the globe on the
 > selected pole. The rest of this file records the legacy view.
 
@@ -53,7 +53,22 @@ No environment/starfield, no height/displacement. Distance clamp [1, 1000].
 
 **Poles** (`scatter3D`, `zlevel:-8`): one point per pole, `value:[lon,lat,0,contributionId,poleId]`, `symbol:"circle"`, `symbolSize:12`, `itemStyle.color: selected ? "#800080" : ageColor`, `emphasis.itemStyle.color:"#800080"`, `label.show:false`.
 
-## a95 uncertainty ellipse (verbatim math)
+## a95 uncertainty ellipse (legacy math)
+
+> **Superseded 2026-11-10.** The rings are no longer computed in the browser.
+> The backend computes each pole's outline with PmagPy when it derives the
+> `poles` doc and stores it at `summary.poles._geometry.ring` (closed
+> `[lon, lat]` ring, 101 points, longitudes −180..180, 2 decimals; unindexed),
+> and the map draws it as is: the α95 circle is `pmag.circ(pole_lon, pole_lat,
+> a95, npts=101)`; the dp/dm ellipse is `pmagplotlib.plot_ell` about the pole
+> with dp along the great circle toward the location (azimuth from
+> `pmag.vgp_di` with pole and site swapped, axes from `pmag.dodirot`), every
+> other one of its 201 points. Differences from the legacy code below: a fixed
+> 101 points instead of `max(12, round(10 + 50·a95))` (60 at 1°, 170 at 3.2°,
+> 510 at 10°); coordinates rounded to 0.01°; an α95 outside (0, 90]° draws
+> nothing (legacy: any α95 > 0); the dp/dm ellipse is PmagPy's (axes as sines
+> of the angles, within 0.01° of the old oval's radius at dp/dm ≤ 20°, 0.03°
+> at 25/40°). Docs indexed before this draw no outline until `fiesta rebuild`.
 
 ```js
 function generateUncertaintyEllipse(poleLat, poleLon, alpha95) {

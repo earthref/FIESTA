@@ -118,6 +118,8 @@ function plotItems(type: PlotType, data: Partial<PlotData>): PlotItem[] {
   });
   const demagSpecimens = data.demag?.specimens ?? [];
   const araiSpecimens = data.arai?.specimens ?? [];
+  // The equal-area net (the same in both responses).
+  const net = data.eqarea?.net ?? data.demag?.net ?? { rim: [], ticks: [] };
   switch (type) {
     case "eqarea":
       return [
@@ -132,14 +134,14 @@ function plotItems(type: PlotType, data: Partial<PlotData>): PlotItem[] {
           level: group.level,
           coords: COORDS.filter((coord) => group.sets[coord]),
           build: (size: Size, coord: Coord) =>
-            directionSetOption(size, group.sets[coord] as DirectionSet),
+            directionSetOption(size, group.sets[coord] as DirectionSet, net),
           note: (coord: Coord) => setNote(group.sets[coord] as DirectionSet),
         })),
         ...demagSpecimens.map((s) => ({
           ...specimenItem(s),
           level: "Measurements",
           coords: coordsOf(s),
-          build: (size: Size, coord: Coord) => stepsNetOption(size, s, coord),
+          build: (size: Size, coord: Coord) => stepsNetOption(size, s, coord, net),
           note: (coord: Coord) => fitsNote(s, coord),
         })),
       ];
@@ -180,14 +182,13 @@ function plotItems(type: PlotType, data: Partial<PlotData>): PlotItem[] {
 }
 
 function coordsOf(specimen: DemagSpecimen): Coord[] {
-  return COORDS.filter(
-    (coord) => coord === "s" || (coord === "g" ? specimen.geo : specimen.tilt) !== undefined,
-  );
+  return COORDS.filter((coord) => specimen.coords[coord] !== undefined);
 }
 
 function stepUnit(specimen: DemagSpecimen): string {
-  const af = specimen.steps.kind.filter((k) => k === "AF").length;
-  return af * 2 >= specimen.steps.kind.filter((k) => k !== "NRM").length ? "mT" : "°C";
+  const steps = specimen.steps.kind.filter((k) => k !== "NRM");
+  if (steps.filter((k) => k === "AF").length * 2 >= steps.length) return "mT";
+  return steps.filter((k) => k === "MW").length * 2 > steps.length ? "J" : "°C";
 }
 
 function fitsNote(specimen: DemagSpecimen, coord: Coord): ReactNode {
@@ -239,8 +240,14 @@ function araiNote(specimen: AraiSpecimen): ReactNode {
     const corrections = Object.entries(fit.corrections ?? {}).map(
       ([name, factor]) => `${CORRECTIONS[name] ?? name} ${nf(factor)}`,
     );
+    const sigma = fit.b_sigma !== undefined ? ` ± ${nf(fit.b_sigma)}` : "";
+    const stats = (["f", "g", "q"] as const).flatMap((key) => {
+      const value = fit[key];
+      return value !== undefined ? [`${key} ${nf(value)}`] : [];
+    });
     parts.push(
-      `b ${nf(fit.b)} over ${nf(fit.min ?? 0)}–${nf(fit.max ?? 0)} °C (n ${fit.n})`,
+      `b ${nf(fit.b)}${sigma} over ${nf(fit.min ?? 0)}–${nf(fit.max ?? 0)} °C (n ${fit.n})`,
+      ...stats,
       ...(fit.int_calc !== undefined
         ? [`B ${nf(fit.int_calc)} µT${corrections.length ? ` (× ${corrections.join(", ")})` : ""}`]
         : []),

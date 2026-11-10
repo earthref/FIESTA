@@ -84,6 +84,17 @@ tests import it as `fiesta.plugins.<name>` with dashes as underscores
 | `build_router()` | app startup | API routes mounted once at `/v2/{repository}/plugins/{name}` (e.g. plot-ready measurement series, plateau computation); handlers read the node from `NodeDep`. The router is guarded so a node that does not activate the plugin gets a 404 |
 | `frontend_config(node)` | `GET /v2/{node}/config` | arbitrary JSON under `plugins[name]` telling the UI plugin what to mount and with which options |
 
+Paleo- and rock-magnetic science comes from PmagPy (`pmagpy`, a backend
+dependency) wherever it has the function: `from pmagpy import pmag` at module
+level (~1 s, numpy/scipy/pandas/matplotlib); `pmagplotlib` and `ipmag` only
+inside functions (importing `pmagplotlib` prints a cartopy notice and silences
+warnings process-wide; see the `poles` plugin's `_plot_ell`); never cartopy.
+PmagPy raises on blank or malformed legacy rows, so clean them first and keep
+one bad row from failing `derive_docs` or a route. Geometry the UI draws
+(projections, circles, ellipses) is computed here too, with PmagPy, and the TS
+only draws it; geometry stored on a search doc goes under a `_geometry` object,
+which the index keeps in `_source` but never indexes.
+
 Plugin routes read contribution data through
 `fiesta.plugins.util.load_visible_parsed`, which enforces the same
 visibility rules as the core API (activated, or matching private key) and
