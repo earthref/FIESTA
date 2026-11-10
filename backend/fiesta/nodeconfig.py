@@ -24,7 +24,7 @@ LON_COLUMNS = ("lon", "lon_w", "lon_e")
 BOX_COLUMNS = ("lon_w", "lat_s", "lon_e", "lat_n")
 # Planetary bodies other than Earth that a row's position can be on, which the
 # maps and thumbnails have a basemap for (frontend/src/components/map/bodies.ts).
-Body = Literal["moon", "mars"]
+Body = Literal["moon"]
 
 PAGE_SLUG_RE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
 # SPA routes a content page can never shadow (frontend/src/router.tsx).

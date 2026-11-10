@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-10-26
+Last updated: 2026-11-10
 
 ## A — Decisions
 
@@ -126,6 +126,16 @@ Last updated: 2026-10-26
       without passwords, so every EarthRef login fails. Dry run, then apply:
       `make fiesta ENV_FILE=.env.prod ARGS="sync-legacy-users magic"` and again with
       `--apply`. Re-run until cutover to pick up legacy password changes (legacy wins).
+
+## 2026-11-10 — Martian records back on Earth
+
+- [ ] **Rebuild the magic and karar search indexes on dev** once the "remove the Mars
+  map" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`,
+  then `NODE=karar`). `search.bodies` no longer maps `Martian` to Mars, since those
+  samples are meteorites positioned where they were found. Until the rebuild, any
+  Martian location already indexed keeps its `_body_point` on Mars. The SPA has no
+  Mars map any more, so those rows are missing from the search map and from area
+  filters.
 
 ## 2026-09-11 — MARFIK legacy app deploys
 

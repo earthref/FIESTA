@@ -84,7 +84,7 @@ export function ModeButtons({
   return <ButtonGroup options={MODES} value={mode} setValue={setMode} {...counts} />;
 }
 
-/** The Earth / Moon / Mars buttons, for `bodies` (in BODIES order); none
+/** The Earth / Moon buttons, for `bodies` (in BODIES order); none
  * when Earth is the only one. */
 export function BodyButtons({
   bodies,

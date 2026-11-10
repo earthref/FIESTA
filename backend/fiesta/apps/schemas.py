@@ -122,7 +122,7 @@ class MapPoint(BaseModel):
     lon: float
     count: int | None = None  # records at this location (the aggregated map)
     value: float | None = None  # its `color_by` number (a location's records' mean)
-    body: str | None = None  # another planetary body it is on ("moon", "mars"); None: Earth
+    body: str | None = None  # another planetary body it is on ("moon"); None: Earth
 
 
 class MapPoints(BaseModel):

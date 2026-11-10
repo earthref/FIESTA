@@ -48,7 +48,6 @@ const COLOR_KEY = "search-map-color";
 const BODY_PLACES: Record<Body, string> = {
   earth: "on Earth",
   moon: "on the Moon",
-  mars: "on Mars",
 };
 const MODE_PLACES: Record<Exclude<Mode, "globe">, string> = {
   flat: "within the Mercator map's ±85°",
@@ -142,8 +141,8 @@ export type AreaRequest = { mode?: Mode; zoomTo?: boolean };
  * record at this level matching the search, on a globe, a Mercator map or a
  * globe over either pole, over Esri's Ocean basemap. The area filter narrows
  * the search to a box that can be moved and resized on the map; the records
- * it leaves out stay on the map in grey. Records on the Moon or Mars are on
- * that body's map (the Earth / Moon / Mars buttons); the area is on Earth.
+ * it leaves out stay on the map in grey. Records on the Moon are on
+ * its map (the Earth / Moon buttons); the area is on Earth.
  */
 export function SearchMap({
   level,

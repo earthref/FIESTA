@@ -9,7 +9,7 @@ import {
   UNDERSEA_FEATURES,
 } from "./basemap";
 import type { Body } from "./bodies";
-import { BODY_BASEMAPS, registerBodyProtocols } from "./body-basemaps";
+import { BODY_BASEMAPS } from "./body-basemaps";
 import { createLinesLayer, type LinesLayer, type MapLine } from "./lines-layer";
 import {
   type Area,
@@ -593,7 +593,6 @@ const MapLibreMap: FC<{
     if (!containerRef.current || !tooltipRef.current) return;
     const view = VIEWS[mode];
     const basemap = BODY_BASEMAPS[body];
-    registerBodyProtocols();
     const globe = view.projection !== "mercator";
     const sign = SIGN[mode];
     // A body's raster labels, but not over a pole, where its zoom-0 tiles'
