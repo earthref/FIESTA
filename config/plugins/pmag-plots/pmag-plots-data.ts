@@ -1,5 +1,5 @@
-// Types of the pmag-plots API (plugin.py, beside this file) and the
-// geometry the plots share.
+// Types of the pmag-plots API (plugin.py, beside this file) and the plots'
+// labels. PmagPy computes every position in the API; the plots only draw.
 
 export type PlotType = "eqarea" | "zijd" | "demag" | "arai" | "deremag" | "hyst";
 /** The API's data kinds; several plot types draw from one. */
@@ -35,7 +35,25 @@ export interface Where {
   location: string;
 }
 
-export type StepKind = "NRM" | "AF" | "T" | "MW" | "LT";
+/** NRM, alternating field, thermal, microwave (energy, in J). */
+export type StepKind = "NRM" | "AF" | "T" | "MW";
+
+// --- geometry, as the API computes it (PmagPy) ---------------------------------------------
+
+/** A position on the equal-area net (pmag.dimap): x east, y north, radius 1. */
+export type XY = [number, number];
+
+/** Part of a circle on one hemisphere: solid on the lower, dashed on the upper. */
+export interface Run {
+  lower: boolean;
+  points: XY[];
+}
+
+/** The net as pmagplotlib.plot_net draws it: the rim and its tick strokes. */
+export interface Net {
+  rim: XY[];
+  ticks: XY[][];
+}
 
 export interface Fit {
   coord: Coord;
@@ -46,23 +64,36 @@ export interface Fit {
   max: number | null;
   comp: string;
   mad: number | null;
+  /** A line's or mean's position on the net. */
+  xy?: XY;
+  /** A plane's great circle. */
+  circle?: Run[];
+  /** A line's Zijderveld line: two (north, east, down) ends, over the NRM. */
+  zijd?: [number, number, number][];
 }
 
-export interface Directions {
+/** A specimen's steps in one coordinate system. */
+export interface StepCoords {
   dec: number[];
   inc: number[];
+  /** Equal-area positions. */
+  x: number[];
+  y: number[];
+  /** North, east and down components over the NRM (pmag.dir2cart). */
+  n: number[];
+  e: number[];
+  d: number[];
 }
 
 export interface DemagSpecimen extends Where {
   unit: string;
-  steps: Directions & {
+  steps: {
     kind: StepKind[];
     value: (number | null)[];
     m: number[];
     bad: number[];
   };
-  geo?: Directions;
-  tilt?: Directions;
+  coords: Partial<Record<Coord, StepCoords>>;
   fits: Fit[];
 }
 
@@ -73,6 +104,10 @@ export interface Direction {
   a95?: number;
   plane?: boolean;
   comp?: string;
+  /** A line's position on the net, */
+  xy?: XY;
+  /** or a plane's great circle. */
+  circle?: Run[];
 }
 
 export interface FisherMean {
@@ -82,6 +117,9 @@ export interface FisherMean {
   r: number;
   k?: number;
   a95?: number;
+  xy: XY;
+  /** The α95 circle. */
+  circle?: Run[];
 }
 
 export interface DirectionSet {
@@ -112,10 +150,15 @@ export interface AraiSpecimen extends Where {
     min: number | null;
     max: number | null;
     int_abs: number | null;
+    /** pmag.int_pars over the interpretation's steps (three or more). */
     n?: number;
     b?: number;
-    x_mean?: number;
-    y_mean?: number;
+    b_sigma?: number;
+    f?: number;
+    g?: number;
+    q?: number;
+    /** The fitted line's ends. */
+    line?: XY[];
     /** |b|·Blab times the published interpretation's correction factors. */
     int_calc?: number;
     corrections?: Partial<Record<"aniso" | "cooling_rate" | "nlt" | "arm", number>>;
@@ -130,80 +173,10 @@ export interface HystLoop extends Where {
 }
 
 export interface PlotData {
-  demag: { specimens: DemagSpecimen[] };
-  eqarea: { plots: EqAreaGroup[] };
+  demag: { net: Net; specimens: DemagSpecimen[] };
+  eqarea: { net: Net; plots: EqAreaGroup[] };
   arai: { specimens: AraiSpecimen[] };
   hyst: { loops: HystLoop[] };
-}
-
-// --- geometry ------------------------------------------------------------------------------
-
-const RAD = Math.PI / 180;
-type Vec = [number, number, number];
-
-/** North, east, down components (pmag.dir2cart). */
-export function dir2cart(dec: number, inc: number, m = 1): Vec {
-  return [
-    m * Math.cos(dec * RAD) * Math.cos(inc * RAD),
-    m * Math.sin(dec * RAD) * Math.cos(inc * RAD),
-    m * Math.sin(inc * RAD),
-  ];
-}
-
-export function cart2dir([x, y, z]: Vec): [number, number] {
-  const r = Math.hypot(x, y, z) || 1;
-  return [(((Math.atan2(y, x) / RAD) % 360) + 360) % 360, Math.asin(z / r) / RAD];
-}
-
-/** Lambert equal-area position (pmag.dimap): radius 1 on the horizontal, 0 at
- * the vertical; upper-hemisphere directions plot at their own azimuth (drawn
- * open), as PmagPy's equal-area plots do. North is up. */
-export function equalArea(dec: number, inc: number): [number, number] {
-  const r = Math.sqrt(1 - Math.abs(Math.sin(inc * RAD)));
-  return [r * Math.sin(dec * RAD), r * Math.cos(dec * RAD)];
-}
-
-const cross = (a: Vec, b: Vec): Vec => [
-  a[1] * b[2] - a[2] * b[1],
-  a[2] * b[0] - a[0] * b[2],
-  a[0] * b[1] - a[1] * b[0],
-];
-const unit = (a: Vec): Vec => {
-  const n = Math.hypot(...a) || 1;
-  return [a[0] / n, a[1] / n, a[2] / n];
-};
-
-/** A small circle of `radius`° about a direction (90° gives the great circle
- * of a plane from its pole), as runs of projected points on one hemisphere. */
-export function circleRuns(
-  dec: number,
-  inc: number,
-  radius: number,
-): { lower: boolean; points: [number, number][] }[] {
-  const m = dir2cart(dec, inc);
-  const u = unit(cross(m, Math.abs(m[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
-  const v = cross(m, u);
-  const [c, s] = [Math.cos(radius * RAD), Math.sin(radius * RAD)];
-  const runs: { lower: boolean; points: [number, number][] }[] = [];
-  for (let k = 0; k <= 180; k++) {
-    const t = (k * 2 * Math.PI) / 180;
-    const p: Vec = [0, 1, 2].map(
-      (i) => c * m[i] + s * (Math.cos(t) * u[i] + Math.sin(t) * v[i]),
-    ) as Vec;
-    const [d, i] = cart2dir(p);
-    const lower = i >= 0;
-    const point = equalArea(d, i);
-    const last = runs[runs.length - 1];
-    if (last && last.lower === lower) last.points.push(point);
-    else {
-      // Start the new run where the last ended, so the circle stays joined.
-      runs.push({
-        lower,
-        points: last ? [last.points[last.points.length - 1], point] : [point],
-      });
-    }
-  }
-  return runs;
 }
 
 // --- labels --------------------------------------------------------------------------------
@@ -217,14 +190,8 @@ export function stepLabel(kind: StepKind, value: number | null): string {
   if (kind === "NRM") return "NRM";
   if (value === null) return kind;
   if (kind === "AF") return `${nf(value)} mT`;
-  if (kind === "MW") return `${nf(value)} W`;
+  if (kind === "MW") return `${nf(value)} J`;
   return `${nf(value)} °C`;
-}
-
-/** A specimen's step directions in a coordinate system, if it has them. */
-export function directionsIn(specimen: DemagSpecimen, coord: Coord): Directions | undefined {
-  if (coord === "s") return specimen.steps;
-  return coord === "g" ? specimen.geo : specimen.tilt;
 }
 
 export function whereOf(item: Where): string {
