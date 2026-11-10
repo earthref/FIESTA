@@ -8,6 +8,14 @@ import { useCallback, useSyncExternalStore } from "react";
  */
 export type Theme = "light" | "dark";
 
+/** How much map imagery (basemaps, the globe thumbnails) is darkened in dark
+ * mode: the share of black laid over it. Markers and labels are not dimmed. */
+export const MAP_DIM = 0.2;
+
+export function mapDim(theme: Theme): number {
+  return theme === "dark" ? MAP_DIM : 0;
+}
+
 /** Shared by every node on the origin, so the choice carries across nodes.
  * Keep in sync with index.html. */
 const STORAGE_KEY = "fiesta-theme";

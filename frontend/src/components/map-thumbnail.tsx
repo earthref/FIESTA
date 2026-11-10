@@ -1,6 +1,7 @@
 import { geoOrthographic } from "d3-geo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiUrl } from "../lib/base";
+import { mapDim, useTheme } from "../lib/theme";
 import {
   THUMBNAIL_HEIGHT as HEIGHT,
   THUMBNAIL_POLAR_ROWS as POLAR_ROWS,
@@ -100,7 +101,10 @@ function drawThumbnail(
   height: number,
   image: ImageData | null,
   body: Body,
+  dim: number,
 ) {
+  // Dark mode darkens the basemap, not the markers drawn over it.
+  const shade = 1 - dim;
   const scale = Math.min(window.devicePixelRatio || 1, 2);
   const [w, h] = [Math.round(width * scale), Math.round(height * scale)];
   const radius = (Math.min(width, height) / 2 - 2) * scale;
@@ -129,9 +133,9 @@ function drawThumbnail(
         );
         const from = (row * WIDTH + column) * 4;
         const to = (y * w + x) * 4;
-        out.data[to] = image.data[from];
-        out.data[to + 1] = image.data[from + 1];
-        out.data[to + 2] = image.data[from + 2];
+        out.data[to] = image.data[from] * shade;
+        out.data[to + 1] = image.data[from + 1] * shade;
+        out.data[to + 2] = image.data[from + 2] * shade;
         out.data[to + 3] = 255;
       }
     }
@@ -141,6 +145,10 @@ function drawThumbnail(
     context.arc(w / 2, h / 2, radius, 0, 2 * Math.PI);
     context.fillStyle = PLAIN_COLOR[body];
     context.fill();
+    if (dim) {
+      context.fillStyle = `rgba(0,0,0,${dim})`;
+      context.fill();
+    }
   }
 
   // Slightly smaller markers when there are many, so they don't merge into
@@ -181,6 +189,7 @@ export function MapThumbnail({
   height?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { theme } = useTheme();
   // The body with the most markers, and those on it.
   const body = bodiesOf(markers)[0] ?? "earth";
   const shown = useMemo(
@@ -203,9 +212,9 @@ export function MapThumbnail({
 
   useEffect(() => {
     if (canvasRef.current && image !== undefined) {
-      drawThumbnail(canvasRef.current, shown, width, height, image, body);
+      drawThumbnail(canvasRef.current, shown, width, height, image, body, mapDim(theme));
     }
-  }, [shown, width, height, image, body]);
+  }, [shown, width, height, image, body, theme]);
 
   return (
     <canvas
