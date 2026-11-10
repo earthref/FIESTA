@@ -19,7 +19,7 @@ import { ErrorMessage } from "./error-message";
 import { bodiesOf } from "./map/bodies";
 import { BodyButtons, useBody } from "./map/map-mode";
 import { type ApiMapPoint, type MapPoint, toMapPoint } from "./map/map-points";
-import { citationOf, DefinitionTable, firstString, formatDateLL } from "./result-item";
+import { citationOf, DefinitionTable, firstString, formatDateLL, InlineHtml } from "./result-item";
 import { type GridRow, RowsGrid } from "./rows-table";
 import type { GridSort } from "./summary-grid";
 import { Icon } from "./ui/icon";
@@ -223,7 +223,7 @@ function ModalHeader({
           <p className="m-0 mt-1 truncate text-[13px] text-gray-700">
             {citation && <b>{citation}</b>}
             {citation && title && " — "}
-            {title}
+            <InlineHtml html={title} />
           </p>
         )}
       </div>
@@ -562,7 +562,9 @@ function ContributionPanel({
       <Section title="Reference">
         {longCitation ? <p className="m-0 text-gray-800">{longCitation}</p> : <p>—</p>}
         {firstString(reference.title) && longCitation !== reference.title && (
-          <p className="m-0 mt-1 italic text-gray-700">{firstString(reference.title)}</p>
+          <p className="m-0 mt-1 italic text-gray-700">
+            <InlineHtml html={firstString(reference.title)} />
+          </p>
         )}
         {description && <p className="m-0 mt-2 text-gray-700">{description}</p>}
       </Section>

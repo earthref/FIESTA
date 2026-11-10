@@ -2,6 +2,7 @@ import { type CSSProperties, type ReactNode, useContext } from "react";
 import { apiUrl, nodeSiteUrl, nodeUrl, siteUrl } from "../lib/base";
 import { NodeConfigScope, useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
+import { sanitizeInlineHtml } from "../lib/sanitize";
 import type { GridColumn, NodeConfig, SearchLevel, SearchResult } from "../lib/types";
 import { abbreviateNumber, cx, getPath, singularize } from "../lib/utils";
 import { pluginGridCell } from "../plugins";
@@ -394,16 +395,21 @@ function formatBytes(value: unknown): string {
   return `${unit === 0 ? size : size.toFixed(2)} ${units[unit]}`;
 }
 
-/** A cell that opens the record's contribution in its modal, at this level's tab. */
+/** A cell that opens the record's contribution in its modal, at this level's tab.
+ * `fill` makes it a column as tall as the row's thumbnail tiles (download, map,
+ * plot: 104px), so a last child with `mt-auto` sits at the bottom. The grid is a
+ * table, so the cell cannot stretch to the row. */
 function OpenCell({
   id,
   table,
   width,
+  fill,
   children,
 }: {
   id: string | undefined;
   table: string;
   width: number;
+  fill?: boolean;
   children: ReactNode;
 }) {
   const openContribution = useOpenContribution();
@@ -412,8 +418,11 @@ function OpenCell({
       type="button"
       onClick={() => id && openContribution(id, table)}
       title="Open this contribution"
-      className="block shrink-0 cursor-pointer self-start overflow-hidden text-left hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
-      style={{ ...cellBase, minWidth: width, maxWidth: width }}
+      className={cx(
+        "shrink-0 cursor-pointer overflow-hidden text-left hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
+        fill ? "flex flex-col" : "block self-start",
+      )}
+      style={{ ...cellBase, minWidth: width, maxWidth: width, ...(fill && { height: 104 }) }}
     >
       {children}
     </button>
@@ -452,6 +461,19 @@ function CitationText({ doc }: { doc: SearchResult }) {
   );
 }
 
+/** Contributor text with inline markup (<sup>, <i>, …) rendered after
+ * sanitizing to text formatting only. */
+export function InlineHtml({ html, className }: { html: string | undefined; className?: string }) {
+  if (!html) return null;
+  return (
+    <span
+      className={className}
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized to inline formatting tags by DOMPurify
+      dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(html) }}
+    />
+  );
+}
+
 /** The reference title (contributions) or the "{location} ⇒ {site}" breadcrumb. */
 function NameText({
   doc,
@@ -463,7 +485,7 @@ function NameText({
   levels: SearchLevel[];
 }) {
   if (level.table === "contribution")
-    return <>{firstString(getPath(doc, "summary.contribution._reference.title"))}</>;
+    return <InlineHtml html={firstString(getPath(doc, "summary.contribution._reference.title"))} />;
   const breadcrumb = breadcrumbOf(doc, level, levels);
   return (
     <>
@@ -531,17 +553,17 @@ function BuiltinCell({
   const id = contributionId(doc);
 
   switch (column.cell) {
-    // Citation, then title / name, then date and contributor, in one column
+    // Citation, then title / name, then date and contributor bottom-right, in one column
     case "record":
       return (
-        <OpenCell id={id} table={level.table} width={width}>
+        <OpenCell id={id} table={level.table} width={width} fill>
           <Clamped lines={2}>
             <CitationText doc={doc} />
           </Clamped>
           <Clamped lines={2}>
             <NameText doc={doc} level={level} levels={config.search_levels} />
           </Clamped>
-          <Clamped lines={2} className="text-ink-muted">
+          <Clamped lines={2} className="mt-auto text-right text-ink-muted">
             <ContributedText doc={doc} />
           </Clamped>
         </OpenCell>
@@ -656,8 +678,10 @@ function BuiltinCell({
       const counts = config.search_levels
         .filter((entry) => entry.count_field)
         .map((entry) => ({ entry, count: getPath(doc, entry.count_field as string) }))
+        // A level with no records gets no row (and so no link to an empty tab).
         .filter(
-          (item): item is { entry: SearchLevel; count: number } => typeof item.count === "number",
+          (item): item is { entry: SearchLevel; count: number } =>
+            typeof item.count === "number" && item.count > 0,
         );
       return (
         <Cell width={width}>
