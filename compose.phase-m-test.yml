@@ -61,7 +61,7 @@ services:
       rustfs: {condition: service_healthy}
       mailpit: {condition: service_started}
     command: >-
-      sh -c "fiesta init && fiesta seed && pytest -q && fiesta verify-storage"
+      sh -c "fiesta init && fiesta seed --fixtures && pytest -q && fiesta verify-storage"
 networks:
   default:
     internal: true

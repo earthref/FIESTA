@@ -263,12 +263,25 @@ def outbox_worker():
 
 
 @app.command()
-def seed():
-    """Load configured development fixtures; refuses remote infrastructure."""
+def seed(
+    public: int = typer.Option(
+        50, min=0, help="import this many of SOURCE's most recent public contributions per node"
+    ),
+    source: str = typer.Option(
+        None, help="FIESTA deployment serving /v2/{node}/... [default: https://dev.earthref.org]"
+    ),
+    fixtures: bool = typer.Option(
+        False, help="load every manifest fixture (public examples too) and import nothing"
+    ),
+):
+    """Seed every node: the manifest's accounts, workspace and private fixtures, plus
+    SOURCE's most recent public contributions not already local; refuses remote
+    infrastructure."""
     from fiesta.nodeconfig import get_deployment
     from fiesta.services.seed import require_local, seed_node
 
     require_local()
+    failed = []
 
     async def run():
         deployment = get_deployment()
@@ -277,11 +290,17 @@ def seed():
 
         try:
             for node in nodes:
-                typer.echo(f"{node.node.slug}: {await seed_node(node)}")
+                result = await seed_node(node, fixtures=fixtures, public=public, source=source)
+                typer.echo(f"{node.node.slug}: {result}")
+                if (result["public"] or {}).get("errors"):
+                    failed.append(node.node.slug)
         finally:
             await get_opensearch().close()
 
     asyncio.run(run())
+    if failed:
+        typer.echo(f"public import errors for {', '.join(failed)} (see above)", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("import-public")

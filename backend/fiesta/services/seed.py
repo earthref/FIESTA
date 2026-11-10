@@ -103,9 +103,24 @@ async def ensure_accounts(session, manifest):
     return users
 
 
-async def seed_node(node):
+PUBLIC_COUNT = 50
+
+
+async def seed_node(node, *, fixtures=False, public=PUBLIC_COUNT, source=None):
+    """The manifest's accounts and workspace, SOURCE's PUBLIC most recent public
+    contributions the node does not have yet (public_import, default dev.earthref.org),
+    and the manifest's unpublished fixtures. FIXTURES loads every manifest fixture
+    instead of importing, offline (the phase-m integration test)."""
     require_local()
     root, manifest = load_seed(node)
+    items = [i for i in manifest["contributions"] if fixtures or not i.get("published")]
+    imported = None
+    if not fixtures and public:
+        from fiesta.services.public_import import import_recent
+
+        # Before the fixtures: imports keep their public IDs, and the fixtures then
+        # take sequence values above them.
+        imported = await import_recent(node, public, source=source)
     created = skipped = 0
     async with get_sessionmaker(node.node.slug)() as session:
         users = await ensure_accounts(session, manifest)
@@ -129,7 +144,7 @@ async def seed_node(node):
                         role=member["role"],
                     )
                 )
-        for item in manifest["contributions"]:
+        for item in items:
             existing = (
                 await session.execute(
                     select(Contribution).where(Contribution.seed_key == item["key"])
@@ -171,13 +186,13 @@ async def seed_node(node):
             await session.commit()
             created += 1
         await session.commit()
-    keys = [item["key"] for item in manifest["contributions"]]
+    keys = [item["key"] for item in items]
     await settle_seed_events(node, keys)
     # Publish only newly seeded, valid requested fixtures; never overwrite later developer edits.
     from fiesta.services.contributions import activate, latest_validation
 
     async with get_sessionmaker(node.node.slug)() as session:
-        for item in manifest["contributions"]:
+        for item in items:
             if not item.get("published"):
                 continue
             c = (
@@ -197,4 +212,4 @@ async def seed_node(node):
     result = await settle_seed_events(node, keys)
     if result["failed"]:
         raise RuntimeError(f"seed processing failed: {result}")
-    return {"created": created, "skipped": skipped, **result}
+    return {"created": created, "skipped": skipped, **result, "public": imported}

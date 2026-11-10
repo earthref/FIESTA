@@ -17,7 +17,7 @@ outside Docker you also need [uv](https://docs.astral.sh/uv/) and Node 22
 git clone https://github.com/<you>/FIESTA.git     # your fork
 cd FIESTA
 make up        # every node; `make up FIESTA_NODE=magic,cdr` for fewer (faster)
-make seed      # demo accounts and example contributions for each node
+make seed      # demo accounts, private drafts and each node's 50 newest public contributions
 ```
 
 The first `make up` builds images and takes a few minutes; later starts take
@@ -32,9 +32,10 @@ seconds. Then:
 The page signs you in as **Local Developer** (`developer@example.test`, a super
 admin, so `/admin` works). `viewer@example.test` is a second account for
 testing sharing; both use the password `local-fiesta-only`. Each node has a
-private draft with revision history, an invalid draft and several public
-examples. `make import-public NODE=magic IDS="20818"` copies real public
-contributions from dev.earthref.org if you need more realistic data.
+private draft with revision history, an invalid draft and its 50 most recent
+public contributions from dev.earthref.org (`make seed ARGS=--fixtures` loads
+hand-made public examples instead, offline). `make import-public NODE=magic
+IDS="20818"` copies particular public contributions.
 
 If a port is already taken on your machine, copy `.env.example` to `.env` and
 move it (`API_PORT`, `FRONTEND_PORT`, `POSTGRES_PORT`, …).
