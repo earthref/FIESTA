@@ -42,8 +42,11 @@ const cellStyle: CSSProperties = {
   textAlign: "left",
 };
 
-/** A column's filter box: typing updates the search after a pause. */
-function FilterInput({
+/**
+ * A column menu's text box (`filter=<key>:<text>`, for a column without facet
+ * lists): typing updates the search after a pause.
+ */
+export function ColumnTextFilter({
   column,
   value,
   onChange,
@@ -62,17 +65,20 @@ function FilterInput({
     return () => window.clearTimeout(timer);
   }, [text, value]);
   return (
-    <input
-      type="search"
-      value={text}
-      onChange={(event) => setText(event.target.value)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") latest.current(text);
-      }}
-      placeholder="Filter"
-      aria-label={`Filter by ${column.label}`}
-      className="mt-1 w-full rounded-sm border border-gray-300 bg-white px-1.5 py-0.5 text-[12px] font-normal focus:border-node focus:outline-hidden"
-    />
+    <div style={{ padding: "0.5em 1em", borderBottom: "1px solid #D4D4D5" }}>
+      <div className="mb-1 font-bold">Contains</div>
+      <input
+        type="search"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") latest.current(text);
+        }}
+        placeholder={`Filter ${column.label}`}
+        aria-label={`Filter by ${column.label}`}
+        className="w-full rounded-sm border border-gray-300 bg-white px-[0.8em] py-[0.5em] text-[13px] placeholder:text-[#AAAAAA] focus:border-node focus:outline-hidden"
+      />
+    </div>
   );
 }
 
@@ -80,14 +86,12 @@ function HeaderCell({
   column,
   sort,
   onSort,
-  filter,
-  onFilter,
+  filterMenu,
 }: {
   column: GridColumn;
   sort?: GridSort;
   onSort?: (sort: GridSort | undefined) => void;
-  filter?: string;
-  onFilter?: (text: string) => void;
+  filterMenu?: ReactNode;
 }) {
   const active = sort?.key === column.key ? sort.order : undefined;
   // Ascending, then descending, then back to the default order.
@@ -104,7 +108,7 @@ function HeaderCell({
         onClick={() => onSort(next())}
         title={`Sort by ${column.label}`}
         className={cx(
-          "flex w-full cursor-pointer items-center gap-1 text-left font-bold hover:text-node focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
+          "flex min-w-0 cursor-pointer items-center gap-1 text-left font-bold hover:text-node focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
           active && "text-node",
         )}
       >
@@ -116,7 +120,7 @@ function HeaderCell({
         />
       </button>
     ) : (
-      <span className="block truncate font-bold">{column.label}</span>
+      <span className="block min-w-0 truncate font-bold">{column.label}</span>
     );
   return (
     <th
@@ -130,10 +134,10 @@ function HeaderCell({
         boxShadow: "inset 0 -1px 0 rgba(34,36,38,.15)",
       }}
     >
-      {label}
-      {onFilter && column.filterable && (
-        <FilterInput column={column} value={filter ?? ""} onChange={onFilter} />
-      )}
+      <div className="flex items-center gap-0.5">
+        {label}
+        {filterMenu}
+      </div>
     </th>
   );
 }
@@ -142,8 +146,9 @@ function HeaderCell({
  * Search records as a grid: one row per record, one column per tile the
  * level's `columns` name (node YAML, admin Summary Grid tab), under a sticky
  * header. With `onSort` a sortable column's header sorts the search; with
- * `onFilter` a filterable one has a filter box. Without them (home page,
- * private workspace) the header only labels the tiles.
+ * `filterMenu` a column may have a filter icon opening its filters (the search
+ * page's ColumnFilterMenu). Without them (home page, private workspace) the
+ * header only labels the tiles.
  */
 export function SummaryGrid({
   level,
@@ -152,8 +157,7 @@ export function SummaryGrid({
   header = true,
   sort,
   onSort,
-  filters,
-  onFilter,
+  filterMenu,
   footer,
 }: {
   level: SearchLevel;
@@ -162,8 +166,8 @@ export function SummaryGrid({
   header?: boolean;
   sort?: GridSort;
   onSort?: (sort: GridSort | undefined) => void;
-  filters?: Record<string, string>;
-  onFilter?: (key: string, text: string) => void;
+  /** A column's header filter icon and menu, or null for none. */
+  filterMenu?: (column: GridColumn) => ReactNode;
   /** Rendered under the rows (loading placeholder, messages). */
   footer?: ReactNode;
 }) {
@@ -196,8 +200,7 @@ export function SummaryGrid({
                   column={column}
                   sort={sort}
                   onSort={onSort}
-                  filter={filters?.[column.key]}
-                  onFilter={onFilter ? (text) => onFilter(column.key, text) : undefined}
+                  filterMenu={filterMenu?.(column)}
                 />
               ))}
             </tr>

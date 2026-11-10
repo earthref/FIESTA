@@ -189,9 +189,15 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
   matches any of them), each row capped at 105px. A sticky header
   names the columns; a sortable column sorts the search on a click (ascending,
   descending, back to the dropdown's order; the dropdown shows the header sort
-  while it applies), a filterable one has a filter box (`filter=<column>:<text>`,
-  which also narrows the Rows and Map views and is cleared by Clear Filters and
-  by switching levels). Columns, headers, widths, sorting and filtering are set
+  while it applies), a filterable one has a filter icon after its label (as on
+  osu-mgr.org's result tables, 2026-11-09): a badge counts its applied filters,
+  and a click opens a menu (header with the column's name and Clear, Close at
+  the foot) of the sidebar's own controls — the column's facet lists (checkboxes
+  with counts and a Find box, the same `<column>:"<value>"` tokens as the
+  sidebar, one list opened, several collapsed), a "Contains" text box for a
+  column without facets (`filter=<column>:<text>`, which also narrows the Rows
+  and Map views and is cleared by switching levels), and on the map tile the
+  Geospatial area. Clear Filters clears them all. Columns, headers, widths, sorting and filtering are set
   per level in the node YAML (`search.levels[].columns`) and the admin Summary
   Grid tab; a level without them shows the default tiles. The expand caret is
   gone (the modal below replaced it); a count ("2 Locations") opens the
@@ -214,7 +220,7 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
   (Poles, Depth Plots, Age Spectra).
 - **Map thumbnail** uses the doc's own `_geo_point` on level cards (inherited from the nearest ancestor with coordinates when the row has none) and every distinct position of its rows on contribution cards, rather than the legacy summary's points and envelopes.
 - **Map thumbnail** is drawn from the Esri Ocean basemap (the Map tab's, as on osu-mgr.org) instead of the legacy SVG globe of 110m countries coloured by a climate lookup (2026-09-27).
-- **Lunar and Martian records** (2026-09-30, new in FIESTA; legacy drew them on Earth): a location whose `location_type` is Lunar or Martian (the node YAML's `search.bodies`), and everything below it, is positioned on that body. Its thumbnail is a Moon (LROC WAC) or Mars (Viking colour) globe; the Map tab shows **Earth / Moon / Mars** buttons before the view buttons on a node with `search.bodies` (the contribution modal's Map when its records include another body), opening on the body with the most records, over OpenPlanetaryMap's lunar basemap or NASA Trek's Viking mosaic with OpenPlanetaryMap's names (the Labels button toggles them; not drawn in the pole views). The area filter is on Earth: "Filter by area" is hidden on the other bodies, whose records an area leaves out (shown in grey).
+- **Lunar records** (2026-09-30, new in FIESTA; legacy drew them on Earth): a location whose `location_type` is Lunar (the node YAML's `search.bodies`), and everything below it, is positioned on the Moon. Its thumbnail is a Moon (LROC WAC) globe; the Map tab shows **Earth / Moon** buttons before the view buttons on a node with `search.bodies` (the contribution modal's Map when its records include another body), opening on the body with the most records, over OpenPlanetaryMap's lunar basemap and names (the Labels button toggles them; not drawn in the pole views). The area filter is on Earth: "Filter by area" is hidden on the Moon, whose records an area leaves out (shown in grey). Martian records stay on Earth (2026-11-10): MagIC's and KArAr's are meteorites, positioned where they were found, so there is no Mars map.
 - **Map tab** (new, 2026-09-27): levels whose data-model table has lat/lon columns get a Map sub-tab after Rows, ported from osu-mgr.org's search map — MapLibre over Esri Ocean in four views (Globe, Mercator, North Pole, South Pole), every matching record plotted, and an area filter (the `area` search param) that also narrows Summaries and Rows. Legacy had no equivalent.
   Color by (2026-09-28, new in FIESTA): a "Color by" menu beside "Filter by area" colors the markers by one of the node's `search.map_colors` offered at the level (MagIC: publication year, age, paleointensity, VADM, inclination, VGP latitude, magnetic moment, mass susceptibility), yellow → red → purple between the values' 2nd and 98th percentiles (log10 for a `log` field), records without a value in grey and drawn underneath; a legend at the bottom left gives the ends and "No value"; tooltips add the value (a location's mean). "None" is the node color. The choice is remembered in the browser, like the view.
   A large search (over 10,000 records at a level of points) maps its unique locations per contribution with a record count each (tooltips "9 sites, at one location in contribution 101"), from an OpenSearch aggregation, instead of stopping at 50,000 records.
@@ -305,6 +311,8 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
 ## 3. PRIVATE WORKSPACE
 
 `client/modules/magic/components/private_contributions.jsx`
+
+**Deviation (data-source mode, 2026-11-09):** while a node's `contributions_mode` is `source` the API refuses every write, so the SPA hides the private workspace: `/private` and `/upload` show only the source-mode notice, and the home page's Upload Tool and Private Workspace cards, the search page's Private Workspace button and the portal bar's user-name link to `/private` are left out (the name stays as plain text). They return unchanged at the cutover to `public`.
 
 ```
 ui list (margin:0)

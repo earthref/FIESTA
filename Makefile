@@ -113,7 +113,7 @@ $(HOST_DEV): export FIESTA_SMTP_PORT := $(or $(MAILPIT_SMTP_PORT),1025)
 
 .PHONY: backend-dev
 backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :API_PORT, default 8000)
-	cd backend && uv sync && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) \
+	cd backend && uv sync && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) FIESTA_CONTRIBUTIONS_MODE=$(or $(FIESTA_CONTRIBUTIONS_MODE),public) \
 		uv run sh -c "fiesta init && uvicorn fiesta.apps.api:create_app --factory --reload --port $(or $(API_PORT),8000)"
 
 .PHONY: fiesta
@@ -123,7 +123,7 @@ fiesta: ## Run the CLI on the host: make fiesta ARGS="legacy-inventory karar --o
 
 .PHONY: worker-dev
 worker-dev: ## Run the job worker locally (every node in FIESTA_NODE)
-	cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) uv run fiesta worker
+	cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) FIESTA_CONTRIBUTIONS_MODE=$(or $(FIESTA_CONTRIBUTIONS_MODE),public) uv run fiesta worker
 
 .PHONY: frontend-dev
 frontend-dev: ## Run the Vite dev server on :5173 for every node in FIESTA_NODE (/<Key>/; proxies /v2 to localhost:API_PORT)
@@ -150,17 +150,17 @@ e2e: ## End-to-end workflow test against a running `make up FIESTA_NODE=magic` s
 
 .PHONY: lint
 lint: ## Lint everything (ruff + biome)
-	cd backend && uv run ruff check . ../sources
-	cd frontend && npx biome check .
+	cd backend && uv run ruff check . ../sources ../config/plugins
+	cd frontend && npx biome check . ../config/plugins
 
 .PHONY: fix
 fix: ## Auto-fix lint issues (ruff --fix + biome --write)
-	cd backend && uv run ruff check --fix . ../sources
-	cd frontend && npx biome check --write .
+	cd backend && uv run ruff check --fix . ../sources ../config/plugins
+	cd frontend && npx biome check --write . ../config/plugins
 
 .PHONY: seed
-seed: ## Seed the enabled nodes with config-defined local fixtures (preserves edits)
-	$(COMPOSE_OPS) run --rm api fiesta seed
+seed: ## Seed the enabled nodes: demo accounts, private fixtures, dev.earthref.org's 50 newest public contributions not yet local [ARGS="--public 10" | --source URL | --fixtures]
+	$(COMPOSE_OPS) run --rm api fiesta seed $(ARGS)
 
 .PHONY: import-public
 import-public: ## Copy public contributions into local dev: make import-public NODE=magic IDS="20818 20848" [ARGS=--versions]

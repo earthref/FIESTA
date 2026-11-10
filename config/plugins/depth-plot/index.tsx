@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { ErrorMessage } from "../../components/error-message";
-import { contributionId } from "../../components/result-item";
-import { PageSpinner } from "../../components/ui/spinner";
-import { api } from "../../lib/api";
-import type { NodeConfig } from "../../lib/types";
-import type { PluginModule, PluginSubTabContext } from "../index";
+import { ErrorMessage } from "@/components/error-message";
+import { contributionId } from "@/components/result-item";
+import { PageSpinner } from "@/components/ui/spinner";
+import { api } from "@/lib/api";
+import type { NodeConfig } from "@/lib/types";
+import type { PluginModule, PluginSubTabContext } from "@/plugins";
 
 interface SeriesDef {
   key: string;
@@ -273,7 +273,7 @@ function DepthPlotsView({ hits, config, privateKey }: PluginSubTabContext) {
   );
 }
 
-export const depthPlotPlugin: PluginModule = {
+const depthPlotPlugin: PluginModule = {
   // A contribution's depth plots, in its modal, when it has rows at a plotted level.
   contributionTabs(config) {
     const levels = config.plugins["depth-plot"]?.levels;
@@ -300,3 +300,5 @@ export const depthPlotPlugin: PluginModule = {
     return [{ name: "Plots", render: (ctx) => <DepthPlotsView {...ctx} /> }];
   },
 };
+
+export default depthPlotPlugin;

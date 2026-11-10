@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton, type IconButtonProps } from "../components/icon-button";
+import { isSourceMode } from "../components/source-mode-notice";
 import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
@@ -231,24 +232,28 @@ export function HomePage() {
                 subtitle="Browse, combine, and save datasets."
               />
             </div>
-            <div className={threeCardClass} style={threeCard}>
-              <IconButton
-                to="/upload"
-                icon="table"
-                cornerIcon="add"
-                title="Upload Tool"
-                subtitle="Import data into your private workspace."
-              />
-            </div>
-            <div className={threeCardClass} style={threeCard}>
-              <IconButton
-                to="/private"
-                icon="file text outline"
-                cornerIcon="checkmark"
-                title="Private Workspace"
-                subtitle={`Manage your contributions to ${config.key}.`}
-              />
-            </div>
+            {!isSourceMode(config) && (
+              <>
+                <div className={threeCardClass} style={threeCard}>
+                  <IconButton
+                    to="/upload"
+                    icon="table"
+                    cornerIcon="add"
+                    title="Upload Tool"
+                    subtitle="Import data into your private workspace."
+                  />
+                </div>
+                <div className={threeCardClass} style={threeCard}>
+                  <IconButton
+                    to="/private"
+                    icon="file text outline"
+                    cornerIcon="checkmark"
+                    title="Private Workspace"
+                    subtitle={`Manage your contributions to ${config.key}.`}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Plugin cards (legacy: the full-width "Poles / View" tiny card),

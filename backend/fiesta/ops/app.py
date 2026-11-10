@@ -74,7 +74,7 @@ async def execute_schedule(
     host = host or host_label()
     logger.info("ops %s: starting (%s)", schedule.name, trigger)
     try:
-        result = await run_schedule_target(schedule)
+        result = await run_schedule_target(schedule, trigger)
     except asyncio.CancelledError:
         # worker shutdown past its grace period, or an abort: the process
         # group is already stopped; say so before procrastinate records it

@@ -13,7 +13,7 @@ import { type Body, bodiesOf, isBody } from "./map/bodies";
  * the Esri Ocean basemap that the search page's Map tab uses (as
  * osu-mgr.org's result thumbnails are). Replaces the legacy
  * `svg_map_thumbnail.jsx` globe of 110m countries coloured by climate.
- * Markers on the Moon or Mars are drawn on that body's globe instead.
+ * Markers on the Moon are drawn on its globe instead.
  */
 
 export interface MapMarker {
@@ -31,7 +31,7 @@ export interface MapMarker {
 const ANTARCTIC_COLOR = "#f1f0eb";
 // Without the image (its source unreachable), the globe is plain ocean, or
 // the body's grey or red.
-const PLAIN_COLOR: Record<Body, string> = { earth: "#8db3e2", moon: "#8e8e8e", mars: "#b86a45" };
+const PLAIN_COLOR: Record<Body, string> = { earth: "#8db3e2", moon: "#8e8e8e" };
 const MARKER_COLOR = "#8B5A8E";
 
 const loadImage = (src: string) =>
@@ -212,9 +212,7 @@ export function MapThumbnail({
       ref={canvasRef}
       role="img"
       aria-label={
-        body === "earth"
-          ? "Map of the result locations"
-          : `Map of the result locations on ${body === "moon" ? "the Moon" : "Mars"}`
+        body === "earth" ? "Map of the result locations" : "Map of the result locations on the Moon"
       }
       style={{ display: "block", width, height }}
     />

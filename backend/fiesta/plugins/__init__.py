@@ -1,37 +1,87 @@
 """Node plugins — isolated node-specific features.
 
-A plugin packages everything a node-specific feature needs on the backend:
-derived search documents, extra search levels, API routes, and the metadata
-the frontend uses to activate its UI counterpart. Plugins are activated per
-node by the deployment YAML (`features.plugins: [poles, depth-plot, ...]`);
-the code for every plugin ships with FIESTA, but only activated plugins run.
+A plugin packages everything a node-specific feature needs: derived search
+documents, extra search levels, API routes, options, its UI, its tests and
+its documentation, all in one folder, `config/plugins/<name>/`
+(FIESTA_PLUGINS_DIR; docs/plugins.md). Plugins are activated per node by the
+deployment YAML (`features.plugins: [poles, depth-plot, ...]`); the code for
+every plugin ships with FIESTA, but only activated plugins run.
+
+This package is the plugin API (`base.FiestaPlugin`, `util`) and the
+registry. A plugin's `plugin.py` imports as `fiesta.plugins.<name>` with
+dashes as underscores (`fiesta.plugins.rock_mag` is
+`config/plugins/rock-mag/plugin.py`), so tests and other modules import it
+like any submodule.
 
 Adding a plugin:
-1. Subclass FiestaPlugin in fiesta/plugins/<name>.py
-2. Register it in PLUGINS below
+1. Create config/plugins/<name>/plugin.py with one FiestaPlugin subclass
+   whose `name` is <name> (the folder is the registration)
+2. (Optional) config/plugins/<name>/index.tsx, default-exporting its UI
+   PluginModule (frontend/src/plugins/index.tsx)
 3. Reference it from a node YAML under features.plugins
-4. (Optional) register a UI component under the same name in the frontend's
-   src/plugins/ registry.
 """
+
+import importlib
+import importlib.abc
+import importlib.util
+import inspect
+import sys
+from pathlib import Path
 
 from fiesta.plugins.base import FiestaPlugin
 
 
-def _registry() -> dict[str, FiestaPlugin]:
-    from fiesta.plugins.depth_plot import DepthPlotPlugin
-    from fiesta.plugins.plateau import PlateauPlugin
-    from fiesta.plugins.pmag_plots import PmagPlotsPlugin
-    from fiesta.plugins.poles import PolesPlugin
-    from fiesta.plugins.rock_mag import RockMagPlugin
+def plugins_dir() -> Path:
+    from fiesta.settings import get_settings
 
-    plugins = [
-        PolesPlugin(),
-        RockMagPlugin(),
-        PmagPlotsPlugin(),
-        DepthPlotPlugin(),
-        PlateauPlugin(),
-    ]
-    return {plugin.name: plugin for plugin in plugins}
+    return get_settings().plugins_path
+
+
+def _plugin_folders() -> dict[str, Path]:
+    """Module name (`rock_mag`) -> the plugin's folder (`.../rock-mag`)."""
+    root = plugins_dir()
+    folders = sorted(path.parent for path in root.glob("*/plugin.py"))
+    return {folder.name.replace("-", "_"): folder for folder in folders}
+
+
+class _PluginFinder(importlib.abc.MetaPathFinder):
+    """Resolves `fiesta.plugins.<module>` to `<plugins_dir>/<name>/plugin.py`."""
+
+    prefix = f"{__name__}."
+
+    def find_spec(self, fullname, path=None, target=None):
+        if not fullname.startswith(self.prefix) or "." in fullname[len(self.prefix) :]:
+            return None
+        folder = _plugin_folders().get(fullname[len(self.prefix) :])
+        if folder is None:
+            return None
+        return importlib.util.spec_from_file_location(fullname, folder / "plugin.py")
+
+
+if not any(isinstance(finder, _PluginFinder) for finder in sys.meta_path):
+    sys.meta_path.append(_PluginFinder())
+
+
+def _registry() -> dict[str, FiestaPlugin]:
+    plugins: dict[str, FiestaPlugin] = {}
+    for module_name, folder in _plugin_folders().items():
+        module = importlib.import_module(f"{__name__}.{module_name}")
+        classes = [
+            cls
+            for _, cls in inspect.getmembers(module, inspect.isclass)
+            if issubclass(cls, FiestaPlugin)
+            and cls is not FiestaPlugin
+            and cls.__module__ == module.__name__
+        ]
+        if len(classes) != 1:
+            raise ValueError(f"{folder}/plugin.py must define exactly one FiestaPlugin subclass")
+        plugin = classes[0]()
+        if plugin.name != folder.name:
+            raise ValueError(
+                f"{folder}/plugin.py: plugin name {plugin.name!r} must match its folder"
+            )
+        plugins[plugin.name] = plugin
+    return plugins
 
 
 _PLUGINS: dict[str, FiestaPlugin] | None = None

@@ -53,7 +53,7 @@ Two schemes are accepted; the private routes take either.
 | PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in the seeded `developer@example.test` only against local dev infrastructure |
 | GET | `/v2/basemap/{world\|arctic}` | — | JPEG: Esri Ocean as a 1024×512 plate carrée world image (blank past ±85.05°) and its Arctic band; fetched from Esri once a day and cached in the API process, for the result thumbnails |
-| GET | `/v2/basemap/{moon\|mars}` | — | JPEG: the Moon (LROC WAC) and Mars (Viking MDIM 2.1 colour) as 1024×512 plate carrée images, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on those bodies |
+| GET | `/v2/basemap/moon` | — | JPEG: the Moon (LROC WAC) as a 1024×512 plate carrée image, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on the Moon |
 | GET | `/v2/basemap/undersea-features` | — | GeoJSON `FeatureCollection` of the IHO-IOC GEBCO Gazetteer of Undersea Feature Names (NOAA NCEI's feature service), each `{name, kind: point\|line\|area}` with areas reduced to their middle point; fetched once a day and cached, for the Map tab's labels |
 
 `UserOut = {id, email, name, orcid: string|null, is_admin: bool, admin_nodes: string[]}` —
@@ -163,7 +163,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "map_colors": [
     {"label": "Age", "field": "age", "unit": "Ma", "scale": 1000000.0, "log": true, "tables": ["locations", "sites"]}
   ],
-  "bodies": ["mars", "moon"],
+  "bodies": ["moon"],
   "pages": [{"slug": "about", "title": "About", "menu": "left", "icon": null}],
   "features": {"plugins": ["poles"]},
   "publish": {"api": true, "web": true},
@@ -185,7 +185,7 @@ Map tab's "Color by" menu offers (as `color_by` on `/search/{table}/points`) on
 the levels whose table is in `tables`; `field` is a column or a `summary.*`
 path, and a value / `scale` is what the legend shows. `bodies` are the planetary
 bodies besides Earth the node YAML's `search.bodies` can put a record on (empty
-for most nodes), for the Map tab's Earth / Moon / Mars buttons. `pages` are the content
+for most nodes), for the Map tab's Earth / Moon buttons. `pages` are the content
 pages in menu order.
 
 Each active plugin's `frontend_config` is built from its options: the node
@@ -213,7 +213,7 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet or a facet of the level's grid columns, else 422), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
@@ -252,7 +252,7 @@ MapPoints = {
 to 50,000 (`truncated` past that), for the search page's Map tab: `id` is the
 contribution, `name` the row's own key column (`sites` → `site`; absent at the
 contribution level), `body` the planetary body a point on another one is on
-(`moon`, `mars`; absent on Earth). A doc with several positions (a
+(`moon`; absent on Earth). A doc with several positions (a
 contribution; an area such as a location, mapped at its sites' and samples'
 positions rather than drawn as its box) gives a point per position it carries
 (only those inside `bbox`, when one is given: a `bbox` is on Earth, so it
@@ -303,7 +303,7 @@ specimen's `sample`), so a geospatial filter narrows every level. A level is
 contribution doc carries every distinct position of its records (up to 500),
 so it matches an area that holds any of them. A row on another planetary body — one whose column named by the
 node YAML's `search.bodies` (MagIC and KArAr: `location_type`) has a value it
-maps to a body (`Lunar` → `moon`, `Martian` → `mars`), and every row below it —
+maps to a body (`Lunar` → `moon`; `Martian` is not one: MagIC's and KArAr's Martian samples are meteorites, found on Earth), and every row below it —
 has its position as `summary._all._body_point` (`{lat, lon, body}`; a list on
 the contribution doc) instead, so Earth's area filters and location
 aggregations leave it out; `mapped_total` counts either.
@@ -334,7 +334,7 @@ grid (below): its header's sort, newest first on ties.
 
 **Summary grid.** Each search level in `GET /config` carries `columns`, its
 Summaries grid in order: `{key, cell, label, width, column?, subtitle_column?,
-format?, sortable, filterable}`. `cell` names the tile (`record` — citation, then
+format?, sortable, filterable, facets, geospatial}`. `cell` names the tile (`record` — citation, then
 title or the record's name, then date and contributor, one column filtered on
 all of them; the default first column —, `citation`, `name`,
 `contributed`, `download`, `links`, `counts`, `map`, `plot`, `geo`, `geology`,
@@ -347,7 +347,16 @@ column sorts on a `.raw` keyword (numbers — data-model `Number` columns, age,
 intensity — by a script that parses the string values; timestamp and id on
 their typed fields). `filter=<key>:<text>` keeps the records whose filterable
 column's text fields hold every typed word as a prefix (`simple_query_string`,
-lenient); an unknown or unsortable/unfilterable key is a 422.
+lenient); an unknown or unsortable/unfilterable key is a 422. A column's header
+filter menu lists its `facets` (summary._all columns: geo → the geologic and
+geographic columns, geology → classes / types / lithologies, method_codes,
+citations, and a `field` column whose data-model type is String or List → that
+column) with the sidebar's checkbox lists: they filter through `<column>:"<value>"`
+query tokens and are counted with `facet=<column>`. `filterable` (a text box,
+`filter=`) is set only for a column without facets, or one configured with
+`filter_fields`; `facets: []` in the YAML turns a column back into a text box.
+`geospatial` marks the map tile of a level with positions, whose menu holds the
+Map tab's area.
 
 **Reference metadata.** `summary.contribution._reference` is the publication
 behind a contribution's reference DOI (the `reference` column of its
@@ -446,7 +455,10 @@ fed by its sync script instead. Details: [data-sources.md](data-sources.md).
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/source` | | `{node, mode, source_id, checkpoints: {"<id>": "<fingerprint>"}}` |
+| GET | `/v2/{repository}/source` | | `{node, mode, source_id, kind, script, sync, synced, schedule, runs}` (the admin page's Data source tab) |
+| GET | `/v2/{repository}/source/checkpoints` | | `{node, mode, source_id, checkpoints: {"<id>": "<fingerprint>"}}` |
+| POST | `/v2/{repository}/source/runs` | `{started_at, finished_at, ok, trigger, summary}` | 201 (a sync script's run report) |
+| POST | `/v2/{repository}/source/run` | | `{job_id, schedule}` (202; queued on the ops worker) |
 | PUT | `/v2/{repository}/source/records/{id}` | multipart: `record` (SourceRecord JSON), `owner` (optional account JSON), files as `<revision key>/<name>` parts | `{id, status: "applied"\|"unchanged", fingerprint, bytes}`; 409 in public mode or when the record cannot apply |
 
 ### Plugins (`/v2/{repository}/plugins/{name}/...`)

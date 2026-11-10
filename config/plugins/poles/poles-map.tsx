@@ -1,12 +1,12 @@
 import { lazy, Suspense, useMemo } from "react";
-import type { MapLine } from "../../components/map/lines-layer";
-import { ModeButtons, useSavedMode } from "../../components/map/map-mode";
-import type { MapPoint } from "../../components/map/map-points";
-import { Spinner } from "../../components/ui/spinner";
+import type { MapLine } from "@/components/map/lines-layer";
+import { ModeButtons, useSavedMode } from "@/components/map/map-mode";
+import type { MapPoint } from "@/components/map/map-points";
+import { Spinner } from "@/components/ui/spinner";
 import { type AgeScale, boundaryRings, formatAge, type Pole, uncertaintyRing } from "./poles-data";
 
 // MapLibre (~800 KB) loads with the first map.
-const MapLibreMap = lazy(() => import("../../components/map/maplibre-map"));
+const MapLibreMap = lazy(() => import("@/components/map/maplibre-map"));
 
 interface PolesMapProps {
   poles: Pole[];

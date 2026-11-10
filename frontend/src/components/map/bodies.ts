@@ -2,11 +2,10 @@
 // `search.bodies` can put a record on (a lunar location's sites: the API gives
 // their points a `body`; backend/fiesta/nodeconfig.py Body). Their basemaps
 // are body-basemaps.ts (loaded with the maps).
-export type Body = "earth" | "moon" | "mars";
+export type Body = "earth" | "moon";
 export const BODIES: [Body, string][] = [
   ["earth", "Earth"],
   ["moon", "Moon"],
-  ["mars", "Mars"],
 ];
 
 export const isBody = (value: unknown): value is Body => BODIES.some(([body]) => body === value);

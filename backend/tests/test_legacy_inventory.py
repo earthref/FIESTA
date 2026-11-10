@@ -30,6 +30,8 @@ def _doc(cid, *, handle, activated, history, tables=None, **extra):
 class FakeSearch:
     def __init__(self, docs, users):
         self.docs, self.users, self.cleared = docs, users, False
+        self.fetched: list[int] = []  # fetch_tables calls, by contribution id
+        self.seq_no: dict[int, int] = {}  # a document's _seq_no; bump it to "write" it
 
     async def search(self, index, body, **kwargs):
         if index == "er_users":
@@ -50,12 +52,21 @@ class FakeSearch:
             cid = body["query"]["bool"]["must"][1]["term"]["summary.contribution.id"]
             docs = [d for d in self.docs if d["summary"]["contribution"]["id"] == cid]
             assert body["_source"] == ["contribution"]
+            self.fetched.append(cid)
             return {
                 "hits": {"hits": [{"_source": {"contribution": d["contribution"]}} for d in docs]}
             }
         assert body["query"] == {"term": {"type": "contribution"}}
         assert body["_source"] == ["summary.contribution"]
-        summaries = [{"_source": {"summary": d["summary"]}} for d in self.docs]
+        assert body["seq_no_primary_term"] is True
+        summaries = [
+            {
+                "_source": {"summary": d["summary"]},
+                "_seq_no": self.seq_no.get(d["summary"]["contribution"]["id"], 1),
+                "_primary_term": 1,
+            }
+            for d in self.docs
+        ]
         return {"_scroll_id": "s1", "hits": {"hits": summaries}}
 
     async def scroll(self, scroll_id, scroll, **kwargs):
@@ -241,10 +252,27 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
     assert "Lava:Flow" in text
     assert text.index("contribution") < text.index("samples")
 
-    # A second run finds the same ETag+size in hashes.json and does not download again.
+    assert sorted(client.fetched) == [9, 11, 16, 20] and report["cached_exports"] == 0
+
+    # A second run finds the same ETag+size in hashes.json and does not download
+    # again, nor re-fetch the tables of a document whose _seq_no is unchanged
+    # (11 and 16 have none to export, so they are asked again).
     downloads = FakeS3.downloads
+    client.fetched.clear()
     again = await legacy_inventory.build_inventory(karar_node, tmp_path, client=client)
     assert again["cached_hashes"] == 8 and FakeS3.downloads == downloads
+    assert again["cached_exports"] == 2 and sorted(client.fetched) == [11, 16]
+    assert load_inventory(tmp_path / "inventory.json").model_dump() == inventory.model_dump()
+
+    # A write to document 9 (new _seq_no) re-exports it; 20 stays cached.
+    client.seq_no[9] = 2
+    client.fetched.clear()
+    docs[1]["contribution"]["samples"].append({"sample": "S2", "geologic_types": ["Lava"]})
+    third = await legacy_inventory.build_inventory(karar_node, tmp_path, client=client)
+    assert sorted(client.fetched) == [9, 11, 16] and third["cached_exports"] == 1
+    changed = load_inventory(tmp_path / "inventory.json").records
+    sha = next(r for r in changed if r.id == 9).revisions[0].files["karar_contribution_9.txt"]
+    assert sha.sha256 != entry.sha256 and b"S2" in (tmp_path / sha.source).read_bytes()
 
     owners = json.loads((tmp_path / "owners.json").read_text())
     assert owners == [

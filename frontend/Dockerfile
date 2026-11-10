@@ -12,6 +12,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# The node plugins' UI lives beside the backend half in config/plugins/, which
+# vite.config.ts expects at ../config/plugins (compose passes it as the
+# `plugins` build context: docker build --build-context plugins=config/plugins).
+COPY --from=plugins . /config/plugins
 ENV VITE_BASE_PATH=$BASE_PATH
 RUN npm run build
 

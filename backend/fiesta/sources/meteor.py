@@ -17,6 +17,7 @@ import asyncio
 import json
 import os
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fiesta.services.legacy import SourceRecord, load_inventory, record_fingerprint
@@ -106,6 +107,22 @@ def _report(summary: dict) -> None:
         Path(path).write_text(json.dumps(scalars))
 
 
+async def _report_run(api: SourceAPI, started: datetime, summary: dict) -> None:
+    """Report the run to the API (the admin page's Data source tab); a failed
+    report is logged, never the run's outcome."""
+    report = {
+        "started_at": started.isoformat(),
+        "finished_at": datetime.now(UTC).isoformat(),
+        "ok": not summary.get("errors") and "failed" not in summary,
+        "trigger": os.environ.get("FIESTA_OPS_TRIGGER") or "by hand",
+        "summary": summary,
+    }
+    try:
+        await api.report_run(report)
+    except (SourceAPIError, OSError) as exc:
+        print(f"could not report the run: {exc}", file=sys.stderr, flush=True)
+
+
 def main(slug: str, description: str | None = None) -> None:
     """Command line of a Meteor node's `sources/<slug>.py`."""
     parser = argparse.ArgumentParser(description=description or f"Sync {slug} from Meteor.")
@@ -150,11 +167,21 @@ def main(slug: str, description: str | None = None) -> None:
 
     async def run() -> dict:
         api = SourceAPI(args.api, node.node.slug)
+        started = datetime.now(UTC)
+        summary: dict = {"node": node.node.slug}
         try:
             await api.login(email, password)
-            return await sync_meteor(
-                node, api, args.state_dir.resolve(), dry_run=args.dry_run, ids=args.ids
-            )
+            try:
+                summary = await sync_meteor(
+                    node, api, args.state_dir.resolve(), dry_run=args.dry_run, ids=args.ids
+                )
+            except Exception as exc:  # reported, then re-raised
+                summary["failed"] = f"{type(exc).__name__}: {exc}"
+                raise
+            finally:
+                if not args.dry_run and not summary.get("skipped"):
+                    await _report_run(api, started, summary)
+            return summary
         finally:
             await api.close()
             await get_opensearch().close()

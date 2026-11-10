@@ -38,7 +38,7 @@ Postgres backups plus the bucket. See [Phase M operations](docs/phase-m.md).
 ```sh
 cp .env.example .env          # optional: FIESTA_NODE (default every node, or a list: magic,karar,erda), ports
 make up                       # infra + one API + one worker + one frontend for every listed node
-make seed                     # demo accounts and example contributions for every listed node
+make seed                     # demo accounts, private drafts, and each listed node's 50 newest public contributions from dev.earthref.org
 ```
 
 Everything runs in local Docker containers: no MARFIK, AWS or production
@@ -68,17 +68,19 @@ running nodes to this frontend and every other node to earthref.org.
 - RustFS (S3) console: http://localhost:9001/rustfs/console/ · Mailpit (dev email): http://localhost:8025
 - Base paths and the multi-node layout in a deployment: see [development.md](development.md).
 
-Each node gets a private draft with revision history, an invalid draft, and
-public examples that are searchable at once. Upload a contribution text file in
+Each node gets a private draft with revision history, an invalid draft, and its
+50 most recent public contributions from dev.earthref.org (keeping their IDs and
+DOIs), searchable at once; a re-run adds only newer ones. Upload a contribution text file in
 the private workspace, validate, publish, and it becomes searchable too. Sign in
 as `viewer@example.test` (password `local-fiesta-only`) to test sharing.
-`make import-public NODE=magic IDS="20818"` adds real public contributions from
-dev.earthref.org. `make user EMAIL=… NAME=…` creates another account.
+`make import-public NODE=magic IDS="20818"` adds particular public contributions
+from dev.earthref.org. `make user EMAIL=… NAME=…` creates another account.
 
 ## Layout
 
 ```
 config/         fiesta.yaml + per-node YAMLs, data models / vocabularies (JSON)
+config/plugins/ node plugins, one folder each: backend, UI, tests, docs (docs/plugins.md)
 backend/        Python package `fiesta` (the FastAPI app, worker, CLI)
 frontend/       SPA (one build serves any node)
 docs/api.md     API contract

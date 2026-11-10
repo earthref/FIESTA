@@ -185,7 +185,8 @@ export function GridEditor({
     <div className="space-y-3">
       <p className="text-sm text-gray-600">
         Each search level's Summaries tab is a grid: one row per record, one column per tile, in
-        list order. Sortable columns sort on a header click; filterable ones get a filter box.
+        list order. Sortable columns sort on a header click; filterable ones get a filter icon whose
+        menu lists the column's facets (as the sidebar does), or a text box when it has none.
       </p>
       <div className="flex flex-wrap items-center gap-1 text-sm">
         {levels.map((entry, index) => (
@@ -294,7 +295,16 @@ export function GridEditor({
                           (c.numeric === undefined ? "" : c.numeric ? " (number)" : " (text)")}
                     </Td>
                     <Td className="text-xs text-gray-600">
-                      {c.filterable === false ? "off" : (c.filter_fields?.join(", ") ?? "default")}
+                      {c.filterable === false
+                        ? "off"
+                        : [
+                            c.facets === undefined
+                              ? null
+                              : `facets: ${c.facets.join(", ") || "none"}`,
+                            c.filter_fields?.join(", "),
+                          ]
+                            .filter(Boolean)
+                            .join("; ") || "default"}
                     </Td>
                     <Td className="whitespace-nowrap">
                       <Button
@@ -395,6 +405,8 @@ function ColumnModal({
   );
   const [filterable, setFilterable] = useState(column.filterable !== false);
   const [filterFields, setFilterFields] = useState<string[]>(column.filter_fields ?? []);
+  // undefined = the tile's default facets; [] = none (a text box instead).
+  const [facets, setFacets] = useState<string[] | undefined>(column.facets);
   const columnListId = useId();
   const data = cell === "field" || cell === "title";
 
@@ -412,7 +424,10 @@ function ColumnModal({
       if (numeric) out.numeric = numeric === "number";
     }
     if (!filterable) out.filterable = false;
-    else if (filterFields.length) out.filter_fields = filterFields;
+    else {
+      if (filterFields.length) out.filter_fields = filterFields;
+      if (facets !== undefined) out.facets = facets;
+    }
     onApply(id, out);
   };
 
@@ -424,6 +439,9 @@ function ColumnModal({
       : null,
     [sortField, ...filterFields].some((p) => p.trim() && !p.trim().startsWith("summary."))
       ? "Sort and filter fields are summary.* paths."
+      : null,
+    (facets ?? []).some((f) => !/^\w+$/.test(f))
+      ? "Facets are column names (lithologies), not paths."
       : null,
   ].filter(Boolean);
 
@@ -548,20 +566,44 @@ function ColumnModal({
               onChange={(e) => setFilterable(e.target.checked)}
               className="h-4 w-4 rounded-sm border-gray-300"
             />
-            Filterable (a filter box under the header)
+            Filterable (a filter icon in the header)
           </label>
           {filterable && (
-            <Field
-              label="Filter fields"
-              hint="Text paths the typed words must match (as prefixes); empty = the tile's default"
-            >
-              <TagInput
-                values={filterFields}
-                options={[]}
-                placeholder="summary._all.location"
-                onChange={setFilterFields}
-              />
-            </Field>
+            <>
+              <label className="mb-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={facets !== undefined}
+                  onChange={(e) => setFacets(e.target.checked ? [] : undefined)}
+                  className="h-4 w-4 rounded-sm border-gray-300"
+                />
+                Set its facets (otherwise the tile's default: a text column lists its values)
+              </label>
+              {facets !== undefined && (
+                <Field
+                  label="Facets"
+                  hint="Columns listed as checkboxes with counts, as in the sidebar; none = a text box"
+                >
+                  <TagInput
+                    values={facets}
+                    options={Object.keys(tableColumns)}
+                    placeholder="lithologies"
+                    onChange={setFacets}
+                  />
+                </Field>
+              )}
+              <Field
+                label="Filter fields"
+                hint="Text paths a text box matches (as prefixes); empty = the tile's default, shown when it has no facets"
+              >
+                <TagInput
+                  values={filterFields}
+                  options={[]}
+                  placeholder="summary._all.location"
+                  onChange={setFilterFields}
+                />
+              </Field>
+            </>
           )}
         </fieldset>
         {errors.length > 0 && <p className="text-red-700 sm:col-span-2">{errors.join(" ")}</p>}

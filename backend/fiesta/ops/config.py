@@ -199,13 +199,93 @@ class Schedule(BaseModel):
         return f"{self.name} [{self.node}]" if self.node else self.name
 
 
+def source_schedule_name(slug: str) -> str:
+    return f"{slug}-source"
+
+
+class SourcesConfig(BaseModel):
+    """How this host runs the nodes' data-source scripts (`sources/<slug>.py`,
+    docs/data-sources.md). Which nodes run and when is each node's
+    `legacy.sync` (the admin node page's Data source tab); `{slug}` in a path
+    is the node's slug."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    python: str | None = None  # default: the ops worker's own interpreter
+    cwd: str | None = None  # default: this checkout's backend/
+    env_file: str | None = "/etc/fiesta/source-{slug}.env"
+    state_dir: str = "/var/lib/fiesta-ops/sources/{slug}"
+    owner_map: str | None = "/etc/fiesta/source-{slug}-owners.json"  # passed if it exists
+    timeout: float = 3600
+    notify: Literal["success", "failure", "both"] = "failure"
+
+    @field_validator("timeout", mode="before")
+    @classmethod
+    def _duration(cls, value):
+        return parse_duration(value)
+
+    def schedules(self, nodes) -> list[Schedule]:
+        """One `<slug>-source` schedule per node with a script and a `legacy:`
+        block, enabled when its `legacy.sync.enabled` is (a disabled one can
+        still be run by hand: `ops-run`, the admin page's Run now)."""
+        import sys
+
+        settings = get_settings()
+        backend = Path(__file__).resolve().parents[2]
+        out = []
+        for node in nodes:
+            script = node.source_script
+            if node.legacy is None or script is None:
+                continue
+            slug = node.node.slug
+
+            def fill(value: str | None, slug: str = slug) -> str | None:
+                return value.replace("{slug}", slug) if value else value
+
+            command = [self.python or sys.executable, str(script)]
+            command += ["--state-dir", fill(self.state_dir)]
+            owner_map = fill(self.owner_map)
+            if owner_map and Path(owner_map).is_file():
+                command += ["--owner-map", owner_map]
+            sync = node.legacy.sync
+            out.append(
+                Schedule(
+                    name=source_schedule_name(slug),
+                    node=slug,
+                    description=f"Sync {node.node.key} from its data source",
+                    enabled=sync.enabled,
+                    cron=sync.cron,
+                    command=command,
+                    cwd=self.cwd or str(backend),
+                    env_file=fill(self.env_file),
+                    env={
+                        "FIESTA_CONFIG_FILE": str(settings.config_file.resolve()),
+                        "FIESTA_NODE_CONFIG_SOURCE": "files",
+                    },
+                    timeout=self.timeout,
+                    notify=self.notify,
+                    expected_interval=2 * cron_max_gap(sync.cron) + 3600,
+                    summary_keys=["applied", "unchanged", "quarantined", "errors"],
+                )
+            )
+        return out
+
+
 class OpsConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     version: Literal[1] = Field(alias="fiesta-ops")
     slack: SlackConfig = Field(default_factory=SlackConfig)
     watchdog: WatchdogConfig = Field(default_factory=WatchdogConfig)
+    sources: SourcesConfig = Field(default_factory=SourcesConfig)
     schedules: list[Schedule] = Field(default_factory=list)
+
+    def with_sources(self, nodes) -> "OpsConfig":
+        """This file's schedules plus the nodes' source schedules (a schedule in
+        the file with the same name wins)."""
+        names = {s.name for s in self.schedules}
+        extra = [s for s in self.sources.schedules(nodes) if s.name not in names]
+        return self.model_copy(update={"schedules": [*self.schedules, *extra]})
 
     @model_validator(mode="after")
     def _unique(self):

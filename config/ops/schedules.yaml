@@ -16,6 +16,17 @@ watchdog:
   cron: "*/15 * * * *"   # missed-run check, in the ops worker
   realert: 24h           # repeat an alert this often while a schedule stays overdue
 
+# Data-source sync (docs/data-sources.md): a `<slug>-source` schedule for every
+# node with a `sources/<slug>.py` script, enabled and timed by the node's
+# `legacy.sync` (the admin node page's Data source tab; a publication takes
+# effect without a restart). This block is only how this host runs them.
+sources:
+  env_file: /etc/fiesta/source-{slug}.env      # FIESTA_SOURCE_API/_EMAIL/_PASSWORD + source read credentials
+  state_dir: /var/lib/fiesta-ops/sources/{slug}
+  owner_map: /etc/fiesta/source-{slug}-owners.json   # passed as --owner-map when it exists
+  timeout: 1h
+  notify: failure
+
 schedules:
   # OSU-MGR OpenSearch incremental update (github.com/osu-mgr/osu-mgr-pipeline).
   # Listing the ~1.4M S3 objects alone takes ~7 min; the lock keeps it from
@@ -29,25 +40,3 @@ schedules:
     timeout: 2h
     notify: both
     expected_interval: 26h
-
-  # KdD data source: Meteor KdD -> FIESTA KdD through the API's /v2/kdd/source
-  # (docs/data-sources.md). Does nothing while the API serves KdD in public
-  # mode. The env file holds the Meteor read credentials (FIESTA_OPENSEARCH_URL,
-  # FIESTA_S3_*), the API (FIESTA_SOURCE_API) and the KdD node admin it signs in
-  # as (FIESTA_SOURCE_EMAIL / _PASSWORD); never FIESTA_DATABASE_URL. Disabled
-  # until the operator has run it once by hand (OPERATOR_TODO).
-  - name: kdd-source
-    node: kdd
-    description: Sync KdD contributions from Meteor KdD (data-source mode)
-    enabled: false
-    cron: "20 * * * *"
-    command: [.venv/bin/python, ../sources/kdd.py, --state-dir, /var/lib/fiesta-ops/sources/kdd]
-    cwd: /srv/fiesta-ops/FIESTA/backend
-    env_file: /etc/fiesta/source-kdd.env
-    env:
-      FIESTA_CONFIG_FILE: ../config/fiesta.yaml
-      FIESTA_NODE_CONFIG_SOURCE: files
-    timeout: 30m
-    notify: failure
-    expected_interval: 3h
-    summary_keys: [applied, unchanged, quarantined, errors]

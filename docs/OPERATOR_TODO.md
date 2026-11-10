@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-10-25
+Last updated: 2026-11-10
 
 ## A — Decisions
 
@@ -45,6 +45,30 @@ Last updated: 2026-10-25
       as −180..180 where 1.0 allows 0..360; contribution 88 has no `lat`/`lon`. Decide
       per cause: fill values (a new version of each contribution), relax the rule in the
       model, or leave them flagged. Unblocks: nothing; CDR data quality only.
+- [ ] **CDR: OSU-MGR XRF left out of legacy `cdr-3`.** On 2026-10-28 the public XRF
+      scans of 46 OSU-MGR cores (164,572 rows) were added to `cdr-3`: appended to 28
+      existing contributions and 18 new ones (ids 666–683). Four cores were held back:
+      SLOR1909 1PU/3PU/4PU (cdr-3 #590–592), whose existing MST `mbs_corrected` is in
+      cm (−104..264) while the XRF is in m, and SLM1801/1UW, which has no OSU-MGR
+      section records and so no down-core depth. Decide: convert SLOR1909's MST depths
+      to m, or the XRF to cm, then add them; give 1UW section tops in OSU-MGR. Also, 235
+      more cores (691 files) have XRF under moratorium, to add as each one lifts.
+      Unblocks: complete XRF in CDR.
+- [ ] **CDR: cdr-3 #88 (HE0006/2JC) publishes XRF that OSU-MGR holds under
+      moratorium.** All ten of 2JC's XRF files are in `_moratorium_files` in the
+      `osu-mgr` index, yet cdr-3 shows 14,022 XRF rows publicly. Either the moratorium
+      ended and OSU-MGR was not updated, or CDR is publishing embargoed data. Ask the
+      OSU-MGR curators. Unblocks: CDR going live in FIESTA.
+- [ ] **CDR 1.0 lacks most XRF element columns.** The OSU-MGR scans carry `al`, `si`,
+      `p`, `s`, `v`, `cr`, `ba`, `la`, `ce`, `pr`, `nd` and, on some cruises, `ag`,
+      `as`, `bi`, `cd`, `co`, `mo`, `sb`, `sc`, `se`, `sn`, `th`, `u`, none in
+      `config/cdr/data_models/1.0.json`, so FIESTA's CDR import will flag them. Adding
+      columns is allowed; approve adding them before the cdr-3 import. Unblocks:
+      valid XRF rows in FIESTA CDR.
+- [ ] **Rotate the `fiesta` OpenSearch password.** It is hard-coded in
+      `osu-mgr/osu-mgr-pipeline` (`osu_mgr_to_cdr_pipeline.py`, `OPENSEARCH_HOST`,
+      committed; private repo). Move it to that repo's `.env` (already loaded) and
+      rotate it on MARFIK, then update FIESTA's `.env.prod`. Unblocks: nothing; security.
 - [ ] **MagIC contributions with no owner account.** 40 legacy handles (66 contributions)
       match no `er_users` account — deleted account ids such as `user8928` (11 records) and
       `user10068` (4), plus two records with the literal handle `undefined`. Map them with
@@ -102,6 +126,16 @@ Last updated: 2026-10-25
       without passwords, so every EarthRef login fails. Dry run, then apply:
       `make fiesta ENV_FILE=.env.prod ARGS="sync-legacy-users magic"` and again with
       `--apply`. Re-run until cutover to pick up legacy password changes (legacy wins).
+
+## 2026-11-10 — Martian records back on Earth
+
+- [ ] **Rebuild the magic and karar search indexes on dev** once the "remove the Mars
+  map" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`,
+  then `NODE=karar`). `search.bodies` no longer maps `Martian` to Mars, since those
+  samples are meteorites positioned where they were found. Until the rebuild, any
+  Martian location already indexed keeps its `_body_point` on Mars. The SPA has no
+  Mars map any more, so those rows are missing from the search map and from area
+  filters.
 
 ## 2026-09-11 — MARFIK legacy app deploys
 
@@ -382,11 +416,12 @@ level, MARFIK) and `fiesta-ct` runners are self-hosted. No deploy.yml has a
 workflow files *from the PR*, so a fork PR can add
 `.github/workflows/x.yml` with `on: pull_request` and
 `runs-on: [self-hosted, marfik-deploy]`, and it runs on MARFIK. Today only a
-first-time contributor's PR waits for approval (every repo's fork-PR policy is
-`first_time_contributors`). Do the first item on each runner host; the rest
-are layers on top.
+first-time contributor's PR waits for approval (MagIC, CDR, KArAr and KDD are
+still `first_time_contributors`; FIESTA requires approval for every external
+contributor since 2026-10-26). fiesta-ct has the guard (2026-10-26, see Done);
+MARFIK still needs it, and the rest are layers on top.
 
-- [ ] **Install the pre-job guard on MARFIK (and on fiesta-ct).** It refuses
+- [ ] **Install the pre-job guard on MARFIK** (done on fiesta-ct). It refuses
       every job whose workflow is not on an allowlist of
       `<repo>/.github/workflows/deploy.yml@refs/heads/<branch>` refs; a fork PR's
       ref is `…@refs/pull/<n>/merge`, so it can never match. As root, with
@@ -414,8 +449,8 @@ are layers on top.
       runner" step shows the hook and the deploy proceeds. A refused job fails
       with `runner-job-guard: refusing job: …` in that step. A new deploying
       workflow or branch needs a line here first.
-- [ ] **Require approval for all outside contributors' workflows** on FIESTA,
-      MagIC, CDR, KArAr and KDD (each repo → Settings → Actions → General →
+- [ ] **Require approval for all outside contributors' workflows** on MagIC,
+      CDR, KArAr and KDD (FIESTA done 2026-10-26; each repo → Settings → Actions → General →
       "Approval for running fork pull request workflows from contributors" →
       "Require approval for all external contributors"; or
       `gh api -X PUT repos/earthref/<repo>/actions/permissions/fork-pr-contributor-approval -f approval_policy=all_external_contributors`).
@@ -434,17 +469,14 @@ are layers on top.
 ## 2026-10-25 — Contribution modes and the KdD data source
 
 Nodes now run in public-contributions or data-source mode
-([data-sources.md](data-sources.md)). The code defaults to `public`; until the
-Meteor cutover a deployment should mirror its sources instead. The KdD sync
-(`sources/kdd.py`, schedule `kdd-source`, disabled) was tested on a local stack
-reading Meteor KdD. Synced records are parsed and indexed by the node's worker,
-so the "Run `fiesta worker` as a service on fiesta-ct" item above applies here too.
+([data-sources.md](data-sources.md)). Since 2026-10-26 `config/fiesta.yaml` says
+`source`, so dev mirrors every node and refuses uploads with no env change (when a
+node cuts over: `source,karar=public` there, or `FIESTA_CONTRIBUTIONS_MODE` on a
+host). Each node's sync schedule is on its admin page's **Data source** tab
+(`legacy.sync`, off by default); that tab also shows the last runs. Synced
+records are parsed and indexed by the node's worker, so the "Run `fiesta worker`
+as a service on fiesta-ct" item above applies here too.
 
-- [ ] **Set `FIESTA_CONTRIBUTIONS_MODE=source`** in the fiesta-ct env file the API
-      and worker units read, then restart the API. dev.earthref.org then mirrors
-      every node and answers uploads and edits with a 409 pointing at the Meteor
-      app (`links.website`); the SPA shows that notice instead of the upload button.
-      When a node cuts over, add an exception: `source,karar=public`.
 - [ ] **Create the KdD sync account on dev**: a dedicated account (e.g. a `sources@`
       address you control), made a KdD node admin in `/admin` — not a super admin.
       Its email and password go only in the MARFIK3 env file below.
@@ -459,12 +491,54 @@ so the "Run `fiesta worker` as a service on fiesta-ct" item above applies here t
 - [ ] **Run it once by hand on MARFIK3**, as the service user from
       `/srv/fiesta-ops/FIESTA/backend` with that env file loaded:
       `.venv/bin/python ../sources/kdd.py --state-dir /var/lib/fiesta-ops/sources/kdd --dry-run`,
-      then without `--dry-run`. Expect 8 applied and 256 quarantined until the KdD
-      ownership decision (§A). Then tell Claude, which flips `enabled: true` on
-      `kdd-source` in `config/ops/schedules.yaml` (hourly at :20).
+      then without `--dry-run` (both read `/etc/fiesta/source-kdd.env`, e.g. via
+      `set -a; . /etc/fiesta/source-kdd.env; set +a`). Expect 0 applied once
+      Claude's first dev run has landed, 256 quarantined until the KdD ownership
+      decision (§A). Then on `/KdD/admin/nodes/kdd?section=source` tick "Sync on a
+      schedule", Save to Draft and publish; the ops worker picks it up within a
+      minute, no restart.
 - [ ] **Check the dev reverse proxy's request body limit** for
       `PUT /v2/*/source/records/*` (multipart). KdD files are tens of KB; MagIC's
       reach hundreds of MB when its source sync follows.
+
+## 2026-11-07 — MagIC data source, hourly
+
+`sources/magic.py` keeps dev MagIC in step with Meteor MagIC. Its schedule
+`magic-source` is already on in git (`legacy.sync`: `enabled: true`, `40 * * * *`),
+so it starts with the MARFIK3 ops worker (§2026-10-01) as soon as the env file
+below exists; untick "Sync on a schedule" on `/MagIC/admin/nodes/magic?section=source`
+to pause it. Synced records still need the fiesta-ct worker (§2026-09-28), or
+dev must be drained by hand. A read-only comparison on 2026-11-07 found 7,614 of
+the 7,658 bulk-imported records unchanged, 40 new contributions and 35 changed,
+so the first run sends about 75 records.
+
+- [x] **Make the sync account a MagIC node admin** on dev (2026-11-09):
+      `source-sync@earthref.org` ("FIESTA sync", id 5423) is a node admin of every
+      served node (magic, kdd, cdr, karar, erda, osu-mgr, sc), not a super admin.
+      Its password is in the main checkout's gitignored `migration/kdd/source-sync.env`;
+      use the same values in `/etc/fiesta/source-<slug>.env` on MARFIK3.
+- [ ] **`/etc/fiesta/source-magic.env` on MARFIK3** (root:fiesta, 0640): the same
+      variables as `source-kdd.env`, with OpenSearch read on `magic` and `er_users`
+      and S3 read on `magic-activated-contributions`, `magic-contributions` and
+      `magic-private-contributions`. Create `/var/lib/fiesta-ops/sources/magic`
+      owned by the ops service user. Optional: copy this machine's
+      `.claude/worktrees/karar-legacy-sync/migration/magic/hashes.json` into it,
+      or the first run downloads ~2.5 GB from S3 just to hash it.
+- [ ] **Run it once by hand on MARFIK3** (as for KdD):
+      `.venv/bin/python ../sources/magic.py --state-dir /var/lib/fiesta-ops/sources/magic --dry-run`,
+      then without `--dry-run`. Dev was caught up from the laptop on 2026-11-09
+      (77 applied, 74 quarantined, `missing_from_source: 9`, errors 19014 and 19020:
+      no S3 object and no indexed tables in Meteor), so expect only what changed
+      since, but a cold state dir still takes ~30 min. The script exits 1 while
+      those two errors stand.
+- [x] **Decide what an `er_users` email change means** (§A; 2026-11-09: follow
+      the new email, applied in the laptop run). 30 MagIC
+      contributions changed owner email in `er_users` since September (17 from
+      one fsu.edu address to tufts.edu, 11 from a ucsd.edu address to an
+      unrelated gmail.com one, 2 others). The importer matches owners by
+      email, so the sync moves them to an account for the new address (created
+      without a password if missing) and leaves the old FIESTA account as it is.
+      Either accept that or merge the accounts before the first run.
 
 ## 2026-10-26 — SPA shell caching on fiesta-ct
 
@@ -485,6 +559,17 @@ so the "Run `fiesta worker` as a service on fiesta-ct" item above applies here t
 - [x] **Branch protection and Actions token on FIESTA** (2026-10-22): ruleset
       "Protect main" (PR + 1 approval + `CI` + `check-labels`, admin bypass PR-only),
       default `GITHUB_TOKEN` read-only, workflows cannot approve PRs.
+- [x] **Pre-job guard on fiesta-ct** (2026-10-26): `scripts/runner-job-guard.sh`
+      installed as `/etc/github-runner/job-guard.sh`, allowlist
+      `earthref/FIESTA/.github/workflows/deploy.yml@refs/heads/main`, wired via
+      `ACTIONS_RUNNER_HOOK_JOB_STARTED`; the runner refuses every other workflow.
+- [x] **Fork-PR approval on FIESTA** (2026-10-26): `all_external_contributors`
+      (verified via the API), so every fork PR's CI waits for a maintainer.
+- [x] **Write collaborators on FIESTA** (decided 2026-10-26): njarboe,
+      Swanson-Hysell and osu-argon keep write access; new developers work from
+      forks (CONTRIBUTING.md). `main` is protected by the ruleset above; the
+      runner guard covers workflows they push on other branches.
+
 ## Phase M — live migration and recovery gates
 
 - [ ] Supply and verify each node's full source inventory (public/private buckets,

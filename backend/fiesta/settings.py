@@ -153,7 +153,15 @@ class Settings(BaseSettings):
     # cutover, its Meteor app): user writes are refused and a node admin's sync
     # script writes through /v2/{node}/source. A comma-separated list, a mode
     # for every node plus `<slug>=<mode>` exceptions: `source,karar=public`.
-    contributions_mode: str = "public"
+    # Empty: the deployment file's `api.contributions_mode` (config/fiesta.yaml
+    # says `source` until the cutover); local stacks and tests set `public`.
+    contributions_mode: str = ""
+    # The per-node sync scripts (`<slug>.py`); empty: `sources/` beside the
+    # directory holding config_file.
+    sources_dir: Path | None = None
+    # The node plugins, one folder each (`<name>/plugin.py` + its UI, tests and
+    # README); empty: `plugins/` beside config_file (docs/plugins.md).
+    plugins_dir: Path | None = None
 
     @field_validator("contributions_mode")
     @classmethod
@@ -161,12 +169,22 @@ class Settings(BaseSettings):
         parse_contributions_mode(value)
         return value
 
-    def contributions_mode_for(self, slug: str) -> str:
-        default, nodes = parse_contributions_mode(self.contributions_mode)
-        return nodes.get(slug.lower(), default)
+    @property
+    def sources_path(self) -> Path:
+        return (self.sources_dir or self.config_file.resolve().parent.parent / "sources").resolve()
+
+    @property
+    def plugins_path(self) -> Path:
+        return (self.plugins_dir or self.config_file.resolve().parent / "plugins").resolve()
 
     @field_validator(
-        "s3_endpoint", "s3_bucket", "opensearch_ca_certs", "ops_config_file", mode="before"
+        "s3_endpoint",
+        "s3_bucket",
+        "opensearch_ca_certs",
+        "ops_config_file",
+        "sources_dir",
+        "plugins_dir",
+        mode="before",
     )
     @classmethod
     def _empty_is_none(cls, value):

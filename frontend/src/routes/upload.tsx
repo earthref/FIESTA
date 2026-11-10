@@ -1,5 +1,5 @@
 import { useLoginModal } from "../components/login-modal";
-import { SourceModeNotice } from "../components/source-mode-notice";
+import { isSourceMode, SourceModeNotice } from "../components/source-mode-notice";
 import { UploadWizard } from "../components/upload-wizard";
 import { useAuth } from "../lib/auth";
 import { useNodeConfig } from "../lib/config";
@@ -9,7 +9,7 @@ export function UploadPage() {
   const { user } = useAuth();
   const { openLogin } = useLoginModal();
 
-  if (config?.contributions_mode === "source") {
+  if (isSourceMode(config)) {
     return (
       <div>
         <h1 className="mb-3 text-xl font-semibold text-gray-900">Upload a contribution</h1>

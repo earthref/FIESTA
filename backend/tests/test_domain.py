@@ -806,6 +806,12 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
         "summary.contribution._contributor",
     ]
     assert by_key["map"].sort is None and not by_key["map"].filter_fields
+    # Header menus: listed tiles take the sidebar's facet lists instead of a
+    # text box, the map tile the area, the rest a text box.
+    assert by_key["map"].geospatial and not by_key["plot"].geospatial
+    assert by_key["geology"].facets == ["geologic_classes", "geologic_types", "lithologies"]
+    assert by_key["geology"].filter_fields == [] and by_key["method_codes"].facets
+    assert by_key["age"].facets == [] and by_key["age"].filter_fields
     # Summary values are strings, so a numeric column sorts by script.
     (script, tie) = sort_clauses(by_key["age"], "desc")
     assert script["_script"]["type"] == "number" and script["_script"]["order"] == "desc"
@@ -816,6 +822,10 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
     public = {c["key"]: c for c in osu_mgr_node.public_level(cores)["columns"]}
     assert public["core"]["cell"] == "title" and public["length"]["label"] == "Length (cm)"
     assert public["citation"]["sortable"] and public["citation"]["filterable"]
+    # A text column lists its values; a number, or `facets: []`, a text box.
+    assert public["method"]["facets"] == ["method"] and not public["method"]["filterable"]
+    assert public["length"]["facets"] == [] and public["length"]["filterable"]
+    assert public["start_date"]["facets"] == [] and public["start_date"]["filterable"]
     method = {c.key: c for c in level_columns(osu_mgr_node, cores)}["method"]
     assert sort_clauses(method, "asc")[0] == {
         "summary.cores.method.raw": {"order": "asc", "unmapped_type": "keyword", "missing": "_last"}
@@ -827,11 +837,14 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
         table="sites",
         columns=[
             GridColumn(cell="age", sortable=False, filterable=False),
-            GridColumn(column="site", sort_field="summary.sites.site.raw", numeric=True),
+            GridColumn(column="site", sort_field="summary.sites.site.raw", numeric=True, facets=[]),
+            GridColumn(cell="geology", facets=["lithologies"], filter_fields=["summary._all.x"]),
         ],
     )
-    age, site = level_columns(magic_node, level)
-    assert age.sort is None and age.filter_fields == []
+    age, site, geology = level_columns(magic_node, level)
+    assert age.sort is None and age.filter_fields == [] and age.facets == []
+    assert site.facets == [] and site.filter_fields == ["summary.sites.site"]
+    assert geology.facets == ["lithologies"] and geology.filter_fields == ["summary._all.x"]
     assert site.sort.type == "number" and site.sort.fields == ["summary.sites.site.raw"]
 
     # A filter matches every typed word as a prefix, special characters escaped.
@@ -849,6 +862,8 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
         GridColumn(cell="field")
     with pytest.raises(ValueError, match="takes no column"):
         GridColumn(cell="age", column="age")
+    with pytest.raises(ValueError, match="facets are column names"):
+        GridColumn(cell="geology", facets=["summary._all.lithologies"])
     with pytest.raises(ValueError, match="repeats grid columns"):
         SearchLevel(name="X", table="sites", columns=[GridColumn(cell="age")] * 2)
     levels = [*osu_mgr_node.search.levels]

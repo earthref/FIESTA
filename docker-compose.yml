@@ -115,6 +115,7 @@ services:
     environment: *backend-env
     volumes:
       - ./config:/config:ro
+      - ./sources:/sources:ro # the data-source scripts the admin page lists
     # FIESTA_REMOTE (docker-compose.remote.yml): never migrate a shared database.
     command: >-
       sh -c "{ [ $${FIESTA_REMOTE:-0} = 1 ] || fiesta init; } &&
@@ -154,7 +155,11 @@ services:
   # One image, built at "/"; nginx serves the SPA for every listed node and
   # proxies /v2/ to the API. The SPA reads its node from the first path segment.
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # The plugins' UI (config/plugins/<name>/*.tsx; docs/plugins.md).
+      additional_contexts:
+        plugins: ./config/plugins
     environment:
       FIESTA_NODES: ${FIESTA_NODE:-magic}
     ports:

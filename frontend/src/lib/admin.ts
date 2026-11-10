@@ -162,6 +162,8 @@ export interface NodeSettings {
   features?: { plugins?: string[] };
   /** Whether production serves the node's API and web app (both default on). */
   publish?: { api?: boolean; web?: boolean };
+  /** The node's data source and its scheduled sync (docs/data-sources.md). */
+  legacy?: { kind?: string; source_id?: string; sync?: { enabled?: boolean; cron?: string } };
   /** Per-plugin options, keyed by plugin name. */
   plugins?: Record<string, Record<string, unknown>>;
   [key: string]: unknown;
@@ -194,6 +196,7 @@ export interface SettingsColumn {
   sort_field?: string;
   numeric?: boolean;
   filter_fields?: string[];
+  facets?: string[];
 }
 
 /** A `pages` entry as written in the YAML. */

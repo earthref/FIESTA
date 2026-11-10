@@ -1,15 +1,17 @@
 """Contribution modes and the data-source sync client (no infrastructure)."""
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
-from conftest import CONFIG_DIR
 
 from fiesta.nodeconfig import load_deployment
 from fiesta.services.legacy import SourceRecord, record_fingerprint
 from fiesta.settings import get_settings, parse_contributions_mode
 from fiesta.sources.client import SourceAPI
+
+CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
 
 
 @pytest.fixture(scope="session")
@@ -51,7 +53,6 @@ def test_mode_per_node_and_write_guard(kdd_node, mode):
 
     mode("source,kdd=source,karar=public")
     assert kdd_node.contributions_mode == "source"
-    assert get_settings().contributions_mode_for("karar") == "public"
     assert "earthref.org/KdD" in source_mode_message(kdd_node)
     require_public_contributions(request("GET"), kdd_node)
     with pytest.raises(HTTPException) as refused:
@@ -115,7 +116,7 @@ async def test_sync_meteor_sends_only_changed_records(kdd_node, tmp_path, monkey
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "GET":
-            assert request.url.path == "/v2/kdd/source"
+            assert request.url.path == "/v2/kdd/source/checkpoints"
             return httpx.Response(
                 200,
                 json={
@@ -159,3 +160,55 @@ async def test_sync_meteor_does_nothing_in_public_mode(kdd_node, tmp_path, monke
     api = SourceAPI("http://fiesta.test", "kdd", transport=transport)
     summary = await meteor.sync_meteor(kdd_node, api, tmp_path)
     assert summary["skipped"] == "node is in public mode"
+
+
+def test_source_schedules_follow_node_sync(kdd_node, tmp_path, monkeypatch):
+    """A node with a script gets a `<slug>-source` schedule timed and enabled by
+    its `legacy.sync`; a node without one gets none; the file's own wins."""
+    from fiesta.ops.config import parse_ops_config
+
+    monkeypatch.setattr(get_settings(), "sources_dir", tmp_path)
+    (tmp_path / "kdd.py").write_text("")
+    owners = tmp_path / "kdd-owners.json"
+    owners.write_text("{}")
+    legacy = kdd_node.legacy.model_copy(
+        update={"sync": kdd_node.legacy.sync.model_copy(update={"enabled": True})}
+    )
+    node = kdd_node.model_copy(update={"legacy": legacy})
+    karar = load_deployment(CONFIG_DIR / "karar.yaml").node_for("karar")
+    config = parse_ops_config(
+        f"""
+fiesta-ops: 1
+sources:
+  env_file: /etc/fiesta/source-{{slug}}.env
+  owner_map: {tmp_path}/{{slug}}-owners.json
+"""
+    ).with_sources([node, karar])
+    (schedule,) = config.schedules
+    assert schedule.name == "kdd-source" and schedule.enabled and schedule.cron == "20 * * * *"
+    assert schedule.env_file == "/etc/fiesta/source-kdd.env"
+    assert schedule.command[1] == str(tmp_path / "kdd.py")
+    assert schedule.command[-2:] == ["--owner-map", str(owners)]
+    assert schedule.expected_interval > 3600
+    assert kdd_node.legacy.sync.enabled is False  # the checked-in default
+
+
+def test_checked_in_source_scripts_are_scheduled(monkeypatch):
+    """Every `sources/<slug>.py` is a served node with a Meteor `legacy:` block,
+    so the ops worker gives it a schedule; MagIC's is on, hourly."""
+    from fiesta.ops.config import parse_ops_config
+
+    sources = CONFIG_DIR.parent / "sources"
+    if not sources.is_dir():  # the Phase M image carries config/ but not sources/
+        pytest.skip("no sources/ in this checkout")
+    monkeypatch.setattr(get_settings(), "sources_dir", sources)
+    scripts = sorted(p.stem for p in sources.glob("*.py"))
+    assert {"kdd", "magic"} <= set(scripts)
+    nodes = [load_deployment(CONFIG_DIR / "fiesta.yaml").node_for(s) for s in scripts]
+    assert all(n.legacy is not None and n.legacy.kind == "meteor" for n in nodes)
+    config = parse_ops_config("fiesta-ops: 1\n").with_sources(nodes)
+    schedules = {s.name: s for s in config.schedules}
+    assert set(schedules) == {f"{s}-source" for s in scripts}
+    magic = schedules["magic-source"]
+    assert magic.enabled and magic.cron == "40 * * * *"
+    assert magic.command[1] == str(sources / "magic.py")

@@ -33,6 +33,8 @@ from fiesta.ops.config import Schedule
 logger = logging.getLogger(__name__)
 
 SUMMARY_ENV = "FIESTA_OPS_SUMMARY_JSON"
+# "cron" or "manual ..." (ops-run, the admin page's Run now), for the job's own reports.
+TRIGGER_ENV = "FIESTA_OPS_TRIGGER"
 TAIL_LINES = 40
 KILL_GRACE = 30.0
 # Inherited variables a job never sees: FIESTA's own settings and secrets
@@ -255,7 +257,7 @@ async def run_callable(
     )
 
 
-async def run_schedule_target(schedule: Schedule) -> RunResult:
+async def run_schedule_target(schedule: Schedule, trigger: str = "cron") -> RunResult:
     if schedule.callable:
         return await run_callable(schedule.callable, schedule.kwargs, max_seconds=schedule.timeout)
     assert schedule.command is not None
@@ -263,6 +265,7 @@ async def run_schedule_target(schedule: Schedule) -> RunResult:
         env = build_env(schedule)
     except OSError as exc:
         return RunResult(ok=False, duration=0.0, error=f"env_file: {exc}")
+    env[TRIGGER_ENV] = trigger
     log = logging.getLogger(f"fiesta.ops.job.{schedule.name}")
     return await run_command(
         schedule.command,

@@ -78,6 +78,20 @@ def _grid_filters(node, table: str, filters: list[str] | None) -> list[dict]:
     return clauses
 
 
+def _facet_names(node, table: str, facets: bool, facet: list[str] | None) -> list[str]:
+    """The columns aggregated as facet buckets: `facet=<column>` (a sidebar
+    facet, or a facet of a grid column's header menu on the level), else with
+    `facets` the sidebar's."""
+    if not facet:
+        return node.search.facets if facets else []
+    allowed = set(node.search.facets)
+    for column in _grid_columns(node, table).values():
+        allowed.update(column.facets)
+    if bad := [f for f in facet if f not in allowed]:
+        raise HTTPException(422, f"facet must be a sidebar or grid column facet, got {bad}")
+    return list(dict.fromkeys(facet))
+
+
 def _parse_ranges(ranges: list[str] | None) -> list[dict] | None:
     """`range=summary.poles.age:0.5:120` -> {field, gte, lte} (blank = open)."""
     if not ranges:
@@ -158,6 +172,7 @@ async def search(
     size: int = Query(10, ge=1, le=1000),
     from_: int = Query(0, ge=0, alias="from"),
     facets: bool = False,
+    facet: Annotated[list[str] | None, Query()] = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
     sort: str | None = None,
@@ -169,12 +184,14 @@ async def search(
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
     level = next((lvl for lvl in _all_levels(node) if lvl.table == table), None)
+    facet_names = _facet_names(node, table, facets, facet)
+    facets = bool(facet_names) or facets
     body = build_search_body(
         table=table,
         query=query,
         size=size,
         from_=from_,
-        facets=node.search.facets if facets else None,
+        facets=facet_names or None,
         count_field=level.count_field if level else None,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
@@ -192,7 +209,7 @@ async def search(
             positioned = {"filter": POSITIONED}
             aggs["_n_mapped"] = positioned
             # And per facet value, so the sidebar counts follow the Map sub-tab.
-            for name in node.search.facets if facets else []:
+            for name in facet_names:
                 aggs[name].setdefault("aggs", {})["mapped"] = positioned
     try:
         response = await get_opensearch().search(index=node.search_index, body=body)

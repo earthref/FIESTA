@@ -43,6 +43,13 @@ schedules:
     summary_keys: []          # which summary fields the success message shows
 ```
 
+**Node source schedules.** Besides this list, the ops worker runs a
+`<slug>-source` schedule for every node with a data-source sync script
+(`sources/<slug>.py`), timed and enabled by the node's `legacy.sync` (the admin
+node page's Data source tab), and restarts itself on a published change once no
+ops job is running. The file's `sources:` block says how this host runs them;
+see [data-sources.md](data-sources.md#schedule-and-the-admin-page).
+
 Instead of `command`, a job can name a Python `callable`
 (`package.module:function`, sync or async) with `kwargs`; it runs inside the
 ops worker, and a dict it returns is the run summary.

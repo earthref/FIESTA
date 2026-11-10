@@ -6,8 +6,8 @@ services serve it uncacheable, or slowly):
                                     Web Mercator's ±85.05°
     /v2/basemap/arctic              Esri's Arctic version of it, over the band
                                     past that
-    /v2/basemap/moon, /mars         the other planetary bodies' thumbnail
-                                    images, pole to pole
+    /v2/basemap/moon                the Moon's thumbnail image, pole
+                                    to pole
     /v2/basemap/undersea-features   the IHO-IOC GEBCO Gazetteer of Undersea
                                     Feature Names as GeoJSON, for the map labels
 
@@ -35,7 +35,7 @@ POLAR_DEGREES = POLAR_ROWS * 180 / HEIGHT
 ESRI = "https://services.arcgisonline.com/arcgis/rest/services"
 EXPORT = "bboxSR=4326&imageSR=4326&format=jpg&f=image"
 # The other bodies' thumbnails, from USGS Astrogeology's WMS: the LROC WAC
-# mosaic of the Moon and the Viking MDIM 2.1 colour mosaic of Mars, to the
+# mosaic of the Moon, to the
 # poles (so without the Earth images' polar patch-up).
 USGS = "https://planetarymaps.usgs.gov/cgi-bin/mapserv"
 WMS = (
@@ -48,7 +48,6 @@ IMAGES = {
     "arctic": f"{ESRI}/Polar/Arctic_Ocean_Base/MapServer/export"
     f"?bbox=-180,{90 - POLAR_DEGREES},180,90&size={WIDTH},{POLAR_ROWS}&{EXPORT}",
     "moon": f"{USGS}?map=/maps/earth/moon_simp_cyl.map&LAYERS=LROC_WAC&{WMS}",
-    "mars": f"{USGS}?map=/maps/mars/mars_simp_cyl.map&LAYERS=MDIM21_color&{WMS}",
 }
 MAX_AGE = 24 * 3600
 _cache: dict[str, tuple[float, str, bytes]] = {}

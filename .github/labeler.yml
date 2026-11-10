@@ -16,3 +16,4 @@ internal:
         - '!**/*.md'
         - '!frontend/**'
         - '!backend/**'
+        - '!config/plugins/**'

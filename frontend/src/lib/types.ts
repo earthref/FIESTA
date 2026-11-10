@@ -42,7 +42,12 @@ export interface GridColumn {
   subtitle_column?: string;
   format?: "bytes";
   sortable: boolean;
+  /** Its header menu has a text box (`filter=<key>:<text>`). */
   filterable: boolean;
+  /** Its header menu's facet lists: summary._all columns, `<column>:"<value>"` tokens. */
+  facets: string[];
+  /** Its header menu has the Map tab's area (a map tile on a level with positions). */
+  geospatial: boolean;
 }
 
 /** features.home.resources entry: a resource card (title lines split on "\n"). */
@@ -118,8 +123,8 @@ export interface NodeConfig {
   /** The search map's "Color by" menu (node YAML `search.map_colors`). */
   map_colors?: MapColorOption[];
   /** The planetary bodies besides Earth a record can be on (node YAML
-   * `search.bodies`): the search map's Earth / Moon / Mars buttons. */
-  bodies?: ("moon" | "mars")[];
+   * `search.bodies`): the search map's Earth / Moon buttons. */
+  bodies?: "moon"[];
   /** Content pages (node YAML `pages`), in menu order. */
   pages: NodePage[];
   features: {

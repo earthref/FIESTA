@@ -58,7 +58,7 @@ search:
       count_field: summary.references._n_results
       columns:
         - { cell: title, column: citation, subtitle_column: url }
-        - { column: reference, label: ERR ID, width: 100 }
+        - { column: reference, label: ERR ID, width: 100, facets: [] }
         - { cell: contributed }
   # Searchable without a tab of their own.
   extra_types: [contours, files]

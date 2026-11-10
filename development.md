@@ -88,8 +88,18 @@ portal list) every link stays on production.
 ## Seed data and local login
 
 `make up` starts Docker infrastructure, the API, the worker and the frontend;
-`make seed` then loads, for every node in `FIESTA_NODE`, the manifest its YAML
-selects under `development.seed_manifest` (`config/<node>/seeds/`). On page load, local development
+`make seed` then seeds every node in `FIESTA_NODE`. It creates the accounts, the
+workspace and the private fixtures (a draft with revision history and an invalid
+draft) from the manifest the node's YAML selects under `development.seed_manifest`
+(`config/<node>/seeds/`). It also copies the node's 50 most recent public
+contributions from `dev.earthref.org` that the stack does not have yet; they keep
+their public IDs, versions and DOIs and are owned by Local Developer. A node
+dev.earthref.org has no public data for (today every node but MagIC and KArAr)
+gets no public contributions. `ARGS="--public 10"` changes the count (`0` skips
+the import), `ARGS="--source https://…"` reads another FIESTA deployment, and
+`ARGS=--fixtures` loads the manifest's hand-made public examples instead,
+offline; the phase-m integration test uses that mode. Re-running the seed
+fetches only contributions published on the source since the last run. On page load, local development
 automatically signs in as Local Developer (`developer@example.test`) once seeded;
 the account is a super admin (`admin: true` in the manifests), so `/admin` works.
 Sign-out lasts until the next page refresh. An existing valid login is preserved;
@@ -99,18 +109,21 @@ The viewer can read shared
 workspace contributions but cannot edit them. Repeated seeds preserve developer
 edits and settings. No production credentials, MARFIK, or AWS are needed.
 
-`make import-public NODE=magic IDS="20818 20848"` copies real public contributions
-from `dev.earthref.org` (`ARGS="--source https://…"` for another FIESTA deployment)
-with their IDs, versions and DOIs, owned by Local Developer; `ARGS=--versions` also
-imports each ID's earlier published versions. Re-running is a no-op, and it also
-needs no credentials. Seed fixtures take the lowest free IDs, so import IDs that small
-(e.g. `NODE=karar IDS=3`) before `make seed`, or after a `make clean`.
+`make import-public NODE=magic IDS="20818 20848"` copies particular public
+contributions the same way (`ARGS="--source https://…"` for another FIESTA
+deployment); `ARGS=--versions` also imports each ID's earlier published versions.
+Re-running is a no-op, and it also needs no credentials. The seed's private
+fixtures take IDs above the imported ones, but an ID a fixture already holds
+cannot be imported later, so import IDs below that before `make seed`, or after a
+`make clean`.
 
 A local stack runs every node in **public contributions** mode (upload, publish,
-new versions). To try a node in **data-source** mode, as deployments run until the
-cutover from Meteor, set `FIESTA_CONTRIBUTIONS_MODE=public,kdd=source` in `.env`
-(or on the `make up` line): the SPA stops offering uploads for KdD and
-`sources/kdd.py` can sync it from Meteor KdD. See [docs/data-sources.md](docs/data-sources.md).
+new versions), although `config/fiesta.yaml` puts deployments in **data-source**
+mode until the cutover from Meteor. To try a node in data-source mode, set
+`FIESTA_CONTRIBUTIONS_MODE=public,kdd=source` in `.env` (or on the `make up`
+line): the SPA stops offering uploads for KdD, `/admin/nodes/kdd?section=source`
+shows its sync, and `sources/kdd.py` can sync it from Meteor KdD. See
+[docs/data-sources.md](docs/data-sources.md).
 
 `make test-phase-m` builds and runs all-node seed, revision and migration checks in
 an isolated Docker network without external runtime connectivity. Image/dependency

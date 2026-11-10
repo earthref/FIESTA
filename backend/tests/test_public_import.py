@@ -3,7 +3,7 @@
 import httpx
 
 from fiesta.services.legacy import load_inventory
-from fiesta.services.public_import import build_inventory, source_id
+from fiesta.services.public_import import build_inventory, recent_public_ids, source_id
 from fiesta.services.revisions import digest
 
 SOURCE = "https://fiesta.example.test"
@@ -81,3 +81,22 @@ async def test_local_ids_are_never_overwritten(tmp_path):
     # An earlier import from the same source is refreshed, and its successor links to it.
     _, inventory = await _build(tmp_path, [20818], local_ids={18742}, imported_ids={18742})
     assert inventory.records[0].previous_id == 18742
+
+
+async def test_skip_local_leaves_local_ids_alone(tmp_path):
+    report, inventory = await _build(
+        tmp_path, [20818, 18742], local_ids={18742, 20818}, imported_ids={20818}, skip_local=True
+    )
+    assert inventory.records == [] and report["errors"] == [] and report["skipped"] == 2
+
+
+async def test_recent_public_ids():
+    def handler(request):
+        if request.url.path != "/v2/magic/search/contribution":
+            return httpx.Response(404, json={"detail": "unknown repository 'erda'"})
+        assert dict(request.url.params) == {"size": "50", "sort": "recent"}
+        return httpx.Response(200, json={"total": 2, "results": [_summary(20818, 8, True)]})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+        assert await recent_public_ids("magic", 50, source=SOURCE + "/", http=http) == [20818]
+        assert await recent_public_ids("erda", 50, source=SOURCE, http=http) == []

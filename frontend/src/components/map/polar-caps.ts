@@ -1,5 +1,6 @@
-import type maplibregl from "maplibre-gl";
+import type * as maplibregl from "maplibre-gl";
 import { MERCATOR_LAT, type PolarCap, type PolarTiles, type Pole } from "./basemap";
+import { isOccluded, mapSize } from "./map-view";
 
 // MapLibre's globe is drawn from Web Mercator tiles, which stop at ±85.05°;
 // past that it stretches the tiles' edge rows out to the pole. This custom
@@ -138,7 +139,7 @@ const MAX_MAGNIFICATION = 1.5;
 const selectTiles = (map: maplibregl.Map, tiles: PolarTiles, pole: Pole, edge: number) => {
   // The cap's radius.
   const reach = stereoRho(tiles, edge);
-  const { width, height } = map.transform;
+  const { width, height } = mapSize(map);
   const selected: TileId[] = [];
   const visit = (level: number, row: number, col: number) => {
     const { size, left, top } = tileBounds(tiles, level, row, col);
@@ -159,8 +160,8 @@ const selectTiles = (map: maplibregl.Map, tiles: PolarTiles, pole: Pole, edge: n
           x0 + ((x1 - x0) * i) / (SAMPLES - 1),
           y1 - ((y1 - y0) * j) / (SAMPLES - 1),
         );
-        const lngLat = { lng: lon, lat: signed(pole, lat) } as maplibregl.LngLat;
-        visible ||= !map.transform.isLocationOccluded(lngLat);
+        const lngLat = { lng: lon, lat: signed(pole, lat) };
+        visible ||= !isOccluded(map, lngLat);
         const p = map.project(lngLat);
         points[j].push(p);
         [minX, minY, maxX, maxY] = [
@@ -518,12 +519,6 @@ ${VERTEX_SOURCE}`;
     // GL objects are created and changed only in render(): MapLibre caches GL
     // state and resets its cache just around that call.
     onAdd(m, context) {
-      // MapLibre 5 renders with WebGL2; the caps are skipped otherwise.
-      if (
-        typeof WebGL2RenderingContext === "undefined" ||
-        !(context instanceof WebGL2RenderingContext)
-      )
-        return;
       map = m;
       gl = context;
     },

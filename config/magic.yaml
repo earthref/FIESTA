@@ -83,9 +83,10 @@ search:
     - { label: Mass Susceptibility, field: susc_chi_mass, unit: m³/kg, log: true }
   # Locations on another planetary body, by their location_type: they and
   # their sites, samples, ... are mapped on that body's globe, not Earth's.
+  # Martian is left out: those samples are meteorites, mapped where found.
   bodies:
     column: location_type
-    values: { Lunar: moon, Martian: mars }
+    values: { Lunar: moon }
 
 storage:
   bucket: magic
@@ -234,7 +235,8 @@ features:
           and
           <a href="https://developers.google.com/search/docs/guides/intro-structured-data" target="_blank" rel="noreferrer"><b>Google Search with Structured Data</b></a>.
 
-# Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).
+# Legacy Meteor sources, read by `fiesta legacy-inventory` (Phase M5/M6) and by
+# the data-source sync `sources/magic.py` (docs/data-sources.md).
 # `magic-activated-contributions` is the append-only archive, `magic-contributions`
 # the latest-only mirror; `magic-private-contributions` is fed by an external
 # pipeline. Only the canonical `.txt` is imported; the `.zip` companions
@@ -244,6 +246,9 @@ legacy:
   index: magic
   buckets: [magic-activated-contributions, magic-contributions, magic-private-contributions]
   users_index: er_users
+  sync:
+    enabled: true
+    cron: "40 * * * *"  # hourly; KdD keeps the default :20
 
 # Local fixtures only; never read during normal application startup.
 development:
