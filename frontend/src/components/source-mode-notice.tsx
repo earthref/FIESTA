@@ -1,9 +1,14 @@
 import type { NodeConfig } from "../lib/types";
 
+/** The node mirrors its data source: no uploads, no private workspace here. */
+export function isSourceMode(config?: NodeConfig): boolean {
+  return config?.contributions_mode === "source";
+}
+
 /** Where to contribute while a node mirrors its data source (contributions_mode
  * "source"); nothing when the node takes contributions here. */
 export function SourceModeNotice({ config }: { config?: NodeConfig }) {
-  if (config?.contributions_mode !== "source") return null;
+  if (!config || !isSourceMode(config)) return null;
   const website = config.links.website;
   return (
     <div className="mb-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-gray-800">
