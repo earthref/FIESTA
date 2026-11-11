@@ -100,7 +100,7 @@ CSS facts:
 
 ### Filter sidebar
 
-- Fixed **width: 275px** column: `div{display:flex; flexDirection:column; height:100%; width:'275px'}` (`search.jsx:1416-1422`).
+- Fixed **width: 275px** column: `div{display:flex; flexDirection:column; height:100%; width:'275px'}` (`search.jsx:1416-1422`). FIESTA: 220px since 2026-11-10 — the sidebar only lists the filters and their applied values (the controls are in modals), and 220px still fits the Filters tab and the Clear Filters button.
 - **Header bar**: `ui top attached tabular small menu` inline `paddingLeft:1em` (`:1426`). Active `item` "Filters" with `styles.activeTab` (#F0F0F0). Right side `right aligned item` `padding:0 1em` holding a Clear-Filters button: `ui small compact button` + (`<color>` when active else `basic disabled`), inline `padding:0.5em`, icon `remove circle` (`:1432-1448`).
 - **Filters scroll area**: `ui small basic attached segment` with inline `styles.filters` = `{whiteSpace:nowrap; overflowY:scroll; border:none; flex:1; margin:0; width:100%; padding:0}` (`search.jsx:653-661`, used `:1454`).
 - **Each filter block**: inline `styles.filter` = `{padding:0.25em 1em 0.5em; borderBottom:1px solid #D4D4D5}` (`search.jsx:662-665`). So each accordion section is separated by a 1px `#D4D4D5` divider.
