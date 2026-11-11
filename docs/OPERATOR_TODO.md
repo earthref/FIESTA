@@ -58,13 +58,15 @@ Last updated: 2026-11-10
       to m, or the XRF to cm, then add them; give 1UW section tops in OSU-MGR. Also, 235
       more cores (691 files) have XRF under moratorium, to add as each one lifts.
       Unblocks: complete XRF in CDR.
-- [ ] **CDR: cdr-3 #88 (HE0006/2JC) publishes XRF that OSU-MGR holds under
+- [ ] **CDR: cdr-3 #88 (HE0006/2JC) carries XRF that OSU-MGR holds under
       moratorium.** All ten of 2JC's XRF files are in `_moratorium_files` in the
-      `osu-mgr` index, yet cdr-3 shows 14,022 XRF rows publicly. Either the moratorium
-      ended and OSU-MGR was not updated, or CDR is publishing embargoed data. Ask the
-      OSU-MGR curators. Unblocks: CDR going live in FIESTA. Until they answer,
-      `legacy.exclude_ids: [88]` in `config/cdr.yaml` withholds #88 from every CDR
-      sync (decided 2026-11-10); remove it from that list to release #88.
+      `osu-mgr` index, and cdr-3 #88 holds 14,022 of those XRF rows. Corrected
+      2026-11-10: #88 is the one cdr-3 record that is not activated, so Meteor CDR
+      does not publish it (its 682 public contributions are the other 682). Ask the
+      OSU-MGR curators whether the moratorium has ended. Until they answer,
+      `legacy.exclude_ids: [88]` in `config/cdr.yaml` keeps #88 out of FIESTA
+      entirely (decided 2026-11-10); remove it from that list to sync it as a private
+      contribution, or once released.
 - [ ] **CDR 1.0 lacks most XRF element columns.** The OSU-MGR scans carry `al`, `si`,
       `p`, `s`, `v`, `cr`, `ba`, `la`, `ce`, `pr`, `nd` and, on some cruises, `ag`,
       `as`, `bi`, `cd`, `co`, `mo`, `sb`, `sc`, `se`, `sn`, `th`, `u`, none in
@@ -605,8 +607,8 @@ so the first run sends about 75 records.
 
 On 2026-11-10 Claude ran `sources/karar.py`, `kdd.py` and the new `cdr.py` from the
 laptop against dev (as `source-sync@earthref.org`): KArAr 29 applied, KdD 264 (owner
-map: "Roger Nielsen" → `rnielsen`), CDR 682 (owner map: handle `cdr` →
-`admin@osu-mgr.org`; #88 withheld by `legacy.exclude_ids`). `admin@osu-mgr.org` had no
+map: "Roger Nielsen" → `rnielsen`), CDR 682, every contribution Meteor CDR publishes (owner map: handle `cdr` →
+`admin@osu-mgr.org`; the unactivated #88 withheld by `legacy.exclude_ids`). `admin@osu-mgr.org` had no
 EarthRef account, so the CDR owner map declares it under `owner_accounts` and dev
 created it, without a password, on the first record. The owner maps are in the
 `node-source-syncs` worktree's gitignored `migration/<slug>/owner_map.json`.

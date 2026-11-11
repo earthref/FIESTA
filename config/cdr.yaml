@@ -120,8 +120,8 @@ legacy:
   # `legacy-inventory --owner-map` (owner emails never go in checked-in config).
   buckets: []
   users_index: er_users
-  # #88 (HE0006/2JC) publishes XRF that OSU-MGR holds under moratorium; withheld
-  # until the curators confirm it has ended (docs/OPERATOR_TODO.md, decided 2026-11-10).
+  # #88 (HE0006/2JC, unactivated in cdr-3) holds XRF that OSU-MGR keeps under
+  # moratorium; withheld until the curators answer (docs/OPERATOR_TODO.md, 2026-11-10).
   exclude_ids: [88]
 
 # Local fixtures only; never read during normal application startup.
