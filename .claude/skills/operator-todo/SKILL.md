@@ -11,7 +11,7 @@ said in chat and not written here is lost by the next session.
 ## When invoked
 
 1. Read `docs/OPERATOR_TODO.md` in full and `git log --since=<its "Last updated" date> --oneline`.
-2. Collect from THIS session every action that requires the operator. The test: does it need a secret value, money, production access, a DNS/vendor console, or a product judgement call? If Claude could do it with the repo and a local stack alone, it is NOT an operator item — do it or leave it in ROADMAP.md.
+2. Collect from THIS session every action that requires the operator. The test: does it need a secret value, money, production access, a DNS/vendor console, or a product judgement call? If Claude could do it with the repo and a local stack alone, it is NOT an operator item — do it or leave it in docs/ROADMAP.md.
 3. For each item, record: what to do (exact env var / setting / URL), why it matters (which roadmap item it unblocks), and what Claude will do AFTER it is done.
 4. If the user reported something done: move it to `## Done` with the date and the observed effect, and remove follow-ups it unblocked that Claude has since completed.
 5. Prune: drop items superseded by code changes (check the repo, not memory); merge duplicates; keep section letters stable (A decisions, B credentials/access, C data, then dated sections).
@@ -19,6 +19,6 @@ said in chat and not written here is lost by the next session.
 
 ## Rules
 
-- Env var names must be the ones the code actually reads — grep `backend/fiesta/settings.py` (`FIESTA_` prefix) and `frontend/vite.config.ts` (`VITE_`) before writing one; never guess.
+- Env var names must be the ones the code actually reads — grep `fiesta/backend/fiesta/settings.py` (`FIESTA_` prefix) and `fiesta/frontend/vite.config.ts` (`VITE_`) before writing one; never guess.
 - Never put a secret VALUE here, only the name.
-- Node-specific settings do not belong in env vars at all — they go in `config/<node>.yaml`; if an "operator item" is really a YAML edit, it is Claude's work.
+- Node-specific settings do not belong in env vars at all — they go in `configurations/<node>.yaml`; if an "operator item" is really a YAML edit, it is Claude's work.

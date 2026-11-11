@@ -9,11 +9,11 @@ internal:
     - changed-files:
       - any-glob-to-any-file:
         - .github/**
-        - scripts/**
+        - fiesta/scripts/**
         - .gitignore
         - .pre-commit-config.yaml
       - all-globs-to-all-files:
         - '!**/*.md'
-        - '!frontend/**'
-        - '!backend/**'
-        - '!config/plugins/**'
+        - '!fiesta/frontend/**'
+        - '!fiesta/backend/**'
+        - '!configurations/plugins/**'

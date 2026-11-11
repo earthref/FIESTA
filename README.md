@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png?raw=true"/>
+  <img src="docs/logo.png?raw=true"/>
 </p>
 <h1 align="center">FIESTA</h1>
 <p align="center">
@@ -11,9 +11,9 @@ FIESTA is the platform behind the EarthRef.org data repositories (nodes):
 [KArAr](https://earthref.org/KArAr).
 
 One codebase serves any node. A deployment is fully described by a single YAML
-file in [`config/`](config/) — node name, branding colors, OpenSearch index,
+file in [`configurations/`](configurations/) — node name, branding colors, OpenSearch index,
 storage bucket, data model, controlled vocabularies, summarization hierarchy,
-and enabled features. `config/fiesta.yaml` lists the nodes one API process
+and enabled features. `configurations/fiesta.yaml` lists the nodes one API process
 serves; `FIESTA_NODE` narrows that list for a local stack.
 
 ## Architecture
@@ -45,7 +45,7 @@ make up                       # infra + one API + one worker + one frontend for 
 Everything runs in local Docker containers: no MARFIK, AWS or production
 credentials, and no EarthRef account. http://localhost:8080/MagIC/ signs you
 in as Local Developer (`developer@example.test`, a super admin) as soon as the
-stack is up. See [CONTRIBUTING.md](CONTRIBUTING.md)
+stack is up. See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
 to make a change.
 
 Run `make` for all targets (tests, linting, e2e, rebuild, local dev servers).
@@ -67,7 +67,7 @@ each node in `FIESTA_NODE` under its key, the same layout as `earthref.org/MagIC
 running nodes to this frontend and every other node to earthref.org.
 
 - RustFS (S3) console: http://localhost:9001/rustfs/console/ · Mailpit (dev email): http://localhost:8025
-- Base paths and the multi-node layout in a deployment: see [development.md](development.md).
+- Base paths and the multi-node layout in a deployment: see [docs/development.md](docs/development.md).
 
 Each node gets a private draft with revision history, an invalid draft, and its
 50 most recent public contributions from dev.earthref.org (keeping their IDs and
@@ -79,16 +79,27 @@ from dev.earthref.org. `make user EMAIL=… NAME=…` creates another account.
 
 ## Layout
 
+The repository splits what node developers work on from the platform itself:
+
 ```
-config/         fiesta.yaml + per-node YAMLs, data models / vocabularies (JSON)
-config/plugins/ node plugins, one folder each: backend, UI, tests, docs (docs/plugins.md)
-backend/        Python package `fiesta` (the FastAPI app, worker, CLI)
-frontend/       SPA (one build serves any node)
-docs/api.md     API contract
-old-backend/    Legacy Koa/OpenSearch API — reference for porting remaining features
+configurations/            what node developers edit
+  fiesta.yaml              the nodes one API serves
+  <node>.yaml, <node>/     a node: identity, search, data models, vocabularies, pages, assets, seeds
+  plugins/<name>/          node-specific science and UI, one folder each: backend, UI, tests, docs (docs/plugins.md)
+  sources/<slug>.py        a node's data-source sync script (docs/data-sources.md)
+fiesta/                    the platform (FIESTA infrastructure)
+  backend/                 Python package `fiesta`: the FastAPI app, worker, CLI, migrations, tests
+  frontend/                the SPA (one build serves any node)
+  scripts/                 e2e and operations scripts
+  docker-compose*.yml      the local stack (`make up`)
+docs/                      API contract, plugin guide, development, deployment, roadmap
+.env.example               copy to .env for local settings
 ```
 
-See [development.md](development.md) and [deployment.md](deployment.md).
+A new node, filter, plot or validation rule is a change under `configurations/`;
+a change under `fiesta/` is a change to every node.
+
+See [docs/development.md](docs/development.md) and [docs/deployment.md](docs/deployment.md).
 
 ## License
 

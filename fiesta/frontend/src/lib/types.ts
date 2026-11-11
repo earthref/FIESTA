@@ -1,0 +1,418 @@
+// TypeScript types for the FIESTA node backend API (see docs/api.md).
+
+export interface SearchLevel {
+  name: string;
+  table: string;
+  count_field: string | null;
+  /** Its rows can carry a position (lat/lon columns), so it has a Map tab. */
+  geo?: boolean;
+  /** Its Summaries grid, in order (node YAML `search.levels[].columns`, or the default tiles). */
+  columns?: GridColumn[];
+}
+
+/** The tiles a summary grid column can show (fiesta.search.grid). */
+export type GridCellKind =
+  | "record"
+  | "citation"
+  | "name"
+  | "contributed"
+  | "download"
+  | "links"
+  | "counts"
+  | "map"
+  | "plot"
+  | "geo"
+  | "geology"
+  | "age"
+  | "intensity"
+  | "method_codes"
+  | "citations"
+  | "field"
+  | "title";
+
+/** One summary grid column, resolved by the API (label, width and defaults filled in). */
+export interface GridColumn {
+  /** Its name in `sort=<key>:asc|desc` and `filter=<key>:<text>`. */
+  key: string;
+  cell: GridCellKind;
+  label: string;
+  width: number;
+  /** field/title cells: the level summary block's column (and title's subtitle). */
+  column?: string;
+  subtitle_column?: string;
+  format?: "bytes";
+  sortable: boolean;
+  /** Its header menu has a text box (`filter=<key>:<text>`). */
+  filterable: boolean;
+  /** Its header menu's facet lists: summary._all columns, `<column>:"<value>"` tokens. */
+  facets: string[];
+  /** Its header menu has the Map tab's area (a map tile on a level with positions). */
+  geospatial: boolean;
+}
+
+/** features.home.resources entry: a resource card (title lines split on "\n"). */
+export interface HomeCard {
+  title: string;
+  icon: string;
+  corner_icon: string | null;
+  to: string | null;
+  href: string | null;
+}
+
+/** features.home.news entry; `html` is trusted markup from the node YAML. */
+export interface HomeNews {
+  title: string;
+  html: string;
+  image: string | null;
+  link: string | null;
+}
+
+/** One filter sidebar control (backend `SearchFilter`). `levels` / `views`
+ * empty = shown on every search level / result view. */
+export interface SearchFilter {
+  type: "facet" | "range" | "bbox" | "numeric" | "exists";
+  /** facet: a column name; range: a `summary.*` document path (a number
+   * column's `summary._num.<column>`); bbox, numeric (a picker of the
+   * level's number columns) and exists (the with/without data picker): null. */
+  field: string | null;
+  label: string | null;
+  levels: string[];
+  views: string[];
+  unit: string | null;
+  /** range: typed value × scale is what the API receives (Ma → years). */
+  scale: number;
+  min: number | null;
+  max: number | null;
+}
+
+/** A number the search map can color its markers by (backend `MapColor`),
+ * sent as `color_by=<field>`; offered on the levels whose table is in `tables`. */
+export interface MapColorOption {
+  label: string;
+  field: string;
+  unit: string | null;
+  /** A value / scale is what the legend shows (T → μT with 1e-6). */
+  scale: number;
+  log: boolean;
+  tables: string[];
+}
+
+/** A content page (backend `PageConfig`); its HTML comes from /config/pages/{slug}. */
+export interface NodePage {
+  slug: string;
+  title: string;
+  menu: "left" | "right" | "hidden";
+  icon: string | null;
+}
+
+export interface NodeConfig {
+  key: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  color: string;
+  /** File under configurations/<slug>/assets/ (node YAML `node.logo`), shown on the portal home. */
+  logo?: string | null;
+  links: Record<string, string>;
+  data_model_versions: string[];
+  data_model_latest: string;
+  doi_prefix: string | null;
+  search_levels: SearchLevel[];
+  /** Columns aggregated as term buckets (the facet filters' fields). */
+  facets: string[];
+  /** The filter sidebar's controls (node YAML `search.filters`). */
+  filters: SearchFilter[];
+  /** The base unit of the `summary._num` columns a unit conversion puts in
+   * one (node YAML `search.unit_conversions`: {"age": "years BP"}). */
+  number_units?: Record<string, string>;
+  /** The with/without data filter's tabs per search table: the tables its
+   * docs record columns with data of (`_any`, their union, first when there
+   * are several); a table without any is absent. */
+  exists_tables?: Record<string, string[]>;
+  /** The search map's "Color by" menu (node YAML `search.map_colors`). */
+  map_colors?: MapColorOption[];
+  /** The planetary bodies besides Earth a record can be on (node YAML
+   * `search.bodies`): the search map's Earth / Moon buttons. */
+  bodies?: "moon"[];
+  /** Content pages (node YAML `pages`), in menu order. */
+  pages: NodePage[];
+  features: {
+    plugins: string[];
+    home?: { resources: HomeCard[]; news: HomeNews[] };
+  };
+  /** Active plugins with their per-node configuration, keyed by plugin name. */
+  plugins: Record<string, Record<string, unknown>>;
+  has_method_codes: boolean;
+  /** Keys of every node the API serves; the portal bar links them to their
+   * instances next to this one off the production hosts (lib/portals.ts). */
+  deployment_nodes?: string[];
+  /** Keys of the nodes whose web app production does not serve: the portal bar leaves them out. */
+  hidden_nodes?: string[];
+  /** False when production does not serve this node's web app (node YAML `publish.web`). */
+  web_published?: boolean;
+  /** "source": contributions are made at the node's data source (`links.website`
+   * until the cutover) and synced here, so the SPA offers no upload. */
+  contributions_mode?: "public" | "source";
+  /** The private workspace's per-node options (node YAML `workspace`). */
+  workspace?: WorkspaceConfig;
+}
+
+/** A contribution-table column the private workspace's cards edit; `kind`
+ * and `vocabulary` come from the data model (List / Dictionary / other). */
+export interface WorkspaceField {
+  column: string;
+  label: string;
+  placeholder: string | null;
+  kind: "list" | "links" | "text";
+  vocabulary: string | null;
+  required: boolean;
+}
+
+export interface WorkspaceConfig {
+  fields: WorkspaceField[];
+  /** Publish waits until the reference DOI resolves at Crossref or DataCite. */
+  require_reference: boolean;
+}
+
+/** GET /private/contributions/{id}/reference. */
+export interface ReferenceCheck {
+  doi: string | null;
+  status: "none" | "ok" | "not_found" | "error";
+  citation: string | null;
+  title: string | null;
+}
+
+export interface HealthStatus {
+  status: string;
+  database: boolean;
+  search: boolean;
+  storage: boolean;
+}
+
+// --- Auth ---
+
+export interface UserOut {
+  id: number;
+  email: string;
+  name: string;
+  /** Alternative login name (the login form takes an email or a handle). */
+  handle: string | null;
+  orcid: string | null;
+  /** False for an account imported without a password: it sets one without the current one. */
+  has_password: boolean;
+  /** Super admin: every node, node creation, accounts. */
+  is_admin: boolean;
+  /** Slugs of the nodes this user administers. */
+  admin_nodes: string[];
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: "bearer";
+}
+
+// --- Search ---
+
+export interface FacetBucket {
+  key: string;
+  doc_count: number;
+  /** The value's rows (levels with a count field) and, with `totals`, its
+   * positioned docs: the sidebar counts follow the Rows and Map sub-tabs. */
+  rows_count?: number;
+  mapped_count?: number;
+}
+
+/**
+ * A search hit is an OpenSearch `_source` document. Its exact shape varies by
+ * node and level; the summary hierarchy is traversed defensively via `getPath`.
+ */
+export type SearchResult = Record<string, unknown>;
+
+export interface SearchPage {
+  total: number;
+  results: SearchResult[];
+  aggregations: Record<string, FacetBucket[]> | null;
+  /** With `totals`: the matches' rows, and those with a position. */
+  rows_total?: number | null;
+  mapped_total?: number | null;
+}
+
+/** The search page's scope filters, sent with every search request of the
+ * page: `mine` (only the signed-in user's own contributions, unpublished or
+ * published) and `versions` ("all" adds older versions of contributions). */
+export interface SearchScope {
+  mine?: "in_prep" | "published";
+  versions?: "all";
+}
+
+// --- Private workspace ---
+
+export type ContributionStatus =
+  | "created"
+  | "uploaded"
+  | "parsing"
+  | "validating"
+  | "summarizing"
+  | "ready"
+  | "failed";
+
+export interface ContributionOut {
+  head_revision: string | null;
+  published_revision: string | null;
+  indexing_status: string;
+  id: number;
+  version: number;
+  previous_id: number | null;
+  contributor_id: number;
+  contributor_name: string;
+  private_key?: string;
+  is_activated: boolean;
+  is_latest: boolean;
+  data_model_version: string;
+  reference_doi: string | null;
+  filename: string | null;
+  status: ContributionStatus;
+  created_at: string;
+  updated_at: string;
+  activated_at: string | null;
+}
+
+/** One entry of GET /contributions/{id}/versions (oldest first). */
+export interface ContributionVersion {
+  id: number;
+  version: number;
+  data_model_version: string;
+  timestamp: string;
+  contributor: string | null;
+  is_activated: boolean;
+  is_latest: boolean;
+}
+
+/** GET /contributions/{id}/rows: per table, flagged and changed row counts. */
+export interface ContributionRowStats {
+  validated: boolean;
+  previous: { id: number; version: number } | null;
+  tables: Record<
+    string,
+    { errors?: number; warnings?: number; changed?: number; removed?: number }
+  >;
+}
+
+/** Validation issues on one cell (or, keyed "", a whole row or column). */
+export interface CellIssue {
+  severity: "error" | "warning";
+  messages: string[];
+}
+
+/** One page of a table of a contribution's file
+ * (`/contributions/{id}/tables/{table}`). */
+export interface TablePage {
+  total: number;
+  columns: string[];
+  validated: boolean;
+  column_issues: Record<string, CellIssue>;
+  rows: { row: number; values: Record<string, string>; issues: Record<string, CellIssue> }[];
+}
+
+export interface ValidationIssue {
+  table: string;
+  row: number | null;
+  column: string | null;
+  message: string;
+}
+
+export interface ValidationResult {
+  is_valid: boolean;
+  validated_at: string;
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+}
+
+export interface JobOut {
+  job_id: string;
+}
+
+// --- Data models ---
+
+export interface DataModelColumn {
+  label?: string;
+  group?: string;
+  type?: string;
+  unit?: string;
+  description?: string;
+  notes?: string;
+  examples?: string[];
+  validations?: string[];
+  position?: number;
+  previous_columns?: ({ table: string; column: string } | string)[];
+}
+
+export interface DataModelTable {
+  label?: string;
+  position?: number;
+  description?: string;
+  columns: Record<string, DataModelColumn>;
+}
+
+export interface DataModel {
+  updated_day?: string;
+  tables: Record<string, DataModelTable>;
+}
+
+// --- Vocabularies ---
+
+export interface VocabularyItem {
+  item: string;
+  label?: string;
+}
+
+export interface Vocabulary {
+  label: string;
+  database_column?: string;
+  items: VocabularyItem[];
+}
+
+export type Vocabularies = Record<string, Vocabulary>;
+
+export interface MethodCode {
+  code: string;
+  definition: string;
+  [key: string]: unknown;
+}
+
+export interface MethodCodeGroup {
+  label: string;
+  codes: MethodCode[];
+}
+
+export type MethodCodes = Record<string, MethodCodeGroup>;
+
+/** GET /search/{table}/histogram: a numeric field's distribution over a search. */
+export interface SearchHistogram {
+  total: number;
+  /** Docs with a value in a bin. */
+  counted: number;
+  min: number | null;
+  max: number | null;
+  /** The smallest value above zero (a log scale's lower bound). */
+  positive_min: number | null;
+  /** The bins are equal in log10 space (asked for, and positive values exist). */
+  log: boolean;
+  bins: { lo: number; hi: number; count: number }[];
+}
+
+/** GET /search/{table}/has?of=<table>: of a search's docs, how many have
+ * the table and how many have a value in each of its columns (data-model
+ * order, zero included); those without one are `with_table` less its count. */
+export interface HasColumns {
+  total: number;
+  with_table: number;
+  columns: Record<string, number>;
+}
+
+/** GET /search/{table}/numbers: a level's number columns (`summary._num.<column>`)
+ * and how many of a search's docs have a value of each, in data-model order. */
+export interface NumberColumns {
+  total: number;
+  columns: Record<string, number>;
+}

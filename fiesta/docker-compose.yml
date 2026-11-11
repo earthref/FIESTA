@@ -1,0 +1,176 @@
+# FIESTA local development stack.
+#
+# One API process (`api`, /v2/{node}/...), one job worker and one frontend
+# serve every node in FIESTA_NODE; the frontend publishes each node under its
+# key, http://localhost:8080/MagIC/, /CDR/, ... (the earthref.org layout).
+# Postgres, OpenSearch, RustFS (S3) and Mailpit are shared. Contributions are
+# scoped per node in Postgres (one schema each), each node has its own
+# OpenSearch index, S3 prefix and job queue.
+#
+#   FIESTA_NODE=magic,karar,cdr     # in .env: which nodes the stack serves
+#   make up                         # runs the nodes in FIESTA_NODE; `all` (make's
+#                                   # default) is every node in configurations/fiesta.yaml.
+#                                   # Plain `docker compose` does not expand `all`.
+#   make up FIESTA_NODE=magic,karar # override on the command line
+#
+# Default host ports (override in .env):
+#   api        8000      (all nodes: http://localhost:8000/v2/magic/config)
+#   frontend   8080      (all nodes: http://localhost:8080/MagIC/, /KArAr/, ...)
+#
+# The portal bar links the nodes in FIESTA_NODE to this frontend and every
+# other node to earthref.org (fiesta/frontend/src/lib/portals.ts).
+#
+# Postgres owns application state; RustFS holds revision files.
+# `make rebuild` regenerates only the OpenSearch projection.
+
+name: fiesta
+
+x-backend-env: &backend-env
+  FIESTA_ENVIRONMENT: development
+  FIESTA_CONFIG_FILE: /config/fiesta.yaml
+  FIESTA_NODE: ${FIESTA_NODE:-magic}
+  # Local stacks take contributions (upload, publish); `source` or
+  # `public,kdd=source` mirrors a node's data source instead (docs/data-sources.md).
+  FIESTA_CONTRIBUTIONS_MODE: ${FIESTA_CONTRIBUTIONS_MODE:-public}
+  # How many of dev.earthref.org's most recent public contributions `make seed`
+  # imports per node (`fiesta seed --public`; 0 skips the import).
+  FIESTA_SEED_PUBLIC: ${FIESTA_SEED_PUBLIC:-50}
+  FIESTA_S3_BUCKET: fiesta-local
+  FIESTA_DATABASE_URL: postgresql+asyncpg://fiesta:${POSTGRES_PASSWORD:-fiesta}@postgres:5432/fiesta
+  FIESTA_OPENSEARCH_URL: http://opensearch:9200
+  FIESTA_S3_ENDPOINT: http://rustfs:9000
+  FIESTA_S3_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-fiesta}
+  FIESTA_S3_SECRET_KEY: ${RUSTFS_SECRET_KEY:-fiesta-secret}
+  FIESTA_SECRET_KEY: ${FIESTA_SECRET_KEY:-dev-only-change-me}
+  FIESTA_SMTP_HOST: mailpit
+  FIESTA_SMTP_PORT: 1025
+  FIESTA_CORS_ORIGINS: '["http://localhost:5173","http://localhost:${FRONTEND_PORT:-8080}"]'
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: fiesta
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fiesta}
+      POSTGRES_DB: fiesta
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fiesta -d fiesta"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    ports:
+      - "${OPENSEARCH_PORT:-9200}:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  # S3-compatible store. RustFS replaced MinIO in Sept 2026, when MinIO stopped
+  # publishing public images (Docker Hub, then Quay). Console:
+  # http://localhost:9001/rustfs/console/
+  rustfs:
+    image: rustfs/rustfs:1.0.0
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-fiesta}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-fiesta-secret}
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+    volumes:
+      - rustfs-data:/data
+    ports:
+      - "${RUSTFS_API_PORT:-9000}:9000"
+      - "${RUSTFS_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "${MAILPIT_WEB_PORT:-8025}:8025" # web UI
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP, for a host-run API/worker (make backend-dev)
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---- The FIESTA API + worker (every node in FIESTA_NODE) -------------------
+  api:
+    build: ./fiesta/backend
+    environment: *backend-env
+    volumes:
+      - ./configurations:/config:ro
+    # FIESTA_REMOTE (docker-compose.remote.yml): never migrate a shared database.
+    command: >-
+      sh -c "{ [ $${FIESTA_REMOTE:-0} = 1 ] || fiesta init; } &&
+             uvicorn fiesta.apps.api:create_app --factory --host 0.0.0.0 --port 8000"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/v2/health-check')"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build: ./fiesta/backend
+    environment: *backend-env
+    volumes:
+      - ./configurations:/config:ro
+    command: fiesta worker
+    depends_on:
+      api:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+  # ---- The frontend (every node in FIESTA_NODE, each under /<Key>/) ---------
+  # One image, built at "/"; nginx serves the SPA for every listed node and
+  # proxies /v2/ to the API. The SPA reads its node from the first path segment.
+  frontend:
+    build:
+      context: ./fiesta/frontend
+      # The plugins' UI (configurations/plugins/<name>/*.tsx; docs/plugins.md).
+      additional_contexts:
+        plugins: ./configurations/plugins
+    environment:
+      FIESTA_NODES: ${FIESTA_NODE:-magic}
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  opensearch-data:
+  rustfs-data:

@@ -10,14 +10,14 @@ second queue system.
 
 | Piece | Where | What |
 |---|---|---|
-| `config/ops/schedules.yaml` | this repo | one entry per job, the Slack channel ID, the watchdog settings |
+| `configurations/ops/schedules.yaml` | this repo | one entry per job, the Slack channel ID, the watchdog settings |
 | `fiesta ops-worker` | MARFIK3, systemd | defers each schedule when its cron fires, runs it from the `ops` queue, posts to Slack |
 | `fiesta ops-watchdog --post --every 3600` | another host's systemd timer (fiesta-ct) | notices a dead ops worker |
 | `fiesta ops-status` / `fiesta ops-run NAME` | anywhere with the database URL | last run per schedule / run one now |
 | `FIESTA_SLACK_BOT_TOKEN` | the ops worker's (and watchdog's) environment | the bot token; no token means messages are only logged |
 
-Code: `backend/fiesta/ops/` (config, runner, Slack, watchdog, the procrastinate
-app), `backend/fiesta/jobs/queues.py` and `worker.py` (the queue split).
+Code: `fiesta/backend/fiesta/ops/` (config, runner, Slack, watchdog, the procrastinate
+app), `fiesta/backend/fiesta/jobs/queues.py` and `worker.py` (the queue split).
 
 ## The schedules file
 
@@ -45,7 +45,7 @@ schedules:
 
 **Node source schedules.** Besides this list, the ops worker runs a
 `<slug>-source` schedule for every node with a data-source sync script
-(`sources/<slug>.py`), timed and enabled by the node's `legacy.sync` (the admin
+(`configurations/sources/<slug>.py`), timed and enabled by the node's `legacy.sync` (the admin
 node page's Data source tab), and restarts itself on a published change once no
 ops job is running. The file's `sources:` block says how this host runs them;
 see [data-sources.md](data-sources.md#schedule-and-the-admin-page).
@@ -54,7 +54,7 @@ Instead of `command`, a job can name a Python `callable`
 (`package.module:function`, sync or async) with `kwargs`; it runs inside the
 ops worker, and a dict it returns is the run summary.
 
-The file is loaded and validated by `backend/tests/test_ops.py`, so CI fails on
+The file is loaded and validated by `fiesta/backend/tests/test_ops.py`, so CI fails on
 a bad schedule. A change reaches the ops worker when its checkout is updated
 and the service restarted. The default path is `ops/schedules.yaml` beside
 `FIESTA_CONFIG_FILE`; `FIESTA_OPS_CONFIG_FILE` overrides it. (`ops` and
@@ -121,10 +121,10 @@ the locks prevent it), but each would need the jobs' checkouts.
 ## Commands
 
 ```bash
-cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml uv run fiesta ops-worker
-cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml uv run fiesta ops-status
-cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml uv run fiesta ops-run osu-mgr-incremental
-cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml uv run fiesta ops-watchdog   # exit 1 if overdue
+cd fiesta/backend && FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml uv run fiesta ops-worker
+cd fiesta/backend && FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml uv run fiesta ops-status
+cd fiesta/backend && FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml uv run fiesta ops-run osu-mgr-incremental
+cd fiesta/backend && FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml uv run fiesta ops-watchdog   # exit 1 if overdue
 ```
 
 `ops-run` defers through the same lock: if a run is already waiting it says so
