@@ -3,7 +3,7 @@ import { lazy, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } 
 import { api } from "../lib/api";
 import { nodeUrl, siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
-import { useOpenContribution } from "../lib/contribution-modal";
+import { type RowMatch, useOpenContribution } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
 import type {
   ContributionRowStats,
@@ -104,14 +104,22 @@ function totalOf(page: SearchPage | undefined): number | undefined {
 export function ContributionModal({
   id,
   tab,
+  row,
+  rowMatch,
   privateKey,
   onTab,
+  onRow,
   onClose,
 }: {
   id: string;
   tab?: string;
+  /** The row selected in a level tab (its 1-based place in the file's table). */
+  row?: number;
+  /** A search row to find in the level tab and select (then `onRow` names it). */
+  rowMatch?: RowMatch;
   privateKey?: string;
   onTab: (tab: string) => void;
+  onRow: (row: number | undefined) => void;
   onClose: () => void;
 }) {
   const { data: config } = useNodeConfig();
@@ -159,8 +167,11 @@ export function ContributionModal({
             doc={docQuery.data}
             config={config}
             tab={tab}
+            row={row}
+            rowMatch={rowMatch}
             privateKey={privateKey}
             onTab={onTab}
+            onRow={onRow}
             onClose={onClose}
           />
         ) : (
@@ -266,16 +277,22 @@ function ModalBody({
   doc,
   config,
   tab,
+  row,
+  rowMatch,
   privateKey,
   onTab,
+  onRow,
   onClose,
 }: {
   id: string;
   doc: SearchResult;
   config: NodeConfig;
   tab?: string;
+  row?: number;
+  rowMatch?: RowMatch;
   privateKey?: string;
   onTab: (tab: string) => void;
+  onRow: (row: number | undefined) => void;
   onClose: () => void;
 }) {
   const levels = config.search_levels.filter((level) => level.table !== "contribution");
@@ -373,7 +390,20 @@ function ModalBody({
       count: count ?? 0,
       isLoading,
       flags: rowFlags(rowStats, level.table),
-      render: () => <LevelPanel level={level} id={id} privateKey={privateKey} />,
+      render: () => (
+        <LevelPanel
+          // A level's sort and scroll are its own.
+          key={level.table}
+          level={level}
+          id={id}
+          privateKey={privateKey}
+          selected={row}
+          match={
+            rowMatch?.id === id && rowMatch.table === level.table ? rowMatch.values : undefined
+          }
+          onSelect={onRow}
+        />
+      ),
     });
   }
   pushIfAny({
@@ -786,14 +816,40 @@ function LevelPanel({
   level,
   id,
   privateKey,
+  selected,
+  match,
+  onSelect,
 }: {
   level: SearchLevel;
   id: string;
   privateKey?: string;
+  /** The selected row: its 1-based place in the file's table. */
+  selected?: number;
+  /** A search row's values to find in the table, then select. */
+  match?: Record<string, unknown>;
+  onSelect: (row: number | undefined) => void;
 }) {
   // A header sort orders the whole table, server-side.
   const [sort, setSort] = useState<GridSort | undefined>();
   const scroller = useRef<HTMLDivElement>(null);
+  // The table opens on the selected row (in file order), in the middle of the view.
+  const [target, setTarget] = useState(() => (selected !== undefined ? selected - 1 : undefined));
+  // A search row (the Rows grid) is found in the file, then selected.
+  const located = useQuery({
+    queryKey: ["contribution-row", id, level.table, privateKey, match],
+    queryFn: () =>
+      api<{ row: number | null }>(`/contributions/${id}/tables/${level.table}/locate`, {
+        params: { values: JSON.stringify(match), private_key: privateKey || undefined },
+      }),
+    enabled: !!match,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const found = located.data?.row ?? undefined;
+  useEffect(() => {
+    if (!match || !located.isSuccess) return;
+    if (found !== undefined) setTarget(found - 1);
+    onSelect(found);
+  }, [match, located.isSuccess, found, onSelect]);
   // The grid is sized to the whole table and fetches the pages it shows.
   const table = usePagedItems({
     queryKey: ["contribution-table", id, level.table, privateKey, sort?.key, sort?.order],
@@ -812,16 +868,23 @@ function LevelPanel({
   });
   const first = table.first.data;
 
-  if (table.first.isPending) {
+  if (table.first.isPending || (match && located.isPending)) {
     return <PageSpinner label={`Loading ${level.name.toLowerCase()}…`} />;
   }
-  if (table.first.error) return <ErrorMessage error={table.first.error} className="m-4" />;
+  const error = table.first.error ?? located.error;
+  if (error) return <ErrorMessage error={error} className="m-4" />;
   return (
-    <div ref={scroller} className="h-full overflow-auto px-4 pb-4 sm:px-6 sm:pb-6">
+    // The rows run edge to edge of the panel; the cells carry the padding.
+    <div ref={scroller} className="h-full overflow-auto">
       <RowsGrid
         items={table.items}
         columns={first?.columns ?? []}
+        table={level.table}
         labelled
+        selected={selected !== undefined ? String(selected) : undefined}
+        onRowClick={(row) => onSelect(Number(row.key))}
+        // Each item is one row of the file's table.
+        scrollTo={sort ? undefined : target}
         columnIssues={first?.column_issues}
         sort={sort}
         onSort={(next) => {

@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { Icon } from "../components/ui/icon";
 import { PageSpinner } from "../components/ui/spinner";
-import { api } from "../lib/api";
 import { useNodeConfig } from "../lib/config";
-import type { DataModel, DataModelColumn, DataModelTable } from "../lib/types";
+import { dataModelQuery, typeUnitLabel, unwrapModel } from "../lib/data-model";
+import type { DataModelColumn, DataModelTable } from "../lib/types";
 import { cx, formatDate } from "../lib/utils";
 
 const routeApi = getRouteApi("/data-models/$version");
@@ -19,18 +19,6 @@ export function DataModelsIndex() {
   return (
     <Navigate to="/data-models/$version" params={{ version: config.data_model_latest }} replace />
   );
-}
-
-function unwrapModel(data: unknown): DataModel | null {
-  if (!data || typeof data !== "object") return null;
-  const record = data as Record<string, unknown>;
-  if (record.tables && typeof record.tables === "object") return record as unknown as DataModel;
-  for (const value of Object.values(record)) {
-    if (value && typeof value === "object" && "tables" in (value as object)) {
-      return value as DataModel;
-    }
-  }
-  return null;
 }
 
 // --- Validation-derived status labels (data_model_column.jsx) --------------------
@@ -82,15 +70,6 @@ function StatusLabel({ badge }: { badge: StatusBadge }) {
       {badge.label}
     </span>
   );
-}
-
-function typeUnitLabel(column: DataModelColumn): string {
-  const type = column.type ?? "";
-  if (!type) return "";
-  if (/^flag$/i.test(type)) return "Flag";
-  const unit = column.unit ?? "";
-  if (!unit || /^(custom|dimensionless)$/i.test(unit)) return type;
-  return `${type} in ${unit}`;
 }
 
 function previousColumnText(entry: { table: string; column: string } | string): string {
@@ -402,11 +381,7 @@ export function DataModelPage() {
   const navigate = routeApi.useNavigate();
   const { data: config } = useNodeConfig();
 
-  const query = useQuery({
-    queryKey: ["data-model", version],
-    queryFn: () => api<unknown>(`/config/data-models/${version}`),
-    staleTime: Number.POSITIVE_INFINITY,
-  });
+  const query = useQuery(dataModelQuery(version));
 
   const model = useMemo(() => unwrapModel(query.data), [query.data]);
   const filter = (search.q ?? "").trim().toLowerCase();

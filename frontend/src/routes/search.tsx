@@ -1,5 +1,5 @@
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
-import { getRouteApi, Link } from "@tanstack/react-router";
+import { getRouteApi, Link, useRouterState } from "@tanstack/react-router";
 import {
   type CSSProperties,
   type FormEvent,
@@ -355,9 +355,17 @@ export function SearchPage() {
   // A contribution's modal, over the search (?contribution=<id>&tab=...).
   const openContribution = useOpenContribution();
   const setModalTab = useCallback(
-    (tab: string) => navigate({ search: (prev) => ({ ...prev, tab }), replace: true }),
+    (tab: string) =>
+      navigate({ search: (prev) => ({ ...prev, tab, row: undefined }), replace: true }),
     [navigate],
   );
+  // The row selected in the modal's level tab; replacing the entry drops the
+  // Rows grid's row to find (the history state) once it is found.
+  const setModalRow = useCallback(
+    (row: number | undefined) => navigate({ search: (prev) => ({ ...prev, row }), replace: true }),
+    [navigate],
+  );
+  const rowMatch = useRouterState({ select: (state) => state.location.state.rowMatch });
   const closeModal = useCallback(
     () =>
       navigate({
@@ -365,11 +373,14 @@ export function SearchPage() {
           ...prev,
           contribution: undefined,
           tab: undefined,
+          row: undefined,
           private_key: undefined,
         }),
       }),
     [navigate],
   );
+  // The Rows grid's row last opened, highlighted (a new search replaces the rows).
+  const [openedRow, setOpenedRow] = useState<string>();
   // The geospatial filter (the Map tab's area, the sidebar's Geospatial
   // checkbox) narrows every level with positions, and each level tab's count;
   // it stays across level tabs. An area asked for is made by the Map tab.
@@ -1064,10 +1075,24 @@ export function SearchPage() {
                       </div>
                     )}
                     {activeTab?.name === "Rows" && (
-                      <div style={{ marginBottom: "1em" }}>
+                      // Rows run edge to edge of the view, as Summaries do.
+                      <div style={{ margin: "0 -1em 1em" }}>
                         <RowsGrid
                           items={rowItems}
                           columns={gridRowColumns}
+                          table={level.table}
+                          selected={openedRow}
+                          onRowClick={(row) => {
+                            const id = row.hit && contributionId(row.hit);
+                            if (!id) return;
+                            setOpenedRow(row.key);
+                            // A level row opens its tab with the row selected.
+                            openContribution(
+                              id,
+                              level.table,
+                              level.table === "contribution" ? undefined : row.values,
+                            );
+                          }}
                           estimateRows={rowsPerRecord}
                           sort={rowsSort}
                           onSort={onRowsSort}
@@ -1103,8 +1128,11 @@ export function SearchPage() {
         <ContributionModal
           id={String(search.contribution)}
           tab={search.tab}
+          row={search.row}
+          rowMatch={rowMatch}
           privateKey={search.private_key ?? privateKey}
           onTab={setModalTab}
+          onRow={setModalRow}
           onClose={closeModal}
         />
       )}

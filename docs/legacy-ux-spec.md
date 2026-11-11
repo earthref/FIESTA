@@ -227,6 +227,16 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
   numbers, and cells with validation issues take the online editor's colors
   (errors red, warnings amber, the messages as a tooltip; a whole-row issue
   tints the row).
+  Both run edge to edge of their view (the cells carry the padding, as on
+  Summaries) under a three-row sticky header per column: its name (the data
+  model's label, sorting), field (the column in the file) and type ("Number
+  in Degrees", as the Data Models page writes it), from the node's latest
+  data model; a column the model lacks is named by its field. A click on a
+  search Rows row (or Enter on a focused one) highlights it and opens its
+  contribution's modal at that level's tab with the row selected: the API
+  finds the row in the file (`/tables/{table}/locate`), the modal scrolls it
+  to the middle of the view (its page fetched there), and `?row=<n>` keeps
+  the selection in the link. A click on a modal row selects it.
 - **Contribution modal** (2026-09-27) replaces the legacy expand caret, the
   map and plot modals and the contribution page, after osu-mgr.org's record
   modal: clicking a card's header, its map thumbnail or a plot (the plateau

@@ -1,8 +1,9 @@
-import { type ReactNode, type RefObject, useMemo } from "react";
-import type { CellIssue, SearchResult } from "../lib/types";
+import { type ReactNode, type RefObject, useEffect, useMemo, useRef } from "react";
+import { typeUnitLabel, useDataModelTable } from "../lib/data-model";
+import type { CellIssue, DataModelColumn, DataModelTable, SearchResult } from "../lib/types";
 import { cx } from "../lib/utils";
 import { useVirtualRows } from "../lib/virtual-rows";
-import type { GridSort } from "./summary-grid";
+import { type GridSort, isRowClick } from "./summary-grid";
 import { Icon } from "./ui/icon";
 import { Skeleton, skeletonWidth } from "./ui/skeleton";
 
@@ -13,6 +14,8 @@ export interface GridRow {
   label?: string;
   values: Record<string, unknown>;
   issues?: Record<string, CellIssue>;
+  /** The search hit the row is from (the search page's Rows view). */
+  hit?: SearchResult;
 }
 
 /** The validation colors of the online editor's cells (error red, warning amber). */
@@ -61,7 +64,7 @@ export function rowsOfHit(hit: SearchResult, h: number, sort?: GridSort): GridRo
         return sort.order === "asc" ? order : -order;
       })
     : rows;
-  return ordered.map((values, i) => ({ key: `${h}-${i}`, values: values ?? {} }));
+  return ordered.map((values, i) => ({ key: `${h}-${i}`, values: values ?? {}, hit }));
 }
 
 /** The loaded rows' columns in first-seen order (from the first 200 rows). */
@@ -78,21 +81,26 @@ export function columnsOf(items: (GridRow[] | undefined)[]): string[] {
   return [...keys];
 }
 
-const TH =
-  "sticky top-0 z-10 whitespace-nowrap bg-gray-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-600";
+const TH = "whitespace-nowrap bg-gray-50 px-3 text-left text-xs";
 const TD = "whitespace-nowrap px-3 py-2 align-top text-gray-800";
+const UNDERLINE = { boxShadow: "inset 0 -1px 0 var(--er-line)" };
 
-function SortHeader({
+/** The header's three cells for one column: its name (sorting with
+ * `onSort`), its field (the column in the file) and its type, from the data
+ * model. A column the data model lacks is named by its field. */
+function headerCells({
   column,
+  model,
   sort,
   onSort,
   issue,
 }: {
   column: string;
+  model?: DataModelColumn;
   sort?: GridSort;
   onSort?: (sort: GridSort | undefined) => void;
   issue?: CellIssue;
-}) {
+}): [ReactNode, ReactNode, ReactNode] {
   const active = sort?.key === column ? sort.order : undefined;
   // Ascending, then descending, then back to the default order.
   const next = (): GridSort | undefined =>
@@ -101,25 +109,28 @@ function SortHeader({
       : active === "asc"
         ? { key: column, order: "desc" }
         : undefined;
-  return (
+  const tint = issue && ISSUE_CLASS[issue.severity];
+  const title = issue && issueTitle(issue);
+  const name = model?.label || column;
+  return [
     <th
+      key={column}
       scope="col"
       aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : undefined}
-      title={issue && issueTitle(issue)}
-      className={cx(TH, issue && ISSUE_CLASS[issue.severity])}
-      style={{ boxShadow: "inset 0 -1px 0 var(--er-line)" }}
+      title={title ?? model?.description}
+      className={cx(TH, "overflow-hidden text-ellipsis pt-2 font-semibold text-gray-700", tint)}
     >
       {onSort ? (
         <button
           type="button"
           onClick={() => onSort(next())}
-          title={`Sort by ${column}`}
+          title={`Sort by ${name}`}
           className={cx(
-            "inline-flex cursor-pointer items-center gap-1 uppercase hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
+            "inline-flex cursor-pointer items-center gap-1 hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
             active && "text-node-ink",
           )}
         >
-          {column}
+          {name}
           <Icon
             name={active === "desc" ? "caret-down" : "caret-up"}
             className={cx("shrink-0", !active && "opacity-25")}
@@ -127,16 +138,44 @@ function SortHeader({
           />
         </button>
       ) : (
-        column
+        name
       )}
-    </th>
-  );
+    </th>,
+    <th
+      key={column}
+      scope="col"
+      title={title}
+      className={cx(TH, "overflow-hidden text-ellipsis font-mono font-normal text-gray-600", tint)}
+    >
+      {column}
+    </th>,
+    <th
+      key={column}
+      scope="col"
+      title={title}
+      className={cx(TH, "overflow-hidden text-ellipsis pb-2 font-normal text-gray-500", tint)}
+      style={UNDERLINE}
+    >
+      {model ? typeUnitLabel(model) : ""}
+    </th>,
+  ];
 }
 
-/** Fixed column widths from the header and the first loaded rows' values, so
- * the columns hold still while rows scroll in and out. */
-function columnWidths(columns: string[], items: (GridRow[] | undefined)[]): number[] {
-  const longest = columns.map((column) => column.length * 1.1 + 2);
+/** Fixed column widths from the header (name, field, type) and the first
+ * loaded rows' values, so the columns hold still while rows scroll in and out. */
+function columnWidths(
+  columns: string[],
+  items: (GridRow[] | undefined)[],
+  model?: DataModelTable,
+): number[] {
+  const longest = columns.map((column) => {
+    const entry = model?.columns[column];
+    // In characters of the 14px cells: the 12px bold name and its sort caret,
+    // the 12px monospaced field, the 12px type.
+    const name = (entry?.label || column).length * 0.95 + 2.5;
+    const type = entry ? typeUnitLabel(entry).length * 0.85 : 0;
+    return Math.max(name, column.length * 0.97, type);
+  });
   let seen = 0;
   outer: for (const item of items) {
     if (!item) continue;
@@ -156,7 +195,9 @@ const ROW_HEIGHT = 37;
 
 /**
  * Raw rows as one grid (the search page's Rows view, the contribution
- * modal's level tabs): a sticky header whose columns sort with `onSort`.
+ * modal's level tabs) under a sticky three-row header: each column's name,
+ * field and type from the node's latest data model (`table`), the name
+ * sorting with `onSort`.
  * `items` are the grid's records, each its rows (a search hit's rows, or one
  * row of a file's table), and may be sparse: undefined until its page
  * arrives, shown as `estimateRows` skeleton rows. With `scrollRef`
@@ -164,7 +205,10 @@ const ROW_HEIGHT = 37;
  * and below are in the DOM, and `onRange` hears their indexes so their pages
  * can be fetched. Cells with validation issues take the online editor's
  * colors, with the messages as their tooltip; a long value is cut short with
- * the whole of it as the tooltip.
+ * the whole of it as the tooltip. With `onRowClick` a row is clickable (or
+ * Enter on a focused one); `selected` (a row's key) is highlighted, and
+ * `scrollTo` (an item's index) is brought to the middle of the view once it
+ * is among the items.
  */
 export function RowsGrid({
   items,
@@ -177,11 +221,20 @@ export function RowsGrid({
   scrollRef,
   overscan = 25,
   onRange,
+  table,
+  onRowClick,
+  selected,
+  scrollTo,
   footer,
   empty = "No row data for these results.",
 }: {
   items: (GridRow[] | undefined)[];
   columns: string[];
+  /** The data-model table the rows are from, for the header's names and types. */
+  table?: string;
+  onRowClick?: (row: GridRow) => void;
+  selected?: string;
+  scrollTo?: number;
   /** A leading column of the rows' labels (their row in the file). */
   labelled?: boolean;
   estimateRows?: number;
@@ -194,9 +247,10 @@ export function RowsGrid({
   footer?: ReactNode;
   empty?: ReactNode;
 }) {
+  const model = useDataModelTable(table);
   // A record still loading: skeleton rows, as many as a record has on average.
   const placeholderRows = Math.max(1, Math.round(estimateRows));
-  const { startRef, indexes, measure, padTop, padBottom } = useVirtualRows({
+  const { startRef, indexes, measure, padTop, padBottom, scrollToIndex } = useVirtualRows({
     count: items.length,
     scrollRef,
     estimateSize: (index) => (items[index]?.length || Math.max(1, estimateRows)) * ROW_HEIGHT,
@@ -206,12 +260,45 @@ export function RowsGrid({
   // Widths settle once the first rows arrive; later pages keep them.
   const loaded = items.some(Boolean);
   // biome-ignore lint/correctness/useExhaustiveDependencies: measured from the first rows only
-  const widths = useMemo(() => columnWidths(columns, items), [columns, loaded]);
+  const widths = useMemo(() => columnWidths(columns, items, model), [columns, loaded, model]);
+
+  // Scroll to `scrollTo` once, when it is among the items. The virtualizer
+  // may not have its scroller yet: try again each frame (a few) until the
+  // item is rendered.
+  const scrolled = useRef<number | undefined>(undefined);
+  const scrollBy = useRef(scrollToIndex);
+  scrollBy.current = scrollToIndex;
+  const target = scrollTo !== undefined && scrollTo < items.length ? scrollTo : undefined;
+  useEffect(() => {
+    if (target === undefined || scrolled.current === target) return;
+    let frame = 0;
+    let tries = 0;
+    const attempt = () => {
+      scrollBy.current(target);
+      const shown = scrollRef?.current?.querySelector(`[data-index="${target}"]`);
+      if (shown || ++tries > 30) {
+        scrolled.current = target;
+        return;
+      }
+      frame = requestAnimationFrame(attempt);
+    };
+    frame = requestAnimationFrame(attempt);
+    return () => cancelAnimationFrame(frame);
+  }, [target, scrollRef]);
 
   if (items.length === 0) {
     return <p className="py-8 text-center text-[13px] text-gray-500">{empty}</p>;
   }
   const span = columns.length + (labelled ? 1 : 0);
+  const headers = columns.map((column) =>
+    headerCells({
+      column,
+      model: model?.columns[column],
+      sort,
+      onSort,
+      issue: columnIssues?.[column],
+    }),
+  );
   const labelWidth = 64;
   const width = widths.reduce((total, w) => total + w, labelled ? labelWidth : 0);
   return (
@@ -226,23 +313,17 @@ export function RowsGrid({
             <col key={columns[i]} style={{ width: w }} />
           ))}
         </colgroup>
-        <thead>
-          <tr>
-            {labelled && (
-              <th scope="col" className={TH} style={{ boxShadow: "inset 0 -1px 0 var(--er-line)" }}>
-                <span className="sr-only">Row</span>
-              </th>
-            )}
-            {columns.map((column) => (
-              <SortHeader
-                key={column}
-                column={column}
-                sort={sort}
-                onSort={onSort}
-                issue={columnIssues?.[column]}
-              />
-            ))}
-          </tr>
+        <thead className="sticky top-0 z-10">
+          {[0, 1, 2].map((line) => (
+            <tr key={line}>
+              {line === 0 && labelled && (
+                <th scope="col" rowSpan={3} className={TH} style={UNDERLINE}>
+                  <span className="sr-only">Row</span>
+                </th>
+              )}
+              {headers.map((cells) => cells[line])}
+            </tr>
+          ))}
         </thead>
         <tbody ref={startRef}>
           <tr>
@@ -276,10 +357,25 @@ export function RowsGrid({
             <tbody key={`item-${index}`} data-index={index} ref={measure}>
               {item.map((row) => {
                 const rowIssue = row.issues?.[""];
+                const isSelected = selected !== undefined && row.key === selected;
+                const open = onRowClick && (() => onRowClick(row));
                 return (
                   <tr
                     key={row.key}
-                    className="hover:bg-gray-50/60"
+                    tabIndex={open ? 0 : undefined}
+                    aria-selected={open ? isSelected : undefined}
+                    onClick={open && ((event) => isRowClick(event) && open())}
+                    onKeyDown={
+                      open &&
+                      ((event) => {
+                        if (event.key === "Enter" && event.target === event.currentTarget) open();
+                      })
+                    }
+                    className={cx(
+                      open &&
+                        "cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-node",
+                      isSelected ? "bg-node-soft" : "hover:bg-gray-50/60",
+                    )}
                     title={rowIssue && issueTitle(rowIssue)}
                   >
                     {labelled && (
