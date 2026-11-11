@@ -12,7 +12,6 @@ function basicButtonStyle(color: string) {
   return {
     color,
     boxShadow: `0 0 0 1px ${color} inset`,
-    background: "var(--er-surface)",
     fontSize: "1rem",
     fontWeight: 400,
     lineHeight: "1em",
@@ -105,7 +104,7 @@ export function Footer() {
         <div className="flex min-w-0 shrink flex-col items-center sm:min-w-fit sm:shrink-0 xl:flex-row">
           <a
             href={`mailto:webmaster@earthref.org?subject=[${(!PORTAL && config?.key) || "FIESTA"} Help]`}
-            className="inline-block self-center text-center sm:whitespace-nowrap"
+            className="inline-block self-center bg-panel-soft text-center hover:bg-panel sm:whitespace-nowrap"
             style={basicButtonStyle("var(--node-ink)")}
           >
             <Icon
@@ -119,7 +118,7 @@ export function Footer() {
             href="https://github.com/earthref/FIESTA#readme"
             target="_blank"
             rel="noreferrer"
-            className="inline-block self-center text-center sm:whitespace-nowrap"
+            className="inline-block self-center bg-panel-soft text-center hover:bg-panel sm:whitespace-nowrap"
             style={basicButtonStyle(earthrefColor)}
           >
             Powered by

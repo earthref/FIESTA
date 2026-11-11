@@ -143,7 +143,7 @@ function CoreTracks({ core, defs }: { core: CoreData; defs: SeriesDef[] }) {
           y1={HEADER}
           x2={AXIS_LEFT - 6}
           y2={HEADER + PLOT_HEIGHT}
-          stroke="#9ca3af"
+          stroke="var(--color-gray-400)"
         />
         {depthTicks.map((tick) => (
           <g key={`tick-${tick}`}>
@@ -152,9 +152,15 @@ function CoreTracks({ core, defs }: { core: CoreData; defs: SeriesDef[] }) {
               y1={y(tick)}
               x2={AXIS_LEFT - 6}
               y2={y(tick)}
-              stroke="#9ca3af"
+              stroke="var(--color-gray-400)"
             />
-            <text x={AXIS_LEFT - 12} y={y(tick) + 3} textAnchor="end" fontSize={9} fill="#6b7280">
+            <text
+              x={AXIS_LEFT - 12}
+              y={y(tick) + 3}
+              textAnchor="end"
+              fontSize={9}
+              fill="var(--color-gray-500)"
+            >
               {tick.toFixed(1)}
             </text>
           </g>
@@ -163,7 +169,7 @@ function CoreTracks({ core, defs }: { core: CoreData; defs: SeriesDef[] }) {
           x={10}
           y={HEADER + PLOT_HEIGHT / 2}
           fontSize={9}
-          fill="#6b7280"
+          fill="var(--color-gray-500)"
           transform={`rotate(-90 10 ${HEADER + PLOT_HEIGHT / 2})`}
           textAnchor="middle"
         >
@@ -188,7 +194,7 @@ function CoreTracks({ core, defs }: { core: CoreData; defs: SeriesDef[] }) {
                 width={PANEL_WIDTH}
                 height={PLOT_HEIGHT}
                 fill="none"
-                stroke="#d1d5db"
+                stroke="var(--color-gray-300)"
               />
               <text
                 x={x0 + PANEL_WIDTH / 2}
@@ -201,7 +207,7 @@ function CoreTracks({ core, defs }: { core: CoreData; defs: SeriesDef[] }) {
                 {entry.def.label}
               </text>
               <polyline points={path} fill="none" stroke={entry.def.color} strokeWidth={1.25} />
-              <text x={x0} y={height - 4} fontSize={9} fill="#6b7280">
+              <text x={x0} y={height - 4} fontSize={9} fill="var(--color-gray-500)">
                 {valueMin.toPrecision(3)}
               </text>
               <text
@@ -209,7 +215,7 @@ function CoreTracks({ core, defs }: { core: CoreData; defs: SeriesDef[] }) {
                 y={height - 4}
                 textAnchor="end"
                 fontSize={9}
-                fill="#6b7280"
+                fill="var(--color-gray-500)"
               >
                 {valueMax.toPrecision(3)}
               </text>

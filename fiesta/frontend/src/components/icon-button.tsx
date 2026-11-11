@@ -83,6 +83,11 @@ export function IconButton({
     small
       ? "bg-transparent hover:bg-panel-soft active:bg-panel hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]"
       : "bg-panel-soft hover:bg-panel active:bg-transparent shadow-[inset_0_0_0_1px_var(--node-color)] hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]",
+    // The corner glyph's outline is the legacy white in light mode; in dark
+    // mode it is the card's own background, so it separates the glyphs unseen.
+    small
+      ? "dark:[--er-icon-outline:var(--er-surface)] dark:hover:[--er-icon-outline:var(--er-panel-soft)] dark:active:[--er-icon-outline:var(--er-panel)]"
+      : "dark:[--er-icon-outline:var(--er-panel-soft)] dark:hover:[--er-icon-outline:var(--er-panel)] dark:active:[--er-icon-outline:var(--er-surface)]",
   );
   const style: CSSProperties = {
     fontSize: cardFont,

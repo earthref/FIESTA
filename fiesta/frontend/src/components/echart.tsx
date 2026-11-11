@@ -17,6 +17,8 @@ import {
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { useEffect, useRef, useState } from "react";
+import { plotColors } from "../lib/plot-colors";
+import { useTheme } from "../lib/theme";
 import { cx } from "../lib/utils";
 import { FaIcon } from "./ui/fa-icon";
 
@@ -88,6 +90,8 @@ export function EChart({
   label: string;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
+  // `build` reads the theme's plot colors (plotColors()), so a switch rebuilds.
+  const { theme } = useTheme();
   const chartRef = useRef<echarts.ECharts | null>(null);
   const [size, setSize] = useState<Size | null>(null);
   const [mode, setMode] = useState<Mode | null>(brush ? "select" : null);
@@ -250,7 +254,8 @@ export function EChart({
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart || !size || size.width === 0) return;
-    const option = build(size) as { xAxis?: BaseAxis; yAxis?: BaseAxis };
+    const option = build(size) as { xAxis?: BaseAxis; yAxis?: BaseAxis; tooltip?: unknown };
+    const dark = theme === "dark";
     const key = JSON.stringify(
       [option.xAxis, option.yAxis].map((a) => [
         a?.type,
@@ -266,6 +271,10 @@ export function EChart({
     chart.setOption(
       {
         ...option,
+        ...(option.tooltip !== undefined &&
+          !Array.isArray(option.tooltip) && {
+            tooltip: tooltipTheme(option.tooltip as Record<string, unknown>),
+          }),
         ...(zoom && {
           xAxis: merge(option.xAxis, axisOption("x")),
           yAxis: merge(option.yAxis, axisOption("y")),
@@ -279,7 +288,10 @@ export function EChart({
             ...(brushType === "rect" && { yAxisIndex: 0 }),
             brushMode: "single",
             transformable: false,
-            brushStyle: { color: "rgba(42,120,214,0.08)", borderColor: "rgba(42,120,214,0.6)" },
+            brushStyle: {
+              color: dark ? "rgba(120,170,235,0.12)" : "rgba(42,120,214,0.08)",
+              borderColor: dark ? "rgba(120,170,235,0.7)" : "rgba(42,120,214,0.6)",
+            },
             outOfBrush: { opacity: 1 },
           },
         }),
@@ -295,7 +307,7 @@ export function EChart({
           brushMode: "single",
         },
       });
-  }, [build, size, brush, zoom, mode]);
+  }, [build, size, brush, zoom, mode, theme]);
 
   const tools: [Mode, IconDefinition, string][] = [
     ["select", faArrowPointer, "Select: drag to choose points"],
@@ -305,8 +317,7 @@ export function EChart({
   const shown = brush ? tools : tools.filter(([m]) => m !== "select");
 
   return (
-    // Canvas colors are fixed (legacy plot styling), so the chart stays light in dark mode.
-    <div className="er-light group relative">
+    <div className="group relative">
       <div
         ref={divRef}
         style={{ height, width: "100%" }}
@@ -413,4 +424,15 @@ function toDataRange(chart: echarts.ECharts, area: BrushArea): BrushRange | null
   }
   const [x0, x1] = area.range as number[];
   return { x: sorted(toData([x0, 0])[0], toData([x1, 0])[0]) };
+}
+
+/** The chart's tooltip in the theme's colors (echarts draws it as HTML, white by default). */
+function tooltipTheme(tooltip: Record<string, unknown>): Record<string, unknown> {
+  const colors = plotColors();
+  return {
+    backgroundColor: colors.tooltip,
+    borderColor: colors.tooltipLine,
+    ...tooltip,
+    textStyle: { color: colors.tooltipInk, ...(tooltip.textStyle as object) },
+  };
 }

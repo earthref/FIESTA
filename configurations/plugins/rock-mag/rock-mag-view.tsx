@@ -5,6 +5,8 @@ import { ErrorMessage } from "@/components/error-message";
 import { PageSpinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
 import { useNodeConfig } from "@/lib/config";
+import { type PlotColors, plotColors, plotInk, usePlotColors } from "@/lib/plot-colors";
+import { useTheme } from "@/lib/theme";
 import type { SearchScope } from "@/lib/types";
 import { cx } from "@/lib/utils";
 import {
@@ -29,9 +31,9 @@ import {
 } from "./rock-mag-data";
 
 const CHART_HEIGHT = 300;
-const TEXT = "#52514e";
-const GRID_LINE = "#ebeae6";
-const REFERENCE = "#6b6b66";
+/** The theme's plot neutrals, read when a chart is built (a canvas takes no
+ * CSS variables); EChart rebuilds on a theme switch. */
+const pc = () => plotColors();
 const FADED = 0.12;
 
 export interface RockMagViewProps {
@@ -87,8 +89,11 @@ export default function RockMagView({
 
   const specimens = useMemo(() => (values.data ? specimensFrom(values.data) : []), [values.data]);
   const [colorBy, setColorBy] = useState<ColorBy>("none");
-  // The node's brand colour (MagIC purple) for the specimens, not a fixed blue.
-  const nodeColor = useNodeConfig().data?.color;
+  // The node's brand colour (MagIC purple) for the specimens, not a fixed blue;
+  // lightened in dark mode so the points stand out from the dark plot.
+  const { theme } = useTheme();
+  const configColor = useNodeConfig().data?.color;
+  const nodeColor = configColor && plotInk(configColor, theme === "dark");
   const groups = useMemo(
     () => groupSpecimens(specimens, colorBy, nodeColor),
     [specimens, colorBy, nodeColor],
@@ -329,12 +334,12 @@ const axis = (
   name,
   nameLocation: "middle",
   nameGap: 28,
-  nameTextStyle: { color: TEXT, fontSize: 12 },
+  nameTextStyle: { color: pc().text, fontSize: 12 },
   min,
   max,
-  axisLine: { lineStyle: { color: "#b4b3ad" } },
+  axisLine: { lineStyle: { color: pc().axis } },
   axisLabel: {
-    color: TEXT,
+    color: pc().text,
     fontSize: 11,
     formatter: (v: number) => nf(v),
     hideOverlap: true,
@@ -342,7 +347,7 @@ const axis = (
     showMinLabel: isRound(min),
     showMaxLabel: max === undefined || isRound(max),
   },
-  splitLine: { lineStyle: { color: GRID_LINE } },
+  splitLine: { lineStyle: { color: pc().grid } },
   ...extra,
 });
 
@@ -355,6 +360,7 @@ type XY = (s: Specimen) => [number | undefined, number | undefined];
 /** Scatter series per colour group; with a selection, the rest fade under
  * the selected specimens. Each point's last value is its specimen's index. */
 function scatterSeries(
+  colors: PlotColors,
   groups: Group[],
   xy: XY,
   selected: Set<number> | null,
@@ -382,7 +388,7 @@ function scatterSeries(
     itemStyle: {
       color,
       opacity,
-      borderColor: "#ffffff",
+      borderColor: colors.surface,
       borderWidth: data.length > 1000 ? 0 : 0.5,
     },
     emphasis: { scale: 1.6 },
@@ -438,8 +444,8 @@ function references(markLines: unknown[]) {
       silent: true,
       symbol: "none",
       animation: false,
-      lineStyle: { color: REFERENCE, type: "dashed", width: 1 },
-      label: { color: TEXT, fontSize: 11 },
+      lineStyle: { color: pc().reference, type: "dashed", width: 1 },
+      label: { color: pc().text, fontSize: 11 },
       data: markLines,
     },
   };
@@ -455,7 +461,7 @@ function regionLabels(labels: { text: string; at: [number, number] }[]) {
     label: {
       show: true,
       formatter: "{b}",
-      color: REFERENCE,
+      color: pc().reference,
       fontSize: 13,
       fontWeight: "bold",
     },
@@ -488,11 +494,12 @@ const PlottedCount = ({ n }: { n: number }) => <>n = {n.toLocaleString()}</>;
 const dayXY: XY = (s) => [s.bcr_bc, s.mr_ms];
 
 function DayPlot({ groups, specimens, selected, select, open }: PanelProps) {
+  const colors = usePlotColors();
   const [log, setLog] = useState(false);
   const onBrush = useScatterBrush("day", select, dayXY);
   const { series, plotted } = useMemo(
-    () => scatterSeries(groups, dayXY, selected, [log, log]),
-    [groups, selected, log],
+    () => scatterSeries(colors, groups, dayXY, selected, [log, log]),
+    [colors, groups, selected, log],
   );
   const build = useCallback(() => {
     const xs = specimens.map((s) => s.bcr_bc ?? Number.NaN);
@@ -557,10 +564,11 @@ function DayPlot({ groups, specimens, selected, select, open }: PanelProps) {
 const neelXY: XY = (s) => [s.bc, s.mr_ms];
 
 function SquarenessPlot({ groups, specimens, selected, select, open }: PanelProps) {
+  const colors = usePlotColors();
   const onBrush = useScatterBrush("neel", select, neelXY);
   const { series, plotted } = useMemo(
-    () => scatterSeries(groups, neelXY, selected, [true, false]),
-    [groups, selected],
+    () => scatterSeries(colors, groups, neelXY, selected, [true, false]),
+    [colors, groups, selected],
   );
   const build = useCallback(() => {
     const [xMin, xMax] = extent(
@@ -611,10 +619,11 @@ function SquarenessPlot({ groups, specimens, selected, select, open }: PanelProp
 const jelinekXY: XY = (s) => [s.pj, s.t];
 
 function JelinekPlot({ groups, specimens, selected, select, open }: PanelProps) {
+  const colors = usePlotColors();
   const onBrush = useScatterBrush("jelinek", select, jelinekXY);
   const { series, plotted } = useMemo(
-    () => scatterSeries(groups, jelinekXY, selected, [false, false]),
-    [groups, selected],
+    () => scatterSeries(colors, groups, jelinekXY, selected, [false, false]),
+    [colors, groups, selected],
   );
   const build = useCallback(() => {
     const [, xMax] = extent(
@@ -663,6 +672,7 @@ function JelinekPlot({ groups, specimens, selected, select, open }: PanelProps) 
 // Explorer: any two parameters ---------------------------------------------------------------
 
 function ExplorerPanel({ groups, specimens, selected, select, open }: PanelProps) {
+  const colors = usePlotColors();
   const [xKey, setXKey] = useState<ParamKey>("bcr");
   const [yKey, setYKey] = useState<ParamKey>("chi_mass");
   const [xLog, setXLog] = useState(true);
@@ -678,8 +688,8 @@ function ExplorerPanel({ groups, specimens, selected, select, open }: PanelProps
   const xy = useCallback<XY>((s) => [s[xKey], s[yKey]], [xKey, yKey]);
   const onBrush = useScatterBrush("explorer", select, xy);
   const { series, plotted } = useMemo(
-    () => scatterSeries(groups, xy, selected, [xLog, yLog]),
-    [groups, xy, selected, xLog, yLog],
+    () => scatterSeries(colors, groups, xy, selected, [xLog, yLog]),
+    [colors, groups, xy, selected, xLog, yLog],
   );
   const build = useCallback(() => {
     const [x, y] = [paramOf(xKey), paramOf(yKey)];
@@ -741,6 +751,7 @@ const BINS = 40;
  * edges): the colour groups, or with a selection the selected specimens
  * stacked over the rest in grey. */
 function histogramSeries(
+  colors: PlotColors,
   groups: Group[],
   value: (s: Specimen) => number | undefined,
   selected: Set<number> | null,
@@ -759,7 +770,7 @@ function histogramSeries(
     ? [
         {
           name: "Not selected",
-          color: "#d8d7d2",
+          color: colors.faded,
           members: groups.flatMap((g) => g.members.filter((s) => !selected.has(s.index))),
         },
         ...groups.map((g) => ({ ...g, members: g.members.filter((s) => selected.has(s.index)) })),
@@ -834,9 +845,10 @@ function Histogram({
   range: [number, number];
   markLines?: Record<string, unknown>[];
 }) {
+  const colors = usePlotColors();
   const { series, counted } = useMemo(
-    () => histogramSeries(groups, value, selected, log, range),
-    [groups, value, selected, log, range],
+    () => histogramSeries(colors, groups, value, selected, log, range),
+    [colors, groups, value, selected, log, range],
   );
   const onBrush = useCallback(
     (brushed: BrushRange) => select(panel, (s) => inRange(value(s), brushed.x)),
@@ -948,6 +960,7 @@ const CIRCLE = Array.from({ length: 181 }, (_, i) => {
 });
 
 function StereonetPanel({ groups, specimens, selected, open }: PanelProps) {
+  const colors = usePlotColors();
   const axes = useMemo(() => {
     const series: Record<string, unknown>[] = [];
     let plotted = 0;
@@ -974,7 +987,7 @@ function StereonetPanel({ groups, specimens, selected, open }: PanelProps) {
           large: data.length > 5000,
           itemStyle:
             symbol === "rect"
-              ? { color: g.color, opacity, borderColor: "#fff", borderWidth: 0.5 }
+              ? { color: g.color, opacity, borderColor: colors.surface, borderWidth: 0.5 }
               : { color: "rgba(0,0,0,0)", borderColor: g.color, borderWidth: 1.5, opacity },
         });
       }
@@ -996,7 +1009,7 @@ function StereonetPanel({ groups, specimens, selected, open }: PanelProps) {
           1,
         );
     return { series, plotted };
-  }, [groups, specimens, selected]);
+  }, [colors, groups, specimens, selected]);
 
   const build = useCallback(
     ({ width, height }: { width: number; height: number }) => {
@@ -1040,7 +1053,7 @@ function StereonetPanel({ groups, specimens, selected, open }: PanelProps) {
             data: CIRCLE,
             silent: true,
             symbol: "none",
-            lineStyle: { color: "#8a8984", width: 1 },
+            lineStyle: { color: pc().net, width: 1 },
             tooltip: { show: false },
           },
           {
@@ -1049,12 +1062,18 @@ function StereonetPanel({ groups, specimens, selected, open }: PanelProps) {
             symbol: "path://M0,-1L0,1M-1,0L1,0",
             symbolSize: 10,
             data: [[0, 0]],
-            itemStyle: { color: "none", borderColor: "#8a8984", borderWidth: 1 },
+            itemStyle: { color: "none", borderColor: pc().net, borderWidth: 1 },
             tooltip: { show: false },
           },
           {
             ...regionLabels([{ text: "N", at: [0, 1.04] }]),
-            label: { show: true, formatter: "{b}", color: TEXT, fontSize: 12, position: "top" },
+            label: {
+              show: true,
+              formatter: "{b}",
+              color: pc().text,
+              fontSize: 12,
+              position: "top",
+            },
           },
           ...axes.series,
         ],

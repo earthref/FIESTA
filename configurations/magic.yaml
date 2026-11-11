@@ -222,7 +222,7 @@ features:
           Visit the beta site and try it out. Please send comments, problem reports, or
           requests for additional formats to paleomagnetism.org@gmail.com
       - title: MagIC at AGU
-        image: agu.jpg
+        image: agu.png
         html: >-
           MagIC will be presenting a poster that this year's AGU conference. It will be in the
           Monday afternoon poster session <b>(GP13B-0307)</b>. Please drop by and see what is new
@@ -231,7 +231,7 @@ features:
           <a href="https://njarboe.com/public/JarboeMagIC2025AGUPoster.pdf"><b>here</b></a>.
           See you there!
       - title: Mag-NetZ
-        image: https://github.com/earthref/MagIC-MagNetS/raw/master/MagnetZ_Logo.jpg
+        image: magnetz.png
         html: >-
           <a href="https://earthref.org/MagIC/MagNetZ"><b>MagNetZ (Magnetic NetworkZ)</b></a>
           is a biweekly online seminar organized by <b>Greig Paterson</b> and
@@ -241,7 +241,7 @@ features:
           all the <b>speakers</b>, their <b>abstracts</b>, as well as links to the <b>YouTube</b>
           videos, <b>ERDA</b> entries, <b>citable DOIs</b>.
       - title: 2021 MagIC Workshop
-        image: sio.jpg
+        image: sio.png
         html: >-
           MagIC hosted its 2021 workshop on <b>January 19th-21st, 2021</b> online via Zoom and
           Slack with 194 participants. Titled
@@ -272,7 +272,7 @@ features:
           on the
           <a href="https://www.youtube.com/channel/UC-DbvhEu49a6dZXdvUWorhQ"><b>MagIC YouTube Channel</b></a>.
       - title: Project 419 / GeoCODES
-        image: ec.jpg
+        image: ec.png
         html: >-
           MagIC is working with EarthCube
           <a href="https://www.earthcube.org/geocodes" target="_blank" rel="noreferrer"><b>GeoCODES</b></a>

@@ -43,7 +43,7 @@ type Thumbnails = Partial<Record<"zijd" | "eqarea" | "arai" | "hyst", Thumbnail>
 
 const RED = "#d62728";
 const BLUE = "#1f77b4";
-const NET = "#8a8984";
+const NET = "var(--er-plot-net)";
 const AXIS = "var(--er-ink-faint)";
 // The node's color, lightened in dark mode as the tile's surface darkens.
 const NODE = "var(--node-ink)";

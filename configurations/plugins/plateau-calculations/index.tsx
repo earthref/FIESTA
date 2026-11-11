@@ -98,8 +98,10 @@ function AgeSpectrum({
         y={y(step.age + step.age_sigma)}
         width={Math.max(0.5, x1 - x0)}
         height={Math.max(0.5, y(step.age - step.age_sigma) - y(step.age + step.age_sigma))}
-        fill={isPlateau ? "#e6f2ff" : "#e5e7eb"}
-        stroke={isPlateau ? "#0066cc" : "#9ca3af"}
+        fill={
+          isPlateau ? "color-mix(in srgb, #0066cc 10%, var(--er-surface))" : "var(--color-gray-200)"
+        }
+        stroke={isPlateau ? "#0066cc" : "var(--color-gray-400)"}
         strokeWidth={detailed ? 1 : 0.5}
       >
         {detailed && (
@@ -152,9 +154,15 @@ function AgeSpectrum({
             y1={pad.top + innerH}
             x2={pad.left + innerW}
             y2={pad.top + innerH}
-            stroke="#6b7280"
+            stroke="var(--color-gray-500)"
           />
-          <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + innerH} stroke="#6b7280" />
+          <line
+            x1={pad.left}
+            y1={pad.top}
+            x2={pad.left}
+            y2={pad.top + innerH}
+            stroke="var(--color-gray-500)"
+          />
           {[0, 25, 50, 75, 100].map((tick) => (
             <text
               key={`x-${tick}`}
@@ -162,7 +170,7 @@ function AgeSpectrum({
               y={pad.top + innerH + 14}
               textAnchor="middle"
               fontSize={10}
-              fill="#6b7280"
+              fill="var(--color-gray-500)"
             >
               {tick}
             </text>
@@ -172,7 +180,7 @@ function AgeSpectrum({
             y={height - 6}
             textAnchor="middle"
             fontSize={11}
-            fill="#374151"
+            fill="var(--color-gray-700)"
           >
             Cumulative ³⁹Ar (%)
           </text>
@@ -183,7 +191,7 @@ function AgeSpectrum({
               y={y(tick) + 3}
               textAnchor="end"
               fontSize={10}
-              fill="#6b7280"
+              fill="var(--color-gray-500)"
             >
               {tick.toFixed(1)}
             </text>
@@ -194,7 +202,7 @@ function AgeSpectrum({
             transform={`rotate(-90 12 ${pad.top + innerH / 2})`}
             textAnchor="middle"
             fontSize={11}
-            fill="#374151"
+            fill="var(--color-gray-700)"
           >
             Age (Ma)
           </text>

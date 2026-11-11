@@ -603,7 +603,7 @@ function BuiltinCell({
           <a
             href={nodeApiUrl(`/contributions/${id}/download${keyParam}`)}
             download
-            className="inline-block w-full bg-surface text-center font-bold text-node-ink hover:bg-node-soft"
+            className="inline-block w-full bg-panel-soft text-center font-bold text-node-ink hover:bg-panel"
             style={{
               padding: "20px 0",
               height: 100,

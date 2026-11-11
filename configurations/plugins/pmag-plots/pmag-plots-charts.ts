@@ -3,6 +3,7 @@
 // Every position comes from the API, where PmagPy computes it.
 
 import type { EChartsOption } from "@/components/echart";
+import { plotColors } from "@/lib/plot-colors";
 import type {
   AraiSpecimen,
   Coord,
@@ -21,25 +22,14 @@ export interface Size {
   height: number;
 }
 
-const TEXT = "#52514e";
-const GRID_LINE = "#ebeae6";
-const NET = "#8a8984";
 const RED = "#d62728";
 const BLUE = "#1f77b4";
 const GREEN = "#2ca02c";
 const PURPLE = "#9467bd";
-const BAD = "#9a9a95";
 
-/** The node's color (MagIC purple), which applyNodeTheme sets on the page;
- * a canvas takes no CSS variables, so it is read when a chart is built. The
- * charts stay light in dark mode, so it needs no dark variant. */
-function nodeColor(): string {
-  const color =
-    typeof document === "undefined"
-      ? ""
-      : document.documentElement.style.getPropertyValue("--node-color").trim();
-  return color || BLUE;
-}
+/** The theme's plot neutrals and the node's color (MagIC purple), read when a
+ * chart is built: a canvas takes no CSS variables. EChart rebuilds on a theme switch. */
+const pc = () => plotColors(BLUE);
 
 type Point = {
   value: (number | string)[];
@@ -77,7 +67,7 @@ function textMarks(marks: { text: string; at: [number, number]; position: string
     label: {
       show: true,
       formatter: "{b}",
-      color: TEXT,
+      color: pc().text,
       fontSize: 11,
       position,
     },
@@ -97,7 +87,7 @@ function netSeries(net: Net) {
     data,
     silent: true,
     symbol: "none",
-    lineStyle: { color: NET, width },
+    lineStyle: { color: pc().net, width },
     tooltip: { show: false },
   });
   return [
@@ -150,8 +140,8 @@ function directionPoints(
       ...(bad && { symbol: "diamond" }),
       itemStyle:
         inc >= 0
-          ? { color: bad ? BAD : color, borderColor: "#fff", borderWidth: 0.5 }
-          : { color: "#fff", borderColor: bad ? BAD : color, borderWidth: 1.5 },
+          ? { color: bad ? pc().muted : color, borderColor: pc().surface, borderWidth: 0.5 }
+          : { color: pc().surface, borderColor: bad ? pc().muted : color, borderWidth: 1.5 },
     })),
   };
 }
@@ -200,7 +190,7 @@ export function directionSetOption(size: Size, set: DirectionSet, net: Net): ECh
     directionPoints(
       "Directions",
       lines.map((d) => ({ xy: d.xy as XY, inc: d.inc, tip: tip(d) })),
-      nodeColor(),
+      pc().node,
       "circle",
       size.width > 400 ? 8 : 6,
     ),
@@ -235,7 +225,7 @@ export function stepsNetOption(
       data: points.map((p) => p.xy),
       silent: true,
       symbol: "none",
-      lineStyle: { color: NET, width: 1 },
+      lineStyle: { color: pc().net, width: 1 },
       tooltip: { show: false },
     },
     // Fits first, so the steps they summarize stay on top.
@@ -254,7 +244,7 @@ export function stepsNetOption(
             ]
           : [],
     ),
-    directionPoints("Steps", points, nodeColor(), "circle", size.width > 400 ? 8 : 6),
+    directionPoints("Steps", points, pc().node, "circle", size.width > 400 ? 8 : 6),
   ]);
 }
 
@@ -313,14 +303,14 @@ export function zijderveldOption(
     z: 3,
     lineStyle: { color, width: 1 },
     itemStyle: filled
-      ? { color, borderColor: "#fff", borderWidth: 0.5 }
-      : { color: "#fff", borderColor: color, borderWidth: 1.5 },
+      ? { color, borderColor: pc().surface, borderWidth: 0.5 }
+      : { color: pc().surface, borderColor: color, borderWidth: 1.5 },
     data: vectors.map((v, i) => ({
       value: [v[0], pick(v)],
       tip: tip(i, name),
       ...(steps.bad[i] && {
         symbol: "diamond",
-        itemStyle: { color: BAD, borderColor: BAD },
+        itemStyle: { color: pc().muted, borderColor: pc().muted },
       }),
     })),
   });
@@ -345,7 +335,7 @@ export function zijderveldOption(
     type: "value",
     min,
     max,
-    axisLine: { onZero: true, lineStyle: { color: NET } },
+    axisLine: { onZero: true, lineStyle: { color: pc().net } },
     axisTick: hidden,
     axisLabel: hidden,
     splitLine: hidden,
@@ -377,10 +367,10 @@ function xyAxis(name: string, extra: object = {}) {
     name,
     nameLocation: "middle",
     nameGap: 26,
-    nameTextStyle: { color: TEXT, fontSize: 11 },
-    axisLabel: { color: TEXT, fontSize: 10, formatter: (v: number) => nf(v) },
-    axisLine: { lineStyle: { color: NET } },
-    splitLine: { lineStyle: { color: GRID_LINE } },
+    nameTextStyle: { color: pc().text, fontSize: 11 },
+    axisLabel: { color: pc().text, fontSize: 10, formatter: (v: number) => nf(v) },
+    axisLine: { lineStyle: { color: pc().net } },
+    splitLine: { lineStyle: { color: pc().grid } },
     ...extra,
   };
 }
@@ -421,8 +411,8 @@ export function demagOption(_size: Size, specimen: DemagSpecimen, large: boolean
       {
         type: "line",
         symbolSize: large ? 8 : 6,
-        lineStyle: { color: nodeColor(), width: 1.2 },
-        itemStyle: { color: nodeColor(), borderColor: "#fff", borderWidth: 0.5 },
+        lineStyle: { color: pc().node, width: 1.2 },
+        itemStyle: { color: pc().node, borderColor: pc().surface, borderWidth: 0.5 },
         data: index.map((i) => ({
           value: [steps.value[i] ?? 0, steps.m[i] / max],
           tip: [
@@ -430,7 +420,7 @@ export function demagOption(_size: Size, specimen: DemagSpecimen, large: boolean
             `M ${nf(steps.m[i])} ${escapeHtml(specimen.unit)} (${nf(steps.m[i] / max)} of max)`,
             ...(steps.bad[i] ? ["Flagged bad"] : []),
           ].join("<br/>"),
-          ...(steps.bad[i] && { symbol: "diamond", itemStyle: { color: BAD } }),
+          ...(steps.bad[i] && { symbol: "diamond", itemStyle: { color: pc().muted } }),
         })),
       },
     ],
@@ -457,14 +447,14 @@ export function araiOption(_size: Size, specimen: AraiSpecimen, large: boolean):
     symbolSize: large ? 9 : 7,
     z: 3,
     itemStyle: filled
-      ? { color, borderColor: "#fff", borderWidth: 0.5 }
-      : { color: "#fff", borderColor: color, borderWidth: 1.5 },
+      ? { color, borderColor: pc().surface, borderWidth: 0.5 }
+      : { color: pc().surface, borderColor: color, borderWidth: 1.5 },
     label: large
       ? {
           show: true,
           position: "right",
           fontSize: 10,
-          color: TEXT,
+          color: pc().text,
           formatter: (p: { data: { t: number } }) => nf(p.data.t),
         }
       : undefined,
@@ -491,7 +481,7 @@ export function araiOption(_size: Size, specimen: AraiSpecimen, large: boolean):
       data: steps.x.map((x, i) => [x, steps.y[i]]),
       silent: true,
       symbol: "none",
-      lineStyle: { color: NET, width: 1 },
+      lineStyle: { color: pc().net, width: 1 },
       tooltip: { show: false },
     },
     {
@@ -510,7 +500,7 @@ export function araiOption(_size: Size, specimen: AraiSpecimen, large: boolean):
       symbol: "triangle",
       symbolSize: large ? 10 : 8,
       z: 4,
-      itemStyle: { color: "#fff", borderColor: GREEN, borderWidth: 1.5 },
+      itemStyle: { color: pc().surface, borderColor: GREEN, borderWidth: 1.5 },
       data: checks.t.map((t, i) => ({
         value: [checks.x[i], checks.y[i]],
         tip: `<b>pTRM check at ${nf(t)} °C</b><br/>after ${nf(checks.t_from[i])} °C<br/>pTRM ${nf(checks.x[i])}`,
@@ -535,7 +525,7 @@ export function araiOption(_size: Size, specimen: AraiSpecimen, large: boolean):
       data: fit.line,
       silent: true,
       symbol: "none",
-      lineStyle: { color: "#333", width: 1.5, type: "dashed" },
+      lineStyle: { color: pc().strong, width: 1.5, type: "dashed" },
       tooltip: { show: false },
     });
   }
@@ -556,7 +546,7 @@ export function deremagOption(_size: Size, specimen: AraiSpecimen, large: boolea
     symbol,
     symbolSize: large ? 8 : 6,
     lineStyle: { color, width: 1.2 },
-    itemStyle: { color, borderColor: "#fff", borderWidth: 0.5 },
+    itemStyle: { color, borderColor: pc().surface, borderWidth: 0.5 },
     data: steps.t.map((t, i) => ({
       value: [t, values[i]],
       tip: `<b>${steps.order[i] === "NRM" ? "NRM" : `${nf(t)} °C`}</b><br/>${name} ${nf(values[i])}`,
@@ -578,15 +568,15 @@ export function hysteresisOption(_size: Size, loop: HystLoop, large: boolean): E
       data: [[f0, 0], [f1, 0], "-", [0, m0], [0, m1]],
       silent: true,
       symbol: "none",
-      lineStyle: { color: NET, width: 1 },
+      lineStyle: { color: pc().net, width: 1 },
       tooltip: { show: false },
     },
     {
       type: "line",
       symbol: "circle",
       symbolSize: large ? 3 : 2,
-      lineStyle: { color: nodeColor(), width: 1 },
-      itemStyle: { color: nodeColor() },
+      lineStyle: { color: pc().node, width: 1 },
+      itemStyle: { color: pc().node },
       large: loop.field.length > 5000,
       data: loop.field.map((field, i) => ({
         value: [field, loop.m[i]],
