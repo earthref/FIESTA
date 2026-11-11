@@ -15,6 +15,9 @@ interface PmagPlotsConfig {
   plot_types?: PlotType[];
 }
 
+/** The levels with a Plot tile (plugin.py `RecordTable`). */
+const RECORD_TABLES = ["contribution", "locations", "sites", "samples", "specimens"];
+
 function pmagPlotsConfig(config: NodeConfig): PmagPlotsConfig {
   return (config.plugins["pmag-plots"] ?? {}) as PmagPlotsConfig;
 }
@@ -43,18 +46,23 @@ const pmagPlotsPlugin: PluginModule = {
     }));
   },
 
-  // A contribution's Plot tile: one of its plots and their total (legacy
-  // SearchPlotThumbnail). Records below the contribution keep the "No Plots"
-  // box: the thumbnails are per contribution.
+  // A record's Plot tile: one of its plots and their total (legacy
+  // SearchPlotThumbnail), for a contribution or a location, site, sample or
+  // specimen of it (the plots of the specimens below it and its groups).
   gridCell({ column, hit, level, config, privateKey }) {
-    if (column.cell !== "plot" || level.table !== "contribution") return null;
+    if (column.cell !== "plot" || !RECORD_TABLES.includes(level.table)) return null;
     const id = contributionId(hit);
     if (!id) return null;
     const pconfig = pmagPlotsConfig(config);
+    const column_ = level.table.replace(/s$/, "");
+    const name = getPath(hit, `summary.${level.table}.${column_}`);
+    if (level.table !== "contribution" && (typeof name !== "string" || !name)) return null;
     return (
       <PmagPlotThumbnail
         id={id}
-        table={pconfig.table ?? "pmag_plots"}
+        table={level.table}
+        name={typeof name === "string" ? name : undefined}
+        docTable={pconfig.table ?? "pmag_plots"}
         plotTypes={pconfig.plot_types ?? []}
         privateKey={privateKey}
         width={column.width}

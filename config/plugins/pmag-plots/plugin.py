@@ -957,16 +957,7 @@ def compute_counts(parsed: ParsedContribution) -> dict[str, int]:
     """The count of each plot type from the same row selection as
     compute_plots, without the PmagPy calls (search indexing runs this for
     every contribution)."""
-    hierarchy = _Hierarchy(parsed)
-    by_specimen = _by_specimen(parsed.tables.get("measurements", []))
-    demag = sum(_demag_rows(rows) is not None for rows in by_specimen.values())
-    eqarea = sum(_has_direction(g[3]) for g in _direction_groups(parsed, hierarchy))
-    arai = 0
-    for rows in by_specimen.values():
-        selected = _arai_rows(rows)
-        arai += selected is not None and len(_arai_temperatures(selected[0])) >= 2
-    hyst = sum(1 for _ in _hysteresis_groups(parsed))
-    return _counts(demag, eqarea, arai, hyst)
+    return _PlotIndex(parsed).counts()
 
 
 # --- grid thumbnails ----------------------------------------------------------------------
@@ -1028,43 +1019,104 @@ def _hyst_thumbnail(loop: tuple) -> dict | None:
     }
 
 
+# The levels whose records the grid's Plot tile draws, by the column naming them.
+RECORD_LEVELS = {
+    "locations": "location",
+    "sites": "site",
+    "samples": "sample",
+    "specimens": "specimen",
+}
+
+
+class _PlotIndex:
+    """What a contribution has to plot, by record: the specimens with
+    demagnetization or Thellier steps, the hysteresis loops, and the
+    equal-area groups (a location's sites, a site's samples and specimens),
+    selected as compute_plots selects them but without PmagPy, which runs
+    only for the records a thumbnail draws."""
+
+    def __init__(self, parsed: ParsedContribution):
+        self.hierarchy = _Hierarchy(parsed)
+        self.by_specimen = _by_specimen(parsed.tables.get("measurements", []))
+        specimens = sorted(self.by_specimen)
+        self.demag = [s for s in specimens if _demag_rows(self.by_specimen[s]) is not None]
+        self.arai = []
+        for specimen in specimens:
+            selected = _arai_rows(self.by_specimen[specimen])
+            if selected is not None and len(_arai_temperatures(selected[0])) >= 2:
+                self.arai.append(specimen)
+        self.hyst = list(_hysteresis_groups(parsed))
+        self.groups = [g for g in _direction_groups(parsed, self.hierarchy) if _has_direction(g[3])]
+
+    def _subset(self, table: str, name: str) -> tuple[list, list, list, list]:
+        """(demag specimens, Arai specimens, loops, equal-area groups) of one
+        record, or of the whole contribution."""
+        if table == "contribution":
+            return self.demag, self.arai, self.hyst, self.groups
+        column = RECORD_LEVELS.get(table)
+        if column is None or not name:
+            return [], [], [], []
+
+        def below(specimen: str) -> bool:
+            return self.hierarchy.of_specimen(specimen)[column] == name
+
+        location_of = self.hierarchy.location_of
+        groups = [
+            g
+            for g in self.groups
+            if (column in ("site", "location") and g[1] == column and g[2] == name)
+            or (column == "location" and g[1] == "site" and location_of.get(g[2]) == name)
+        ]
+        return (
+            [s for s in self.demag if below(s)],
+            [s for s in self.arai if below(s)],
+            [loop for loop in self.hyst if below(loop[0])],
+            groups,
+        )
+
+    def counts(self, table: str = "contribution", name: str = "") -> dict[str, int]:
+        demag, arai, hyst, groups = self._subset(table, name)
+        return _counts(len(demag), len(groups), len(arai), len(hyst))
+
+    def thumbnails(self, seed: Any, table: str = "contribution", name: str = "") -> dict:
+        """One plot of each type, its record chosen at random (seeded, so the
+        same one is drawn again), reduced to the points the search grid's
+        100px Plot tile draws: a specimen's Zijderveld projections
+        (geographic when oriented), a group's equal-area directions, a
+        specimen's Arai steps and a hysteresis loop (moments over their
+        maximum). Only the chosen records go through PmagPy, and a type that
+        fails is left out."""
+        demag, arai, hyst, groups = self._subset(table, name)
+        rng = random.Random(f"{seed}" if table == "contribution" else f"{seed}:{table}:{name}")
+        by_specimen, hierarchy = self.by_specimen, self.hierarchy
+        candidates: dict[str, tuple[list, Callable[[Any], dict | None]]] = {
+            "zijd": (demag, lambda s: _zijd_thumbnail(s, by_specimen[s], hierarchy)),
+            "eqarea": (groups, _eqarea_thumbnail),
+            "arai": (arai, lambda s: _arai_thumbnail(s, by_specimen[s])),
+            "hyst": (hyst, _hyst_thumbnail),
+        }
+        thumbnails: dict[str, dict] = {}
+        for plot_type, (items, build) in candidates.items():
+            for item in rng.sample(items, min(_TRIES, len(items))):
+                try:
+                    if thumbnail := build(item):
+                        thumbnails[plot_type] = thumbnail
+                        break
+                except Exception:
+                    logger.exception("pmag-plots: the %s thumbnail failed", plot_type)
+        return thumbnails
+
+    def record(self, seed: Any, table: str, name: str) -> dict:
+        """A record's plot counts and thumbnails, as the grid's Plot tile asks."""
+        return {
+            "counts": self.counts(table, name),
+            "thumbnails": self.thumbnails(seed, table, name),
+        }
+
+
 def compute_thumbnails(parsed: ParsedContribution, seed: Any) -> dict[str, dict]:
-    """One plot of each type, its record chosen at random (seeded, so a
-    re-index draws the same one), reduced to the points the search grid's
-    100px Plot tile draws: a specimen's Zijderveld projections (geographic
-    when oriented), a site's or location's equal-area directions, a
-    specimen's Arai steps and a hysteresis loop (moments over their maximum).
-    Only the chosen records go through PmagPy, and a type that fails is left
-    out rather than failing the index."""
-    rng = random.Random(str(seed))
-    hierarchy = _Hierarchy(parsed)
-    by_specimen = _by_specimen(parsed.tables.get("measurements", []))
-    specimens = sorted(by_specimen)
-    candidates: dict[str, tuple[list, Callable[[Any], dict | None]]] = {
-        "zijd": (
-            [s for s in specimens if _demag_rows(by_specimen[s]) is not None],
-            lambda s: _zijd_thumbnail(s, by_specimen[s], hierarchy),
-        ),
-        "eqarea": (
-            [g for g in _direction_groups(parsed, hierarchy) if _has_direction(g[3])],
-            _eqarea_thumbnail,
-        ),
-        "arai": (
-            [s for s in specimens if _arai_rows(by_specimen[s]) is not None],
-            lambda s: _arai_thumbnail(s, by_specimen[s]),
-        ),
-        "hyst": (list(_hysteresis_groups(parsed)), _hyst_thumbnail),
-    }
-    thumbnails: dict[str, dict] = {}
-    for plot_type, (items, build) in candidates.items():
-        for item in rng.sample(items, min(_TRIES, len(items))):
-            try:
-                if thumbnail := build(item):
-                    thumbnails[plot_type] = thumbnail
-                    break
-            except Exception:
-                logger.exception("pmag-plots: the %s thumbnail failed", plot_type)
-    return thumbnails
+    """The contribution's thumbnails, one per plot type (search indexing)."""
+    return _PlotIndex(parsed).thumbnails(seed)
 
 
 # --- serving ------------------------------------------------------------------------------
@@ -1153,6 +1205,38 @@ class _Plots:
 _CACHE: OrderedDict[tuple, _Plots] = OrderedDict()
 _CACHE_SIZE = 8
 
+# The grid's Plot tiles: the last few contributions' plot indexes (each holds
+# its parsed file), and every record's answer, small, kept much longer.
+_INDEXES: OrderedDict[tuple, asyncio.Task] = OrderedDict()
+_INDEXES_SIZE = 4
+_RECORDS: OrderedDict[tuple, bytes] = OrderedDict()
+_RECORDS_SIZE = 10_000
+
+
+async def _plot_index(key: tuple, read: Callable[[], Awaitable[bytes]]) -> _PlotIndex:
+    """A contribution's plot index, built once for the requests that share it."""
+    task = _INDEXES.get(key)
+    if task is None:
+
+        async def build() -> _PlotIndex:
+            raw = await read()
+            return await asyncio.to_thread(lambda: _PlotIndex(_parse(raw)[0]))
+
+        task = _INDEXES[key] = asyncio.create_task(build())
+        while len(_INDEXES) > _INDEXES_SIZE:
+            _INDEXES.popitem(last=False)
+    _INDEXES.move_to_end(key)
+    try:
+        # Shielded: a client that disconnects must not cancel the others' wait.
+        return await asyncio.shield(task)
+    except Exception:
+        if _INDEXES.get(key) is task:
+            del _INDEXES[key]  # retried by the next request
+        raise
+
+
+RecordTable = Literal["contribution", "locations", "sites", "samples", "specimens"]
+
 
 class PmagPlotsPlugin(FiestaPlugin):
     name = "pmag-plots"
@@ -1175,11 +1259,12 @@ class PmagPlotsPlugin(FiestaPlugin):
     def derive_docs(
         self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
     ) -> list[dict]:
-        counts = compute_counts(parsed)
+        index = _PlotIndex(parsed)
+        counts = index.counts()
         if not any(counts.values()):
             return []
         # The grid's Plot tile draws one of these (`_geometry`: stored, never indexed).
-        thumbnails = compute_thumbnails(parsed, contribution_meta.get("id"))
+        thumbnails = index.thumbnails(contribution_meta.get("id"))
         block: dict[str, Any] = {**counts, "_geometry": {"thumbnails": thumbnails}}
         return [
             {
@@ -1190,6 +1275,44 @@ class PmagPlotsPlugin(FiestaPlugin):
 
     def build_router(self) -> APIRouter:
         router = APIRouter()
+
+        @router.get("/thumbnails/{contribution_id}")
+        async def get_thumbnails(
+            session: SessionDep,
+            node: NodeDep,
+            contribution_id: int,
+            table: RecordTable = "contribution",
+            name: str = "",
+            private_key: str | None = None,
+        ) -> Response:
+            """A search record's Plot tile: `counts` of its plots by type and
+            `thumbnails`, one small plot per type (a random specimen's,
+            group's or loop's), for the contribution or one of its locations,
+            sites, samples or specimens (`table`, `name`). The index keeps the
+            contribution's; a record's are computed from the file on first
+            request and kept."""
+            contribution = await load_visible_contribution(
+                session, node, contribution_id, private_key
+            )
+            key = (
+                node.node.slug,
+                contribution.id,
+                contribution.head_revision,
+                contribution.filename,
+                contribution.updated_at,
+            )
+            body = _RECORDS.get((key, table, name))
+            if body is None:
+                index = await _plot_index(
+                    key, lambda: load_file(node, contribution.id, contribution.filename)
+                )
+                data = await asyncio.to_thread(index.record, contribution.id, table, name)
+                body = json.dumps(data, default=_json_default, separators=(",", ":")).encode()
+                _RECORDS[(key, table, name)] = body
+                while len(_RECORDS) > _RECORDS_SIZE:
+                    _RECORDS.popitem(last=False)
+            _RECORDS.move_to_end((key, table, name))
+            return Response(body, media_type="application/json")
 
         @router.get("/contributions/{contribution_id}/{kind}")
         async def get_plots(

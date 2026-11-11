@@ -14,6 +14,7 @@ from fiesta.plugins.pmag_plots import (
     PmagPlotsPlugin,
     _by_sequence,
     _circle,
+    _PlotIndex,
     _Plots,
     _xy,
     arai_specimen,
@@ -449,6 +450,34 @@ def test_pmag_plots_derived_doc_counts(magic_node):
     assert sorted(thumbnails) == ["arai", "eqarea", "hyst", "zijd"]
     no_plots = parse_text(NO_MEASUREMENTS_TEXT)
     assert PmagPlotsPlugin().derive_docs(magic_node, no_plots, {"id": 99}) == []
+
+
+def test_pmag_plots_record_thumbnails():
+    # Each search record's Plot tile: the plots of the specimens below it and
+    # its equal-area groups (a location's sites, a site's specimens).
+    parsed = parse_text(PMAG_TEXT)
+    index = _PlotIndex(parsed)
+    whole = index.record(7, "contribution", "")
+    assert whole["counts"] == compute_counts(parsed)
+    assert whole["thumbnails"] == compute_thumbnails(parsed, 7)  # what the index keeps
+    assert index.record(7, "locations", "L")["counts"] == whole["counts"]  # all of it is in L
+
+    site_a, site_b = index.record(7, "sites", "A"), index.record(7, "sites", "B")
+    assert (site_a["counts"]["zijd"], site_a["counts"]["hyst"], site_a["counts"]["arai"]) == (
+        1,
+        1,
+        0,
+    )
+    assert site_a["counts"]["eqarea"] == 2  # its specimens' directions, D1's steps
+    assert {t["name"] for t in site_a["thumbnails"].values()} == {"A", "D1"}
+    assert sorted(site_b["thumbnails"]) == ["arai", "zijd"]
+    assert {t["name"] for t in site_b["thumbnails"].values()} == {"S1"}
+
+    d1 = index.record(7, "specimens", "D1")
+    assert sorted(d1["thumbnails"]) == ["hyst", "zijd"]
+    assert index.record(7, "samples", "D")["counts"] == d1["counts"]
+    nowhere = index.record(7, "sites", "nowhere")
+    assert not any(nowhere["counts"].values()) and nowhere["thumbnails"] == {}
 
 
 def test_pmag_plots_thumbnails_are_the_plots_points():
