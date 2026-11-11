@@ -796,6 +796,10 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
     ]
     by_key = {c.key: c for c in level_columns(magic_node, sites)}
     assert "download" not in by_key and by_key["record"].label == "Site"
+    # Counts fits the longest label it can show: every level's on a
+    # contribution ("Measurements"), only its own on a record ("Sites").
+    assert {c.key: c for c in columns}["counts"].width == 160
+    assert by_key["counts"].width == 104
     # On a site it sorts by the site's name; its breadcrumb filters on the
     # site's ancestors' names too.
     assert by_key["record"].sort.fields == ["summary.sites.site.raw"]
