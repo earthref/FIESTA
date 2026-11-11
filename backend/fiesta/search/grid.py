@@ -166,7 +166,17 @@ def _defaults(
         case "links":
             return "Links", 200, Sort([f"{_CONTRIBUTION}.id"], "long"), [f"{_REFERENCE}.doi"], []
         case "counts":
-            return "Counts", 160, None, [], []
+            # One "25.6 k Measurements" line per level with a count: a
+            # contribution counts every level, a record only its own rows
+            # (summarize gives it just its level's `_n_results`). Wide enough
+            # for the longest label it can show: 160px for "Measurements",
+            # 104px for "Sites".
+            names = [
+                entry.name
+                for entry in node.search.levels
+                if entry.count_field and (table == "contribution" or entry.table == table)
+            ]
+            return "Counts", 64 + 8 * max(map(len, names), default=5), None, [], []
         case "map":
             return "Map", 100, None, [], []
         case "plot":
