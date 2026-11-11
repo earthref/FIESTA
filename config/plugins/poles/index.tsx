@@ -179,7 +179,8 @@ function Lines({ lines }: { lines: [string, string | undefined][] }) {
   );
 }
 
-/** The pole on a globe centred on it, with its uncertainty outline. */
+/** The pole on a globe centred on it, magnified to its uncertainty outline
+ * (none on a doc indexed before the rings: `fiesta rebuild`). */
 function PoleMapTile({ hit, color, width }: { hit: SearchResult; color: string; width: number }) {
   const [pole] = useMemo(() => polesFromHits([hit]), [hit]);
   const markers = useMemo(
@@ -193,6 +194,7 @@ function PoleMapTile({ hit, color, width }: { hit: SearchResult; color: string; 
       <MapThumbnail
         markers={markers}
         rings={rings}
+        zoomToRings
         label="Map of the pole and its uncertainty outline"
       />
     </Cell>

@@ -1,4 +1,4 @@
-import { geoOrthographic, geoPath } from "d3-geo";
+import { geoDistance, geoOrthographic, geoPath } from "d3-geo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiUrl } from "../lib/base";
 import { mapDim, useTheme } from "../lib/theme";
@@ -101,12 +101,30 @@ function sphericalCentroid(markers: MapMarker[]): [number, number] {
   return [Math.atan2(y, x) / RAD, Math.atan2(z, Math.hypot(x, y)) / RAD];
 }
 
+// How far `zoomToRings` magnifies the globe: until the rings reach RING_FILL of
+// its radius, at most MAX_ZOOM times (the basemap is ~0.35°/px, so past that
+// it turns to blocks; a 1° ring is then still ~7px across the marker).
+const RING_FILL = 0.6;
+const MAX_ZOOM = 8;
+
+/** The magnification that fits the rings about `center` to RING_FILL of the
+ * globe's radius (an orthographic point d from the centre sits at sin d). */
+function ringZoom(rings: MapRing[], center: [number, number]): number {
+  let reach = 0;
+  for (const ring of rings) {
+    for (const point of ring.points) reach = Math.max(reach, geoDistance(center, point));
+  }
+  if (reach <= 0 || reach >= Math.PI / 2) return 1;
+  return Math.min(Math.max(RING_FILL / Math.sin(reach), 1), MAX_ZOOM);
+}
+
 // The globe centred on the markers, drawn pixel by pixel from the basemap,
 // with the markers on top.
 function drawThumbnail(
   canvas: HTMLCanvasElement,
   markers: MapMarker[],
   rings: MapRing[],
+  zoomToRings: boolean,
   width: number,
   height: number,
   image: ImageData | null,
@@ -124,7 +142,7 @@ function drawThumbnail(
   if (!context) return;
   const [centerLon, centerLat] = sphericalCentroid(markers);
   const projection = geoOrthographic()
-    .scale(radius)
+    .scale(radius * (zoomToRings ? ringZoom(rings, [centerLon, centerLat]) : 1))
     .translate([w / 2, h / 2])
     .rotate([-centerLon, -centerLat]);
 
@@ -210,12 +228,16 @@ const NO_RINGS: MapRing[] = [];
 export function MapThumbnail({
   markers,
   rings = NO_RINGS,
+  zoomToRings = false,
   width = 100,
   height = 100,
   label,
 }: {
   markers: MapMarker[];
   rings?: MapRing[];
+  /** Magnify the globe until the rings are legible (a pole's few-degree
+   * uncertainty ellipse is a pixel or two on the whole globe). */
+  zoomToRings?: boolean;
   width?: number;
   height?: number;
   /** Its accessible name (default: the result locations). */
@@ -245,9 +267,19 @@ export function MapThumbnail({
 
   useEffect(() => {
     if (canvasRef.current && image !== undefined) {
-      drawThumbnail(canvasRef.current, shown, rings, width, height, image, body, mapDim(theme));
+      drawThumbnail(
+        canvasRef.current,
+        shown,
+        rings,
+        zoomToRings,
+        width,
+        height,
+        image,
+        body,
+        mapDim(theme),
+      );
     }
-  }, [shown, rings, width, height, image, body, theme]);
+  }, [shown, rings, zoomToRings, width, height, image, body, theme]);
 
   return (
     <canvas
