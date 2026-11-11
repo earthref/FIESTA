@@ -28,13 +28,17 @@ demand and cached per contribution revision.
 """
 
 import asyncio
+import gzip
+import json
+import logging
 import math
 from collections import OrderedDict
+from collections.abc import Awaitable, Callable
 from functools import lru_cache
 from typing import Any, Literal
 
 import numpy as np
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, Response
 from pmagpy import pmag
 from pydantic import Field
 
@@ -52,6 +56,8 @@ from fiesta.services.contributions import load_file
 PLOT_TYPES = ["eqarea", "zijd", "demag", "arai", "deremag", "hyst"]
 PlotType = Literal["eqarea", "zijd", "demag", "arai", "deremag", "hyst"]
 Kind = Literal["demag", "eqarea", "arai", "hyst"]
+
+logger = logging.getLogger(__name__)
 
 KELVIN = 273  # as PmagPy converts: MagIC records 100 °C as 373 K
 # The demagnetization steps pmag.find_dmag_rec reads, and each one's kind
@@ -916,20 +922,31 @@ def _counts(demag: int, eqarea: int, arai: int, hyst: int) -> dict[str, int]:
     }
 
 
+KINDS: tuple[Kind, ...] = ("demag", "eqarea", "arai", "hyst")
+
+
+def compute_kind(parsed: ParsedContribution, hierarchy: _Hierarchy, kind: Kind) -> dict:
+    """One kind of plot data, as GET /contributions/{id}/{kind} serves it."""
+    if kind == "demag":
+        return {"net": net(), "specimens": demag_specimens(parsed, hierarchy)}
+    if kind == "eqarea":
+        return {"net": net(), "plots": eqarea_plots(parsed, hierarchy)}
+    if kind == "arai":
+        return {"specimens": arai_specimens(parsed, hierarchy)}
+    return {"loops": hysteresis_loops(parsed, hierarchy)}
+
+
 def compute_plots(parsed: ParsedContribution) -> dict[str, Any]:
     """Every kind of plot data for a contribution, and the count of each plot type."""
     hierarchy = _Hierarchy(parsed)
-    demag = demag_specimens(parsed, hierarchy)
-    eqarea = eqarea_plots(parsed, hierarchy)
-    arai = arai_specimens(parsed, hierarchy)
-    hyst = hysteresis_loops(parsed, hierarchy)
-    return {
-        "demag": {"net": net(), "specimens": demag},
-        "eqarea": {"net": net(), "plots": eqarea},
-        "arai": {"specimens": arai},
-        "hyst": {"loops": hyst},
-        "counts": _counts(len(demag), len(eqarea), len(arai), len(hyst)),
-    }
+    plots: dict[str, Any] = {kind: compute_kind(parsed, hierarchy, kind) for kind in KINDS}
+    plots["counts"] = _counts(
+        len(plots["demag"]["specimens"]),
+        len(plots["eqarea"]["plots"]),
+        len(plots["arai"]["specimens"]),
+        len(plots["hyst"]["loops"]),
+    )
+    return plots
 
 
 def compute_counts(parsed: ParsedContribution) -> dict[str, int]:
@@ -948,9 +965,90 @@ def compute_counts(parsed: ParsedContribution) -> dict[str, int]:
     return _counts(demag, eqarea, arai, hyst)
 
 
-# Recently computed contributions, by node, id and revision: a contribution's
-# tabs each ask for one kind, and the file is parsed once for all of them.
-_CACHE: OrderedDict[tuple, dict[str, Any]] = OrderedDict()
+# --- serving ------------------------------------------------------------------------------
+
+
+def _json_default(value: Any) -> Any:
+    if isinstance(value, np.generic):
+        return value.item()
+    raise TypeError(f"{type(value).__name__} is not JSON serializable")
+
+
+def encode(data: dict) -> tuple[bytes, bytes]:
+    """A kind's response body, as JSON and gzipped, encoded once per revision
+    (FastAPI's encoder took longer than the gzip on the large ones)."""
+    body = json.dumps(
+        data, separators=(",", ":"), ensure_ascii=False, allow_nan=False, default=_json_default
+    ).encode()
+    return body, gzip.compress(body, compresslevel=6)
+
+
+def _parse(raw: bytes) -> tuple[ParsedContribution, _Hierarchy]:
+    parsed = parse_text(raw.decode("utf-8", errors="replace"))
+    return parsed, _Hierarchy(parsed)
+
+
+class _Plots:
+    """One contribution revision's plot data. A kind is computed when it is
+    first asked for, and concurrent requests for it share that computation;
+    once one kind has been served the others are computed in the background,
+    one at a time, so the contribution's other tabs open at once. The parsed
+    file is kept only until every kind is encoded."""
+
+    def __init__(self, read: Callable[[], Awaitable[bytes]]):
+        self._read = read
+        self._source: asyncio.Task | None = None
+        self._kinds: dict[str, asyncio.Task] = {}
+        self._warming: asyncio.Task | None = None
+
+    async def _parsed(self) -> tuple[ParsedContribution, _Hierarchy]:
+        if self._source is None:
+            self._source = asyncio.create_task(self._load())
+        source = self._source
+        try:
+            return await asyncio.shield(source)
+        except Exception:
+            if self._source is source:
+                self._source = None  # retried by the next request
+            raise
+
+    async def _load(self) -> tuple[ParsedContribution, _Hierarchy]:
+        return await asyncio.to_thread(_parse, await self._read())
+
+    async def _compute(self, kind: Kind) -> tuple[bytes, bytes]:
+        parsed, hierarchy = await self._parsed()
+        return await asyncio.to_thread(lambda: encode(compute_kind(parsed, hierarchy, kind)))
+
+    async def _encoded(self, kind: Kind) -> tuple[bytes, bytes]:
+        task = self._kinds.get(kind)
+        if task is None:
+            task = self._kinds[kind] = asyncio.create_task(self._compute(kind))
+        try:
+            # Shielded: a client that disconnects must not cancel the others' wait.
+            return await asyncio.shield(task)
+        except Exception:
+            if self._kinds.get(kind) is task:
+                del self._kinds[kind]  # retried by the next request
+            raise
+
+    async def get(self, kind: Kind) -> tuple[bytes, bytes]:
+        encoded = await self._encoded(kind)
+        if self._warming is None:
+            self._warming = asyncio.create_task(self._warm())
+        return encoded
+
+    async def _warm(self) -> None:
+        for kind in KINDS:
+            try:
+                await self._encoded(kind)
+            except Exception:
+                logger.exception("pmag-plots: computing %s in the background failed", kind)
+        if len(self._kinds) == len(KINDS):  # failed kinds were dropped: keep the source
+            self._source = None
+
+
+# Recently viewed contributions, by node, id and revision.
+_CACHE: OrderedDict[tuple, _Plots] = OrderedDict()
 _CACHE_SIZE = 8
 
 
@@ -990,12 +1088,13 @@ class PmagPlotsPlugin(FiestaPlugin):
 
         @router.get("/contributions/{contribution_id}/{kind}")
         async def get_plots(
+            request: Request,
             session: SessionDep,
             node: NodeDep,
             contribution_id: int,
             kind: Kind,
             private_key: str | None = None,
-        ) -> dict:
+        ) -> Response:
             """One kind of plot data for a contribution: `demag` (steps per
             specimen in each coordinate system, with their fits), `eqarea`
             (interpreted directions per location or site, with Fisher means),
@@ -1013,15 +1112,18 @@ class PmagPlotsPlugin(FiestaPlugin):
             )
             plots = _CACHE.get(key)
             if plots is None:
-                raw = await load_file(node, contribution.id, contribution.filename)
-                plots = await asyncio.to_thread(
-                    lambda: compute_plots(parse_text(raw.decode("utf-8", errors="replace")))
+                plots = _CACHE[key] = _Plots(
+                    lambda: load_file(node, contribution.id, contribution.filename)
                 )
-                _CACHE[key] = plots
                 while len(_CACHE) > _CACHE_SIZE:
                     _CACHE.popitem(last=False)
             _CACHE.move_to_end(key)
-            return plots[kind]
+            body, gzipped = await plots.get(kind)
+            headers = {"Vary": "Accept-Encoding"}
+            if "gzip" in request.headers.get("accept-encoding", ""):
+                headers["Content-Encoding"] = "gzip"
+                body = gzipped
+            return Response(body, media_type="application/json", headers=headers)
 
         return router
 

@@ -44,7 +44,14 @@ What stays custom, because PmagPy has no function for it:
 `summary.pmag_plots` of one `pmag_plots` doc per contribution holds the counts
 (`compute_counts`: the same row selection, without the PmagPy calls);
 `GET /v2/{node}/plugins/pmag-plots/contributions/{id}/{kind}` serves the plot
-data, parsed once per contribution revision and cached:
+data. Each API process keeps the last 8 contributions viewed, per revision
+(`_Plots`): a kind is computed when a tab first asks for it (requests for it
+at the same time share the computation), encoded once as JSON and gzip, and
+served gzipped to clients that accept it. Once one kind has been served, the
+others are computed in the background, so the rest of a contribution's tabs
+open at once. On McMurdo (25.5k measurements) the first tab takes about 2 s,
+2.2 MB of JSON sent as 0.6 MB; later tabs and repeat views take under a
+millisecond.
 
 - `demag`: `net`, and per specimen its steps (kind, value in mT / °C / J,
   moment, bad flag), `coords.{s,g,t}` (dec, inc, equal-area x/y, north, east,

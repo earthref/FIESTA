@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager, suppress
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy import text
 
 from fiesta.apps.deps import NodeDep, SessionDep
@@ -74,6 +75,11 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # Compress responses for clients that accept gzip (search results, plot
+    # data and downloads are JSON or text and shrink 3-5x). Level 6: nearly
+    # level 9's ratio at a third of its CPU. A response that already carries
+    # Content-Encoding (the pmag-plots cache serves its own gzip) passes as is.
+    app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
 
     @app.middleware("http")
     async def current_node_config(request, call_next):
