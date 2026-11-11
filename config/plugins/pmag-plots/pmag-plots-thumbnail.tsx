@@ -45,6 +45,8 @@ const RED = "#d62728";
 const BLUE = "#1f77b4";
 const NET = "#8a8984";
 const AXIS = "var(--er-ink-faint)";
+// The node's color, lightened in dark mode as the tile's surface darkens.
+const NODE = "var(--node-ink)";
 
 /** The contribution's `pmag_plots` doc; the tabs' counts share this query. */
 export function pmagPlotsDocQuery(id: string, table: string, privateKey?: string) {
@@ -143,8 +145,8 @@ function EqAreaPlot({ t }: { t: EqArea }) {
           cx={c + x * r}
           cy={c - t.y[i] * r}
           r={2}
-          fill={t.up[i] ? "var(--er-surface)" : BLUE}
-          stroke={BLUE}
+          fill={t.up[i] ? "var(--er-surface)" : NODE}
+          stroke={NODE}
         />
       ))}
     </>
@@ -174,7 +176,7 @@ function HystPlot({ t }: { t: Hyst }) {
     <>
       <line x1={PAD / 2} x2={SIZE - PAD / 2} y1={f.y(0)} y2={f.y(0)} stroke={AXIS} />
       <line x1={f.x(0)} x2={f.x(0)} y1={PAD / 2} y2={SIZE - PAD / 2} stroke={AXIS} />
-      <path d={path(points)} fill="none" stroke={BLUE} strokeWidth={1} />
+      <path d={path(points)} fill="none" stroke={NODE} strokeWidth={1} />
     </>
   );
 }

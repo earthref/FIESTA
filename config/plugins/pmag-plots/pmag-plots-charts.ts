@@ -30,6 +30,17 @@ const GREEN = "#2ca02c";
 const PURPLE = "#9467bd";
 const BAD = "#9a9a95";
 
+/** The node's color (MagIC purple), which applyNodeTheme sets on the page;
+ * a canvas takes no CSS variables, so it is read when a chart is built. The
+ * charts stay light in dark mode, so it needs no dark variant. */
+function nodeColor(): string {
+  const color =
+    typeof document === "undefined"
+      ? ""
+      : document.documentElement.style.getPropertyValue("--node-color").trim();
+  return color || BLUE;
+}
+
 type Point = {
   value: (number | string)[];
   tip?: string;
@@ -189,7 +200,7 @@ export function directionSetOption(size: Size, set: DirectionSet, net: Net): ECh
     directionPoints(
       "Directions",
       lines.map((d) => ({ xy: d.xy as XY, inc: d.inc, tip: tip(d) })),
-      BLUE,
+      nodeColor(),
       "circle",
       size.width > 400 ? 8 : 6,
     ),
@@ -243,7 +254,7 @@ export function stepsNetOption(
             ]
           : [],
     ),
-    directionPoints("Steps", points, BLUE, "circle", size.width > 400 ? 8 : 6),
+    directionPoints("Steps", points, nodeColor(), "circle", size.width > 400 ? 8 : 6),
   ]);
 }
 
@@ -410,8 +421,8 @@ export function demagOption(_size: Size, specimen: DemagSpecimen, large: boolean
       {
         type: "line",
         symbolSize: large ? 8 : 6,
-        lineStyle: { color: RED, width: 1.2 },
-        itemStyle: { color: RED, borderColor: "#fff", borderWidth: 0.5 },
+        lineStyle: { color: nodeColor(), width: 1.2 },
+        itemStyle: { color: nodeColor(), borderColor: "#fff", borderWidth: 0.5 },
         data: index.map((i) => ({
           value: [steps.value[i] ?? 0, steps.m[i] / max],
           tip: [
@@ -574,8 +585,8 @@ export function hysteresisOption(_size: Size, loop: HystLoop, large: boolean): E
       type: "line",
       symbol: "circle",
       symbolSize: large ? 3 : 2,
-      lineStyle: { color: BLUE, width: 1 },
-      itemStyle: { color: BLUE },
+      lineStyle: { color: nodeColor(), width: 1 },
+      itemStyle: { color: nodeColor() },
       large: loop.field.length > 5000,
       data: loop.field.map((field, i) => ({
         value: [field, loop.m[i]],
