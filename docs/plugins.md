@@ -121,8 +121,12 @@ both resolve from `fiesta/frontend/` (Vite's `resolve.dedupe` and the tsconfig
 Colors follow the light/dark theme through tokens, not literals: `bg-surface`
 (not `bg-white`), `text-ink`/`-muted`/`-faint`, `border-line`/`border-edge`,
 `bg-panel`, and the gray palette, which dark mode remaps; `text-node-ink` for
-node-colored text. A plot with fixed colors (an SVG chart, a canvas) carries
-`className="er-light"` so it stays light in dark mode; `EChart` already does.
+node-colored text. Plots follow the theme too: an SVG chart uses the
+`--er-plot-*` tokens (`var(--er-plot-net)`, …) or the gray palette as `var()`;
+an echarts option reads `plotColors()` (`@/lib/plot-colors`: text, grid, axis,
+net, surface for marker halos, the node color lightened in dark mode) inside
+`build`, which `EChart` re-runs on a theme switch (a memoized series takes
+`usePlotColors()` as a dependency). Data colors (red/blue series) stay as they are.
 
 ## The plugins
 

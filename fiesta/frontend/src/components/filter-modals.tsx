@@ -22,6 +22,7 @@ import { useCallback, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { useNodeConfig } from "../lib/config";
 import { dataModelQuery, unwrapModel } from "../lib/data-model";
+import { plotColors } from "../lib/plot-colors";
 import type {
   DataModel,
   DataModelColumn,
@@ -449,7 +450,6 @@ const SCALES: [boolean, string][] = [
   [false, "Linear"],
   [true, "Log"],
 ];
-const OTHER_FILL = "#c8c8c4";
 
 /** A value to show or type: 4 significant digits, no trailing zeros. */
 export const formatValue = (value: number) =>
@@ -552,50 +552,58 @@ export function RangeModal({
   );
 
   const xLog = !!data?.log;
-  const build = useCallback(
-    () =>
-      ({
-        animation: false,
-        grid: { left: 56, right: 24, top: 16, bottom: 48 },
-        tooltip: { trigger: "item", confine: true, textStyle: { fontSize: 12 } },
-        xAxis: {
-          type: xLog ? "log" : "value",
-          name: `${label}${filter.unit ? ` (${filter.unit})` : ""}`,
-          nameLocation: "middle",
-          nameGap: 30,
-          min: bars[0]?.lo,
-          max: bars[bars.length - 1]?.hi,
-          scale: true,
-          axisLabel: { formatter: (v: number) => formatValue(v) },
-          splitLine: { show: false },
-        },
-        yAxis: { type: "value", name: "Records", minInterval: 1, nameGap: 12 },
-        series: [
-          {
-            type: "custom",
-            data: bars.map((bar) => [bar.lo, bar.hi, 0, bar.count]),
-            encode: { x: [0, 1], y: [2, 3] },
-            renderItem: (
-              params: { dataIndex: number },
-              chart: { value: (i: number) => number; coord: (p: number[]) => number[] },
-            ) => {
-              const [x0, y1] = chart.coord([chart.value(0), chart.value(3)]);
-              const [x1, y0] = chart.coord([chart.value(1), chart.value(2)]);
-              return {
-                type: "rect",
-                shape: { x: x0 + 0.5, y: y1, width: Math.max(1, x1 - x0 - 1), height: y0 - y1 },
-                style: { fill: flags[params.dataIndex] ? color : OTHER_FILL },
-              };
-            },
-            tooltip: {
-              formatter: (item: { value: number[] }) =>
-                `${formatValue(item.value[0])} – ${formatValue(item.value[1])}${unit}: ${item.value[3].toLocaleString()}`,
-            },
+  const build = useCallback(() => {
+    // Read per build (a canvas takes no CSS variables); EChart rebuilds on a theme switch.
+    const colors = plotColors();
+    const axisColors = {
+      nameTextStyle: { color: colors.text },
+      axisLine: { lineStyle: { color: colors.axis } },
+      axisTick: { lineStyle: { color: colors.axis } },
+      axisLabel: { color: colors.text },
+      splitLine: { lineStyle: { color: colors.grid } },
+    };
+    return {
+      animation: false,
+      grid: { left: 56, right: 24, top: 16, bottom: 48 },
+      tooltip: { trigger: "item", confine: true, textStyle: { fontSize: 12 } },
+      xAxis: {
+        type: xLog ? "log" : "value",
+        name: `${label}${filter.unit ? ` (${filter.unit})` : ""}`,
+        nameLocation: "middle",
+        nameGap: 30,
+        min: bars[0]?.lo,
+        max: bars[bars.length - 1]?.hi,
+        scale: true,
+        ...axisColors,
+        axisLabel: { color: colors.text, formatter: (v: number) => formatValue(v) },
+        splitLine: { show: false },
+      },
+      yAxis: { type: "value", name: "Records", minInterval: 1, nameGap: 12, ...axisColors },
+      series: [
+        {
+          type: "custom",
+          data: bars.map((bar) => [bar.lo, bar.hi, 0, bar.count]),
+          encode: { x: [0, 1], y: [2, 3] },
+          renderItem: (
+            params: { dataIndex: number },
+            chart: { value: (i: number) => number; coord: (p: number[]) => number[] },
+          ) => {
+            const [x0, y1] = chart.coord([chart.value(0), chart.value(3)]);
+            const [x1, y0] = chart.coord([chart.value(1), chart.value(2)]);
+            return {
+              type: "rect",
+              shape: { x: x0 + 0.5, y: y1, width: Math.max(1, x1 - x0 - 1), height: y0 - y1 },
+              style: { fill: flags[params.dataIndex] ? color : colors.faded },
+            };
           },
-        ],
-      }) as EChartsOption,
-    [bars, flags, xLog, label, filter.unit, unit, color],
-  );
+          tooltip: {
+            formatter: (item: { value: number[] }) =>
+              `${formatValue(item.value[0])} – ${formatValue(item.value[1])}${unit}: ${item.value[3].toLocaleString()}`,
+          },
+        },
+      ],
+    } as EChartsOption;
+  }, [bars, flags, xLog, label, filter.unit, unit, color]);
 
   const changed = draft.gte !== initial.gte || draft.lte !== initial.lte;
   const apply = () => {

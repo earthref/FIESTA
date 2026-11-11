@@ -87,8 +87,9 @@ export const SEMANTIC_ICONS: Record<string, IconDefinition> = {
 };
 
 /** One FA glyph, 1em tall, width from its aspect ratio (like `i.icon`).
- * `outline` draws a white stroke behind the glyph, in viewBox units (legacy
- * corner icons have a 1px white text-shadow on every side). */
+ * `outline` draws a stroke behind the glyph, in viewBox units (legacy
+ * corner icons have a 1px white text-shadow on every side): white, or
+ * `--er-icon-outline` where the background is not (dark mode). */
 export function FaIcon({
   icon,
   className,
@@ -118,7 +119,14 @@ export function FaIcon({
         ...style,
       }}
     >
-      {outline && <path d={d} stroke="#fff" strokeWidth={outline} strokeLinejoin="round" />}
+      {outline && (
+        <path
+          d={d}
+          stroke="var(--er-icon-outline, #fff)"
+          strokeWidth={outline}
+          strokeLinejoin="round"
+        />
+      )}
       <path d={d} />
     </svg>
   );
