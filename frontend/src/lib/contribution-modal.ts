@@ -23,25 +23,42 @@ declare module "@tanstack/react-router" {
  * (and `tab`, the modal's tab: "contribution", a level's table, "map" or a
  * plugin tab's key), keeping the current search behind it. `match` is a row
  * of that level's table for the modal to find and select (carried in the
- * history entry, not the URL). On the portal home (NodeConfigScope) it loads
- * the scoped node's search page instead.
+ * history entry, not the URL). `options.plot` selects a plot in a plot tab
+ * (`?plot=`), and `options.privateKey` opens a private contribution (the
+ * private workspace's). On the portal home (NodeConfigScope) it loads the
+ * scoped node's search page instead.
  */
 export function useOpenContribution(): (
   id: string,
   tab?: string,
   match?: Record<string, unknown>,
+  options?: { plot?: string; privateKey?: string },
 ) => void {
   const scoped = useContext(NodeConfigScope);
   const navigate = useNavigate();
-  return (id, tab, match) => {
+  return (id, tab, match, options) => {
+    const plot = options?.plot;
+    const privateKey = options?.privateKey;
     if (scoped) {
-      const query = new URLSearchParams({ contribution: id, ...(tab ? { tab } : {}) });
+      const query = new URLSearchParams({
+        contribution: id,
+        ...(tab ? { tab } : {}),
+        ...(plot ? { plot } : {}),
+        ...(privateKey ? { private_key: privateKey } : {}),
+      });
       window.location.assign(nodeSiteUrl(scoped.key, `/search?${query}`));
       return;
     }
     navigate({
       to: "/search",
-      search: (prev: SearchParams) => ({ ...prev, contribution: Number(id), tab, row: undefined }),
+      search: (prev: SearchParams) => ({
+        ...prev,
+        contribution: Number(id),
+        tab,
+        row: undefined,
+        plot,
+        ...(privateKey ? { private_key: privateKey } : {}),
+      }),
       state: match && tab ? { rowMatch: { id, table: tab, values: match } } : undefined,
     });
   };

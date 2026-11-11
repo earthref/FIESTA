@@ -38,9 +38,15 @@ const pmagPlotsPlugin: PluginModule = {
           return Number(getPath(hit, `summary.pmag_plots.${type}`) ?? 0);
         },
       }),
-      render: ({ id, privateKey }) => (
+      render: ({ id, privateKey, plot, onPlot }) => (
         <Suspense fallback={<PageSpinner label="Loading plots…" />}>
-          <PmagPlotsView type={type} id={id} privateKey={privateKey} />
+          <PmagPlotsView
+            type={type}
+            id={id}
+            privateKey={privateKey}
+            selected={plot}
+            onSelect={onPlot}
+          />
         </Suspense>
       ),
     }));

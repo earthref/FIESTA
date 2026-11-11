@@ -86,9 +86,13 @@ millisecond.
   interpretation's fit (`b`, `b_sigma`, `f`, `g`, `q`, `line`, `int_calc`);
 - `hyst`: per loop its fields and moments.
 
-UI: a filterable grid of echarts plots with a coordinate-system and level
-switch; a plot enlarges with its neighbours a click away, wheel zoom, and step
-values on hover.
+UI: a tab per plot type with a coordinate-system and level switch and a name
+filter. The selected plot (the first, or `?plot=<key>`) is drawn large and
+interactive (wheel and box zoom, step values on hover), and every plot of the
+level is a small card to pick from, below it or, from 960px wide, in a column
+beside it; the cards scroll virtually. A search grid's Plot tile opens its
+contribution's tab with that plot selected (`?plot=`: a specimen's name, or an
+equal-area group's `<level>:<name>`, which the thumbnail carries as `level`).
 
 Options: `plot_types` (the tabs, in order).
 

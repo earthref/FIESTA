@@ -304,14 +304,28 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
     !contribution.is_activated &&
     (!doi.trim() || (requireReference && !!reference.data && reference.data.status !== "ok"));
 
-  // Synthesized search doc so the bottom segment reuses the collapsed result card.
+  // The contribution's search doc (its level counts, what the Counts and Plot
+  // tiles read), refetched as the contribution changes; until it is indexed,
+  // a doc of the workspace's own fields, which stay the fresher either way.
   const contributionLevel = config?.search_levels.find(
     (entry) => entry.table === "contribution",
   ) ?? { name: "Contributions", table: "contribution", count_field: null };
+  const indexed = useQuery({
+    queryKey: ["contribution", contribution.id, contribution.private_key, contribution.updated_at],
+    queryFn: () =>
+      api<SearchResult>(`/contributions/${contribution.id}`, {
+        params: { private_key: contribution.private_key || undefined },
+      }),
+    retry: false,
+  });
+  const indexedSummary = (indexed.data?.summary ?? {}) as Record<string, unknown>;
   const doc: SearchResult = {
+    ...indexed.data,
     _is_activated: contribution.is_activated,
     summary: {
+      ...indexedSummary,
       contribution: {
+        ...((indexedSummary.contribution as Record<string, unknown> | undefined) ?? {}),
         id: contribution.id,
         version: contribution.version,
         timestamp: contribution.updated_at,

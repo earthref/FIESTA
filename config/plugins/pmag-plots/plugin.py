@@ -984,7 +984,7 @@ def _zijd_thumbnail(specimen: str, rows: list[dict], hierarchy: _Hierarchy) -> d
 
 
 def _eqarea_thumbnail(group: tuple) -> dict | None:
-    _level, _group_level, name, rows, name_column = group
+    level, _group_level, name, rows, name_column = group
     sets = _direction_sets(rows, name_column)
     found = next((sets[c] for c in ("g", "t", "s") if c in sets), None)
     lines = [d for d in (found or {}).get("dirs", []) if "xy" in d]
@@ -993,6 +993,8 @@ def _eqarea_thumbnail(group: tuple) -> dict | None:
     lines = _thin(lines)
     return {
         "name": name,
+        # The group's level, with its name the modal's key for this plot.
+        "level": level,
         "x": [_r(d["xy"][0], 3) for d in lines],
         "y": [_r(d["xy"][1], 3) for d in lines],
         "up": [int(d["inc"] < 0) for d in lines],

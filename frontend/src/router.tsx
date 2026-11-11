@@ -40,6 +40,8 @@ export interface SearchParams {
   contribution?: number;
   tab?: string;
   row?: number;
+  /** The plot selected in a plot tab (the plugin's key for it). */
+  plot?: string;
   private_key?: string;
   /** "My contributions": the signed-in user's own, unpublished or published. */
   mine?: "in_prep" | "published";
@@ -109,6 +111,7 @@ const searchRoute = createRoute({
     contribution: id(search.contribution),
     tab: str(search.tab),
     row: id(search.row),
+    plot: str(search.plot),
     private_key: str(search.private_key),
     mine: search.mine === "in_prep" || search.mine === "published" ? search.mine : undefined,
     versions: search.versions === "all" ? "all" : undefined,
