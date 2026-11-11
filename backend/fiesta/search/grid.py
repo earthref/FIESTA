@@ -20,23 +20,13 @@ import re
 from dataclasses import dataclass, field
 from typing import Literal
 
+from fiesta.domain.summarize import INHERITED_COLUMNS
 from fiesta.nodeconfig import GridColumn, NodeConfig, SearchLevel
 
 SortType = Literal["keyword", "number", "date", "long"]
 
 _CONTRIBUTION = "summary.contribution"
 _REFERENCE = f"{_CONTRIBUTION}._reference"
-_GEOLOGIC = ["plate_blocks", "terranes", "geological_province_sections", "tectonic_settings"]
-_GEOGRAPHIC = [
-    "continent_ocean",
-    "country",
-    "ocean_sea",
-    "region",
-    "village_city",
-    "location",
-    "location_type",
-    "location_alternatives",
-]
 
 # The default tiles, in the legacy result card's order; download and links
 # exist only on contribution records.
@@ -182,7 +172,7 @@ def _defaults(
         case "plot":
             return "Plot", 100, None, [], []
         case "geo":
-            geography = [*_GEOLOGIC, *_GEOGRAPHIC]
+            geography = list(INHERITED_COLUMNS)
             return "Geography", 125, None, _all(*geography), geography
         case "geology":
             return (

@@ -225,6 +225,47 @@ def test_summarize_groups_a_records_rows(magic_node):
     assert s1["_all"]["method_codes"] == ["LP-AN-MS", "LP-HYS"]
 
 
+def test_summarize_inherits_geography(magic_node):
+    # A sample and a specimen show (and filter on) the geography of the site
+    # and location above them, as the legacy summaries inherited their parents'.
+    text = "\n>>>>>>>>>>\n".join(
+        [
+            _tab_block(
+                "contribution",
+                ["id", "data_model_version"],
+                [{"id": 1, "data_model_version": "3.0"}],
+            ),
+            _tab_block(
+                "locations",
+                ["location", "country", "plate_blocks"],
+                [{"location": "Hawaii", "country": "United States", "plate_blocks": "Pacific"}],
+            ),
+            _tab_block("sites", ["site", "location"], [{"site": "HW01", "location": "Hawaii"}]),
+            _tab_block("samples", ["sample", "site"], [{"sample": "HW01a", "site": "HW01"}]),
+            _tab_block(
+                "specimens",
+                ["specimen", "sample", "method_codes"],
+                [
+                    {"specimen": "HW01a1", "sample": "HW01a", "method_codes": "LP-HYS"},
+                    {"specimen": "X1", "sample": "elsewhere"},
+                ],
+            ),
+        ]
+    )
+    docs = summarize(magic_node, parse_text(text), {"id": 1})
+    alls = {(d["type"], d["rows"][0].get(d["type"][:-1])): d["summary"]["_all"] for d in docs[1:]}
+    for record in (("sites", "HW01"), ("samples", "HW01a"), ("specimens", "HW01a1")):
+        geography = {k: alls[record].get(k) for k in ("location", "country", "plate_blocks")}
+        assert geography == {
+            "location": ["Hawaii"],
+            "country": ["United States"],
+            "plate_blocks": ["Pacific"],
+        }, record
+    # Only geography is inherited, and only from a record it names.
+    assert "method_codes" not in alls[("samples", "HW01a")]
+    assert "country" not in alls[("specimens", "X1")]
+
+
 def test_karar_config_loads(karar_node):
     assert karar_node.hierarchy[-1] == "measurements"
     assert karar_node.search.index == "karar"
