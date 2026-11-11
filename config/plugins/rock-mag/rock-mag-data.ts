@@ -141,9 +141,11 @@ export interface Group {
 }
 
 /** The specimens in colour groups: the most common values of `by` (up to
- * three), then the rest as "Other" (and "Not given" folds in there too). */
-export function groupSpecimens(specimens: Specimen[], by: ColorBy): Group[] {
-  if (by === "none") return [{ name: "Specimens", color: SLOTS[0], members: specimens }];
+ * three), then the rest as "Other" (and "Not given" folds in there too).
+ * `primary` (the node's brand colour) takes the first slot when given. */
+export function groupSpecimens(specimens: Specimen[], by: ColorBy, primary?: string): Group[] {
+  const slots = primary ? [primary, ...SLOTS.slice(1)] : SLOTS;
+  if (by === "none") return [{ name: "Specimens", color: slots[0], members: specimens }];
   const counts = new Map<string, number>();
   for (const s of specimens) {
     const value = s[by];
@@ -153,7 +155,7 @@ export function groupSpecimens(specimens: Specimen[], by: ColorBy): Group[] {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, MAX_GROUPS)
     .map(([name]) => name);
-  const groups: Group[] = top.map((name, i) => ({ name, color: SLOTS[i], members: [] }));
+  const groups: Group[] = top.map((name, i) => ({ name, color: slots[i], members: [] }));
   const other: Group = { name: "Other", color: OTHER_COLOR, members: [] };
   for (const s of specimens) {
     const i = top.indexOf(s[by] ?? "");
