@@ -175,45 +175,78 @@ const DRAW: Record<keyof Thumbnails, (t: Thumbnail) => ReactNode> = {
   hyst: (t) => <HystPlot t={t as Hyst} />,
 };
 
+/** GET /plugins/pmag-plots/thumbnails/{id}: one record's plot counts and thumbnails. */
+interface RecordPlots {
+  counts: Record<string, number>;
+  thumbnails: Thumbnails;
+}
+
+const spinner = (width: number) => (
+  <NoPlotsCell width={width}>
+    <div className="flex h-[98px] items-center justify-center">
+      <Spinner />
+    </div>
+  </NoPlotsCell>
+);
+
+/** The Plot tile of a contribution (`table` "contribution") or of one of its
+ * locations, sites, samples or specimens (`name`). A contribution's thumbnails
+ * come with its `pmag_plots` doc; a record's, and those of a contribution
+ * indexed before thumbnails existed, from the plugin's route, which computes
+ * them from the file once. */
 export function PmagPlotThumbnail({
   id,
   table,
+  name,
+  docTable,
   plotTypes,
   privateKey,
   width,
 }: {
   id: string;
   table: string;
+  name?: string;
+  docTable: string;
   plotTypes: PlotType[];
   privateKey?: string;
   width: number;
 }) {
   const openContribution = useOpenContribution();
-  const query = useQuery({
-    ...pmagPlotsDocQuery(id, table, privateKey),
-    select: (page: SearchPage) => page.results[0],
+  const isContribution = table === "contribution";
+  const doc = useQuery({
+    ...pmagPlotsDocQuery(id, docTable, privateKey),
+    select: (page: SearchPage) => page.results[0] ?? null,
+    enabled: isContribution,
   });
-  if (query.isPending) {
-    return (
-      <NoPlotsCell width={width}>
-        <div className="flex h-[98px] items-center justify-center">
-          <Spinner />
-        </div>
-      </NoPlotsCell>
-    );
-  }
-  const block = getPath(query.data, "summary.pmag_plots") as Record<string, unknown> | undefined;
-  const total = plotTypes.reduce((sum, type) => sum + Number(block?.[type] ?? 0), 0);
-  if (!block || total === 0) return <NoPlotsCell width={width} />;
+  const docBlock = getPath(doc.data, "summary.pmag_plots") as Record<string, unknown> | undefined;
+  const docThumbnails = getPath(docBlock, "_geometry.thumbnails") as Thumbnails | undefined;
+  const totalOf = (counts: Record<string, unknown> | undefined) =>
+    plotTypes.reduce((sum, type) => sum + Number(counts?.[type] ?? 0), 0);
+  const fromRoute = !isContribution || (doc.isSuccess && totalOf(docBlock) > 0 && !docThumbnails);
+  const record = useQuery({
+    queryKey: ["plugin", "pmag-plots", "thumbnails", id, table, name, privateKey],
+    queryFn: () =>
+      api<RecordPlots>(`/plugins/pmag-plots/thumbnails/${id}`, {
+        params: { table, name: name || undefined, private_key: privateKey || undefined },
+      }),
+    enabled: fromRoute,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  if ((isContribution && doc.isPending) || (fromRoute && record.isPending)) return spinner(width);
 
-  const thumbnails = (getPath(block, "_geometry.thumbnails") ?? {}) as Thumbnails;
+  // The route's answer when asked; a contribution whose route failed keeps its doc's count.
+  const counts = record.data?.counts ?? (isContribution ? docBlock : undefined);
+  const thumbnails = record.data?.thumbnails ?? docThumbnails ?? {};
+  const total = totalOf(counts);
+  if (!counts || total === 0) return <NoPlotsCell width={width} />;
+
   const drawable = (Object.keys(DRAW) as (keyof Thumbnails)[]).filter(
     (type) => thumbnails[type] && plotTypes.includes(type),
   );
-  const type = pick(drawable, id);
+  const type = pick(drawable, `${id}:${table}:${name ?? ""}`);
   const thumbnail = type && thumbnails[type];
-  // Before a re-index there are counts but no thumbnails: the first tab opens.
-  const tab = type ?? plotTypes.find((t) => Number(block[t] ?? 0) > 0) ?? plotTypes[0];
+  // Counts without a thumbnail (it failed to draw): the first tab with plots opens.
+  const tab = type ?? plotTypes.find((t) => Number(counts[t] ?? 0) > 0) ?? plotTypes[0];
   const plots = `${total.toLocaleString()} plot${total === 1 ? "" : "s"}`;
   const label = thumbnail ? `${PLOTS[tab].label} of ${thumbnail.name} · ${plots}` : plots;
 
