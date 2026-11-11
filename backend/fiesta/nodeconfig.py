@@ -27,6 +27,9 @@ BOX_COLUMNS = ("lon_w", "lat_s", "lon_e", "lat_n")
 NUMBER_TYPES = {"Number", "Integer"}
 # Number columns that are ids, not measurements (FIESTA's row stamps).
 NUMBER_ID_COLUMNS = {"contribution_id", "row_id"}
+# The with/without data filter's "any table" tab (summary._has._any: the
+# union of a doc's tables' columns with data).
+ANY_TABLE = "_any"
 # Planetary bodies other than Earth that a row's position can be on, which the
 # maps and thumbnails have a basemap for (frontend/src/components/map/bodies.ts).
 Body = Literal["moon"]
@@ -170,12 +173,16 @@ class SearchFilter(BaseModel):
     `scale` multiplies the typed value before it is sent (Ma -> years).
     `bbox`: the lat/lon box on `summary._all._geo_point`. `numeric`: a picker
     of the level's `summary._num` columns, each one picked a range of its own.
+    `exists`: the with/without data picker, a tab per table the level's docs
+    record (`NodeConfig.exists_tables`) listing its data-model columns, each
+    ticked one `has=<table>:<column>` (with data) or `has=!<table>:<column>`
+    (has the table, not that column) on `summary._has.<table>`.
     `levels` / `views` restrict where the control shows: search level names and
     result sub-tab names (Summaries, Rows, Map on levels with positions, a plugin
     tab); empty means everywhere.
     """
 
-    type: Literal["facet", "range", "bbox", "numeric"]
+    type: Literal["facet", "range", "bbox", "numeric", "exists"]
     field: str | None = None
     label: str | None = None  # facets default to the column's title in the UI
     levels: list[str] = []
@@ -191,9 +198,9 @@ class SearchFilter(BaseModel):
             if self.field:
                 raise ValueError("a bbox filter has no field (it uses summary._all._geo_point)")
             return self
-        if self.type == "numeric":
+        if self.type in ("numeric", "exists"):
             if self.field:
-                raise ValueError("a numeric filter has no field (its columns are picked)")
+                raise ValueError(f"a {self.type} filter has no field (its columns are picked)")
             return self
         if not self.field:
             raise ValueError(f"a {self.type} filter needs a field")
@@ -740,6 +747,44 @@ class NodeConfig(BaseModel):
                     out.setdefault(column)
         return list(out)
 
+    def exists_tables(self, table: str) -> list[str]:
+        """The tables whose columns with data a search table's docs record in
+        `summary._has.<table>` (the with/without data filter's tabs), in
+        data-model order: the contribution's every data-model table but its
+        own; a hierarchy level's its own and the levels below it (a record
+        takes its descendants', a location its sites' and theirs). ANY_TABLE
+        (their union) leads when there are several; none for other tables."""
+        tables = self.load_data_model(self.data_model.latest)["tables"]
+        top, levels = self.hierarchy[0], self.hierarchy[1:]
+        if table == top:
+            ordered = sorted(tables, key=lambda t: tables[t].get("position", 0))
+            found = [t for t in ordered if t != top]
+        elif table in levels:
+            found = [t for t in levels[levels.index(table) :] if t in tables]
+        else:
+            return []
+        return [ANY_TABLE, *found] if len(found) > 1 else found
+
+    def exists_columns(self, table: str, search_table: str | None = None) -> list[str]:
+        """A data-model table's columns the with/without data filter lists, in
+        position order, those only for download (`downloadOnly()`, the row
+        stamps) left out. ANY_TABLE's: those of `search_table`'s tables."""
+        if table == ANY_TABLE:
+            out: dict[str, None] = {}
+            for tab in self.exists_tables(search_table or self.hierarchy[0]):
+                if tab != ANY_TABLE:
+                    out.update(dict.fromkeys(self.exists_columns(tab)))
+            return list(out)
+        tables = self.load_data_model(self.data_model.latest)["tables"]
+        columns = tables.get(table, {}).get("columns", {})
+        return [
+            column
+            for column, definition in sorted(
+                columns.items(), key=lambda item: item[1].get("position", 0)
+            )
+            if "downloadOnly()" not in (definition.get("validations") or [])
+        ]
+
     def map_color_tables(self, color: MapColor) -> list[str]:
         """The search levels' tables whose map `color` can color: levels with
         positions, those it names, and for a column those whose table has it."""
@@ -843,6 +888,13 @@ class NodeConfig(BaseModel):
                 for c in self.search.unit_conversions
                 if c.unit
                 for column in c.all_columns
+            },
+            # The with/without data filter's tabs per search table (ANY_TABLE
+            # first when there are several), for levels that record any.
+            "exists_tables": {
+                level.table: tabs
+                for level in self.search.levels
+                if (tabs := self.exists_tables(level.table))
             },
             # `tables`: the levels (by table) each is offered on.
             "map_colors": [

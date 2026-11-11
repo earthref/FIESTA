@@ -262,10 +262,13 @@ SPA route, and a relative `src="people/x.jpg"` is a file in
 plain classes `.er-content` defines in `frontend/src/index.css` (`er-justify`,
 `er-people` portrait cards, `er-logos` tiles, `er-media` image-beside-text
 rows). The search filter sidebar
-is `search.filters` (facet / range / bbox, each with the search `levels` and
-result `views` it applies to), edited in the Search Filters tab with a column
-picker from the data model; a range needs a field a plugin indexes as a
-number (row values are text), e.g. `summary.poles.age`. Each search level's
+is `search.filters` (facet / range / bbox / numeric / exists, each with the
+search `levels` and result `views` it applies to), edited in the Search
+Filters tab with a column picker from the data model; a range needs a field
+indexed as a number (row values are text): a data-model number column's
+`summary._num.<column>` or one a plugin indexes, e.g. `summary.poles.age`.
+`numeric` picks any other number column, `exists` columns with or without data
+per table (`summary._has.<table>`, see docs/api.md). Each search level's
 Summaries grid is its `columns` (tiles such as `citation`, `counts`, `map`,
 `age`, or `{ column, label, width }` for a data column; each with its own
 header, width, sort and filter, defaults in `fiesta.search.grid`), edited in

@@ -139,6 +139,10 @@ Last updated: 2026-11-10
   "Numeric" column picker find no values on records indexed before the deploy, and
   their histograms are empty. Publication Year works without the rebuild. Production
   needs the same rebuild at cutover. Claude needs nothing after this.
+  The same one rebuild (after the "with / without data filter" PR has deployed too)
+  also gives the docs `summary._has.<table>` (each table's columns with data, a
+  `keyword` template): until then MagIC's "With / Without Data" filter lists no
+  columns with records, and ticking one empties the results.
 
 ## 2026-11-10 — Poles, Rock Magnetism and PmagPy plots computed by PmagPy
 

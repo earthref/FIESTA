@@ -171,7 +171,7 @@ export interface NodeSettings {
 
 /** A `search.filters` entry as written in the YAML (unset fields absent). */
 export interface SettingsFilter {
-  type: "facet" | "range" | "bbox" | "numeric";
+  type: "facet" | "range" | "bbox" | "numeric" | "exists";
   field?: string;
   label?: string;
   levels?: string[];

@@ -28,6 +28,14 @@ and `_all` hold text). Columns a `search.unit_conversions` entry names are
 in its base unit (ages in years BP by their age_unit); values that are not
 numbers are left out.
 
+Every doc also has `summary._has`: per table, the sorted names of its
+data-model columns (those the with/without data filter lists, see
+`NodeConfig.exists_columns`) with a value in any of the doc's rows, as
+keywords. The contribution doc's covers every table of the contribution
+(criteria, ages, images too); a record's its own table's and those of the
+records below it that name it (a location's: its sites', samples', ...).
+`summary._has._any` is the union of a doc's tables'.
+
 Positions on another planetary body (a lunar location and the rows below
 it, by the node's `search.bodies`) are `_body_point` ({lat, lon, body})
 instead of `_geo_point`, on the contribution doc too.
@@ -43,7 +51,14 @@ from typing import Any
 
 from fiesta.domain.data_model import LIST_TYPES, column_values, split_list
 from fiesta.domain.parse import ID_COLUMNS, ParsedContribution
-from fiesta.nodeconfig import BOX_COLUMNS, LAT_COLUMNS, LON_COLUMNS, NodeConfig, number
+from fiesta.nodeconfig import (
+    ANY_TABLE,
+    BOX_COLUMNS,
+    LAT_COLUMNS,
+    LON_COLUMNS,
+    NodeConfig,
+    number,
+)
 
 # Columns whose (colon-delimited) values feed summary._all facets when present.
 FACETABLE_COLUMNS = {
@@ -211,6 +226,39 @@ def _num_block(numbers: _Numbers) -> dict:
     return {"_num": values} if values else {}
 
 
+def _has_value(value: Any) -> bool:
+    """Whether a cell holds data (not blank, not an empty list)."""
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set, dict)):
+        return bool(value)
+    return True
+
+
+def _columns_with_data(rows: list[dict], columns: set[str]) -> set[str]:
+    """Which of `columns` have a value in any of the rows."""
+    found: set[str] = set()
+    for row in rows:
+        for column, value in row.items():
+            if column in columns and column not in found and _has_value(value):
+                found.add(column)
+        if len(found) == len(columns):
+            break
+    return found
+
+
+def _has_block(has: dict[str, set[str]]) -> dict:
+    """A doc's `summary._has` entry: each table's columns with data, sorted,
+    and their union under ANY_TABLE; left out when it has none."""
+    tables = {table: sorted(columns) for table, columns in has.items() if columns}
+    if not tables:
+        return {}
+    union = sorted({column for columns in has.values() for column in columns})
+    return {"_has": {**tables, ANY_TABLE: union}}
+
+
 def _finalize_all(
     collected: dict[str, set], geo_point: dict | list | None, body_point: list | None = None
 ) -> dict:
@@ -352,6 +400,17 @@ def summarize(
     areas = node.area_tables
     bodies = planetary_bodies(node, parsed)
     levels = hierarchy[1:]
+    # The columns summary._has records per table, and the contribution's.
+    has_columns = {
+        table: set(node.exists_columns(table))
+        for table in node.exists_tables(hierarchy[0])
+        if table != ANY_TABLE
+    }
+    contribution_has: dict[str, set[str]] = {
+        table: _columns_with_data(parsed.tables.get(table, []), columns)
+        for table, columns in has_columns.items()
+        if table not in levels
+    }
 
     for index, level in enumerate(levels):
         rows = parsed.tables.get(level, [])
@@ -391,6 +450,8 @@ def summarize(
                     (level, str(name)),
                     {c: set(row_all[c]) for c in INHERITED_COLUMNS if row_all.get(c)},
                 )
+            own_has = _columns_with_data(group, has_columns.get(level, set()))
+            contribution_has.setdefault(level, set()).update(own_has)
             row_numbers = _Numbers()
             row_numbers.add_rows(node, number_columns, group)
             all_numbers.update(row_numbers)
@@ -431,15 +492,20 @@ def summarize(
                 None,
             )
             placement = {"doc": doc, "body": body, "points": points, "own": own, "geo": geo}
-            placements.append({**placement, "parent": parent, "below": dict(points)})
+            placements.append(
+                {**placement, "parent": parent, "below": dict(points), "has": {level: own_has}}
+            )
             placements[-1]["area"] = level in areas
             if name not in (None, ""):
                 named.setdefault((level, str(name)), placements[-1])
 
     # The deepest records first, so each passes its descendants' points on too
     # (a sample's through its site to its location).
+    # Their columns with data too (a measurement's through its specimen, ...).
     for placement in reversed(placements):
         if (above := placement["parent"]) is not None:
+            for table, columns in placement["has"].items():
+                above["has"].setdefault(table, set()).update(columns)
             for key, point in placement["below"].items():
                 if len(above["below"]) >= MAX_GEO_POINTS:
                     break
@@ -449,6 +515,7 @@ def summarize(
     for placement in placements:
         mapped = placement["below" if placement["area"] else "points"]
         body, geo, own = (placement[k] for k in ("body", "geo", "own"))
+        placement["doc"]["summary"].update(_has_block(placement["has"]))
         all_block = placement["doc"]["summary"]["_all"]
         all_block.update(_placements(mapped) if mapped else placed(geo, body) if geo else {})
         for key, point in (mapped or ({_point_key(own, body): own} if own else {})).items():
@@ -465,6 +532,7 @@ def summarize(
                 [{**p, "body": body} for (body, *_), p in points.items() if body is not None],
             ),
             **_num_block(all_numbers),
+            **_has_block(contribution_has),
             **level_counts,
         },
     }

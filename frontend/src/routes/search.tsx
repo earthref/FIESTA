@@ -14,12 +14,15 @@ import { ColumnFilterButton } from "../components/column-filter-menu";
 import { ContributionModal } from "../components/contribution-modal";
 import { ErrorMessage } from "../components/error-message";
 import {
+  ExistsModal,
   FacetModal,
   type FacetSpec,
   GeoModal,
+  hasText,
   NumericModal,
   RangeModal,
   rangeText,
+  useLatestDataModel,
   useNumberFilter,
 } from "../components/filter-modals";
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
@@ -31,6 +34,8 @@ import {
   type FilterChip,
   FilterEntry,
   filterLabel,
+  hasFor,
+  parseHas,
   parseRange,
   pickedRanges,
   rangesFor,
@@ -190,6 +195,7 @@ function searchRequestParams(
   bbox?: string,
   sort?: string,
   filters?: string[],
+  has?: string[],
 ) {
   return {
     query: query || undefined,
@@ -200,6 +206,7 @@ function searchRequestParams(
     bbox: bbox || undefined,
     sort,
     filter: filters && filters.length > 0 ? filters : undefined,
+    has: has && has.length > 0 ? has : undefined,
   };
 }
 
@@ -213,6 +220,7 @@ type FilterModalState =
   // `back`: the numeric filter whose picker it was chosen from.
   | { kind: "range"; filter: SearchFilter; back?: SearchFilter }
   | { kind: "numeric"; filter: SearchFilter }
+  | { kind: "exists"; filter: SearchFilter }
   | { kind: "geo"; title: string; target: "area" | "bbox" };
 
 /** An area's extent as one chip's text. */
@@ -266,6 +274,7 @@ export function SearchPage() {
 
   const q = search.q ?? "";
   const ranges = useMemo(() => search.ranges ?? [], [search.ranges]);
+  const has = useMemo(() => search.has ?? [], [search.has]);
   const bbox = search.bbox;
   const levels = config?.search_levels ?? [];
   const level: SearchLevel | undefined =
@@ -317,6 +326,7 @@ export function SearchPage() {
     sort?: string | undefined;
     ranges?: string[];
     filter?: string[];
+    has?: string[];
     bbox?: string | undefined;
     area?: string | undefined;
   }) => {
@@ -328,6 +338,7 @@ export function SearchPage() {
         sort: "sort" in next ? next.sort : search.sort,
         ranges: (next.ranges ?? ranges).length > 0 ? (next.ranges ?? ranges) : undefined,
         filter: filter.length > 0 ? filter : undefined,
+        has: (next.has ?? has).length > 0 ? (next.has ?? has) : undefined,
         bbox: "bbox" in next ? next.bbox || undefined : bbox,
         area: "area" in next ? next.area || undefined : search.area,
       },
@@ -375,18 +386,37 @@ export function SearchPage() {
     setSearch({ area: next?.join(",") });
   };
 
+  // The with/without data entries a level's search applies on a view: those
+  // on the tables its records cover, while an `exists` filter shows there.
+  const hasAt = (entry: SearchLevel | undefined, viewName: string | undefined) =>
+    entry && applicableFilters(config, entry.name, viewName).some((f) => f.type === "exists")
+      ? hasFor(has, config?.exists_tables?.[entry.table])
+      : [];
+
   // Live totals for every level tab (size=1: the API requires size >= 1). The
   // open level's also follows its ranges (as its Summaries view applies them,
-  // whichever view is open); a level tab clears them.
+  // whichever view is open); a level tab clears them. Every level's follows
+  // the with/without data entries on its tables, which a level tab keeps.
   const levelRanges = rangesFor(ranges, applicableFilters(config, level?.name, "Summaries"));
   const countQueries = useQueries({
     queries: levels.map((entry) => {
       const entryRanges = entry.name === level?.name ? levelRanges : undefined;
+      const entryHas = hasAt(entry, "Summaries");
       return {
-        queryKey: ["search-count", entry.table, q, areaBbox(entry), entryRanges],
+        queryKey: ["search-count", entry.table, q, areaBbox(entry), entryRanges, entryHas],
         queryFn: () =>
           api<SearchPageData>(`/search/${entry.table}`, {
-            params: searchRequestParams(q, 1, 0, false, entryRanges, areaBbox(entry)),
+            params: searchRequestParams(
+              q,
+              1,
+              0,
+              false,
+              entryRanges,
+              areaBbox(entry),
+              undefined,
+              undefined,
+              entryHas,
+            ),
           }),
         staleTime: 60_000,
         placeholderData: keepPreviousData,
@@ -442,7 +472,11 @@ export function SearchPage() {
   // A plugin may still replace the whole panel. Range/bbox values apply to the
   // main query only when their filter is visible here; a plugin view (Poles)
   // reads them from its sub-tab context for its own fetch.
-  const filters: SearchFilter[] = applicableFilters(config, level?.name, activeTab?.name);
+  // An `exists` filter only where the level's records cover a table.
+  const existsTabs = (level && config?.exists_tables?.[level.table]) || [];
+  const filters: SearchFilter[] = applicableFilters(config, level?.name, activeTab?.name).filter(
+    (filter) => filter.type !== "exists" || existsTabs.length > 0,
+  );
   const filtersPanel = level
     ? pluginFiltersPanel(config, {
         levelName: level.name,
@@ -464,13 +498,25 @@ export function SearchPage() {
   // A plugin view renders from its own fetch; keep its ranges out of the level query.
   const queryRanges = activeTab?.render ? undefined : activeRanges;
   const queryBbox = activeTab?.render ? undefined : (areaBbox(level) ?? activeBbox);
+  const activeHas = hasAt(level, activeTab?.name);
+  const queryHas = activeTab?.render ? undefined : activeHas;
+  const dataModel = useLatestDataModel();
   // A picked number column as a range filter (its label and unit).
   const numberFilter = useNumberFilter(level?.table ?? "");
 
   // The grids are sized to every match (up to MAX_RESULTS) and fetch the
   // pages under their visible rows; page 0 carries the totals. Facet values
   // are counted by their modal when it opens.
-  const searchKey = ["search", level?.table, q, sort, queryRanges, queryBbox, gridFilterList];
+  const searchKey = [
+    "search",
+    level?.table,
+    q,
+    sort,
+    queryRanges,
+    queryBbox,
+    gridFilterList,
+    queryHas,
+  ];
   const paged = usePagedItems({
     queryKey: searchKey,
     pageSize: PAGE_SIZE,
@@ -486,6 +532,7 @@ export function SearchPage() {
             queryBbox,
             sort,
             gridFilterList,
+            queryHas,
           ),
           // The Rows and Map sub-tabs' counts, with the first page.
           totals: page === 0 || undefined,
@@ -547,6 +594,7 @@ export function SearchPage() {
       q: queryWithout(q, clearedFacets),
       ranges: keptRanges,
       filter: [],
+      has: has.filter((entry) => !activeHas.includes(entry)),
       bbox: activeBbox ? undefined : bbox,
       area: undefined,
     });
@@ -554,6 +602,7 @@ export function SearchPage() {
   const clearActive =
     hasFacetFilters ||
     activeRanges.length > 0 ||
+    activeHas.length > 0 ||
     !!activeBbox ||
     !!area ||
     gridFilterList.length > 0;
@@ -629,7 +678,7 @@ export function SearchPage() {
 
   // The search's request params for a filter modal's counts: a plugin view's
   // own docs, or the level's records (with the grid's column filters).
-  const levelParams = (query: string, rangeList: string[]) =>
+  const levelParams = (query: string, rangeList: string[], hasList = activeHas) =>
     searchRequestParams(
       query,
       1,
@@ -639,6 +688,7 @@ export function SearchPage() {
       queryBbox,
       undefined,
       gridFilterList,
+      activeTab?.render ? undefined : hasList,
     );
   const modalParams = (query: string, rangeList: string[]) =>
     pluginTable ? pluginParams(pluginTable, query, rangeList) : levelParams(query, rangeList);
@@ -684,6 +734,17 @@ export function SearchPage() {
         return { key: entry.field, label: text, title: text, onRemove: removeRange(entry.field) };
       });
     }
+    if (filter.type === "exists") {
+      return activeHas.map((entry) => {
+        const text = hasText(dataModel, parseHas(entry));
+        return {
+          key: entry,
+          label: text,
+          title: text,
+          onRemove: () => setSearch({ has: has.filter((e) => e !== entry) }),
+        };
+      });
+    }
     const box = parseArea(bbox);
     return box
       ? [{ key: "bbox", label: areaText(box), onRemove: () => setSearch({ bbox: undefined }) }]
@@ -701,7 +762,9 @@ export function SearchPage() {
           ? { kind: "range", filter }
           : filter.type === "numeric"
             ? { kind: "numeric", filter }
-            : { kind: "geo", title: filterLabel(filter), target: "bbox" },
+            : filter.type === "exists"
+              ? { kind: "exists", filter }
+              : { kind: "geo", title: filterLabel(filter), target: "bbox" },
     );
 
   const renderFilterModal = () => {
@@ -731,6 +794,23 @@ export function SearchPage() {
                 ? { filter: formatGridFilters({ ...gridFilters, [column.key]: text ?? "" }) }
                 : {}),
             });
+          }}
+          onClose={close}
+        />
+      );
+    }
+    if (filterModal.kind === "exists") {
+      return (
+        <ExistsModal
+          title={filterLabel(filterModal.filter)}
+          table={level.table}
+          levelName={level.name}
+          tabs={existsTabs}
+          has={activeHas}
+          paramsFor={(hasList) => levelParams(q, ranges, hasList)}
+          onApply={(next) => {
+            close();
+            setSearch({ has: [...has.filter((entry) => !activeHas.includes(entry)), ...next] });
           }}
           onClose={close}
         />
@@ -780,6 +860,7 @@ export function SearchPage() {
         query={q}
         ranges={queryRanges}
         filters={gridFilterList}
+        has={queryHas}
         area={isArea ? area : parseArea(bbox)}
         color={config.color}
         onApply={(next) => {
@@ -808,6 +889,8 @@ export function SearchPage() {
                   level: entry.name,
                   ranges: [],
                   filter: [],
+                  // The with/without data entries on tables its records cover.
+                  has: hasAt(entry, "Summaries"),
                   bbox: undefined,
                   // A header sort names this level's columns.
                   sort: headerSort ? undefined : search.sort,
@@ -1111,6 +1194,7 @@ export function SearchPage() {
                   query={q}
                   ranges={queryRanges}
                   filters={gridFilterList}
+                  has={queryHas}
                   area={area}
                   onAreaChange={setArea}
                   areaRequest={areaRequest}
