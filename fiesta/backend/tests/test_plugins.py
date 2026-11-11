@@ -13,6 +13,7 @@ def test_registry_names():
         "depth-plot",
         "plateau-calculations",
         "pmag-plots",
+        "periodic-table",
     }
     for plugin in all_plugins().values():
         assert plugin.description

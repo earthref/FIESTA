@@ -47,7 +47,13 @@ doi:
 pages: []
 
 features:
-  plugins: []
+  plugins: [periodic-table]
+
+# Plugin options (docs/plugins.md); the element column the periodic table counts.
+plugins:
+  periodic-table:
+    table: kds
+    column: element
 
 # Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).
 # Only the append-only archive bucket exists for KdD; private contributions are

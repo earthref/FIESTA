@@ -3,6 +3,7 @@ import { getRouteApi, Link, useRouterState } from "@tanstack/react-router";
 import {
   type CSSProperties,
   type FormEvent,
+  Fragment,
   type ReactNode,
   useCallback,
   useEffect,
@@ -78,7 +79,12 @@ import {
   queryWithout,
   toggleQueryToken,
 } from "../lib/utils";
-import { type PluginSubTabContext, pluginFiltersPanel, pluginSubTabs } from "../plugins";
+import {
+  type PluginSubTabContext,
+  pluginFiltersPanel,
+  pluginSidebarFilters,
+  pluginSubTabs,
+} from "../plugins";
 
 const PAGE_SIZE = 20;
 /** OpenSearch's max_result_window: `from` + `size` past it is refused, so the
@@ -507,7 +513,13 @@ export function SearchPage() {
         setBbox: (next) => setSearch({ bbox: next }),
       })
     : null;
-  const facetFields = filters.filter((f) => f.type === "facet").map((f) => f.field ?? "");
+  // Plugin filters after the node's own (the KdD periodic table); their
+  // query tokens clear with the sidebar's facets.
+  const pluginFilters = pluginSidebarFilters(config, level?.name, activeTab?.name);
+  const facetFields = [
+    ...filters.filter((f) => f.type === "facet").map((f) => f.field ?? ""),
+    ...pluginFilters.flatMap((filter) => filter.fields),
+  ];
   const activeRanges = rangesFor(ranges, filters);
   const activeBbox = filters.some((f) => f.type === "bbox") ? bbox : undefined;
   // The grid columns' facet lists filter through the same tokens.
@@ -1172,7 +1184,21 @@ export function SearchPage() {
                       onOpen={() => openFilter(filter)}
                     />
                   ))}
-                  {filters.length === 0 && !level.geo && (
+                  {pluginFilters.map((filter) => (
+                    <Fragment key={filter.key}>
+                      {filter.render({
+                        levelName: level.name,
+                        subTabName: activeTab?.name,
+                        config,
+                        q,
+                        setQuery: (next) => setSearch({ q: next }),
+                        table: pluginTable ?? level.table,
+                        paramsFor: (query) => modalParams(query, ranges),
+                        count: bucketCount,
+                      })}
+                    </Fragment>
+                  ))}
+                  {filters.length === 0 && pluginFilters.length === 0 && !level.geo && (
                     <p className="px-[1em] py-3 text-[12px] text-ink-faint">
                       No filters for this view.
                     </p>

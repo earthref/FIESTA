@@ -2,7 +2,15 @@
 // the plugin in configurations/plugins/<name>/ (docs/plugins.md): its index.tsx
 // default-exports a PluginModule and imports core code as "@/..." (src/).
 import type { ReactNode } from "react";
-import type { GridColumn, NodeConfig, SearchLevel, SearchResult, SearchScope } from "../lib/types";
+import type { SearchParams } from "../components/filter-modals";
+import type {
+  FacetBucket,
+  GridColumn,
+  NodeConfig,
+  SearchLevel,
+  SearchResult,
+  SearchScope,
+} from "../lib/types";
 
 export interface PluginGridCellProps {
   /** The summary grid column being rendered (its `cell` names the tile). */
@@ -50,6 +58,37 @@ export interface PluginFiltersProps {
   bbox?: string;
   setRanges: (ranges: string[]) => void;
   setBbox: (bbox: string | undefined) => void;
+}
+
+/** What a plugin's sidebar filter reads and sets: the search's query, whose
+ * `<field>:"<value>"` tokens are facet picks (OR'd within a field), and the
+ * request params its counts use, the same as the core facet modal's. */
+export interface PluginFilterContext {
+  levelName: string;
+  /** The name of the active result sub-tab (Summaries/Rows/plugin tabs). */
+  subTabName?: string;
+  config: NodeConfig;
+  /** The search's query string. */
+  q: string;
+  /** Apply a new query string (the search runs once). */
+  setQuery: (q: string) => void;
+  /** The search table its counts are on: the level's, or an open plugin view's. */
+  table: string;
+  /** The search's request params (ranges, bbox, grid filters, scope) for a
+   * query string; count a facet with `facet: [field]` added. */
+  paramsFor: (q: string) => SearchParams;
+  /** A facet bucket's count on the open sub-tab (its rows, its mapped
+   * records); undefined = its doc_count. */
+  count?: (bucket: FacetBucket) => number | undefined;
+}
+
+/** A filter a plugin adds to the search sidebar, after the node's own. */
+export interface PluginFilter {
+  key: string;
+  /** The query-token fields it sets; the sidebar's Clear removes them. A
+   * field the search API counts must be a facet (a plugin's `search_facets`). */
+  fields: string[];
+  render: (ctx: PluginFilterContext) => ReactNode;
 }
 
 export interface PluginHomeCard {
@@ -104,6 +143,12 @@ export interface PluginModule {
   levelSubTabs?: (level: SearchLevel, config: NodeConfig) => PluginSubTab[];
   /** Replace the facet sidebar for a level; return null to keep the facet sidebar. */
   filtersPanel?: (props: PluginFiltersProps) => ReactNode | null;
+  /** Filters added to the facet sidebar for a level + result view. */
+  sidebarFilters?: (
+    levelName: string,
+    subTabName: string | undefined,
+    config: NodeConfig,
+  ) => PluginFilter[];
   /** Asset tabs for the contribution modal, after its Map tab. */
   contributionTabs?: (config: NodeConfig) => ContributionTab[];
 }
@@ -167,4 +212,16 @@ export function pluginFiltersPanel(
     if (panel) return panel;
   }
   return null;
+}
+
+/** Every plugin's sidebar filters for a level + result view. */
+export function pluginSidebarFilters(
+  config: NodeConfig | undefined,
+  levelName: string | undefined,
+  subTabName: string | undefined,
+): PluginFilter[] {
+  if (!config || !levelName) return [];
+  return activePlugins(config).flatMap(
+    (plugin) => plugin.sidebarFilters?.(levelName, subTabName, config) ?? [],
+  );
 }

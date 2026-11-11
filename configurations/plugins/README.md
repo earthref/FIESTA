@@ -12,6 +12,7 @@ its options, its routes). A node switches a plugin on with
 | [pmag-plots](pmag-plots/README.md) | MagIC |
 | [depth-plot](depth-plot/README.md) | CDR |
 | [plateau-calculations](plateau-calculations/README.md) | KArAr |
+| [periodic-table](periodic-table/README.md) | KdD |
 
 How to write one, the hooks, and how the tooling reaches this folder:
 [docs/plugins.md](../../docs/plugins.md). `conftest.py` and `ruff.toml` here

@@ -76,6 +76,13 @@ class FiestaPlugin:
         become valid `/api/search/{table}` targets without adding a tab."""
         return []
 
+    def search_facets(self, node: NodeConfig) -> list[str]:
+        """Extra columns the search API counts as facet buckets
+        (`facet=<column>`) for the plugin's own sidebar filter; a picked
+        value is the usual `<column>:"<value>"` query token, OR'd within the
+        column like a sidebar facet's."""
+        return []
+
     def build_router(self) -> APIRouter | None:
         """Extra API routes, mounted at /v2/{repository}/plugins/{plugin.name} and
         served only for nodes that activate this plugin; handlers take NodeDep."""

@@ -10,6 +10,7 @@ features:
   plugins: [poles, rock-mag, pmag-plots] # magic.yaml
   plugins: [depth-plot]     # cdr.yaml
   plugins: [plateau-calculations]  # karar.yaml
+  plugins: [periodic-table]  # kdd.yaml
 ```
 
 Unknown names fail at startup, not at request time.
@@ -82,6 +83,7 @@ tests import it as `fiesta.plugins.<name>` with dashes as underscores
 | `check(node, options)` | startup and every validation / publication | reject options that do not fit this node (tables, columns, levels) with a `ValueError` |
 | `derive_docs(node, parsed, meta)` | every (re)process and `fiesta rebuild` | extra search documents derived from contribution rows (e.g. one `poles` doc per location row with `pole_lat`/`pole_lon`) — always reproducible from the bucket |
 | `search_levels(node)` | config load | extra search tabs; merged into `GET /v2/{node}/config` `search_levels` and the search API's allowed tables |
+| `search_facets(node)` | every search request with `facet=` | extra columns the search API counts as facet buckets for the plugin's own sidebar filter (the periodic table's `element`); a pick is the usual `<column>:"<value>"` query token |
 | `build_router()` | app startup | API routes mounted once at `/v2/{repository}/plugins/{name}` (e.g. plot-ready measurement series, plateau computation); handlers read the node from `NodeDep`. The router is guarded so a node that does not activate the plugin gets a 404 |
 | `frontend_config(node)` | `GET /v2/{node}/config` | arbitrary JSON under `plugins[name]` telling the UI plugin what to mount and with which options |
 
@@ -107,7 +109,19 @@ parses the canonical file from the bucket.
 custom result items and grid tiles, extra sub-tabs on a search level, filter
 overrides, home-page cards, and `contributionTabs` — asset tabs in the
 contribution modal, each counted by the matches of an optional `countTable`
-in that contribution and hidden when there are none. It activates only when
+in that contribution and hidden when there are none.
+
+`sidebarFilters(levelName, subTabName, config)` adds filters to the facet
+sidebar after the node's own (`filtersPanel` instead replaces the whole
+sidebar). Each `PluginFilter` names the query-token `fields` it sets, so the
+sidebar's Clear removes them, and renders from a `PluginFilterContext`: the
+search's `q` and `setQuery`, the `table` its counts are on, `paramsFor(q)`
+(the request params a core facet modal counts with: ranges, bbox, grid
+filters, scope) and the open sub-tab's bucket `count`. A pick is a
+`<field>:"<value>"` token, OR'd within the field like a facet's values; the
+plugin counts the field with `facet: [field]`, which the search API accepts
+once the backend half lists it in `search_facets`. The periodic table is the
+example: a `FilterEntry` whose modal is the table. It activates only when
 the plugin's name appears in `config.plugins`, so nothing node-specific leaks
 into core components.
 
@@ -133,6 +147,7 @@ node-colored text. A plot with fixed colors (an SVG chart, a canvas) carries
 | [`pmag-plots`](../configurations/plugins/pmag-plots/README.md) | MagIC | the PmagPy plots (equal area, Zijderveld, demagnetization, Arai, deremagnetization, hysteresis), drawn interactively |
 | [`depth-plot`](../configurations/plugins/depth-plot/README.md) | CDR | depth-sorted measurement tracks per core |
 | [`plateau-calculations`](../configurations/plugins/plateau-calculations/README.md) | KArAr | ⁴⁰Ar/³⁹Ar age spectra and plateaus |
+| [`periodic-table`](../configurations/plugins/periodic-table/README.md) | KdD | a periodic-table element filter in the search sidebar, each element counted in the search |
 
 Retired: **`record-cards`** (ERDA, OSU-MGR) was retired on 2026-09-30: its per-table
   card layout (title column, subtitle, cells) is now core configuration, each
