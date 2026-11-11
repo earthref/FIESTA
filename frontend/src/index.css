@@ -53,6 +53,15 @@
     border-color: var(--color-gray-200, currentcolor);
   }
 
+  /* Native checkboxes, radios and range sliders take the node colour, not the
+     browser's blue (the `accent-node` utility, as a default for every one). */
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"],
+  progress {
+    accent-color: var(--node-color);
+  }
+
   /* Legacy Semantic UI globals (site.variables): Open Sans, 1em = 14px,
      body line-height 1.4285em, text rgba(0,0,0,.87). */
   html {
