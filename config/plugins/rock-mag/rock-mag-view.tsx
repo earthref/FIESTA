@@ -4,6 +4,7 @@ import { type BrushRange, EChart, type EChartsOption } from "@/components/echart
 import { ErrorMessage } from "@/components/error-message";
 import { PageSpinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
+import { useNodeConfig } from "@/lib/config";
 import { cx } from "@/lib/utils";
 import {
   axisName,
@@ -81,7 +82,12 @@ export default function RockMagView({
 
   const specimens = useMemo(() => (values.data ? specimensFrom(values.data) : []), [values.data]);
   const [colorBy, setColorBy] = useState<ColorBy>("none");
-  const groups = useMemo(() => groupSpecimens(specimens, colorBy), [specimens, colorBy]);
+  // The node's brand colour (MagIC purple) for the specimens, not a fixed blue.
+  const nodeColor = useNodeConfig().data?.color;
+  const groups = useMemo(
+    () => groupSpecimens(specimens, colorBy, nodeColor),
+    [specimens, colorBy, nodeColor],
+  );
   const [selection, setSelection] = useState<Selection | null>(null);
   // A new search starts without a selection.
   const [selectionFor, setSelectionFor] = useState(values.data);
