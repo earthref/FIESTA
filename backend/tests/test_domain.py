@@ -3,7 +3,14 @@ from pathlib import Path
 import pytest
 
 from fiesta.domain.compare import changed_rows, issue_rows
-from fiesta.domain.parse import ParsedContribution, ParseError, export_text, parse_text, stamp_ids
+from fiesta.domain.parse import (
+    ParsedContribution,
+    ParseError,
+    export_text,
+    parse_text,
+    set_table_values,
+    stamp_ids,
+)
 from fiesta.domain.summarize import summarize
 from fiesta.domain.validate import guess_data_model_version, validate_contribution
 from fiesta.nodeconfig import load_deployment
@@ -566,6 +573,54 @@ def test_search_has_counts_one_table(magic_node, monkeypatch):
         {"table": "_any", "column": "lat", "without": True},
         {"table": "sites", "column": "vadm", "without": False},
     ]
+
+
+def test_set_table_values():
+    values = {"lab_names": "Lab A:Lab B", "description": "two\tlines\nhere"}
+    text = set_table_values(MAGIC_TEXT, "contribution", values)
+    parsed = parse_text(text)
+    row = parsed.tables["contribution"][0]
+    assert row["lab_names"] == "Lab A:Lab B"
+    assert row["description"] == "two lines here"
+    # Every other table, and the contribution's other cells, are untouched.
+    before = parse_text(MAGIC_TEXT)
+    kept = {k: v for k, v in before.tables["contribution"][0].items() if k not in values}
+    assert {k: v for k, v in row.items() if k not in values} == kept
+    assert {t: r for t, r in parsed.tables.items() if t != "contribution"} == {
+        t: r for t, r in before.tables.items() if t != "contribution"
+    }
+    # A column already in the header is overwritten in place; "" empties it.
+    assert text.split("\n")[1].split("\t").count("lab_names") == 1
+    again = parse_text(set_table_values(text, "contribution", {"lab_names": ""}))
+    assert "lab_names" not in again.tables["contribution"][0]
+    # A file without the table gains its block; a block without rows, a row.
+    bare = "tab delimited\tsites\nsite\nS1\n"
+    added = parse_text(set_table_values(bare, "contribution", {"description": "x"}))
+    assert added.tables["contribution"] == [{"description": "x"}]
+    assert added.tables["sites"] == [{"site": "S1"}]
+    empty = "tab delimited\tcontribution\nid\n>>>>>>>>>>\ntab delimited\tsites\nsite\nS1\n"
+    filled = parse_text(set_table_values(empty, "contribution", {"description": "x"}))
+    assert filled.tables["contribution"] == [{"description": "x"}]
+    assert filled.tables["sites"] == [{"site": "S1"}]
+
+
+def test_workspace_fields_are_node_configuration(magic_node):
+    workspace = magic_node.public_config()["workspace"]
+    fields = {f["column"]: f for f in workspace["fields"]}
+    assert list(fields) == ["lab_names", "funding", "supplemental_links", "description"]
+    assert {k: fields["lab_names"][k] for k in ("label", "kind", "vocabulary", "required")} == {
+        "label": "Labs",
+        "kind": "list",
+        "vocabulary": "lab_names",
+        "required": True,
+    }
+    assert fields["funding"]["kind"] == fields["supplemental_links"]["kind"] == "links"
+    assert fields["description"]["kind"] == "text"
+    assert workspace["require_reference"] is True
+    assert "lab_names" in magic_node.load_controlled_vocabularies()
+    bad = magic_node.model_dump() | {"workspace": {"fields": [{"column": "no_such_column"}]}}
+    with pytest.raises(ValueError, match="no_such_column"):
+        type(magic_node).model_validate(bad)
 
 
 def test_karar_config_loads(karar_node):

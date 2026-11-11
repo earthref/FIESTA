@@ -453,6 +453,28 @@ class PublishConfig(BaseModel):
         return self
 
 
+class WorkspaceField(BaseModel):
+    """A column of the workspace table a private contribution's card edits.
+    Its control follows the data model: a `List` column is a multi-select
+    (over its `cv(...)` vocabulary when it has one), a `Dictionary` column is
+    rows of title + URL (`title[url]` cells joined by `;`), anything else is a
+    text input. `required()` columns are marked until they are filled."""
+
+    column: str
+    label: str | None = None  # default: the data model's label
+    placeholder: str | None = None
+
+
+class WorkspaceConfig(BaseModel):
+    """The private workspace's per-node options (legacy MagIC
+    private_contributions.jsx: Labs, Funding, Supplement, Description)."""
+
+    table: str = "contribution"
+    fields: list[WorkspaceField] = []
+    # Publish waits until the reference DOI resolves at Crossref or DataCite.
+    require_reference: bool = False
+
+
 class HomeCardConfig(BaseModel):
     """A resource card on the home page (legacy `ui nine cards` IconButton)."""
 
@@ -608,6 +630,7 @@ class NodeConfig(BaseModel):
     pages: list[PageConfig] = []
     features: FeaturesConfig = FeaturesConfig()
     publish: PublishConfig = PublishConfig()
+    workspace: WorkspaceConfig = WorkspaceConfig()
     # Per-plugin options, keyed by plugin name, validated against each
     # plugin's Options model by fiesta.plugins.active_plugins.
     plugins: dict[str, dict[str, Any]] = {}
@@ -638,7 +661,19 @@ class NodeConfig(BaseModel):
         ):
             raise ValueError(f"search.bodies column {bodies.column!r} is in no hierarchy table")
         self._check_grid_columns()
-        slugs = [p.slug for p in self.pages]
+        if self.workspace.fields:
+            columns = model_tables.get(self.workspace.table, {}).get("columns")
+            if columns is None:
+                raise ValueError(
+                    f"workspace.table {self.workspace.table!r} is not in the data model"
+                )
+            named = [f.column for f in self.workspace.fields]
+            if missing := [c for c in named if c not in columns]:
+                raise ValueError(
+                    f"workspace.fields name columns {missing} "
+                    f"the {self.workspace.table} table does not have"
+                )
+        slugs =[p.slug for p in self.pages]
         if len(set(slugs)) != len(slugs):
             raise ValueError(
                 f"duplicate page slugs: {sorted({s for s in slugs if slugs.count(s) > 1})}"
@@ -915,7 +950,39 @@ class NodeConfig(BaseModel):
             "contributions_mode": self.contributions_mode,
             "has_method_codes": self.vocabularies.method_codes is not None,
             "doi_prefix": self.doi.prefix,
+            "workspace": {
+                "fields": self.workspace_fields(),
+                "require_reference": self.workspace.require_reference,
+            },
         }
+
+    def workspace_fields(self) -> list[dict]:
+        """`workspace.fields` with each column's control resolved from the
+        latest data model: kind (list | links | text), vocabulary, required."""
+        columns = (
+            self.load_data_model(self.data_model.latest)["tables"]
+            .get(self.workspace.table, {})
+            .get("columns", {})
+        )
+        resolved = []
+        for field in self.workspace.fields:
+            column = columns.get(field.column, {})
+            validations = column.get("validations") or []
+            kind = {"List": "list", "Dictionary": "links"}.get(column.get("type"), "text")
+            vocabulary = next(
+                (v[len('cv("') : -2] for v in validations if v.startswith('cv("')), None
+            )
+            resolved.append(
+                {
+                    "column": field.column,
+                    "label": field.label or column.get("label") or field.column,
+                    "placeholder": field.placeholder,
+                    "kind": kind,
+                    "vocabulary": vocabulary,
+                    "required": "required()" in validations,
+                }
+            )
+        return resolved
 
     model_config = {"frozen": True, "arbitrary_types_allowed": True}
 

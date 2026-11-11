@@ -146,6 +146,18 @@ hierarchy:
 doi:
   prefix: 10.7288/V4/MAGIC
 
+# Private workspace cards (legacy private_contributions.jsx): contribution-table
+# columns each in-preparation card edits, in order (a List column is a
+# multi-select over its cv() vocabulary, a Dictionary column title + URL rows),
+# and whether Publish waits for the reference DOI to resolve.
+workspace:
+  fields:
+    - { column: lab_names, label: Labs, placeholder: "Select one or more labs where the measurements were made (required)" }
+    - { column: funding, label: Funding }
+    - { column: supplemental_links, label: Supplement }
+    - { column: description, label: Description, placeholder: "Describe the changes being made in this version" }
+  require_reference: true
+
 # Content pages, in menu order: /<slug> renders magic/pages/<slug>.html (edited
 # in the admin UI's Pages tab). `menu` is left, right (with an icon) or hidden.
 pages:

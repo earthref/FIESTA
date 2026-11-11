@@ -432,8 +432,11 @@ When omitted the API sorts by relevance if the query has free text and by
 | PUT | `/{id}/file` | multipart `file`; headers `Idempotency-Key` (required), `If-Match` (revision; omit only for the first upload) | `ContributionOut` (stores file, enqueues processing) |
 | POST | `/{id}/validate` | | `{job_id}` (async validation; a Postgres outbox event id) |
 | GET | `/{id}/validation` | | `ValidationResult` (404 if never validated) |
-| PUT | `/{id}/reference` | `{doi, expected_revision, request_key}` | `ContributionOut` |
-| POST | `/{id}/activate` | | `ContributionOut` (publishes; requires `status=ready` and passing validation) |
+| PUT | `/{id}/reference` | `{doi, expected_revision, request_key}` | `ContributionOut` (a DOI the registries did not know is asked for again) |
+| GET | `/{id}/reference` | | `{doi, status: none\|ok\|not_found\|error, citation, title}`: whether the DOI resolves at Crossref/DataCite, asked now when the cache does not know |
+| GET | `/{id}/fields` | | `{column: cell}` for the node's `workspace.fields`, from the canonical file's `workspace.table` (`""` when empty) |
+| PUT | `/{id}/fields` | `{values: {column: cell}, expected_revision, request_key}` | `ContributionOut` (sets those columns in the canonical file as a new revision; 422 for a column not in `workspace.fields`; unpublished only) |
+| POST | `/{id}/activate` | | `ContributionOut` (publishes; requires `status=ready`, passing validation and, with `workspace.require_reference`, a DOI that resolves) |
 | POST | `/{id}/deactivate` | | `ContributionOut` |
 | DELETE | `/{id}` | | 204 (private, unactivated only) |
 | GET | `/{id}/content` | `revision_id?` | `{revision_id, text}` (canonical file text) |

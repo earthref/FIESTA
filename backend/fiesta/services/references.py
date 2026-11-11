@@ -68,6 +68,40 @@ async def lookup(session, doi: str | None) -> dict | None:
     return row.reference if row is not None and row.status == "ok" else None
 
 
+async def resolve(session, doi: str | None) -> DoiReference | None:
+    """A DOI's cache row, fetched now (not by the outbox worker) unless it is
+    already known: `ok`, or `not_found` within the last hour (saving the DOI
+    again asks once more, see `retry`). Used where a person waits on the
+    answer: the private workspace's DOI check and publishing. Search is not
+    touched: the caller commits, and reindexes a contribution that cites the
+    DOI when the row becomes `ok` (indexing reads `_reference` from the cache)."""
+    if not (key := normalize(doi)):
+        return None
+    row = await session.get(DoiReference, key)
+    if row is None:
+        row = DoiReference(doi=key, status="pending", attempts=0, due_at=datetime.now(UTC))
+        session.add(row)
+    recent = row.fetched_at and datetime.now(UTC) - row.fetched_at < RETRY
+    if row.status == "ok" or (row.status == "not_found" and recent):
+        return row
+    try:
+        async with _client() as client:
+            outcome = await fetch(client, key)
+    except (httpx.HTTPError, ValueError, KeyError) as exc:
+        outcome = exc
+    await _apply(row, outcome)
+    return row
+
+
+async def retry(session, doi: str | None) -> None:
+    """Ask again for a DOI the registries did not know: a DOI registers some
+    hours after a paper is published, so saving it again checks once more."""
+    key = normalize(doi)
+    row = await session.get(DoiReference, key) if key else None
+    if row is not None and row.status != "ok":
+        row.status, row.fetched_at, row.due_at = "pending", None, datetime.now(UTC)
+
+
 # --- The registries' records, in the legacy shape ------------------------------
 
 

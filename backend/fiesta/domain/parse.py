@@ -147,6 +147,67 @@ def stamp_ids(text: str, contribution_id: int, model: dict) -> str:
     return "\n".join(lines)
 
 
+def set_table_values(text: str, table: str, values: dict[str, str]) -> str:
+    """Set `values` (column -> cell) on every row of one table in a
+    contribution's text, in place: a column the block lacks is appended to its
+    header, a block without rows gains one, and a file without the table gains
+    the block at its front. Tabs and line breaks in a value become spaces.
+    Nothing else in the text changes. Call it only on text that `parse_text`
+    accepts."""
+    clean = {c: " ".join(v.replace("\t", " ").splitlines()).strip() for c, v in values.items()}
+    lines = text.lstrip("﻿").replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    out: list[str] = []
+    state, index, rows_seen, found = "table", {}, 0, False
+
+    def close_block() -> None:
+        if index and not rows_seen:
+            cells = [""] * (max(index.values()) + 1)
+            for column, i in index.items():
+                cells[i] = clean[column]
+            # Before the block's trailing blank lines.
+            at = len(out)
+            while at > 0 and not out[at - 1].strip():
+                at -= 1
+            out.insert(at, "\t".join(cells))
+
+    for line in lines:
+        if line.startswith(">>>"):
+            close_block()
+            state, index, rows_seen = "table", {}, 0
+            out.append(line)
+            continue
+        if not line.strip():
+            out.append(line)
+            continue
+        if state == "table":
+            header = line.split("\t")
+            matched = len(header) > 1 and header[1].strip() == table
+            found = found or matched
+            state = "columns" if matched else "other"
+            out.append(line)
+        elif state == "columns":
+            columns = [c.strip() for c in line.split("\t")]
+            missing = [c for c in clean if c not in columns]
+            columns += missing
+            index = {c: columns.index(c) for c in clean}
+            out.append("\t".join([line, *missing]) if missing else line)
+            state = "rows"
+        elif state == "rows":
+            cells = line.split("\t")
+            cells += [""] * (max(index.values()) + 1 - len(cells))
+            for column, i in index.items():
+                cells[i] = clean[column]
+            rows_seen += 1
+            out.append("\t".join(cells))
+        else:
+            out.append(line)
+    close_block()
+    if not found:
+        block = [f"tab delimited\t{table}", "\t".join(clean), "\t".join(clean.values())]
+        out = [*block, TABLE_SEPARATOR, *out]
+    return "\n".join(out)
+
+
 def export_text(parsed: ParsedContribution, model: dict) -> str:
     """Serialize tables back to canonical text, ordered by the data model."""
     from fiesta.domain.data_model import tables_in_order

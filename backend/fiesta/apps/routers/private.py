@@ -9,10 +9,18 @@ from sqlalchemy import select
 from fiesta.apps.deps import CurrentUser, NodeDep, SessionDep, require_public_contributions
 from fiesta.apps.schemas import ContributionOut, JobOut, ReferenceIn, ValidationOut
 from fiesta.db.models import Contribution, ContributionStatus, Revision, User
+from fiesta.domain.parse import ParseError, parse_text, set_table_values
 from fiesta.jobs import tasks
 from fiesta.services import contributions as svc
+from fiesta.services import references
 from fiesta.services.access import can_access
-from fiesta.services.revisions import locked, revision_file, save_revision, snapshot_for
+from fiesta.services.revisions import (
+    enqueue,
+    locked,
+    revision_file,
+    save_revision,
+    snapshot_for,
+)
 
 # In data-source mode a node's contributions are read here but made at the source.
 router = APIRouter(
@@ -174,6 +182,105 @@ async def set_reference(
         reference_doi=payload.doi.strip(),
         operation="reference",
     )
+    # Saving a DOI the registries did not know yet checks it once more.
+    await references.retry(session, payload.doi)
+    await session.commit()
+    return _out(contribution, user)
+
+
+@router.get("/{contribution_id}/reference")
+async def check_reference(
+    session: SessionDep, node: NodeDep, user: CurrentUser, contribution_id: int
+) -> dict:
+    """Whether the reference DOI resolves (Crossref, then DataCite), asked now
+    when the cache does not know: status none | ok | not_found | error, with
+    the citation once it resolves."""
+    contribution = await _own_contribution(session, node, user, contribution_id, write=False)
+    doi = contribution.reference_doi
+    if not references.normalize(doi):
+        return {"doi": doi, "status": "none", "citation": None, "title": None}
+    known = await references.lookup(session, doi)
+    row = await references.resolve(session, doi)
+    if known is None and row.status == "ok" and contribution.head_revision:
+        enqueue(session, contribution, kind="index")  # its docs gain _reference
+    await session.commit()
+    reference = row.reference if row.status == "ok" else {}
+    return {
+        "doi": doi,
+        "status": "error" if row.status == "pending" else row.status,
+        "citation": reference.get("citation"),
+        "title": reference.get("title"),
+    }
+
+
+class FieldsIn(BaseModel):
+    expected_revision: str | None
+    request_key: str
+    values: dict[str, str]
+
+
+async def _workspace_text(session, node, contribution) -> str:
+    if not contribution.head_revision:
+        raise HTTPException(409, "upload a file before editing its fields")
+    try:
+        return (await revision_file(session, node, contribution)).decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(409, "the contribution's file is not UTF-8 text") from None
+
+
+@router.get("/{contribution_id}/fields")
+async def get_fields(
+    session: SessionDep, node: NodeDep, user: CurrentUser, contribution_id: int
+) -> dict[str, str]:
+    """The node's `workspace.fields` as the canonical file holds them (the
+    first row of the workspace table), "" where a column is empty."""
+    contribution = await _own_contribution(session, node, user, contribution_id, write=False)
+    columns = [f.column for f in node.workspace.fields]
+    if not columns or not contribution.head_revision:
+        return dict.fromkeys(columns, "")
+    try:
+        parsed = parse_text(await _workspace_text(session, node, contribution))
+    except ParseError:
+        return dict.fromkeys(columns, "")
+    rows = parsed.tables.get(node.workspace.table) or [{}]
+    return {c: rows[0].get(c, "") for c in columns}
+
+
+@router.put("/{contribution_id}/fields", response_model=ContributionOut)
+async def set_fields(
+    session: SessionDep,
+    node: NodeDep,
+    user: CurrentUser,
+    contribution_id: int,
+    payload: FieldsIn,
+) -> ContributionOut:
+    """Set `workspace.fields` columns in the canonical file (a new revision;
+    the rest of the file is left as it was)."""
+    contribution = await _own_contribution(
+        session, node, user, contribution_id, allow_activated=False
+    )
+    allowed = {f.column for f in node.workspace.fields}
+    if unknown := sorted(set(payload.values) - allowed):
+        raise HTTPException(422, f"not editable in the workspace: {', '.join(unknown)}")
+    if not payload.values:
+        raise HTTPException(422, "no fields to set")
+    text = await _workspace_text(session, node, contribution)
+    try:
+        parse_text(text)
+    except ParseError as exc:
+        raise HTTPException(409, f"fix the file before editing its fields ({exc})") from None
+    name = contribution.filename or svc.default_filename(node, contribution.id)
+    await save_revision(
+        session,
+        node,
+        contribution,
+        user.id,
+        expected_revision=payload.expected_revision,
+        request_key=payload.request_key,
+        files={name: set_table_values(text, node.workspace.table, payload.values).encode()},
+        canonical=name,
+        operation="fields",
+    )
     await session.commit()
     return _out(contribution, user)
 
@@ -192,6 +299,14 @@ async def activate(
     validation = await svc.latest_validation(session, contribution_id)
     if validation is None or not validation.is_valid:
         raise HTTPException(409, "contribution must pass validation before publishing")
+    if node.workspace.require_reference:
+        row = await references.resolve(session, contribution.reference_doi)
+        if row is None or row.status != "ok":
+            await session.commit()  # keep what the registries answered
+            raise HTTPException(
+                409,
+                "the reference DOI must resolve at Crossref or DataCite before publishing",
+            )
     await svc.activate(session, node, contribution, actor_id=user.id)
     await tasks.send_email.defer_async(
         to=user.email,

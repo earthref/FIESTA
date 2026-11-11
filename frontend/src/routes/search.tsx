@@ -49,6 +49,7 @@ import {
   parseGridSort,
   SummaryGrid,
 } from "../components/summary-grid";
+import { CountLabel } from "../components/ui/count-label";
 import { buttonIconStyle, SemanticIcon } from "../components/ui/fa-icon";
 import { Icon } from "../components/ui/icon";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
@@ -147,28 +148,6 @@ function tabItemStyle(
     borderTopRightRadius: 4,
     marginBottom: -1,
   };
-}
-
-/** `ui circular small basic label` + legacy `styles.countLabel`: white bg, 1px
- * border, bold 11px text, min-width 4em, pulled into the tab's padding. */
-function CountLabel({ children }: { children: ReactNode }) {
-  return (
-    <span
-      className="inline-block rounded-full border bg-surface text-center font-bold"
-      style={{
-        color: "var(--er-ink-heading)",
-        borderColor: SEGMENT_BORDER,
-        margin: "-1em -1em -1em 0.5em",
-        minWidth: "4em",
-        minHeight: "2em",
-        fontSize: 11,
-        lineHeight: "0.7em",
-        padding: "0.5em",
-      }}
-    >
-      {children}
-    </span>
-  );
 }
 
 /** Semantic "basic small compact button" (Clear buttons) / node-colored when active. */

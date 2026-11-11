@@ -7,10 +7,12 @@ import { useLoginModal } from "../components/login-modal";
 import { isSourceMode, SourceModeNotice } from "../components/source-mode-notice";
 import { SummaryGrid } from "../components/summary-grid";
 import { Button } from "../components/ui/button";
+import { CountLabel } from "../components/ui/count-label";
 import { Icon } from "../components/ui/icon";
 import { Input } from "../components/ui/input";
 import { Modal } from "../components/ui/modal";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
+import { WorkspaceFields } from "../components/workspace-fields";
 import { ApiError, api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { siteUrl } from "../lib/base";
@@ -18,6 +20,7 @@ import { useNodeConfig } from "../lib/config";
 import type {
   ContributionOut,
   JobOut,
+  ReferenceCheck,
   SearchResult,
   ValidationIssue,
   ValidationResult,
@@ -199,7 +202,10 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
           request_key: crypto.randomUUID(),
         },
       }),
-    onSuccess: invalidate,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["private", "reference", contribution.id] });
+      await invalidate();
+    },
     onError: setActionError,
   });
 
@@ -284,7 +290,19 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
     deactivateMutation.isPending ||
     deleteMutation.isPending;
   const isValid = validation.data?.is_valid === true;
-  const doiMissing = !doi.trim() && !contribution.is_activated;
+  const workspaceFields = config?.workspace?.fields ?? [];
+  // A node may require the DOI to resolve (Crossref / DataCite) before Publish.
+  const requireReference = config?.workspace?.require_reference ?? false;
+  const reference = useQuery({
+    queryKey: ["private", "reference", contribution.id, contribution.reference_doi],
+    queryFn: () => api<ReferenceCheck>(`/private/contributions/${contribution.id}/reference`),
+    enabled: requireReference && !contribution.is_activated && !!contribution.reference_doi,
+    staleTime: 60_000,
+  });
+  const referenceOk = !requireReference || reference.data?.status === "ok";
+  const doiMissing =
+    !contribution.is_activated &&
+    (!doi.trim() || (requireReference && !!reference.data && reference.data.status !== "ok"));
 
   // Synthesized search doc so the bottom segment reuses the collapsed result card.
   const contributionLevel = config?.search_levels.find(
@@ -327,7 +345,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
             type="button"
             disabled
             title="Renaming is coming soon"
-            className="cursor-not-allowed rounded-r-sm bg-red-600 px-2.5 py-1 text-[12px] font-medium text-white opacity-60"
+            className="cursor-not-allowed rounded-r-sm bg-danger px-2.5 py-1 text-[12px] font-medium text-white opacity-60"
             style={{ marginRight: 0 }}
           >
             Save
@@ -357,7 +375,12 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
         )}
       </div>
 
-      {/* 2. DOI + status/actions: ui attached secondary segment */}
+      {/* 2. The node's editable fields (YAML workspace.fields), in preparation only */}
+      {!contribution.is_activated && workspaceFields.length > 0 && (
+        <WorkspaceFields contribution={contribution} fields={workspaceFields} disabled={busy} />
+      )}
+
+      {/* 3. DOI + status/actions: ui attached secondary segment */}
       <div
         className="flex flex-wrap items-center bg-panel-hover"
         style={{
@@ -379,7 +402,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
             htmlFor={`doi-${contribution.id}`}
             className={cx(
               "flex items-center whitespace-nowrap rounded-l-sm px-[0.8em] text-[12px] font-bold",
-              doiMissing ? "bg-red-600 text-white" : "bg-panel-strong text-gray-700",
+              doiMissing ? "bg-danger text-white" : "bg-panel-strong text-gray-700",
             )}
           >
             DOI
@@ -388,15 +411,17 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
             id={`doi-${contribution.id}`}
             value={doi}
             onChange={(event) => setDoi(event.target.value)}
-            placeholder="10.1029/…"
-            className={cx(
-              "flex-1 rounded-none py-1 text-[13px]",
-              doiMissing && "border-red-400 bg-red-50",
-            )}
+            placeholder={requireReference ? "The study's DOI (required)" : "10.1029/…"}
+            title="After your paper is published, its DOI can take up to a day to register (usually an hour or two). Save the DOI again to check once more."
+            className={cx("flex-1 rounded-none py-1 text-[13px]", doiMissing && "border-danger")}
           />
           <button
             type="submit"
-            disabled={busy || doi.trim() === (contribution.reference_doi ?? "")}
+            disabled={
+              busy ||
+              (doi.trim() === (contribution.reference_doi ?? "") &&
+                !(requireReference && reference.data && reference.data.status !== "ok"))
+            }
             className="rounded-r-sm border border-l-0 border-gray-300 bg-surface px-2.5 py-1 text-[12px] font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {doiMutation.isPending ? "Saving…" : "Save"}
@@ -428,7 +453,7 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
               <button
                 type="button"
                 disabled
-                className="rounded-sm bg-green-600 px-2.5 py-1 text-[12px] font-medium text-white opacity-80"
+                className="rounded-sm bg-success px-2.5 py-1 text-[12px] font-medium text-white"
               >
                 Published
               </button>
@@ -444,9 +469,13 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
           ) : contribution.status === "ready" && isValid ? (
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || !referenceOk}
               onClick={() => setPublishOpen(true)}
-              className="rounded-sm bg-node px-2.5 py-1 text-[12px] font-medium text-white hover:bg-node-dark disabled:opacity-50"
+              title={referenceOk ? undefined : "Publishing needs a DOI that resolves"}
+              className={cx(
+                "rounded-sm px-2.5 py-1 text-[12px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50",
+                referenceOk ? "bg-node hover:bg-node-dark" : "bg-danger",
+              )}
             >
               Publish
             </button>
@@ -455,12 +484,34 @@ function ContributionCard({ contribution }: { contribution: ContributionOut }) {
               type="button"
               disabled={busy || !contribution.filename}
               onClick={validate}
-              className="rounded-sm bg-red-600 px-2.5 py-1 text-[12px] font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-sm bg-danger px-2.5 py-1 text-[12px] font-medium text-white hover:bg-danger-dark disabled:cursor-not-allowed disabled:opacity-50"
             >
               Validate
             </button>
           )}
         </span>
+
+        {requireReference && !contribution.is_activated && contribution.reference_doi && (
+          <p className="mt-1.5 basis-full text-[12px]">
+            {reference.isPending ? (
+              <span className="text-gray-500">Checking the DOI…</span>
+            ) : reference.data?.status === "ok" ? (
+              <span className="text-gray-600" title={reference.data.title ?? undefined}>
+                <Icon name="check" size="small" /> {reference.data.citation ?? "DOI found"}
+                {reference.data.title && <> — {reference.data.title}</>}
+              </span>
+            ) : reference.data?.status === "not_found" ? (
+              <span className="text-error-ink">
+                This DOI is not registered at Crossref or DataCite yet. A new paper's DOI can take
+                up to a day to register; save the DOI again to check once more.
+              </span>
+            ) : reference.data ? (
+              <span className="text-error-ink">
+                The DOI registries could not be reached; save the DOI again to retry.
+              </span>
+            ) : null}
+          </p>
+        )}
       </div>
 
       {actionError !== null && (
@@ -612,8 +663,8 @@ export function PrivateWorkspacePage() {
   const { user, isLoading: authLoading } = useAuth();
   const { openLogin } = useLoginModal();
   const { data: config } = useNodeConfig();
-  const [showPreparation, setShowPreparation] = useState(true);
-  const [showPublished, setShowPublished] = useState(true);
+  // One list at a time: in preparation (the default) or published.
+  const [showing, setShowing] = useState<"preparation" | "published">("preparation");
 
   const sourceMode = isSourceMode(config);
 
@@ -651,22 +702,19 @@ export function PrivateWorkspacePage() {
   const contributions = list.data ?? [];
   const preparationCount = contributions.filter((entry) => !entry.is_activated).length;
   const publishedCount = contributions.filter((entry) => entry.is_activated).length;
-  const visible = contributions.filter((entry) =>
-    entry.is_activated ? showPublished : showPreparation,
-  );
-
-  const countLabelStyle = {
-    color: "var(--er-ink-heading)",
-    margin: "-1em -0.5em -1em 0.5em",
-    minWidth: "4em",
-    padding: "0.5em",
-  } as const;
+  const showPublished = showing === "published";
+  // Published: newest publication first (activated_at; updated_at for rows
+  // published before it was recorded).
+  const publishedAt = (entry: ContributionOut) => entry.activated_at ?? entry.updated_at;
+  const visible = contributions
+    .filter((entry) => entry.is_activated === showPublished)
+    .sort((a, b) => (showPublished ? publishedAt(b).localeCompare(publishedAt(a)) : 0));
 
   const toggleClass = (active: boolean) =>
     cx(
       "inline-flex items-center rounded-sm text-[13px] font-medium focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
       active
-        ? "bg-node text-white hover:bg-node-dark"
+        ? "border border-transparent bg-node text-white hover:bg-node-dark"
         : "border border-gray-300 bg-surface text-gray-500 hover:bg-gray-50",
     );
 
@@ -682,35 +730,25 @@ export function PrivateWorkspacePage() {
         </Link>
         <button
           type="button"
-          onClick={() => setShowPreparation(!showPreparation)}
-          aria-pressed={showPreparation}
-          className={toggleClass(showPreparation)}
+          onClick={() => setShowing("preparation")}
+          aria-pressed={!showPublished}
+          className={toggleClass(!showPublished)}
           style={{ margin: "0 1em 0.5em 0", padding: "0.6em 1.2em" }}
         >
           <Icon name="edit" size="small" />
           &nbsp;In Preparation
-          <span
-            className="inline-block rounded-full border border-gray-300 bg-surface text-center text-[11px] font-medium"
-            style={countLabelStyle}
-          >
-            {preparationCount}
-          </span>
+          <CountLabel>{preparationCount}</CountLabel>
         </button>
         <button
           type="button"
-          onClick={() => setShowPublished(!showPublished)}
+          onClick={() => setShowing("published")}
           aria-pressed={showPublished}
           className={toggleClass(showPublished)}
           style={{ margin: "0 1em 0.5em 0", padding: "0.6em 1.2em" }}
         >
           <Icon name="check" size="small" />
           &nbsp;Published
-          <span
-            className="inline-block rounded-full border border-gray-300 bg-surface text-center text-[11px] font-medium"
-            style={countLabelStyle}
-          >
-            {publishedCount}
-          </span>
+          <CountLabel>{publishedCount}</CountLabel>
         </button>
       </div>
 
