@@ -194,6 +194,29 @@ def sorted_order(
     return number_rows + text_rows + empty
 
 
+def matching_row(rows: list[dict[str, str]], values: dict[str, Any]) -> int | None:
+    """The 1-based position of the first row holding `values` (each named
+    column equal as text, blank matching blank), or None."""
+    wanted = {column: _cell_text(value) for column, value in values.items()}
+    for index, row in enumerate(rows):
+        if all(_cell_text(row.get(column)) == text for column, text in wanted.items()):
+            return index + 1
+    return None
+
+
+def _cell_text(value: Any) -> str:
+    return "" if value is None else str(value).strip()
+
+
+async def locate_row(
+    node: NodeConfig, contribution: Contribution, table: str, values: dict[str, Any]
+) -> int | None:
+    """Where a search doc's row (its values) sits in the contribution's
+    current file's table: its 1-based `row`, as `table_page` numbers it."""
+    entry = await _parsed_tables(node, contribution)
+    return await asyncio.to_thread(matching_row, entry["tables"].get(table, []), values)
+
+
 def _issues_by_row(report, table: str) -> tuple[dict[int, dict], dict[str, dict]]:
     """The table's validation issues per 1-based row and column ("" for an
     issue on the whole row), and per column for issues naming no row; an

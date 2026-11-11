@@ -1656,6 +1656,23 @@ def test_table_sorted_order_and_issues():
     assert _issues_by_row(None, "sites") == ({}, {})
 
 
+def test_matching_row_finds_a_search_rows_place_in_the_file():
+    from fiesta.services.history import matching_row
+
+    rows = [
+        {"site": "A", "lat": "1", "description": ""},
+        {"site": "B", "lat": "2.5"},
+        {"site": "B", "lat": "3"},
+        {"site": "B", "lat": "3"},
+    ]
+    # Every named column equal as text; a blank matches a missing column.
+    assert matching_row(rows, {"site": "B", "lat": "3"}) == 3
+    assert matching_row(rows, {"site": "B", "lat": 2.5, "description": None}) == 2
+    assert matching_row(rows, {"site": "A", "description": ""}) == 1
+    assert matching_row(rows, {"site": "C"}) is None
+    assert matching_row([], {"site": "A"}) is None
+
+
 def test_changed_rows_ignores_order_blanks_and_stamped_ids():
     previous = ParsedContribution(
         tables={

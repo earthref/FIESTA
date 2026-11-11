@@ -1,5 +1,6 @@
 """Public search + contribution retrieval for the node frontend."""
 
+import json
 import logging
 import math
 import uuid as uuid_mod
@@ -23,7 +24,7 @@ from fiesta.search.grid import (
 from fiesta.search.queries import SORT_OPTIONS, build_search_body
 from fiesta.services.access import constrain_search
 from fiesta.services.contributions import load_file
-from fiesta.services.history import row_stats, table_page, versions
+from fiesta.services.history import locate_row, row_stats, table_page, versions
 
 logger = logging.getLogger(__name__)
 
@@ -732,6 +733,32 @@ async def get_table_page(
     return await table_page(
         session, node, contribution, table, sort=parsed_sort, offset=from_, size=size
     )
+
+
+@router.get("/contributions/{contribution_id}/tables/{table}/locate")
+async def locate_table_row(
+    session: SessionDep,
+    node: NodeDep,
+    contribution_id: int,
+    table: str,
+    values: str,
+    private_key: str | None = None,
+) -> dict:
+    """Where a search doc's row sits in the contribution's file's table:
+    `values` is the row as a JSON object; `row` is the first matching row's
+    1-based position (as the table pages number it), or null."""
+    contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    if not contribution.filename:
+        raise HTTPException(404, "this contribution has no file")
+    if table not in node.load_data_model(node.data_model.latest)["tables"]:
+        raise HTTPException(404, f"{table!r} is not a table of the data model")
+    try:
+        parsed = json.loads(values)
+    except ValueError:
+        parsed = None
+    if not isinstance(parsed, dict):
+        raise HTTPException(422, "values must be a JSON object")
+    return {"row": await locate_row(node, contribution, table, parsed)}
 
 
 @router.get("/contributions/{contribution_id}/download")

@@ -12,7 +12,8 @@ import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from "re
  * Put `startRef` on the top spacer (always rendered, `padTop` tall),
  * `measure` and `data-index` on each item's element (a row, or a `<tbody>`
  * per item), and `padBottom` on the bottom spacer. `onRange` hears the
- * first and last rendered index, for fetching their pages.
+ * first and last rendered index, for fetching their pages. `scrollToIndex`
+ * brings an item to the middle of the view.
  */
 export function useVirtualRows({
   count,
@@ -70,6 +71,8 @@ export function useVirtualRows({
       measure: undefined,
       padTop: 0,
       padBottom: 0,
+      // Nothing scrolls here (the page does): every item is in place.
+      scrollToIndex: (_index: number) => {},
     };
   }
   return {
@@ -78,5 +81,6 @@ export function useVirtualRows({
     measure: virtualizer.measureElement,
     padTop: first ? first.start - margin : 0,
     padBottom: last ? Math.max(virtualizer.getTotalSize() - (last.end - margin), 0) : 0,
+    scrollToIndex: (index: number) => virtualizer.scrollToIndex(index, { align: "center" }),
   };
 }

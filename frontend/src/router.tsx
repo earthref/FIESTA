@@ -32,9 +32,11 @@ export interface SearchParams {
   bbox?: string;
   /** The Map tab's area filter: "west,south,east,north", east past 180 across the antimeridian. */
   area?: string;
-  /** The contribution whose modal is open, its tab, and a private one's key. */
+  /** The contribution whose modal is open, its tab, the row selected in a
+   * level tab (its 1-based place in the file's table), and a private one's key. */
   contribution?: number;
   tab?: string;
+  row?: number;
   private_key?: string;
 }
 
@@ -98,6 +100,7 @@ const searchRoute = createRoute({
     area: str(search.area),
     contribution: id(search.contribution),
     tab: str(search.tab),
+    row: id(search.row),
     private_key: str(search.private_key),
   }),
   component: SearchPage,
