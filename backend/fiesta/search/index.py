@@ -40,6 +40,15 @@ INDEX_BODY = {
                 }
             },
             {
+                # The columns with data per table (summary._has.<table>, see
+                # fiesta.domain.summarize): exact names, for the with/without
+                # data filter's terms clauses and per-column counts.
+                "column_names": {
+                    "path_match": "summary._has.*",
+                    "mapping": {"type": "keyword"},
+                }
+            },
+            {
                 "geo_points": {
                     "match": "_geo_point",
                     "mapping": {"type": "geo_point"},

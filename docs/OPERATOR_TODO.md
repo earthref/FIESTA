@@ -139,6 +139,10 @@ Last updated: 2026-11-10
   "Numeric" column picker find no values on records indexed before the deploy, and
   their histograms are empty. Publication Year works without the rebuild. Production
   needs the same rebuild at cutover. Claude needs nothing after this.
+  The same one rebuild (after the "with / without data filter" PR has deployed too)
+  also gives the docs `summary._has.<table>` (each table's columns with data, a
+  `keyword` template): until then MagIC's "With / Without Data" filter lists no
+  columns with records, and ticking one empties the results.
 
 ## 2026-11-10 — Poles, Rock Magnetism and PmagPy plots computed by PmagPy
 
@@ -162,9 +166,11 @@ Last updated: 2026-11-10
   ARGS="rebuild --yes"`, then each other node; the MagIC rebuilds above cover both if
   run after the deploys). Site, sample and specimen docs then carry the geology and
   geography of the location above them (Geography tile and its filters), and MagIC's
-  `pmag_plots` docs carry the thumbnails the Plot tile draws. Until the rebuild,
-  samples and specimens show "No Geographic Data", and a contribution's Plot tile
-  shows only its plot count. Production needs the same rebuild at cutover.
+  `pmag_plots` docs carry the contribution-level thumbnails the Plot tile draws. Until
+  the rebuild, samples and specimens show "No Geographic Data". The Contributions
+  grid's Plot tiles still draw, but each one is computed from its file on first view
+  (up to a few seconds) instead of read from the index. Production needs the same
+  rebuild at cutover.
 
 ## 2026-11-10 — Martian records back on Earth
 

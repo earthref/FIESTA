@@ -41,19 +41,28 @@ What stays custom, because PmagPy has no function for it:
   only to call `.to_dict("records")`, so they get a list that answers it
   (pandas per specimen cost more than the science).
 
-**Search grid thumbnail.** A contribution's Plot tile shows one of its plots
-with the total plot count in the corner (the legacy grid showed one cached PNG
-and a count); a click opens that plot's tab. Indexing (`compute_thumbnails`)
-keeps one thumbnail per plot type in `summary.pmag_plots._geometry.thumbnails`
-(stored, never indexed): a random specimen's Zijderveld components
+**Search grid thumbnails.** The Plot tile of a contribution, location, site,
+sample or specimen shows one of its plots with the record's plot count in the
+corner (the legacy grid showed one cached PNG and a count); a click opens that
+plot's tab of the contribution. A record's plots are those of the specimens
+below it and its equal-area groups (a location's sites, a site's samples and
+specimens). `_PlotIndex` selects them without PmagPy, and only the records a
+thumbnail draws go through it: a random specimen's Zijderveld components
 (geographic when oriented), a random group's equal-area positions, a
-specimen's Arai steps and a hysteresis loop, each at most 150 points. The
-choice is seeded by the contribution id, so a re-index keeps it. Only the
-chosen records go through PmagPy (well under 2 s on the largest local
-contribution), and a type that fails is left out. The browser picks one type
-per page load and draws it as SVG (`pmag-plots-thumbnail.tsx`). Records below
-the contribution keep the "No Plots" box, since the thumbnails are per
-contribution.
+specimen's Arai steps and a hysteresis loop, each at most 150 points, seeded
+by the contribution and record so the same one is drawn again. A type that
+fails is left out.
+
+- A contribution's thumbnails are kept by indexing, in
+  `summary.pmag_plots._geometry.thumbnails` (stored, never indexed).
+- `GET /v2/{node}/plugins/pmag-plots/thumbnails/{id}?table=&name=` serves any
+  record's `counts` and `thumbnails`. It also serves a contribution indexed
+  before thumbnails existed. Each API process builds the plot index of the last
+  4 contributions asked for (0.1–2.5 s for the largest local ones) and keeps the
+  last 10,000 answers.
+
+The browser picks one type per record and page load and draws it as SVG
+(`pmag-plots-thumbnail.tsx`).
 
 `summary.pmag_plots` of one `pmag_plots` doc per contribution holds the counts
 (`compute_counts`: the same row selection, without the PmagPy calls);

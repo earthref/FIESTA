@@ -33,7 +33,7 @@ search:
     - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
   # (The Poles search level is contributed by the `poles` plugin below.)
   extra_types: []
-  # Filter sidebar controls (facet / range / bbox / numeric), edited in the admin
+  # Filter sidebar controls (facet / range / bbox / numeric / exists), edited in the admin
   # UI's Search Filters tab. Facets aggregate on summary._all.<field>.raw and show
   # on every level's Summaries, Rows and Map views; the poles range/bbox filters
   # show on the Locations level's Poles view (the `poles` plugin indexes
@@ -42,6 +42,9 @@ search:
   # number column (stored in its data-model unit, SI; ages in years BP by
   # unit_conversions below): `scale` turns the typed value into it. The
   # `numeric` entry picks any other number column of the level.
+  # The `exists` entry picks columns with (or without) data per table: a tab
+  # per table the level's records cover (theirs and the levels below; on
+  # Contributions every table), on summary._has.<table>.
   filters:
     - { type: range, label: Publication Year, field: summary.contribution._reference.year, views: [Summaries, Rows, Map] }
     - { type: range, label: Age, field: summary._num.age, unit: Ma, scale: 1.0e6, levels: [Contributions, Locations, Sites], views: [Summaries, Rows, Map] }
@@ -65,6 +68,7 @@ search:
     - { type: facet, field: plate_blocks, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: facet, field: tectonic_settings, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: numeric, label: Numeric, views: [Summaries, Rows, Map] }
+    - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map] }
     - { type: range, label: Age, field: summary.poles.age, unit: Ma, scale: 1.0e6, levels: [Locations], views: [Poles] }
     - { type: range, label: Pole A95, field: summary.poles.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
     - { type: bbox, label: Geospatial, levels: [Locations], views: [Poles] }

@@ -1,7 +1,8 @@
 // The search page's filter sidebar, driven by the node YAML's `search.filters`
 // (config.filters): facet buckets, numeric ranges (a number column's
 // `summary._num.<column>`, or a plugin's field), the `numeric` picker of any
-// other number column (each picked range a chip of its own) and the bounding box, plus
+// other number column (each picked range a chip of its own), the `exists`
+// picker of columns with or without data per table and the bounding box, plus
 // the Geospatial area on levels with positions. Each filter names the search
 // levels and result views it applies to (empty = everywhere), so the sidebar
 // changes with the active level tab and sub-tab (legacy: the Poles view shows
@@ -64,6 +65,30 @@ export function pickedRanges(ranges: string[], filters: SearchFilter[]): string[
     const { field } = parseRange(entry);
     return field.startsWith(NUMBER_PREFIX) && !fields.has(field);
   });
+}
+
+/** The with/without data filter's "any table" tab (summary._has._any). */
+export const ANY_TABLE = "_any";
+
+/** A with/without data entry (the `has` param): "<table>:<column>" a value
+ * in that column, "!<table>:<column>" the table but not that column. */
+export type HasEntry = { table: string; column: string; without: boolean };
+
+export function parseHas(entry: string): HasEntry {
+  const without = entry.startsWith("!");
+  const [table = "", ...rest] = (without ? entry.slice(1) : entry).split(":");
+  return { table, column: rest.join(":"), without };
+}
+
+export function formatHas({ table, column, without }: HasEntry): string {
+  return `${without ? "!" : ""}${table}:${column}`;
+}
+
+/** The `has` entries on the tables a search table's docs record (its
+ * `exists_tables`); the others don't apply there. */
+export function hasFor(has: string[], tables: string[] | undefined): string[] {
+  const offered = new Set(tables ?? []);
+  return has.filter((entry) => offered.has(parseHas(entry).table));
 }
 
 /** An applied value: its text and a button that removes it. */

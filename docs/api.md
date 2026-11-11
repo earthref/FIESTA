@@ -216,11 +216,12 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet or a facet of the level's grid columns, else 422), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below) | `SearchPage` |
-| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet or a facet of the level's grid columns, else 422), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
-| GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (default 40, 1–200), `log` (bool), `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` | `SearchHistogram` |
-| GET | `/v2/{repository}/search/{table}/numbers` | `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` | `{total, columns: {<column>: n}}` — the level's number columns (`summary._num.<column>`, data-model order) and how many matches have a value of each, zeros included (the `numeric` filter's column picker) |
+| GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (default 40, 1–200), `log` (bool), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `SearchHistogram` |
+| GET | `/v2/{repository}/search/{table}/numbers` | `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, columns: {<column>: n}}` — the level's number columns (`summary._num.<column>`, data-model order) and how many matches have a value of each, zeros included (the `numeric` filter's column picker) |
+| GET | `/v2/{repository}/search/{table}/has` | `of` (one of the level's `exists_tables`, else 422), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, with_table, columns: {<column>: n}}` — of the matches, how many have the table `of` and how many have a value in each of its columns (data-model order, zeros included); those without a column are `with_table` − n (the `exists` filter's modal; the caller leaves `of`'s own `has` entries out) |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 | GET | `/v2/{repository}/contributions/{id}/versions` | `private_key?` | the `previous_id` chain, oldest first: every published version plus this one — `[{id, version, data_model_version, timestamp, contributor, is_activated, is_latest}]` |
@@ -558,6 +559,38 @@ Range filters (`range=summary._num.age:0:5e6`) and histograms use these:
 ```
 
 A new or changed `_num` (or its `double` template) reaches an existing index
+only through `fiesta rebuild`.
+
+Every doc also carries `summary._has` (2026-11-10, the legacy "With … Data" /
+"Without … Data" filters): per table, the sorted names of its data-model
+columns with a value (not blank) in the doc's rows, mapped as `keyword` — the
+columns the filter lists, in position order without the `downloadOnly()` ones
+(the row stamps). The contribution doc's covers every table of the
+contribution, those outside the hierarchy too (MagIC criteria, ages, images);
+a record's covers its own table and those of the records below it that name
+it (a location's: its sites', samples', specimens', measurements'), passed up
+as the positions are. `summary._has._any` is the union of a doc's tables'.
+Which tables a level offers is `NodeConfig.exists_tables`, served as the
+config's `exists_tables` (`{<search table>: [_any?, <table>, ...]}`, `_any`
+first when there are several): every data-model table but the contribution's
+own on the contribution level, its own and the levels below on a level.
+
+```json
+"summary": {"_has": {"sites": ["int_abs", "lat", "lon", "site", ...],
+                     "samples": ["azimuth", "dip", "sample", "site", ...],
+                     "_any": ["azimuth", "dip", "int_abs", ...]}, ...}
+```
+
+`has=<table>:<column>` keeps the docs with data in that column of that table
+(`terms` on `summary._has.<table>`); `has=!<table>:<column>` those that have
+the table (`exists`) but no data in the column. Entries of one table and sense
+are one filter whose columns are OR'd (with: data in any; without: lacking
+any), separate filters AND — the legacy semantics. The table must be one the
+level offers and the column a listed data-model column (else 422); a column
+the table lacks matches no doc with data and every doc without. The SPA keeps
+the entries in the URL's repeatable `has` param, applies those on the tables a
+level offers to its results, map, filter-modal counts and level-tab count, and
+keeps only those when switching levels. A new `_has` reaches an existing index
 only through `fiesta rebuild`.
 
 ## Phase M revision management

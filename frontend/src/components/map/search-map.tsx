@@ -67,6 +67,7 @@ function usePoints(
   query: string,
   ranges: string[] | undefined,
   filters: string[] | undefined,
+  has: string[] | undefined,
   bbox: string | undefined,
   color: string,
   enabled = true,
@@ -74,7 +75,7 @@ function usePoints(
   scope?: SearchScope,
 ) {
   return useQuery({
-    queryKey: ["search-points", level.table, query, ranges, filters, bbox, colorBy, scope],
+    queryKey: ["search-points", level.table, query, ranges, filters, has, bbox, colorBy, scope],
     queryFn: () =>
       api<MapPointsPage>(`/search/${level.table}/points`, {
         params: {
@@ -82,6 +83,7 @@ function usePoints(
           query: query || undefined,
           range: ranges,
           filter: filters?.length ? filters : undefined,
+          has: has?.length ? has : undefined,
           bbox,
           color_by: colorBy,
         },
@@ -151,6 +153,7 @@ export function SearchMap({
   query,
   ranges,
   filters,
+  has,
   area,
   onAreaChange,
   areaRequest,
@@ -165,6 +168,8 @@ export function SearchMap({
   ranges?: string[];
   /** The Summaries grid's column filters ("<column>:<text>"). */
   filters?: string[];
+  /** The with/without data filter's entries ("[!]<table>:<column>"). */
+  has?: string[];
   /** The search's scope filters (My contributions, Previous versions). */
   scope?: SearchScope;
   area: Area | null;
@@ -205,6 +210,7 @@ export function SearchMap({
     query,
     ranges,
     filters,
+    has,
     area ? areaToBbox(area) : undefined,
     color,
     true,
@@ -217,6 +223,7 @@ export function SearchMap({
     query,
     ranges,
     filters,
+    has,
     undefined,
     color,
     Boolean(area),
@@ -259,7 +266,7 @@ export function SearchMap({
   // loaded (as on osu-mgr.org): around them, or, for an unfiltered search,
   // over the middle of the view (requestViewArea), which leaves the map where
   // it is. With an area already, the request only zooms to it.
-  const unfiltered = !query.trim() && !ranges?.length && !filters?.length;
+  const unfiltered = !query.trim() && !ranges?.length && !filters?.length && !has?.length;
   const areaPending =
     Boolean(areaRequest) && (!areaRequest?.mode || areaRequest.mode === mode) && !inArea.isFetching;
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the request can be answered
@@ -309,7 +316,7 @@ export function SearchMap({
   const inMode = (each: Mode) => (each === "globe" ? onBody(body) : MODE_PLACES[each]);
 
   // The view re-centres on the points for a new search, not for an area edit.
-  const focusKey = JSON.stringify([level.table, query, ranges, filters]);
+  const focusKey = JSON.stringify([level.table, query, ranges, filters, has]);
   // Only show the loading overlay when a refresh is slow.
   const [showLoading, setShowLoading] = useState(false);
   useEffect(() => {

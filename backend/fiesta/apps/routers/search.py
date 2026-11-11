@@ -19,6 +19,7 @@ from fiesta.apps.deps import (
     oauth2_scheme,
 )
 from fiesta.apps.schemas import (
+    HasColumns,
     HistogramBin,
     MapPoints,
     NumberColumns,
@@ -27,7 +28,7 @@ from fiesta.apps.schemas import (
     SearchValues,
 )
 from fiesta.db.models import Contribution, User
-from fiesta.nodeconfig import MapColor
+from fiesta.nodeconfig import ANY_TABLE, MapColor
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import (
     ROW_SORT_PREFIX,
@@ -36,7 +37,7 @@ from fiesta.search.grid import (
     row_sort_clauses,
     sort_clauses,
 )
-from fiesta.search.queries import SORT_OPTIONS, build_search_body
+from fiesta.search.queries import HAS_FIELD, SORT_OPTIONS, build_search_body
 from fiesta.services.access import constrain_search
 from fiesta.services.contributions import load_file
 from fiesta.services.history import locate_row, row_stats, table_page, versions
@@ -142,6 +143,33 @@ def _parse_ranges(ranges: list[str] | None) -> list[dict] | None:
 
         parsed.append({"field": field, "gte": _num(gte), "lte": _num(lte)})
     return parsed
+
+
+def _parse_has(node, table: str, has: list[str] | None) -> list[dict] | None:
+    """`has=<table>:<column>` (a value in that column of that table) or
+    `has=!<table>:<column>` (has the table, not that column): the with/without
+    data filter, on a table the search table's docs record. The column is
+    any the filter lists (one kept from another level whose table lacks it
+    matches no doc with data, every doc without)."""
+    if not has:
+        return None
+    tables = node.exists_tables(table)
+    listed = set(node.exists_columns(ANY_TABLE, node.hierarchy[0]))
+    parsed = []
+    for spec in has:
+        without = spec.startswith("!")
+        tab, sep, column = spec.removeprefix("!").partition(":")
+        if not sep or tab not in tables or column not in listed:
+            raise HTTPException(
+                422,
+                f"has must be [!]<table>:<column> with a table of {tables} and a data-model "
+                f"column, got {spec!r}",
+            )
+        parsed.append({"table": tab, "column": column, "without": without})
+    return parsed
+
+
+HasQuery = Annotated[list[str] | None, Query()]
 
 
 def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
@@ -251,6 +279,7 @@ async def search(
     bbox: str | None = None,
     sort: str | None = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
     contribution: int | None = None,
     private_key: str | None = None,
     totals: bool = False,
@@ -272,6 +301,7 @@ async def search(
         bbox=_parse_bbox(bbox),
         sort=_grid_sort(node, table, sort),
         column_filters=_grid_filters(node, table, filter_),
+        has=_parse_has(node, table, has),
     )
     await _constrain(session, node, body, query, contribution, private_key, scope)
     if totals:
@@ -542,6 +572,7 @@ async def search_points(
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
     contribution: int | None = None,
     private_key: str | None = None,
     color_by: str | None = None,
@@ -564,6 +595,7 @@ async def search_points(
         ranges=_parse_ranges(range_),
         bbox=area,
         column_filters=_grid_filters(node, table, filter_),
+        has=_parse_has(node, table, has),
     )
     await _constrain(session, node, body, query, contribution, private_key, scope)
     body["query"]["bool"]["filter"].append(POSITIONED)
@@ -747,6 +779,7 @@ async def search_histogram(
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
     contribution: int | None = None,
     private_key: str | None = None,
 ) -> SearchHistogram:
@@ -764,6 +797,7 @@ async def search_histogram(
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
         column_filters=_grid_filters(node, table, filter_),
+        has=_parse_has(node, table, has),
     )
     await _constrain(session, node, body, query, contribution, private_key, scope)
     body.pop("sort", None)
@@ -842,6 +876,7 @@ async def search_numbers(
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
     contribution: int | None = None,
     private_key: str | None = None,
 ) -> NumberColumns:
@@ -858,6 +893,7 @@ async def search_numbers(
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
         column_filters=_grid_filters(node, table, filter_),
+        has=_parse_has(node, table, has),
     )
     await _constrain(session, node, body, query, contribution, private_key, scope)
     body.pop("sort", None)
@@ -877,6 +913,65 @@ async def search_numbers(
     buckets = response["aggregations"]["columns"]["buckets"]
     return NumberColumns(
         total=total, columns={c: buckets.get(c, {}).get("doc_count", 0) for c in columns}
+    )
+
+
+@router.get("/search/{table}/has", response_model=HasColumns)
+async def search_has(
+    session: SessionDep,
+    node: NodeDep,
+    table: str,
+    of: str,
+    query: str | None = None,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    bbox: str | None = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
+    contribution: int | None = None,
+    private_key: str | None = None,
+) -> HasColumns:
+    """The with/without data filter's counts for one of a level's tables
+    (`of`, see NodeConfig.exists_tables): how many of the docs matching a
+    search have that table (`with_table`) and how many have a value in each
+    of its columns (`columns`, data-model order, zero included); those
+    without a column are `with_table` less its count. The caller leaves the
+    table's own `has` entries out. One request: a filter and a terms
+    aggregation on `summary._has.<of>`."""
+    if table not in _level_tables(node):
+        raise HTTPException(404, f"unknown search table {table!r}")
+    if of not in node.exists_tables(table):
+        raise HTTPException(
+            422, f"of must be one of {node.exists_tables(table)} for {table!r}, got {of!r}"
+        )
+    columns = node.exists_columns(of, table)
+    body = build_search_body(
+        table=table,
+        query=query,
+        size=0,
+        ranges=_parse_ranges(range_),
+        bbox=_parse_bbox(bbox),
+        column_filters=_grid_filters(node, table, filter_),
+        has=_parse_has(node, table, has),
+    )
+    await _constrain(session, node, body, query, contribution, private_key)
+    body.pop("sort", None)
+    field = f"{HAS_FIELD}.{of}"
+    body["aggs"] = {
+        "with_table": {"filter": {"exists": {"field": field}}},
+        "columns": {"terms": {"field": field, "size": max(len(columns), 1), "include": columns}},
+    }
+    try:
+        response = await get_opensearch().search(index=node.search_index, body=body)
+    except NotFoundError:
+        return HasColumns(total=0, with_table=0, columns=dict.fromkeys(columns, 0))
+    hits = response["hits"]
+    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+    aggs = response["aggregations"]
+    counts = {b["key"]: b["doc_count"] for b in aggs["columns"]["buckets"]}
+    return HasColumns(
+        total=total,
+        with_table=aggs["with_table"]["doc_count"],
+        columns={c: counts.get(c, 0) for c in columns},
     )
 
 

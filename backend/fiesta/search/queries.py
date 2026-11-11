@@ -77,6 +77,31 @@ def parse_query(query: str | None) -> tuple[str, dict[str, list[str]]]:
     return text, tokens
 
 
+HAS_FIELD = "summary._has"
+
+
+def has_clauses(has: list[dict] | None) -> list[dict]:
+    """The with/without data filter's clauses (`summary._has.<table>`, see
+    fiesta.domain.summarize), for {table, column, without} entries: those of
+    one table and sense are one filter whose columns are OR'd, separate
+    filters AND. With: a value in any of the columns. Without: the doc has
+    the table but not all of the columns (lacks at least one)."""
+    groups: dict[tuple[str, bool], list[str]] = {}
+    for entry in has or []:
+        columns = groups.setdefault((entry["table"], bool(entry["without"])), [])
+        if entry["column"] not in columns:
+            columns.append(entry["column"])
+    clauses: list[dict] = []
+    for (table, without), columns in groups.items():
+        field = f"{HAS_FIELD}.{table}"
+        if not without:
+            clauses.append({"terms": {field: columns}})
+            continue
+        every = {"bool": {"filter": [{"term": {field: column}} for column in columns]}}
+        clauses.append({"bool": {"filter": [{"exists": {"field": field}}], "must_not": [every]}})
+    return clauses
+
+
 def build_search_body(
     *,
     table: str,
@@ -92,11 +117,13 @@ def build_search_body(
     bbox: tuple[float, float, float, float] | None = None,
     sort: str | list | None = None,
     column_filters: list[dict] | None = None,
+    has: list[dict] | None = None,
 ) -> dict[str, Any]:
     """`sort` is a SORT_OPTIONS key or a list of sort clauses (a grid column
     header's); None picks relevance when there is free text and newest-first
     otherwise (the legacy page's default behaviour). `column_filters` are
-    extra filter clauses (the grid's column filters)."""
+    extra filter clauses (the grid's column filters); `has` the with/without
+    data filter's entries (see has_clauses)."""
     text, tokens = parse_query(query)
     has_private_key = "private_key" in tokens
 
@@ -124,13 +151,12 @@ def build_search_body(
         field = range_filter.get("field", "")
         if not field.startswith("summary."):
             continue
-        bounds = {
-            op: range_filter[op] for op in ("gte", "lte") if range_filter.get(op) is not None
-        }
+        bounds = {op: range_filter[op] for op in ("gte", "lte") if range_filter.get(op) is not None}
         if bounds:
             filters.append({"range": {field: bounds}})
 
     filters.extend(column_filters or [])
+    filters.extend(has_clauses(has))
 
     if bbox is not None:
         min_lon, min_lat, max_lon, max_lat = bbox
