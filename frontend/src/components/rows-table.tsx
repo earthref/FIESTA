@@ -4,6 +4,7 @@ import { cx } from "../lib/utils";
 import { useVirtualRows } from "../lib/virtual-rows";
 import type { GridSort } from "./summary-grid";
 import { Icon } from "./ui/icon";
+import { Skeleton, skeletonWidth } from "./ui/skeleton";
 
 /** One row of a Rows grid: its values, an optional leading label (its row in
  * the file) and validation issues by column ("" for the whole row). */
@@ -158,7 +159,7 @@ const ROW_HEIGHT = 37;
  * modal's level tabs): a sticky header whose columns sort with `onSort`.
  * `items` are the grid's records, each its rows (a search hit's rows, or one
  * row of a file's table), and may be sparse: undefined until its page
- * arrives, shown as a placeholder `estimateRows` rows tall. With `scrollRef`
+ * arrives, shown as `estimateRows` skeleton rows. With `scrollRef`
  * (the element it scrolls in) only the items in view and `overscan` above
  * and below are in the DOM, and `onRange` hears their indexes so their pages
  * can be fetched. Cells with validation issues take the online editor's
@@ -193,7 +194,8 @@ export function RowsGrid({
   footer?: ReactNode;
   empty?: ReactNode;
 }) {
-  const placeholder = Math.max(1, Math.round(estimateRows)) * ROW_HEIGHT;
+  // A record still loading: skeleton rows, as many as a record has on average.
+  const placeholderRows = Math.max(1, Math.round(estimateRows));
   const { startRef, indexes, measure, padTop, padBottom } = useVirtualRows({
     count: items.length,
     scrollRef,
@@ -252,15 +254,21 @@ export function RowsGrid({
           if (!item) {
             return (
               <tbody key={`loading-${index}`} data-index={index} ref={measure} aria-busy="true">
-                <tr>
-                  <td
-                    colSpan={span}
-                    className="border-b border-gray-100 px-3 align-top"
-                    style={{ height: placeholder }}
-                  >
-                    <div className="mt-3 h-3 w-1/3 animate-pulse rounded-sm bg-gray-100" />
-                  </td>
-                </tr>
+                {Array.from({ length: placeholderRows }, (_, r) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count skeleton rows
+                  <tr key={r} style={{ height: ROW_HEIGHT }}>
+                    {labelled && (
+                      <td className={cx(TD, "border-b border-gray-100")}>
+                        <Skeleton className="ml-auto h-3 w-6" />
+                      </td>
+                    )}
+                    {columns.map((column, c) => (
+                      <td key={column} className={cx(TD, "border-b border-gray-100")}>
+                        <Skeleton className="h-3" style={{ width: skeletonWidth(index + r, c) }} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             );
           }
