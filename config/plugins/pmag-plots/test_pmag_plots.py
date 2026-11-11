@@ -501,6 +501,9 @@ def test_pmag_plots_thumbnails_are_the_plots_points():
 
     eqarea = thumbnails["eqarea"]
     assert len(eqarea["x"]) == len(eqarea["y"]) == len(eqarea["up"]) > 0
+    # Its level and name are the modal's key for the plot (`?plot=<level>:<name>`).
+    groups = {(g["level"], g["name"]) for g in plots["eqarea"]["plots"]}
+    assert (eqarea["level"], eqarea["name"]) in groups
 
     hyst = thumbnails["hyst"]
     assert max(map(abs, hyst["m"])) == 1.0

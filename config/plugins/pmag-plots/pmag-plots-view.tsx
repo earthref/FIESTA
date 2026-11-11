@@ -41,13 +41,15 @@ import {
   whereOf,
 } from "./pmag-plots-data";
 
-const CARD_HEIGHT = 260;
+const CARD_HEIGHT = 130;
 /** A card's narrowest width before the grid drops a column, and the gap. */
-const CARD_MIN_WIDTH = 300;
-const CARD_GAP = 12;
-/** A row of cards: the chart, its header and borders (a note is measured). */
-const CARD_ROW_ESTIMATE = CARD_HEIGHT + 36;
+const CARD_MIN_WIDTH = 150;
+const CARD_GAP = 8;
+/** A row of cards: the chart, its title and borders. */
+const CARD_ROW_ESTIMATE = CARD_HEIGHT + 28;
 const LARGE_HEIGHT = 520;
+/** From this width the selected plot sits beside the cards, not above them. */
+const SIDE_BY_SIDE = 960;
 
 /** One plot of the grid: a specimen's, or a group's directions. */
 interface PlotItem {
@@ -91,10 +93,15 @@ export default function PmagPlotsView({
   type,
   id,
   privateKey,
+  selected,
+  onSelect,
 }: {
   type: PlotType;
   id: string;
   privateKey?: string;
+  /** The selected plot's key (`?plot=`), or none for the first. */
+  selected?: string;
+  onSelect?: (key: string) => void;
 }) {
   const { kind } = PLOTS[type];
   const demag = useKind("demag", id, privateKey, kind === "demag" || type === "eqarea");
@@ -118,7 +125,7 @@ export default function PmagPlotsView({
   const failed = active.find((query) => query.error);
   if (failed) return <ErrorMessage error={failed.error} className="m-3" />;
   if (active.some((query) => query.isPending)) return <PageSpinner label="Loading plots…" />;
-  return <PlotGrid type={type} items={items} />;
+  return <PlotGrid type={type} items={items} selected={selected} onSelect={onSelect} />;
 }
 
 // --- items per plot type -------------------------------------------------------------------
@@ -276,29 +283,86 @@ function araiNote(specimen: AraiSpecimen): ReactNode {
 
 const LEVELS = ["Sites", "Samples", "Specimens", "Measurements"];
 
-function PlotGrid({ type, items }: { type: PlotType; items: PlotItem[] }) {
+/** The item a `?plot=` key names: its own key, else (a link from a summary's
+ * Plot tile) a hysteresis loop of that specimen or an equal-area group of that
+ * name at any level. */
+function itemFor(items: PlotItem[], key: string | undefined): PlotItem | undefined {
+  if (!key) return undefined;
+  return (
+    items.find((item) => item.key === key) ??
+    items.find((item) => item.key.startsWith(`${key}:`) || item.key.endsWith(`:${key}`))
+  );
+}
+
+/** Watches an element's width. */
+function useWidth(ref: RefObject<HTMLElement | null>): number {
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const update = () => setWidth(element.clientWidth);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width;
+}
+
+/**
+ * A plot type's tab: the selected plot drawn large and interactive (the
+ * first, or `selected`), and every plot of the level as a small card to pick
+ * from, below it or, on a wide view, beside it.
+ */
+function PlotGrid({
+  type,
+  items,
+  selected,
+  onSelect,
+}: {
+  type: PlotType;
+  items: PlotItem[];
+  selected?: string;
+  onSelect?: (key: string) => void;
+}) {
   const [filter, setFilter] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
-  // The card to bring back into view on leaving the enlarged plot.
-  const [returnTo, setReturnTo] = useState<number | undefined>();
+  const outer = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
-  const toTop = () => {
-    setReturnTo(undefined);
-    scroller.current?.scrollTo({ top: 0 });
-  };
+  const wide = useWidth(outer) >= SIDE_BY_SIDE;
   const levelCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const item of items)
       if (item.level) counts.set(item.level, (counts.get(item.level) ?? 0) + 1);
     return counts;
   }, [items]);
-  const [level, setLevel] = useState(() => LEVELS.find((l) => levelCounts.has(l)));
+  const [chosen, setChosen] = useState(() => itemFor(items, selected)?.key);
+  // Opened on a plot: its level; otherwise the first with plots.
+  const [level, setLevel] = useState(
+    () => itemFor(items, selected)?.level ?? LEVELS.find((l) => levelCounts.has(l)),
+  );
+  // A new `?plot=` while the tab is open (another Plot tile clicked).
+  useEffect(() => {
+    const item = itemFor(items, selected);
+    if (!item) return;
+    setChosen(item.key);
+    if (item.level) setLevel(item.level);
+  }, [items, selected]);
   const leveled = level ? items.filter((item) => item.level === level) : items;
   const coords = COORDS.filter((coord) => leveled.some((item) => item.coords?.includes(coord)));
   const [coord, setCoord] = useState<Coord>(() => coords[0] ?? "g");
   const needle = filter.trim().toLowerCase();
   const shown = needle ? leveled.filter((item) => item.names.includes(needle)) : leveled;
-  const current = expanded ? shown.findIndex((item) => item.key === expanded) : -1;
+  // The chosen plot, or the first shown when it is filtered out or on another level.
+  const index = Math.max(
+    0,
+    shown.findIndex((item) => item.key === chosen),
+  );
+  const current = shown[index];
+  const choose = (item: PlotItem) => {
+    setChosen(item.key);
+    onSelect?.(item.key);
+  };
+  const toTop = () => scroller.current?.scrollTo({ top: 0 });
 
   const controls = (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
@@ -313,7 +377,6 @@ function PlotGrid({ type, items }: { type: PlotType; items: PlotItem[] }) {
           value={level}
           onChange={(next) => {
             setLevel(next);
-            setExpanded(null);
             toTop();
           }}
         />
@@ -348,95 +411,104 @@ function PlotGrid({ type, items }: { type: PlotType; items: PlotItem[] }) {
   const coordOf = (item: PlotItem): Coord =>
     !item.coords || item.coords.includes(coord) ? coord : item.coords[0];
 
+  const large = current && (
+    <SelectedPlot
+      item={current}
+      // Nets and Zijderveld plots keep one scale on both axes.
+      zoom={type === "eqarea" || type === "zijd" ? "square" : "xy"}
+      coord={coordOf(current)}
+      preferred={coord}
+      position={`${index + 1} of ${shown.length}`}
+    />
+  );
+  const cards = (
+    <VirtualCards
+      // A grid per layout: each mounts with its own scroller (and reveal).
+      key={wide ? "beside" : "below"}
+      count={shown.length}
+      scrollRef={scroller}
+      // Beside the plot, the cards scroll to the selected one.
+      reveal={wide ? index : undefined}
+      render={(i) => {
+        const item = shown[i];
+        return (
+          <PlotCard
+            key={item.key}
+            item={item}
+            coord={coordOf(item)}
+            selected={item.key === current?.key}
+            onSelect={() => choose(item)}
+          />
+        );
+      }}
+    />
+  );
+
   return (
     // The controls stay put; the plots scroll below them.
-    <div className="flex h-full min-h-[420px] flex-col">
+    <div ref={outer} className="flex h-full min-h-[420px] flex-col">
       <div className="space-y-3 px-3 pt-3">
         {controls}
         <p className="text-[12px] text-gray-500">{LEGENDS[type]}</p>
       </div>
-      <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto p-3">
-        {current >= 0 ? (
-          <ExpandedPlot
-            item={shown[current]}
-            // Nets and Zijderveld plots keep one scale on both axes.
-            zoom={type === "eqarea" || type === "zijd" ? "square" : "xy"}
-            coord={coordOf(shown[current])}
-            preferred={coord}
-            position={`${current + 1} of ${shown.length}`}
-            onBack={() => {
-              setReturnTo(current);
-              setExpanded(null);
-            }}
-            onStep={(delta) =>
-              setExpanded(shown[(current + delta + shown.length) % shown.length].key)
-            }
-          />
-        ) : shown.length === 0 ? (
-          <p className="py-8 text-center text-[13px] text-gray-500">No plots match the filter.</p>
-        ) : (
-          <VirtualCards
-            count={shown.length}
-            scrollRef={scroller}
-            returnTo={returnTo}
-            render={(index) => {
-              const item = shown[index];
-              return (
-                <PlotCard
-                  key={item.key}
-                  item={item}
-                  coord={coordOf(item)}
-                  preferred={coord}
-                  onExpand={() => {
-                    scroller.current?.scrollTo({ top: 0 });
-                    setExpanded(item.key);
-                  }}
-                />
-              );
-            }}
-          />
-        )}
-      </div>
+      {shown.length === 0 ? (
+        <p className="py-8 text-center text-[13px] text-gray-500">No plots match the filter.</p>
+      ) : wide ? (
+        <div className="flex min-h-0 flex-1 gap-3 p-3">
+          <div className="min-w-0 flex-[3] overflow-y-auto">{large}</div>
+          <div ref={scroller} className="relative min-w-0 flex-[2] overflow-y-auto">
+            {cards}
+          </div>
+        </div>
+      ) : (
+        <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto p-3">
+          {large}
+          <div className="mt-3">{cards}</div>
+        </div>
+      )}
     </div>
   );
 }
 
 /**
  * The plot cards as a grid that scrolls virtually: as many columns as fit
- * (at least CARD_MIN_WIDTH each, up to three), and only the rows of cards in
- * view, and two above and below, mounted, so a contribution's hundreds of
- * charts never all draw at once. `returnTo` brings that card back into view
- * (on leaving its enlarged plot).
+ * (at least CARD_MIN_WIDTH each), and only the rows of cards in view, and two
+ * above and below, mounted, so a contribution's hundreds of charts never all
+ * draw at once. `reveal` scrolls that card into view once the columns are
+ * known.
  */
 function VirtualCards({
   count,
   scrollRef,
-  returnTo,
+  reveal,
   render,
 }: {
   count: number;
   scrollRef: RefObject<HTMLDivElement | null>;
-  returnTo?: number;
+  reveal?: number;
   render: (index: number) => ReactNode;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
   // Unknown until the grid's width is measured (no rows until then).
   const [columns, setColumns] = useState<number | null>(null);
-  // Where the grid starts inside the scroller (its padding).
+  // Where the grid starts inside the scroller (its padding, a plot above it).
   const [margin, setMargin] = useState(0);
   useLayoutEffect(() => {
     const grid = gridRef.current;
     if (!grid) return;
     const update = () => {
       const fit = Math.floor((grid.clientWidth + CARD_GAP) / (CARD_MIN_WIDTH + CARD_GAP));
-      setColumns(Math.max(1, Math.min(3, fit)));
-      setMargin(grid.offsetTop);
+      setColumns(Math.max(1, Math.min(8, fit)));
     };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(grid);
     return () => observer.disconnect();
   }, []);
+  useLayoutEffect(() => {
+    const top = gridRef.current?.offsetTop ?? 0;
+    if (top !== margin) setMargin(top);
+  });
   const perRow = columns ?? 1;
   const rows = columns ? Math.ceil(count / columns) : 0;
   const virtualizer = useVirtualizer({
@@ -447,14 +519,20 @@ function VirtualCards({
     gap: CARD_GAP,
     scrollMargin: margin,
   });
-  // Once the columns are known, back to the card an enlarged plot left from.
-  const pending = useRef(returnTo);
+  // Once the columns are known and the virtualizer has its scroller (which
+  // mounts with the grid, so after the grid's first effects), the selected
+  // card into view.
+  // Rows not yet drawn sit at their estimated places, so the scroller goes
+  // straight to the row's estimated middle and the virtualizer follows it.
+  const pending = useRef(reveal);
   useEffect(() => {
-    if (columns && pending.current !== undefined) {
-      virtualizer.scrollToIndex(Math.floor(pending.current / columns), { align: "center" });
-      pending.current = undefined;
-    }
-  }, [columns, virtualizer]);
+    const scroller = scrollRef.current;
+    if (!columns || pending.current === undefined || !scroller) return;
+    const row = Math.floor(pending.current / columns);
+    const middle = margin + row * (CARD_ROW_ESTIMATE + CARD_GAP) + CARD_ROW_ESTIMATE / 2;
+    scroller.scrollTop = Math.max(0, middle - scroller.clientHeight / 2);
+    pending.current = undefined;
+  });
   return (
     <div ref={gridRef} className="relative" style={{ height: virtualizer.getTotalSize() }}>
       {virtualizer.getVirtualItems().map((row) => (
@@ -522,34 +600,45 @@ function Choices<T extends string>({
   );
 }
 
+/** A plot to pick: the whole card selects it. The small chart only shows
+ * (the selected plot is the interactive one). */
 function PlotCard({
   item,
   coord,
-  preferred,
-  onExpand,
+  selected,
+  onSelect,
 }: {
   item: PlotItem;
   coord: Coord;
-  preferred: Coord;
-  onExpand: () => void;
+  selected: boolean;
+  onSelect: () => void;
 }) {
   const build = useCallback((size: Size) => item.build(size, coord, false), [item, coord]);
   return (
-    <section className="min-w-0 rounded-sm border border-gray-300 bg-surface">
-      <header className="flex items-baseline gap-2 border-b border-gray-200 px-3 py-1.5">
-        <button
-          type="button"
-          onClick={onExpand}
-          className="truncate text-left text-[13px] font-bold text-node-ink hover:underline"
-          title="Enlarge"
-        >
-          {item.title}
-        </button>
-        <span className="truncate text-[12px] text-gray-500">{item.where}</span>
-      </header>
-      <EChart build={build} height={CARD_HEIGHT} label={`${item.title} plot`} />
-      <PlotNote item={item} coord={coord} preferred={preferred} />
-    </section>
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      title={[item.title, item.where].filter(Boolean).join(" · ")}
+      className={cx(
+        "block w-full min-w-0 cursor-pointer overflow-hidden rounded-sm border bg-surface text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
+        selected ? "border-node ring-1 ring-node" : "border-gray-300 hover:border-node",
+      )}
+    >
+      <span
+        className={cx(
+          "block truncate border-b px-2 py-1 text-[12px] font-bold",
+          selected
+            ? "border-node bg-node-soft text-node-ink-strong"
+            : "border-gray-200 text-node-ink",
+        )}
+      >
+        {item.title}
+      </span>
+      <span className="pointer-events-none block">
+        <EChart build={build} height={CARD_HEIGHT} label={`${item.title} plot`} />
+      </span>
+    </button>
   );
 }
 
@@ -565,50 +654,29 @@ function PlotNote({ item, coord, preferred }: { item: PlotItem; coord: Coord; pr
   );
 }
 
-function ExpandedPlot({
+/** The selected plot, large: hover for values, the toolbar zooms and pans. */
+function SelectedPlot({
   item,
   zoom,
   coord,
   preferred,
   position,
-  onBack,
-  onStep,
 }: {
   item: PlotItem;
   zoom: "xy" | "square";
   coord: Coord;
   preferred: Coord;
   position: string;
-  onBack: () => void;
-  onStep: (delta: number) => void;
 }) {
   const build = useCallback((size: Size) => item.build(size, coord, true), [item, coord]);
-  const button =
-    "rounded-sm border border-gray-300 bg-surface px-2 py-0.5 text-[13px] text-gray-700 hover:bg-gray-50";
   return (
     <section className="rounded-sm border border-gray-300 bg-surface">
-      <header className="flex flex-wrap items-center gap-2 border-b border-gray-200 px-3 py-2">
-        <button type="button" onClick={onBack} className={button}>
-          ← All plots
-        </button>
+      <header className="flex flex-wrap items-baseline gap-2 border-b border-gray-200 px-3 py-2">
         <h4 className="text-[14px] font-bold text-gray-900">{item.title}</h4>
         <span className="text-[12px] text-gray-500">{item.where}</span>
-        <span className="ml-auto flex items-center gap-1.5 text-[12px] text-gray-500">
-          <button
-            type="button"
-            onClick={() => onStep(-1)}
-            className={button}
-            aria-label="Previous plot"
-          >
-            ‹
-          </button>
-          {position}
-          <button type="button" onClick={() => onStep(1)} className={button} aria-label="Next plot">
-            ›
-          </button>
-        </span>
+        <span className="ml-auto text-[12px] text-gray-500">{position}</span>
       </header>
-      {/* Keyed by plot, so stepping to the next one starts at its full view. */}
+      {/* Keyed by plot, so a newly picked one starts at its full view. */}
       <EChart
         key={item.key}
         build={build}
@@ -619,7 +687,7 @@ function ExpandedPlot({
       <PlotNote item={item} coord={coord} preferred={preferred} />
       <p className="px-3 pb-2 text-[11px] text-gray-400">
         Hover a point for its values; the plot's toolbar zooms (a box, or the wheel), pans and
-        resets the axes.
+        resets the axes. Pick another plot from the cards.
       </p>
     </section>
   );

@@ -22,6 +22,8 @@ interface Zijd {
 }
 interface EqArea {
   name: string;
+  /** The group's level ("Specimens"); missing on thumbnails indexed before it. */
+  level?: string;
   x: number[];
   y: number[];
   up: number[];
@@ -53,6 +55,15 @@ export function pmagPlotsDocQuery(id: string, table: string, privateKey?: string
         params: { contribution: id, private_key: privateKey || undefined, size: 1 },
       }),
   };
+}
+
+/** The plot tab's key for a thumbnail's plot (pmag-plots-view `plotItems`): an
+ * equal-area group's "<level>:<name>", else the specimen's name (which the
+ * tab also matches against the start of a hysteresis loop's key). */
+function plotKeyOf(thumbnail: Thumbnail): string {
+  return "level" in thumbnail && thumbnail.level
+    ? `${thumbnail.level}:${thumbnail.name}`
+    : thumbnail.name;
 }
 
 // One draw per page load: a row shows the same plot when it scrolls back into
@@ -254,7 +265,13 @@ export function PmagPlotThumbnail({
     <NoPlotsCell width={width}>
       <button
         type="button"
-        onClick={() => openContribution(id, PLOTS[tab].key)}
+        // Opens on this plot, selected (an equal-area group's key is its level and name).
+        onClick={() =>
+          openContribution(id, PLOTS[tab].key, undefined, {
+            plot: thumbnail ? plotKeyOf(thumbnail) : undefined,
+            privateKey,
+          })
+        }
         title={`${label}: open the plots`}
         aria-label={`${label}: open the plots`}
         className="block size-full cursor-pointer text-ink-faint hover:bg-panel-soft focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"

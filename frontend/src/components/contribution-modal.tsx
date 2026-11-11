@@ -105,21 +105,26 @@ export function ContributionModal({
   id,
   tab,
   row,
+  plot,
   rowMatch,
   privateKey,
   onTab,
   onRow,
+  onPlot,
   onClose,
 }: {
   id: string;
   tab?: string;
   /** The row selected in a level tab (its 1-based place in the file's table). */
   row?: number;
+  /** The plot selected in a plot tab (`?plot=`; `onPlot` names a new one). */
+  plot?: string;
   /** A search row to find in the level tab and select (then `onRow` names it). */
   rowMatch?: RowMatch;
   privateKey?: string;
   onTab: (tab: string) => void;
   onRow: (row: number | undefined) => void;
+  onPlot: (plot: string | undefined) => void;
   onClose: () => void;
 }) {
   const { data: config } = useNodeConfig();
@@ -159,7 +164,7 @@ export function ContributionModal({
         open
         aria-modal="true"
         aria-label={`Contribution ${id}`}
-        className="relative m-0 flex h-[calc(100vh-1rem)] w-full max-w-7xl flex-col overflow-hidden rounded-lg border-0 bg-surface p-0 text-left shadow-2xl sm:h-[calc(100vh-4rem)]"
+        className="relative m-0 flex h-[calc(100vh-1rem)] w-full flex-col overflow-hidden rounded-lg border-0 bg-surface p-0 text-left shadow-2xl sm:h-[calc(100vh-4rem)]"
       >
         {config && docQuery.data ? (
           <ModalBody
@@ -172,6 +177,8 @@ export function ContributionModal({
             privateKey={privateKey}
             onTab={onTab}
             onRow={onRow}
+            plot={plot}
+            onPlot={onPlot}
             onClose={onClose}
           />
         ) : (
@@ -278,10 +285,12 @@ function ModalBody({
   config,
   tab,
   row,
+  plot,
   rowMatch,
   privateKey,
   onTab,
   onRow,
+  onPlot,
   onClose,
 }: {
   id: string;
@@ -289,10 +298,12 @@ function ModalBody({
   config: NodeConfig;
   tab?: string;
   row?: number;
+  plot?: string;
   rowMatch?: RowMatch;
   privateKey?: string;
   onTab: (tab: string) => void;
   onRow: (row: number | undefined) => void;
+  onPlot: (plot: string | undefined) => void;
   onClose: () => void;
 }) {
   const levels = config.search_levels.filter((level) => level.table !== "contribution");
@@ -367,7 +378,7 @@ function ModalBody({
       ((countOf(level.table).count ?? 0) > 0 && pointQueries[index].isPending),
   );
 
-  const ctx = { id, privateKey, config, doc };
+  const ctx = { id, privateKey, config, doc, plot, onPlot };
   const tabs: Tab[] = [
     {
       key: "contribution",

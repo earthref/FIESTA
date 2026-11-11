@@ -249,7 +249,13 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
   then each search level's rows in it (100 at a time); **Assets** — Map (a
   MapLibre globe of one level's records, labelled with their names, levels
   switchable; opens on the level with the most records), then plugin tabs
-  (Poles, Depth Plots, Age Spectra).
+  (Poles, Depth Plots, Age Spectra). Since 2026-11-11 the modal spans the
+  view, inside the margin it keeps above and below (2rem; 0.5rem on a phone).
+  The PmagPy plot tabs (Equal Area, Zijderveld, …) draw the selected plot
+  large and interactive, the first by default, over (or, from 960px wide,
+  beside) half-size cards of the level's other plots, each card picking its
+  plot with a click; a search grid's Plot tile opens the tab with its plot
+  selected (`&plot=`), so the legacy thumbnail's "open this plot" is one click.
 - **Map thumbnail** uses the doc's own `_geo_point` on level cards (inherited from the nearest ancestor with coordinates when the row has none) and every distinct position of its rows on contribution cards, rather than the legacy summary's points and envelopes.
 - **Map thumbnail** is drawn from the Esri Ocean basemap (the Map tab's, as on osu-mgr.org) instead of the legacy SVG globe of 110m countries coloured by a climate lookup (2026-09-27).
 - **Lunar records** (2026-09-30, new in FIESTA; legacy drew them on Earth): a location whose `location_type` is Lunar (the node YAML's `search.bodies`), and everything below it, is positioned on the Moon. Its thumbnail is a Moon (LROC WAC) globe; the Map tab shows **Earth / Moon** buttons before the view buttons on a node with `search.bodies` (the contribution modal's Map when its records include another body), opening on the body with the most records, over OpenPlanetaryMap's lunar basemap and names (the Labels button toggles them; not drawn in the pole views). The area filter is on Earth: "Filter by area" is hidden on the Moon, whose records an area leaves out (shown in grey). Martian records stay on Earth (2026-11-10): MagIC's and KArAr's are meteorites, positioned where they were found, so there is no Mars map.

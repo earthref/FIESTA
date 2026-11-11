@@ -67,6 +67,10 @@ export interface ContributionTabContext {
   config: NodeConfig;
   /** The contribution's own search doc. */
   doc: SearchResult;
+  /** The plot selected in the tab (`?plot=`, the tab's own key for it), and
+   * how the tab names a new selection (kept in the URL, so a link opens it). */
+  plot?: string;
+  onPlot?: (plot: string | undefined) => void;
 }
 
 /** An asset tab in the contribution modal (plots, maps, images, ...). */

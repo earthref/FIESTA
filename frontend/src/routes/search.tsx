@@ -353,13 +353,22 @@ export function SearchPage() {
   const openContribution = useOpenContribution();
   const setModalTab = useCallback(
     (tab: string) =>
-      navigate({ search: (prev) => ({ ...prev, tab, row: undefined }), replace: true }),
+      navigate({
+        search: (prev) => ({ ...prev, tab, row: undefined, plot: undefined }),
+        replace: true,
+      }),
     [navigate],
   );
   // The row selected in the modal's level tab; replacing the entry drops the
   // Rows grid's row to find (the history state) once it is found.
   const setModalRow = useCallback(
     (row: number | undefined) => navigate({ search: (prev) => ({ ...prev, row }), replace: true }),
+    [navigate],
+  );
+  // The plot selected in a plot tab of the modal.
+  const setModalPlot = useCallback(
+    (plot: string | undefined) =>
+      navigate({ search: (prev) => ({ ...prev, plot }), replace: true }),
     [navigate],
   );
   const rowMatch = useRouterState({ select: (state) => state.location.state.rowMatch });
@@ -371,6 +380,7 @@ export function SearchPage() {
           contribution: undefined,
           tab: undefined,
           row: undefined,
+          plot: undefined,
           private_key: undefined,
         }),
       }),
@@ -1352,10 +1362,12 @@ export function SearchPage() {
           id={String(search.contribution)}
           tab={search.tab}
           row={search.row}
+          plot={search.plot}
           rowMatch={rowMatch}
           privateKey={search.private_key ?? privateKey ?? ownKey(search.contribution)}
           onTab={setModalTab}
           onRow={setModalRow}
+          onPlot={setModalPlot}
           onClose={closeModal}
         />
       )}
