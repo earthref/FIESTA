@@ -51,12 +51,15 @@ Two schemes are accepted; the private routes take either.
 | GET | `/v2/auth/me` | Bearer/Basic | `UserOut` |
 | GET | `/v2/auth/settings` | Bearer/Basic | the account's settings JSON object |
 | PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
+| PATCH | `/v2/auth/me` | Bearer/Basic | `UserOut`; body any of `{name, email, handle, orcid}` (the user's own account; `""`/`null` clears a handle or ORCID; handle `[A-Za-z0-9_.-]{2,64}`, ORCID `0000-0000-0000-000X`); 409 on a value another account has, and on an email change while any served node is in data-source mode (legacy sync matches owners by email) |
+| POST | `/v2/auth/password` | Bearer/Basic | 204; body `{current_password, new_password}` (≥ 8 chars); 403 when the account has a password and `current_password` does not match |
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in `developer@example.test` only against local dev infrastructure, first creating the seed manifest's accounts on an unseeded stack (`null` elsewhere) |
 | GET | `/v2/basemap/{world\|arctic}` | — | JPEG: Esri Ocean as a 1024×512 plate carrée world image (blank past ±85.05°) and its Arctic band; fetched from Esri once a day and cached in the API process, for the result thumbnails |
 | GET | `/v2/basemap/moon` | — | JPEG: the Moon (LROC WAC) as a 1024×512 plate carrée image, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on the Moon |
 | GET | `/v2/basemap/undersea-features` | — | GeoJSON `FeatureCollection` of the IHO-IOC GEBCO Gazetteer of Undersea Feature Names (NOAA NCEI's feature service), each `{name, kind: point\|line\|area}` with areas reduced to their middle point; fetched once a day and cached, for the Map tab's labels |
 
-`UserOut = {id, email, name, orcid: string|null, is_admin: bool, admin_nodes: string[]}` —
+`UserOut = {id, email, name, handle: string|null, orcid: string|null, has_password: bool, is_admin: bool, admin_nodes: string[]}` —
+`has_password` is false for an account imported without one (it sets a password without a current one);
 `is_admin` is a **super admin** (every node, node creation, accounts); `admin_nodes`
 lists the slugs of the nodes the user administers (**node admin**). A node admin
 sees that node's private contributions and private keys like a super admin does.

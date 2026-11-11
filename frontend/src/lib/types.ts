@@ -159,7 +159,11 @@ export interface UserOut {
   id: number;
   email: string;
   name: string;
+  /** Alternative login name (the login form takes an email or a handle). */
+  handle: string | null;
   orcid: string | null;
+  /** False for an account imported without a password: it sets one without the current one. */
+  has_password: boolean;
   /** Super admin: every node, node creation, accounts. */
   is_admin: boolean;
   /** Slugs of the nodes this user administers. */

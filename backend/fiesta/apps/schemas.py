@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from fiesta.db.models import Contribution, User
 
@@ -12,7 +12,9 @@ class UserOut(BaseModel):
     id: int
     email: str
     name: str
+    handle: str | None = None
     orcid: str | None = None
+    has_password: bool = False  # False for an account imported without one
     is_admin: bool = False  # super admin: every node, node creation, accounts
     admin_nodes: list[str] = []  # slugs of the nodes this user administers
     settings: dict = {}
@@ -23,7 +25,9 @@ class UserOut(BaseModel):
             id=user.id,
             email=user.email,
             name=user.name,
+            handle=user.handle,
             orcid=user.orcid,
+            has_password=user.password_hash is not None,
             is_admin=user.is_admin,
             admin_nodes=user.admin_nodes,
             settings=user.settings,
@@ -34,6 +38,23 @@ class RegisterIn(BaseModel):
     email: EmailStr
     password: str
     name: str
+
+
+class AccountPatchIn(BaseModel):
+    """The signed-in user's own account fields (PATCH /v2/auth/me); an empty
+    handle or ORCID clears it."""
+
+    email: EmailStr | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    # No "@": login accepts an email or a handle in the same field.
+    handle: str | None = Field(default=None, pattern=r"^([A-Za-z0-9_.-]{2,64})?$")
+    orcid: str | None = Field(default=None, pattern=r"^(\d{4}-\d{4}-\d{4}-\d{3}[\dX])?$")
+
+
+class PasswordIn(BaseModel):
+    # Required when the account already has a password.
+    current_password: str | None = None
+    new_password: str = Field(min_length=8)
 
 
 class TokenOut(BaseModel):

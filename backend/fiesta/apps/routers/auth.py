@@ -5,8 +5,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import func, select
 
 from fiesta.apps.deps import CurrentUser, SessionDep
-from fiesta.apps.schemas import RegisterIn, TokenOut, UserOut
+from fiesta.apps.routers.admin import ensure_unique_user_fields
+from fiesta.apps.schemas import AccountPatchIn, PasswordIn, RegisterIn, TokenOut, UserOut
 from fiesta.db.models import User
+from fiesta.nodeconfig import get_deployment
 from fiesta.security import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -47,6 +49,50 @@ async def login(
 @router.get("/me", response_model=UserOut)
 async def me(user: CurrentUser) -> UserOut:
     return UserOut.from_db(user)
+
+
+@router.patch("/me", response_model=UserOut)
+async def update_me(payload: AccountPatchIn, user: CurrentUser, session: SessionDep) -> UserOut:
+    """Edit the signed-in user's own name, email, handle and ORCID."""
+    fields = payload.model_dump(exclude_unset=True)
+    email = (fields.get("email") or "").strip().lower() or None
+    if email == user.email:
+        email = None
+    if email:
+        # A legacy sync finds owners by email and creates a missing one, so a
+        # changed address would split the account while any node still syncs.
+        syncing = [
+            n.node.key for n in get_deployment().node_list if n.contributions_mode == "source"
+        ]
+        if syncing:
+            raise HTTPException(
+                409,
+                f"email changes are unavailable while {', '.join(syncing)} sync from the "
+                "legacy site; contact webmaster@earthref.org",
+            )
+    await ensure_unique_user_fields(
+        session, email, fields.get("handle"), fields.get("orcid"), exclude=user.id
+    )
+    if email:
+        user.email = email
+    if name := (fields.get("name") or "").strip():
+        user.name = name
+    for field in ("handle", "orcid"):
+        if field in fields:
+            setattr(user, field, fields[field] or None)
+    await session.commit()
+    return UserOut.from_db(user)
+
+
+@router.post("/password", status_code=204)
+async def change_password(payload: PasswordIn, user: CurrentUser, session: SessionDep) -> None:
+    """Set a new password; the current one is required when the account has one."""
+    if user.password_hash and not verify_password(
+        payload.current_password or "", user.password_hash
+    ):
+        raise HTTPException(403, "current password is incorrect")
+    user.password_hash = hash_password(payload.new_password)
+    await session.commit()
 
 
 @router.post("/local-login", response_model=TokenOut | None)

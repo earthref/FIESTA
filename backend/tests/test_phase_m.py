@@ -159,3 +159,101 @@ async def test_local_login_signs_in_developer(monkeypatch, seeded):
     else:
         assert {"developer@example.test", "viewer@example.test"} <= set(created)
         session.commit.assert_awaited_once()
+
+
+def _account(**fields):
+    from fiesta.db.models import User
+    from fiesta.security import hash_password
+
+    defaults = {"id": 7, "email": "old@example.org", "name": "Old Name", "settings": {}}
+    defaults["is_admin"] = False
+    defaults["password_hash"] = hash_password("old-password")
+    return User(**{**defaults, **fields})
+
+
+def _modes(monkeypatch, *modes):
+    from types import SimpleNamespace
+
+    from fiesta.apps.routers import auth
+
+    nodes = [
+        SimpleNamespace(node=SimpleNamespace(key=f"N{i}"), contributions_mode=mode)
+        for i, mode in enumerate(modes)
+    ]
+    monkeypatch.setattr(auth, "get_deployment", lambda: SimpleNamespace(node_list=nodes))
+
+    async def unique(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(auth, "ensure_unique_user_fields", unique)
+
+
+@pytest.mark.asyncio
+async def test_account_edits_own_fields(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from fiesta.apps.routers.auth import update_me
+    from fiesta.apps.schemas import AccountPatchIn
+
+    _modes(monkeypatch, "public")
+    user = _account(handle="old", orcid="0000-0002-1825-0097")
+    payload = AccountPatchIn(name=" New Name ", email="New@Example.org", handle="", orcid=None)
+    out = await update_me(payload, user, AsyncMock())
+    assert (out.name, out.email, out.handle, out.orcid) == (
+        "New Name",
+        "new@example.org",
+        None,
+        None,
+    )
+    assert out.has_password
+
+
+@pytest.mark.asyncio
+async def test_account_email_change_refused_while_a_node_syncs(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from fiesta.apps.routers.auth import update_me
+    from fiesta.apps.schemas import AccountPatchIn
+
+    _modes(monkeypatch, "public", "source")
+    user = _account()
+    with pytest.raises(HTTPException) as err:
+        await update_me(AccountPatchIn(email="new@example.org"), user, AsyncMock())
+    assert err.value.status_code == 409 and "N1" in err.value.detail
+    # The unchanged address (any case) and the other fields still save.
+    payload = AccountPatchIn(email="OLD@example.org", name="Renamed")
+    out = await update_me(payload, user, AsyncMock())
+    assert (out.email, out.name) == ("old@example.org", "Renamed")
+
+
+@pytest.mark.parametrize(
+    "fields", [{"handle": "a@b"}, {"handle": "x"}, {"orcid": "1234"}, {"name": ""}]
+)
+def test_account_patch_rejects_bad_fields(fields):
+    from pydantic import ValidationError
+
+    from fiesta.apps.schemas import AccountPatchIn
+
+    with pytest.raises(ValidationError):
+        AccountPatchIn(**fields)
+
+
+@pytest.mark.asyncio
+async def test_account_password_change():
+    from unittest.mock import AsyncMock
+
+    from fiesta.apps.routers.auth import change_password
+    from fiesta.apps.schemas import PasswordIn
+    from fiesta.security import verify_password
+
+    user = _account()
+    with pytest.raises(HTTPException) as err:
+        await change_password(PasswordIn(new_password="new-password"), user, AsyncMock())
+    assert err.value.status_code == 403
+    payload = PasswordIn(current_password="old-password", new_password="new-password")
+    await change_password(payload, user, AsyncMock())
+    assert verify_password("new-password", user.password_hash)
+    # An account imported without a password sets one without a current password.
+    imported = _account(password_hash=None)
+    await change_password(PasswordIn(new_password="first-password"), imported, AsyncMock())
+    assert verify_password("first-password", imported.password_hash)
