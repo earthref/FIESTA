@@ -17,7 +17,11 @@ Last updated: 2026-11-10
       run). Unblocks: ROADMAP E1, B2.
 - [ ] **Cutover shape**: `dev.earthref.org/<Node>/` first, then `earthref.org/<Node>/`
       as a proxy change (deployment.md) — confirm or change. Unblocks: E4.
-- [ ] **KdD legacy ownership.** 256 of 264 KdD contributions were bulk-loaded with only
+- [x] **KdD legacy ownership.** Decided 2026-11-10: map "Roger Nielsen" to `rnielsen`'s
+      email (`owner_names`); that day Claude synced all 264 to dev from the laptop (255 +
+      9 retried after nginx 502s, 0 quarantined). The MARFIK3 schedule needs the same
+      map as `/etc/fiesta/source-kdd-owners.json` (2026-11-10 section below).
+      Was: 256 of 264 KdD contributions were bulk-loaded with only
       the display name "Roger Nielsen" and no handle; the shared user index has one
       matching account (`rnielsen`). Approve mapping it with
       `{"owner_names": {"Roger Nielsen": "<that account's email>"}}` in the gitignored
@@ -58,7 +62,9 @@ Last updated: 2026-11-10
       moratorium.** All ten of 2JC's XRF files are in `_moratorium_files` in the
       `osu-mgr` index, yet cdr-3 shows 14,022 XRF rows publicly. Either the moratorium
       ended and OSU-MGR was not updated, or CDR is publishing embargoed data. Ask the
-      OSU-MGR curators. Unblocks: CDR going live in FIESTA.
+      OSU-MGR curators. Unblocks: CDR going live in FIESTA. Until they answer,
+      `legacy.exclude_ids: [88]` in `config/cdr.yaml` withholds #88 from every CDR
+      sync (decided 2026-11-10); remove it from that list to release #88.
 - [ ] **CDR 1.0 lacks most XRF element columns.** The OSU-MGR scans carry `al`, `si`,
       `p`, `s`, `v`, `cr`, `ba`, `la`, `ce`, `pr`, `nd` and, on some cruises, `ag`,
       `as`, `bi`, `cd`, `co`, `mo`, `sb`, `sc`, `se`, `sn`, `th`, `u`, none in
@@ -518,7 +524,8 @@ host). Each node's sync schedule is on its admin page's **Data source** tab
 records are parsed and indexed by the node's worker, so the "Run `fiesta worker`
 as a service on fiesta-ct" item above applies here too.
 
-- [ ] **Create the KdD sync account on dev**: a dedicated account (e.g. a `sources@`
+- [x] **Create the KdD sync account on dev** (done 2026-11-09: `source-sync@earthref.org`,
+      node admin of every node). Was: a dedicated account (e.g. a `sources@`
       address you control), made a KdD node admin in `/admin` — not a super admin.
       Its email and password go only in the MARFIK3 env file below.
 - [ ] **`/etc/fiesta/source-kdd.env` on MARFIK3** (root:fiesta, 0640), the
@@ -533,9 +540,8 @@ as a service on fiesta-ct" item above applies here too.
       `/srv/fiesta-ops/FIESTA/backend` with that env file loaded:
       `.venv/bin/python ../sources/kdd.py --state-dir /var/lib/fiesta-ops/sources/kdd --dry-run`,
       then without `--dry-run` (both read `/etc/fiesta/source-kdd.env`, e.g. via
-      `set -a; . /etc/fiesta/source-kdd.env; set +a`). Expect 0 applied once
-      Claude's first dev run has landed, 256 quarantined until the KdD ownership
-      decision (§A). Then on `/KdD/admin/nodes/kdd?section=source` tick "Sync on a
+      `set -a; . /etc/fiesta/source-kdd.env; set +a`). Expect 0 applied (Claude's dev
+      run of 2026-11-10 landed all 264) and 0 quarantined with the owner map below. Then on `/KdD/admin/nodes/kdd?section=source` tick "Sync on a
       schedule", Save to Draft and publish; the ops worker picks it up within a
       minute, no restart.
 - [ ] **Check the dev reverse proxy's request body limit** for
@@ -594,6 +600,29 @@ so the first run sends about 75 records.
       `deploy-fiesta.sh` copy the previous release's `assets/` into the new one
       so tabs open across a deploy keep working without a reload. After:
       `curl -sI https://dev.earthref.org/MagIC/search` shows `no-cache`.
+
+## 2026-11-10 — KArAr, KdD and CDR synced to dev; their schedules
+
+On 2026-11-10 Claude ran `sources/karar.py`, `kdd.py` and the new `cdr.py` from the
+laptop against dev (as `source-sync@earthref.org`): KArAr 29 applied, KdD 264 (owner
+map: "Roger Nielsen" → `rnielsen`), CDR 682 (owner map: handle `cdr` →
+`admin@osu-mgr.org`; #88 withheld by `legacy.exclude_ids`). `admin@osu-mgr.org` had no
+EarthRef account, so the CDR owner map declares it under `owner_accounts` and dev
+created it, without a password, on the first record. The owner maps are in the
+`node-source-syncs` worktree's gitignored `migration/<slug>/owner_map.json`.
+
+- [ ] **Owner maps on MARFIK3** for the scheduled runs (the ops config's
+      `owner_map: /etc/fiesta/source-{slug}-owners.json`, root:fiesta 0640):
+      `source-kdd-owners.json` = `{"owner_names": {"Roger Nielsen": "<rnielsen's email>"}}`;
+      `source-cdr-owners.json` = `{"owner_handles": {"cdr": "admin@osu-mgr.org"},
+      "owner_accounts": {"admin@osu-mgr.org": {"name": "OSU Marine and Geology Repository"}}}`.
+      KArAr needs none. Without them the schedules quarantine those records.
+- [ ] **`/etc/fiesta/source-karar.env` and `source-cdr.env` on MARFIK3**, as for KdD:
+      OpenSearch read on `karar` / `cdr-3` and `er_users`; S3 read on
+      `karar-activated-contributions` and `karar-contributions` (CDR has no bucket).
+      Then enable each node's schedule on its admin **Data source** tab when wanted.
+- [ ] **Give `admin@osu-mgr.org` a login** when OSU-MGR staff need it: it owns all CDR
+      contributions on dev but has no password (a password reset to that mailbox).
 
 ## Done
 

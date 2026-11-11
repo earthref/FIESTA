@@ -380,6 +380,26 @@ def test_owner_map_merges_over_the_legacy_block():
         base.with_owner_map({"index": "other"})
 
 
+def test_declared_owner_for_a_mapped_email_without_a_legacy_account():
+    """A steward email the operator maps to but er_users never had resolves to the
+    account declared in `owner_accounts`; an undeclared one stays unresolved."""
+    from fiesta.nodeconfig import LegacySourceConfig
+
+    cfg = LegacySourceConfig(source_id="s", index="i").with_owner_map(
+        {
+            "owner_handles": {"cdr": "Steward@Example.org"},
+            "owner_accounts": {"Steward@Example.org": {"name": "Repository Steward"}},
+        }
+    )
+    assert legacy_inventory.declared_owner(cfg, "steward@example.org") == {
+        "handle": None,
+        "email": "steward@example.org",
+        "name": "Repository Steward",
+        "orcid": None,
+    }
+    assert legacy_inventory.declared_owner(cfg, "other@example.org") is None
+
+
 def test_export_tables_stamps_the_import_data_model_version():
     model = {
         "tables": {

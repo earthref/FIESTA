@@ -71,6 +71,8 @@ A node-specific fix-up of the source records belongs in the node's script.
 | Script | Source | Status |
 |---|---|---|
 | `sources/kdd.py` | Meteor KdD: index `kdd`, bucket `kdd-activated-contributions` | first; schedule `kdd-source`, off until `legacy.sync.enabled` |
+| `sources/karar.py` | Meteor KArAr: index `karar`, buckets `karar-activated-contributions`, `karar-contributions` | schedule `karar-source`, off until `legacy.sync.enabled`; continues from the `legacy-karar` bulk import |
+| `sources/cdr.py` | Meteor CDR: index `cdr-3` (no archive bucket; every record exported from the index) | schedule `cdr-source`, off until `legacy.sync.enabled`; needs the owner map (`cdr` handle → steward); `legacy.exclude_ids` withholds #88 |
 | `sources/magic.py` | Meteor MagIC: index `magic`, buckets `magic-activated-contributions`, `magic-contributions`, `magic-private-contributions` | schedule `magic-source`, on, hourly at :40; continues from the `legacy-magic` bulk import |
 
 Run one by hand from the repository root (`make fiesta` runs it in `backend/`
@@ -88,12 +90,12 @@ FIESTA_SOURCE_EMAIL=<node admin> FIESTA_SOURCE_PASSWORD=<password> \
 | `FIESTA_SOURCE_EMAIL`, `FIESTA_SOURCE_PASSWORD` | a node admin of that node |
 | `FIESTA_OPENSEARCH_URL`, `FIESTA_S3_*` | read access to the legacy index, `er_users` and the archive bucket |
 | `--state-dir` | snapshot, hash cache and index exports, kept between runs (default `~/.cache/fiesta/sources/<slug>`) |
-| `--owner-map` | operator-approved owners for records without a usable handle (`owner_names`, `owner_handles`, `owner_overrides`, `default_owner`); never checked in |
+| `--owner-map` | operator-approved owners for records without a usable handle (`owner_names`, `owner_handles`, `owner_overrides`, `default_owner`, and `owner_accounts` for a mapped email with no `er_users` account); never checked in |
 | `--dry-run`, `--ids` | report only; limit to some IDs |
 
 It exits 0 in `public` mode without reading the source, prints a JSON summary
-as its last line (`applied`, `unchanged`, `quarantined`, `missing_from_source`,
-`errors`), reports the run to `POST /source/runs` (not on `--dry-run`) and
+as its last line (`applied`, `unchanged`, `quarantined`, `excluded`,
+`missing_from_source`, `errors`), reports the run to `POST /source/runs` (not on `--dry-run`) and
 exits 1 when any record failed. Records whose legacy owner has no
 account are quarantined, not errors: they wait for an owner mapping.
 

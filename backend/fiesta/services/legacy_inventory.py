@@ -191,6 +191,21 @@ async def _owner_from_query(client, users_index: str, handle: str, queries: list
     return _account_fields(hits[0]["_source"], handle)
 
 
+def declared_owner(cfg, email: str) -> dict | None:
+    """The account the operator declared in `owner_accounts` for a mapped email with
+    no er_users account, in the shape `_account_fields` gives; None if undeclared."""
+    email = email.lower()
+    declared = {k.lower(): v for k, v in cfg.owner_accounts.items()}.get(email)
+    if declared is None:
+        return None
+    return {
+        "handle": None,
+        "email": email,
+        "name": declared.get("name") or email,
+        "orcid": declared.get("orcid") or None,
+    }
+
+
 def _account_fields(user: dict, fallback_name: str) -> dict | None:
     """The shared-account fields of one er_users document; None without an email."""
     email = (user.get("email") or {}).get("address")
@@ -325,7 +340,9 @@ async def build_inventory(node, out_dir: Path, *, client=None, concurrency: int 
         handle = _handle_for(cfg, cid, summary)
         if handle and handle not in owners and handle not in unresolved:
             if handle.startswith("override:"):
-                owner = await lookup_owner_by_email(client, cfg.users_index, handle[9:])
+                owner = await lookup_owner_by_email(
+                    client, cfg.users_index, handle[9:]
+                ) or declared_owner(cfg, handle[9:])
             else:
                 owner = await lookup_owner(client, cfg.users_index, handle)
             if owner:  # one entry per account, however many keys point at it
