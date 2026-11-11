@@ -369,6 +369,205 @@ def test_unit_conversions_are_node_configuration(magic_node):
         UnitConversion(unit_column="u", columns=["v"], bounds=("v", "w"), factors={})
 
 
+def test_summarize_writes_columns_with_data(magic_node):
+    """summary._has: per table the data-model columns with a value in a doc's
+    rows (blanks and the row stamps left out), a record's taking those of the
+    records below it that name it, the contribution's every table's (ages
+    too), and `_any` their union."""
+    text = "\n>>>>>>>>>>\n".join(
+        [
+            _tab_block(
+                "contribution",
+                ["id", "data_model_version"],
+                [{"id": 1, "data_model_version": "3.0"}],
+            ),
+            _tab_block("locations", ["location", "location_type"], [{"location": "L"}]),
+            _tab_block(
+                "sites",
+                ["site", "location", "int_abs", "dir_dec", "row_id"],
+                [
+                    {"site": "A", "location": "L", "int_abs": "4e-05", "row_id": "1"},
+                    {"site": "A", "location": "L", "dir_dec": " ", "row_id": "2"},
+                    {"site": "B", "location": "L", "dir_dec": "10", "row_id": "3"},
+                ],
+            ),
+            _tab_block(
+                "samples",
+                ["sample", "site", "azimuth"],
+                [{"sample": "S", "site": "A", "azimuth": "5"}],
+            ),
+            _tab_block(
+                "ages", ["site", "age", "age_unit"], [{"site": "A", "age": "1", "age_unit": "Ma"}]
+            ),
+        ]
+    )
+    docs = summarize(magic_node, parse_text(text), {"id": 1})
+    by_name = {
+        (d["type"], d["rows"][0].get(d["type"].removesuffix("s"))): d["summary"]["_has"]
+        for d in docs[1:]
+    }
+    assert by_name[("sites", "A")] == {
+        "sites": ["int_abs", "location", "site"],
+        "samples": ["azimuth", "sample", "site"],
+        "_any": ["azimuth", "int_abs", "location", "sample", "site"],
+    }
+    assert by_name[("sites", "B")] == {
+        "sites": ["dir_dec", "location", "site"],
+        "_any": ["dir_dec", "location", "site"],
+    }
+    # A location takes its sites' and their samples' (location_type is blank).
+    location = by_name[("locations", "L")]
+    assert location["locations"] == ["location"]
+    assert location["sites"] == ["dir_dec", "int_abs", "location", "site"]
+    assert location["samples"] == ["azimuth", "sample", "site"]
+    contribution = docs[0]["summary"]["_has"]
+    assert contribution["ages"] == ["age", "age_unit", "site"]
+    assert contribution["sites"] == ["dir_dec", "int_abs", "location", "site"]
+    assert "specimens" not in contribution and "row_id" not in contribution["_any"]
+    assert set(contribution["_any"]) == {c for t, cs in contribution.items() for c in cs}
+
+
+def test_columns_with_data_are_keywords():
+    from fiesta.search.index import INDEX_BODY
+
+    templates = [next(iter(t.values())) for t in INDEX_BODY["mappings"]["dynamic_templates"]]
+    at = templates.index({"path_match": "summary._has.*", "mapping": {"type": "keyword"}})
+    # Ahead of the string template (text + .raw).
+    assert at < next(i for i, t in enumerate(templates) if t.get("match_mapping_type") == "string")
+
+
+def test_exists_tables_follow_the_data_model_and_hierarchy(magic_node):
+    """The with/without data filter's tabs: on the contribution every table
+    but its own, on a level its own and the levels below, `_any` first when
+    there are several; columns in data-model position order without the
+    download-only ones."""
+    from fiesta.nodeconfig import SearchFilter
+
+    assert magic_node.exists_tables("contribution") == [
+        "_any",
+        *("locations", "sites", "samples", "specimens", "measurements"),
+        *("criteria", "ages", "images"),
+    ]
+    assert magic_node.exists_tables("locations") == [
+        "_any",
+        *("locations", "sites", "samples", "specimens", "measurements"),
+    ]
+    assert magic_node.exists_tables("measurements") == ["measurements"]
+    assert magic_node.exists_tables("poles") == []
+    sites = magic_node.exists_columns("sites")
+    model = magic_node.load_data_model("3.0")["tables"]["sites"]["columns"]
+    assert sites[0] == "site" and "row_id" not in sites and "contribution_id" not in sites
+    assert [model[c]["position"] for c in sites] == sorted(model[c]["position"] for c in sites)
+    every = magic_node.exists_columns("_any", "contribution")
+    assert set(sites) | set(magic_node.exists_columns("ages")) <= set(every)
+    assert set(magic_node.exists_columns("_any", "specimens")) == set(
+        magic_node.exists_columns("specimens")
+    ) | set(magic_node.exists_columns("measurements"))
+    assert magic_node.public_config()["exists_tables"]["sites"][:2] == ["_any", "sites"]
+    assert any(f.type == "exists" for f in magic_node.search.filters)
+    with pytest.raises(ValueError, match="no field"):
+        SearchFilter(type="exists", field="sites")
+
+
+def test_with_and_without_data_clauses():
+    """Ticked columns of one table and sense are OR'd, separate filters AND;
+    without = has the table but lacks one of the columns."""
+    from fiesta.search.queries import build_search_body, has_clauses
+
+    assert has_clauses(None) == []
+    clauses = has_clauses(
+        [
+            {"table": "sites", "column": "int_abs", "without": False},
+            {"table": "sites", "column": "vadm", "without": False},
+            {"table": "samples", "column": "azimuth", "without": True},
+            {"table": "samples", "column": "dip", "without": True},
+        ]
+    )
+    assert clauses == [
+        {"terms": {"summary._has.sites": ["int_abs", "vadm"]}},
+        {
+            "bool": {
+                "filter": [{"exists": {"field": "summary._has.samples"}}],
+                "must_not": [
+                    {
+                        "bool": {
+                            "filter": [
+                                {"term": {"summary._has.samples": "azimuth"}},
+                                {"term": {"summary._has.samples": "dip"}},
+                            ]
+                        }
+                    }
+                ],
+            }
+        },
+    ]
+    body = build_search_body(
+        table="sites", query=None, has=[{"table": "_any", "column": "lat", "without": False}]
+    )
+    assert {"terms": {"summary._has._any": ["lat"]}} in body["query"]["bool"]["filter"]
+
+
+def test_search_has_counts_one_table(magic_node, monkeypatch):
+    """GET /search/{table}/has: one request, the table's docs and a terms
+    aggregation of its columns (every listed column, zero included); `has`
+    entries are checked against the level's tables and columns."""
+    import asyncio
+
+    from fiesta.apps.routers import search as router
+
+    bodies = []
+
+    class Client:
+        async def search(self, index, body):
+            bodies.append(body)
+            return {
+                "hits": {"total": {"value": 10}},
+                "aggregations": {
+                    "with_table": {"doc_count": 7},
+                    "columns": {"buckets": [{"key": "int_abs", "doc_count": 3}]},
+                },
+            }
+
+    async def unconstrained(*args):
+        return None
+
+    monkeypatch.setattr(router, "_constrain", unconstrained)
+    monkeypatch.setattr(router, "get_opensearch", lambda: Client())
+    run = lambda table, of, has=None: asyncio.run(  # noqa: E731
+        router.search_has(
+            None,
+            magic_node,
+            table,
+            of=of,
+            query=None,
+            range_=None,
+            bbox=None,
+            filter_=None,
+            has=has,
+            contribution=None,
+            private_key=None,
+        )
+    )
+    out = run("contribution", "sites", has=["!samples:azimuth"])
+    assert (out.total, out.with_table, out.columns["int_abs"]) == (10, 7, 3)
+    assert list(out.columns) == magic_node.exists_columns("sites")
+    assert out.columns["vadm"] == 0
+    aggs = bodies[-1]["aggs"]
+    assert aggs["with_table"] == {"filter": {"exists": {"field": "summary._has.sites"}}}
+    assert aggs["columns"]["terms"]["field"] == "summary._has.sites"
+    assert any("must_not" in str(f) for f in bodies[-1]["query"]["bool"]["filter"])
+    # A table the level's docs do not record, a column not in it, a bad shape.
+    for of, has in (("ages", None), ("sites", ["ages:age"]), ("sites", ["sites:nope"])):
+        with pytest.raises(router.HTTPException):
+            run("samples", of, has)
+    with pytest.raises(router.HTTPException):
+        run("contribution", "sites", ["sites"])
+    assert router._parse_has(magic_node, "locations", ["!_any:lat", "sites:vadm"]) == [
+        {"table": "_any", "column": "lat", "without": True},
+        {"table": "sites", "column": "vadm", "without": False},
+    ]
+
+
 def test_karar_config_loads(karar_node):
     assert karar_node.hierarchy[-1] == "measurements"
     assert karar_node.search.index == "karar"

@@ -189,6 +189,17 @@ class NumberColumns(BaseModel):
     columns: dict[str, int]
 
 
+class HasColumns(BaseModel):
+    """One table's columns for the with/without data filter: of the docs
+    matching a search (`total`), how many have the table (`with_table`) and
+    how many have a value in each of its columns, in data-model order
+    (`columns`: column -> count, zero included)."""
+
+    total: int
+    with_table: int
+    columns: dict[str, int]
+
+
 class HealthOut(BaseModel):
     status: str
     database: bool

@@ -70,10 +70,10 @@ export interface HomeNews {
 /** One filter sidebar control (backend `SearchFilter`). `levels` / `views`
  * empty = shown on every search level / result view. */
 export interface SearchFilter {
-  type: "facet" | "range" | "bbox" | "numeric";
+  type: "facet" | "range" | "bbox" | "numeric" | "exists";
   /** facet: a column name; range: a `summary.*` document path (a number
-   * column's `summary._num.<column>`); bbox and numeric (a picker of the
-   * level's number columns): null. */
+   * column's `summary._num.<column>`); bbox, numeric (a picker of the
+   * level's number columns) and exists (the with/without data picker): null. */
   field: string | null;
   label: string | null;
   levels: string[];
@@ -125,6 +125,10 @@ export interface NodeConfig {
   /** The base unit of the `summary._num` columns a unit conversion puts in
    * one (node YAML `search.unit_conversions`: {"age": "years BP"}). */
   number_units?: Record<string, string>;
+  /** The with/without data filter's tabs per search table: the tables its
+   * docs record columns with data of (`_any`, their union, first when there
+   * are several); a table without any is absent. */
+  exists_tables?: Record<string, string[]>;
   /** The search map's "Color by" menu (node YAML `search.map_colors`). */
   map_colors?: MapColorOption[];
   /** The planetary bodies besides Earth a record can be on (node YAML
@@ -360,6 +364,15 @@ export interface SearchHistogram {
   /** The bins are equal in log10 space (asked for, and positive values exist). */
   log: boolean;
   bins: { lo: number; hi: number; count: number }[];
+}
+
+/** GET /search/{table}/has?of=<table>: of a search's docs, how many have
+ * the table and how many have a value in each of its columns (data-model
+ * order, zero included); those without one are `with_table` less its count. */
+export interface HasColumns {
+  total: number;
+  with_table: number;
+  columns: Record<string, number>;
 }
 
 /** GET /search/{table}/numbers: a level's number columns (`summary._num.<column>`)

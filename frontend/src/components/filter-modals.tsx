@@ -10,6 +10,8 @@
 //   with min/max boxes.
 // - NumericModal: the `numeric` filter's picker of the level's number columns
 //   (summary._num.<column>), each then a RangeModal of its own.
+// - ExistsModal: the `exists` filter's columns with (or without) data, a tab
+//   per table the level's records cover and a With / Without switch.
 // - GeoModal: the geospatial area on the search's map, with its bounds as numbers.
 //
 // Each edits a draft and applies it with Apply, so a long list keeps its order
@@ -24,6 +26,7 @@ import type {
   DataModel,
   DataModelColumn,
   FacetBucket,
+  HasColumns,
   MethodCodes,
   NumberColumns,
   SearchFilter,
@@ -31,11 +34,27 @@ import type {
   SearchLevel,
   SearchPage,
 } from "../lib/types";
-import { abbreviateNumber, buildQuery, cx, parseQueryTokens, queryWithout } from "../lib/utils";
+import {
+  abbreviateNumber,
+  buildQuery,
+  cx,
+  facetTitle,
+  parseQueryTokens,
+  queryWithout,
+  singularize,
+} from "../lib/utils";
 import { type BrushRange, EChart, type EChartsOption } from "./echart";
 import { type Area, WHOLE_GLOBE } from "./map/map-points";
 import { type AreaRequest, SearchMap } from "./map/search-map";
-import { Chip, NUMBER_PREFIX, parseRange } from "./search-filters";
+import {
+  ANY_TABLE,
+  Chip,
+  formatHas,
+  type HasEntry,
+  NUMBER_PREFIX,
+  parseHas,
+  parseRange,
+} from "./search-filters";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 import { Spinner } from "./ui/spinner";
@@ -946,6 +965,361 @@ export function NumericModal({
   );
 }
 
+// --- With / without data (the `exists` filter) ------------------------------------
+
+/** The node's latest data model (shared with the data-model pages' fetch). */
+export function useLatestDataModel(): DataModel | null | undefined {
+  const { data: config } = useNodeConfig();
+  const { data: model } = useQuery({
+    ...dataModelQuery(config?.data_model_latest ?? ""),
+    enabled: !!config,
+    select: unwrapModel,
+  });
+  return model;
+}
+
+/** A with/without data tab's name: "Any Table", or the data model's label. */
+export function existsTableLabel(model: DataModel | null | undefined, table: string): string {
+  if (table === ANY_TABLE) return "Any Table";
+  return model?.tables[table]?.label ?? facetTitle(table);
+}
+
+/** An applied with/without data entry as a chip's text: "With Sites: int_abs". */
+export function hasText(model: DataModel | null | undefined, entry: HasEntry): string {
+  return `${entry.without ? "Without" : "With"} ${existsTableLabel(model, entry.table)}: ${entry.column}`;
+}
+
+const SENSES: [boolean, string][] = [
+  [false, "With data"],
+  [true, "Without data"],
+];
+type ColumnSort = "model" | "count" | "name";
+
+/**
+ * The `exists` filter: a tab per table the level's records cover (Any Table
+ * first) and a With / Without switch, listing the table's data-model columns
+ * with how many of the search's records have (or lack) data in each, counted
+ * for the search without this table's own choices. Ticked columns of one
+ * table and sense are OR'd; each table and sense is a filter of its own,
+ * and they AND (legacy "With … Data" / "Without … Data").
+ */
+export function ExistsModal({
+  title,
+  table,
+  levelName,
+  tabs,
+  has,
+  paramsFor,
+  onApply,
+  onClose,
+}: {
+  title: string;
+  /** The search level's table, whose docs are counted. */
+  table: string;
+  /** The level's name (Sites), for the counts' hover text. */
+  levelName: string;
+  tabs: string[];
+  /** The applied entries ("[!]<table>:<column>"). */
+  has: string[];
+  /** The search's request params with these entries. */
+  paramsFor: (has: string[]) => SearchParams;
+  onApply: (has: string[]) => void;
+  onClose: () => void;
+}) {
+  const model = useLatestDataModel();
+  const [draft, setDraft] = useState<HasEntry[]>(() => has.map(parseHas));
+  // The first tab with a choice, in its sense; else Any Table, With.
+  const first = draft.find((entry) => tabs.includes(entry.table));
+  const [tab, setTab] = useState(first?.table ?? tabs[0] ?? "");
+  const [without, setWithout] = useState(first?.without ?? false);
+  const [find, setFind] = useState("");
+  const [sortBy, setSortBy] = useState<ColumnSort>("model");
+  const [selectedOnly, setSelectedOnly] = useState(false);
+  const [showEmpty, setShowEmpty] = useState(false);
+
+  // Counted without this table's own applied entries (either sense).
+  const params = paramsFor(has.filter((entry) => parseHas(entry).table !== tab));
+  const counts = useQuery({
+    queryKey: ["filter-modal-has", table, tab, params],
+    queryFn: () =>
+      api<HasColumns>(`/search/${table}/has`, {
+        params: { ...params, size: undefined, of: tab },
+      }),
+    enabled: !!tab,
+    staleTime: 60_000,
+  });
+
+  const picked = useMemo(
+    () =>
+      new Set(
+        draft
+          .filter((entry) => entry.table === tab && entry.without === without)
+          .map((entry) => entry.column),
+      ),
+    [draft, tab, without],
+  );
+  const needle = find.trim().toLowerCase();
+  const tableLabel = existsTableLabel(model, tab);
+  const records = levelName.toLowerCase();
+  const record = singularize(levelName).toLowerCase();
+  const all = useMemo(() => {
+    const data = counts.data;
+    const listed = Object.entries(data?.columns ?? {}).map(([column, n], position) => ({
+      column,
+      position,
+      count: without ? (data?.with_table ?? 0) - n : n,
+    }));
+    // A ticked column the list lacks (kept from another level) stays, at zero.
+    const seen = new Set(listed.map((row) => row.column));
+    const extra = [...picked]
+      .filter((column) => !seen.has(column))
+      .map((column, i) => ({ column, position: listed.length + i, count: 0 }));
+    return [...listed, ...extra].map((row) => ({
+      ...row,
+      def: columnDef(model, tab === ANY_TABLE ? "" : tab, row.column),
+    }));
+  }, [counts.data, without, picked, model, tab]);
+  const empty = all.filter((row) => row.count === 0 && !picked.has(row.column)).length;
+  const rows = all
+    .filter((row) => showEmpty || row.count > 0 || picked.has(row.column))
+    .filter((row) => !selectedOnly || picked.has(row.column))
+    .filter(
+      (row) =>
+        !needle ||
+        row.column.toLowerCase().includes(needle) ||
+        (row.def?.label ?? "").toLowerCase().includes(needle) ||
+        (row.def?.description ?? "").toLowerCase().includes(needle),
+    )
+    .sort((a, b) =>
+      sortBy === "count"
+        ? b.count - a.count || a.position - b.position
+        : sortBy === "name"
+          ? a.column.localeCompare(b.column)
+          : a.position - b.position,
+    );
+
+  const toggle = (column: string) =>
+    setDraft(
+      picked.has(column)
+        ? draft.filter(
+            (entry) =>
+              !(entry.table === tab && entry.without === without && entry.column === column),
+          )
+        : [...draft, { table: tab, column, without }],
+    );
+  const countOf = (table: string, sense?: boolean) =>
+    draft.filter(
+      (entry) => entry.table === table && (sense === undefined || entry.without === sense),
+    ).length;
+  const next = draft.map(formatHas);
+  const changed = JSON.stringify([...next].sort()) !== JSON.stringify([...has].sort());
+  const hover = (column: string, n: number) =>
+    `${n.toLocaleString()} ${n === 1 ? record : records} ${
+      without ? (n === 1 ? "does not have" : "do not have") : n === 1 ? "has" : "have"
+    } data in the ${column} column of ${
+      tab === ANY_TABLE ? "any table" : `the ${tableLabel} table`
+    } and ${n === 1 ? "matches" : "match"} your search and other filters`;
+  const loading = counts.isPending && !!tab;
+
+  return (
+    <Modal
+      open
+      xl
+      onClose={onClose}
+      title={title}
+      footer={
+        <Footer
+          onClear={() => setDraft([])}
+          clearDisabled={draft.length === 0}
+          onCancel={onClose}
+          onApply={() => onApply(next)}
+          applyDisabled={!changed}
+        />
+      }
+    >
+      <div className="flex flex-col gap-3 text-[13px] text-ink">
+        {tabs.length > 1 && (
+          <div className="flex flex-wrap gap-1 border-b border-line" role="tablist">
+            {tabs.map((name) => {
+              const n = countOf(name);
+              const active = name === tab;
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTab(name)}
+                  className={cx(
+                    "-mb-px cursor-pointer rounded-t-sm border px-3 py-1.5",
+                    active
+                      ? "border-line border-b-surface bg-surface font-bold"
+                      : "border-transparent text-ink-muted hover:text-node-ink",
+                  )}
+                >
+                  {existsTableLabel(model, name)}
+                  {n > 0 && (
+                    <span className="ml-1.5 rounded-full bg-node px-[0.45em] text-[10px] font-bold text-white">
+                      {n}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {tab && (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <fieldset className="m-0 inline-flex overflow-hidden rounded-sm border border-gray-300 p-0">
+                <legend className="sr-only">With or without data</legend>
+                {SENSES.map(([value, name]) => {
+                  const n = countOf(tab, value);
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      aria-pressed={without === value}
+                      title={
+                        value
+                          ? `${levelName} with the ${tableLabel} table but no data in a ticked column`
+                          : `${levelName} with data in a ticked column`
+                      }
+                      onClick={() => setWithout(value)}
+                      className={cx(
+                        "cursor-pointer px-2.5 py-1",
+                        without === value
+                          ? "bg-node font-bold text-white"
+                          : "bg-surface hover:bg-panel",
+                      )}
+                    >
+                      {name}
+                      {n > 0 && ` (${n})`}
+                    </button>
+                  );
+                })}
+              </fieldset>
+              <input
+                type="search"
+                value={find}
+                onChange={(event) => setFind(event.target.value)}
+                placeholder="Find a column by name or description"
+                aria-label={`Find ${tableLabel} columns`}
+                className={cx(inputClass, "min-w-48 flex-1")}
+              />
+              <label className="flex items-center gap-1.5">
+                <span className="text-ink-muted">Sort</span>
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as ColumnSort)}
+                  className="rounded-sm border border-gray-300 bg-surface px-1.5 py-1"
+                >
+                  <option value="model">Data model order</option>
+                  <option value="count">Most records</option>
+                  <option value="name">A–Z</option>
+                </select>
+              </label>
+              <label className="flex cursor-pointer items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={selectedOnly}
+                  onChange={() => setSelectedOnly(!selectedOnly)}
+                  className="h-4 w-4 accent-node"
+                />
+                Selected only
+              </label>
+              <label className="flex cursor-pointer items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={showEmpty}
+                  onChange={() => setShowEmpty(!showEmpty)}
+                  className="h-4 w-4 accent-node"
+                />
+                Columns with no records{empty > 0 ? ` (${empty})` : ""}
+              </label>
+            </div>
+            {picked.size > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[...picked].map((column) => (
+                  <Chip
+                    key={column}
+                    label={hasText(model, { table: tab, column, without })}
+                    onRemove={() => toggle(column)}
+                  />
+                ))}
+              </div>
+            )}
+            <div
+              className="min-h-40 overflow-y-auto rounded-sm border border-line"
+              style={{ maxHeight: "50vh" }}
+            >
+              {loading && (
+                <div className="flex items-center justify-center gap-2 p-6 text-ink-muted">
+                  <Spinner /> Loading the columns…
+                </div>
+              )}
+              {counts.error && (
+                <div className="p-4 text-center text-red-700">Could not load the columns.</div>
+              )}
+              {!loading && !counts.error && rows.length === 0 && (
+                <div className="p-6 text-center font-bold text-ink-muted">
+                  {needle || selectedOnly ? "No matching columns" : "No columns with records"}
+                </div>
+              )}
+              {rows.map((row) => {
+                const on = picked.has(row.column);
+                return (
+                  <label
+                    key={row.column}
+                    title={hover(row.def?.label ?? row.column, row.count)}
+                    className={cx(
+                      "flex cursor-pointer items-start gap-2 border-b border-line/60 px-3 py-1.5 last:border-b-0 hover:bg-node-soft",
+                      on && "bg-node-soft/60",
+                      row.count === 0 && "text-ink-muted",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() => toggle(row.column)}
+                      className="mt-[1px] h-4 w-4 shrink-0 cursor-pointer accent-node"
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="flex flex-wrap items-baseline gap-x-2">
+                        <span className={cx(on && "font-bold")}>
+                          <Highlight text={row.def?.label ?? row.column} needle={needle} />
+                        </span>
+                        <span className="font-mono text-[12px] text-ink-muted">
+                          <Highlight text={row.column} needle={needle} />
+                        </span>
+                      </span>
+                      {row.def?.description && (
+                        <span className="text-[12px] text-ink-muted">
+                          <Highlight text={row.def.description} needle={needle} />
+                        </span>
+                      )}
+                    </span>
+                    <CountBadge n={row.count} />
+                  </label>
+                );
+              })}
+            </div>
+            <div className="text-[12px] text-ink-muted">
+              {rows.length.toLocaleString()} column{rows.length === 1 ? "" : "s"} shown · counts are
+              the search's {records}{" "}
+              {without ? `with the ${tableLabel} table but no data in` : "with data in"} each column
+              {tab === ANY_TABLE ? " of any table" : ""}
+              {counts.data && tab !== ANY_TABLE
+                ? ` (${counts.data.with_table.toLocaleString()} of ${counts.data.total.toLocaleString()} have the table)`
+                : ""}
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 // --- Geospatial -----------------------------------------------------------------
 
 type Bounds = { west: string; south: string; east: string; north: string };
@@ -979,6 +1353,7 @@ export function GeoModal({
   query,
   ranges,
   filters,
+  has,
   area,
   color,
   onApply,
@@ -990,6 +1365,8 @@ export function GeoModal({
   query: string;
   ranges?: string[];
   filters?: string[];
+  /** The with/without data filter's entries. */
+  has?: string[];
   area: Area | null;
   color: string;
   onApply: (area: Area | null) => void;
@@ -1048,6 +1425,7 @@ export function GeoModal({
               query={query}
               ranges={ranges}
               filters={filters}
+              has={has}
               area={draft}
               onAreaChange={fromMap}
               areaRequest={request}
