@@ -25,7 +25,9 @@ import { Spinner } from "../ui/spinner";
 import { Table, TBody, Td, THead, Th, Tr } from "../ui/table";
 import { Field } from "./admin-ui";
 
-const TYPES: SettingsFilter["type"][] = ["facet", "range", "bbox"];
+const TYPES: SettingsFilter["type"][] = ["facet", "range", "bbox", "numeric"];
+// Types without a field: the box is summary._all._geo_point; numeric picks columns.
+const NO_FIELD: SettingsFilter["type"][] = ["bbox", "numeric"];
 const VIEWS = ["Summaries", "Rows", "Map"];
 
 // Stable keys so the list survives reordering without index-based keys.
@@ -93,7 +95,7 @@ export function FiltersEditor({
           columns.set(column, tables);
         }
         tables.add(table);
-        if (col.type === "Number") ranges.push(`summary.${table}.${column}`);
+        if (col.type === "Number" || col.type === "Integer") ranges.push(`summary._num.${column}`);
       }
     }
     return { facetColumns: columns, rangeFields: [...new Set(ranges)].sort() };
@@ -279,7 +281,7 @@ function FilterModal({
 
   const submit = () => {
     const out: SettingsFilter = { type };
-    if (type !== "bbox" && field.trim()) out.field = field.trim();
+    if (!NO_FIELD.includes(type) && field.trim()) out.field = field.trim();
     if (label.trim()) out.label = label.trim();
     if (levels.length) out.levels = levels;
     if (views.length) out.views = views;
@@ -293,7 +295,7 @@ function FilterModal({
     onApply(id, out);
   };
 
-  const fieldError = type !== "bbox" && !field.trim() ? "required" : null;
+  const fieldError = !NO_FIELD.includes(type) && !field.trim() ? "required" : null;
 
   return (
     <Modal
@@ -349,7 +351,7 @@ function FilterModal({
               label="Field"
               hint={
                 fieldError ??
-                "A summary.* path a plugin indexes numerically; plain row values are text and will not range-filter"
+                "A number: summary._num.<column> (a data-model number column of the level's records) or a summary.* path a plugin indexes; summary.<level>.<column> is text and will not range-filter"
               }
             >
               <Input list={rangeListId} value={field} onChange={(e) => setField(e.target.value)} />

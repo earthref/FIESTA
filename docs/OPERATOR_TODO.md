@@ -127,6 +127,19 @@ Last updated: 2026-11-10
       `make fiesta ENV_FILE=.env.prod ARGS="sync-legacy-users magic"` and again with
       `--apply`. Re-run until cutover to pick up legacy password changes (legacy wins).
 
+## 2026-11-10 — Numeric range filters (`summary._num`)
+
+- [ ] **Rebuild every node's search index on dev** once the "numeric range filters" PR
+  has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`, then
+  each other node: `kdd`, `cdr`, `karar`, `erda`, `osu-mgr`, `sc`). Search docs now
+  carry `summary._num.<column>`, each data-model number column as numbers (MagIC ages
+  in years BP), mapped as `double` by a new index template. Only a rebuild gives an
+  existing index the template and re-summarizes old contributions. Until then, the new
+  range filters (MagIC: Age, Paleointensity, VADM, Declination, Inclination, …) and the
+  "Numeric" column picker find no values on records indexed before the deploy, and
+  their histograms are empty. Publication Year works without the rebuild. Production
+  needs the same rebuild at cutover. Claude needs nothing after this.
+
 ## 2026-11-10 — Poles, Rock Magnetism and PmagPy plots computed by PmagPy
 
 - [ ] **Rebuild MagIC's search index on dev** once the "plugins on PmagPy" PR has

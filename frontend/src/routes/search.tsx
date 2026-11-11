@@ -16,9 +16,11 @@ import { ErrorMessage } from "../components/error-message";
 import {
   FacetModal,
   type FacetSpec,
-  formatValue,
   GeoModal,
+  NumericModal,
   RangeModal,
+  rangeText,
+  useNumberFilter,
 } from "../components/filter-modals";
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
 import { type AreaRequest, SearchMap } from "../components/map/search-map";
@@ -30,6 +32,7 @@ import {
   FilterEntry,
   filterLabel,
   parseRange,
+  pickedRanges,
   rangesFor,
 } from "../components/search-filters";
 import { isSourceMode } from "../components/source-mode-notice";
@@ -207,7 +210,9 @@ function searchRequestParams(
  * (`area`, every level with positions) / a bbox filter (`bbox`, a plugin view). */
 type FilterModalState =
   | { kind: "facet"; title: string; facets: FacetSpec[]; column?: GridColumn }
-  | { kind: "range"; filter: SearchFilter }
+  // `back`: the numeric filter whose picker it was chosen from.
+  | { kind: "range"; filter: SearchFilter; back?: SearchFilter }
+  | { kind: "numeric"; filter: SearchFilter }
   | { kind: "geo"; title: string; target: "area" | "bbox" };
 
 /** An area's extent as one chip's text. */
@@ -370,17 +375,23 @@ export function SearchPage() {
     setSearch({ area: next?.join(",") });
   };
 
-  // Live totals for every level tab (size=1: the API requires size >= 1).
+  // Live totals for every level tab (size=1: the API requires size >= 1). The
+  // open level's also follows its ranges (as its Summaries view applies them,
+  // whichever view is open); a level tab clears them.
+  const levelRanges = rangesFor(ranges, applicableFilters(config, level?.name, "Summaries"));
   const countQueries = useQueries({
-    queries: levels.map((entry) => ({
-      queryKey: ["search-count", entry.table, q, areaBbox(entry)],
-      queryFn: () =>
-        api<SearchPageData>(`/search/${entry.table}`, {
-          params: searchRequestParams(q, 1, 0, false, undefined, areaBbox(entry)),
-        }),
-      staleTime: 60_000,
-      placeholderData: keepPreviousData,
-    })),
+    queries: levels.map((entry) => {
+      const entryRanges = entry.name === level?.name ? levelRanges : undefined;
+      return {
+        queryKey: ["search-count", entry.table, q, areaBbox(entry), entryRanges],
+        queryFn: () =>
+          api<SearchPageData>(`/search/${entry.table}`, {
+            params: searchRequestParams(q, 1, 0, false, entryRanges, areaBbox(entry)),
+          }),
+        staleTime: 60_000,
+        placeholderData: keepPreviousData,
+      };
+    }),
   });
 
   // Result sub-tabs: Summaries, Rows (non-contribution), Map (levels with
@@ -453,6 +464,8 @@ export function SearchPage() {
   // A plugin view renders from its own fetch; keep its ranges out of the level query.
   const queryRanges = activeTab?.render ? undefined : activeRanges;
   const queryBbox = activeTab?.render ? undefined : (areaBbox(level) ?? activeBbox);
+  // A picked number column as a range filter (its label and unit).
+  const numberFilter = useNumberFilter(level?.table ?? "");
 
   // The grids are sized to every match (up to MAX_RESULTS) and fetch the
   // pages under their visible rows; page 0 carries the totals. Facet values
@@ -647,24 +660,29 @@ export function SearchPage() {
           onRemove: () => setSearch({ q: toggleQueryToken(q, field, value) }),
         }));
     }
+    const removeRange = (field: string) => () =>
+      setSearch({ ranges: ranges.filter((r) => parseRange(r).field !== field) });
     if (filter.type === "range") {
       const entry = ranges.map(parseRange).find((r) => r.field === filter.field);
       if (!entry) return [];
-      const scale = filter.scale || 1;
-      const shown = (v: string) => (v === "" ? "" : formatValue(Number(v) / scale));
-      const unit = filter.unit ? ` ${filter.unit}` : "";
-      const [gte, lte] = [shown(entry.gte), shown(entry.lte)];
-      const text =
-        gte && lte ? `${gte} to ${lte}${unit}` : gte ? `≥ ${gte}${unit}` : `≤ ${lte}${unit}`;
+      const text = rangeText(filter, entry);
       return [
         {
           key: "range",
           label: text,
           title: `${filterLabel(filter)} ${text}`,
-          onRemove: () =>
-            setSearch({ ranges: ranges.filter((r) => parseRange(r).field !== filter.field) }),
+          onRemove: removeRange(entry.field),
         },
       ];
+    }
+    if (filter.type === "numeric") {
+      // Each picked column's range, named.
+      return pickedRanges(ranges, filters).map((spec) => {
+        const entry = parseRange(spec);
+        const picked = numberFilter(entry.field);
+        const text = `${filterLabel(picked)} ${rangeText(picked, entry)}`;
+        return { key: entry.field, label: text, title: text, onRemove: removeRange(entry.field) };
+      });
     }
     const box = parseArea(bbox);
     return box
@@ -681,7 +699,9 @@ export function SearchPage() {
           }
         : filter.type === "range"
           ? { kind: "range", filter }
-          : { kind: "geo", title: filterLabel(filter), target: "bbox" },
+          : filter.type === "numeric"
+            ? { kind: "numeric", filter }
+            : { kind: "geo", title: filterLabel(filter), target: "bbox" },
     );
 
   const renderFilterModal = () => {
@@ -716,11 +736,26 @@ export function SearchPage() {
         />
       );
     }
+    if (filterModal.kind === "numeric") {
+      const picker = filterModal.filter;
+      return (
+        <NumericModal
+          title={filterLabel(picker)}
+          table={level.table}
+          ranges={ranges}
+          paramsFor={(rangeList) => levelParams(q, rangeList)}
+          onPick={(filter) => setFilterModal({ kind: "range", filter, back: picker })}
+          onClose={close}
+        />
+      );
+    }
     if (filterModal.kind === "range") {
-      const { filter } = filterModal;
+      const { filter, back } = filterModal;
       return (
         <RangeModal
+          key={filter.field}
           filter={filter}
+          onBack={back ? () => setFilterModal({ kind: "numeric", filter: back }) : undefined}
           table={rangeTable(filter)}
           ranges={ranges}
           paramsFor={(rangeList) =>

@@ -20,6 +20,14 @@ For a node with hierarchy [contribution, A, B, ...] this produces:
   so every level narrows under the same filter. A row without a name is a
   doc of its own.
 
+Every doc also has `summary._num`: per data-model number column (Number,
+Integer) the sorted distinct values of its rows as numbers (the
+contribution's: every level's), capped at MAX_ALL_VALUES but always keeping
+the least and greatest, for range filters and histograms (`summary.<level>`
+and `_all` hold text). Columns a `search.unit_conversions` entry names are
+in its base unit (ages in years BP by their age_unit); values that are not
+numbers are left out.
+
 Positions on another planetary body (a lunar location and the rows below
 it, by the node's `search.bodies`) are `_body_point` ({lat, lon, body})
 instead of `_geo_point`, on the contribution doc too.
@@ -35,7 +43,7 @@ from typing import Any
 
 from fiesta.domain.data_model import LIST_TYPES, column_values, split_list
 from fiesta.domain.parse import ID_COLUMNS, ParsedContribution
-from fiesta.nodeconfig import BOX_COLUMNS, LAT_COLUMNS, LON_COLUMNS, NodeConfig
+from fiesta.nodeconfig import BOX_COLUMNS, LAT_COLUMNS, LON_COLUMNS, NodeConfig, number
 
 # Columns whose (colon-delimited) values feed summary._all facets when present.
 FACETABLE_COLUMNS = {
@@ -146,6 +154,61 @@ def _collect_all(columns_def: dict, rows: list[dict], into: dict[str, set]) -> N
             bucket = into.setdefault(column, set())
             if len(bucket) < MAX_ALL_VALUES:
                 bucket.update(values)
+
+
+class _Numbers:
+    """A record's (or the contribution's) number columns' values, for
+    `summary._num`: per column the distinct values, up to MAX_ALL_VALUES of
+    them, and always its least and greatest, so a range filter and a
+    histogram's extent see the ends of even a capped column."""
+
+    def __init__(self) -> None:
+        self.values: dict[str, set[float]] = {}
+        self.ends: dict[str, list[float]] = {}
+
+    def add(self, column: str, value: float) -> None:
+        bucket = self.values.setdefault(column, set())
+        if len(bucket) < MAX_ALL_VALUES:
+            bucket.add(value)
+        ends = self.ends.get(column)
+        if ends is None:
+            self.ends[column] = [value, value]
+        else:
+            ends[0], ends[1] = min(ends[0], value), max(ends[1], value)
+
+    def add_rows(self, node: NodeConfig, columns: list[str], rows: list[dict]) -> None:
+        """The rows' values of `columns`, in the base unit of those a unit
+        conversion names (an age by its age_unit); text and blanks skipped."""
+        conversions = node.search.unit_conversions
+        converted = {c for conversion in conversions for c in conversion.all_columns}
+        wanted = set(columns)
+        plain = wanted - converted
+        for row in rows:
+            for column, cell in row.items():
+                if column in plain and (value := number(cell)) is not None:
+                    self.add(column, value)
+            for conversion in conversions:
+                for column, value in conversion.convert(row).items():
+                    if column in wanted:
+                        self.add(column, value)
+
+    def update(self, other: "_Numbers") -> None:
+        """Another's values too (a record's, into its contribution's)."""
+        for column, values in other.finalize().items():
+            for value in values:
+                self.add(column, value)
+
+    def finalize(self) -> dict[str, list[float]]:
+        return {
+            column: sorted(bucket | set(self.ends[column]))
+            for column, bucket in self.values.items()
+        }
+
+
+def _num_block(numbers: _Numbers) -> dict:
+    """A doc's `summary._num` entry, left out when it has no numbers."""
+    values = numbers.finalize()
+    return {"_num": values} if values else {}
 
 
 def _finalize_all(
@@ -273,6 +336,7 @@ def summarize(
 
     docs: list[dict] = []
     all_values: dict[str, set] = {}
+    all_numbers = _Numbers()
     level_counts: dict[str, dict] = {}
     # Every level's positions by row name ({"samples": {"S1-a": point}}), for
     # the rows below it that have none of their own.
@@ -294,6 +358,7 @@ def summarize(
         level_counts[level] = {"_n_results": len(rows)}
         columns_def = model["tables"].get(level, {}).get("columns", {})
         _collect_all(columns_def, rows, all_values)
+        number_columns = node.number_columns(level)
         # A row names its ancestors by their key columns ("sites" -> "site").
         ancestors = [(a, a.removesuffix("s")) for a in reversed(levels[:index])]
 
@@ -326,6 +391,9 @@ def summarize(
                     (level, str(name)),
                     {c: set(row_all[c]) for c in INHERITED_COLUMNS if row_all.get(c)},
                 )
+            row_numbers = _Numbers()
+            row_numbers.add_rows(node, number_columns, group)
+            all_numbers.update(row_numbers)
             points: dict[PointKey, dict] = {}
             for row in group:
                 if (point := _lat_lon(row)) is not None and len(points) < MAX_GEO_POINTS:
@@ -348,6 +416,7 @@ def summarize(
                     "contribution": contribution_summary,
                     level: {**merged, "_n_results": len(group)},
                     "_all": _finalize_all(row_all, None),
+                    **_num_block(row_numbers),
                 },
                 "rows": group,
             }
@@ -395,6 +464,7 @@ def summarize(
                 [p for (body, *_), p in points.items() if body is None] or None,
                 [{**p, "body": body} for (body, *_), p in points.items() if body is not None],
             ),
+            **_num_block(all_numbers),
             **level_counts,
         },
     }

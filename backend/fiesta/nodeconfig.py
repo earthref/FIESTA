@@ -8,6 +8,7 @@ YAML, resolved relative to the YAML file's directory.
 """
 
 import json
+import math
 import re
 from pathlib import Path
 from typing import Any, ClassVar, Literal
@@ -22,6 +23,10 @@ from fiesta.settings import get_settings
 LAT_COLUMNS = ("lat", "lat_s", "lat_n")
 LON_COLUMNS = ("lon", "lon_w", "lon_e")
 BOX_COLUMNS = ("lon_w", "lat_s", "lon_e", "lat_n")
+# Data-model column types also indexed as numbers, in summary._num.<column>.
+NUMBER_TYPES = {"Number", "Integer"}
+# Number columns that are ids, not measurements (FIESTA's row stamps).
+NUMBER_ID_COLUMNS = {"contribution_id", "row_id"}
 # Planetary bodies other than Earth that a row's position can be on, which the
 # maps and thumbnails have a basemap for (frontend/src/components/map/bodies.ts).
 Body = Literal["moon"]
@@ -158,16 +163,19 @@ class SearchFilter(BaseModel):
 
     `facet`: term buckets of a data-model column, aggregated on
     `summary._all.<field>.raw` and toggled as `field:"value"` query tokens.
-    `range`: a numeric min/max on a full document path (e.g. `summary.poles.age`,
-    a field a plugin indexes as a number; plain row values are text). `scale`
-    multiplies the typed value before it is sent (Ma -> years). `bbox`: the
-    lat/lon box on `summary._all._geo_point`.
+    `range`: a numeric min/max on a full document path: a data-model number
+    column's `summary._num.<column>` (a record's values as numbers, see
+    `NUMBER_TYPES`), or a field a plugin indexes as a number
+    (`summary.poles.age`); the merged rows under `summary.<level>` are text.
+    `scale` multiplies the typed value before it is sent (Ma -> years).
+    `bbox`: the lat/lon box on `summary._all._geo_point`. `numeric`: a picker
+    of the level's `summary._num` columns, each one picked a range of its own.
     `levels` / `views` restrict where the control shows: search level names and
     result sub-tab names (Summaries, Rows, Map on levels with positions, a plugin
     tab); empty means everywhere.
     """
 
-    type: Literal["facet", "range", "bbox"]
+    type: Literal["facet", "range", "bbox", "numeric"]
     field: str | None = None
     label: str | None = None  # facets default to the column's title in the UI
     levels: list[str] = []
@@ -182,6 +190,10 @@ class SearchFilter(BaseModel):
         if self.type == "bbox":
             if self.field:
                 raise ValueError("a bbox filter has no field (it uses summary._all._geo_point)")
+            return self
+        if self.type == "numeric":
+            if self.field:
+                raise ValueError("a numeric filter has no field (its columns are picked)")
             return self
         if not self.field:
             raise ValueError(f"a {self.type} filter needs a field")
@@ -208,8 +220,10 @@ class MapColor(BaseModel):
     value's unit (`age_unit`): `unit_factors` multiplies a value into the
     field's base unit by it, then `unit_offsets` adds to it (years AD to
     years BP: factor -1, offset 1950); a unit without a factor leaves the
-    record uncolored. `log` spaces the colors by order of magnitude. `levels`, when
-    set, restricts it to those search levels.
+    record uncolored. Without factors of its own it takes those of the
+    `search.unit_conversions` entry for its unit column and field. `log`
+    spaces the colors by order of magnitude. `levels`, when set, restricts it
+    to those search levels.
     """
 
     label: str
@@ -226,15 +240,71 @@ class MapColor(BaseModel):
     def _check_field(self) -> "MapColor":
         if "." in self.field and not self.field.startswith("summary."):
             raise ValueError(f"map color field {self.field!r} must be a column or a summary.* path")
-        if self.unit_column and ("." in self.field or not self.unit_factors):
-            raise ValueError(
-                f"map color {self.field!r}: unit_column needs a column field and unit_factors"
-            )
+        if self.unit_column and "." in self.field:
+            raise ValueError(f"map color {self.field!r}: unit_column needs a column field")
         return self
 
     def path(self, table: str) -> str:
         """Its document path at a search level."""
         return self.field if "." in self.field else f"summary.{table}.{self.field}"
+
+
+def number(value: Any) -> float | None:
+    """A cell's value as a finite number, or None (blank, text, NaN)."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    return result if math.isfinite(result) else None
+
+
+class UnitConversion(BaseModel):
+    """Number columns whose unit is another column of the row (`age` in its
+    `age_unit`), put in one base unit (`unit`: years BP) in `summary._num` so
+    values in different units compare. A value in `columns` is multiplied by
+    its unit's factor and its offset added (years AD -> BP: factor -1, offset
+    1950); one in `scaled` (an uncertainty) only by the factor's size. A
+    negative factor reverses order, so the `bounds` pair (low, high) swaps. A
+    unit without a factor leaves the row's values out."""
+
+    unit_column: str
+    columns: list[str]
+    scaled: list[str] = []
+    bounds: tuple[str, str] | None = None
+    unit: str | None = None
+    factors: dict[str, float]
+    offsets: dict[str, float] = {}
+
+    @model_validator(mode="after")
+    def _check_bounds(self) -> "UnitConversion":
+        if self.bounds and not set(self.bounds) <= set(self.columns):
+            raise ValueError(f"unit conversion bounds {list(self.bounds)} must be in its columns")
+        return self
+
+    @property
+    def all_columns(self) -> list[str]:
+        return [*self.columns, *self.scaled]
+
+    def convert(self, row: dict) -> dict[str, float]:
+        """A row's values of these columns in the base unit (none without a
+        known unit)."""
+        unit = str(row.get(self.unit_column) or "").strip()
+        factor = self.factors.get(unit)
+        if factor is None:
+            return {}
+        offset = self.offsets.get(unit, 0.0)
+        out: dict[str, float] = {}
+        for column in self.all_columns:
+            if (value := number(row.get(column))) is not None:
+                out[column] = (
+                    value * factor + offset if column in self.columns else value * abs(factor)
+                )
+        if factor < 0 and self.bounds and all(c in out for c in self.bounds):
+            low, high = self.bounds
+            out[low], out[high] = out[high], out[low]
+        return out
 
 
 class BodiesConfig(BaseModel):
@@ -267,6 +337,38 @@ class SearchConfig(BaseModel):
     # What the search map can color its markers by, in menu order.
     map_colors: list[MapColor] = []
     bodies: BodiesConfig | None = None
+    # Number columns put in one unit in summary._num (ages in years BP).
+    unit_conversions: list[UnitConversion] = []
+
+    @model_validator(mode="after")
+    def _map_color_units(self) -> "SearchConfig":
+        """A map color with a unit column and no factors of its own takes its
+        unit conversion's."""
+        colors = []
+        for color in self.map_colors:
+            if color.unit_column and not color.unit_factors:
+                conversion = self.conversion(color.unit_column, color.field)
+                if conversion is None:
+                    raise ValueError(
+                        f"map color {color.field!r}: unit_column needs unit_factors or a "
+                        f"unit_conversions entry for {color.unit_column!r} and {color.field!r}"
+                    )
+                color = color.model_copy(
+                    update={"unit_factors": conversion.factors, "unit_offsets": conversion.offsets}
+                )
+            colors.append(color)
+        self.map_colors = colors
+        return self
+
+    def conversion(self, unit_column: str, column: str) -> UnitConversion | None:
+        return next(
+            (
+                c
+                for c in self.unit_conversions
+                if c.unit_column == unit_column and column in c.all_columns
+            ),
+            None,
+        )
 
     @model_validator(mode="before")
     @classmethod
@@ -625,6 +727,19 @@ class NodeConfig(BaseModel):
             if all(c in tables.get(table, {}).get("columns", {}) for c in BOX_COLUMNS)
         }
 
+    def number_columns(self, table: str) -> list[str]:
+        """The columns of a hierarchy table indexed as numbers in its docs'
+        `summary._num` (the latest data model's NUMBER_TYPES, ids left out);
+        the contribution's are every level's, as its doc unions them."""
+        tables = self.load_data_model(self.data_model.latest)["tables"]
+        levels = self.hierarchy[1:] if table == self.hierarchy[0] else [table]
+        out: dict[str, None] = {}
+        for level in levels:
+            for column, definition in tables.get(level, {}).get("columns", {}).items():
+                if definition.get("type") in NUMBER_TYPES and column not in NUMBER_ID_COLUMNS:
+                    out.setdefault(column)
+        return list(out)
+
     def map_color_tables(self, color: MapColor) -> list[str]:
         """The search levels' tables whose map `color` can color: levels with
         positions, those it names, and for a column those whose table has it."""
@@ -721,6 +836,14 @@ class NodeConfig(BaseModel):
             "search_levels": [self.public_level(lvl) for lvl in self.search.levels],
             "facets": self.search.facets,
             "filters": [f.model_dump() for f in self.search.filters],
+            # The base unit of the summary._num columns a unit conversion puts
+            # in one ({"age": "years BP"}), for the numeric filter's picker.
+            "number_units": {
+                column: c.unit
+                for c in self.search.unit_conversions
+                if c.unit
+                for column in c.all_columns
+            },
             # `tables`: the levels (by table) each is offered on.
             "map_colors": [
                 {

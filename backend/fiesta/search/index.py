@@ -31,6 +31,15 @@ INDEX_BODY = {
         "numeric_detection": False,
         "dynamic_templates": [
             {
+                # Number columns' values (summary._num.<column>, see
+                # fiesta.domain.summarize): always double, so a column whose
+                # first value is a whole number is not mapped as a long.
+                "numbers": {
+                    "path_match": "summary._num.*",
+                    "mapping": {"type": "double"},
+                }
+            },
+            {
                 "geo_points": {
                     "match": "_geo_point",
                     "mapping": {"type": "geo_point"},

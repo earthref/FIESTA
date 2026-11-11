@@ -1,5 +1,7 @@
 // The search page's filter sidebar, driven by the node YAML's `search.filters`
-// (config.filters): facet buckets, numeric ranges and the bounding box, plus
+// (config.filters): facet buckets, numeric ranges (a number column's
+// `summary._num.<column>`, or a plugin's field), the `numeric` picker of any
+// other number column (each picked range a chip of its own) and the bounding box, plus
 // the Geospatial area on levels with positions. Each filter names the search
 // levels and result views it applies to (empty = everywhere), so the sidebar
 // changes with the active level tab and sub-tab (legacy: the Poles view shows
@@ -40,10 +42,28 @@ export function parseRange(entry: string): { field: string; gte: string; lte: st
   return { field: parts.join(":"), gte, lte };
 }
 
-/** The `ranges` entries that belong to the given filters. */
+/** A number column's document path (its records' values as numbers). */
+export const NUMBER_PREFIX = "summary._num.";
+
+/** The `ranges` entries that belong to the given filters: their range
+ * filters' fields, and with a `numeric` filter any number column's. */
 export function rangesFor(ranges: string[], filters: SearchFilter[]): string[] {
   const fields = new Set(filters.filter((f) => f.type === "range").map((f) => f.field));
-  return ranges.filter((entry) => fields.has(parseRange(entry).field));
+  const numeric = filters.some((f) => f.type === "numeric");
+  return ranges.filter((entry) => {
+    const { field } = parseRange(entry);
+    return fields.has(field) || (numeric && field.startsWith(NUMBER_PREFIX));
+  });
+}
+
+/** The ranges a `numeric` filter's picker set: number columns' that no range
+ * filter shown beside it has. */
+export function pickedRanges(ranges: string[], filters: SearchFilter[]): string[] {
+  const fields = new Set(filters.filter((f) => f.type === "range").map((f) => f.field));
+  return ranges.filter((entry) => {
+    const { field } = parseRange(entry);
+    return field.startsWith(NUMBER_PREFIX) && !fields.has(field);
+  });
 }
 
 /** An applied value: its text and a button that removes it. */

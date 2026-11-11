@@ -277,7 +277,9 @@ def data_model_columns(node: NodeConfig) -> dict[str, set[str]]:
 
 def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[str]:
     """Every page has its HTML file; every facet and map color column is a
-    data-model column; every filter's and map color's levels name search levels."""
+    data-model column, every summary._num range a number column and every unit
+    conversion's columns data-model columns; every filter's and map color's
+    levels name search levels."""
     errors = []
     for page in node.pages:
         if node.page_path(page.slug) not in files:
@@ -299,9 +301,23 @@ def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[s
             errors.append(
                 f"facet {f.field!r} is not a column of data model {node.data_model.latest}"
             )
+        if f.type == "range" and f.field.startswith("summary._num."):
+            column = f.field.removeprefix("summary._num.")
+            if column not in node.number_columns(node.hierarchy[0]):
+                errors.append(
+                    f"range {f.field!r}: {column!r} is not a number column of data model "
+                    f"{node.data_model.latest}"
+                )
         for level in f.levels:
             if level not in levels:
                 errors.append(f"filter {f.key!r}: no search level {level!r}")
+    for conversion in node.search.unit_conversions:
+        for column in (conversion.unit_column, *conversion.all_columns):
+            if column not in columns:
+                errors.append(
+                    f"unit conversion {conversion.unit_column!r}: {column!r} is not a column "
+                    f"of data model {node.data_model.latest}"
+                )
     for c in node.search.map_colors:
         for column in (c.field, c.unit_column):
             if column and "." not in column and column not in columns:

@@ -70,8 +70,10 @@ export interface HomeNews {
 /** One filter sidebar control (backend `SearchFilter`). `levels` / `views`
  * empty = shown on every search level / result view. */
 export interface SearchFilter {
-  type: "facet" | "range" | "bbox";
-  /** facet: a column name; range: a `summary.*` document path; bbox: null. */
+  type: "facet" | "range" | "bbox" | "numeric";
+  /** facet: a column name; range: a `summary.*` document path (a number
+   * column's `summary._num.<column>`); bbox and numeric (a picker of the
+   * level's number columns): null. */
   field: string | null;
   label: string | null;
   levels: string[];
@@ -120,6 +122,9 @@ export interface NodeConfig {
   facets: string[];
   /** The filter sidebar's controls (node YAML `search.filters`). */
   filters: SearchFilter[];
+  /** The base unit of the `summary._num` columns a unit conversion puts in
+   * one (node YAML `search.unit_conversions`: {"age": "years BP"}). */
+  number_units?: Record<string, string>;
   /** The search map's "Color by" menu (node YAML `search.map_colors`). */
   map_colors?: MapColorOption[];
   /** The planetary bodies besides Earth a record can be on (node YAML
@@ -355,4 +360,11 @@ export interface SearchHistogram {
   /** The bins are equal in log10 space (asked for, and positive values exist). */
   log: boolean;
   bins: { lo: number; hi: number; count: number }[];
+}
+
+/** GET /search/{table}/numbers: a level's number columns (`summary._num.<column>`)
+ * and how many of a search's docs have a value of each, in data-model order. */
+export interface NumberColumns {
+  total: number;
+  columns: Record<string, number>;
 }

@@ -266,6 +266,109 @@ def test_summarize_inherits_geography(magic_node):
     assert "country" not in alls[("specimens", "X1")]
 
 
+def test_summarize_writes_number_columns(magic_node):
+    """summary._num: a record's data-model number columns as numbers (text and
+    blanks skipped, ids left out), ages in years BP by their age_unit (years
+    AD: 1950 - year, low and high swapped; sigma only scaled; an unknown unit
+    left out), and on the contribution doc every level's."""
+    text = "\n>>>>>>>>>>\n".join(
+        [
+            _tab_block(
+                "contribution",
+                ["id", "data_model_version"],
+                [{"id": 1, "data_model_version": "3.0"}],
+            ),
+            _tab_block(
+                "sites",
+                ["site", "age", "age_sigma", "age_low", "age_high", "age_unit", "dir_inc"],
+                [
+                    {
+                        "site": "A",
+                        "age": "2",
+                        "age_sigma": "0.5",
+                        "age_unit": "Ma",
+                        "dir_inc": "45",
+                    },
+                    {"site": "A", "age": "1.5", "age_unit": "Ma", "dir_inc": "not a number"},
+                    {
+                        "site": "B",
+                        "age_low": "1000",
+                        "age_high": "1500",
+                        "age_sigma": "10",
+                        "age_unit": "Years AD (+/-)",
+                        "dir_inc": "-30",
+                    },
+                    {"site": "C", "age": "3", "age_unit": "Moons", "dir_inc": ""},
+                ],
+            ),
+            _tab_block(
+                "specimens", ["specimen", "int_abs"], [{"specimen": "S", "int_abs": "4e-05"}]
+            ),
+        ]
+    )
+    docs = summarize(magic_node, parse_text(text), {"id": 1})
+    by_name = {d["rows"][0].get("site") or d["rows"][0].get("specimen"): d for d in docs[1:]}
+    assert by_name["A"]["summary"]["_num"] == {
+        "age": [1.5e6, 2e6],
+        "age_sigma": [5e5],
+        "dir_inc": [45.0],
+    }
+    assert by_name["B"]["summary"]["_num"] == {
+        "age_low": [450.0],
+        "age_high": [950.0],
+        "age_sigma": [10.0],
+        "dir_inc": [-30.0],
+    }
+    assert "_num" not in by_name["C"]["summary"]
+    assert by_name["S"]["summary"]["_num"] == {"int_abs": [4e-05]}
+    contribution = docs[0]["summary"]["_num"]
+    assert contribution["age"] == [1.5e6, 2e6] and contribution["int_abs"] == [4e-05]
+    assert contribution["dir_inc"] == [-30.0, 45.0]
+    # The merged row stays text.
+    assert by_name["A"]["summary"]["sites"]["age"] == "2"
+
+
+def test_number_columns_cap_keeps_the_ends(magic_node):
+    from fiesta.domain import summarize as module
+
+    numbers = module._Numbers()
+    for value in range(module.MAX_ALL_VALUES + 100):
+        numbers.add("x", float(value))
+    numbers.add("x", -1.0)
+    values = numbers.finalize()["x"]
+    assert len(values) == module.MAX_ALL_VALUES + 2
+    assert values[0] == -1.0 and values[-1] == module.MAX_ALL_VALUES + 99
+    # The contribution's number columns are every level's; ids are not numbers.
+    assert "age" in magic_node.number_columns("sites")
+    assert "row_id" not in magic_node.number_columns("sites")
+    assert set(magic_node.number_columns("specimens")) <= set(
+        magic_node.number_columns("contribution")
+    )
+
+
+def test_number_columns_are_mapped_as_doubles():
+    from fiesta.search.index import INDEX_BODY
+
+    templates = INDEX_BODY["mappings"]["dynamic_templates"]
+    first = next(iter(templates[0].values()))
+    # Ahead of the string template, whatever a column's first value looks like.
+    assert first == {"path_match": "summary._num.*", "mapping": {"type": "double"}}
+
+
+def test_unit_conversions_are_node_configuration(magic_node):
+    from fiesta.nodeconfig import UnitConversion
+
+    age = magic_node.map_color("sites", "age")
+    # The map color takes its factors from search.unit_conversions.
+    assert age.unit_factors["Ga"] == 1e9 and age.unit_offsets["Years AD (+/-)"] == 1950
+    assert magic_node.public_config()["number_units"]["age_low"] == "years BP"
+    conversion = UnitConversion(unit_column="u", columns=["v"], scaled=["s"], factors={"k": 1000.0})
+    assert conversion.convert({"u": "k", "v": "2", "s": "x"}) == {"v": 2000.0}
+    assert conversion.convert({"u": "?", "v": "2"}) == {}
+    with pytest.raises(ValueError, match="bounds"):
+        UnitConversion(unit_column="u", columns=["v"], bounds=("v", "w"), factors={})
+
+
 def test_karar_config_loads(karar_node):
     assert karar_node.hierarchy[-1] == "measurements"
     assert karar_node.search.index == "karar"
@@ -1259,6 +1362,7 @@ def test_rows_without_coordinates_take_their_ancestors_position(magic_node):
         for d in docs
         if d["type"] != "contribution"
     }
+
     def ordered(points):
         return sorted(points, key=lambda p: (p["lat"], p["lon"]))
 
@@ -1357,8 +1461,16 @@ def test_map_colors_are_node_configuration(magic_node):
     assert magic_node.map_color("samples", "age") is None
     with pytest.raises(ValueError, match="summary"):
         MapColor(label="x", field="sites.age")
+    with pytest.raises(ValueError, match="column field"):
+        MapColor(label="x", field="summary.sites.age", unit_column="age_unit")
+    from fiesta.nodeconfig import SearchConfig
+
     with pytest.raises(ValueError, match="unit_factors"):
-        MapColor(label="x", field="age", unit_column="age_unit")
+        SearchConfig(
+            index="x",
+            levels=[],
+            map_colors=[{"label": "x", "field": "age", "unit_column": "age_unit"}],
+        )
     from fiesta.services import node_config as svc
 
     files = svc.read_tree(CONFIG_DIR, "magic")
@@ -1630,7 +1742,11 @@ def test_reference_metadata_in_the_legacy_shape():
         "page": "4948-4960",
         "is-referenced-by-count": 29,
         "author": [
-            {"given": "Nicole", "family": "BEHAR", "ORCID": "https://orcid.org/0000-0002-6374-2277"},
+            {
+                "given": "Nicole",
+                "family": "BEHAR",
+                "ORCID": "https://orcid.org/0000-0002-6374-2277",
+            },
             {"given": "Ron", "family": "Shaar", "affiliation": [{"name": "Hebrew University"}]},
             {"given": "Lisa", "family": "Tauxe"},
         ],

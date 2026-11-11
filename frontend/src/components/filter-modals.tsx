@@ -8,6 +8,8 @@
 // - RangeModal: a numeric filter over its distribution (a histogram of the
 //   search's values, linear or log bins, of a chosen count) to brush or click,
 //   with min/max boxes.
+// - NumericModal: the `numeric` filter's picker of the level's number columns
+//   (summary._num.<column>), each then a RangeModal of its own.
 // - GeoModal: the geospatial area on the search's map, with its bounds as numbers.
 //
 // Each edits a draft and applies it with Apply, so a long list keeps its order
@@ -17,9 +19,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { useNodeConfig } from "../lib/config";
+import { dataModelQuery, unwrapModel } from "../lib/data-model";
 import type {
+  DataModel,
+  DataModelColumn,
   FacetBucket,
   MethodCodes,
+  NumberColumns,
   SearchFilter,
   SearchHistogram,
   SearchLevel,
@@ -29,7 +35,7 @@ import { abbreviateNumber, buildQuery, cx, parseQueryTokens, queryWithout } from
 import { type BrushRange, EChart, type EChartsOption } from "./echart";
 import { type Area, WHOLE_GLOBE } from "./map/map-points";
 import { type AreaRequest, SearchMap } from "./map/search-map";
-import { Chip, parseRange } from "./search-filters";
+import { Chip, NUMBER_PREFIX, parseRange } from "./search-filters";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 import { Spinner } from "./ui/spinner";
@@ -449,6 +455,7 @@ export function RangeModal({
   paramsFor,
   color,
   onApply,
+  onBack,
   onClose,
 }: {
   filter: SearchFilter;
@@ -458,6 +465,8 @@ export function RangeModal({
   paramsFor: (ranges: string[]) => SearchParams;
   color: string;
   onApply: (ranges: string[]) => void;
+  /** Back to the list it was picked from (the numeric filter's columns). */
+  onBack?: () => void;
   onClose: () => void;
 }) {
   const field = filter.field ?? "";
@@ -606,6 +615,15 @@ export function RangeModal({
       }
     >
       <div className="flex flex-col gap-3 text-[13px] text-ink">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex cursor-pointer items-center gap-1 self-start text-node-ink hover:underline"
+          >
+            ← All number columns
+          </button>
+        )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <fieldset className="m-0 inline-flex overflow-hidden rounded-sm border border-gray-300 p-0">
             <legend className="sr-only">Bin scale</legend>
@@ -694,6 +712,235 @@ export function RangeModal({
           Drag across the histogram or click a bar to select whole bins; type a bound for an exact
           one. Leave a box empty for no limit.
         </p>
+      </div>
+    </Modal>
+  );
+}
+
+// --- Number columns (the `numeric` filter's picker) ---------------------------
+
+/** A data-model unit as a label: "Am^2" -> "Am²", Degrees -> °, none for Custom. */
+function unitLabel(unit: string | undefined): string | null {
+  if (!unit || /^(custom|dimensionless|flag)$/i.test(unit)) return null;
+  if (/^degrees?$/i.test(unit)) return "°";
+  return unit.replace(/\^2/g, "²").replace(/\^3/g, "³").replace(/\^-1/g, "⁻¹");
+}
+
+/** A number column's definition: the level table's, or (the contribution
+ * level, whose docs union every level's) the first table's that has it. */
+function columnDef(
+  model: DataModel | null | undefined,
+  table: string,
+  column: string,
+): DataModelColumn | undefined {
+  if (!model) return undefined;
+  const own = model.tables[table]?.columns[column];
+  if (own) return own;
+  return Object.values(model.tables).find((t) => t.columns[column])?.columns[column];
+}
+
+/**
+ * A number column as a range filter (`summary._num.<column>`): a curated
+ * range filter's label, unit and scale when the node has one on that column,
+ * else the data model's label and unit (a unit conversion's base unit, years
+ * BP, for the columns it converts).
+ */
+export function useNumberFilter(table: string): (field: string) => SearchFilter {
+  const { data: config } = useNodeConfig();
+  const { data: model } = useQuery({
+    ...dataModelQuery(config?.data_model_latest ?? ""),
+    enabled: !!config,
+    select: unwrapModel,
+  });
+  return useCallback(
+    (field: string) => {
+      const curated = (config?.filters ?? []).find((f) => f.type === "range" && f.field === field);
+      if (curated) return curated;
+      const column = field.slice(NUMBER_PREFIX.length);
+      const def = columnDef(model, table, column);
+      return {
+        type: "range",
+        field,
+        label: def?.label ?? column,
+        levels: [],
+        views: [],
+        unit: config?.number_units?.[column] ?? unitLabel(def?.unit),
+        scale: 1,
+        min: null,
+        max: null,
+      };
+    },
+    [config, model, table],
+  );
+}
+
+/** A range entry's bounds as a chip's text, in the filter's units. */
+export function rangeText(filter: SearchFilter, entry: { gte: string; lte: string }): string {
+  const scale = filter.scale || 1;
+  const shown = (v: string) => (v === "" ? "" : formatValue(Number(v) / scale));
+  const unit = filter.unit ? ` ${filter.unit}` : "";
+  const [gte, lte] = [shown(entry.gte), shown(entry.lte)];
+  return gte && lte ? `${gte} to ${lte}${unit}` : gte ? `≥ ${gte}${unit}` : `≤ ${lte}${unit}`;
+}
+
+/**
+ * The `numeric` filter's column picker: the level's data-model number
+ * columns, each with how many of the search's records have a value (those
+ * without any hidden unless asked for), found by label, name or
+ * description. Picking one opens its range (`onPick`).
+ */
+export function NumericModal({
+  title,
+  table,
+  ranges,
+  paramsFor,
+  onPick,
+  onClose,
+}: {
+  title: string;
+  table: string;
+  ranges: string[];
+  /** The search's request params with these ranges. */
+  paramsFor: (ranges: string[]) => SearchParams;
+  onPick: (filter: SearchFilter) => void;
+  onClose: () => void;
+}) {
+  const { data: config } = useNodeConfig();
+  const { data: model } = useQuery({
+    ...dataModelQuery(config?.data_model_latest ?? ""),
+    enabled: !!config,
+    select: unwrapModel,
+  });
+  const filterFor = useNumberFilter(table);
+  const [find, setFind] = useState("");
+  const [showEmpty, setShowEmpty] = useState(false);
+  const params = paramsFor(ranges);
+  const numbers = useQuery({
+    queryKey: ["filter-modal-numbers", table, params],
+    queryFn: () =>
+      api<NumberColumns>(`/search/${table}/numbers`, { params: { ...params, size: undefined } }),
+    staleTime: 60_000,
+  });
+  const applied = useMemo(
+    () => new Map(ranges.map(parseRange).map((entry) => [entry.field, entry])),
+    [ranges],
+  );
+
+  const needle = find.trim().toLowerCase();
+  const all = useMemo(
+    () =>
+      Object.entries(numbers.data?.columns ?? {}).map(([column, count]) => {
+        const def = columnDef(model, table, column);
+        const field = `${NUMBER_PREFIX}${column}`;
+        return { column, field, count, def, filter: filterFor(field) };
+      }),
+    [numbers.data, model, table, filterFor],
+  );
+  const empty = all.filter((row) => row.count === 0 && !applied.has(row.field)).length;
+  const rows = all.filter(
+    (row) =>
+      (showEmpty || row.count > 0 || applied.has(row.field)) &&
+      (!needle ||
+        row.column.toLowerCase().includes(needle) ||
+        (row.def?.label ?? "").toLowerCase().includes(needle) ||
+        (row.def?.description ?? "").toLowerCase().includes(needle)),
+  );
+
+  return (
+    <Modal
+      open
+      xl
+      onClose={onClose}
+      title={title}
+      footer={
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-3 text-[13px] text-ink">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="search"
+            value={find}
+            onChange={(event) => setFind(event.target.value)}
+            placeholder="Find a column by name or description"
+            aria-label="Find a number column"
+            className={cx(inputClass, "min-w-48 flex-1")}
+          />
+          <label className="flex cursor-pointer items-center gap-1.5">
+            <input
+              type="checkbox"
+              checked={showEmpty}
+              onChange={() => setShowEmpty(!showEmpty)}
+              className="h-4 w-4 accent-node"
+            />
+            Columns without values{empty > 0 ? ` (${empty})` : ""}
+          </label>
+        </div>
+        <div
+          className="min-h-40 overflow-y-auto rounded-sm border border-line"
+          style={{ maxHeight: "55vh" }}
+        >
+          {numbers.isPending && (
+            <div className="flex items-center justify-center gap-2 p-6 text-ink-muted">
+              <Spinner /> Loading the columns…
+            </div>
+          )}
+          {numbers.error && (
+            <div className="p-4 text-center text-red-700">Could not load the columns.</div>
+          )}
+          {numbers.data && rows.length === 0 && (
+            <div className="p-6 text-center font-bold text-ink-muted">
+              {needle || !showEmpty ? "No matching columns with values" : "No number columns"}
+            </div>
+          )}
+          {rows.map((row) => {
+            const entry = applied.get(row.field);
+            return (
+              <button
+                key={row.column}
+                type="button"
+                onClick={() => onPick(row.filter)}
+                title={`Filter by ${row.filter.label ?? row.column}`}
+                className={cx(
+                  "flex w-full cursor-pointer items-start gap-2 border-b border-line/60 px-3 py-1.5 text-left last:border-b-0 hover:bg-node-soft",
+                  entry && "bg-node-soft/60",
+                  row.count === 0 && "text-ink-muted",
+                )}
+              >
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="font-bold">
+                      <Highlight text={row.def?.label ?? row.column} needle={needle} />
+                    </span>
+                    <span className="font-mono text-[12px] text-ink-muted">
+                      <Highlight text={row.column} needle={needle} />
+                    </span>
+                    {row.filter.unit && (
+                      <span className="text-[12px] text-ink-muted">in {row.filter.unit}</span>
+                    )}
+                    {entry && (
+                      <span className="rounded-sm bg-node-soft px-1.5 text-[12px] font-bold text-node-ink">
+                        {rangeText(row.filter, entry)}
+                      </span>
+                    )}
+                  </span>
+                  {row.def?.description && (
+                    <span className="text-[12px] text-ink-muted">
+                      <Highlight text={row.def.description} needle={needle} />
+                    </span>
+                  )}
+                </span>
+                <CountBadge n={row.count} />
+              </button>
+            );
+          })}
+        </div>
+        <div className="text-[12px] text-ink-muted">
+          {rows.length.toLocaleString()} column{rows.length === 1 ? "" : "s"} shown · counts are the
+          search's records with a value · choose one to filter by its range
+        </div>
       </div>
     </Modal>
   );
