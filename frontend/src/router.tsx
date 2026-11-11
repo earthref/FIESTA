@@ -41,6 +41,10 @@ export interface SearchParams {
   tab?: string;
   row?: number;
   private_key?: string;
+  /** "My contributions": the signed-in user's own, unpublished or published. */
+  mine?: "in_prep" | "published";
+  /** "all" also shows older versions of contributions. */
+  versions?: "all";
 }
 
 function strArray(value: unknown): string[] | undefined {
@@ -106,6 +110,8 @@ const searchRoute = createRoute({
     tab: str(search.tab),
     row: id(search.row),
     private_key: str(search.private_key),
+    mine: search.mine === "in_prep" || search.mine === "published" ? search.mine : undefined,
+    versions: search.versions === "all" ? "all" : undefined,
   }),
   component: SearchPage,
 });

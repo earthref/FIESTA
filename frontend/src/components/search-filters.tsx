@@ -176,3 +176,45 @@ export function FilterEntry({
     </div>
   );
 }
+
+/**
+ * A filter whose few choices fit the sidebar itself, so it opens no modal:
+ * its name over a compact checkbox per choice. At most one is checked
+ * (checking one unchecks the others; unchecking it clears the filter).
+ */
+export function FilterChoices<T extends string>({
+  label,
+  choices,
+  value,
+  onChange,
+}: {
+  label: string;
+  choices: { value: T; label: string; title?: string }[];
+  value: T | undefined;
+  onChange: (value: T | undefined) => void;
+}) {
+  return (
+    <fieldset
+      className="m-0 min-w-0 border-0 text-[13px]"
+      style={{ padding: "0.75em 1em 0.5em", borderBottom: "1px solid var(--er-edge)" }}
+    >
+      {/* Floated: a legend otherwise sits on the fieldset's (absent) border. */}
+      <legend className="float-left w-full whitespace-normal p-0 font-bold">{label}</legend>
+      {choices.map((choice) => (
+        <label
+          key={choice.value}
+          title={choice.title}
+          className="clear-left flex cursor-pointer items-center gap-1.5 pt-[0.35em] hover:text-node-ink"
+        >
+          <input
+            type="checkbox"
+            checked={value === choice.value}
+            onChange={(event) => onChange(event.target.checked ? choice.value : undefined)}
+            className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-node"
+          />
+          <span className="whitespace-normal">{choice.label}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}

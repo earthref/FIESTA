@@ -1,4 +1,4 @@
-import { keepPreviousData, useQueries } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link, useRouterState } from "@tanstack/react-router";
 import {
   type CSSProperties,
@@ -32,6 +32,7 @@ import { columnsOf, RowsGrid, rowsOfHit } from "../components/rows-table";
 import {
   applicableFilters,
   type FilterChip,
+  FilterChoices,
   FilterEntry,
   filterLabel,
   hasFor,
@@ -58,12 +59,14 @@ import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
 import type {
+  ContributionOut,
   FacetBucket,
   GridColumn,
   SearchFilter,
   SearchLevel,
   SearchPage as SearchPageData,
   SearchResult,
+  SearchScope,
 } from "../lib/types";
 import {
   cx,
@@ -297,6 +300,25 @@ export function SearchPage() {
   const gridFilterList = useMemo(() => search.filter ?? [], [search.filter]);
   const gridFilters = useMemo(() => parseGridFilters(gridFilterList), [gridFilterList]);
 
+  // The scope filters, on every level, its count and every view (URL
+  // `mine` / `versions`). "My contributions" needs a login: signed out, a
+  // `mine` left in the URL is dropped (the API refuses it anonymously). It is
+  // offered once the user has a contribution here (the private workspace's
+  // list, whose cache it shares); one chosen stays shown so it can be cleared.
+  const sourceMode = isSourceMode(config);
+  const myContributions = useQuery({
+    queryKey: ["private", "contributions"],
+    queryFn: () => api<ContributionOut[]>("/private/contributions"),
+    enabled: !!user && !!config && !sourceMode,
+  });
+  const mine = user ? search.mine : undefined;
+  const versions = search.versions;
+  const scope = useMemo<SearchScope>(() => ({ mine, versions }), [mine, versions]);
+  const showMine = !!user && !sourceMode && ((myContributions.data?.length ?? 0) > 0 || !!mine);
+  // An unpublished one of the user's opens in the modal by its private key.
+  const ownKey = (id: number | undefined) =>
+    myContributions.data?.find((c) => c.id === id)?.private_key;
+
   const [input, setInput] = useState(q);
   // A link may open a sub-tab (the home page's plugin cards); it is kept in
   // the page's state from then on.
@@ -329,6 +351,8 @@ export function SearchPage() {
     has?: string[];
     bbox?: string | undefined;
     area?: string | undefined;
+    mine?: SearchScope["mine"];
+    versions?: SearchScope["versions"];
   }) => {
     const filter = next.filter ?? gridFilterList;
     navigate({
@@ -341,6 +365,8 @@ export function SearchPage() {
         has: (next.has ?? has).length > 0 ? (next.has ?? has) : undefined,
         bbox: "bbox" in next ? next.bbox || undefined : bbox,
         area: "area" in next ? next.area || undefined : search.area,
+        mine: "mine" in next ? next.mine : search.mine,
+        versions: "versions" in next ? next.versions : search.versions,
       },
     });
   };
@@ -403,20 +429,23 @@ export function SearchPage() {
       const entryRanges = entry.name === level?.name ? levelRanges : undefined;
       const entryHas = hasAt(entry, "Summaries");
       return {
-        queryKey: ["search-count", entry.table, q, areaBbox(entry), entryRanges, entryHas],
+        queryKey: ["search-count", entry.table, q, areaBbox(entry), entryRanges, entryHas, scope],
         queryFn: () =>
           api<SearchPageData>(`/search/${entry.table}`, {
-            params: searchRequestParams(
-              q,
-              1,
-              0,
-              false,
-              entryRanges,
-              areaBbox(entry),
-              undefined,
-              undefined,
-              entryHas,
-            ),
+            params: {
+              ...searchRequestParams(
+                q,
+                1,
+                0,
+                false,
+                entryRanges,
+                areaBbox(entry),
+                undefined,
+                undefined,
+                entryHas,
+              ),
+              ...scope,
+            },
           }),
         staleTime: 60_000,
         placeholderData: keepPreviousData,
@@ -447,15 +476,17 @@ export function SearchPage() {
   // sub-tabs never changes the level tabs' counts. Its docs are what the
   // filter modals count while that view is open.
   const countedTabs = subTabs.filter((tab) => tab.countTable);
-  const pluginParams = (table: string, query: string, rangeList: string[]) =>
-    searchRequestParams(
+  const pluginParams = (table: string, query: string, rangeList: string[]) => ({
+    ...searchRequestParams(
       query,
       1,
       0,
       false,
       rangeList.filter((r) => r.startsWith(`summary.${table}.`)),
       bbox,
-    );
+    ),
+    ...scope,
+  });
   const pluginCounts = useQueries({
     queries: countedTabs.map(({ countTable = "" }) => {
       const params = pluginParams(countTable, q, ranges);
@@ -516,6 +547,7 @@ export function SearchPage() {
     queryBbox,
     gridFilterList,
     queryHas,
+    scope,
   ];
   const paged = usePagedItems({
     queryKey: searchKey,
@@ -534,6 +566,7 @@ export function SearchPage() {
             gridFilterList,
             queryHas,
           ),
+          ...scope,
           // The Rows and Map sub-tabs' counts, with the first page.
           totals: page === 0 || undefined,
         },
@@ -597,6 +630,8 @@ export function SearchPage() {
       has: has.filter((entry) => !activeHas.includes(entry)),
       bbox: activeBbox ? undefined : bbox,
       area: undefined,
+      mine: undefined,
+      versions: undefined,
     });
   };
   const clearActive =
@@ -605,7 +640,9 @@ export function SearchPage() {
     activeHas.length > 0 ||
     !!activeBbox ||
     !!area ||
-    gridFilterList.length > 0;
+    gridFilterList.length > 0 ||
+    !!scope.mine ||
+    !!scope.versions;
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -678,8 +715,8 @@ export function SearchPage() {
 
   // The search's request params for a filter modal's counts: a plugin view's
   // own docs, or the level's records (with the grid's column filters).
-  const levelParams = (query: string, rangeList: string[], hasList = activeHas) =>
-    searchRequestParams(
+  const levelParams = (query: string, rangeList: string[], hasList = activeHas) => ({
+    ...searchRequestParams(
       query,
       1,
       0,
@@ -689,7 +726,9 @@ export function SearchPage() {
       undefined,
       gridFilterList,
       activeTab?.render ? undefined : hasList,
-    );
+    ),
+    ...scope,
+  });
   const modalParams = (query: string, rangeList: string[]) =>
     pluginTable ? pluginParams(pluginTable, query, rangeList) : levelParams(query, rangeList);
   // A range filter's docs: a plugin view's block (summary.<table>.*), else the level's.
@@ -1089,6 +1128,37 @@ export function SearchPage() {
                 fontSize: "0.92857143rem",
               }}
             >
+              {showMine && (
+                <FilterChoices
+                  label="My contributions"
+                  choices={[
+                    {
+                      value: "in_prep",
+                      label: "My in preparation",
+                      title: "Only your contributions not yet published",
+                    },
+                    {
+                      value: "published",
+                      label: "My published",
+                      title: "Only your published contributions",
+                    },
+                  ]}
+                  value={mine}
+                  onChange={(next) => setSearch({ mine: next })}
+                />
+              )}
+              <FilterChoices
+                label="Versions"
+                choices={[
+                  {
+                    value: "all",
+                    label: "Previous versions",
+                    title: "Also show older versions of contributions",
+                  },
+                ]}
+                value={versions}
+                onChange={(next) => setSearch({ versions: next })}
+              />
               {filtersPanel ?? (
                 <>
                   {/* A view with its own bbox filter (Poles) shows the area only while set. */}
@@ -1195,6 +1265,7 @@ export function SearchPage() {
                   ranges={queryRanges}
                   filters={gridFilterList}
                   has={queryHas}
+                  scope={scope}
                   area={area}
                   onAreaChange={setArea}
                   areaRequest={areaRequest}
@@ -1283,6 +1354,7 @@ export function SearchPage() {
                           query: q,
                           ranges,
                           bbox,
+                          scope,
                         })}
                       </div>
                     )}
@@ -1302,7 +1374,7 @@ export function SearchPage() {
           tab={search.tab}
           row={search.row}
           rowMatch={rowMatch}
-          privateKey={search.private_key ?? privateKey}
+          privateKey={search.private_key ?? privateKey ?? ownKey(search.contribution)}
           onTab={setModalTab}
           onRow={setModalRow}
           onClose={closeModal}

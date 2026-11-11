@@ -216,7 +216,7 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet or a facet of the level's grid columns, else 422), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet or a facet of the level's grid columns, else 422), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (default 40, 1–200), `log` (bool), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `SearchHistogram` |
@@ -351,9 +351,24 @@ plugin-contributed table — otherwise 404. An unknown `sort`, a malformed `rang
 or `bbox` is a 422. A missing search index returns an empty page rather than an
 error.
 
-Search results are always restricted to `_is_latest`, and to `_is_activated`
+Search results are restricted to `_is_latest`, and to `_is_activated`
 unless a valid `private_key` token (`private_key:"<uuid>"` with `id:"<id>"`)
-is in the query.
+is in the query. Two scope parameters, accepted by `/search/{table}` and its
+`/points`, `/values`, `/histogram` and `/numbers` (the search page sends them
+with every request, so the level tabs' counts follow), relax or narrow that:
+
+- `versions=all` (default `latest`) drops the `_is_latest` restriction: older
+  versions of contributions too, still only the published ones.
+- `mine=in_prep|published` narrows the search to the signed-in user's own
+  contributions (`summary.contribution._contributor_id` = the bearer token's
+  user, never a client-supplied id): `in_prep` the unpublished ones (the one
+  way to search unpublished docs without a private key), `published` the
+  published ones. Anonymous (or an expired token): 401. Postgres decides what
+  may appear (`fiesta.services.access.constrain_search`, as for every search):
+  in prep, only contributions the user may access, so a stale doc naming
+  another contributor still never shows another user's work.
+
+Both are ignored with `contribution=<id>`.
 
 `sort` is one of the legacy sort-dropdown options: `relevance` (score, then
 newest), `recent` / `recent_asc` (contribution timestamp), `published` /

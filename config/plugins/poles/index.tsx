@@ -451,6 +451,7 @@ function PolesMapView({
   config,
   contribution,
   privateKey,
+  scope,
 }: PluginSubTabContext) {
   const [selected, setSelected] = useState<number | null>(null);
   const [maxPoles, setMaxPoles] = useState(DEFAULT_MAX_POLES);
@@ -460,10 +461,11 @@ function PolesMapView({
   const colors: AgeColors = { ...DEFAULT_AGE_COLORS, ...pconfig.age_color };
 
   const polesQuery = useQuery({
-    queryKey: ["plugin", "poles", "search", query, ranges, bbox, maxPoles, contribution],
+    queryKey: ["plugin", "poles", "search", query, ranges, bbox, maxPoles, contribution, scope],
     queryFn: () =>
       api<SearchPageData>("/search/poles", {
         params: {
+          ...scope,
           query: query || undefined,
           size: maxPoles,
           range: ranges.length > 0 ? ranges : undefined,

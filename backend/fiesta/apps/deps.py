@@ -77,6 +77,24 @@ async def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+async def get_optional_user(
+    session: SessionDep,
+    token: Annotated[str | None, Depends(oauth2_scheme)],
+    credentials: Annotated[HTTPBasicCredentials | None, Depends(basic_scheme)],
+) -> User | None:
+    """The signed-in user, or None for an anonymous request (or one whose
+    token has expired: a public read answers it as anonymous)."""
+    if not token and not credentials:
+        return None
+    try:
+        return await get_current_user(session, token, credentials)
+    except HTTPException:
+        return None
+
+
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]
+
+
 async def get_basic_user(
     session: SessionDep,
     credentials: Annotated[HTTPBasicCredentials | None, Depends(basic_scheme)],

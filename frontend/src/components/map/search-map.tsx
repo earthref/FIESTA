@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/api";
 import { useNodeConfig } from "../../lib/config";
-import type { MapColorOption, SearchLevel } from "../../lib/types";
+import type { MapColorOption, SearchLevel, SearchScope } from "../../lib/types";
 import { singularize } from "../../lib/utils";
 import { Icon } from "../ui/icon";
 import { Spinner } from "../ui/spinner";
@@ -72,12 +72,14 @@ function usePoints(
   color: string,
   enabled = true,
   colorBy?: string,
+  scope?: SearchScope,
 ) {
   return useQuery({
-    queryKey: ["search-points", level.table, query, ranges, filters, has, bbox, colorBy],
+    queryKey: ["search-points", level.table, query, ranges, filters, has, bbox, colorBy, scope],
     queryFn: () =>
       api<MapPointsPage>(`/search/${level.table}/points`, {
         params: {
+          ...scope,
           query: query || undefined,
           range: ranges,
           filter: filters?.length ? filters : undefined,
@@ -159,6 +161,7 @@ export function SearchMap({
   onAreaRequestDone,
   onSelect,
   color,
+  scope,
 }: {
   level: SearchLevel;
   query: string;
@@ -167,6 +170,8 @@ export function SearchMap({
   filters?: string[];
   /** The with/without data filter's entries ("[!]<table>:<column>"). */
   has?: string[];
+  /** The search's scope filters (My contributions, Previous versions). */
+  scope?: SearchScope;
   area: Area | null;
   onAreaChange: (area: Area | null) => void;
   areaRequest: AreaRequest | null;
@@ -210,9 +215,21 @@ export function SearchMap({
     color,
     true,
     colorOption?.field,
+    scope,
   );
   // With an area, the same search without it, for the grey context points.
-  const all = usePoints(level, query, ranges, filters, has, undefined, color, Boolean(area));
+  const all = usePoints(
+    level,
+    query,
+    ranges,
+    filters,
+    has,
+    undefined,
+    color,
+    Boolean(area),
+    undefined,
+    scope,
+  );
   const fetched = inArea.data?.points;
   // Scaled to the values of the search's points (in the area, if any).
   const scale = useMemo(

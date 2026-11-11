@@ -5,6 +5,7 @@ import { ErrorMessage } from "@/components/error-message";
 import { PageSpinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
 import { useNodeConfig } from "@/lib/config";
+import type { SearchScope } from "@/lib/types";
 import { cx } from "@/lib/utils";
 import {
   axisName,
@@ -40,6 +41,8 @@ export interface RockMagViewProps {
   /** Only this contribution (the contribution modal's tab). */
   contribution?: string;
   privateKey?: string;
+  /** The search page's scope filters (My contributions, Previous versions). */
+  scope?: SearchScope;
   /** Opens a specimen's contribution; not given inside its own modal. */
   onOpen?: (contributionId: string) => void;
 }
@@ -58,16 +61,18 @@ export default function RockMagView({
   bbox,
   contribution,
   privateKey,
+  scope,
   onOpen,
 }: RockMagViewProps) {
   // Only this view's range filters: others (the Poles view's) name fields its
   // docs don't have, and would match nothing.
   const ownRanges = ranges.filter((r) => r.startsWith("summary.rock_mag."));
   const values = useQuery({
-    queryKey: ["plugin", "rock-mag", "values", query, ownRanges, bbox, contribution],
+    queryKey: ["plugin", "rock-mag", "values", query, ownRanges, bbox, contribution, scope],
     queryFn: () =>
       api<SearchValues>("/search/rock_mag/values", {
         params: {
+          ...scope,
           field: VALUE_FIELDS,
           query: query || undefined,
           range: ownRanges.length > 0 ? ownRanges : undefined,

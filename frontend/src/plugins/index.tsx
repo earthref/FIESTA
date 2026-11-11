@@ -2,7 +2,7 @@
 // the plugin in config/plugins/<name>/ (docs/plugins.md): its index.tsx
 // default-exports a PluginModule and imports core code as "@/..." (src/).
 import type { ReactNode } from "react";
-import type { GridColumn, NodeConfig, SearchLevel, SearchResult } from "../lib/types";
+import type { GridColumn, NodeConfig, SearchLevel, SearchResult, SearchScope } from "../lib/types";
 
 export interface PluginGridCellProps {
   /** The summary grid column being rendered (its `cell` names the tile). */
@@ -26,6 +26,9 @@ export interface PluginSubTabContext {
   bbox?: string;
   /** Only this contribution (any version; the contribution modal's tabs). */
   contribution?: string;
+  /** The search's scope filters (My contributions, Previous versions): add
+   * them to the view's own search requests (and their query keys). */
+  scope?: SearchScope;
 }
 
 export interface PluginSubTab {

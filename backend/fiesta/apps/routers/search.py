@@ -4,12 +4,20 @@ import json
 import logging
 import math
 import uuid as uuid_mod
-from typing import Annotated, Any
+from dataclasses import dataclass
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.security import HTTPBasicCredentials
 from opensearchpy.exceptions import NotFoundError, TransportError
 
-from fiesta.apps.deps import NodeDep, SessionDep
+from fiesta.apps.deps import (
+    NodeDep,
+    SessionDep,
+    basic_scheme,
+    get_optional_user,
+    oauth2_scheme,
+)
 from fiesta.apps.schemas import (
     HasColumns,
     HistogramBin,
@@ -19,7 +27,7 @@ from fiesta.apps.schemas import (
     SearchPage,
     SearchValues,
 )
-from fiesta.db.models import Contribution
+from fiesta.db.models import Contribution, User
 from fiesta.nodeconfig import ANY_TABLE, MapColor
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import (
@@ -186,14 +194,56 @@ def _drop_workflow_filters(body: dict) -> None:
     ]
 
 
+@dataclass
+class SearchScope:
+    """A search's `mine` / `versions` filters and the session user they need."""
+
+    user: User | None = None
+    mine: str | None = None
+    all_versions: bool = False
+
+
+async def search_scope(
+    session: SessionDep,
+    token: Annotated[str | None, Depends(oauth2_scheme)],
+    credentials: Annotated[HTTPBasicCredentials | None, Depends(basic_scheme)],
+    # Only the signed-in user's own contributions: unpublished or published.
+    mine: Literal["in_prep", "published"] | None = None,
+    # "all" also returns older versions of contributions.
+    versions: Literal["latest", "all"] = "latest",
+) -> SearchScope:
+    # The user is looked up only for `mine` (constrain_search refuses it anonymously).
+    user = await get_optional_user(session, token, credentials) if mine else None
+    return SearchScope(user=user, mine=mine, all_versions=versions == "all")
+
+
+ScopeDep = Annotated[SearchScope, Depends(search_scope)]
+
+
 async def _constrain(
-    session, node, body: dict, query: str | None, contribution: int | None, private_key: str | None
+    session,
+    node,
+    body: dict,
+    query: str | None,
+    contribution: int | None,
+    private_key: str | None,
+    scope: SearchScope | None = None,
 ) -> None:
-    """Scope a search to what the caller may see or, with `contribution`, to
-    that one contribution: any version, public or opened by its private key
-    (the contribution modal's level tabs and map)."""
+    """Scope a search to what the caller may see (constrain_search, with the
+    `mine` / `versions` filters) or, with `contribution`, to that one
+    contribution: any version, public or opened by its private key (the
+    contribution modal's level tabs and map)."""
     if contribution is None:
-        await constrain_search(session, node, body, query=query)
+        scope = scope or SearchScope()
+        await constrain_search(
+            session,
+            node,
+            body,
+            user=scope.user,
+            query=query,
+            mine=scope.mine,
+            all_versions=scope.all_versions,
+        )
         return
     await _get_visible_contribution(session, node, contribution, private_key)
     _drop_workflow_filters(body)
@@ -216,6 +266,7 @@ def _facet_bucket(bucket: dict) -> dict:
 async def search(
     session: SessionDep,
     node: NodeDep,
+    scope: ScopeDep,
     table: str,
     query: str | None = None,
     size: int = Query(10, ge=1, le=1000),
@@ -252,7 +303,7 @@ async def search(
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
-    await _constrain(session, node, body, query, contribution, private_key)
+    await _constrain(session, node, body, query, contribution, private_key, scope)
     if totals:
         # The result sub-tabs' counts: the matches' rows (a doc without a
         # count_field is one row) and those with a position.
@@ -515,6 +566,7 @@ async def _location_points(
 async def search_points(
     session: SessionDep,
     node: NodeDep,
+    scope: ScopeDep,
     table: str,
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
@@ -545,7 +597,7 @@ async def search_points(
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
-    await _constrain(session, node, body, query, contribution, private_key)
+    await _constrain(session, node, body, query, contribution, private_key, scope)
     body["query"]["bool"]["filter"].append(POSITIONED)
     body["_source"] = [
         GEO_FIELD,
@@ -655,6 +707,7 @@ def _get_path(source: dict, field: str) -> Any:
 async def search_values(
     session: SessionDep,
     node: NodeDep,
+    scope: ScopeDep,
     table: str,
     field: Annotated[list[str], Query(min_length=1, max_length=50)],
     query: str | None = None,
@@ -675,7 +728,7 @@ async def search_values(
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
     )
-    await _constrain(session, node, body, query, contribution, private_key)
+    await _constrain(session, node, body, query, contribution, private_key, scope)
     body["_source"] = fields
     rows: list[list] = []
     total = await _scroll(
@@ -717,6 +770,7 @@ def histogram_edges(lo: float, hi: float, bins: int, log: bool) -> list[float]:
 async def search_histogram(
     session: SessionDep,
     node: NodeDep,
+    scope: ScopeDep,
     table: str,
     field: str,
     bins: int = Query(40, ge=1, le=200),
@@ -745,7 +799,7 @@ async def search_histogram(
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
-    await _constrain(session, node, body, query, contribution, private_key)
+    await _constrain(session, node, body, query, contribution, private_key, scope)
     body.pop("sort", None)
     body["aggs"] = {
         "all": {"stats": {"field": path}},
@@ -816,6 +870,7 @@ async def search_histogram(
 async def search_numbers(
     session: SessionDep,
     node: NodeDep,
+    scope: ScopeDep,
     table: str,
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
@@ -840,7 +895,7 @@ async def search_numbers(
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
-    await _constrain(session, node, body, query, contribution, private_key)
+    await _constrain(session, node, body, query, contribution, private_key, scope)
     body.pop("sort", None)
     if not columns:
         return NumberColumns(total=0, columns={})
