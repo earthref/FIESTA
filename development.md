@@ -87,8 +87,11 @@ portal list) every link stays on production.
 
 ## Seed data and local login
 
-`make up` starts Docker infrastructure, the API, the worker and the frontend;
-`make seed` then seeds every node in `FIESTA_NODE`. It creates the accounts, the
+`make up` starts Docker infrastructure, the API, the worker and the frontend,
+then runs `make seed`, which seeds every node in `FIESTA_NODE`. `make up` skips
+the seed with `SEED=0`, with `ENV_FILE` (remote data) and in CI (`CI` set, so the
+e2e stack never depends on dev.earthref.org); a seed that fails (dev unreachable)
+leaves the stack up with a warning, and `make seed` retries. It creates the accounts, the
 workspace and the private fixtures (a draft with revision history and an invalid
 draft) from the manifest the node's YAML selects under `development.seed_manifest`
 (`config/<node>/seeds/`). It also copies the node's 50 most recent public

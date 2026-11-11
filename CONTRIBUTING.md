@@ -17,11 +17,13 @@ outside Docker you also need [uv](https://docs.astral.sh/uv/) and Node 22
 git clone https://github.com/<you>/FIESTA.git     # your fork
 cd FIESTA
 make up        # every node; `make up FIESTA_NODE=magic,cdr` for fewer (faster)
-make seed      # demo accounts, private drafts and each node's 50 newest public contributions
 ```
 
-The first `make up` builds images and takes a few minutes; later starts take
-seconds. Then:
+`make up` starts the stack, then seeds it: demo accounts, private drafts and
+each node's 50 newest public contributions from dev.earthref.org (later starts
+fetch only what dev published since). The first `make up` builds images and
+downloads the data, so it takes a few minutes; later starts take seconds.
+`make up SEED=0` skips the seed (offline work); `make seed` runs it on its own. Then:
 
 | | |
 |---|---|
@@ -43,7 +45,7 @@ move it (`API_PORT`, `FRONTEND_PORT`, `POSTGRES_PORT`, …).
 `make up` runs with hot reload: edits under `backend/fiesta/` and
 `frontend/src/` are live. A change to a node YAML or a dependency needs another
 `make up`. `make down` stops the stack; `make clean` also deletes its data,
-and `make up && make seed` starts over. [development.md](development.md) covers
+and `make up` starts over. [development.md](development.md) covers
 running the API, worker or frontend on the host and everything else.
 
 ## Before you change things

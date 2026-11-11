@@ -48,9 +48,16 @@ help: ## List available targets
 ## ---- Docker Compose stack -------------------------------------------------
 
 .PHONY: up
-up: ## Start infra + the API + worker + the frontend (every node in FIESTA_NODE at /<Key>/), hot reload (PROD=1 for the built images, ENV_FILE=.env.prod for remote data)
+up: ## Start infra + the API + worker + the frontend (every node in FIESTA_NODE at /<Key>/), hot reload, then `make seed` (SEED=0 skips it; PROD=1 for the built images, ENV_FILE=.env.prod for remote data)
 	@mkdir -p frontend/node_modules
 	$(COMPOSE) up -d --build --remove-orphans --wait
+	@$(if $(SKIP_SEED),,$(MAKE) --no-print-directory seed || \
+		echo "make up: the stack is up, but the seed did not finish (above); \`make seed\` retries")
+
+# `make up` seeds a local stack (only what dev published since the last seed), but
+# not one on remote data (ENV_FILE), in CI (its e2e stack must not depend on
+# dev.earthref.org), or with SEED=0.
+SKIP_SEED = $(ENV_FILE)$(CI)$(filter 0,$(SEED))
 
 .PHONY: down
 down: ## Stop the stack (keep data volumes)

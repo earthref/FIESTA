@@ -37,14 +37,15 @@ Postgres backups plus the bucket. See [Phase M operations](docs/phase-m.md).
 
 ```sh
 cp .env.example .env          # optional: FIESTA_NODE (default every node, or a list: magic,karar,erda), ports
-make up                       # infra + one API + one worker + one frontend for every listed node
-make seed                     # demo accounts, private drafts, and each listed node's 50 newest public contributions from dev.earthref.org
+make up                       # infra + one API + one worker + one frontend for every listed node, then
+                              # `make seed`: demo accounts, private drafts, and each listed node's 50
+                              # newest public contributions from dev.earthref.org (SEED=0 skips it)
 ```
 
 Everything runs in local Docker containers: no MARFIK, AWS or production
 credentials, and no EarthRef account. http://localhost:8080/MagIC/ signs you
 in as Local Developer (`developer@example.test`, a super admin) as soon as the
-stack is up; `make seed` adds the data. See [CONTRIBUTING.md](CONTRIBUTING.md)
+stack is up. See [CONTRIBUTING.md](CONTRIBUTING.md)
 to make a change.
 
 Run `make` for all targets (tests, linting, e2e, rebuild, local dev servers).
