@@ -126,3 +126,12 @@ export function hasQueryToken(q: string, field: string, value: string): boolean 
 export function getQueryToken(q: string, field: string): string | undefined {
   return parseQueryTokens(q).tokens.find(([f]) => f === field)?.[1];
 }
+
+/** The query string without the given fields' `field:"value"` tokens. */
+export function queryWithout(q: string, fields: string[]): string {
+  const { tokens, freeText } = parseQueryTokens(q);
+  return buildQuery(
+    freeText,
+    tokens.filter(([field]) => !fields.includes(field)),
+  );
+}

@@ -159,6 +159,27 @@ class SearchValues(BaseModel):
     truncated: bool = False
 
 
+class HistogramBin(BaseModel):
+    lo: float
+    hi: float
+    count: int
+
+
+class SearchHistogram(BaseModel):
+    """A numeric field's distribution over the docs matching a search: `bins`
+    equal-width bins (in log10 space with `log`) between the field's min and
+    max. `positive_min` is the smallest value above zero (a log scale's lower
+    bound; null when there is none); `counted` docs have a value in a bin."""
+
+    total: int
+    counted: int
+    min: float | None
+    max: float | None
+    positive_min: float | None
+    log: bool
+    bins: list[HistogramBin]
+
+
 class HealthOut(BaseModel):
     status: str
     database: bool

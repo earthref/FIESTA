@@ -1,4 +1,4 @@
-import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQueries } from "@tanstack/react-query";
 import { getRouteApi, Link, useRouterState } from "@tanstack/react-router";
 import {
   type CSSProperties,
@@ -10,25 +10,30 @@ import {
   useRef,
   useState,
 } from "react";
-import { ColumnFilterMenu } from "../components/column-filter-menu";
+import { ColumnFilterButton } from "../components/column-filter-menu";
 import { ContributionModal } from "../components/contribution-modal";
 import { ErrorMessage } from "../components/error-message";
-import { type Area, areaToBbox, parseArea } from "../components/map/map-points";
+import {
+  FacetModal,
+  type FacetSpec,
+  formatValue,
+  GeoModal,
+  RangeModal,
+} from "../components/filter-modals";
+import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
 import { type AreaRequest, SearchMap } from "../components/map/search-map";
 import { contributionId, ResultDivider } from "../components/result-item";
 import { columnsOf, RowsGrid, rowsOfHit } from "../components/rows-table";
 import {
   applicableFilters,
-  BboxFilter,
-  FacetSection,
+  type FilterChip,
+  FilterEntry,
   filterLabel,
-  GeospatialFilter,
-  RangeFilter,
+  parseRange,
   rangesFor,
 } from "../components/search-filters";
 import { isSourceMode } from "../components/source-mode-notice";
 import {
-  ColumnTextFilter,
   formatGridFilters,
   type GridSort,
   parseGridFilters,
@@ -52,7 +57,15 @@ import type {
   SearchPage as SearchPageData,
   SearchResult,
 } from "../lib/types";
-import { cx, formatNumber, getQueryToken, parseQueryTokens, toggleQueryToken } from "../lib/utils";
+import {
+  cx,
+  facetTitle,
+  formatNumber,
+  getQueryToken,
+  parseQueryTokens,
+  queryWithout,
+  toggleQueryToken,
+} from "../lib/utils";
 import { type PluginSubTabContext, pluginFiltersPanel, pluginSubTabs } from "../plugins";
 
 const PAGE_SIZE = 20;
@@ -187,57 +200,20 @@ function searchRequestParams(
   };
 }
 
-// --- Summary grid column menus ---------------------------------------------------
+// --- Filter modals ----------------------------------------------------------------
 
-/**
- * A grid column's facet lists: the sidebar's FacetSection, counted for the
- * search as it stands (`facet=<column>`, fetched once the menu opens).
- */
-function ColumnFacets({
-  table,
-  facets,
-  labels,
-  params,
-  q,
-  onToggle,
-}: {
-  table: string;
-  facets: string[];
-  labels: Record<string, string>;
-  params: ReturnType<typeof searchRequestParams>;
-  q: string;
-  onToggle: (facet: string, value: string) => void;
-}) {
-  const counts = useQuery({
-    queryKey: ["search-column-facets", table, facets, params],
-    queryFn: () =>
-      api<SearchPageData>(`/search/${table}`, { params: { ...params, facet: facets } }),
-    staleTime: 60_000,
-    placeholderData: keepPreviousData,
-  });
-  return (
-    <>
-      {facets.map((facet) => (
-        <FacetSection
-          key={facet}
-          facet={facet}
-          label={labels[facet]}
-          buckets={counts.data?.aggregations?.[facet] ?? []}
-          loading={counts.isPending}
-          q={q}
-          onToggle={onToggle}
-          defaultOpen={facets.length === 1}
-        />
-      ))}
-    </>
-  );
-}
+/** The filter modal open over the search: a facet list (the sidebar's, or a
+ * grid column's with its text box), a numeric range, or the geospatial area
+ * (`area`, every level with positions) / a bbox filter (`bbox`, a plugin view). */
+type FilterModalState =
+  | { kind: "facet"; title: string; facets: FacetSpec[]; column?: GridColumn }
+  | { kind: "range"; filter: SearchFilter }
+  | { kind: "geo"; title: string; target: "area" | "bbox" };
 
-/** The search box's string without the given fields' tokens. */
-function queryWithout(q: string, fields: string[]): string {
-  const { tokens, freeText } = parseQueryTokens(q);
-  const kept = tokens.filter(([field]) => !fields.includes(field));
-  return [freeText, ...kept.map(([f, v]) => `${f}:"${v}"`)].filter(Boolean).join(" ");
+/** An area's extent as one chip's text. */
+function areaText(area: Area): string {
+  const { latitude, longitude } = formatArea(area);
+  return `${latitude}, ${longitude}`;
 }
 
 // --- Rows view ----------------------------------------------------------------
@@ -388,6 +364,7 @@ export function SearchPage() {
   const areaBbox = (entry: SearchLevel | undefined) =>
     area && entry?.geo ? areaToBbox(area) : undefined;
   const [areaRequest, setAreaRequest] = useState<AreaRequest | null>(null);
+  const [filterModal, setFilterModal] = useState<FilterModalState | null>(null);
   const setArea = (next: Area | null) => {
     setAreaRequest(null);
     setSearch({ area: next?.join(",") });
@@ -426,18 +403,24 @@ export function SearchPage() {
 
   // A plugin view's count: its own docs matching the search and its filters
   // (ranges on its summary block, the bbox), as it fetches them. Switching
-  // sub-tabs never changes the level tabs' counts. Its facets are the
-  // sidebar's counts while that view is open.
+  // sub-tabs never changes the level tabs' counts. Its docs are what the
+  // filter modals count while that view is open.
   const countedTabs = subTabs.filter((tab) => tab.countTable);
+  const pluginParams = (table: string, query: string, rangeList: string[]) =>
+    searchRequestParams(
+      query,
+      1,
+      0,
+      false,
+      rangeList.filter((r) => r.startsWith(`summary.${table}.`)),
+      bbox,
+    );
   const pluginCounts = useQueries({
-    queries: countedTabs.map(({ countTable }) => {
-      const tableRanges = ranges.filter((r) => r.startsWith(`summary.${countTable}.`));
+    queries: countedTabs.map(({ countTable = "" }) => {
+      const params = pluginParams(countTable, q, ranges);
       return {
-        queryKey: ["search-count", countTable, q, tableRanges, bbox, "facets"],
-        queryFn: () =>
-          api<SearchPageData>(`/search/${countTable}`, {
-            params: searchRequestParams(q, 1, 0, true, tableRanges, bbox),
-          }),
+        queryKey: ["search-count", countTable, params],
+        queryFn: () => api<SearchPageData>(`/search/${countTable}`, { params }),
         staleTime: 60_000,
         placeholderData: keepPreviousData,
       };
@@ -472,7 +455,8 @@ export function SearchPage() {
   const queryBbox = activeTab?.render ? undefined : (areaBbox(level) ?? activeBbox);
 
   // The grids are sized to every match (up to MAX_RESULTS) and fetch the
-  // pages under their visible rows; page 0 carries the facets and totals.
+  // pages under their visible rows; page 0 carries the totals. Facet values
+  // are counted by their modal when it opens.
   const searchKey = ["search", level?.table, q, sort, queryRanges, queryBbox, gridFilterList];
   const paged = usePagedItems({
     queryKey: searchKey,
@@ -484,7 +468,7 @@ export function SearchPage() {
             q,
             PAGE_SIZE,
             page * PAGE_SIZE,
-            page === 0,
+            false,
             queryRanges,
             queryBbox,
             sort,
@@ -522,28 +506,15 @@ export function SearchPage() {
     const index = countedTabs.indexOf(tab);
     return index < 0 ? null : pluginCounts[index]?.data?.total;
   };
-  const aggregations = results.data?.aggregations ?? null;
-  // The sidebar's facet counts follow the sub-tab: records (Summaries), their
-  // rows, those on the map, or a plugin view's own docs. A value with none
-  // drops out (an active one stays, at zero).
-  const activeCounted = activeTab ? countedTabs.indexOf(activeTab) : -1;
-  const pluginFacets = activeCounted >= 0 ? pluginCounts[activeCounted] : undefined;
-  const facetsLoading = pluginFacets ? pluginFacets.isPending : results.isPending;
-  const facetBuckets = (field: string): FacetBucket[] => {
-    if (pluginFacets) return pluginFacets.data?.aggregations?.[field] ?? [];
-    const buckets = aggregations?.[field] ?? [];
-    const count =
-      activeTab?.name === "Rows"
-        ? (bucket: FacetBucket) => bucket.rows_count
-        : activeTab?.name === "Map"
-          ? (bucket: FacetBucket) => bucket.mapped_count
-          : undefined;
-    if (!count) return buckets;
-    return buckets
-      .map((bucket) => ({ key: bucket.key, doc_count: count(bucket) ?? bucket.doc_count }))
-      .filter((bucket) => bucket.doc_count > 0)
-      .sort((a, b) => b.doc_count - a.doc_count);
-  };
+  // A facet modal's counts follow the sub-tab: records (Summaries), their
+  // rows, those on the map, or a plugin view's own docs.
+  const pluginTable = activeTab?.countTable;
+  const bucketCount =
+    pluginTable === undefined && activeTab?.name === "Rows"
+      ? (bucket: FacetBucket) => bucket.rows_count
+      : pluginTable === undefined && activeTab?.name === "Map"
+        ? (bucket: FacetBucket) => bucket.mapped_count
+        : undefined;
   const topContributionId =
     level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
 
@@ -573,17 +544,6 @@ export function SearchPage() {
     !!activeBbox ||
     !!area ||
     gridFilterList.length > 0;
-
-  // The sidebar's Geospatial filter opens the Map, in the Mercator view and
-  // zoomed to the new area when coming from a list (as on osu-mgr.org).
-  const requestArea = () => {
-    setAreaRequest(activeTab?.name === "Map" ? {} : { mode: "flat", zoomTo: true });
-    setView("Map");
-  };
-  const showArea = () => {
-    if (activeTab?.name !== "Map") setAreaRequest({ zoomTo: true });
-    setView("Map");
-  };
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -624,26 +584,13 @@ export function SearchPage() {
   );
   const onRowsSort = (next: GridSort | undefined) =>
     setSearch({ sort: next ? `${ROWS_SORT}${next.key}:${next.order}` : undefined });
-  const onGridFilter = (key: string, text: string) =>
-    setSearch({ filter: formatGridFilters({ ...gridFilters, [key]: text }) });
 
-  // A column header's filter icon: its facet lists (the sidebar's, sharing
-  // its tokens and labels), else a text box, and on the map tile the area.
-  const facetLabels = Object.fromEntries(
-    (config.filters ?? [])
-      .filter((f) => f.type === "facet" && f.field && f.label)
-      .map((f) => [f.field ?? "", f.label ?? ""]),
-  );
-  const columnFacetParams = searchRequestParams(
-    q,
-    1,
-    0,
-    true,
-    queryRanges,
-    queryBbox,
-    undefined,
-    gridFilterList,
-  );
+  // A column header's filter icon opens its modal: its facet lists (the
+  // sidebar's, sharing their tokens and labels) and/or a text box, or on the
+  // map tile the area.
+  const facetLabel = (field: string) =>
+    config.filters?.find((f) => f.type === "facet" && f.field === field)?.label ??
+    facetTitle(field);
   const queryTokens = parseQueryTokens(q).tokens;
   const columnFilterMenu = (column: GridColumn) => {
     const geospatial = column.geospatial && !!level.geo;
@@ -653,40 +600,160 @@ export function SearchPage() {
       queryTokens.filter(([field]) => column.facets.includes(field)).length +
       (text.trim() ? 1 : 0) +
       (geospatial && area ? 1 : 0);
-    const clear = () =>
-      setSearch({
-        q: queryWithout(q, column.facets),
-        filter: formatGridFilters({ ...gridFilters, [column.key]: "" }),
-        ...(geospatial ? { area: undefined } : {}),
-      });
+    const open = () =>
+      setFilterModal(
+        geospatial && column.facets.length === 0 && !column.filterable
+          ? { kind: "geo", title: column.label, target: "area" }
+          : {
+              kind: "facet",
+              title: column.label,
+              facets: column.facets.map((field) => ({ field, label: facetLabel(field) })),
+              column,
+            },
+      );
+    return <ColumnFilterButton label={column.label} active={active} onOpen={open} />;
+  };
+
+  // The search's request params for a filter modal's counts: a plugin view's
+  // own docs, or the level's records (with the grid's column filters).
+  const levelParams = (query: string, rangeList: string[]) =>
+    searchRequestParams(
+      query,
+      1,
+      0,
+      false,
+      activeTab?.render ? undefined : rangesFor(rangeList, filters),
+      queryBbox,
+      undefined,
+      gridFilterList,
+    );
+  const modalParams = (query: string, rangeList: string[]) =>
+    pluginTable ? pluginParams(pluginTable, query, rangeList) : levelParams(query, rangeList);
+  // A range filter's docs: a plugin view's block (summary.<table>.*), else the level's.
+  const rangeTable = (filter: SearchFilter) => {
+    const block = (filter.field ?? "").split(".")[1];
+    return countedTabs.some((tab) => tab.countTable === block) ? block : level.table;
+  };
+
+  // The sidebar: each filter with its applied values as chips.
+  const chipsFor = (filter: SearchFilter): FilterChip[] => {
+    if (filter.type === "facet") {
+      const field = filter.field ?? "";
+      return queryTokens
+        .filter(([f]) => f === field)
+        .map(([, value]) => ({
+          key: value,
+          label: value,
+          onRemove: () => setSearch({ q: toggleQueryToken(q, field, value) }),
+        }));
+    }
+    if (filter.type === "range") {
+      const entry = ranges.map(parseRange).find((r) => r.field === filter.field);
+      if (!entry) return [];
+      const scale = filter.scale || 1;
+      const shown = (v: string) => (v === "" ? "" : formatValue(Number(v) / scale));
+      const unit = filter.unit ? ` ${filter.unit}` : "";
+      const [gte, lte] = [shown(entry.gte), shown(entry.lte)];
+      const text =
+        gte && lte ? `${gte} to ${lte}${unit}` : gte ? `≥ ${gte}${unit}` : `≤ ${lte}${unit}`;
+      return [
+        {
+          key: "range",
+          label: text,
+          title: `${filterLabel(filter)} ${text}`,
+          onRemove: () =>
+            setSearch({ ranges: ranges.filter((r) => parseRange(r).field !== filter.field) }),
+        },
+      ];
+    }
+    const box = parseArea(bbox);
+    return box
+      ? [{ key: "bbox", label: areaText(box), onRemove: () => setSearch({ bbox: undefined }) }]
+      : [];
+  };
+  const openFilter = (filter: SearchFilter) =>
+    setFilterModal(
+      filter.type === "facet"
+        ? {
+            kind: "facet",
+            title: filterLabel(filter),
+            facets: [{ field: filter.field ?? "", label: filterLabel(filter) }],
+          }
+        : filter.type === "range"
+          ? { kind: "range", filter }
+          : { kind: "geo", title: filterLabel(filter), target: "bbox" },
+    );
+
+  const renderFilterModal = () => {
+    if (!filterModal) return null;
+    const close = () => setFilterModal(null);
+    if (filterModal.kind === "facet") {
+      const { column } = filterModal;
+      return (
+        <FacetModal
+          title={filterModal.title}
+          facets={filterModal.facets}
+          // A column's lists count the level's records (the Summaries grid).
+          table={column ? level.table : (pluginTable ?? level.table)}
+          q={q}
+          paramsFor={(query) => (column ? levelParams(query, ranges) : modalParams(query, ranges))}
+          count={column ? undefined : bucketCount}
+          text={
+            column?.filterable
+              ? { label: column.label, value: gridFilters[column.key] ?? "" }
+              : undefined
+          }
+          onApply={({ q: next, text }) => {
+            close();
+            setSearch({
+              q: next,
+              ...(column?.filterable
+                ? { filter: formatGridFilters({ ...gridFilters, [column.key]: text ?? "" }) }
+                : {}),
+            });
+          }}
+          onClose={close}
+        />
+      );
+    }
+    if (filterModal.kind === "range") {
+      const { filter } = filterModal;
+      return (
+        <RangeModal
+          filter={filter}
+          table={rangeTable(filter)}
+          ranges={ranges}
+          paramsFor={(rangeList) =>
+            rangeTable(filter) === level.table
+              ? levelParams(q, rangeList)
+              : pluginParams(rangeTable(filter), q, rangeList)
+          }
+          color={config.color}
+          onApply={(next) => {
+            close();
+            setSearch({ ranges: next });
+          }}
+          onClose={close}
+        />
+      );
+    }
+    const isArea = filterModal.target === "area";
     return (
-      <ColumnFilterMenu label={column.label} active={active} onClear={clear}>
-        {column.facets.length > 0 && (
-          <ColumnFacets
-            table={level.table}
-            facets={column.facets}
-            labels={facetLabels}
-            params={columnFacetParams}
-            q={q}
-            onToggle={(name, value) => setSearch({ q: toggleQueryToken(q, name, value) })}
-          />
-        )}
-        {column.filterable && (
-          <ColumnTextFilter
-            column={column}
-            value={text}
-            onChange={(next) => onGridFilter(column.key, next)}
-          />
-        )}
-        {geospatial && (
-          <GeospatialFilter
-            area={area}
-            onRequest={requestArea}
-            onShow={showArea}
-            onRemove={() => setArea(null)}
-          />
-        )}
-      </ColumnFilterMenu>
+      <GeoModal
+        title={filterModal.title}
+        level={level}
+        query={q}
+        ranges={queryRanges}
+        filters={gridFilterList}
+        area={isArea ? area : parseArea(bbox)}
+        color={config.color}
+        onApply={(next) => {
+          close();
+          if (isArea) setArea(next);
+          else setSearch({ bbox: next ? areaToBbox(next) : undefined });
+        }}
+        onClose={close}
+      />
     );
   };
 
@@ -906,43 +973,28 @@ export function SearchPage() {
             >
               {filtersPanel ?? (
                 <>
-                  {level.geo && (
-                    <GeospatialFilter
-                      area={area}
-                      onRequest={requestArea}
-                      onShow={showArea}
-                      onRemove={() => setArea(null)}
+                  {/* A view with its own bbox filter (Poles) shows the area only while set. */}
+                  {level.geo && (area || !filters.some((f) => f.type === "bbox")) && (
+                    <FilterEntry
+                      label="Geospatial"
+                      chips={
+                        area
+                          ? [{ key: "area", label: areaText(area), onRemove: () => setArea(null) }]
+                          : []
+                      }
+                      onOpen={() =>
+                        setFilterModal({ kind: "geo", title: "Geospatial", target: "area" })
+                      }
                     />
                   )}
-                  {filters.map((filter) =>
-                    filter.type === "facet" ? (
-                      <FacetSection
-                        key={filter.field}
-                        facet={filter.field ?? ""}
-                        label={filter.label ?? undefined}
-                        buckets={facetBuckets(filter.field ?? "")}
-                        loading={facetsLoading}
-                        q={q}
-                        onToggle={(name, value) =>
-                          setSearch({ q: toggleQueryToken(q, name, value) })
-                        }
-                      />
-                    ) : filter.type === "range" ? (
-                      <RangeFilter
-                        key={filter.field}
-                        filter={filter}
-                        ranges={ranges}
-                        setRanges={(next) => setSearch({ ranges: next })}
-                      />
-                    ) : (
-                      <BboxFilter
-                        key={`bbox-${filterLabel(filter)}`}
-                        filter={filter}
-                        bbox={bbox}
-                        setBbox={(next) => setSearch({ bbox: next })}
-                      />
-                    ),
-                  )}
+                  {filters.map((filter) => (
+                    <FilterEntry
+                      key={`${filter.type}-${filter.field ?? filterLabel(filter)}`}
+                      label={filterLabel(filter)}
+                      chips={chipsFor(filter)}
+                      onOpen={() => openFilter(filter)}
+                    />
+                  ))}
                   {filters.length === 0 && !level.geo && (
                     <p className="px-[1em] py-3 text-[12px] text-ink-faint">
                       No filters for this view.
@@ -1124,6 +1176,7 @@ export function SearchPage() {
           </div>
         </div>
       </div>
+      {renderFilterModal()}
       {search.contribution !== undefined && (
         <ContributionModal
           id={String(search.contribution)}

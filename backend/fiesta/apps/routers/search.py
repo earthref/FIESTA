@@ -10,7 +10,13 @@ from fastapi import APIRouter, HTTPException, Query, Response
 from opensearchpy.exceptions import NotFoundError, TransportError
 
 from fiesta.apps.deps import NodeDep, SessionDep
-from fiesta.apps.schemas import MapPoints, SearchPage, SearchValues
+from fiesta.apps.schemas import (
+    HistogramBin,
+    MapPoints,
+    SearchHistogram,
+    SearchPage,
+    SearchValues,
+)
 from fiesta.db.models import Contribution
 from fiesta.nodeconfig import MapColor
 from fiesta.search.client import get_opensearch
@@ -186,6 +192,8 @@ async def search(
     from_: int = Query(0, ge=0, alias="from"),
     facets: bool = False,
     facet: Annotated[list[str] | None, Query()] = None,
+    # Values per facet: the sidebar's 100, a filter modal's whole list.
+    facet_size: int = Query(100, ge=1, le=2000),
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
     sort: str | None = None,
@@ -205,6 +213,7 @@ async def search(
         size=size,
         from_=from_,
         facets=facet_names or None,
+        facet_size=facet_size,
         count_field=level.count_field if level else None,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
@@ -643,6 +652,104 @@ async def search_values(
     )
     return SearchValues(
         total=total, fields=fields, rows=rows[:MAX_VALUE_ROWS], truncated=total > MAX_VALUE_ROWS
+    )
+
+
+def histogram_edges(lo: float, hi: float, bins: int, log: bool) -> list[float]:
+    """`bins` + 1 equal-width bin edges from `lo` to `hi` (equal in log10
+    space with `log`; `lo` must then be above zero). One value is one bin."""
+    if hi <= lo:
+        return [lo, hi]
+    a, b = (math.log10(lo), math.log10(hi)) if log else (lo, hi)
+    width = (b - a) / bins
+    edges = [a + i * width for i in range(bins + 1)]
+    if log:
+        edges = [10**e for e in edges]
+    # Exact ends, so float rounding never drops the min or the max.
+    edges[0], edges[-1] = lo, hi
+    return edges
+
+
+@router.get("/search/{table}/histogram", response_model=SearchHistogram)
+async def search_histogram(
+    session: SessionDep,
+    node: NodeDep,
+    table: str,
+    field: str,
+    bins: int = Query(40, ge=1, le=200),
+    log: bool = False,
+    query: str | None = None,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    bbox: str | None = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    contribution: int | None = None,
+    private_key: str | None = None,
+) -> SearchHistogram:
+    """A numeric summary field's distribution over the docs matching a search
+    (the filter modal's range histogram; the caller leaves the field's own
+    range out of `range`). `log` bins in log10 space over the values above
+    zero, and falls back to linear bins when there are none."""
+    if table not in _level_tables(node):
+        raise HTTPException(404, f"unknown search table {table!r}")
+    path = _value_field(field)
+    body = build_search_body(
+        table=table,
+        query=query,
+        size=0,
+        ranges=_parse_ranges(range_),
+        bbox=_parse_bbox(bbox),
+        column_filters=_grid_filters(node, table, filter_),
+    )
+    await _constrain(session, node, body, query, contribution, private_key)
+    body.pop("sort", None)
+    body["aggs"] = {
+        "all": {"stats": {"field": path}},
+        "positive": {
+            "filter": {"range": {path: {"gt": 0}}},
+            "aggs": {"s": {"min": {"field": path}}},
+        },
+    }
+    client = get_opensearch()
+    try:
+        response = await client.search(index=node.search_index, body=body)
+    except NotFoundError:
+        return SearchHistogram(
+            total=0, counted=0, min=None, max=None, positive_min=None, log=False, bins=[]
+        )
+    except TransportError as exc:
+        # A text field (row values are strings): stats need a numeric mapping.
+        raise HTTPException(422, f"{field!r} is not a numeric field") from exc
+    hits = response["hits"]
+    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+    stats = response["aggregations"]["all"]
+    lo, hi = stats.get("min"), stats.get("max")
+    positive_min = response["aggregations"]["positive"]["s"].get("value")
+    if lo is None or hi is None:
+        return SearchHistogram(
+            total=total, counted=0, min=None, max=None, positive_min=None, log=False, bins=[]
+        )
+    use_log = log and positive_min is not None and hi > 0
+    edges = histogram_edges(positive_min if use_log else lo, hi, bins, use_log)
+    # Each bin holds [from, to); the last is open above so it keeps the max.
+    ranges = [
+        {"from": edges[i], "to": edges[i + 1]} if i < len(edges) - 2 else {"from": edges[i]}
+        for i in range(len(edges) - 1)
+    ]
+    body["aggs"] = {"bins": {"range": {"field": path, "ranges": ranges}}}
+    response = await client.search(index=node.search_index, body=body)
+    buckets = response["aggregations"]["bins"]["buckets"]
+    out = [
+        HistogramBin(lo=edges[i], hi=edges[i + 1], count=b["doc_count"])
+        for i, b in enumerate(buckets)
+    ]
+    return SearchHistogram(
+        total=total,
+        counted=sum(b.count for b in out),
+        min=lo,
+        max=hi,
+        positive_min=positive_min,
+        log=use_log,
+        bins=out,
     )
 
 

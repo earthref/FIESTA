@@ -84,6 +84,7 @@ def build_search_body(
     size: int = 10,
     from_: int = 0,
     facets: list[str] | None = None,
+    facet_size: int = 100,
     count_field: str | None = None,
     contributor_id: int | None = None,
     private_only: bool = False,
@@ -169,7 +170,7 @@ def build_search_body(
         aggs: dict[str, Any] = {}
         for facet in facets:
             agg: dict[str, Any] = {
-                "terms": {"field": f"summary._all.{facet}.raw", "size": 100}
+                "terms": {"field": f"summary._all.{facet}.raw", "size": facet_size}
             }
             if count_field:
                 # Each value's rows, for the Rows sub-tab (a doc without the

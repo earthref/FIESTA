@@ -8,9 +8,11 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   wide?: boolean;
+  /** Wider still, for a filter's list, histogram or map. */
+  xl?: boolean;
 }
 
-export function Modal({ open, onClose, title, children, footer, wide }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, wide, xl }: ModalProps) {
   const panelRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: ModalPro
         tabIndex={-1}
         className={cx(
           "relative m-0 flex max-h-[85vh] w-full flex-col rounded-lg border-0 bg-surface p-0 shadow-xl outline-hidden",
-          wide ? "max-w-3xl" : "max-w-lg",
+          xl ? "max-w-5xl" : wide ? "max-w-3xl" : "max-w-lg",
         )}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
