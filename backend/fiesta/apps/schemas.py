@@ -180,6 +180,15 @@ class SearchHistogram(BaseModel):
     bins: list[HistogramBin]
 
 
+class NumberColumns(BaseModel):
+    """A search level's number columns (`summary._num.<column>`) and how many
+    of the docs matching a search have a value of each, in data-model order
+    (`columns`: column -> count, zero included)."""
+
+    total: int
+    columns: dict[str, int]
+
+
 class HealthOut(BaseModel):
     status: str
     database: bool

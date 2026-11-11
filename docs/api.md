@@ -220,6 +220,7 @@ needs `publish.api`.
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (default 40, 1–200), `log` (bool), `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` | `SearchHistogram` |
+| GET | `/v2/{repository}/search/{table}/numbers` | `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` | `{total, columns: {<column>: n}}` — the level's number columns (`summary._num.<column>`, data-model order) and how many matches have a value of each, zeros included (the `numeric` filter's column picker) |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 | GET | `/v2/{repository}/contributions/{id}/versions` | `private_key?` | the `previous_id` chain, oldest first: every published version plus this one — `[{id, version, data_model_version, timestamp, contributor, is_activated, is_latest}]` |
@@ -313,7 +314,10 @@ the last closed so the max is counted, as `range` aggregation buckets. With
 above zero) and the max, values at or below zero left out; without positive
 values `log` comes back false and the bins are linear. `counted` docs have a
 value in a bin; a field no match has has no bins, and a text field (row values
-are strings) is a 422. Field rules and visibility are as for `values`.
+are strings) is a 422 — a data-model number column's histogram is on its
+`summary._num.<column>`. Field rules and visibility are as for `values`.
+A `range` on a multi-valued field (`summary._num`) matches a doc with any value
+inside it.
 
 Positions (`summary._all._geo_point`, one `{lat, lon}` or a list): a record's
 rows' own `lat`/`lon` (a box that is a single point counts as one). A record of
@@ -520,6 +524,26 @@ doc, `rows` holding them all, `summary.<level>` their merge (each column's first
 value) plus `_n_results`, how many rows (the level's `count_field`). A row
 without a name is a doc of its own. So a level's matches count records (the
 Summaries tab), and their summed `_n_results` its rows (the Rows tab).
+
+Row values are text everywhere above (`summary.<level>`, `_all`), so every doc
+also carries `summary._num` (2026-11-10): per data-model number column
+(`Number`, `Integer`; not `contribution_id` / `row_id`) the sorted distinct
+values of the record's rows as numbers, mapped as `double` — capped at 500 per
+column but always keeping the least and the greatest; values that do not parse
+are left out. The contribution doc's is the union across its levels (as its
+`_all`). Columns a `search.unit_conversions` entry names are in its base unit:
+MagIC's `age`, `age_low`, `age_high` are years BP by the row's `age_unit`
+(factor, then offset: years AD → 1950 − year, which swaps low and high;
+`age_sigma` only scaled), and a row whose unit has no factor leaves them out.
+Range filters (`range=summary._num.age:0:5e6`) and histograms use these:
+
+```json
+"summary": {"sites": {"site": "HW01", "age": "2", "age_unit": "Ma", ...},
+            "_num": {"age": [2000000.0], "dir_inc": [31.2, 33.0], ...}, ...}
+```
+
+A new or changed `_num` (or its `double` template) reaches an existing index
+only through `fiesta rebuild`.
 
 ## Phase M revision management
 

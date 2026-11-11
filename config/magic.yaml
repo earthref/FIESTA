@@ -33,12 +33,30 @@ search:
     - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
   # (The Poles search level is contributed by the `poles` plugin below.)
   extra_types: []
-  # Filter sidebar controls (facet / range / bbox), edited in the admin UI's
-  # Search Filters tab. Facets aggregate on summary._all.<field>.raw and show on
-  # every level's Summaries, Rows and Map views; the poles range/bbox filters show
-  # on the Locations level's Poles view (the `poles` plugin indexes
+  # Filter sidebar controls (facet / range / bbox / numeric), edited in the admin
+  # UI's Search Filters tab. Facets aggregate on summary._all.<field>.raw and show
+  # on every level's Summaries, Rows and Map views; the poles range/bbox filters
+  # show on the Locations level's Poles view (the `poles` plugin indexes
   # summary.poles.age in years, hence the Ma scale).
+  # Ranges on summary._num.<column> filter a level's records by a data-model
+  # number column (stored in its data-model unit, SI; ages in years BP by
+  # unit_conversions below): `scale` turns the typed value into it. The
+  # `numeric` entry picks any other number column of the level.
   filters:
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year, views: [Summaries, Rows, Map] }
+    - { type: range, label: Age, field: summary._num.age, unit: Ma, scale: 1.0e6, levels: [Contributions, Locations, Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: Paleointensity, field: summary._num.int_abs, unit: μT, scale: 1.0e-6, levels: [Contributions, Locations, Sites, Samples, Specimens], views: [Summaries, Rows, Map] }
+    - { type: range, label: VADM, field: summary._num.vadm, unit: ZAm², scale: 1.0e21, levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: Declination, field: summary._num.dir_dec, unit: "°", levels: [Locations, Sites, Samples, Specimens, Measurements], views: [Summaries, Rows, Map] }
+    - { type: range, label: Inclination, field: summary._num.dir_inc, unit: "°", levels: [Locations, Sites, Samples, Specimens, Measurements], views: [Summaries, Rows, Map] }
+    - { type: range, label: Direction α95, field: summary._num.dir_alpha95, unit: "°", levels: [Locations, Sites, Samples, Specimens], views: [Summaries, Rows, Map] }
+    - { type: range, label: Pole Latitude, field: summary._num.pole_lat, unit: "°", levels: [Locations], views: [Summaries, Rows, Map] }
+    - { type: range, label: VGP Latitude, field: summary._num.vgp_lat, unit: "°", levels: [Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: Elevation, field: summary._num.elevation, unit: m, levels: [Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: Magnetic Moment, field: summary._num.magn_moment, unit: Am², levels: [Specimens, Measurements], views: [Summaries, Rows, Map] }
+    - { type: range, label: Mass Susceptibility, field: summary._num.susc_chi_mass, unit: m³/kg, levels: [Specimens, Measurements], views: [Summaries, Rows, Map] }
+    - { type: range, label: Treatment Temperature, field: summary._num.treat_temp, unit: K, levels: [Measurements], views: [Summaries, Rows, Map] }
+    - { type: range, label: Treatment AC Field, field: summary._num.treat_ac_field, unit: mT, scale: 1.0e-3, levels: [Measurements], views: [Summaries, Rows, Map] }
     - { type: facet, field: method_codes, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: facet, field: geologic_classes, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: facet, field: geologic_types, views: [Summaries, Rows, Map, Rock Magnetism] }
@@ -46,6 +64,7 @@ search:
     - { type: facet, field: location_type, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: facet, field: plate_blocks, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: facet, field: tectonic_settings, views: [Summaries, Rows, Map, Rock Magnetism] }
+    - { type: numeric, label: Numeric, views: [Summaries, Rows, Map] }
     - { type: range, label: Age, field: summary.poles.age, unit: Ma, scale: 1.0e6, levels: [Locations], views: [Poles] }
     - { type: range, label: Pole A95, field: summary.poles.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
     - { type: bbox, label: Geospatial, levels: [Locations], views: [Poles] }
@@ -61,26 +80,32 @@ search:
     - { type: bbox, label: Geospatial, levels: [Specimens], views: [Rock Magnetism] }
   # The Map view's "Color by" menu: a column (offered on the levels whose table
   # has it) or a summary.* path, parsed as a number; `scale` as a range
-  # filter's. Ages are put in years BP by their age_unit (AD: 1950 - year),
-  # and a unit not listed leaves the record uncolored.
+  # filter's. Ages are put in years BP by their age_unit (unit_conversions
+  # below), and a unit not listed leaves the record uncolored.
   map_colors:
     - { label: Publication Year, field: summary.contribution._reference.year }
-    - label: Age
-      field: age
-      unit: Ma
-      scale: 1.0e6
-      log: true
-      unit_column: age_unit
-      unit_factors:
-        { Ga: 1.0e9, Ma: 1.0e6, ka: 1.0e3, Ka: 1.0e3, Years BP: 1, Years Cal BP: 1,
-          "Years AD (+/-)": -1, "Years Cal AD (+/-)": -1 }
-      unit_offsets: { "Years AD (+/-)": 1950, "Years Cal AD (+/-)": 1950 }
+    - { label: Age, field: age, unit: Ma, scale: 1.0e6, log: true, unit_column: age_unit }
     - { label: Paleointensity, field: int_abs, unit: μT, scale: 1.0e-6 }
     - { label: VADM, field: vadm, unit: ZAm², scale: 1.0e21 }
     - { label: Inclination, field: dir_inc, unit: "°" }
     - { label: VGP Latitude, field: vgp_lat, unit: "°" }
     - { label: Magnetic Moment, field: magn_moment, unit: Am², log: true }
     - { label: Mass Susceptibility, field: susc_chi_mass, unit: m³/kg, log: true }
+  # Number columns whose unit is another column of the row, put in one base
+  # unit in summary._num (and the map's Age colors): an age times its
+  # age_unit's factor plus its offset is years BP (years AD: 1950 - year, so
+  # age_low and age_high swap); age_sigma only scaled. A unit not listed
+  # leaves that row's ages out.
+  unit_conversions:
+    - unit_column: age_unit
+      columns: [age, age_low, age_high]
+      scaled: [age_sigma]
+      bounds: [age_low, age_high]
+      unit: years BP
+      factors:
+        { Ga: 1.0e9, Ma: 1.0e6, ka: 1.0e3, Ka: 1.0e3, Years BP: 1, Years Cal BP: 1,
+          "Years AD (+/-)": -1, "Years Cal AD (+/-)": -1 }
+      offsets: { "Years AD (+/-)": 1950, "Years Cal AD (+/-)": 1950 }
   # Locations on another planetary body, by their location_type: they and
   # their sites, samples, ... are mapped on that body's globe, not Earth's.
   # Martian is left out: those samples are meteorites, mapped where found.

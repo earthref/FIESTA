@@ -13,6 +13,7 @@ from fiesta.apps.deps import NodeDep, SessionDep
 from fiesta.apps.schemas import (
     HistogramBin,
     MapPoints,
+    NumberColumns,
     SearchHistogram,
     SearchPage,
     SearchValues,
@@ -74,8 +75,9 @@ def _grid_sort(node, table: str, sort: str | None) -> str | list | None:
     column = _grid_columns(node, table).get(key)
     if column is None or column.sort is None or order not in ("asc", "desc"):
         raise HTTPException(
-            422, f"sort must be one of {sorted(SORT_OPTIONS)}, <sortable column>:asc|desc"
-            " or rows.<column>:asc|desc"
+            422,
+            f"sort must be one of {sorted(SORT_OPTIONS)}, <sortable column>:asc|desc"
+            " or rows.<column>:asc|desc",
         )
     return sort_clauses(column, order)
 
@@ -655,6 +657,15 @@ async def search_values(
     )
 
 
+# A doc's least value above zero (+infinity without one, which `min` ignores
+# beside any finite value).
+POSITIVE_MIN_SCRIPT = (
+    "double m = Double.POSITIVE_INFINITY;"
+    " for (def v : doc[params.field]) { if (v > 0 && v < m) { m = v; } }"
+    " return m;"
+)
+
+
 def histogram_edges(lo: float, hi: float, bins: int, log: bool) -> list[float]:
     """`bins` + 1 equal-width bin edges from `lo` to `hi` (equal in log10
     space with `log`; `lo` must then be above zero). One value is one bin."""
@@ -704,9 +715,21 @@ async def search_histogram(
     body.pop("sort", None)
     body["aggs"] = {
         "all": {"stats": {"field": path}},
+        # The least value above zero of the docs with one: of each doc's
+        # values only those above zero (a multi-valued field, summary._num,
+        # can hold negatives beside them).
         "positive": {
             "filter": {"range": {path: {"gt": 0}}},
-            "aggs": {"s": {"min": {"field": path}}},
+            "aggs": {
+                "s": {
+                    "min": {
+                        "script": {
+                            "source": POSITIVE_MIN_SCRIPT,
+                            "params": {"field": path},
+                        }
+                    }
+                }
+            },
         },
     }
     client = get_opensearch()
@@ -724,6 +747,8 @@ async def search_histogram(
     stats = response["aggregations"]["all"]
     lo, hi = stats.get("min"), stats.get("max")
     positive_min = response["aggregations"]["positive"]["s"].get("value")
+    if positive_min is not None and not (0 < positive_min < math.inf):
+        positive_min = None
     if lo is None or hi is None:
         return SearchHistogram(
             total=total, counted=0, min=None, max=None, positive_min=None, log=False, bins=[]
@@ -750,6 +775,53 @@ async def search_histogram(
         positive_min=positive_min,
         log=use_log,
         bins=out,
+    )
+
+
+@router.get("/search/{table}/numbers", response_model=NumberColumns)
+async def search_numbers(
+    session: SessionDep,
+    node: NodeDep,
+    table: str,
+    query: str | None = None,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    bbox: str | None = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    contribution: int | None = None,
+    private_key: str | None = None,
+) -> NumberColumns:
+    """A level's number columns (`summary._num.<column>`) with how many of
+    the docs matching a search have a value of each: the numeric filter's
+    column picker. One request, an `exists` filter per column."""
+    if table not in _level_tables(node):
+        raise HTTPException(404, f"unknown search table {table!r}")
+    columns = node.number_columns(table)
+    body = build_search_body(
+        table=table,
+        query=query,
+        size=0,
+        ranges=_parse_ranges(range_),
+        bbox=_parse_bbox(bbox),
+        column_filters=_grid_filters(node, table, filter_),
+    )
+    await _constrain(session, node, body, query, contribution, private_key)
+    body.pop("sort", None)
+    if not columns:
+        return NumberColumns(total=0, columns={})
+    body["aggs"] = {
+        "columns": {
+            "filters": {"filters": {c: {"exists": {"field": f"summary._num.{c}"}} for c in columns}}
+        }
+    }
+    try:
+        response = await get_opensearch().search(index=node.search_index, body=body)
+    except NotFoundError:
+        return NumberColumns(total=0, columns=dict.fromkeys(columns, 0))
+    hits = response["hits"]
+    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+    buckets = response["aggregations"]["columns"]["buckets"]
+    return NumberColumns(
+        total=total, columns={c: buckets.get(c, {}).get("doc_count", 0) for c in columns}
     )
 
 
