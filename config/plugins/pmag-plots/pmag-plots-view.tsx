@@ -1,5 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useCallback, useMemo, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import {
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { EChart, type EChartsOption } from "@/components/echart";
 import { ErrorMessage } from "@/components/error-message";
 import { PageSpinner } from "@/components/ui/spinner";
@@ -31,8 +41,12 @@ import {
   whereOf,
 } from "./pmag-plots-data";
 
-const PAGE = 12;
 const CARD_HEIGHT = 260;
+/** A card's narrowest width before the grid drops a column, and the gap. */
+const CARD_MIN_WIDTH = 300;
+const CARD_GAP = 12;
+/** A row of cards: the chart, its header and borders (a note is measured). */
+const CARD_ROW_ESTIMATE = CARD_HEIGHT + 36;
 const LARGE_HEIGHT = 520;
 
 /** One plot of the grid: a specimen's, or a group's directions. */
@@ -264,8 +278,14 @@ const LEVELS = ["Sites", "Samples", "Specimens", "Measurements"];
 
 function PlotGrid({ type, items }: { type: PlotType; items: PlotItem[] }) {
   const [filter, setFilter] = useState("");
-  const [visible, setVisible] = useState(PAGE);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // The card to bring back into view on leaving the enlarged plot.
+  const [returnTo, setReturnTo] = useState<number | undefined>();
+  const scroller = useRef<HTMLDivElement>(null);
+  const toTop = () => {
+    setReturnTo(undefined);
+    scroller.current?.scrollTo({ top: 0 });
+  };
   const levelCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const item of items)
@@ -293,8 +313,8 @@ function PlotGrid({ type, items }: { type: PlotType; items: PlotItem[] }) {
           value={level}
           onChange={(next) => {
             setLevel(next);
-            setVisible(PAGE);
             setExpanded(null);
+            toTop();
           }}
         />
       )}
@@ -311,7 +331,7 @@ function PlotGrid({ type, items }: { type: PlotType; items: PlotItem[] }) {
         value={filter}
         onChange={(e) => {
           setFilter(e.target.value);
-          setVisible(PAGE);
+          toTop();
         }}
         placeholder="Filter by name…"
         aria-label="Filter plots by specimen, sample, site or location"
@@ -329,50 +349,132 @@ function PlotGrid({ type, items }: { type: PlotType; items: PlotItem[] }) {
     !item.coords || item.coords.includes(coord) ? coord : item.coords[0];
 
   return (
-    <div className="space-y-3 p-3">
-      {controls}
-      <p className="text-[12px] text-gray-500">{LEGENDS[type]}</p>
-      {current >= 0 ? (
-        <ExpandedPlot
-          item={shown[current]}
-          // Nets and Zijderveld plots keep one scale on both axes.
-          zoom={type === "eqarea" || type === "zijd" ? "square" : "xy"}
-          coord={coordOf(shown[current])}
-          preferred={coord}
-          position={`${current + 1} of ${shown.length}`}
-          onBack={() => setExpanded(null)}
-          onStep={(delta) =>
-            setExpanded(shown[(current + delta + shown.length) % shown.length].key)
-          }
-        />
-      ) : shown.length === 0 ? (
-        <p className="py-8 text-center text-[13px] text-gray-500">No plots match the filter.</p>
-      ) : (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {shown.slice(0, visible).map((item) => (
-              <PlotCard
-                key={item.key}
-                item={item}
-                coord={coordOf(item)}
-                preferred={coord}
-                onExpand={() => setExpanded(item.key)}
-              />
-            ))}
-          </div>
-          {shown.length > visible && (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setVisible((n) => n + PAGE)}
-                className="rounded-sm border border-gray-300 bg-surface px-3 py-1 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
-              >
-                Show {Math.min(PAGE, shown.length - visible)} more of {shown.length - visible}
-              </button>
-            </div>
-          )}
-        </>
-      )}
+    // The controls stay put; the plots scroll below them.
+    <div className="flex h-full min-h-[420px] flex-col">
+      <div className="space-y-3 px-3 pt-3">
+        {controls}
+        <p className="text-[12px] text-gray-500">{LEGENDS[type]}</p>
+      </div>
+      <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto p-3">
+        {current >= 0 ? (
+          <ExpandedPlot
+            item={shown[current]}
+            // Nets and Zijderveld plots keep one scale on both axes.
+            zoom={type === "eqarea" || type === "zijd" ? "square" : "xy"}
+            coord={coordOf(shown[current])}
+            preferred={coord}
+            position={`${current + 1} of ${shown.length}`}
+            onBack={() => {
+              setReturnTo(current);
+              setExpanded(null);
+            }}
+            onStep={(delta) =>
+              setExpanded(shown[(current + delta + shown.length) % shown.length].key)
+            }
+          />
+        ) : shown.length === 0 ? (
+          <p className="py-8 text-center text-[13px] text-gray-500">No plots match the filter.</p>
+        ) : (
+          <VirtualCards
+            count={shown.length}
+            scrollRef={scroller}
+            returnTo={returnTo}
+            render={(index) => {
+              const item = shown[index];
+              return (
+                <PlotCard
+                  key={item.key}
+                  item={item}
+                  coord={coordOf(item)}
+                  preferred={coord}
+                  onExpand={() => {
+                    scroller.current?.scrollTo({ top: 0 });
+                    setExpanded(item.key);
+                  }}
+                />
+              );
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The plot cards as a grid that scrolls virtually: as many columns as fit
+ * (at least CARD_MIN_WIDTH each, up to three), and only the rows of cards in
+ * view, and two above and below, mounted, so a contribution's hundreds of
+ * charts never all draw at once. `returnTo` brings that card back into view
+ * (on leaving its enlarged plot).
+ */
+function VirtualCards({
+  count,
+  scrollRef,
+  returnTo,
+  render,
+}: {
+  count: number;
+  scrollRef: RefObject<HTMLDivElement | null>;
+  returnTo?: number;
+  render: (index: number) => ReactNode;
+}) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  // Unknown until the grid's width is measured (no rows until then).
+  const [columns, setColumns] = useState<number | null>(null);
+  // Where the grid starts inside the scroller (its padding).
+  const [margin, setMargin] = useState(0);
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const update = () => {
+      const fit = Math.floor((grid.clientWidth + CARD_GAP) / (CARD_MIN_WIDTH + CARD_GAP));
+      setColumns(Math.max(1, Math.min(3, fit)));
+      setMargin(grid.offsetTop);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, []);
+  const perRow = columns ?? 1;
+  const rows = columns ? Math.ceil(count / columns) : 0;
+  const virtualizer = useVirtualizer({
+    count: rows,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => CARD_ROW_ESTIMATE,
+    overscan: 2,
+    gap: CARD_GAP,
+    scrollMargin: margin,
+  });
+  // Once the columns are known, back to the card an enlarged plot left from.
+  const pending = useRef(returnTo);
+  useEffect(() => {
+    if (columns && pending.current !== undefined) {
+      virtualizer.scrollToIndex(Math.floor(pending.current / columns), { align: "center" });
+      pending.current = undefined;
+    }
+  }, [columns, virtualizer]);
+  return (
+    <div ref={gridRef} className="relative" style={{ height: virtualizer.getTotalSize() }}>
+      {virtualizer.getVirtualItems().map((row) => (
+        <div
+          key={row.key}
+          data-index={row.index}
+          ref={virtualizer.measureElement}
+          className="absolute inset-x-0 top-0 grid"
+          style={{
+            gap: CARD_GAP,
+            gridTemplateColumns: `repeat(${perRow}, minmax(0, 1fr))`,
+            transform: `translateY(${row.start - margin}px)`,
+          }}
+        >
+          {Array.from(
+            { length: Math.min(perRow, count - row.index * perRow) },
+            (_, i) => row.index * perRow + i,
+          ).map(render)}
+        </div>
+      ))}
     </div>
   );
 }
