@@ -18,6 +18,10 @@ node:
 
 search:
   index: cdr
+  # A record's geography, inherited by the records below that name it and
+  # listed by the summary grid's Geography tile.
+  geography:
+    geographic: [continent_ocean, country, ocean_sea, region, village_city]
   levels:
     - { name: Contributions, table: contribution }
     - { name: Cores, table: cores, count_field: summary.cores._n_results }
@@ -101,7 +105,7 @@ plugins:
       - { key: zr, label: Zr (cps), color: "#17becf" }
 
 features:
-  plugins: [depth-plot]
+  plugins: [depth-plot, sample-tiles]
 
 # Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).
 # CDR never had S3 buckets; every contribution is exported from the indexed tables.

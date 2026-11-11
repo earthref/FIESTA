@@ -17,6 +17,7 @@ import {
 } from "../../lib/admin";
 import { ApiError, api } from "../../lib/api";
 import { sanitizeHtml } from "../../lib/sanitize";
+import { pluginPages } from "../../plugins";
 import { ErrorMessage } from "../error-message";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -34,8 +35,9 @@ interface EditablePage {
 
 const MENUS: EditablePage["menu"][] = ["left", "right", "hidden"];
 const SLUG = /^[a-z][a-z0-9-]{0,63}$/;
-// Slugs the router already owns, so a content page may not take them.
+// Slugs the router already owns (plugin pages too), so a content page may not take them.
 const RESERVED = new Set([
+  ...pluginPages().map(({ page }) => page.path.replace(/^\//, "")),
   "search",
   "contribution",
   "contributions",
@@ -44,7 +46,6 @@ const RESERVED = new Set([
   "validate",
   "data-models",
   "vocabularies",
-  "method-codes",
   "login",
   "contact",
   "admin",

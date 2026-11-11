@@ -914,7 +914,7 @@ export function SearchPage() {
   };
 
   return (
-    <div className="magic-search">
+    <div className="fiesta-search">
       {/* Level tabs: Semantic tabular menu (bottom border only; grey active tab) */}
       <div className="flex flex-wrap items-end" style={{ borderBottom: `1px solid ${TAB_BORDER}` }}>
         {levels.map((entry, index) => {
@@ -990,7 +990,7 @@ export function SearchPage() {
             <input
               id="search-input"
               type="search"
-              placeholder='e.g. metamorphic "field intensity" -precambrian'
+              placeholder={config.search_placeholder}
               value={input}
               onChange={(event) => setInput(event.target.value)}
               className="min-w-0 bg-surface placeholder:text-ink-faint focus:outline-hidden"

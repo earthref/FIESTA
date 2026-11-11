@@ -77,6 +77,9 @@ export interface PluginInfo {
   name: string;
   description: string;
   schema: JsonSchema;
+  /** The summary grid tiles it adds (FiestaPlugin.grid_tiles); `default`
+   * ones show on a level without columns, after Geography. */
+  grid_tiles?: { cell: string; label: string; hint: string; default: boolean }[];
 }
 
 /** The subset of JSON Schema pydantic v2 emits for an Options model. */
@@ -155,7 +158,7 @@ export interface NodeSettings {
   };
   storage: { bucket: string };
   data_model: { versions: string[]; latest: string; dir: string };
-  vocabularies: { controlled: string; suggested?: string | null; method_codes?: string | null };
+  vocabularies: { controlled: string; suggested?: string | null };
   hierarchy: string[];
   doi?: { prefix?: string | null };
   pages?: SettingsPage[];

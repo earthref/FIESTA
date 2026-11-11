@@ -23,6 +23,10 @@ node:
 
 search:
   index: sc
+  # A record's geography, inherited by the records below that name it and
+  # listed by the summary grid's Geography tile.
+  geography:
+    geographic: [region]
   # One contribution per legacy region (a seamount trail or ocean basin); each
   # level's `columns` are its Summaries grid, edited in the Summary Grid tab.
   levels:
@@ -101,7 +105,7 @@ hierarchy:
 pages: []
 
 features:
-  plugins: []
+  plugins: [sample-tiles]
 
 # Production serves the API but not the web app at /SC/ — the legacy CGI
 # catalog still answers there until cutover; a local stack serves both.

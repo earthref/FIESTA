@@ -75,7 +75,7 @@ export function firstString(value: unknown): string | undefined {
   return undefined;
 }
 
-function listOf(value: unknown): string[] {
+export function listOf(value: unknown): string[] {
   if (Array.isArray(value)) return value.map(String).filter(Boolean);
   if (value === undefined || value === null || value === "") return [];
   return [String(value)];
@@ -236,7 +236,7 @@ export function NoDataCell({
 }
 
 /** Label on its own line above a value clamped to `lines` (legacy <b/> + Clamp). */
-function ClampedField({
+export function ClampedField({
   label,
   lines,
   children,
@@ -356,37 +356,6 @@ export function DefinitionTable({ data }: { data: Record<string, unknown> }) {
       </tbody>
     </table>
   );
-}
-
-function rangeText(value: unknown): string {
-  if (Array.isArray(value) && value.length > 0) {
-    const numbers = value.map(Number).filter((n) => Number.isFinite(n));
-    if (numbers.length === 0) return listOf(value).join(", ");
-    const min = Math.min(...numbers);
-    const max = Math.max(...numbers);
-    return min === max ? String(min) : `${min} to ${max}`;
-  }
-  if (value === undefined || value === null) return "";
-  return String(value);
-}
-
-/** Legacy intensity formatting: values are in Tesla; show nT/µT/mT/T. */
-function formatIntensity(tesla: number): string {
-  const nano = tesla * 1e9;
-  const units: [number, string][] = [
-    [1e9, "T"],
-    [1e6, "mT"],
-    [1e3, "µT"],
-  ];
-  for (const [threshold, unit] of units) {
-    if (Math.abs(nano) >= threshold) return `${trimNumber(nano / threshold)} ${unit}`;
-  }
-  return `${trimNumber(nano)} nT`;
-}
-
-/** numeral "0[.]0[00]": up to three decimals, no trailing zeros. */
-function trimNumber(value: number): string {
-  return String(Number(value.toFixed(3)));
 }
 
 const THIS_STUDY = /^this[_ ]study$/i;
@@ -771,22 +740,9 @@ function BuiltinCell({
 
     // Geologic units then geographic names
     case "geo": {
-      const geologic = unionOf(doc, [
-        "plate_blocks",
-        "terranes",
-        "geological_province_sections",
-        "tectonic_settings",
-      ]);
-      const geographic = unionOf(doc, [
-        "continent_ocean",
-        "country",
-        "ocean_sea",
-        "region",
-        "village_city",
-        "location",
-        "location_type",
-        "location_alternatives",
-      ]);
+      // The node's geography columns (node YAML `search.geography`).
+      const geologic = unionOf(doc, config.geography?.geologic ?? []);
+      const geographic = unionOf(doc, config.geography?.geographic ?? []);
       if (geologic.length === 0 && geographic.length === 0)
         return <NoDataCell label="Geographic" width={width} />;
       return (
@@ -801,110 +757,6 @@ function BuiltinCell({
               {geographic.join(", ")}
             </ClampedField>
           )}
-        </Cell>
-      );
-    }
-
-    // Class / Type / Lithology
-    case "geology": {
-      const classes = listOf(getPath(doc, "summary._all.geologic_classes"));
-      const types = listOf(getPath(doc, "summary._all.geologic_types"));
-      const lithologies = listOf(getPath(doc, "summary._all.lithologies"));
-      const defined = [classes, types, lithologies].filter((list) => list.length > 0).length;
-      if (defined === 0) return <NoDataCell label="Geologic" width={width} />;
-      const clamp = defined === 3 ? 1 : defined === 2 ? 2 : 5;
-      return (
-        <Cell width={width} wrap>
-          {classes.length > 0 && (
-            <ClampedField label="Class:" lines={clamp}>
-              {classes.join(", ")}
-            </ClampedField>
-          )}
-          {types.length > 0 && (
-            <ClampedField label="Type:" lines={clamp}>
-              {types.join(", ")}
-            </ClampedField>
-          )}
-          {lithologies.length > 0 && (
-            <ClampedField label="Lithology:" lines={clamp}>
-              {lithologies.join(", ")}
-            </ClampedField>
-          )}
-        </Cell>
-      );
-    }
-
-    case "age": {
-      const age = rangeText(getPath(doc, "summary._all.ages") ?? getPath(doc, "summary._all.age"));
-      if (!age) return <NoDataCell label="Age" width={width} />;
-      const ageUnit = firstString(getPath(doc, "summary._all.age_unit"));
-      return (
-        <Cell width={width} wrap>
-          <b>Age:</b>
-          <br />
-          {age}
-          {ageUnit ? ` ${ageUnit}` : ""}
-        </Cell>
-      );
-    }
-
-    case "intensity": {
-      const intensities = listOf(
-        getPath(doc, "summary._all.int_abs") ?? getPath(doc, "summary._all.intensities"),
-      )
-        .map(Number)
-        .filter((n) => Number.isFinite(n));
-      if (intensities.length === 0) return <NoDataCell label="Intensity" width={width} />;
-      const min = Math.min(...intensities);
-      const max = Math.max(...intensities);
-      return (
-        <Cell width={width} wrap>
-          {min === max ? (
-            <>
-              <b>Int:</b>
-              <br />
-              {formatIntensity(min)}
-              <br />
-            </>
-          ) : (
-            <>
-              <b>Min Int:</b>
-              <br />
-              {formatIntensity(min)}
-              <br />
-              <b>Max Int:</b>
-              <br />
-              {formatIntensity(max)}
-              <br />
-            </>
-          )}
-          <b>N: </b>
-          {intensities.length}
-        </Cell>
-      );
-    }
-
-    case "method_codes": {
-      const methodCodes = listOf(getPath(doc, "summary._all.method_codes"));
-      if (methodCodes.length === 0)
-        return (
-          <NoDataCell
-            label={
-              <>
-                Method
-                <br />
-                Codes
-              </>
-            }
-            width={width}
-            dataWord={false}
-          />
-        );
-      return (
-        <Cell width={width} wrap>
-          <ClampedField label="Method Codes:" lines={5}>
-            {methodCodes.join(", ")}
-          </ClampedField>
         </Cell>
       );
     }

@@ -22,6 +22,12 @@ node:
 
 search:
   index: magic
+  # A record's geography, inherited by the records below that name it and
+  # listed by the summary grid's Geography tile.
+  geography:
+    geologic: [plate_blocks, terranes, geological_province_sections, tectonic_settings]
+    geographic: [continent_ocean, country, ocean_sea, region, village_city, location, location_type, location_alternatives]
+  placeholder: 'e.g. metamorphic "field intensity" -precambrian'
   # Ordered search tabs; `table` is the doc `type` in the index and the
   # data-model table the rows come from.
   levels:
@@ -131,7 +137,6 @@ data_model:
 vocabularies:
   controlled: magic/controlled_vocabularies.json
   suggested: magic/suggested_vocabularies.json
-  method_codes: magic/method_codes.json
 
 # Parent -> child chain used to summarize contribution rows into per-level
 # search documents (summary._all aggregates roll up through this chain).
@@ -183,12 +188,16 @@ plugins:
     # black for unknown age, purple for the selected pole.
     age_color: { young: "#ffff00", old: "#ff0000", unknown: "#000000", selected: "#800080" }
     plate_boundary_color: "#990000"
+    facet_columns: [method_codes, geologic_classes, geologic_types, lithologies, location_type, plate_blocks, tectonic_settings, citations]
   rock-mag:
     base_level: Specimens # the Rock Magnetism view is a sub-tab of this level
     source_table: specimens
+    facet_columns: [method_codes, geologic_classes, geologic_types, lithologies, location_type, plate_blocks, tectonic_settings, citations]
+  method-codes:
+    file: method_codes.json # in magic/: {group: {label, codes: [{code, definition}]}}
 
 features:
-  plugins: [poles, rock-mag, pmag-plots]
+  plugins: [poles, rock-mag, pmag-plots, method-codes, sample-tiles]
   # Home page content (legacy client/modules/magic/components/home.jsx + home_news.jsx).
   home:
     # `ui nine cards` resource row: Semantic icon names; `to` = SPA route, `href` = external.

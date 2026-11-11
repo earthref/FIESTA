@@ -35,7 +35,8 @@ ANY_TABLE = "_any"
 Body = Literal["moon"]
 
 PAGE_SLUG_RE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
-# SPA routes a content page can never shadow (fiesta/frontend/src/router.tsx).
+# SPA routes a content page can never shadow (fiesta/frontend/src/router.tsx;
+# plugin pages are checked by fiesta.plugins.active_plugins).
 RESERVED_PAGE_SLUGS = {
     "search",
     "contribution",
@@ -45,7 +46,6 @@ RESERVED_PAGE_SLUGS = {
     "validate",
     "data-models",
     "vocabularies",
-    "method-codes",
     "login",
     "contact",
     "admin",
@@ -79,7 +79,8 @@ class NodeIdentity(BaseModel):
         return value
 
 
-GridCell = Literal[
+# The core's summary grid tiles; plugins add their own (FiestaPlugin.grid_tiles).
+CORE_GRID_CELLS = (
     "record",
     "citation",
     "name",
@@ -90,14 +91,10 @@ GridCell = Literal[
     "map",
     "plot",
     "geo",
-    "geology",
-    "age",
-    "intensity",
-    "method_codes",
     "citations",
     "field",
     "title",
-]
+)
 
 
 class GridColumn(BaseModel):
@@ -105,18 +102,19 @@ class GridColumn(BaseModel):
 
     `cell` names the tile the column shows: a built-in summary tile (record,
     which stacks citation, name and contributed in one column; citation, name,
-    contributed, download, links, counts, map, plot, geo, geology, age,
-    intensity, method_codes, citations), `field` (one column of the level's
-    summary block, "Label: value") or `title` (a column in bold over an optional
-    `subtitle_column`). Each tile has a default header label, width, sort and
-    filters (fiesta.search.grid); `sortable` / `filterable` switch them off, and
+    contributed, download, links, counts, map, plot, geo, citations), a tile an
+    active plugin adds (checked by fiesta.plugins.active_plugins), `field` (one
+    column of the level's summary block, "Label: value") or `title` (a column
+    in bold over an optional `subtitle_column`). Each tile has a default
+    header label, width, sort and filters (fiesta.search.grid); `sortable` /
+    `filterable` switch them off, and
     `sort_field` (a `.raw` keyword path, or with `numeric` any string path),
     `filter_fields` (text paths) and `facets` replace them. The header's filter
     menu offers the `facets` (summary._all columns) as the sidebar's checkbox
     lists, a text box over the `filter_fields`, and on a map tile the area.
     """
 
-    cell: GridCell = "field"
+    cell: str = Field(default="field", pattern=r"^\w+$")
     column: str | None = None
     subtitle_column: str | None = None
     label: str | None = None
@@ -338,6 +336,21 @@ class BodiesConfig(BaseModel):
         )
 
 
+class GeographyConfig(BaseModel):
+    """A record's geography: columns (geologic units, then geographic names)
+    that a record below inherits from the records above it that it names (a
+    specimen shows and filters on its site's location and that location's
+    country, as the legacy summaries did), and that the grid's Geography tile
+    lists, filters and facets on."""
+
+    geologic: list[str] = []
+    geographic: list[str] = []
+
+    @property
+    def columns(self) -> list[str]:
+        return [*self.geologic, *self.geographic]
+
+
 class SearchConfig(BaseModel):
     index: str
     levels: list[SearchLevel]
@@ -348,6 +361,9 @@ class SearchConfig(BaseModel):
     bodies: BodiesConfig | None = None
     # Number columns put in one unit in summary._num (ages in years BP).
     unit_conversions: list[UnitConversion] = []
+    geography: GeographyConfig = GeographyConfig()
+    # The search box's example query.
+    placeholder: str = 'e.g. keyword "exact phrase" -excluded'
 
     @model_validator(mode="after")
     def _map_color_units(self) -> "SearchConfig":
@@ -433,7 +449,6 @@ class DataModelConfig(BaseModel):
 class VocabulariesConfig(BaseModel):
     controlled: str
     suggested: str | None = None
-    method_codes: str | None = None
 
 
 class DoiConfig(BaseModel):
@@ -742,11 +757,6 @@ class NodeConfig(BaseModel):
             return {}
         return self._load_json(self.vocabularies.suggested)
 
-    def load_method_codes(self) -> dict | None:
-        if not self.vocabularies.method_codes:
-            return None
-        return self._load_json(self.vocabularies.method_codes)
-
     @property
     def geo_tables(self) -> set[str]:
         """Hierarchy tables whose rows can carry a position: a latitude and a
@@ -955,8 +965,10 @@ class NodeConfig(BaseModel):
             # "source": contributions are made at the data source (links.website
             # until the cutover) and synced here; the SPA offers no upload.
             "contributions_mode": self.contributions_mode,
-            "has_method_codes": self.vocabularies.method_codes is not None,
             "doi_prefix": self.doi.prefix,
+            # The Geography tile's columns and the search box's example query.
+            "geography": self.search.geography.model_dump(),
+            "search_placeholder": self.search.placeholder,
             "workspace": {
                 "fields": self.workspace_fields(),
                 "require_reference": self.workspace.require_reference,

@@ -9,6 +9,7 @@ import { useEffect, useId, useMemo, useState } from "react";
 import {
   adminKeys,
   type NodeSettings,
+  type PluginInfo,
   patchSettings,
   readFile,
   type SettingsColumn,
@@ -26,8 +27,10 @@ import { Table, TBody, Td, THead, Th, Tr } from "../ui/table";
 import { Field } from "./admin-ui";
 import { TagInput } from "./filters-editor";
 
-/** The tiles a column can show (fiesta.search.grid). */
-const TILES: { cell: GridCellKind; label: string; hint: string }[] = [
+type Tile = { cell: GridCellKind; label: string; hint: string };
+
+/** The core's tiles (fiesta.search.grid); the node's plugins add theirs. */
+const CORE_TILES: Tile[] = [
   { cell: "field", label: "Data column", hint: "One column of the level's rows: Label: value" },
   { cell: "title", label: "Title", hint: "A column in bold over an optional subtitle column" },
   {
@@ -43,17 +46,13 @@ const TILES: { cell: GridCellKind; label: string; hint: string }[] = [
   { cell: "counts", label: "Counts", hint: "Records per level, each opening its modal tab" },
   { cell: "map", label: "Map", hint: "Map thumbnail of the record's positions" },
   { cell: "plot", label: "Plot", hint: "A plugin's plot thumbnail (age spectrum, …)" },
-  { cell: "geo", label: "Geography", hint: "Geologic units and geographic names" },
-  { cell: "geology", label: "Geology", hint: "Geologic class, type and lithology" },
-  { cell: "age", label: "Age", hint: "Age range and unit" },
-  { cell: "intensity", label: "Intensity", hint: "Paleointensity range and N" },
-  { cell: "method_codes", label: "Method Codes", hint: "Method codes" },
+  { cell: "geo", label: "Geography", hint: "The node's geography columns (search.geography)" },
   { cell: "citations", label: "Citations", hint: "Additional citations" },
 ];
-const TILE_LABEL = Object.fromEntries(TILES.map((t) => [t.cell, t.label]));
 
-// The default tiles (fiesta.search.grid.DEFAULT_CELLS): what a level without
-// columns shows; download and links only on contributions.
+// The default tiles (fiesta.search.grid.DEFAULT_CELLS, the active plugins'
+// default tiles, DEFAULT_TAIL_CELLS): what a level without columns shows;
+// download and links only on contributions.
 const DEFAULT_CELLS: GridCellKind[] = [
   "record",
   "download",
@@ -62,17 +61,25 @@ const DEFAULT_CELLS: GridCellKind[] = [
   "map",
   "plot",
   "geo",
-  "geology",
-  "age",
-  "intensity",
-  "method_codes",
-  "citations",
 ];
+const DEFAULT_TAIL_CELLS: GridCellKind[] = ["citations"];
 
-function defaultColumns(table: string): SettingsColumn[] {
-  return DEFAULT_CELLS.filter(
-    (cell) => table === "contribution" || (cell !== "download" && cell !== "links"),
-  ).map((cell) => ({ cell }));
+/** The tiles this node's columns can show, and its default ones. */
+function nodeTiles(settings: NodeSettings, plugins: PluginInfo[]) {
+  const enabled = plugins.filter((p) => settings.features?.plugins?.includes(p.name));
+  const pluginTiles = enabled.flatMap((p) => p.grid_tiles ?? []);
+  const tiles: Tile[] = [...CORE_TILES, ...pluginTiles];
+  const defaults = [
+    ...DEFAULT_CELLS,
+    ...pluginTiles.filter((t) => t.default).map((t) => t.cell),
+    ...DEFAULT_TAIL_CELLS,
+  ];
+  const label = (cell: string) => tiles.find((t) => t.cell === cell)?.label ?? cell;
+  const defaultColumns = (table: string): SettingsColumn[] =>
+    defaults
+      .filter((cell) => table === "contribution" || (cell !== "download" && cell !== "links"))
+      .map((cell) => ({ cell }));
+  return { tiles, label, defaultColumns };
 }
 
 const isData = (column: SettingsColumn) =>
@@ -97,13 +104,17 @@ export function GridEditor({
   slug,
   settings,
   settingsLock,
+  plugins,
 }: {
   slug: string;
   settings: NodeSettings;
   /** lockOf() the settings the parent loaded (for edits to the node YAML). */
   settingsLock: number | null;
+  /** Every plugin in the code: the ones the node switches on add their tiles. */
+  plugins: PluginInfo[];
 }) {
   const queryClient = useQueryClient();
+  const { tiles, label: tileLabel, defaultColumns } = nodeTiles(settings, plugins);
   const levels = settings.search.levels;
   const [levelIndex, setLevelIndex] = useState(0);
   const level = levels[Math.min(levelIndex, levels.length - 1)];
@@ -241,7 +252,7 @@ export function GridEditor({
           <p className="text-gray-700">
             {level.name} shows the default tiles:{" "}
             {defaultColumns(level.table)
-              .map((c) => TILE_LABEL[c.cell ?? "field"])
+              .map((c) => tileLabel(c.cell ?? "field"))
               .join(", ")}
             .
           </p>
@@ -274,7 +285,7 @@ export function GridEditor({
                 return (
                   <Tr key={row.id}>
                     <Td>
-                      <Badge variant="node">{TILE_LABEL[c.cell ?? "field"]}</Badge>
+                      <Badge variant="node">{tileLabel(c.cell ?? "field")}</Badge>
                     </Td>
                     <Td className="font-mono text-xs">
                       {c.column ?? "—"}
@@ -369,6 +380,7 @@ export function GridEditor({
         <ColumnModal
           id={editing.id}
           column={editing.column}
+          tiles={tiles}
           tableColumns={tableColumns}
           onClose={() => setEditing(null)}
           onApply={apply}
@@ -382,12 +394,14 @@ export function GridEditor({
 function ColumnModal({
   id,
   column,
+  tiles,
   tableColumns,
   onClose,
   onApply,
 }: {
   id: string | null;
   column: SettingsColumn;
+  tiles: Tile[];
   tableColumns: Record<string, { label?: string; type?: string }>;
   onClose: () => void;
   onApply: (id: string | null, column: SettingsColumn) => void;
@@ -473,13 +487,13 @@ function ColumnModal({
       }
     >
       <div className="grid gap-3 text-sm sm:grid-cols-2">
-        <Field label="Tile" hint={TILES.find((t) => t.cell === cell)?.hint}>
+        <Field label="Tile" hint={tiles.find((t) => t.cell === cell)?.hint}>
           <select
             value={cell}
             onChange={(e) => setCell(e.target.value as GridCellKind)}
             className="w-full rounded-md border border-gray-300 px-3 py-2"
           >
-            {TILES.map((t) => (
+            {tiles.map((t) => (
               <option key={t.cell} value={t.cell}>
                 {t.label}
               </option>

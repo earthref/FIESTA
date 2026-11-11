@@ -872,6 +872,7 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
               slug={slug}
               settings={settings.data.settings}
               settingsLock={lockOf(settings.data)}
+              plugins={n.plugins ?? []}
             />
           ) : section === "plugins" ? (
             <PluginsEditor

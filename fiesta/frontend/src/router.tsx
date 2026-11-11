@@ -1,5 +1,8 @@
 import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
+import type { ComponentType, ReactNode } from "react";
 import { BASE_PATH, PORTAL } from "./lib/base";
+import { useNodeConfig } from "./lib/config";
+import { pluginPages } from "./plugins";
 import { AccountPage } from "./routes/account";
 import { AdminPage } from "./routes/admin";
 import { AdminNodePage } from "./routes/admin-node";
@@ -8,7 +11,6 @@ import { DataModelPage, DataModelsIndex } from "./routes/data-models";
 import { HomePage } from "./routes/home";
 import { RootLayout } from "./routes/layout";
 import { LoginPage } from "./routes/login";
-import { MethodCodesPage } from "./routes/method-codes";
 import { NotFoundPage } from "./routes/not-found";
 import { ContentPage } from "./routes/page";
 import { PortalHomePage } from "./routes/portal-home";
@@ -184,14 +186,24 @@ const vocabulariesRoute = createRoute({
   component: VocabulariesPage,
 });
 
-const methodCodesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/method-codes",
-  validateSearch: (search: Record<string, unknown>): FilterParams => ({
-    q: str(search.q),
+// Plugin pages (PluginModule.pages): every plugin's, a not-found page on a
+// node that does not activate it.
+function pluginPageComponent(plugin: string, Page: ComponentType): () => ReactNode {
+  return function PluginPage() {
+    const { data: config } = useNodeConfig();
+    if (!config) return null;
+    return plugin in (config.plugins ?? {}) ? <Page /> : <NotFoundPage />;
+  };
+}
+
+const pluginRoutes = pluginPages().map(({ plugin, page }) =>
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: page.path,
+    validateSearch: page.validateSearch ?? (() => ({})),
+    component: pluginPageComponent(plugin, page.component),
   }),
-  component: MethodCodesPage,
-});
+);
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -254,7 +266,7 @@ const routeTree = rootRoute.addChildren([
   dataModelsIndexRoute,
   dataModelRoute,
   vocabulariesRoute,
-  methodCodesRoute,
+  ...pluginRoutes,
   loginRoute,
   contactRoute,
   adminRoute,

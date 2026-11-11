@@ -245,7 +245,6 @@ def validate_files(slug: str, files: dict[str, bytes], key: str | None = None) -
                     errors.append(f"data model {version}: no `tables` object")
             node.load_controlled_vocabularies()
             node.load_suggested_vocabularies()
-            node.load_method_codes()
             active_plugins(node)
         except (ValueError, KeyError, OSError) as exc:
             errors.append(str(exc))
@@ -258,7 +257,6 @@ def validate_files(slug: str, files: dict[str, bytes], key: str | None = None) -
         "data_model.dir": node.data_model.dir,
         "vocabularies.controlled": node.vocabularies.controlled,
         "vocabularies.suggested": node.vocabularies.suggested,
-        "vocabularies.method_codes": node.vocabularies.method_codes,
         "development.seed_manifest": node.development.seed_manifest,
     }
     for field, ref in refs.items():
@@ -575,18 +573,19 @@ async def diff(session, record: NodeRecord, revision: NodeRevision) -> list[dict
 def template_files(
     template: NodeConfig, files: dict[str, bytes], slug: str, key: str, title: str
 ) -> dict[str, bytes]:
-    """A new node's first tree, copied from an existing node: its data models
-    and vocabularies (assets and seeds stay behind), re-keyed to the new node."""
+    """A new node's first tree, copied from an existing node: its data models,
+    vocabularies and the other JSON files at the top of its folder, which its
+    plugins read (method codes, plate boundaries; assets, pages and seeds stay
+    behind), re-keyed to the new node."""
     old = template.node.slug
     raw = yaml.safe_load(files[f"{old}.yaml"])
     keep = {f"{template.data_model.dir}/{v}.json" for v in template.data_model.versions} | {
-        ref
-        for ref in (
-            template.vocabularies.controlled,
-            template.vocabularies.suggested,
-            template.vocabularies.method_codes,
-        )
-        if ref
+        ref for ref in (template.vocabularies.controlled, template.vocabularies.suggested) if ref
+    }
+    keep |= {
+        path
+        for path in files
+        if path.startswith(f"{old}/") and path.count("/") == 1 and path.endswith(".json")
     }
 
     def moved(ref: str | None) -> str | None:
@@ -603,7 +602,7 @@ def template_files(
     raw["search"]["index"] = slug
     raw["storage"] = {"bucket": slug}
     raw["data_model"]["dir"] = moved(raw["data_model"]["dir"])
-    for field in ("controlled", "suggested", "method_codes"):
+    for field in ("controlled", "suggested"):
         if raw["vocabularies"].get(field):
             raw["vocabularies"][field] = moved(raw["vocabularies"][field])
     raw["doi"] = {}

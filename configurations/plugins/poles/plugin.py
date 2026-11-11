@@ -33,7 +33,6 @@ from pydantic import BaseModel, Field
 
 from fiesta.apps.deps import NodeDep
 from fiesta.domain.parse import ParsedContribution
-from fiesta.domain.summarize import FACETABLE_COLUMNS
 from fiesta.nodeconfig import NodeConfig
 from fiesta.plugins.base import FiestaPlugin, PluginOptions
 from fiesta.plugins.util import to_float
@@ -169,6 +168,19 @@ class AgeColors(BaseModel):
     selected: str = "#800080"
 
 
+# The columns a pole doc's summary._all carries (the legacy facet columns).
+FACET_COLUMNS = [
+    "method_codes",
+    "geologic_classes",
+    "geologic_types",
+    "lithologies",
+    "location_type",
+    "plate_blocks",
+    "tectonic_settings",
+    "citations",
+]
+
+
 class PolesOptions(PluginOptions):
     display_columns: list[str] = Field(
         default=["pole_lat", "pole_lon", "pole_alpha95", "age", "age_unit"],
@@ -184,6 +196,11 @@ class PolesOptions(PluginOptions):
     age_color: AgeColors = Field(default=AgeColors(), description="Pole colors by age")
     plate_boundary_color: str = Field(
         default="#990000", description="Color of the plate boundary lines on the map"
+    )
+    facet_columns: list[str] = Field(
+        default=FACET_COLUMNS,
+        description="Location columns copied (colon-delimited lists split) into a pole's "
+        "summary._all, for its facets and free-text search",
     )
 
 
@@ -218,6 +235,7 @@ class PolesPlugin(FiestaPlugin):
         self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
     ) -> list[dict]:
         docs: list[dict] = []
+        facet_columns = self.options(node).facet_columns
         for row in parsed.tables.get("locations", []):
             pole_lat = _finite(row.get("pole_lat"))
             pole_lon = _finite(row.get("pole_lon"))
@@ -227,7 +245,7 @@ class PolesPlugin(FiestaPlugin):
                 "pole_lat": [str(pole_lat)],
                 "pole_lon": [str(pole_lon)],
             }
-            for column in FACETABLE_COLUMNS:
+            for column in facet_columns:
                 if row.get(column):
                     all_block[column] = [
                         v.strip() for v in str(row[column]).split(":") if v.strip()

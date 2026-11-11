@@ -11,8 +11,9 @@ For a node with hierarchy [contribution, A, B, ...] this produces:
   sites) are one doc, with the shared `summary.contribution` block, the rows
   merged under `summary.<level>` (each column's first value) plus
   `_n_results` (how many rows, the level's `count_field`), the raw rows in
-  `rows`, and per-doc `_all` values (with the geography, INHERITED_COLUMNS,
-  of the records above it that it names), including its `_geo_point`: every
+  `rows`, and per-doc `_all` values (with the geography, the node YAML's
+  `search.geography` columns, of the records above it that it names),
+  including its `_geo_point`: every
   distinct lat/lon of its rows and, for an area (a table with a box), of the
   rows below it that name it (a location's sites' and samples'), one point
   or a list (capped); without any, its box's centre or its nearest
@@ -49,7 +50,7 @@ without changing the document contract.
 
 from typing import Any
 
-from fiesta.domain.data_model import LIST_TYPES, column_values, split_list
+from fiesta.domain.data_model import column_values
 from fiesta.domain.parse import ID_COLUMNS, ParsedContribution
 from fiesta.nodeconfig import (
     ANY_TABLE,
@@ -59,18 +60,6 @@ from fiesta.nodeconfig import (
     NodeConfig,
     number,
 )
-
-# Columns whose (colon-delimited) values feed summary._all facets when present.
-FACETABLE_COLUMNS = {
-    "method_codes",
-    "geologic_classes",
-    "geologic_types",
-    "lithologies",
-    "location_type",
-    "plate_blocks",
-    "tectonic_settings",
-    "citations",
-}
 
 
 def _to_float(value: Any) -> float | None:
@@ -136,36 +125,16 @@ MAX_GEO_POINTS = 500
 # roll-up docs bounded; facets and free-text search degrade gracefully).
 MAX_ALL_VALUES = 500
 
-# A record's geography (the grid's Geography tile): its own values and those
-# of the records above it that it names, as the legacy summaries inherited
-# their parents', so a specimen shows and filters on its site's location and
-# that location's country.
-GEOLOGIC_COLUMNS = ["plate_blocks", "terranes", "geological_province_sections", "tectonic_settings"]
-GEOGRAPHIC_COLUMNS = [
-    "continent_ocean",
-    "country",
-    "ocean_sea",
-    "region",
-    "village_city",
-    "location",
-    "location_type",
-    "location_alternatives",
-]
-INHERITED_COLUMNS = (*GEOLOGIC_COLUMNS, *GEOGRAPHIC_COLUMNS)
-
 
 def _collect_all(columns_def: dict, rows: list[dict], into: dict[str, set]) -> None:
     """Union row values per column — the cross-level `summary._all` roll-up
-    that powers free-text search and facets on parent-level docs."""
+    that powers free-text search and facets on parent-level docs. A list
+    column (List, Matrix, Dictionary) contributes each of its values."""
     for row in rows:
         for column, value in row.items():
             if value in (None, "") or column in ID_COLUMNS:
                 continue
-            column_def = columns_def.get(column, {})
-            if column in FACETABLE_COLUMNS or column_def.get("type") in LIST_TYPES:
-                values = column_values(column_def, value) or split_list(value)
-            else:
-                values = [str(value)]
+            values = column_values(columns_def.get(column, {}), value)
             bucket = into.setdefault(column, set())
             if len(bucket) < MAX_ALL_VALUES:
                 bucket.update(values)
@@ -397,6 +366,7 @@ def summarize(
     named: dict[tuple[str, str], dict[str, Any]] = {}
     # Each named record's geography, own and inherited ({("sites", "S1"): {...}}).
     inherited: dict[tuple[str, str], dict[str, set]] = {}
+    geography = node.search.geography.columns
     areas = node.area_tables
     bodies = planetary_bodies(node, parsed)
     levels = hierarchy[1:]
@@ -448,7 +418,7 @@ def summarize(
             if name not in (None, ""):
                 inherited.setdefault(
                     (level, str(name)),
-                    {c: set(row_all[c]) for c in INHERITED_COLUMNS if row_all.get(c)},
+                    {c: set(row_all[c]) for c in geography if row_all.get(c)},
                 )
             own_has = _columns_with_data(group, has_columns.get(level, set()))
             contribution_has.setdefault(level, set()).update(own_has)

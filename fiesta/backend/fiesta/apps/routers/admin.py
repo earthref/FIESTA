@@ -328,8 +328,17 @@ async def _node_out(session, record: NodeRecord, detail: bool = False) -> dict:
         # Every plugin in the code, for the Plugins tab: switched on per node
         # by `features.plugins`, its options (JSON schema of its Options
         # model, defaults included) edited under `plugins.<name>`.
+        # Its grid tiles, for the Summary Grid tab's tile picker and defaults.
         out["plugins"] = [
-            {"name": name, "description": plugin.description, "schema": plugin.options_schema()}
+            {
+                "name": name,
+                "description": plugin.description,
+                "schema": plugin.options_schema(),
+                "grid_tiles": [
+                    {"cell": t.cell, "label": t.label, "hint": t.hint, "default": t.default}
+                    for t in plugin.grid_tiles
+                ],
+            }
             for name, plugin in sorted(all_plugins().items())
         ]
     return out

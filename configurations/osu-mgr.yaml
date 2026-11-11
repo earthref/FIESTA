@@ -164,7 +164,7 @@ doi:
 pages: []
 
 features:
-  plugins: []
+  plugins: [sample-tiles]
 
 # Production serves the API but not the web app at
 # /OSU-MGR/, and the portal bar leaves it out; a local stack serves both.

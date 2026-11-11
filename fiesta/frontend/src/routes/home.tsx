@@ -12,7 +12,7 @@ import { useNodeConfig } from "../lib/config";
 import { sanitizeHtml } from "../lib/sanitize";
 import type { HomeCard, HomeNews, NodeConfig, SearchPage } from "../lib/types";
 import { cx } from "../lib/utils";
-import { pluginHomeCards } from "../plugins";
+import { pluginHomeCards, pluginResourceCards } from "../plugins";
 
 const RULE = "var(--er-line)";
 
@@ -89,16 +89,8 @@ function defaultResources(config: NodeConfig): HomeCard[] {
       to: `/data-models/${config.data_model_latest}`,
       href: null,
     },
+    ...pluginResourceCards(config),
   ];
-  if (config.has_method_codes) {
-    cards.push({
-      title: "Method\nCodes",
-      icon: "lab",
-      corner_icon: "write",
-      to: "/method-codes",
-      href: null,
-    });
-  }
   cards.push({
     title: "Vocabulary\nLists",
     icon: "list",

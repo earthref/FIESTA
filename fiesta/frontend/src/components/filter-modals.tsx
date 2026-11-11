@@ -3,8 +3,8 @@
 // accordions and the headers' drop-down menus):
 //
 // - FacetModal: a facet's values as a list with their counts, a Find box and a
-//   sort; values that are the node's method codes show their definitions and
-//   are grouped as on the Method Codes page. A column's text box sits above.
+//   sort; values a plugin describes (its facetDescriptions) show definitions
+//   and are grouped as the plugin lists them. A column's text box sits above.
 // - RangeModal: a numeric filter over its distribution (a histogram of the
 //   search's values, linear or log bins, of a chosen count) to brush or click,
 //   with min/max boxes.
@@ -27,7 +27,6 @@ import type {
   DataModelColumn,
   FacetBucket,
   HasColumns,
-  MethodCodes,
   NumberColumns,
   SearchFilter,
   SearchHistogram,
@@ -43,6 +42,7 @@ import {
   queryWithout,
   singularize,
 } from "../lib/utils";
+import { type FacetValueDescription, usePluginFacetDescriptions } from "../plugins";
 import { type BrushRange, EChart, type EChartsOption } from "./echart";
 import { type Area, WHOLE_GLOBE } from "./map/map-points";
 import { type AreaRequest, SearchMap } from "./map/search-map";
@@ -128,28 +128,7 @@ function Highlight({ text, needle }: { text: string; needle: string }) {
 
 export type FacetSpec = { field: string; label: string };
 
-type Described = { definition: string; group: string; order: number };
-
-/** The node's method codes by code: definition, group label and group order. */
-function useMethodCodes(): Map<string, Described> {
-  const { data: config } = useNodeConfig();
-  // The Method Codes page's query, so the two share the fetch.
-  const codes = useQuery({
-    queryKey: ["method-codes"],
-    queryFn: () => api<MethodCodes>("/config/method-codes"),
-    enabled: !!config?.has_method_codes,
-    staleTime: Number.POSITIVE_INFINITY,
-  });
-  return useMemo(() => {
-    const out = new Map<string, Described>();
-    Object.values(codes.data ?? {}).forEach((group, order) => {
-      for (const code of group.codes) {
-        out.set(code.code, { definition: code.definition ?? "", group: group.label, order });
-      }
-    });
-    return out;
-  }, [codes.data]);
-}
+type Described = FacetValueDescription;
 
 /** Each facet's values in the query's `field:"value"` tokens. */
 function selectedIn(q: string, facets: FacetSpec[]): Record<string, string[]> {
@@ -196,7 +175,8 @@ export function FacetModal({
   const [sortBy, setSortBy] = useState<"count" | "name">("count");
   const [selectedOnly, setSelectedOnly] = useState(false);
   const [textDraft, setTextDraft] = useState(text?.value ?? "");
-  const methodCodes = useMethodCodes();
+  const { data: config } = useNodeConfig();
+  const descriptions = usePluginFacetDescriptions(config);
 
   const params = tab ? paramsFor(queryWithout(q, [tab])) : {};
   const buckets = useQuery({
@@ -221,7 +201,7 @@ export function FacetModal({
     const all = [
       ...counted,
       ...(draft[tab] ?? []).filter((key) => !seen.has(key)).map((key) => ({ key, count: 0 })),
-    ].map((row) => ({ ...row, described: methodCodes.get(row.key) }));
+    ].map((row) => ({ ...row, described: descriptions.get(row.key) }));
     return all
       .filter((row) => !selectedOnly || (draft[tab] ?? []).includes(row.key))
       .filter(
@@ -235,9 +215,9 @@ export function FacetModal({
           ? a.key.localeCompare(b.key)
           : b.count - a.count || a.key.localeCompare(b.key),
       );
-  }, [buckets.data, tab, count, draft, methodCodes, selectedOnly, needle, sortBy]);
+  }, [buckets.data, tab, count, draft, descriptions, selectedOnly, needle, sortBy]);
 
-  // Method codes are grouped as on the Method Codes page; other values aren't.
+  // Values a plugin describes are grouped as it lists them; others aren't.
   const grouped = rows.some((row) => row.described);
   const groups = useMemo(() => {
     if (!grouped) return [{ name: "", rows }];

@@ -1,16 +1,15 @@
+// The Method Codes page (/method-codes): every group of the node's codes,
+// filtered by `q` across groups, codes and definitions.
 import { useQuery } from "@tanstack/react-query";
-import { getRouteApi } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
-import { ErrorMessage } from "../components/error-message";
-import { Card, CardContent } from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { PageSpinner } from "../components/ui/spinner";
-import { Table, TBody, Td, THead, Th, Tr } from "../components/ui/table";
-import { api } from "../lib/api";
-import type { MethodCodeGroup, MethodCodes } from "../lib/types";
-import { cx } from "../lib/utils";
-
-const routeApi = getRouteApi("/method-codes");
+import { ErrorMessage } from "@/components/error-message";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { PageSpinner } from "@/components/ui/spinner";
+import { Table, TBody, Td, THead, Th, Tr } from "@/components/ui/table";
+import { cx } from "@/lib/utils";
+import { type MethodCodeGroup, methodCodesQuery } from "./method-codes-data";
 
 function MethodCodeGroupEntry({
   name,
@@ -85,15 +84,11 @@ function MethodCodeGroupEntry({
 }
 
 export function MethodCodesPage() {
-  const search = routeApi.useSearch();
-  const navigate = routeApi.useNavigate();
+  const search = useSearch({ strict: false }) as { q?: string };
+  const navigate = useNavigate();
   const filter = (search.q ?? "").toLowerCase();
 
-  const query = useQuery({
-    queryKey: ["method-codes"],
-    queryFn: () => api<MethodCodes>("/config/method-codes"),
-    staleTime: Number.POSITIVE_INFINITY,
-  });
+  const query = useQuery({ ...methodCodesQuery, staleTime: Number.POSITIVE_INFINITY });
 
   if (query.isPending) return <PageSpinner label="Loading method codes…" />;
   if (query.error) return <ErrorMessage error={query.error} />;
@@ -127,7 +122,11 @@ export function MethodCodesPage() {
           placeholder="Filter groups, codes, and definitions…"
           value={search.q ?? ""}
           onChange={(event) =>
-            navigate({ search: { q: event.target.value || undefined }, replace: true })
+            navigate({
+              to: ".",
+              search: { q: event.target.value || undefined } as never,
+              replace: true,
+            })
           }
         />
       </div>

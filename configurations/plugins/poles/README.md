@@ -31,7 +31,8 @@ location row) and the plugin's own via `gridCell` (the pole on a map
 thumbnail with its ring, pole statistics, age, direction). The Age / A95 / Geospatial filters are `search.filters` entries.
 
 Options: `display_columns`, `base_level`, `after_sub_tab`, `age_color`,
-`plate_boundary_color`.
+`plate_boundary_color`, `facet_columns` (the location columns a pole doc's
+`summary._all` carries, lists split).
 
 API: `GET /v2/{node}/plugins/poles/plate-boundaries`.
 

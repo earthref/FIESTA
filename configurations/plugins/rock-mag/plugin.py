@@ -37,7 +37,6 @@ from pydantic import Field
 
 from fiesta.domain.parse import ParsedContribution
 from fiesta.domain.summarize import (
-    FACETABLE_COLUMNS,
     _geo_point,
     group_rows,
     merge_rows,
@@ -83,6 +82,19 @@ FIELDS = {
 KELVIN = 273.15
 
 
+# The columns a rock_mag doc's summary._all carries (the legacy facet columns).
+FACET_COLUMNS = [
+    "method_codes",
+    "geologic_classes",
+    "geologic_types",
+    "lithologies",
+    "location_type",
+    "plate_blocks",
+    "tectonic_settings",
+    "citations",
+]
+
+
 class RockMagOptions(PluginOptions):
     base_level: str = Field(
         default="Specimens",
@@ -91,6 +103,11 @@ class RockMagOptions(PluginOptions):
     source_table: str = Field(
         default="specimens",
         description="Data-model table whose rows carry the rock-magnetic parameters",
+    )
+    facet_columns: list[str] = Field(
+        default=FACET_COLUMNS,
+        description="Columns copied (colon-delimited lists split) into a result's "
+        "summary._all from its row, else its sample's or site's, for facets and search",
     )
 
 
@@ -358,7 +375,8 @@ class RockMagPlugin(FiestaPlugin):
     def derive_docs(
         self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
     ) -> list[dict]:
-        source = self.options(node).source_table
+        options = self.options(node)
+        source = options.source_table
         sites = {str(r.get("site")): r for r in parsed.tables.get("sites", []) if r.get("site")}
         samples = {
             str(r.get("sample")): r for r in parsed.tables.get("samples", []) if r.get("sample")
@@ -373,7 +391,7 @@ class RockMagPlugin(FiestaPlugin):
             site = sites.get(str(row.get("site") or sample.get("site") or ""), {})
             lineage = [row, sample, site]
             all_block: dict[str, Any] = {}
-            for column in FACETABLE_COLUMNS:
+            for column in options.facet_columns:
                 value = next((r[column] for r in lineage if r.get(column)), None)
                 if value:
                     all_block[column] = [v.strip() for v in str(value).split(":") if v.strip()]

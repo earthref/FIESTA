@@ -1,11 +1,13 @@
 // The plugin UI contract and registry. Each plugin's UI lives with the rest of
 // the plugin in configurations/plugins/<name>/ (docs/plugins.md): its index.tsx
 // default-exports a PluginModule and imports core code as "@/..." (src/).
-import type { ReactNode } from "react";
+import { useQueries } from "@tanstack/react-query";
+import type { ComponentType, ReactNode } from "react";
 import type { SearchParams } from "../components/filter-modals";
 import type {
   FacetBucket,
   GridColumn,
+  HomeCard,
   NodeConfig,
   SearchLevel,
   SearchResult,
@@ -151,6 +153,37 @@ export interface PluginModule {
   ) => PluginFilter[];
   /** Asset tabs for the contribution modal, after its Map tab. */
   contributionTabs?: (config: NodeConfig) => ContributionTab[];
+  /** SPA pages at their own paths (/method-codes); each is a not-found page on
+   * a node that does not activate the plugin. Their slugs are the backend
+   * plugin's `pages`, so no content page takes them. */
+  pages?: PluginPage[];
+  /** Resource cards for the home page's default row (a node YAML without
+   * `features.home.resources`), after its Data Model card. */
+  resourceCards?: (config: NodeConfig) => HomeCard[];
+  /** Definitions of facet values (any facet's), shown beside them in the
+   * filter modals and grouped as they are listed; null for none. */
+  facetDescriptions?: (config: NodeConfig) => FacetDescriptionsQuery | null;
+}
+
+export interface PluginPage {
+  /** The route path, "/<slug>". */
+  path: string;
+  component: ComponentType;
+  /** Its search params (default: none kept). */
+  validateSearch?: (search: Record<string, unknown>) => Record<string, unknown>;
+}
+
+/** A facet value's definition and the group it is listed under (groups in `order`). */
+export interface FacetValueDescription {
+  definition: string;
+  group: string;
+  order: number;
+}
+
+export interface FacetDescriptionsQuery {
+  queryKey: readonly unknown[];
+  queryFn: () => Promise<unknown>;
+  select: (data: unknown) => Map<string, FacetValueDescription>;
 }
 
 const MODULES = import.meta.glob<PluginModule>("@plugins/*/index.tsx", {
@@ -224,4 +257,40 @@ export function pluginSidebarFilters(
   return activePlugins(config).flatMap(
     (plugin) => plugin.sidebarFilters?.(levelName, subTabName, config) ?? [],
   );
+}
+
+/** Every plugin's pages (active or not: the router is built once), by plugin name. */
+export function pluginPages(): { plugin: string; page: PluginPage }[] {
+  return Object.entries(PLUGINS).flatMap(([plugin, module]) =>
+    (module.pages ?? []).map((page) => ({ plugin, page })),
+  );
+}
+
+export function pluginResourceCards(config: NodeConfig | undefined): HomeCard[] {
+  if (!config) return [];
+  return activePlugins(config).flatMap((plugin) => plugin.resourceCards?.(config) ?? []);
+}
+
+// Module-level, so useQueries keeps the merged map until a result changes.
+function mergeDescriptions(
+  results: { data?: Map<string, FacetValueDescription> }[],
+): Map<string, FacetValueDescription> {
+  const out = new Map<string, FacetValueDescription>();
+  for (const result of results) {
+    for (const [key, value] of result.data ?? []) if (!out.has(key)) out.set(key, value);
+  }
+  return out;
+}
+
+/** The active plugins' facet value definitions, merged (the first plugin's win). */
+export function usePluginFacetDescriptions(
+  config: NodeConfig | undefined,
+): Map<string, FacetValueDescription> {
+  const queries = activePlugins(config)
+    .map((plugin) => (config ? plugin.facetDescriptions?.(config) : null))
+    .filter((query): query is FacetDescriptionsQuery => !!query);
+  return useQueries({
+    queries: queries.map((query) => ({ ...query, staleTime: Number.POSITIVE_INFINITY })),
+    combine: mergeDescriptions,
+  });
 }

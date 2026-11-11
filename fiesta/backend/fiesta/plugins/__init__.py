@@ -28,6 +28,7 @@ import inspect
 import sys
 from pathlib import Path
 
+from fiesta.nodeconfig import CORE_GRID_CELLS
 from fiesta.plugins.base import FiestaPlugin
 
 
@@ -81,6 +82,9 @@ def _registry() -> dict[str, FiestaPlugin]:
                 f"{folder}/plugin.py: plugin name {plugin.name!r} must match its folder"
             )
         plugins[plugin.name] = plugin
+    tiles = [tile.cell for plugin in plugins.values() for tile in plugin.grid_tiles]
+    if clash := sorted({c for c in tiles if c in CORE_GRID_CELLS or tiles.count(c) > 1}):
+        raise ValueError(f"plugin grid tiles {clash} repeat a core or another plugin's tile")
     return plugins
 
 
@@ -111,4 +115,21 @@ def active_plugins(node) -> list[FiestaPlugin]:
     for name in {*node.features.plugins, *node.plugins}:
         plugin = plugins[name]
         plugin.check(node, plugin.options(node))
-    return [plugins[name] for name in node.features.plugins]
+    active = [plugins[name] for name in node.features.plugins]
+    # The SPA serves every plugin's pages (inactive ones as not found), so a
+    # content page may not take one on any node.
+    taken = {slug: p.name for p in plugins.values() for slug in p.pages}
+    if clash := sorted(page.slug for page in node.pages if page.slug in taken):
+        owners = ", ".join(taken[slug] for slug in clash)
+        raise ValueError(f"pages {clash} are plugin pages ({owners})")
+    # A grid column names a core tile or one an active plugin adds.
+    tiles = {tile.cell for p in active for tile in p.grid_tiles} | set(CORE_GRID_CELLS)
+    for level in node.search.levels:
+        if unknown := sorted({c.cell for c in level.columns or []} - tiles):
+            offered = {tile.cell: p.name for p in plugins.values() for tile in p.grid_tiles}
+            owners = [f"{c}: plugin {offered[c]!r}" for c in unknown if c in offered]
+            raise ValueError(
+                f"search level {level.name!r} grid names unknown tiles {unknown}"
+                + (f" ({'; '.join(owners)}, not switched on)" if owners else "")
+            )
+    return active
