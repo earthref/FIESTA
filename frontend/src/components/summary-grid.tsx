@@ -4,8 +4,6 @@ import {
   type MouseEvent,
   type ReactNode,
   type RefObject,
-  useEffect,
-  useRef,
   useState,
 } from "react";
 import type { GridColumn, SearchLevel, SearchResult } from "../lib/types";
@@ -87,46 +85,6 @@ const cellStyle: CSSProperties = {
   verticalAlign: "top",
   textAlign: "left",
 };
-
-/**
- * A column menu's text box (`filter=<key>:<text>`, for a column without facet
- * lists): typing updates the search after a pause.
- */
-export function ColumnTextFilter({
-  column,
-  value,
-  onChange,
-}: {
-  column: GridColumn;
-  value: string;
-  onChange: (text: string) => void;
-}) {
-  const [text, setText] = useState(value);
-  const latest = useRef(onChange);
-  latest.current = onChange;
-  useEffect(() => setText(value), [value]);
-  useEffect(() => {
-    if (text === value) return;
-    const timer = window.setTimeout(() => latest.current(text), 400);
-    return () => window.clearTimeout(timer);
-  }, [text, value]);
-  return (
-    <div style={{ padding: "0.5em 1em", borderBottom: "1px solid var(--er-edge)" }}>
-      <div className="mb-1 font-bold">Contains</div>
-      <input
-        type="search"
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") latest.current(text);
-        }}
-        placeholder={`Filter ${column.label}`}
-        aria-label={`Filter by ${column.label}`}
-        className="w-full rounded-sm border border-gray-300 bg-surface px-[0.8em] py-[0.5em] text-[13px] placeholder:text-ink-faint focus:border-node focus:outline-hidden"
-      />
-    </div>
-  );
-}
 
 function HeaderCell({
   column,

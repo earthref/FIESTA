@@ -1492,6 +1492,76 @@ def test_large_maps_are_unique_locations(magic_node, monkeypatch):
     assert requests == [None, {"x": 1}]
 
 
+def test_search_histogram_bins(magic_node, monkeypatch):
+    """The filter modal's range histogram: equal-width bins (in log10 space
+    with `log`, over the values above zero) from the min to the max, the last
+    open above so the max is counted; log falls back to linear without
+    positive values."""
+    import asyncio
+
+    import pytest
+
+    from fiesta.apps.routers import search as router
+
+    assert router.histogram_edges(0, 10, 5, False) == [0, 2, 4, 6, 8, 10]
+    assert router.histogram_edges(1, 1000, 3, True) == pytest.approx([1, 10, 100, 1000])
+    assert router.histogram_edges(7, 7, 40, False) == [7, 7]
+
+    bodies = []
+
+    def client_for(positive_min):
+        class Client:
+            async def search(self, index, body):
+                bodies.append(body)
+                if "all" in body["aggs"]:
+                    return {
+                        "hits": {"total": {"value": 9}},
+                        "aggregations": {
+                            "all": {"min": -5.0, "max": 1000.0},
+                            "positive": {"s": {"value": positive_min}},
+                        },
+                    }
+                n = len(body["aggs"]["bins"]["range"]["ranges"])
+                return {"aggregations": {"bins": {"buckets": [{"doc_count": 2}] * n}}}
+
+        return Client()
+
+    async def unconstrained(*args):
+        return None
+
+    monkeypatch.setattr(router, "_constrain", unconstrained)
+    run = lambda field="summary.poles.age", **kw: asyncio.run(  # noqa: E731
+        router.search_histogram(
+            None,
+            magic_node,
+            "locations",
+            field=field,
+            range_=None,
+            bbox=None,
+            filter_=None,
+            query=None,
+            contribution=None,
+            private_key=None,
+            **kw,
+        )
+    )
+
+    monkeypatch.setattr(router, "get_opensearch", lambda: client_for(1.0))
+    out = run(bins=3, log=True)
+    ranges = bodies[-1]["aggs"]["bins"]["range"]["ranges"]
+    assert out.log and out.total == 9 and out.counted == 6
+    assert ranges[0]["from"] == 1.0 and "to" not in ranges[-1]
+    assert [b.hi for b in out.bins] == pytest.approx([10, 100, 1000])
+
+    monkeypatch.setattr(router, "get_opensearch", lambda: client_for(None))
+    out = run(bins=4, log=True)
+    assert not out.log and out.bins[0].lo == -5.0 and out.bins[-1].hi == 1000.0
+
+    # Only summary fields, never a private one.
+    with pytest.raises(router.HTTPException):
+        run(field="summary._private.key", bins=4, log=False)
+
+
 def test_reference_metadata_in_the_legacy_shape():
     """A reference DOI's Crossref (or DataCite) record becomes the legacy
     `_reference`; a fetch's outcome decides when the DOI is fetched again."""

@@ -342,3 +342,17 @@ export interface MethodCodeGroup {
 }
 
 export type MethodCodes = Record<string, MethodCodeGroup>;
+
+/** GET /search/{table}/histogram: a numeric field's distribution over a search. */
+export interface SearchHistogram {
+  total: number;
+  /** Docs with a value in a bin. */
+  counted: number;
+  min: number | null;
+  max: number | null;
+  /** The smallest value above zero (a log scale's lower bound). */
+  positive_min: number | null;
+  /** The bins are equal in log10 space (asked for, and positive values exist). */
+  log: boolean;
+  bins: { lo: number; hi: number; count: number }[];
+}

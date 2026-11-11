@@ -216,9 +216,10 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet or a facet of the level's grid columns, else 422), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet or a facet of the level's grid columns, else 422), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `contribution` + `private_key?` (see below), `totals` (bool, see below) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
+| GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (default 40, 1–200), `log` (bool), `query`, `range`, `bbox`, `filter`, `contribution`, `private_key?` | `SearchHistogram` |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 | GET | `/v2/{repository}/contributions/{id}/versions` | `private_key?` | the `previous_id` chain, oldest first: every published version plus this one — `[{id, version, data_model_version, timestamp, contributor, is_activated, is_latest}]` |
@@ -294,6 +295,25 @@ one is `null`), up to 50,000 rows (`truncated` past that), for plots of many
 docs (the `rock-mag` plugin's Rock Magnetism view). A field must be a path
 under `summary` at least three deep, and no part of it may start with
 `_private` (422 otherwise). Visibility is the same as the search's.
+
+```json
+SearchHistogram = {
+  "total": 53, "counted": 53,
+  "min": 19000000.0, "max": 1779100032.0, "positive_min": 19000000.0,
+  "log": false,
+  "bins": [{"lo": 19000000.0, "hi": 371020006.4, "count": 10}, ...]
+}
+```
+
+`histogram` is a numeric summary field's distribution over the matches (a
+range filter's modal; the caller leaves the field's own range out of
+`range`): `bins` equal-width bins from its min to its max, each `[lo, hi)` and
+the last closed so the max is counted, as `range` aggregation buckets. With
+`log` the bins are equal in log10 between `positive_min` (the smallest value
+above zero) and the max, values at or below zero left out; without positive
+values `log` comes back false and the bins are linear. `counted` docs have a
+value in a bin; a field no match has has no bins, and a text field (row values
+are strings) is a 422. Field rules and visibility are as for `values`.
 
 Positions (`summary._all._geo_point`, one `{lat, lon}` or a list): a record's
 rows' own `lat`/`lon` (a box that is a single point counts as one). A record of
