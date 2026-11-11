@@ -41,6 +41,20 @@ What stays custom, because PmagPy has no function for it:
   only to call `.to_dict("records")`, so they get a list that answers it
   (pandas per specimen cost more than the science).
 
+**Search grid thumbnail.** A contribution's Plot tile shows one of its plots
+with the total plot count in the corner (the legacy grid showed one cached PNG
+and a count); a click opens that plot's tab. Indexing (`compute_thumbnails`)
+keeps one thumbnail per plot type in `summary.pmag_plots._geometry.thumbnails`
+(stored, never indexed): a random specimen's Zijderveld components
+(geographic when oriented), a random group's equal-area positions, a
+specimen's Arai steps and a hysteresis loop, each at most 150 points. The
+choice is seeded by the contribution id, so a re-index keeps it. Only the
+chosen records go through PmagPy (well under 2 s on the largest local
+contribution), and a type that fails is left out. The browser picks one type
+per page load and draws it as SVG (`pmag-plots-thumbnail.tsx`). Records below
+the contribution keep the "No Plots" box, since the thumbnails are per
+contribution.
+
 `summary.pmag_plots` of one `pmag_plots` doc per contribution holds the counts
 (`compute_counts`: the same row selection, without the PmagPy calls);
 `GET /v2/{node}/plugins/pmag-plots/contributions/{id}/{kind}` serves the plot

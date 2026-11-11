@@ -24,7 +24,10 @@ whose `summary.pmag_plots` block counts the plots of each type, so the
 contribution view shows the tabs and their counts without reading the file;
 the counts take the same row selection without calling PmagPy. The plot
 data itself (GET /contributions/{id}/{kind}) is computed from the file on
-demand and cached per contribution revision.
+demand and cached per contribution revision. The same doc carries one small
+thumbnail per plot type (`compute_thumbnails`, under `_geometry`), which the
+search grid's Plot tile draws with the total count, as the legacy grid showed
+one cached PNG and a count.
 """
 
 import asyncio
@@ -32,6 +35,7 @@ import gzip
 import json
 import logging
 import math
+import random
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
@@ -965,6 +969,104 @@ def compute_counts(parsed: ParsedContribution) -> dict[str, int]:
     return _counts(demag, eqarea, arai, hyst)
 
 
+# --- grid thumbnails ----------------------------------------------------------------------
+
+THUMBNAIL_POINTS = 150
+_TRIES = 5  # candidates tried per kind before giving up on it
+
+
+def _thin(values: list, limit: int = THUMBNAIL_POINTS) -> list:
+    """Every nth value, keeping the last, so a long loop still closes."""
+    if len(values) <= limit:
+        return values
+    step = (len(values) - 1) / (limit - 1)
+    return [values[round(i * step)] for i in range(limit)]
+
+
+def _zijd_thumbnail(specimen: str, rows: list[dict], hierarchy: _Hierarchy) -> dict | None:
+    orientation = hierarchy.orientation.get(hierarchy.sample_of.get(specimen, ""))
+    item = demag_specimen(rows, orientation, [])
+    if item is None:
+        return None
+    coords = item["coords"].get("g") or item["coords"]["s"]
+    return {"name": specimen, **{k: _thin([_r(v, 3) for v in coords[k]]) for k in "ned"}}
+
+
+def _eqarea_thumbnail(group: tuple) -> dict | None:
+    _level, _group_level, name, rows, name_column = group
+    sets = _direction_sets(rows, name_column)
+    found = next((sets[c] for c in ("g", "t", "s") if c in sets), None)
+    lines = [d for d in (found or {}).get("dirs", []) if "xy" in d]
+    if not lines:
+        return None
+    lines = _thin(lines)
+    return {
+        "name": name,
+        "x": [_r(d["xy"][0], 3) for d in lines],
+        "y": [_r(d["xy"][1], 3) for d in lines],
+        "up": [int(d["inc"] < 0) for d in lines],
+    }
+
+
+def _arai_thumbnail(specimen: str, rows: list[dict]) -> dict | None:
+    item = arai_specimen(rows, None)
+    if item is None:
+        return None
+    steps = item["steps"]
+    return {"name": specimen, "x": _thin(steps["x"]), "y": _thin(steps["y"])}
+
+
+def _hyst_thumbnail(loop: tuple) -> dict | None:
+    specimen, _experiment, column, rows = loop
+    fields = [_num(r, "meas_field_dc") or 0.0 for r in rows]
+    moments = [_num(r, column) or 0.0 for r in rows]
+    scale = max(map(abs, moments)) or 1.0
+    return {
+        "name": specimen,
+        "field": _thin([_sig(f, 3) for f in fields]),
+        "m": _thin([_r(m / scale, 3) for m in moments]),
+    }
+
+
+def compute_thumbnails(parsed: ParsedContribution, seed: Any) -> dict[str, dict]:
+    """One plot of each type, its record chosen at random (seeded, so a
+    re-index draws the same one), reduced to the points the search grid's
+    100px Plot tile draws: a specimen's Zijderveld projections (geographic
+    when oriented), a site's or location's equal-area directions, a
+    specimen's Arai steps and a hysteresis loop (moments over their maximum).
+    Only the chosen records go through PmagPy, and a type that fails is left
+    out rather than failing the index."""
+    rng = random.Random(str(seed))
+    hierarchy = _Hierarchy(parsed)
+    by_specimen = _by_specimen(parsed.tables.get("measurements", []))
+    specimens = sorted(by_specimen)
+    candidates: dict[str, tuple[list, Callable[[Any], dict | None]]] = {
+        "zijd": (
+            [s for s in specimens if _demag_rows(by_specimen[s]) is not None],
+            lambda s: _zijd_thumbnail(s, by_specimen[s], hierarchy),
+        ),
+        "eqarea": (
+            [g for g in _direction_groups(parsed, hierarchy) if _has_direction(g[3])],
+            _eqarea_thumbnail,
+        ),
+        "arai": (
+            [s for s in specimens if _arai_rows(by_specimen[s]) is not None],
+            lambda s: _arai_thumbnail(s, by_specimen[s]),
+        ),
+        "hyst": (list(_hysteresis_groups(parsed)), _hyst_thumbnail),
+    }
+    thumbnails: dict[str, dict] = {}
+    for plot_type, (items, build) in candidates.items():
+        for item in rng.sample(items, min(_TRIES, len(items))):
+            try:
+                if thumbnail := build(item):
+                    thumbnails[plot_type] = thumbnail
+                    break
+            except Exception:
+                logger.exception("pmag-plots: the %s thumbnail failed", plot_type)
+    return thumbnails
+
+
 # --- serving ------------------------------------------------------------------------------
 
 
@@ -1076,10 +1178,13 @@ class PmagPlotsPlugin(FiestaPlugin):
         counts = compute_counts(parsed)
         if not any(counts.values()):
             return []
+        # The grid's Plot tile draws one of these (`_geometry`: stored, never indexed).
+        thumbnails = compute_thumbnails(parsed, contribution_meta.get("id"))
+        block: dict[str, Any] = {**counts, "_geometry": {"thumbnails": thumbnails}}
         return [
             {
                 "type": "pmag_plots",
-                "summary": {"contribution": contribution_meta, "pmag_plots": counts, "_all": {}},
+                "summary": {"contribution": contribution_meta, "pmag_plots": block, "_all": {}},
             }
         ]
 
