@@ -3,7 +3,7 @@
 Interprets the validation DSL embedded in data-model column definitions
 (`validations: ['required()', 'cv("geologic_classes")', 'min(-90)', ...]`)
 against parsed contribution rows, using the node's controlled/suggested
-vocabularies and method codes.
+vocabularies and those its active plugins supply (FiestaPlugin.vocabularies).
 
 Implemented checks: unknown table/column, column type coercion
 (Integer/Number/Timestamp), required(), cv(), sv() (warning), min(), max(),
@@ -98,19 +98,16 @@ class Validator:
         self.model = node.load_data_model(version)
         self.cvs = node.load_controlled_vocabularies()
         self.svs = node.load_suggested_vocabularies()
-        self.method_codes = self._flatten_method_codes(node.load_method_codes())
-        self._cv_items_cache: dict[str, set[str]] = {}
+        from fiesta.plugins import active_plugins
 
-    @staticmethod
-    def _flatten_method_codes(method_codes: dict | None) -> set[str] | None:
-        if not method_codes:
-            return None
-        codes: set[str] = set()
-        for group in method_codes.values():
-            for entry in group.get("codes", []):
-                if entry.get("code"):
-                    codes.add(str(entry["code"]).upper())
-        return codes
+        self.plugin_cvs = {
+            name: vocabulary
+            for plugin in active_plugins(node)
+            for name, vocabulary in plugin.vocabularies(node).items()
+        }
+        self._cv_items_cache: dict[str, set[str] | None] = {}
+        # Vocabularies whose values are compared upper-cased.
+        self._upper: set[str] = set()
 
     def _cv_items(self, name: str) -> set[str] | None:
         if name in self._cv_items_cache:
@@ -119,8 +116,11 @@ class Validator:
         items = None
         if vocab is not None:
             items = {str(i["item"]) for i in vocab.get("items", []) if "item" in i}
-        elif name == "method_codes" and self.method_codes is not None:
-            items = self.method_codes
+        elif (supplied := self.plugin_cvs.get(name)) is not None:
+            items = set(supplied.items)
+            if supplied.case_insensitive:
+                items = {i.upper() for i in items}
+                self._upper.add(name)
         self._cv_items_cache[name] = items
         return items
 
@@ -245,7 +245,7 @@ class Validator:
         target = report.errors if error else report.warnings
         kind = "controlled" if error else "suggested"
         for value in values:
-            candidate = value.upper() if vocab_name == "method_codes" else value
+            candidate = value.upper() if error and vocab_name in self._upper else value
             if candidate not in items:
                 target.append(
                     Issue(

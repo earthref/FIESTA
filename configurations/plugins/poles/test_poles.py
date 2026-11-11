@@ -35,7 +35,7 @@ def test_poles_derive_docs(magic_node):
 
 def test_poles_is_searchable_table_not_top_level(magic_node):
     plugins = active_plugins(magic_node)
-    assert [p.name for p in plugins] == ["poles", "rock-mag", "pmag-plots"]
+    assert [p.name for p in plugins][:3] == ["poles", "rock-mag", "pmag-plots"]
     # Poles is NOT a top-level tab...
     assert plugins[0].search_levels(magic_node) == []
     # ...but `poles` is a searchable table, surfaced as a Locations sub-tab.

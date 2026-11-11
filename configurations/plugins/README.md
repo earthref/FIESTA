@@ -13,6 +13,8 @@ its options, its routes). A node switches a plugin on with
 | [depth-plot](depth-plot/README.md) | CDR |
 | [plateau-calculations](plateau-calculations/README.md) | KArAr |
 | [periodic-table](periodic-table/README.md) | KdD |
+| [method-codes](method-codes/README.md) | MagIC |
+| [sample-tiles](sample-tiles/README.md) | every node |
 
 How to write one, the hooks, and how the tooling reaches this folder:
 [docs/plugins.md](../../docs/plugins.md). `conftest.py` and `ruff.toml` here

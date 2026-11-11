@@ -1208,11 +1208,21 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
     # Header menus: listed tiles take the sidebar's facet lists instead of a
     # text box, the map tile the area, the rest a text box.
     assert by_key["map"].geospatial and not by_key["plot"].geospatial
-    assert by_key["geology"].facets == ["geologic_classes", "geologic_types", "lithologies"]
-    assert by_key["geology"].filter_fields == [] and by_key["method_codes"].facets
-    assert by_key["age"].facets == [] and by_key["age"].filter_fields
+    # The Geography tile lists the node's `search.geography` columns.
+    assert by_key["geo"].facets == magic_node.search.geography.columns
+    assert by_key["geo"].filter_fields == [] and by_key["citations"].facets == ["citations"]
+    # The active plugins' default tiles go between Geography and Citations
+    # (sample-tiles' own defaults are tested with the plugin).
+    keys = list(by_key)
+    assert keys[keys.index("geo") + 1 : keys.index("citations")] == [
+        "geology",
+        "age",
+        "intensity",
+        "method_codes",
+    ]
     # Summary values are strings, so a numeric column sorts by script.
-    (script, tie) = sort_clauses(by_key["age"], "desc")
+    inclination = SearchLevel(name="Sites", table="sites", columns=[GridColumn(column="dir_inc")])
+    (script, tie) = sort_clauses(level_columns(magic_node, inclination)[0], "desc")
     assert script["_script"]["type"] == "number" and script["_script"]["order"] == "desc"
     assert tie == {"summary.contribution.timestamp": {"order": "desc", "unmapped_type": "date"}}
 
@@ -1235,15 +1245,15 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
         name="Sites",
         table="sites",
         columns=[
-            GridColumn(cell="age", sortable=False, filterable=False),
+            GridColumn(cell="contributed", sortable=False, filterable=False),
             GridColumn(column="site", sort_field="summary.sites.site.raw", numeric=True, facets=[]),
-            GridColumn(cell="geology", facets=["lithologies"], filter_fields=["summary._all.x"]),
+            GridColumn(cell="geo", facets=["country"], filter_fields=["summary._all.x"]),
         ],
     )
-    age, site, geology = level_columns(magic_node, level)
-    assert age.sort is None and age.filter_fields == [] and age.facets == []
+    contributed, site, geo = level_columns(magic_node, level)
+    assert contributed.sort is None and contributed.filter_fields == [] and not contributed.facets
     assert site.facets == [] and site.filter_fields == ["summary.sites.site"]
-    assert geology.facets == ["lithologies"] and geology.filter_fields == ["summary._all.x"]
+    assert geo.facets == ["country"] and geo.filter_fields == ["summary._all.x"]
     assert site.sort.type == "number" and site.sort.fields == ["summary.sites.site.raw"]
 
     # A filter matches every typed word as a prefix, special characters escaped.

@@ -138,7 +138,6 @@ after its YAML is merged and deployed, because the frontend is built per node.
 | GET | `/v2/{repository}/config/data-models/{version}` | Full data model JSON for a version (404 if unknown) |
 | GET | `/v2/{repository}/config/vocabularies/controlled` | `{<name>: {label, database_column, items: [{item, label?}]}}` |
 | GET | `/v2/{repository}/config/vocabularies/suggested` | same shape |
-| GET | `/v2/{repository}/config/method-codes` | `{<group>: {label, codes: [{code, definition, ...}]}}` (404 if the node has none) |
 
 `GET /v2/{repository}/config` response:
 
@@ -171,9 +170,10 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "features": {"plugins": ["poles"]},
   "publish": {"api": true, "web": true},
   "web_published": true,
-  "has_method_codes": true,
   "doi_prefix": "10.7288",
-  "plugins": {"poles": { /* frontend_config per active plugin */ }},
+  "geography": {"geologic": ["plate_blocks", "terranes"], "geographic": ["country", "location"]},
+  "search_placeholder": "e.g. metamorphic \"field intensity\" -precambrian",
+  "plugins": {"poles": { /* frontend_config per active plugin */ }, "method-codes": {"has_codes": true}},
   "deployment_nodes": ["MagIC", "KdD", "CDR", "KArAr", "ERDA", "OSU-MGR"],
   "hidden_nodes": ["OSU-MGR"]
 }
@@ -387,20 +387,23 @@ Summaries grid in order: `{key, cell, label, width, column?, subtitle_column?,
 format?, sortable, filterable, facets, geospatial}`. `cell` names the tile (`record` — citation, then
 title or the record's name, then date and contributor, one column filtered on
 all of them; the default first column —, `citation`, `name`,
-`contributed`, `download`, `links`, `counts`, `map`, `plot`, `geo`, `geology`,
-`age`, `intensity`, `method_codes`, `citations`, or `field` / `title` for a
-`column` of the level's summary block); `key` is the column (field/title) or the
-tile. They come from the node YAML's `search.levels[].columns` (admin Summary
-Grid tab), each unset field filled from the tile's defaults
-(`fiesta.search.grid`), or the default tiles when a level sets none. A sortable
-column sorts on a `.raw` keyword (numbers — data-model `Number` columns, age,
-intensity — by a script that parses the string values; timestamp and id on
+`contributed`, `download`, `links`, `counts`, `map`, `plot`, `geo` (the node
+YAML's `search.geography` columns), `citations`, a tile an active plugin adds
+(`sample-tiles`: `geology`, `age`, `intensity`, `method_codes`), or `field` /
+`title` for a `column` of the level's summary block); `key` is the column
+(field/title) or the tile. They come from the node YAML's
+`search.levels[].columns` (admin Summary Grid tab), each unset field filled
+from the tile's defaults (`fiesta.search.grid`, or the plugin's
+`grid_tile_fields`), or the default tiles when a level sets none (the core's,
+with the active plugins' default tiles before `citations`). A sortable
+column sorts on a `.raw` keyword (numbers — data-model `Number` columns, a
+plugin tile's number sort (age, intensity) — by a script that parses the string values; timestamp and id on
 their typed fields). `filter=<key>:<text>` keeps the records whose filterable
 column's text fields hold every typed word as a prefix (`simple_query_string`,
 lenient); an unknown or unsortable/unfilterable key is a 422. A column's header
-filter menu lists its `facets` (summary._all columns: geo → the geologic and
-geographic columns, geology → classes / types / lithologies, method_codes,
-citations, and a `field` column whose data-model type is String or List → that
+filter menu lists its `facets` (summary._all columns: geo → the geography
+columns, citations, a plugin tile's (geology → classes / types / lithologies,
+method_codes), and a `field` column whose data-model type is String or List → that
 column) with the sidebar's checkbox lists: they filter through `<column>:"<value>"`
 query tokens and are counted with `facet=<column>`. `filterable` (a text box,
 `filter=`) is set only for a column without facets, or one configured with
@@ -525,6 +528,7 @@ loading), which enforces the same visibility rules as the core API.
 | Method | Path | Plugin (node) |
 |---|---|---|
 | GET | `/v2/{repository}/plugins/poles/plate-boundaries` | `poles` (MagIC) — GeoJSON |
+| GET | `/v2/{repository}/plugins/method-codes` | `method-codes` (MagIC) — `{<group>: {label, codes: [{code, definition, ...}]}}` (404 if the node has no codes file); was `/config/method-codes` until 2026-11-11 |
 | GET | `/v2/{repository}/plugins/pmag-plots/contributions/{id}/{kind}` | `pmag-plots` (MagIC) — plot data, `kind` ∈ `demag`, `eqarea`, `arai`, `hyst`; counts are `summary.pmag_plots` of `GET /search/pmag_plots?contribution={id}` |
 | GET | `/v2/{repository}/plugins/depth-plot/contributions/{id}/measurements` | `depth-plot` (CDR) |
 | GET | `/v2/{repository}/plugins/plateau-calculations/contributions/{id}/experiments/{name}/plateau` | `plateau-calculations` (KArAr) |

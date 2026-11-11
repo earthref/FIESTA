@@ -10,8 +10,8 @@ export interface SearchLevel {
   columns?: GridColumn[];
 }
 
-/** The tiles a summary grid column can show (fiesta.search.grid). */
-export type GridCellKind =
+/** The core's summary grid tiles (fiesta.search.grid). */
+export type CoreGridCell =
   | "record"
   | "citation"
   | "name"
@@ -22,13 +22,13 @@ export type GridCellKind =
   | "map"
   | "plot"
   | "geo"
-  | "geology"
-  | "age"
-  | "intensity"
-  | "method_codes"
   | "citations"
   | "field"
   | "title";
+
+/** The tile a summary grid column shows: a core tile or a plugin's
+ * (FiestaPlugin.grid_tiles, rendered by its `gridCell`). */
+export type GridCellKind = CoreGridCell | (string & {});
 
 /** One summary grid column, resolved by the API (label, width and defaults filled in). */
 export interface GridColumn {
@@ -142,7 +142,10 @@ export interface NodeConfig {
   };
   /** Active plugins with their per-node configuration, keyed by plugin name. */
   plugins: Record<string, Record<string, unknown>>;
-  has_method_codes: boolean;
+  /** A record's geography columns (node YAML `search.geography`): the Geography tile's lines. */
+  geography?: { geologic: string[]; geographic: string[] };
+  /** The search box's example query (node YAML `search.placeholder`). */
+  search_placeholder?: string;
   /** Keys of every node the API serves; the portal bar links them to their
    * instances next to this one off the production hosts (lib/portals.ts). */
   deployment_nodes?: string[];
@@ -373,19 +376,6 @@ export interface Vocabulary {
 }
 
 export type Vocabularies = Record<string, Vocabulary>;
-
-export interface MethodCode {
-  code: string;
-  definition: string;
-  [key: string]: unknown;
-}
-
-export interface MethodCodeGroup {
-  label: string;
-  codes: MethodCode[];
-}
-
-export type MethodCodes = Record<string, MethodCodeGroup>;
 
 /** GET /search/{table}/histogram: a numeric field's distribution over a search. */
 export interface SearchHistogram {

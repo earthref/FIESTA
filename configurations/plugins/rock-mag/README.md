@@ -51,7 +51,8 @@ transition type, brushing any panel selects those specimens on all of them and
 lists them, CSV download. The plots read `GET /search/rock_mag/values`; the
 range filters are `search.filters` entries on `summary.rock_mag.<field>`.
 
-Options: `base_level`, `source_table`.
+Options: `base_level`, `source_table`, `facet_columns` (the columns a result's
+`summary._all` takes from its row, else its sample's or site's, lists split).
 
 | File | What |
 |---|---|

@@ -20,7 +20,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Literal
 
-from fiesta.domain.summarize import INHERITED_COLUMNS
 from fiesta.nodeconfig import GridColumn, NodeConfig, SearchLevel
 
 SortType = Literal["keyword", "number", "date", "long"]
@@ -28,22 +27,11 @@ SortType = Literal["keyword", "number", "date", "long"]
 _CONTRIBUTION = "summary.contribution"
 _REFERENCE = f"{_CONTRIBUTION}._reference"
 
-# The default tiles, in the legacy result card's order; download and links
-# exist only on contribution records.
-DEFAULT_CELLS = [
-    "record",
-    "download",
-    "links",
-    "counts",
-    "map",
-    "plot",
-    "geo",
-    "geology",
-    "age",
-    "intensity",
-    "method_codes",
-    "citations",
-]
+# The default tiles, in the legacy result card's order, with the active
+# plugins' default tiles (FiestaPlugin.grid_tiles) between the two lists;
+# download and links exist only on contribution records.
+DEFAULT_CELLS = ["record", "download", "links", "counts", "map", "plot", "geo"]
+DEFAULT_TAIL_CELLS = ["citations"]
 CONTRIBUTION_ONLY = {"download", "links"}
 
 
@@ -97,9 +85,10 @@ _FACET_TYPES = {"String", "List"}
 
 
 def _defaults(
-    node: NodeConfig, level: SearchLevel, col: GridColumn, columns: dict
+    node: NodeConfig, level: SearchLevel, col: GridColumn, columns: dict, tiles: dict
 ) -> tuple[str, int, Sort | None, list[str], list[str]]:
-    """A tile's default header label, width, sort, text filter fields and facets."""
+    """A tile's default header label, width, sort, text filter fields and
+    facets; `tiles` are the active plugins' (`_plugin_tiles`)."""
     table = level.table
     match col.cell:
         case "record":
@@ -107,7 +96,7 @@ def _defaults(
             # ("Contribution", "Site"), sorted like its first line that differs
             # per level (citation, or the record's name), filtered on all three.
             parts = [
-                _defaults(node, level, GridColumn(cell=cell), columns)
+                _defaults(node, level, GridColumn(cell=cell), columns, tiles)
                 for cell in ("citation", "name", "contributed")
             ]
             filters = list(dict.fromkeys(f for part in parts for f in part[3]))
@@ -172,43 +161,11 @@ def _defaults(
         case "plot":
             return "Plot", 100, None, [], []
         case "geo":
-            geography = list(INHERITED_COLUMNS)
+            geography = node.search.geography.columns
             return "Geography", 125, None, _all(*geography), geography
-        case "geology":
-            return (
-                "Geology",
-                125,
-                Sort(_all("geologic_classes.raw"), "keyword"),
-                _all("geologic_classes", "geologic_types", "lithologies"),
-                ["geologic_classes", "geologic_types", "lithologies"],
-            )
-        case "age":
-            return (
-                "Age",
-                120,
-                Sort(_all("ages.raw", "age.raw"), "number"),
-                _all("ages", "age"),
-                [],
-            )
-        case "intensity":
-            return (
-                "Intensity",
-                90,
-                Sort(_all("int_abs.raw", "intensities.raw"), "number"),
-                [],
-                [],
-            )
-        case "method_codes":
-            return (
-                "Method Codes",
-                125,
-                Sort(_all("method_codes.raw"), "keyword"),
-                _all("method_codes"),
-                ["method_codes"],
-            )
         case "citations":
             return "Citations", 125, None, _all("citations", "citation_dois"), ["citations"]
-        case _:  # field / title: one column of the level's summary block
+        case "field" | "title":  # one column of the level's summary block
             path = f"summary.{table}.{col.column}"
             kind = columns.get(col.column, {}).get("type")
             label = columns.get(col.column, {}).get("label") or str(col.column)
@@ -221,15 +178,33 @@ def _defaults(
             # title (one per record), number or date is typed into a text box.
             facets = [str(col.column)] if col.cell == "field" and kind in _FACET_TYPES else []
             return label, width, sort, filters, facets
+        case cell:  # a plugin's tile (fiesta.plugins.active_plugins checked the name)
+            if cell not in tiles:
+                raise ValueError(f"no grid tile {cell!r} on node {node.node.key!r}")
+            plugin, tile = tiles[cell]
+            fields = plugin.grid_tile_fields(node, level, cell)
+            sort = Sort(fields.sort_fields, fields.sort_type) if fields.sort_fields else None
+            return tile.label, tile.width, sort, fields.filter_fields, fields.facets
+
+
+def _plugin_tiles(node: NodeConfig) -> dict:
+    """{cell: (plugin, GridTile)} for the tiles the node's active plugins add."""
+    from fiesta.plugins import active_plugins
+
+    return {
+        tile.cell: (plugin, tile) for plugin in active_plugins(node) for tile in plugin.grid_tiles
+    }
 
 
 def level_columns(node: NodeConfig, level: SearchLevel) -> list[ResolvedColumn]:
     """The level's grid columns with every default filled in."""
     configured = level.columns
+    tiles = _plugin_tiles(node)
     if configured is None:
+        plugin_defaults = [cell for cell, (_, tile) in tiles.items() if tile.default]
         configured = [
             GridColumn(cell=cell)
-            for cell in DEFAULT_CELLS
+            for cell in [*DEFAULT_CELLS, *plugin_defaults, *DEFAULT_TAIL_CELLS]
             if level.table == "contribution" or cell not in CONTRIBUTION_ONLY
         ]
     tables = node.load_data_model(node.data_model.latest)["tables"]
@@ -238,7 +213,7 @@ def level_columns(node: NodeConfig, level: SearchLevel) -> list[ResolvedColumn]:
     geo = level.table in node.geo_tables
     out = []
     for col in configured:
-        label, width, sort, filters, facets = _defaults(node, level, col, columns)
+        label, width, sort, filters, facets = _defaults(node, level, col, columns, tiles)
         if col.sort_field:
             numeric = col.numeric
             if numeric is None:

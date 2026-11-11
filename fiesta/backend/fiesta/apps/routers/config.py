@@ -61,11 +61,3 @@ async def get_controlled_vocabularies(node: NodeDep) -> dict:
 @router.get("/vocabularies/suggested")
 async def get_suggested_vocabularies(node: NodeDep) -> dict:
     return node.load_suggested_vocabularies()
-
-
-@router.get("/method-codes")
-async def get_method_codes(node: NodeDep) -> dict:
-    codes = node.load_method_codes()
-    if codes is None:
-        raise HTTPException(404, "this node has no method codes")
-    return codes

@@ -13,11 +13,12 @@ def _with_options(node, options):
 
 
 def test_kdd_activates_the_periodic_table(kdd_node):
-    plugins = active_plugins(kdd_node)
-    assert [p.name for p in plugins] == ["periodic-table"]
-    options = plugins[0].options(kdd_node)
+    plugins = {p.name: p for p in active_plugins(kdd_node)}
+    assert "periodic-table" in plugins
+    plugin = plugins["periodic-table"]
+    options = plugin.options(kdd_node)
     assert options == PeriodicTableOptions(table="kds", column="element")
-    config = plugins[0].frontend_config(kdd_node)
+    config = plugin.frontend_config(kdd_node)
     assert config["column"] == "element" and config["levels"] == []
     assert config["label"] == "Periodic Table of Elements"
 

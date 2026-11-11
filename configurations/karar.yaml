@@ -18,6 +18,10 @@ node:
 
 search:
   index: karar
+  # A record's geography, inherited by the records below that name it and
+  # listed by the summary grid's Geography tile.
+  geography:
+    geographic: [continent_ocean, country, region, village_city, location, location_type, location_alternatives]
   levels:
     - { name: Contributions, table: contribution }
     - { name: Samples, table: samples, count_field: summary.samples._n_results }
@@ -78,7 +82,7 @@ plugins:
     min_ar39_percent: 50.0
 
 features:
-  plugins: [plateau-calculations]
+  plugins: [plateau-calculations, sample-tiles]
 
 # Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).
 # The public archive bucket comes first; `karar-contributions` is the latest-only

@@ -14,10 +14,37 @@ def test_registry_names():
         "plateau-calculations",
         "pmag-plots",
         "periodic-table",
+        "method-codes",
+        "sample-tiles",
     }
     for plugin in all_plugins().values():
         assert plugin.description
         assert plugin.options_schema()["type"] == "object"
+
+
+def test_plugin_pages_and_grid_tiles_are_checked(magic_node, sc_node):
+    from fiesta.nodeconfig import GridColumn, PageConfig
+
+    # A content page may not take a plugin's page slug, on any node.
+    pages = [*sc_node.pages, PageConfig(slug="method-codes", title="Codes")]
+    with pytest.raises(ValueError, match=r"pages \['method-codes'\] are plugin pages"):
+        active_plugins(sc_node.model_copy(update={"pages": pages}))
+    # A grid column names a core tile or one an active plugin adds.
+    level = magic_node.search.levels[2].model_copy(
+        update={"columns": [GridColumn(cell="geo"), GridColumn(cell="intensity")]}
+    )
+    levels = [*magic_node.search.levels]
+    levels[2] = level
+    search = magic_node.search.model_copy(update={"levels": levels})
+    active_plugins(magic_node.model_copy(update={"search": search}))
+    features = magic_node.features.model_copy(update={"plugins": ["poles"]})
+    off = magic_node.model_copy(update={"search": search, "features": features})
+    with pytest.raises(ValueError, match="unknown tiles \\['intensity'\\].*'sample-tiles'"):
+        active_plugins(off)
+    levels[2] = level.model_copy(update={"columns": [GridColumn(cell="nope")]})
+    search = magic_node.search.model_copy(update={"levels": levels})
+    with pytest.raises(ValueError, match="unknown tiles \\['nope'\\]"):
+        active_plugins(magic_node.model_copy(update={"search": search}))
 
 
 def test_plugin_options_come_from_the_node_yaml(magic_node, karar_node):

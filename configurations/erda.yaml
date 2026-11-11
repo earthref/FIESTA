@@ -89,7 +89,7 @@ doi:
 pages: []
 
 features:
-  plugins: []
+  plugins: [sample-tiles]
 
 # Legacy import (`fiesta legacy-inventory erda --out …`): the Perl CGI archive
 # has no reachable er_* tables or index, so its public record pages are crawled.

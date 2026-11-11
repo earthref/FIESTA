@@ -47,7 +47,7 @@ doi:
 pages: []
 
 features:
-  plugins: [periodic-table]
+  plugins: [sample-tiles, periodic-table]
 
 # Plugin options (docs/plugins.md); the element column the periodic table counts.
 plugins:
