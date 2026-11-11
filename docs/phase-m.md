@@ -227,7 +227,10 @@ and exports private contributions (index-only) from their indexed tables into
 errors and their contributions are left out. Records whose legacy owner is not an
 account are mapped by the operator with `owner_overrides` (by id), `owner_handles` (by
 legacy handle, private records too), `owner_names` (by display name, records without a
-handle) and `default_owner` (published records still unowned). These name accounts by
+handle) and `default_owner` (published records still unowned). A mapped email must be
+an `er_users` account unless `owner_accounts` declares it (`{"<email>": {"name": …}}`,
+a steward address that never used the legacy apps), which the import then creates
+without a password. These name accounts by
 email, so they go in a gitignored JSON file passed as `--owner-map <dir>/owner_map.json`
 (e.g. `{"owner_handles": {"cdr": "<email>"}}`), merged over the YAML's `legacy:` block
 for that run, either `legacy.kind`, by `LegacySourceConfig.with_owner_map` (maps merge key by key), never in

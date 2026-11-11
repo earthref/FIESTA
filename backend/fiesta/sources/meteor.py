@@ -66,11 +66,16 @@ async def sync_meteor(
         "applied": 0,
         "planned": [],
         "bytes": 0,
+        "excluded": [],
     }
 
     wanted = set(ids or ())
+    excluded = set(node.legacy.exclude_ids)
     for record in sorted(inventory.records, key=lambda r: (r.version, r.id)):
         if wanted and record.id not in wanted:
+            continue
+        if record.id in excluded:  # withheld by the node YAML's `legacy.exclude_ids`
+            summary["excluded"].append(record.id)
             continue
         if checkpoints.get(str(record.id)) == record_fingerprint(record):
             summary["unchanged"] += 1

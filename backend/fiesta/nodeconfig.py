@@ -550,7 +550,7 @@ class LegacySourceConfig(BaseModel):
     base_url: str | None = None  # earthref-cgi
     max_id: int = 0  # earthref-cgi: highest record id probed
     concurrency: int = 4  # earthref-cgi: parallel page/file requests (be polite)
-    exclude_ids: list[int] = []  # earthref-cgi: live records left out (test records)
+    exclude_ids: list[int] = []  # live records left out (test or withheld records)
     # earthref-cgi: a record whose files are not all on disk (deferred by size, or
     # lost from the legacy archive). "exclude" leaves it out; "metadata" imports its
     # text alone, each `files` row noting why its file is not attached.
@@ -565,8 +565,8 @@ class LegacySourceConfig(BaseModel):
     # the legacy version when the node has it, else the latest.
     data_model_version: str | None = None
     # Operator-supplied owner for contributions whose legacy record has no usable
-    # contributor handle (bulk loads). Keyed by contribution id; the email must still
-    # resolve to an er_users account so name/ORCID are verified, never typed in.
+    # contributor handle (bulk loads). Keyed by contribution id; the email must resolve
+    # to an er_users account (name/ORCID verified) or be declared in `owner_accounts`.
     owner_overrides: dict[int, str] = {}
     # Operator-approved mapping of a legacy display name (`_contributor`) to an
     # account email, for bulk-loaded records that carry no handle at all.
@@ -578,6 +578,10 @@ class LegacySourceConfig(BaseModel):
     # Operator-designated steward account for published records that still have no
     # owner after the maps above (never applied to private contributions).
     default_owner: str | None = None
+    # Operator-declared accounts for mapped emails that have no er_users account (a
+    # steward address that never used the legacy apps): email -> {name, orcid}. Such
+    # an owner is created on the target without a password, with this name.
+    owner_accounts: dict[str, dict[str, str]] = {}
     # The scheduled sync of this source into a data-source-mode node.
     sync: SourceSyncConfig = Field(default_factory=SourceSyncConfig)
 
@@ -594,6 +598,7 @@ class LegacySourceConfig(BaseModel):
         "owner_names",
         "owner_handles",
         "default_owner",
+        "owner_accounts",
     )
 
     def with_owner_map(self, owner_map: dict) -> "LegacySourceConfig":

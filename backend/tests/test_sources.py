@@ -142,6 +142,13 @@ async def test_sync_meteor_sends_only_changed_records(kdd_node, tmp_path, monkey
     dry = await meteor.sync_meteor(kdd_node, api, tmp_path, dry_run=True)
     assert dry["planned"] == [2] and sent == [2]
 
+    # `legacy.exclude_ids` withholds a record from every run.
+    legacy = kdd_node.legacy.model_copy(update={"exclude_ids": [2]})
+    withheld = await meteor.sync_meteor(
+        kdd_node.model_copy(update={"legacy": legacy}), api, tmp_path
+    )
+    assert withheld["excluded"] == [2] and withheld["applied"] == 0 and sent == [2]
+
 
 @pytest.mark.asyncio
 async def test_sync_meteor_does_nothing_in_public_mode(kdd_node, tmp_path, monkeypatch):
