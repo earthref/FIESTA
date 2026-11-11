@@ -1687,6 +1687,7 @@ def test_search_histogram_bins(magic_node, monkeypatch):
         router.search_histogram(
             None,
             magic_node,
+            router.SearchScope(),
             "locations",
             field=field,
             range_=None,

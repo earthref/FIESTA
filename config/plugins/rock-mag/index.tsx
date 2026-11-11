@@ -18,7 +18,7 @@ function rockMagConfig(config: NodeConfig): RockMagPluginConfig {
   return (config.plugins["rock-mag"] ?? {}) as RockMagPluginConfig;
 }
 
-function RockMagSubTab({ query, ranges, bbox }: PluginSubTabContext) {
+function RockMagSubTab({ query, ranges, bbox, scope }: PluginSubTabContext) {
   const openContribution = useOpenContribution();
   return (
     <Suspense fallback={<PageSpinner label="Loading plots…" />}>
@@ -26,6 +26,7 @@ function RockMagSubTab({ query, ranges, bbox }: PluginSubTabContext) {
         query={query}
         ranges={ranges}
         bbox={bbox}
+        scope={scope}
         onOpen={(id) => openContribution(id, "rock-mag")}
       />
     </Suspense>

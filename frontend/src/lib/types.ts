@@ -206,6 +206,14 @@ export interface SearchPage {
   mapped_total?: number | null;
 }
 
+/** The search page's scope filters, sent with every search request of the
+ * page: `mine` (only the signed-in user's own contributions, unpublished or
+ * published) and `versions` ("all" adds older versions of contributions). */
+export interface SearchScope {
+  mine?: "in_prep" | "published";
+  versions?: "all";
+}
+
 // --- Private workspace ---
 
 export type ContributionStatus =
