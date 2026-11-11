@@ -22,3 +22,8 @@ def _node(slug: str):
 @pytest.fixture(scope="session")
 def magic_node():
     return _node("magic")
+
+
+@pytest.fixture(scope="session")
+def kdd_node():
+    return _node("kdd")

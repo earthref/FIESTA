@@ -110,13 +110,17 @@ def _grid_filters(node, table: str, filters: list[str] | None) -> list[dict]:
 
 def _facet_names(node, table: str, facets: bool, facet: list[str] | None) -> list[str]:
     """The columns aggregated as facet buckets: `facet=<column>` (a sidebar
-    facet, or a facet of a grid column's header menu on the level), else with
-    `facets` the sidebar's."""
+    facet, a facet of a grid column's header menu on the level, or an active
+    plugin's `search_facets`), else with `facets` the sidebar's."""
+    from fiesta.plugins import active_plugins
+
     if not facet:
         return node.search.facets if facets else []
     allowed = set(node.search.facets)
     for column in _grid_columns(node, table).values():
         allowed.update(column.facets)
+    for plugin in active_plugins(node):
+        allowed.update(plugin.search_facets(node))
     if bad := [f for f in facet if f not in allowed]:
         raise HTTPException(422, f"facet must be a sidebar or grid column facet, got {bad}")
     return list(dict.fromkeys(facet))
