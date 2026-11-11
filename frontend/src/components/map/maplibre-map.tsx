@@ -47,6 +47,24 @@ const VIEWS: Record<
   north: { projection: "vertical-perspective", center: [0, 90], zoom: -1.5 },
   south: { projection: "vertical-perspective", center: [0, -90], zoom: -1.5 },
 };
+// MapLibre's globe radius is 512 * 2^zoom / (2π cos(latitude)) pixels at the
+// map centre's surface, which the camera sees at scale from
+// cameraToCenterDistance (height / 2 / tan(fov / 2); MapLibre's default fov).
+// The globe's centre is a radius further back, so its outline looks smaller:
+// this is the radius whose outline is `outline` pixels.
+const GLOBE_FOV = 36.8699;
+const globeRadiusFor = (outline: number, height: number) => {
+  const distance = height / 2 / Math.tan((GLOBE_FOV * Math.PI) / 360);
+  return (outline * outline + outline * Math.hypot(outline, distance)) / distance;
+};
+const globeZoomFor = (radius: number, lat: number) =>
+  Math.log2((radius * 2 * Math.PI * Math.cos((lat * Math.PI) / 180)) / 512);
+// The globe view opens with the globe's diameter this share of the map's
+// smaller side (instead of VIEWS.globe.zoom, a fixed size that left a large
+// map mostly black).
+const GLOBE_FILL = 0.92;
+const globeZoom = (width: number, height: number, lat: number) =>
+  globeZoomFor(globeRadiusFor((GLOBE_FILL * Math.min(width, height)) / 2, height), lat);
 // The pole views show the globe as from far above the pole, a flat picture
 // that dragging slides across the screen and zooming scales. MapLibre can't
 // shift its picture past the canvas's edges, so instead its camera moves:
@@ -264,13 +282,13 @@ const globeFitCamera = (points: MapPoint[], width: number, height: number) => {
     );
   });
   // The zoom that fits the points in a box of that half-size: from the globe's
-  // radius in pixels (the whole globe if points are on its far side), since
-  // MapLibre's globe radius is 512 * 2^zoom / (2π cos(latitude)).
+  // radius in pixels (the whole globe's outline if points are on its far side;
+  // see globeRadiusFor).
   const zoomFor = (halfWidth: number, halfHeight: number) => {
     const radius = farSide
-      ? Math.min(halfWidth, halfHeight)
+      ? globeRadiusFor(Math.min(halfWidth, halfHeight), height)
       : Math.min(halfWidth / (maxX || 1e-9), halfHeight / (maxY || 1e-9));
-    return Math.log2((radius * 2 * Math.PI * Math.cos(lat0 * rad)) / 512);
+    return globeZoomFor(radius, lat0);
   };
   const zoom = fitZoom(
     zoomFor(width / 2 - FIT_PADDING, height / 2 - FIT_PADDING),
@@ -624,7 +642,10 @@ const MapLibreMap: FC<{
     } else {
       const center = focusCenter(mode as "globe" | "flat", initialPoints);
       if (center) focused = focusKeyRef.current;
-      camera = { center: center ?? view.center, zoom: zoom ?? view.zoom };
+      const { clientWidth: width, clientHeight: height } = containerRef.current;
+      const sized = mode === "globe" && zoom === undefined && Math.min(width, height) > 0;
+      const at = center ?? view.center;
+      camera = { center: at, zoom: zoom ?? (sized ? globeZoom(width, height, at[1]) : view.zoom) };
     }
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -888,13 +909,19 @@ const MapLibreMap: FC<{
     };
     // Re-fitted as the container resizes, until the map is moved by hand.
     let autoFit = Boolean(fit);
+    // The globe view's default size follows the container the same way.
+    let autoSize = mode === "globe" && zoom === undefined && !fit;
     const refit = () => {
       const camera = autoFit ? fitCamera(pointsRef.current.points) : undefined;
       if (camera) map.jumpTo(camera);
+      const { width, height } = mapSize(map);
+      if (autoSize && Math.min(width, height) > 0) {
+        map.jumpTo({ zoom: globeZoom(width, height, map.getCenter().lat) });
+      }
     };
     refit();
     map.on("movestart", (e) => {
-      if (e.originalEvent) autoFit = false;
+      if (e.originalEvent) autoFit = autoSize = false;
     });
 
     const tooltip = createTooltip(tooltipRef.current);
@@ -950,8 +977,14 @@ const MapLibreMap: FC<{
           const fitted = fitCamera(points);
           const center = focusCenter(mode as "globe" | "flat", points);
           autoFit = Boolean(fit);
+          const { width, height } = mapSize(map);
           if (fitted) map.easeTo({ ...fitted, duration: 800 });
-          else if (center) map.easeTo({ center, duration: 800 });
+          else if (center)
+            map.easeTo({
+              center,
+              ...(autoSize && { zoom: globeZoom(width, height, center[1]) }),
+              duration: 800,
+            });
         }
       }
     };
@@ -1184,6 +1217,7 @@ const MapLibreMap: FC<{
       const target = zoomToRef.current;
       if (!target || target === zoomedTo || sign) return;
       zoomedTo = target;
+      autoSize = false;
       const [west, south, east, north] = target;
       const { width, height } = mapSize(map);
       const camera = map.cameraForBounds(
@@ -1401,8 +1435,15 @@ const MapLibreMap: FC<{
 
   return (
     <div className="relative w-full h-full bg-black">
-      {/* Inline: maplibre-gl.css makes its container position: relative. */}
-      <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
+      {/* Inline: maplibre-gl.css makes its container position: relative.
+          MapLibre sizes the canvas in whole device pixels, which can fall a
+          fraction short of a fractional container and show the black behind it
+          along the right and bottom edges: the canvas stretches to fill it. */}
+      <div
+        ref={containerRef}
+        className="[&_.maplibregl-canvas]:h-full! [&_.maplibregl-canvas]:w-full!"
+        style={{ position: "absolute", inset: 0 }}
+      />
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: the tooltip's record links are a pointer shortcut; each record is also on the Summaries tab */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: as above */}
       <div
