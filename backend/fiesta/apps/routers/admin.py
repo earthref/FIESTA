@@ -161,7 +161,7 @@ async def list_users(
     return {"total": total, "users": [AdminUserOut.from_db(u) for u in rows]}
 
 
-async def _unique_user_fields(session, email=None, handle=None, orcid=None, exclude=None):
+async def ensure_unique_user_fields(session, email=None, handle=None, orcid=None, exclude=None):
     checks = {
         "email": (func.lower(User.email) == email.lower()) if email else None,
         "handle": (User.handle == handle) if handle else None,
@@ -193,7 +193,7 @@ async def _set_roles(session, target: User, slugs: list[str], actor: User) -> No
 @router.post("/users", status_code=201)
 async def create_user(payload: UserCreateIn, session: SessionDep, actor: SuperAdmin):
     email = payload.email.strip().lower()
-    await _unique_user_fields(session, email, payload.handle, payload.orcid)
+    await ensure_unique_user_fields(session, email, payload.handle, payload.orcid)
     user = User(
         email=email,
         name=payload.name,
@@ -214,7 +214,7 @@ async def patch_user(user_id: int, payload: UserPatchIn, session: SessionDep, ac
     if user is None:
         raise HTTPException(404, "user not found")
     fields = payload.model_dump(exclude_unset=True)
-    await _unique_user_fields(
+    await ensure_unique_user_fields(
         session, fields.get("email"), fields.get("handle"), fields.get("orcid"), exclude=user.id
     )
     if fields.get("is_admin") is False and user.is_admin:

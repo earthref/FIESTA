@@ -1,6 +1,5 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
-import { isAnyAdmin, isNodeAdmin } from "../lib/admin";
 import { useAuth } from "../lib/auth";
 import { PORTAL } from "../lib/base";
 import { inkColor, useNodeConfig } from "../lib/config";
@@ -8,8 +7,8 @@ import { EARTHREF, FIESTA_PORTAL, PORTALS, portalUrl } from "../lib/portals";
 import { useTheme } from "../lib/theme";
 import { useLoginModal } from "./login-modal";
 import { MobileDrawer } from "./mobile-drawer";
-import { isSourceMode } from "./source-mode-notice";
 import { Icon } from "./ui/icon";
+import { UserMenu } from "./user-menu";
 
 /**
  * Legacy `ui top fixed secondary pointing menu top-menu` (layout.jsx:89-160,
@@ -38,9 +37,8 @@ export function PortalBar() {
   const config = PORTAL ? undefined : nodeConfig;
   // Nodes whose web app production does not serve are left out (node YAML `publish.web`).
   const portals = PORTALS.filter((portal) => !nodeConfig?.hidden_nodes?.includes(portal.label));
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { openLogin } = useLoginModal();
-  const navigate = useNavigate();
   const { theme, toggle: toggleTheme } = useTheme();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -107,76 +105,32 @@ export function PortalBar() {
 
         {/* User / login menu (always visible, right) */}
         <div className="ml-auto flex shrink-0 items-stretch">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className={itemClass}
-            style={itemStyle}
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            title={theme === "dark" ? "Light mode" : "Dark mode"}
-          >
-            <Icon name={theme === "dark" ? "sun" : "moon"} />
-          </button>
           {user ? (
+            // Workspace, account, admin, light/dark and log out live in its menu.
+            <UserMenu user={user} config={config} className={itemClass} style={itemStyle} />
+          ) : (
             <>
               <button
                 type="button"
-                onClick={() => {
-                  logout();
-                  navigate({ to: "/" });
-                }}
+                onClick={toggleTheme}
                 className={itemClass}
                 style={itemStyle}
+                aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                title={theme === "dark" ? "Light mode" : "Dark mode"}
               >
-                <Icon name="close" style={{ marginRight: "0.35714286em" }} />
-                Log Out
+                <Icon name={theme === "dark" ? "sun" : "moon"} />
               </button>
-              {isAnyAdmin(user) && (
-                // Straight to this node's settings when the user administers it.
-                <Link
-                  {...(config && isNodeAdmin(user, config.slug)
-                    ? { to: "/admin/nodes/$slug", params: { slug: config.slug } }
-                    : { to: "/admin" })}
-                  className={itemClass}
-                  style={itemStyle}
-                >
-                  <Icon name="edit" style={{ marginRight: "0.35714286em" }} />
-                  Admin
-                </Link>
-              )}
-              {isSourceMode(config) ? (
-                // No private workspace while the node mirrors its source.
-                <span
-                  className={itemClass}
-                  style={{ ...itemStyle, color: "var(--node-ink)" }}
-                  title={user.email}
-                >
-                  <Icon name="user" style={{ marginRight: "0.35714286em" }} />
-                  {user.name}
-                </span>
-              ) : (
-                <Link
-                  to="/private"
-                  className={itemClass}
-                  style={{ ...itemStyle, color: "var(--node-ink)" }}
-                  title={user.email}
-                >
-                  <Icon name="user" style={{ marginRight: "0.35714286em" }} />
-                  {user.name}
-                </Link>
-              )}
+              <button
+                type="button"
+                onClick={openLogin}
+                className={itemClass}
+                style={{ ...itemStyle, color: "var(--node-ink)" }}
+              >
+                <Icon name="user" style={{ marginRight: "0.35714286em" }} />
+                <span className="hidden sm:inline">Log In / Register</span>
+                <span className="sm:hidden">Log In</span>
+              </button>
             </>
-          ) : (
-            <button
-              type="button"
-              onClick={openLogin}
-              className={itemClass}
-              style={{ ...itemStyle, color: "var(--node-ink)" }}
-            >
-              <Icon name="user" style={{ marginRight: "0.35714286em" }} />
-              <span className="hidden sm:inline">Log In / Register</span>
-              <span className="sm:hidden">Log In</span>
-            </button>
           )}
         </div>
       </div>

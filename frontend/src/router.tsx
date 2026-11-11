@@ -1,5 +1,6 @@
 import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
 import { BASE_PATH, PORTAL } from "./lib/base";
+import { AccountPage } from "./routes/account";
 import { AdminPage } from "./routes/admin";
 import { AdminNodePage } from "./routes/admin-node";
 import { ContactPage } from "./routes/contact";
@@ -131,6 +132,12 @@ const privateRoute = createRoute({
   component: PrivateWorkspacePage,
 });
 
+const accountRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account",
+  component: AccountPage,
+});
+
 const validateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/validate",
@@ -226,6 +233,7 @@ const routeTree = rootRoute.addChildren([
   contributionRoute,
   uploadRoute,
   privateRoute,
+  accountRoute,
   validateRoute,
   dataModelsIndexRoute,
   dataModelRoute,
