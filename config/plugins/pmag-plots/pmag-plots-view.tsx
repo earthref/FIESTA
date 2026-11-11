@@ -48,8 +48,27 @@ const CARD_GAP = 8;
 /** A row of cards: the chart, its title and borders. */
 const CARD_ROW_ESTIMATE = CARD_HEIGHT + 28;
 const LARGE_HEIGHT = 520;
-/** From this width the selected plot sits beside the cards, not above them. */
-const SIDE_BY_SIDE = 960;
+/** The selected plot's header, note and hint around its chart. */
+const LARGE_CHROME = 90;
+/** The plots' padding and the gap between the selected plot and the cards. */
+const PANE_GAP = 12;
+/** Beside the selected plot, the cards' share of the width (the plot's 3:2). */
+const BESIDE_SHARE = 2 / 5;
+
+/**
+ * Whether the cards go beside the selected plot rather than below it: where
+ * they get the larger view to scroll in. Below, the full width under the
+ * plot; beside, their share of the width at the full height (and at least a
+ * card wide).
+ */
+function cardsBeside(width: number, height: number): boolean {
+  const w = width - 2 * PANE_GAP;
+  const h = height - 2 * PANE_GAP;
+  const besideWidth = (w - PANE_GAP) * BESIDE_SHARE;
+  if (besideWidth < CARD_MIN_WIDTH) return false;
+  const below = w * Math.max(0, h - LARGE_HEIGHT - LARGE_CHROME - PANE_GAP);
+  return besideWidth * h > below;
+}
 
 /** One plot of the grid: a specimen's, or a group's directions. */
 interface PlotItem {
@@ -294,25 +313,30 @@ function itemFor(items: PlotItem[], key: string | undefined): PlotItem | undefin
   );
 }
 
-/** Watches an element's width. */
-function useWidth(ref: RefObject<HTMLElement | null>): number {
-  const [width, setWidth] = useState(0);
+/** Watches an element's size. */
+function useSize(ref: RefObject<HTMLElement | null>): { width: number; height: number } {
+  const [size, setSize] = useState({ width: 0, height: 0 });
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
-    const update = () => setWidth(element.clientWidth);
+    const update = () =>
+      setSize((prev) =>
+        prev.width === element.clientWidth && prev.height === element.clientHeight
+          ? prev
+          : { width: element.clientWidth, height: element.clientHeight },
+      );
     update();
     const observer = new ResizeObserver(update);
     observer.observe(element);
     return () => observer.disconnect();
   }, [ref]);
-  return width;
+  return size;
 }
 
 /**
  * A plot type's tab: the selected plot drawn large and interactive (the
  * first, or `selected`), and every plot of the level as a small card to pick
- * from, below it or, on a wide view, beside it.
+ * from, below it or beside it, whichever leaves them more room (cardsBeside).
  */
 function PlotGrid({
   type,
@@ -326,9 +350,11 @@ function PlotGrid({
   onSelect?: (key: string) => void;
 }) {
   const [filter, setFilter] = useState("");
-  const outer = useRef<HTMLDivElement>(null);
+  // The room under the controls, which the plot and the cards share.
+  const body = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
-  const wide = useWidth(outer) >= SIDE_BY_SIDE;
+  const room = useSize(body);
+  const beside = cardsBeside(room.width, room.height);
   const levelCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const item of items)
@@ -424,11 +450,11 @@ function PlotGrid({
   const cards = (
     <VirtualCards
       // A grid per layout: each mounts with its own scroller (and reveal).
-      key={wide ? "beside" : "below"}
+      key={beside ? "beside" : "below"}
       count={shown.length}
       scrollRef={scroller}
       // Beside the plot, the cards scroll to the selected one.
-      reveal={wide ? index : undefined}
+      reveal={beside ? index : undefined}
       render={(i) => {
         const item = shown[i];
         return (
@@ -446,26 +472,28 @@ function PlotGrid({
 
   return (
     // The controls stay put; the plots scroll below them.
-    <div ref={outer} className="flex h-full min-h-[420px] flex-col">
+    <div className="flex h-full min-h-[420px] flex-col">
       <div className="space-y-3 px-3 pt-3">
         {controls}
         <p className="text-[12px] text-gray-500">{LEGENDS[type]}</p>
       </div>
-      {shown.length === 0 ? (
-        <p className="py-8 text-center text-[13px] text-gray-500">No plots match the filter.</p>
-      ) : wide ? (
-        <div className="flex min-h-0 flex-1 gap-3 p-3">
-          <div className="min-w-0 flex-[3] overflow-y-auto">{large}</div>
-          <div ref={scroller} className="relative min-w-0 flex-[2] overflow-y-auto">
-            {cards}
+      <div ref={body} className="flex min-h-0 flex-1 flex-col">
+        {shown.length === 0 ? (
+          <p className="py-8 text-center text-[13px] text-gray-500">No plots match the filter.</p>
+        ) : beside ? (
+          <div className="flex min-h-0 flex-1 gap-3 p-3">
+            <div className="min-w-0 flex-[3] overflow-y-auto">{large}</div>
+            <div ref={scroller} className="relative min-w-0 flex-[2] overflow-y-auto">
+              {cards}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto p-3">
-          {large}
-          <div className="mt-3">{cards}</div>
-        </div>
-      )}
+        ) : (
+          <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto p-3">
+            {large}
+            <div className="mt-3">{cards}</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -622,17 +650,10 @@ function PlotCard({
       title={[item.title, item.where].filter(Boolean).join(" · ")}
       className={cx(
         "block w-full min-w-0 cursor-pointer overflow-hidden rounded-sm border bg-surface text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
-        selected ? "border-node ring-1 ring-node" : "border-gray-300 hover:border-node",
+        selected ? "border-node" : "border-gray-300 hover:border-gray-400",
       )}
     >
-      <span
-        className={cx(
-          "block truncate border-b px-2 py-1 text-[12px] font-bold",
-          selected
-            ? "border-node bg-node-soft text-node-ink-strong"
-            : "border-gray-200 text-node-ink",
-        )}
-      >
+      <span className="block truncate border-b border-gray-200 px-2 py-1 text-[12px] font-bold text-node-ink">
         {item.title}
       </span>
       <span className="pointer-events-none block">
