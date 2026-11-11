@@ -252,9 +252,11 @@ rebuild reproduces these exactly (see `frontend/src/routes/search.tsx`,
   (Poles, Depth Plots, Age Spectra). Since 2026-11-11 the modal spans the
   view, inside the margin it keeps above and below (2rem; 0.5rem on a phone).
   The PmagPy plot tabs (Equal Area, Zijderveld, …) draw the selected plot
-  large and interactive, the first by default, over (or, from 960px wide,
-  beside) half-size cards of the level's other plots, each card picking its
-  plot with a click; a search grid's Plot tile opens the tab with its plot
+  large and interactive, the first by default, over or beside half-size cards
+  of the level's other plots (beside when that leaves the cards the larger
+  view, the full width under the plot against two-fifths of it at full
+  height), each card picking its plot with a click and the selected one
+  outlined in the node color; a search grid's Plot tile opens the tab with its plot
   selected (`&plot=`), so the legacy thumbnail's "open this plot" is one click.
 - **Map thumbnail** uses the doc's own `_geo_point` on level cards (inherited from the nearest ancestor with coordinates when the row has none) and every distinct position of its rows on contribution cards, rather than the legacy summary's points and envelopes.
 - **Map thumbnail** is drawn from the Esri Ocean basemap (the Map tab's, as on osu-mgr.org) instead of the legacy SVG globe of 110m countries coloured by a climate lookup (2026-09-27).

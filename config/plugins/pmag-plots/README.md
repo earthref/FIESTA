@@ -89,8 +89,9 @@ millisecond.
 UI: a tab per plot type with a coordinate-system and level switch and a name
 filter. The selected plot (the first, or `?plot=<key>`) is drawn large and
 interactive (wheel and box zoom, step values on hover), and every plot of the
-level is a small card to pick from, below it or, from 960px wide, in a column
-beside it; the cards scroll virtually. A search grid's Plot tile opens its
+level is a small card to pick from (the selected one's border in the node
+color), below it or in a column beside it, whichever leaves the cards the
+larger view; the cards scroll virtually. A search grid's Plot tile opens its
 contribution's tab with that plot selected (`?plot=`: a specimen's name, or an
 equal-area group's `<level>:<name>`, which the thumbnail carries as `level`).
 
