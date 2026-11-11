@@ -13,6 +13,32 @@ import { cx } from "../lib/utils";
 import { useVirtualRows } from "../lib/virtual-rows";
 import { contributionId, SummaryCell } from "./result-item";
 import { Icon } from "./ui/icon";
+import { Skeleton, skeletonWidth } from "./ui/skeleton";
+
+/** A tile's stand-in while its record's page loads: a thumbnail's square (a
+ * map's globe), the record column's citation and title lines, or a label
+ * and a value line. */
+function SkeletonCell({ column, row, index }: { column: GridColumn; row: number; index: number }) {
+  if (column.cell === "map" || column.cell === "plot") {
+    const size = Math.min(column.width, 100);
+    return <Skeleton round={column.cell === "map"} style={{ width: size, height: size }} />;
+  }
+  const lines = column.cell === "record" ? 3 : 2;
+  return (
+    <div className="flex flex-col gap-2 pt-0.5">
+      {Array.from({ length: lines }, (_, line) => (
+        <Skeleton
+          // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count lines
+          key={line}
+          className="h-3"
+          style={{
+            width: line === 0 && column.cell !== "record" ? "40%" : skeletonWidth(row, index, line),
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 /** A column header's sort: `sort=<key>:asc|desc` in the search URL. */
 export interface GridSort {
@@ -268,13 +294,20 @@ export function SummaryGrid({
             if (!doc) {
               return (
                 <tr key={`loading-${index}`} data-index={index} ref={measure} aria-busy="true">
-                  <td
-                    colSpan={columns.length}
-                    style={{ height: estimate, padding: "0.75em 0", borderBottom: divider }}
-                  >
-                    <div className="h-3 w-1/3 animate-pulse rounded-sm bg-gray-100" />
-                    <div className="mt-2 h-3 w-1/2 animate-pulse rounded-sm bg-gray-100" />
-                  </td>
+                  {columns.map((column, c) => (
+                    <td
+                      key={column.key}
+                      style={{
+                        ...cellStyle,
+                        height: estimate,
+                        paddingTop: "0.75em",
+                        paddingBottom: "0.75em",
+                        borderBottom: divider,
+                      }}
+                    >
+                      <SkeletonCell column={column} row={index} index={c} />
+                    </td>
+                  ))}
                 </tr>
               );
             }
