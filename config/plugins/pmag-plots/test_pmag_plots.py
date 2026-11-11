@@ -19,6 +19,7 @@ from fiesta.plugins.pmag_plots import (
     arai_specimen,
     compute_counts,
     compute_plots,
+    compute_thumbnails,
     fisher_mean,
     net,
 )
@@ -444,8 +445,37 @@ def test_pmag_plots_derived_doc_counts(magic_node):
     (doc,) = PmagPlotsPlugin().derive_docs(magic_node, parse_text(PMAG_TEXT), {"id": 7})
     assert doc["type"] == "pmag_plots"
     assert doc["summary"]["pmag_plots"]["arai"] == 1
+    thumbnails = doc["summary"]["pmag_plots"]["_geometry"]["thumbnails"]
+    assert sorted(thumbnails) == ["arai", "eqarea", "hyst", "zijd"]
     no_plots = parse_text(NO_MEASUREMENTS_TEXT)
     assert PmagPlotsPlugin().derive_docs(magic_node, no_plots, {"id": 99}) == []
+
+
+def test_pmag_plots_thumbnails_are_the_plots_points():
+    # One record per plot type, drawn from the same data as its tab: the
+    # Zijderveld components and Arai steps of a specimen, a group's
+    # equal-area positions, a hysteresis loop over its largest moment.
+    parsed = parse_text(PMAG_TEXT)
+    plots = compute_plots(parsed)
+    thumbnails = compute_thumbnails(parsed, 7)
+    assert compute_thumbnails(parsed, 7) == thumbnails  # seeded: a re-index draws the same
+
+    zijd = thumbnails["zijd"]
+    specimen = next(s for s in plots["demag"]["specimens"] if s["specimen"] == zijd["name"])
+    coords = specimen["coords"].get("g") or specimen["coords"]["s"]
+    assert zijd["n"] == pytest.approx(coords["n"], abs=1e-3)
+    assert zijd["d"] == pytest.approx(coords["d"], abs=1e-3)
+
+    arai = thumbnails["arai"]
+    (steps,) = [s["steps"] for s in plots["arai"]["specimens"] if s["specimen"] == arai["name"]]
+    assert (arai["x"], arai["y"]) == (steps["x"], steps["y"])
+
+    eqarea = thumbnails["eqarea"]
+    assert len(eqarea["x"]) == len(eqarea["y"]) == len(eqarea["up"]) > 0
+
+    hyst = thumbnails["hyst"]
+    assert max(map(abs, hyst["m"])) == 1.0
+    assert len(hyst["field"]) == len(hyst["m"])
 
 
 @pytest.mark.asyncio

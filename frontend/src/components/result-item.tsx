@@ -170,6 +170,38 @@ export function Cell({
   );
 }
 
+/** The Plot tile without a plot: legacy SearchPlotThumbnail's bordered "No
+ * Plots Available" box. `children` replace its text (a plugin's thumbnail). */
+export function NoPlotsCell({ width, children }: { width: number; children?: ReactNode }) {
+  return (
+    <div
+      className="relative shrink-0 overflow-hidden text-ellipsis text-center text-ink-faint"
+      style={{
+        boxSizing: "content-box",
+        minWidth: width - 2,
+        maxWidth: width - 2,
+        minHeight: 98,
+        maxHeight: 98,
+        fontSize: 13,
+        border: "1px solid rgba(0,0,0,.1)",
+      }}
+    >
+      {children ?? (
+        <>
+          <br />
+          No
+          <br />
+          <b>Plots</b>
+          <br />
+          Available
+          <br />
+          <br />
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Grey centered "No X Data" placeholder with the legacy <br> structure. The
  * label may be multi-line (legacy "No Method<br/>Codes"); `dataWord` is false
  * for placeholders whose label already ends the sentence. */
@@ -735,29 +767,7 @@ function BuiltinCell({
 
     // Plot thumbnail: a plugin's (legacy SearchPlotThumbnail container), else none
     case "plot":
-      return (
-        <div
-          className="shrink-0 overflow-hidden text-ellipsis text-center text-ink-faint"
-          style={{
-            boxSizing: "content-box",
-            minWidth: width - 2,
-            maxWidth: width - 2,
-            minHeight: 98,
-            maxHeight: 98,
-            fontSize: 13,
-            border: "1px solid rgba(0,0,0,.1)",
-          }}
-        >
-          <br />
-          No
-          <br />
-          <b>Plots</b>
-          <br />
-          Available
-          <br />
-          <br />
-        </div>
-      );
+      return <NoPlotsCell width={width} />;
 
     // Geologic units then geographic names
     case "geo": {

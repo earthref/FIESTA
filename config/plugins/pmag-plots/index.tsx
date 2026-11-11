@@ -1,10 +1,11 @@
 import { lazy, Suspense } from "react";
+import { contributionId } from "@/components/result-item";
 import { PageSpinner } from "@/components/ui/spinner";
-import { api } from "@/lib/api";
 import type { NodeConfig, SearchPage } from "@/lib/types";
 import { getPath } from "@/lib/utils";
 import type { PluginModule } from "@/plugins";
 import { PLOTS, type PlotType } from "./pmag-plots-data";
+import { PmagPlotThumbnail, pmagPlotsDocQuery } from "./pmag-plots-thumbnail";
 
 // echarts and the plot builders live in a lazily loaded chunk.
 const PmagPlotsView = lazy(() => import("./pmag-plots-view"));
@@ -28,15 +29,7 @@ const pmagPlotsPlugin: PluginModule = {
       key: PLOTS[type].key,
       label: PLOTS[type].label,
       countQuery: (id, privateKey) => ({
-        queryKey: ["plugin", "pmag-plots", "counts", id, table, privateKey],
-        queryFn: () =>
-          api<SearchPage>(`/search/${table}`, {
-            params: {
-              contribution: id,
-              private_key: privateKey || undefined,
-              size: 1,
-            },
-          }),
+        ...pmagPlotsDocQuery(id, table, privateKey),
         select: (page) => {
           const hit = (page as SearchPage).results[0];
           return Number(getPath(hit, `summary.pmag_plots.${type}`) ?? 0);
@@ -48,6 +41,25 @@ const pmagPlotsPlugin: PluginModule = {
         </Suspense>
       ),
     }));
+  },
+
+  // A contribution's Plot tile: one of its plots and their total (legacy
+  // SearchPlotThumbnail). Records below the contribution keep the "No Plots"
+  // box: the thumbnails are per contribution.
+  gridCell({ column, hit, level, config, privateKey }) {
+    if (column.cell !== "plot" || level.table !== "contribution") return null;
+    const id = contributionId(hit);
+    if (!id) return null;
+    const pconfig = pmagPlotsConfig(config);
+    return (
+      <PmagPlotThumbnail
+        id={id}
+        table={pconfig.table ?? "pmag_plots"}
+        plotTypes={pconfig.plot_types ?? []}
+        privateKey={privateKey}
+        width={column.width}
+      />
+    );
   },
 };
 
