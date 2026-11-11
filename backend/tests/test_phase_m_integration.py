@@ -16,6 +16,26 @@ pytestmark = pytest.mark.skipif(
     os.getenv("FIESTA_INTEGRATION") != "1", reason="requires isolated Docker integration stack"
 )
 
+_REAL_RESOLVE = None
+
+
+@pytest.fixture(autouse=True)
+def _doi_registered(monkeypatch):
+    """The stack is offline: every reference DOI resolves, so MagIC's
+    workspace.require_reference lets publishing through (one test checks the
+    refusal with `_REAL_RESOLVE` and a stubbed registry)."""
+    from types import SimpleNamespace
+
+    from fiesta.services import references
+
+    global _REAL_RESOLVE
+    _REAL_RESOLVE = _REAL_RESOLVE or references.resolve
+
+    async def registered(_session, _doi):
+        return SimpleNamespace(status="ok")
+
+    monkeypatch.setattr(references, "resolve", registered)
+
 
 @pytest.mark.asyncio
 async def test_seed_waits_for_claimed_event(monkeypatch):
@@ -171,6 +191,19 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
             assert validation.revision_id == c["head_revision"]
         assert (await client.get(root)).status_code == 200
         assert (await client.put("/v2/auth/settings", json={"theme": "dark"})).status_code == 200
+        # MagIC's workspace.require_reference: publishing waits for the DOI
+        # to resolve (offline here: the registry is stubbed as not knowing it).
+        from fiesta.services import references
+
+        async def not_registered(_client, _doi):
+            return "not_found", None, None
+
+        stub_resolve = references.resolve
+        monkeypatch.setattr(references, "fetch", not_registered)
+        monkeypatch.setattr(references, "resolve", _REAL_RESOLVE)
+        refused = await client.post(path + "/activate")
+        assert refused.status_code == 409 and "DOI" in refused.text, refused.text
+        monkeypatch.setattr(references, "resolve", stub_resolve)
         assert (await client.post(path + "/activate")).status_code == 200
         monkeypatch.setattr(search.indices, "exists", original_exists)
         assert (await drain(node))["failed"] == 0

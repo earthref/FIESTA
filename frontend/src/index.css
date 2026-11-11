@@ -34,6 +34,9 @@
   --color-panel-hover: var(--er-panel-hover);
   --color-shade: var(--er-shade);
   --color-error-ink: var(--er-error-ink);
+  --color-danger: var(--er-danger);
+  --color-danger-dark: var(--er-danger-dark);
+  --color-success: var(--er-success);
   --color-backdrop: var(--er-backdrop);
 }
 
@@ -274,6 +277,11 @@
   --er-panel-hover: #f3f4f5;
   --er-shade: #000;
   --er-error-ink: #9f3a38;
+  /* Muted fills behind white text (Validate / Save / required, Published):
+     calmer than Tailwind's red-600 / green-600, still >= 4.5:1 with white. */
+  --er-danger: #b04a47;
+  --er-danger-dark: #963c3a;
+  --er-success: #3f7a52;
   --er-warning-bg: #fffaf3;
   --er-warning-ink: #573a08;
   --er-warning-line: #c9ba9b;
@@ -305,6 +313,9 @@
   --er-panel-hover: #2a2d33;
   --er-shade: #fff;
   --er-error-ink: #f08c8a;
+  --er-danger: #9a4644;
+  --er-danger-dark: #b0524f;
+  --er-success: #3d6f4c;
   --er-warning-bg: #2b2416;
   --er-warning-ink: #f0d9a8;
   --er-warning-line: #6b5a33;

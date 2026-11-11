@@ -153,6 +153,33 @@ export interface NodeConfig {
   /** "source": contributions are made at the node's data source (`links.website`
    * until the cutover) and synced here, so the SPA offers no upload. */
   contributions_mode?: "public" | "source";
+  /** The private workspace's per-node options (node YAML `workspace`). */
+  workspace?: WorkspaceConfig;
+}
+
+/** A contribution-table column the private workspace's cards edit; `kind`
+ * and `vocabulary` come from the data model (List / Dictionary / other). */
+export interface WorkspaceField {
+  column: string;
+  label: string;
+  placeholder: string | null;
+  kind: "list" | "links" | "text";
+  vocabulary: string | null;
+  required: boolean;
+}
+
+export interface WorkspaceConfig {
+  fields: WorkspaceField[];
+  /** Publish waits until the reference DOI resolves at Crossref or DataCite. */
+  require_reference: boolean;
+}
+
+/** GET /private/contributions/{id}/reference. */
+export interface ReferenceCheck {
+  doi: string | null;
+  status: "none" | "ok" | "not_found" | "error";
+  citation: string | null;
+  title: string | null;
 }
 
 export interface HealthStatus {
