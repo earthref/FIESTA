@@ -936,8 +936,8 @@ export function SearchPage() {
             width: "100%",
           }}
         >
-          {/* Sidebar: fixed 275px */}
-          <div className="flex h-full flex-col" style={{ width: 275, flexShrink: 0 }}>
+          {/* Sidebar: fixed 220px (legacy 275px; the filters' controls are in modals) */}
+          <div className="flex h-full flex-col" style={{ width: 220, flexShrink: 0 }}>
             <div
               className="flex items-end"
               style={{
