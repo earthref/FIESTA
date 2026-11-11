@@ -142,6 +142,15 @@ Last updated: 2026-11-10
   treats blank as specimen coordinates (−1), which would drop the axes of every
   legacy row that leaves the column blank. Tensor-derived axes already follow PmagPy.
 
+## 2026-11-10 — Samples and specimens inherit geography
+
+- [ ] **Rebuild each node's search index on dev** once the "inherit geography" PR has
+  deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`, then
+  each other node; the MagIC rebuilds above cover it if run after the deploy). Site,
+  sample and specimen docs then carry the geology and geography of the location
+  above them (Geography tile and its filters). Until the rebuild, samples and
+  specimens show "No Geographic Data". Production needs the same rebuild at cutover.
+
 ## 2026-11-10 — Martian records back on Earth
 
 - [ ] **Rebuild the magic and karar search indexes on dev** once the "remove the Mars

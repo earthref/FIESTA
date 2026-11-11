@@ -11,7 +11,8 @@ For a node with hierarchy [contribution, A, B, ...] this produces:
   sites) are one doc, with the shared `summary.contribution` block, the rows
   merged under `summary.<level>` (each column's first value) plus
   `_n_results` (how many rows, the level's `count_field`), the raw rows in
-  `rows`, and per-doc `_all` values, including its `_geo_point`: every
+  `rows`, and per-doc `_all` values (with the geography, INHERITED_COLUMNS,
+  of the records above it that it names), including its `_geo_point`: every
   distinct lat/lon of its rows and, for an area (a table with a box), of the
   rows below it that name it (a location's sites' and samples'), one point
   or a list (capped); without any, its box's centre or its nearest
@@ -111,6 +112,23 @@ MAX_GEO_POINTS = 500
 # Distinct-values cap per column in summary._all (keeps huge contributions'
 # roll-up docs bounded; facets and free-text search degrade gracefully).
 MAX_ALL_VALUES = 500
+
+# A record's geography (the grid's Geography tile): its own values and those
+# of the records above it that it names, as the legacy summaries inherited
+# their parents', so a specimen shows and filters on its site's location and
+# that location's country.
+GEOLOGIC_COLUMNS = ["plate_blocks", "terranes", "geological_province_sections", "tectonic_settings"]
+GEOGRAPHIC_COLUMNS = [
+    "continent_ocean",
+    "country",
+    "ocean_sea",
+    "region",
+    "village_city",
+    "location",
+    "location_type",
+    "location_alternatives",
+]
+INHERITED_COLUMNS = (*GEOLOGIC_COLUMNS, *GEOGRAPHIC_COLUMNS)
 
 
 def _collect_all(columns_def: dict, rows: list[dict], into: dict[str, set]) -> None:
@@ -265,6 +283,8 @@ def summarize(
     # position, only without any.
     placements: list[dict[str, Any]] = []
     named: dict[tuple[str, str], dict[str, Any]] = {}
+    # Each named record's geography, own and inherited ({("sites", "S1"): {...}}).
+    inherited: dict[tuple[str, str], dict[str, set]] = {}
     areas = node.area_tables
     bodies = planetary_bodies(node, parsed)
     levels = hierarchy[1:]
@@ -287,6 +307,25 @@ def summarize(
             )
             row_all: dict[str, set] = {}
             _collect_all(columns_def, group, row_all)
+            # The nearest record above it that it names carries its own
+            # ancestors' geography already (a sample's site has its location's).
+            above = next(
+                (
+                    inherited[key]
+                    for ancestor, column in ancestors
+                    if (key := (ancestor, str(merged.get(column) or ""))) in inherited
+                ),
+                {},
+            )
+            for column, values in above.items():
+                bucket = row_all.setdefault(column, set())
+                if len(bucket) < MAX_ALL_VALUES:
+                    bucket.update(values)
+            if name not in (None, ""):
+                inherited.setdefault(
+                    (level, str(name)),
+                    {c: set(row_all[c]) for c in INHERITED_COLUMNS if row_all.get(c)},
+                )
             points: dict[PointKey, dict] = {}
             for row in group:
                 if (point := _lat_lon(row)) is not None and len(points) < MAX_GEO_POINTS:
