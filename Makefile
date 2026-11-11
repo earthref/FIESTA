@@ -8,9 +8,9 @@
 # `make up` layers the hot-reload overlay (Vite dev server, uvicorn --reload,
 # watchfiles worker) so a `git pull` is live without rebuilding images.
 # PROD=1 runs the built images exactly as deployed (CI's e2e job does this).
-# (The dev overlay mounts a named volume at frontend/node_modules; `up` creates
+# (The dev overlay mounts a named volume at fiesta/frontend/node_modules; `up` creates
 # that directory first so Docker does not leave a root-owned one behind.)
-# ENV_FILE=.env.prod adds docker-compose.remote.yml: the API uses that file's
+# ENV_FILE=.env.prod adds fiesta/docker-compose.remote.yml: the API uses that file's
 # Postgres/OpenSearch/S3 (no `fiesta init`, no worker) instead of the local
 # containers, so login and data are the remote deployment's.
 
@@ -22,16 +22,16 @@
 # init, user, rebuild and fiesta write to whatever they point at, so they take
 # ENV_FILE only from the command line or the shell, never from .env.
 OPS_ENV_FILE := $(if $(filter command line environment,$(origin ENV_FILE)),$(ENV_FILE))
-compose = docker compose -f docker-compose.yml$(if $(PROD),, -f docker-compose.dev.yml)$(if $1, -f docker-compose.remote.yml$(if $(wildcard .env), --env-file .env) --env-file $1)
+compose = docker compose --project-directory . -f fiesta/docker-compose.yml$(if $(PROD),, -f fiesta/docker-compose.dev.yml)$(if $1, -f fiesta/docker-compose.remote.yml$(if $(wildcard .env), --env-file .env) --env-file $1)
 COMPOSE := $(call compose,$(ENV_FILE))
 COMPOSE_OPS := $(call compose,$(OPS_ENV_FILE))
 
 # FIESTA_NODE is a comma-separated node list (magic,karar,cdr), or `all` (the
-# default, also when empty): every node config/fiesta.yaml lists, so a new node
+# default, also when empty): every node configurations/fiesta.yaml lists, so a new node
 # is served as soon as it is added there. The one API, worker and frontend
 # serve every listed node (the frontend at http://localhost:$(FRONTEND_PORT)/<Key>/);
 # the first is the default node.
-ALL_NODES := $(shell sed -n 's/^ *- *\([A-Za-z0-9_-]*\)\.yaml *$$/\1/p' config/fiesta.yaml | paste -sd, -)
+ALL_NODES := $(shell sed -n 's/^ *- *\([A-Za-z0-9_-]*\)\.yaml *$$/\1/p' configurations/fiesta.yaml | paste -sd, -)
 FIESTA_NODE ?= all
 ifneq ($(filter-out all,$(strip $(FIESTA_NODE))),)
 else
@@ -49,7 +49,7 @@ help: ## List available targets
 
 .PHONY: up
 up: ## Start infra + the API + worker + the frontend (every node in FIESTA_NODE at /<Key>/), hot reload, then `make seed` (SEED=0 skips it; PROD=1 for the built images, ENV_FILE=.env.prod for remote data)
-	@mkdir -p frontend/node_modules
+	@mkdir -p fiesta/frontend/node_modules
 	$(COMPOSE) up -d --build --remove-orphans --wait
 	@$(if $(SKIP_SEED),,$(MAKE) --no-print-directory seed || \
 		echo "make up: the stack is up, but the seed did not finish (above); \`make seed\` retries")
@@ -121,21 +121,21 @@ $(HOST_DEV): export FIESTA_SEED_PUBLIC := $(or $(FIESTA_SEED_PUBLIC),50)
 
 .PHONY: backend-dev
 backend-dev: infra ## Run the API locally with reload (every node in FIESTA_NODE, :API_PORT, default 8000)
-	cd backend && uv sync && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) FIESTA_CONTRIBUTIONS_MODE=$(or $(FIESTA_CONTRIBUTIONS_MODE),public) \
+	cd fiesta/backend && uv sync && FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) FIESTA_CONTRIBUTIONS_MODE=$(or $(FIESTA_CONTRIBUTIONS_MODE),public) \
 		uv run sh -c "fiesta init && uvicorn fiesta.apps.api:create_app --factory --reload --port $(or $(API_PORT),8000)"
 
 .PHONY: fiesta
 fiesta: ## Run the CLI on the host: make fiesta ARGS="legacy-inventory karar --out ../migration/karar" [ENV_FILE=.env.prod] [NODE=karar] [CMD=python]
-	cd backend && $(if $(OPS_ENV_FILE),FIESTA_ENV_FILE=$(abspath $(OPS_ENV_FILE))) \
-		FIESTA_CONFIG_FILE=../config/fiesta.yaml $(if $(NODE),FIESTA_NODE=$(NODE)) uv run $(or $(CMD),fiesta) $(ARGS)
+	cd fiesta/backend && $(if $(OPS_ENV_FILE),FIESTA_ENV_FILE=$(abspath $(OPS_ENV_FILE))) \
+		FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml $(if $(NODE),FIESTA_NODE=$(NODE)) uv run $(or $(CMD),fiesta) $(ARGS)
 
 .PHONY: worker-dev
 worker-dev: ## Run the job worker locally (every node in FIESTA_NODE)
-	cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) FIESTA_CONTRIBUTIONS_MODE=$(or $(FIESTA_CONTRIBUTIONS_MODE),public) uv run fiesta worker
+	cd fiesta/backend && FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml FIESTA_NODE=$(FIESTA_NODE) FIESTA_CONTRIBUTIONS_MODE=$(or $(FIESTA_CONTRIBUTIONS_MODE),public) uv run fiesta worker
 
 .PHONY: frontend-dev
 frontend-dev: ## Run the Vite dev server on :5173 for every node in FIESTA_NODE (/<Key>/; proxies /v2 to localhost:API_PORT)
-	cd frontend && npm install && FIESTA_NODES=$(FIESTA_NODE) \
+	cd fiesta/frontend && npm install && FIESTA_NODES=$(FIESTA_NODE) \
 		VITE_API_TARGET=$${VITE_API_TARGET:-http://localhost:$(or $(API_PORT),8000)} npm run dev
 
 ## ---- Tests & linting --------------------------------------------------------
@@ -145,26 +145,26 @@ test: test-backend test-frontend ## Run all tests/builds
 
 .PHONY: test-backend
 test-backend: ## Backend unit tests (pytest)
-	cd backend && uv run pytest
+	cd fiesta/backend && uv run pytest
 
 .PHONY: test-frontend
 test-frontend: ## Frontend type-check + production build
-	cd frontend && npm run build
+	cd fiesta/frontend && npm run build
 
 .PHONY: e2e
 e2e: ## End-to-end workflow test against a running `make up FIESTA_NODE=magic` stack
 	API_PORT=$(or $(API_PORT),8000) \
-	MAILPIT_PORT=$(or $(MAILPIT_WEB_PORT),8025) bash scripts/e2e.sh
+	MAILPIT_PORT=$(or $(MAILPIT_WEB_PORT),8025) bash fiesta/scripts/e2e.sh
 
 .PHONY: lint
 lint: ## Lint everything (ruff + biome)
-	cd backend && uv run ruff check . ../sources ../config/plugins
-	cd frontend && npx biome check . ../config/plugins
+	cd fiesta/backend && uv run ruff check . ../../configurations/sources ../../configurations/plugins
+	cd fiesta/frontend && npx biome check . ../../configurations/plugins
 
 .PHONY: fix
 fix: ## Auto-fix lint issues (ruff --fix + biome --write)
-	cd backend && uv run ruff check --fix . ../sources ../config/plugins
-	cd frontend && npx biome check --write . ../config/plugins
+	cd fiesta/backend && uv run ruff check --fix . ../../configurations/sources ../../configurations/plugins
+	cd fiesta/frontend && npx biome check --write . ../../configurations/plugins
 
 .PHONY: seed
 seed: ## Seed the enabled nodes: demo accounts, private fixtures, dev.earthref.org's 50 (FIESTA_SEED_PUBLIC) newest public contributions not yet local [ARGS="--public 10" | --source URL | --fixtures]
@@ -177,8 +177,8 @@ import-public: ## Copy public contributions into local dev: make import-public N
 
 .PHONY: test-phase-m
 test-phase-m: ## Run all-node seeds and migration/revision integration tests without external services
-	docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml run --build --rm tests
+	docker compose -p fiesta-phase-m-test --project-directory . -f fiesta/compose.phase-m-test.yml run --build --rm tests
 
 .PHONY: test-phase-m-restore
 test-phase-m-restore: ## Rehearse a logical database restore against the isolated Phase M test bucket
-	bash scripts/rehearse-phase-m-restore.sh
+	bash fiesta/scripts/rehearse-phase-m-restore.sh

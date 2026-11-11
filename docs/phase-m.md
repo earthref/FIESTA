@@ -21,7 +21,7 @@ Host-run processes need the same: `make backend-dev`, `make worker-dev` and
 `make fiesta` (without `ENV_FILE`) set development mode and the local endpoints.
 
 Each node YAML selects `development.seed_manifest`, resolved relative to that YAML.
-Fixtures live under `config/<node>/seeds/`. The two local logins are
+Fixtures live under `configurations/<node>/seeds/`. The two local logins are
 `developer@example.test` and `viewer@example.test`, both with password
 `local-fiesta-only`. The owner can edit and is a super admin (`admin: true`); the
 viewer can inspect shared workspace contributions. `make seed` loads only the

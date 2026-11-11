@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-11-10
+Last updated: 2026-11-11
 
 ## A — Decisions
 
@@ -27,7 +27,7 @@ Last updated: 2026-11-10
       `{"owner_names": {"Roger Nielsen": "<that account's email>"}}` in the gitignored
       `migration/kdd/owner_map.json` (`legacy-inventory --owner-map`; owner emails never
       go in checked-in config) so all 264 import; otherwise only the 8 with handles do.
-      Since 2026-10-25 the scheduled KdD sync (`sources/kdd.py`) takes the same file as
+      Since 2026-10-25 the scheduled KdD sync (`configurations/sources/kdd.py`) takes the same file as
       `--owner-map` (on MARFIK3, outside the repo); until then it quarantines those 256
       on every run (local test 2026-10-25: 264 read, 8 applied, 256 quarantined).
       Unblocks: KdD import (M5), a complete KdD mirror.
@@ -36,7 +36,7 @@ Last updated: 2026-11-10
       the `cdr` alias (`cdr-2`, model 1.0, ids overlapping with different content) are left
       behind. No CDR 3.0 model exists anywhere, so FIESTA CDR stays at 1.0: `1.0.json` is
       extended with every table and column cdr-3 carries (only `sections.label` was
-      missing), and `legacy.data_model_version: "1.0"` in `config/cdr.yaml` imports every
+      missing), and `legacy.data_model_version: "1.0"` in `configurations/cdr.yaml` imports every
       record as 1.0. CDR has no S3 buckets, so every record exports from the index. The
       contributor handle on every cdr-3 record is `cdr` (no account); decided 2026-09-29
       they go to the OSU-MGR steward account via `owner_handles` in the gitignored
@@ -64,13 +64,13 @@ Last updated: 2026-11-10
       2026-11-10: #88 is the one cdr-3 record that is not activated, so Meteor CDR
       does not publish it (its 682 public contributions are the other 682). Ask the
       OSU-MGR curators whether the moratorium has ended. Until they answer,
-      `legacy.exclude_ids: [88]` in `config/cdr.yaml` keeps #88 out of FIESTA
+      `legacy.exclude_ids: [88]` in `configurations/cdr.yaml` keeps #88 out of FIESTA
       entirely (decided 2026-11-10); remove it from that list to sync it as a private
       contribution, or once released.
 - [ ] **CDR 1.0 lacks most XRF element columns.** The OSU-MGR scans carry `al`, `si`,
       `p`, `s`, `v`, `cr`, `ba`, `la`, `ce`, `pr`, `nd` and, on some cruises, `ag`,
       `as`, `bi`, `cd`, `co`, `mo`, `sb`, `sc`, `se`, `sn`, `th`, `u`, none in
-      `config/cdr/data_models/1.0.json`, so FIESTA's CDR import will flag them. Adding
+      `configurations/cdr/data_models/1.0.json`, so FIESTA's CDR import will flag them. Adding
       columns is allowed; approve adding them before the cdr-3 import. Unblocks:
       valid XRF rows in FIESTA CDR.
 - [ ] **Rotate the `fiesta` OpenSearch password.** It is hard-coded in
@@ -80,7 +80,7 @@ Last updated: 2026-11-10
 - [ ] **MagIC contributions with no owner account.** 40 legacy handles (66 contributions)
       match no `er_users` account — deleted account ids such as `user8928` (11 records) and
       `user10068` (4), plus two records with the literal handle `undefined`. Map them with
-      `owner_overrides` / `owner_names` / `default_owner` in `config/magic.yaml`, or leave
+      `owner_overrides` / `owner_names` / `default_owner` in `configurations/magic.yaml`, or leave
       them out; a re-run of the sync picks them up incrementally. The list with ids is
       produced by `legacy-inventory` (report `errors`). Unblocks: nothing; parity only.
 - [ ] **ERDA legacy import: apply** (decisions made 2026-09-29: a steward account,
@@ -134,6 +134,37 @@ Last updated: 2026-11-10
       without passwords, so every EarthRef login fails. Dry run, then apply:
       `make fiesta ENV_FILE=.env.prod ARGS="sync-legacy-users magic"` and again with
       `--apply`. Re-run until cutover to pick up legacy password changes (legacy wins).
+
+## 2026-11-11 — Repository layout: `configurations/` + `fiesta/`
+
+The repo now has `configurations/` (was `config/` and `sources/`), `fiesta/`
+(was `backend/`, `frontend/`, `scripts/` and the compose files) and `docs/` (now
+also holding ROADMAP, development, deployment, CONTRIBUTING, release notes).
+Every path outside the repo has to follow; the layout PR waits for the first item.
+
+- [ ] **Update `/srv/fiesta/bin/deploy-fiesta.sh` on fiesta-ct before the layout PR
+      merges** (it is not in the repo, so CI cannot fix it). In each release dir:
+      `uv sync` / ruff / pytest run in `fiesta/backend` (ruff over
+      `. ../../configurations/sources ../../configurations/plugins`), `npm ci` and the
+      per-node vite builds in `fiesta/frontend`, and `FIESTA_CONFIG_FILE` is
+      `<release>/configurations/fiesta.yaml`. Sync scripts are found at
+      `configurations/sources/` beside it (unset `FIESTA_SOURCES_DIR` if it points at
+      `<release>/sources`). Then the API/worker units: `WorkingDirectory` and
+      `ExecStart` under `/srv/fiesta/current/fiesta/backend`, and any relative
+      `FIESTA_CONFIG_FILE=../config/fiesta.yaml` becomes `../../configurations/fiesta.yaml`.
+      Unblocks: merging the layout PR (otherwise every dev deploy fails until it is done).
+- [ ] **MARFIK3 ops checkout** (`/srv/fiesta-ops/FIESTA`): after pulling the layout
+      change, `cd fiesta/backend && uv sync --frozen`, and point `fiesta-ops-worker`'s
+      `WorkingDirectory`/`ExecStart` at `/srv/fiesta-ops/FIESTA/fiesta/backend` with
+      `FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml` (the unit below is updated).
+      Same for the fiesta-ct watchdog unit.
+- [ ] **`FIESTA_GITHUB_CONFIG_PATH`**: if the dev API's env sets it to `config`, change
+      it to `configurations` (the new default) or delete it, otherwise admin-UI node
+      publication opens PRs against the old path.
+- [ ] **Your clone**: after pulling, delete the old `backend/.venv` and
+      `frontend/node_modules`, and repoint the shell's `VIRTUAL_ENV` (it names
+      `FIESTA/backend/.venv`). Also update `.claude/settings.json` allowlist entries
+      written as `cd backend && …` / `cd frontend && …`.
 
 ## 2026-11-10 — Numeric range filters (`summary._num`)
 
@@ -230,7 +261,7 @@ Last updated: 2026-11-10
       API **and** worker env (the worker opens the PR). Optionally turn on "Allow
       auto-merge" in the repository settings and set `FIESTA_GITHUB_AUTO_MERGE=true`.
       Until this is done, publications still go live, but their revisions show
-      "not written to git" and `config/` falls behind the live nodes. After: Claude
+      "not written to git" and `configurations/` falls behind the live nodes. After: Claude
       publishes a no-op settings change on one node and checks that the
       `node-config/<slug>` PR opens with the `internal` label.
 - [ ] **Name the first super admin(s) on production.** Either `fiesta create-user
@@ -238,10 +269,10 @@ Last updated: 2026-11-10
       existing EarthRef account. Super admins then grant node admins in `/<Key>/admin`.
       Product call: who gets super admin and who administers each node.
 - [ ] **Deploy script, in addition to the 2026-09-12 item:** keep running `fiesta init`
-      on every deploy (it imports `config/` into Postgres and brings up nodes created
+      on every deploy (it imports `configurations/` into Postgres and brings up nodes created
       in the UI), and run the worker **without** `FIESTA_NODE` so it listens on every
       queue, including queues of nodes published later. The script still builds one
-      SPA per node listed in `config/fiesta.yaml`, so a node created in the UI appears
+      SPA per node listed in `configurations/fiesta.yaml`, so a node created in the UI appears
       on the website only after its PR is merged and deployed.
 
 ## 2026-09-28 — Geospatial filter across levels
@@ -283,9 +314,9 @@ Last updated: 2026-11-10
       The deploy script swaps the release and restarts the API only; nothing starts
       the worker, so dev has been drained by hand from a laptop. A systemd unit
       beside the API's, restarted by `deploy-fiesta.sh` after `fiesta init`:
-      `ExecStart=/srv/fiesta/current/backend/.venv/bin/fiesta worker`,
-      `WorkingDirectory=/srv/fiesta/current/backend`, the API's `EnvironmentFile`,
-      `FIESTA_CONFIG_FILE=../config/fiesta.yaml`, no `FIESTA_NODE` (every node's
+      `ExecStart=/srv/fiesta/current/fiesta/backend/.venv/bin/fiesta worker`,
+      `WorkingDirectory=/srv/fiesta/current/fiesta/backend`, the API's `EnvironmentFile`,
+      `FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml`, no `FIESTA_NODE` (every node's
       queue plus `default`; since 2026-10-01 never `ops`, which belongs to the
       MARFIK3 ops worker, and a node published in the admin UI is picked up by an
       in-process restart, not by listening on all queues), `Restart=always`
@@ -330,7 +361,7 @@ Last updated: 2026-11-10
 
 - [ ] **Import the catalog on production.** Pick the steward account the 33
   region contributions belong to (the legacy pages name no contributors), then
-  `python3 scripts/sc-legacy-catalog.py --cache ../migration/sc/pages
+  `python3 fiesta/scripts/sc-legacy-catalog.py --cache ../migration/sc/pages
   --inventory ../migration/sc --owner <steward email>` and `make fiesta
   ENV_FILE=.env.prod NODE=sc ARGS="sync-legacy ../migration/sc/inventory.json"`
   (add `--apply` once the dry run reads right). See `docs/sc-node.md`.
@@ -339,12 +370,12 @@ Last updated: 2026-11-10
   same paths with HTML. If they survive on MARFIK or an SDSC backup, say where;
   the SC `maps` rows carry each file's name and legacy file id to attach them by.
 - [ ] **Decide when FIESTA serves `/SC/`.** `publish.web` is false in
-  `config/sc.yaml` because the legacy CGI catalog still answers at
+  `configurations/sc.yaml` because the legacy CGI catalog still answers at
   `earthref.org/SC/`; flip it at that node's cutover.
 
 ## 2026-10-01 — Scheduled operations on MARFIK3
 
-`fiesta ops-worker` runs the jobs in `config/ops/schedules.yaml` (first:
+`fiesta ops-worker` runs the jobs in `configurations/ops/schedules.yaml` (first:
 `osu-mgr-incremental`, daily 10:00 UTC) and posts ✅/❌ to the MARFIK monitor
 channel; see [ops-scheduler.md](ops-scheduler.md). Nothing runs until these are
 done. Paths below (`/srv/fiesta-ops`, `/etc/fiesta`, user `fiesta`) are
@@ -357,13 +388,13 @@ suggestions; keep whatever MARFIK3 already uses and adjust the units to match.
       workspace's MARFIK monitor channel run `/invite @FIESTA ops` (without the
       invite every post fails with `not_in_channel`, which the ops worker logs).
       Put the channel's ID (channel details → bottom of the About tab, `C…`) in
-      `config/ops/schedules.yaml` as `slack.channel` via a PR; until then the
+      `configurations/ops/schedules.yaml` as `slack.channel` via a PR; until then the
       worker only logs its messages. Secret name: `FIESTA_SLACK_BOT_TOKEN`.
 - [ ] **Check out and sync FIESTA on MARFIK3** (the ops worker reads
-      `config/ops/schedules.yaml` and `config/fiesta.yaml` from it):
+      `configurations/ops/schedules.yaml` and `configurations/fiesta.yaml` from it):
       `git clone https://github.com/earthref/FIESTA /srv/fiesta-ops/FIESTA`,
-      then `cd /srv/fiesta-ops/FIESTA/backend && uv sync --frozen`. Nothing
-      deploys it yet: after a merge that changes `backend/` or the schedules
+      then `cd /srv/fiesta-ops/FIESTA/fiesta/backend && uv sync --frozen`. Nothing
+      deploys it yet: after a merge that changes `fiesta/backend/` or the schedules
       file, `git pull && uv sync --frozen && systemctl restart fiesta-ops-worker`
       (or extend the deploy workflow to MARFIK3 later).
 - [ ] **Check out and sync osu-mgr-pipeline on MARFIK3** at the schedule's
@@ -400,10 +431,10 @@ suggestions; keep whatever MARFIK3 already uses and adjust the units to match.
       Type=simple
       User=fiesta
       Group=fiesta
-      WorkingDirectory=/srv/fiesta-ops/FIESTA/backend
+      WorkingDirectory=/srv/fiesta-ops/FIESTA/fiesta/backend
       EnvironmentFile=/etc/fiesta/ops-worker.env
-      Environment=FIESTA_CONFIG_FILE=../config/fiesta.yaml
-      ExecStart=/srv/fiesta-ops/FIESTA/backend/.venv/bin/fiesta ops-worker
+      Environment=FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml
+      ExecStart=/srv/fiesta-ops/FIESTA/fiesta/backend/.venv/bin/fiesta ops-worker
       Restart=always
       RestartSec=10
       # a stop gives running jobs 30 s (--graceful-timeout), then stops their
@@ -433,10 +464,10 @@ suggestions; keep whatever MARFIK3 already uses and adjust the units to match.
       [Service]
       Type=oneshot
       User=<the API unit's user>
-      WorkingDirectory=/srv/fiesta/current/backend
+      WorkingDirectory=/srv/fiesta/current/fiesta/backend
       EnvironmentFile=<the API unit's env file>
-      Environment=FIESTA_CONFIG_FILE=../config/fiesta.yaml
-      ExecStart=/srv/fiesta/current/backend/.venv/bin/fiesta ops-watchdog --post --every 3600
+      Environment=FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml
+      ExecStart=/srv/fiesta/current/fiesta/backend/.venv/bin/fiesta ops-watchdog --post --every 3600
       # exit 1 means "something is overdue" and was posted to Slack
       SuccessExitStatus=1
       ```
@@ -479,7 +510,7 @@ MARFIK still needs it, and the rest are layers on top.
       `<repo>/.github/workflows/deploy.yml@refs/heads/<branch>` refs; a fork PR's
       ref is `…@refs/pull/<n>/merge`, so it can never match. As root, with
       `<runner dir>` the directory holding the runner's `config.sh` and `.env`:
-      `install -o root -g root -m 0755 scripts/runner-job-guard.sh /etc/github-runner/job-guard.sh`
+      `install -o root -g root -m 0755 fiesta/scripts/runner-job-guard.sh /etc/github-runner/job-guard.sh`
       (from a FIESTA checkout after this PR merges), then
       `/etc/github-runner/allowed-workflows` (root-owned, 0644 — the runner
       user must be able to read it but not change it). On MARFIK:
@@ -522,7 +553,7 @@ MARFIK still needs it, and the rest are layers on top.
 ## 2026-10-25 — Contribution modes and the KdD data source
 
 Nodes now run in public-contributions or data-source mode
-([data-sources.md](data-sources.md)). Since 2026-10-26 `config/fiesta.yaml` says
+([data-sources.md](data-sources.md)). Since 2026-10-26 `configurations/fiesta.yaml` says
 `source`, so dev mirrors every node and refuses uploads with no env change (when a
 node cuts over: `source,karar=public` there, or `FIESTA_CONTRIBUTIONS_MODE` on a
 host). Each node's sync schedule is on its admin page's **Data source** tab
@@ -543,8 +574,8 @@ as a service on fiesta-ct" item above applies here too.
       AWS). Never `FIESTA_DATABASE_URL`: the script writes only through the API.
       Create `/var/lib/fiesta-ops/sources/kdd` owned by the ops service user.
 - [ ] **Run it once by hand on MARFIK3**, as the service user from
-      `/srv/fiesta-ops/FIESTA/backend` with that env file loaded:
-      `.venv/bin/python ../sources/kdd.py --state-dir /var/lib/fiesta-ops/sources/kdd --dry-run`,
+      `/srv/fiesta-ops/FIESTA/fiesta/backend` with that env file loaded:
+      `.venv/bin/python ../../configurations/sources/kdd.py --state-dir /var/lib/fiesta-ops/sources/kdd --dry-run`,
       then without `--dry-run` (both read `/etc/fiesta/source-kdd.env`, e.g. via
       `set -a; . /etc/fiesta/source-kdd.env; set +a`). Expect 0 applied (Claude's dev
       run of 2026-11-10 landed all 264) and 0 quarantined with the owner map below. Then on `/KdD/admin/nodes/kdd?section=source` tick "Sync on a
@@ -556,7 +587,7 @@ as a service on fiesta-ct" item above applies here too.
 
 ## 2026-11-07 — MagIC data source, hourly
 
-`sources/magic.py` keeps dev MagIC in step with Meteor MagIC. Its schedule
+`configurations/sources/magic.py` keeps dev MagIC in step with Meteor MagIC. Its schedule
 `magic-source` is already on in git (`legacy.sync`: `enabled: true`, `40 * * * *`),
 so it starts with the MARFIK3 ops worker (§2026-10-01) as soon as the env file
 below exists; untick "Sync on a schedule" on `/MagIC/admin/nodes/magic?section=source`
@@ -578,7 +609,7 @@ so the first run sends about 75 records.
       `.claude/worktrees/karar-legacy-sync/migration/magic/hashes.json` into it,
       or the first run downloads ~2.5 GB from S3 just to hash it.
 - [ ] **Run it once by hand on MARFIK3** (as for KdD):
-      `.venv/bin/python ../sources/magic.py --state-dir /var/lib/fiesta-ops/sources/magic --dry-run`,
+      `.venv/bin/python ../../configurations/sources/magic.py --state-dir /var/lib/fiesta-ops/sources/magic --dry-run`,
       then without `--dry-run`. Dev was caught up from the laptop on 2026-11-09
       (77 applied, 74 quarantined, `missing_from_source: 9`, errors 19014 and 19020:
       no S3 object and no indexed tables in Meteor), so expect only what changed
@@ -601,7 +632,7 @@ so the first run sends about 75 records.
       `index.html` for hours, and after a deploy a stale shell points at
       hashed chunks the release swap removed ("Failed to fetch dynamically
       imported module"). In each node's SPA-fallback location add
-      `add_header Cache-Control "no-cache";` (as `frontend/nginx.conf.template`
+      `add_header Cache-Control "no-cache";` (as `fiesta/frontend/nginx.conf.template`
       now does); keep `assets/` at `public, immutable`. Optional: have
       `deploy-fiesta.sh` copy the previous release's `assets/` into the new one
       so tabs open across a deploy keep working without a reload. After:
@@ -609,7 +640,7 @@ so the first run sends about 75 records.
 
 ## 2026-11-10 — KArAr, KdD and CDR synced to dev; their schedules
 
-On 2026-11-10 Claude ran `sources/karar.py`, `kdd.py` and the new `cdr.py` from the
+On 2026-11-10 Claude ran `configurations/sources/karar.py`, `kdd.py` and the new `cdr.py` from the
 laptop against dev (as `source-sync@earthref.org`): KArAr 29 applied, KdD 264 (owner
 map: "Roger Nielsen" → `rnielsen`), CDR 682, every contribution Meteor CDR publishes (owner map: handle `cdr` →
 `admin@osu-mgr.org`; the unactivated #88 withheld by `legacy.exclude_ids`). `admin@osu-mgr.org` had no
@@ -635,7 +666,7 @@ created it, without a password, on the first record. The owner maps are in the
 - [x] **Branch protection and Actions token on FIESTA** (2026-10-22): ruleset
       "Protect main" (PR + 1 approval + `CI` + `check-labels`, admin bypass PR-only),
       default `GITHUB_TOKEN` read-only, workflows cannot approve PRs.
-- [x] **Pre-job guard on fiesta-ct** (2026-10-26): `scripts/runner-job-guard.sh`
+- [x] **Pre-job guard on fiesta-ct** (2026-10-26): `fiesta/scripts/runner-job-guard.sh`
       installed as `/etc/github-runner/job-guard.sh`, allowlist
       `earthref/FIESTA/.github/workflows/deploy.yml@refs/heads/main`, wired via
       `ACTIONS_RUNNER_HOOK_JOB_STARTED`; the runner refuses every other workflow.

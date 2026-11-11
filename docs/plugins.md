@@ -38,12 +38,12 @@ per node and edits its options through a form generated from the model's
 JSON schema. A plugin never keys behaviour on a node name; it reads
 `self.options(node)`.
 
-## One folder per plugin (`config/plugins/<name>/`)
+## One folder per plugin (`configurations/plugins/<name>/`)
 
 Everything a plugin is lives in one folder, named after the plugin:
 
 ```
-config/plugins/rock-mag/
+configurations/plugins/rock-mag/
   plugin.py            backend half: the FiestaPlugin subclass (imports as fiesta.plugins.rock_mag)
   index.tsx            UI half: default-exports the plugin's PluginModule
   rock-mag-view.tsx …  the rest of its UI
@@ -55,18 +55,19 @@ The folder is the registration: no list to edit on either side. The backend
 loads every `*/plugin.py` under `FIESTA_PLUGINS_DIR` (default: `plugins/`
 beside `FIESTA_CONFIG_FILE`), the frontend build every `*/index.tsx`, and both
 key the plugin by its folder name, which must equal its `name`. The plugin
-API stays in core: `backend/fiesta/plugins/` (`base.FiestaPlugin`, `util`,
-the loader) and `frontend/src/plugins/index.tsx` (the UI contract and
+API stays in core: `fiesta/backend/fiesta/plugins/` (`base.FiestaPlugin`, `util`,
+the loader) and `fiesta/frontend/src/plugins/index.tsx` (the UI contract and
 registry). Plugin code may import core code; core code never imports a
 plugin, only the registries.
 
 Tooling reaches the folders from the usual places: `make lint`/`make fix`
-run ruff and biome over `config/plugins`; `cd backend && uv run pytest`
-collects `config/plugins/*/test_*.py` (backend `testpaths`; a test file's
+run ruff and biome over `configurations/plugins`; `cd fiesta/backend && uv run pytest`
+collects `configurations/plugins/*/test_*.py` (backend `testpaths`; a test file's
 name must be unique across plugins); `npm run build` type-checks and bundles
-the UI (frontend `tsconfig.json` includes `../config/plugins`). In the
-Docker images `config/plugins` is `/config/plugins` — the backend's
-`/config` mount, and the frontend image's `plugins` build context.
+the UI (frontend `tsconfig.json` includes `../../configurations/plugins`). In the
+Docker images `configurations/plugins` is `/config/plugins` in the backend (its
+`/config` mount) and `/configurations/plugins` in the frontend (its `plugins`
+build context; that image mirrors the repo layout).
 
 ## Backend half (`plugin.py`)
 
@@ -102,7 +103,7 @@ parses the canonical file from the bucket.
 
 ## UI half (`index.tsx`)
 
-`index.tsx` default-exports a `PluginModule` (`frontend/src/plugins/index.tsx`):
+`index.tsx` default-exports a `PluginModule` (`fiesta/frontend/src/plugins/index.tsx`):
 custom result items and grid tiles, extra sub-tabs on a search level, filter
 overrides, home-page cards, and `contributionTabs` — asset tabs in the
 contribution modal, each counted by the matches of an optional `countTable`
@@ -112,9 +113,9 @@ into core components.
 
 Plugin files import core code through the `@/` alias (`@/lib/api`,
 `@/components/echart`, `@/plugins` for the types) and npm packages as usual;
-both resolve from `frontend/` (Vite's `resolve.dedupe` and the tsconfig
+both resolve from `fiesta/frontend/` (Vite's `resolve.dedupe` and the tsconfig
 `paths` fallback), so a plugin that needs a new package adds it to
-`frontend/package.json`. Tailwind scans the folder (`@source` in
+`fiesta/frontend/package.json`. Tailwind scans the folder (`@source` in
 `src/index.css`).
 
 Colors follow the light/dark theme through tokens, not literals: `bg-surface`
@@ -127,11 +128,11 @@ node-colored text. A plot with fixed colors (an SVG chart, a canvas) carries
 
 | Plugin | Node | What |
 |---|---|---|
-| [`poles`](../config/plugins/poles/README.md) | MagIC | a `poles` search level from location poles; the MapLibre pole maps with plate boundaries and α95 / dp-dm outlines |
-| [`rock-mag`](../config/plugins/rock-mag/README.md) | MagIC | a `rock_mag` doc per rock-magnetic result; the linked panels (Day plot, squareness–coercivity, critical temperatures, Jelinek, V1/V3 stereonet) |
-| [`pmag-plots`](../config/plugins/pmag-plots/README.md) | MagIC | the PmagPy plots (equal area, Zijderveld, demagnetization, Arai, deremagnetization, hysteresis), drawn interactively |
-| [`depth-plot`](../config/plugins/depth-plot/README.md) | CDR | depth-sorted measurement tracks per core |
-| [`plateau-calculations`](../config/plugins/plateau-calculations/README.md) | KArAr | ⁴⁰Ar/³⁹Ar age spectra and plateaus |
+| [`poles`](../configurations/plugins/poles/README.md) | MagIC | a `poles` search level from location poles; the MapLibre pole maps with plate boundaries and α95 / dp-dm outlines |
+| [`rock-mag`](../configurations/plugins/rock-mag/README.md) | MagIC | a `rock_mag` doc per rock-magnetic result; the linked panels (Day plot, squareness–coercivity, critical temperatures, Jelinek, V1/V3 stereonet) |
+| [`pmag-plots`](../configurations/plugins/pmag-plots/README.md) | MagIC | the PmagPy plots (equal area, Zijderveld, demagnetization, Arai, deremagnetization, hysteresis), drawn interactively |
+| [`depth-plot`](../configurations/plugins/depth-plot/README.md) | CDR | depth-sorted measurement tracks per core |
+| [`plateau-calculations`](../configurations/plugins/plateau-calculations/README.md) | KArAr | ⁴⁰Ar/³⁹Ar age spectra and plateaus |
 
 Retired: **`record-cards`** (ERDA, OSU-MGR) was retired on 2026-09-30: its per-table
   card layout (title column, subtitle, cells) is now core configuration, each

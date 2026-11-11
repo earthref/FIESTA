@@ -1,0 +1,68 @@
+# Hot-reload overlay for local development — `make up` layers it over
+# docker-compose.yml (pass PROD=1 to run the built images instead, which is
+# what CI's e2e job and a deployment do).
+#
+# What changes versus the built images:
+#   api         the package dirs are bind-mounted over the image's editable
+#               install and uvicorn runs with --reload, so a `git pull` (or an
+#               edit) restarts the API in place. `fiesta init` still runs first.
+#   worker      `watchfiles` restarts `fiesta worker` when backend code changes.
+#   frontend    a plain node image runs the Vite dev server (HMR, /v2 proxied
+#               to the API, every node in FIESTA_NODE under /<node>/) on the
+#               container's port 80, so the host port mapping from
+#               docker-compose.yml is unchanged. node_modules lives in a
+#               named volume and `npm install` runs on start.
+#
+# Config YAML changes still need the API restarted (`make up` does that);
+# dependency changes need `make up` too (npm install / the backend image build).
+
+x-dev-backend-volumes: &dev-backend-volumes
+  - ./configurations:/config:ro
+  - ./fiesta/backend/fiesta:/app/fiesta:ro
+  - ./fiesta/backend/alembic:/app/alembic:ro
+
+services:
+  api:
+    # configurations/ is writable here: publishing a node in the admin UI writes its
+    # files into this checkout (FIESTA_CONFIG_PUBLISH=files) to commit.
+    volumes:
+      - ./configurations:/config
+      - ./fiesta/backend/fiesta:/app/fiesta:ro
+      - ./fiesta/backend/alembic:/app/alembic:ro
+    environment:
+      FIESTA_CONFIG_PUBLISH: files
+    command: >-
+      sh -c "{ [ $${FIESTA_REMOTE:-0} = 1 ] || fiesta init; } &&
+             uvicorn fiesta.apps.api:create_app --factory --host 0.0.0.0 --port 8000 --reload --reload-dir /app/fiesta"
+  worker:
+    volumes: *dev-backend-volumes
+    command: watchfiles --filter python "fiesta worker" /app/fiesta
+
+  frontend:
+    image: node:22-alpine
+    build: !reset null
+    working_dir: /fiesta/frontend
+    command: >-
+      sh -c "npm install --no-audit --no-fund &&
+             exec npx vite --host 0.0.0.0 --port 80 --strictPort"
+    environment:
+      FIESTA_NODES: ${FIESTA_NODE:-magic}
+      VITE_API_TARGET: http://api:8000
+    volumes:
+      - ./fiesta/frontend:/fiesta/frontend
+      - node-modules:/fiesta/frontend/node_modules
+      # The plugins' UI, at the ../../configurations/plugins vite.config.ts expects
+      # (this container mirrors the repo layout: /fiesta/frontend, /configurations).
+      - ./configurations/plugins:/configurations/plugins:ro
+    # Healthy once Vite answers; `make up` passes --wait so it returns only then.
+    # The first start includes `npm install` into the empty volume (~30 s), so
+    # allow several minutes. 127.0.0.1, not localhost: Vite binds IPv4 only.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
+
+volumes:
+  node-modules:

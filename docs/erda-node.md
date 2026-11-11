@@ -60,13 +60,13 @@ MagIC's 0–360 convention.
 
 ## Vocabularies
 
-`config/erda/controlled_vocabularies.json` — `data_type`, `expert_level`,
+`configurations/erda/controlled_vocabularies.json` — `data_type`, `expert_level`,
 `project_group`, `license`, `erda_version`, `boolean`, plus `age_unit`,
 `continent_ocean`, `country`, `ocean_sea`, `state_province`, and the five
 `timescale_*` vocabularies shared with MagIC (copied, not referenced, so a
 node stays fully described by its own config).
 
-`config/erda/suggested_vocabularies.json` — `projects` (the 42 legacy projects,
+`configurations/erda/suggested_vocabularies.json` — `projects` (the 42 legacy projects,
 each tagged with its group), `education_topics`, `computer_programs`,
 `file_formats`, `region`. Suggested-vocabulary misses are warnings, which is
 what an open-ended archive needs.

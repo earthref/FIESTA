@@ -37,15 +37,15 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --frozen
-        working-directory: backend
+        working-directory: fiesta/backend
 
       - name: Lint
-        run: uv run ruff check . ../sources ../config/plugins
-        working-directory: backend
+        run: uv run ruff check . ../../configurations/sources ../../configurations/plugins
+        working-directory: fiesta/backend
 
       - name: Test
         run: uv run pytest -q
-        working-directory: backend
+        working-directory: fiesta/backend
 
   frontend:
     name: Frontend (biome + tsc + build)
@@ -57,20 +57,20 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: fiesta/frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: frontend
+        working-directory: fiesta/frontend
 
       - name: Lint
-        run: npx biome check . ../config/plugins
-        working-directory: frontend
+        run: npx biome check . ../../configurations/plugins
+        working-directory: fiesta/frontend
 
       # `npm run build` is tsc (type-check) followed by the production build.
       - name: Type-check and build
         run: npm run build
-        working-directory: frontend
+        working-directory: fiesta/frontend
 
   config:
     name: Node configs load
@@ -87,13 +87,13 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --frozen
-        working-directory: backend
+        working-directory: fiesta/backend
 
-      # Every config/*.yaml must parse, its data model and vocabularies must
+      # Every configurations/*.yaml must parse, its data model and vocabularies must
       # load, its hierarchy tables must exist, and its plugins must resolve.
       # This is the check that catches a broken node config before deploy.
       - name: Load every deployment config
-        working-directory: backend
+        working-directory: fiesta/backend
         run: |
           uv run python - <<'PY'
           import sys
@@ -102,7 +102,7 @@ jobs:
           from fiesta.plugins import active_plugins
 
           failed = False
-          for path in sorted(Path("../config").glob("*.yaml")):
+          for path in sorted(Path("../../configurations").glob("*.yaml")):
               try:
                   for node in load_deployment(path).node_list:
                       for version in node.data_model.versions:
@@ -149,7 +149,7 @@ jobs:
 
       - name: Dump container logs
         if: failure()
-        run: docker compose logs --no-color --tail 200
+        run: docker compose --project-directory . -f fiesta/docker-compose.yml logs --no-color --tail 200
 
       - name: Tear down
         if: always()
@@ -166,10 +166,10 @@ jobs:
       - run: make test-phase-m-restore
       - name: Logs
         if: failure()
-        run: docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml logs --no-color --tail 100
+        run: docker compose -p fiesta-phase-m-test --project-directory . -f fiesta/compose.phase-m-test.yml logs --no-color --tail 100
       - name: Tear down isolated stack
         if: always()
-        run: docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml down -v
+        run: docker compose -p fiesta-phase-m-test --project-directory . -f fiesta/compose.phase-m-test.yml down -v
 
   # Single required check for branch protection: green only if every job above
   # succeeded. Add this as the required status check when protecting `main`.

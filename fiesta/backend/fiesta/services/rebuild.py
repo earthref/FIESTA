@@ -1,0 +1,136 @@
+"""Rebuild search from authoritative Postgres selections and revision objects.
+
+Does not recreate accounts, restore metadata, or mutate revision history.
+"""
+
+import uuid
+
+from sqlalchemy import select, text
+
+from fiesta.db.models import Contribution, User
+from fiesta.domain.parse import ParseError, parse_text
+from fiesta.search.client import get_opensearch
+from fiesta.search.index import ensure_index
+from fiesta.services import references
+from fiesta.services.contributions import index_parsed, load_file
+from fiesta.services.revisions import revision_file
+from fiesta.settings import get_settings
+
+
+async def rebuild_node(session, node):
+    client = get_opensearch()
+    alias = node.search_index
+    target = f"{alias}-build-{uuid.uuid4().hex}"
+    # SHARE blocks concurrent contribution writes for a consistent alias switch.
+    # This is an explicit maintenance operation, not the normal event path.
+    await session.execute(text(f'LOCK TABLE "{node.node.slug}".contributions IN SHARE MODE'))
+    await ensure_index(client, target)
+    indexed = 0
+    try:
+        rows = (
+            await session.execute(select(Contribution).where(Contribution.deleted_at.is_(None)))
+        ).scalars()
+        target_node = node.model_copy(
+            update={
+                "search": node.search.model_copy(
+                    update={"index": target.removeprefix(get_settings().index_prefix)}
+                )
+            }
+        )
+        for c in rows:
+            if not c.filename:
+                continue
+            raw = (
+                await revision_file(session, node, c)
+                if c.head_revision
+                else await load_file(node, c.id, c.filename)
+            )
+            contributor = await session.get(User, c.contributor_id)
+            try:
+                parsed = parse_text(raw.decode("utf-8"))
+            except (ParseError, UnicodeDecodeError):
+                continue
+            reference = await references.lookup(session, c.reference_doi)
+            await index_parsed(target_node, c, contributor, parsed, reference, prune=False)
+            indexed += 1
+        await client.indices.refresh(index=target)
+        actions = []
+        # Looked up among the node's own indices: the production `fiesta` role
+        # may not look an alias up across the cluster (a 403).
+        own = f"{alias}*"
+        if await client.indices.exists_alias(index=own, name=alias):
+            old = await client.indices.get_alias(index=own, name=alias)
+            actions += [{"remove": {"index": index, "alias": alias}} for index in old]
+        elif await client.indices.exists(index=alias):
+            # Legacy installs used a concrete index under the alias name.
+            actions.append({"remove_index": {"index": alias}})
+        actions.append({"add": {"index": target, "alias": alias}})
+        await client.indices.update_aliases(body={"actions": actions})
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        await client.indices.delete(index=target)
+        raise
+    return {"indexed": indexed, "index": target, "alias": alias}
+
+
+async def verify_index(session, node, *, fix=False):
+    """Compare a node's live contributions in Postgres with its search index.
+
+    `missing`: a live contribution with a parseable file and no contribution doc;
+    `orphaned`: a contribution doc whose contribution is deleted or absent. With
+    `fix`, each missing one is re-indexed and each orphan's docs deleted, one
+    contribution at a time (no index swap, unlike `rebuild_node`)."""
+    from opensearchpy.helpers import async_scan
+
+    from fiesta.search.documents import delete_contribution_docs
+
+    client = get_opensearch()
+    index = node.search_index
+    await ensure_index(client, index)
+    indexed = {
+        hit["_source"]["summary"]["contribution"]["id"]
+        async for hit in async_scan(
+            client,
+            index=index,
+            query={"query": {"term": {"type": "contribution"}}},
+            _source=["summary.contribution.id"],
+            clear_scroll=False,  # the restricted role may not clear scrolls; it expires
+        )
+    }
+    live = {
+        c.id: c
+        for c in (
+            await session.execute(
+                select(Contribution).where(
+                    Contribution.deleted_at.is_(None), Contribution.filename.is_not(None)
+                )
+            )
+        ).scalars()
+    }
+    report = {"live": len(live), "indexed": len(indexed), "missing": [], "unparseable": []}
+    report["orphaned"] = sorted(indexed - set(live))
+    report["fixed"] = 0
+    for cid in sorted(set(live) - indexed):
+        c = live[cid]
+        raw = (
+            await revision_file(session, node, c)
+            if c.head_revision
+            else await load_file(node, c.id, c.filename)
+        )
+        try:
+            parsed = parse_text(raw.decode("utf-8"))
+        except (ParseError, UnicodeDecodeError):
+            report["unparseable"].append(cid)  # has no docs by design
+            continue
+        report["missing"].append(cid)
+        if fix:
+            contributor = await session.get(User, c.contributor_id)
+            reference = await references.lookup(session, c.reference_doi)
+            await index_parsed(node, c, contributor, parsed, reference)
+            report["fixed"] += 1
+    if fix:
+        for cid in report["orphaned"]:
+            await delete_contribution_docs(client, index, cid)
+            report["fixed"] += 1
+    return report

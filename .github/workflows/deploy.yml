@@ -10,7 +10,7 @@ name: Deploy
 # branch NAME, so a fork PR from a branch called `main` passes it. The job's
 # `if` also requires the CI run to be a push to this repository, i.e. by an
 # account with write access. workflow_dispatch stays for manual rollouts.
-# On the host, scripts/runner-job-guard.sh refuses any job whose workflow is
+# On the host, fiesta/scripts/runner-job-guard.sh refuses any job whose workflow is
 # not this file on main (a fork PR can add its own self-hosted workflow).
 on:
   workflow_run:

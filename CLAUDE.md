@@ -2,13 +2,13 @@
 
 ## What This Is
 
-FIESTA is the platform behind the EarthRef.org data repositories (nodes): MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR, SC. One codebase serves any node; a deployment is fully described by one YAML in `config/`. Rebuilt from scratch in July 2026 (Meteor/Semantic-UI → FastAPI + Vite/React). The direction as of 2026-09-10 is **one FIESTA API for every node** (`/v2/{node}/...`) that the SPA talks to directly — see `ROADMAP.md` Phase A. Long-form rationale lives in `docs/`, `development.md`, `deployment.md` and `ROADMAP.md`; this file is the rules.
+FIESTA is the platform behind the EarthRef.org data repositories (nodes): MagIC, KdD, CDR, KArAr, ERDA, OSU-MGR, SC. One codebase serves any node; a deployment is fully described by one YAML in `configurations/`. Rebuilt from scratch in July 2026 (Meteor/Semantic-UI → FastAPI + Vite/React). The direction as of 2026-09-10 is **one FIESTA API for every node** (`/v2/{node}/...`) that the SPA talks to directly — see `docs/ROADMAP.md` Phase A. Long-form rationale lives in `docs/`, `docs/development.md`, `docs/deployment.md` and `docs/ROADMAP.md`; this file is the rules.
 
 ## Stack
 
 ```
-Backend:    FastAPI + SQLAlchemy (async) + asyncpg + Pydantic v2 + Alembic      (backend/, package `fiesta`)
-API:        one process, `fiesta.apps.api` — every node under /v2/{repository}/... (api.earthref.org, and what the SPA talks to); `config/fiesta.yaml` lists the nodes, FIESTA_NODE narrows them. /v1 is the frozen legacy api.earthref.org contract (`routers/v1.py`, MagIC only, ported from old-backend) — never change its behaviour, add to /v2
+Backend:    FastAPI + SQLAlchemy (async) + asyncpg + Pydantic v2 + Alembic      (fiesta/backend/, package `fiesta`)
+API:        one process, `fiesta.apps.api` — every node under /v2/{repository}/... (api.earthref.org, and what the SPA talks to); `configurations/fiesta.yaml` lists the nodes, FIESTA_NODE narrows them. /v1 is the frozen legacy api.earthref.org contract (`routers/v1.py`, MagIC only, ported from old-backend) — never change its behaviour, add to /v2
 Jobs:       procrastinate (Postgres-native LISTEN/NOTIFY) — parse / validate / summarize / index, email
 Frontend:   Vite + React + TanStack Router/Query SPA, Tailwind; one build serves any node (branding from the API)
 Database:   Postgres 16 — shared `users` schema + one schema per node (magic, cdr, …), Alembic per schema
@@ -22,20 +22,22 @@ Linting:    ruff (Python), biome (TypeScript)
 ## Repo Layout
 
 ```
-config/                <node>.yaml + <node>/{data_models/*.json, vocabularies}; fiesta.yaml lists every node the API serves
-config/plugins/<name>/ one folder per plugin: plugin.py (backend, imports as fiesta.plugins.<name_>) · index.tsx + views (UI) · test_<name_>.py · README.md
-backend/fiesta/        apps/ (api.py — one FastAPI, routers/, deps) · domain/ (parse, validate, summarize)
+configurations/        WHAT NODE DEVELOPERS EDIT. <node>.yaml + <node>/{data_models/*.json, vocabularies, assets, pages, seeds}; fiesta.yaml lists every node the API serves; ops/schedules.yaml
+  plugins/<name>/      one folder per plugin: plugin.py (backend, imports as fiesta.plugins.<name_>) · index.tsx + views (UI) · test_<name_>.py · README.md
+  sources/<slug>.py    per-node data-source sync scripts (data-source mode), built on fiesta/backend/fiesta/sources/
+fiesta/                THE PLATFORM (infra; node work does not belong here)
+  backend/fiesta/      apps/ (api.py — one FastAPI, routers/, deps) · domain/ (parse, validate, summarize)
                        services/ (contributions, rebuild) · jobs/ (procrastinate) · search/ · plugins/ (plugin API + loader) · cli.py
-backend/alembic/       migrations (applied per node schema by `fiesta init`)
-backend/tests/         pytest (domain + plugin registry; no infra needed); testpaths also collect config/plugins
-frontend/src/          routes/ components/ lib/ (api.ts, config.ts, base.ts) plugins/index.tsx (plugin UI contract + registry); `@/` = src/
-docs/                  api.md (contract) · plugins.md · legacy-ux-spec.md (pixel-level Meteor UI parity spec)
-                       <node>-node.md · OPERATOR_TODO.md (human-only actions)
-old-backend/           legacy Koa/OpenSearch API — READ-ONLY porting reference, never edited
-scripts/               e2e.sh (full workflow against a running stack), pg-node-readonly-role.sql
-sources/               <slug>.py — per-node data-source sync scripts (data-source mode), built on backend/fiesta/sources/
+  backend/alembic/     migrations (applied per node schema by `fiesta init`)
+  backend/tests/       pytest (domain + plugin registry; no infra needed); testpaths also collect configurations/plugins
+  frontend/src/        routes/ components/ lib/ (api.ts, config.ts, base.ts) plugins/index.tsx (plugin UI contract + registry); `@/` = src/
+  scripts/             e2e.sh (full workflow against a running stack), pg-node-readonly-role.sql
+  docker-compose*.yml  the local stack; the Makefile runs compose with --project-directory . (paths in them are repo-root relative)
+docs/                  api.md (contract) · plugins.md · legacy-ux-spec.md (pixel-level Meteor UI parity spec) · ROADMAP.md
+                       development.md · deployment.md · <node>-node.md · OPERATOR_TODO.md (human-only actions)
+.env / .env.example    local settings and secrets (root); Makefile, README.md, CLAUDE.md, LICENSE stay at the root too
 ../MagIC ../CDR ../KArAr ../KDD ../FIESTA-API   sibling legacy repos — reference for data models, vocab, UI, API
-.claude/skills/        /roadmap-next (reconcile ROADMAP.md, propose next) · /operator-todo (docs/OPERATOR_TODO.md)
+.claude/skills/        /roadmap-next (reconcile docs/ROADMAP.md, propose next) · /operator-todo (docs/OPERATOR_TODO.md)
 ```
 
 ## Commands (use exactly these forms — they match the permission allowlist)
@@ -51,10 +53,10 @@ make worker-dev                 # procrastinate worker for every node in FIESTA_
 make frontend-dev               # Vite on :5173 for every node in FIESTA_NODE (:5173/MagIC/; nvm use first — Node 22); VITE_API_TARGET=http://localhost:18000 to re-point
 make test                       # backend pytest + frontend tsc/build   (make test-backend / make test-frontend)
 make lint / make fix            # ruff + biome check / auto-fix
-make e2e                        # scripts/e2e.sh against a running `make up FIESTA_NODE=magic PROD=1`
+make e2e                        # fiesta/scripts/e2e.sh against a running `make up FIESTA_NODE=magic PROD=1`
 make init / make rebuild / make user EMAIL=… NAME=…   # run once on the `api` service
-cd backend && uv run pytest tests/test_domain.py -x --tb=short
-cd backend && FIESTA_CONFIG_FILE=../config/fiesta.yaml FIESTA_NODE=magic uv run fiesta <init|rebuild --yes|worker|create-user>
+cd fiesta/backend && uv run pytest tests/test_domain.py -x --tb=short
+cd fiesta/backend && FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml FIESTA_NODE=magic uv run fiesta <init|rebuild --yes|worker|create-user>
 ```
 
 On this machine host ports 5432/8000/8001 are taken: `.env` publishes Postgres on 55432 and the API on `API_PORT` (the old per-node `<NODE>_BACKEND_PORT` variables are retired, so this machine's `.env` must set `API_PORT`, e.g. 18000). `make e2e API_PORT=…` reads the same override. `.env` holds secrets — do not print it.
@@ -62,14 +64,14 @@ On this machine host ports 5432/8000/8001 are taken: `.env` publishes Postgres o
 ## Hard Rules (each links to its rationale)
 
 - **Postgres owns application state; the bucket preserves immutable contribution history; OpenSearch is a projection.** Save content through the revision service with optimistic concurrency and an idempotency key. Commit revision pointers and outbox events together. Never edit published revision content or erase retained history. `fiesta rebuild` rebuilds search only; full recovery needs Postgres plus S3. Local development uses Docker and per-node seed manifests, never production credentials. → [docs/phase-m.md](docs/phase-m.md)
-- **A node is configuration, never a code branch.** Identity, colors, index, bucket, data model, vocabularies, hierarchy, facets, and enabled features all live in `config/<node>.yaml` + `config/<node>/`; the loader validates it on startup and before every publication, and CI loads every YAML. No `if node == "magic"` in core code. The served copy is the node's published revision in Postgres: admins draft and publish in the admin UI (`fiesta.services.node_config`), publication writes the same files back to git (`FIESTA_CONFIG_PUBLISH`, a PR from `node-config/<slug>`), and `fiesta init` imports trees merged in git that Postgres never published. Change a node in either place, never in only the database. Roles: `users.is_admin` = super admin, `node_admins` = per-node admin; check them with `user.is_node_admin(slug)`, never `is_admin` alone. → [README.md](README.md), [development.md](development.md) "Adding or changing a node", [docs/api.md](docs/api.md) "Admin"
-- **Node-specific science is a plugin** (everything in one folder, `config/plugins/<name>/`: `plugin.py`, its UI, tests and README; the plugin API stays in core, `fiesta.plugins.base`/`util` and `frontend/src/plugins/index.tsx`; activated by `features.plugins`, tuned per node under the YAML's `plugins.<name>` map, which its pydantic `Options` model validates). Poles, depth plots, age plateaus, record cards, digital objects — all plugins. New node feature ⇒ new plugin, not a core special case; a plugin never keys behaviour on a node name (the old `CARDS_BY_NODE` is what this rule forbids), it reads its options. → [docs/plugins.md](docs/plugins.md)
-- **Data models and vocabularies are the legacy repos' JSON, converted, not rewritten.** `config/<node>/data_models/<version>.json` comes from the Meteor repos' `export const` modules. MagIC 3.0 gotchas: no `experiments` table (it is a derived search level); longitudes are 0–360; `lab_names`, `citations`, `geologic_types`, `lithologies`, `age_unit`, `reference` are required — fixtures and seeds must satisfy them.
+- **A node is configuration, never a code branch.** Identity, colors, index, bucket, data model, vocabularies, hierarchy, facets, and enabled features all live in `configurations/<node>.yaml` + `configurations/<node>/`; the loader validates it on startup and before every publication, and CI loads every YAML. No `if node == "magic"` in core code. The served copy is the node's published revision in Postgres: admins draft and publish in the admin UI (`fiesta.services.node_config`), publication writes the same files back to git (`FIESTA_CONFIG_PUBLISH`, a PR from `node-config/<slug>`), and `fiesta init` imports trees merged in git that Postgres never published. Change a node in either place, never in only the database. Roles: `users.is_admin` = super admin, `node_admins` = per-node admin; check them with `user.is_node_admin(slug)`, never `is_admin` alone. → [README.md](README.md), [docs/development.md](docs/development.md) "Adding or changing a node", [docs/api.md](docs/api.md) "Admin"
+- **Node-specific science is a plugin** (everything in one folder, `configurations/plugins/<name>/`: `plugin.py`, its UI, tests and README; the plugin API stays in core, `fiesta.plugins.base`/`util` and `fiesta/frontend/src/plugins/index.tsx`; activated by `features.plugins`, tuned per node under the YAML's `plugins.<name>` map, which its pydantic `Options` model validates). Poles, depth plots, age plateaus, record cards, digital objects — all plugins. New node feature ⇒ new plugin, not a core special case; a plugin never keys behaviour on a node name (the old `CARDS_BY_NODE` is what this rule forbids), it reads its options. → [docs/plugins.md](docs/plugins.md)
+- **Data models and vocabularies are the legacy repos' JSON, converted, not rewritten.** `configurations/<node>/data_models/<version>.json` comes from the Meteor repos' `export const` modules. MagIC 3.0 gotchas: no `experiments` table (it is a derived search level); longitudes are 0–360; `lab_names`, `citations`, `geologic_types`, `lithologies`, `age_unit`, `reference` are required — fixtures and seeds must satisfy them.
 - **Search documents keep the legacy shape** `{type, summary: {contribution, <level>, _all}, rows}`; `summary._all` unions row values (capped 500/column) for free-text search; workflow flags `_is_activated` / `_is_latest` / `_private_key` live in `summary.contribution`. Public reads are always `_is_latest` and `_is_activated` unless a matching private key is supplied. → [docs/api.md](docs/api.md)
-- **Each node runs in public-contributions or data-source mode** (per deployment, not per node YAML: `api.contributions_mode` in `config/fiesta.yaml` = `source` until the Meteor cutover, `FIESTA_CONTRIBUTIONS_MODE` overrides it, local stacks and tests set `public`; the sync schedule is the node YAML's `legacy.sync`, edited on the admin page's Data source tab). In data-source mode user writes are refused and the node is written only through `/v2/{node}/source` by its `sources/<slug>.py`, which sends changed records over the API as a node admin and never touches Postgres; records go through `fiesta.services.legacy.import_record`, the same importer and checkpoints as `sync-legacy`. → [docs/data-sources.md](docs/data-sources.md)
+- **Each node runs in public-contributions or data-source mode** (per deployment, not per node YAML: `api.contributions_mode` in `configurations/fiesta.yaml` = `source` until the Meteor cutover, `FIESTA_CONTRIBUTIONS_MODE` overrides it, local stacks and tests set `public`; the sync schedule is the node YAML's `legacy.sync`, edited on the admin page's Data source tab). In data-source mode user writes are refused and the node is written only through `/v2/{node}/source` by its `configurations/sources/<slug>.py`, which sends changed records over the API as a node admin and never touches Postgres; records go through `fiesta.services.legacy.import_record`, the same importer and checkpoints as `sync-legacy`. → [docs/data-sources.md](docs/data-sources.md)
 - **Visibility is enforced server-side in one place.** Private contributions are visible only to their contributor (or admin) or via `private_key`; plugin routes go through `fiesta.plugins.util.load_visible_parsed` (or its `load_visible_contribution` half, for a route that caches the file's contents). Never add a route that reads a contribution file without that check.
 - **Multi-node isolation invariants**: contributions carry a `node` column; each node has its own Postgres schema, OpenSearch index, bucket prefix, and procrastinate queue; accounts are shared (one EarthRef login). A migration runs once per node schema under a `schema_translate_map`, but Alembic's `add_column` / `alter_column` / `drop_column` render the schema literally and bypass it (CI e2e failure 2026-09-10): in those ops use the resolved `context.config.attributes["node_schema"]` / `["shared_schema"]` set by `alembic/env.py`, never the `NODE_SCHEMA` token; `create_table` / `create_index` may use either. Legacy Meteor apps share the OpenSearch cluster with indices named plainly `magic`, `cdr`, … — `fiesta rebuild` deletes and recreates an index, so `FIESTA_INDEX_PREFIX` is mandatory on any shared cluster.
-- **UI parity is a spec, not a vibe.** Legacy Meteor UI behaviour is recorded in [docs/legacy-ux-spec.md](docs/legacy-ux-spec.md); deviations are decisions recorded there or in `ROADMAP.md`, not accidents.
+- **UI parity is a spec, not a vibe.** Legacy Meteor UI behaviour is recorded in [docs/legacy-ux-spec.md](docs/legacy-ux-spec.md); deviations are decisions recorded there or in `docs/ROADMAP.md`, not accidents.
 - **`old-backend/` and the sibling legacy repos are read-only reference.** Port from them; never edit them from a FIESTA session.
 - **Never `git stash`/pop to compare against HEAD** — the tree can carry concurrent uncommitted work.
 - **Sessions do not share this tree for edits.** A session that will modify files runs `EnterWorktree` first (subagents: `isolation: "worktree"`); one that must edit here anyway commits ONLY by explicit pathspec (`git commit -- <files>`, never `git add .`/`-a`) and checks `git status` on each file it touches immediately before committing.
@@ -88,15 +90,15 @@ Delegate when work fans out across independent items (six node YAMLs, the per-no
 
 `/roadmap-next` runs forked (`context: fork`, Opus 5.5) so its `git log` and ROADMAP reads stay out of this transcript; `/operator-todo` stays inline because it collects from the session and therefore sets no `model:`.
 
-Edit files surgically; never rewrite a file to change a few lines. Scratch checks live in the scratchpad; commit a test only where the task asks for one or the neighbouring module already keeps tests for that kind of change (`backend/tests/test_domain.py`, `test_plugins.py`).
+Edit files surgically; never rewrite a file to change a few lines. Scratch checks live in the scratchpad; commit a test only where the task asks for one or the neighbouring module already keeps tests for that kind of change (`fiesta/backend/tests/test_domain.py`, `test_plugins.py`).
 
 ## Skills (`.claude/skills/`)
 
-`/roadmap-next` (reconcile ROADMAP.md with `git log`, propose the next 1–3 items, separating code work from operator blockers) · `/operator-todo` (maintain docs/OPERATOR_TODO.md).
+`/roadmap-next` (reconcile docs/ROADMAP.md with `git log`, propose the next 1–3 items, separating code work from operator blockers) · `/operator-todo` (maintain docs/OPERATOR_TODO.md).
 
-## Domain Model (one line each; details in docs/api.md and backend/fiesta/db/models.py)
+## Domain Model (one line each; details in docs/api.md and fiesta/backend/fiesta/db/models.py)
 
-`users` (shared schema; email/handle, `orcid`, `is_admin`) → `contributions` (per-node schema; `node`, `version`/`previous_id`, `private_key`, `is_activated`/`is_latest`, `data_model_version`, `reference_doi`, `filename`, `status` ∈ created|uploaded|parsing|validating|summarizing|ready|failed) → bucket objects `<prefix><id>/<filename>` + `manifest.json`; search docs per node index (`type` = contribution | hierarchy level | plugin-derived type); procrastinate queues = node slug + `default` (email). Node config: `NodeConfig` in `backend/fiesta/nodeconfig.py` (identity, search levels/filters, storage, data_model versions, vocabularies, hierarchy, doi prefix, pages, features.plugins).
+`users` (shared schema; email/handle, `orcid`, `is_admin`) → `contributions` (per-node schema; `node`, `version`/`previous_id`, `private_key`, `is_activated`/`is_latest`, `data_model_version`, `reference_doi`, `filename`, `status` ∈ created|uploaded|parsing|validating|summarizing|ready|failed) → bucket objects `<prefix><id>/<filename>` + `manifest.json`; search docs per node index (`type` = contribution | hierarchy level | plugin-derived type); procrastinate queues = node slug + `default` (email). Node config: `NodeConfig` in `fiesta/backend/fiesta/nodeconfig.py` (identity, search levels/filters, storage, data_model versions, vocabularies, hierarchy, doi prefix, pages, features.plugins).
 
 ## What NOT to Add
 

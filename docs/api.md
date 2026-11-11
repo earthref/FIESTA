@@ -3,7 +3,7 @@
 There is **one** FastAPI process — `fiesta.apps.api:create_app` — serving every
 node in the deployment under `/v2/{repository}/...` (this is `api.earthref.org`
 and what the SPA talks to directly). The deployment is described by
-`config/fiesta.yaml` (`deployment: api`, `api: {title, nodes: [magic.yaml, ...]}`);
+`configurations/fiesta.yaml` (`deployment: api`, `api: {title, nodes: [magic.yaml, ...]}`);
 `FIESTA_NODE` (comma-separated keys/slugs, empty = all) narrows which of those
 nodes a given process serves. A single node YAML still loads on its own as a
 one-node deployment (used by the tests).
@@ -100,13 +100,13 @@ configuration is a 422 with `{"detail": {"errors": [...]}}`. A draft that
 changes a protected setting (`node.key`, `node.slug`, `search.index`,
 `storage`, `legacy`, `publish`) can only be published by a super admin.
 
-**Node configuration lifecycle.** Each node is a file tree, `config/<slug>.yaml`
-plus `config/<slug>/**`. Postgres keeps every version of it (shared schema:
+**Node configuration lifecycle.** Each node is a file tree, `configurations/<slug>.yaml`
+plus `configurations/<slug>/**`. Postgres keeps every version of it (shared schema:
 `nodes`, `node_revisions`, content-addressed `config_blobs`). Admins edit one
 draft per node. Publishing it makes it the revision every API process and
 worker serves (within 5 s), and writes the same bytes to the repository
 (`FIESTA_CONFIG_PUBLISH`: `github` opens or updates a PR from the
-`node-config/<slug>` branch, `files` writes this checkout's `config/`). `fiesta init`
+`node-config/<slug>` branch, `files` writes this checkout's `configurations/`). `fiesta init`
 imports a repository tree Postgres has never published, as a revision with
 source `repo`, so changes merged in git reach the live node too. A tree that
 matches any earlier publication is not imported, so a deploy never rolls back
@@ -133,8 +133,8 @@ after its YAML is merged and deployed, because the frontend is built per node.
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/v2/{repository}/config` | Public node config (below) |
-| GET | `/v2/{repository}/config/assets/{path}` | static file from `config/<slug>/assets/` (news images, …) |
-| GET | `/v2/{repository}/config/pages/{slug}` | a content page `{slug, title, menu, icon, html}` from `config/<slug>/pages/<page>.html` (404 if the YAML does not list it); the SPA sanitizes `html` (DOMPurify) before rendering |
+| GET | `/v2/{repository}/config/assets/{path}` | static file from `configurations/<slug>/assets/` (news images, …) |
+| GET | `/v2/{repository}/config/pages/{slug}` | a content page `{slug, title, menu, icon, html}` from `configurations/<slug>/pages/<page>.html` (404 if the YAML does not list it); the SPA sanitizes `html` (DOMPurify) before rendering |
 | GET | `/v2/{repository}/config/data-models/{version}` | Full data model JSON for a version (404 if unknown) |
 | GET | `/v2/{repository}/config/vocabularies/controlled` | `{<name>: {label, database_column, items: [{item, label?}]}}` |
 | GET | `/v2/{repository}/config/vocabularies/suggested` | same shape |
@@ -614,7 +614,7 @@ search is current. Publishing validates the exact current revision. See
 
 `/v1/...` is the API that `old-backend` served at api.earthref.org, ported onto
 FIESTA's Postgres-owned contributions, revision service and search projection
-(`backend/fiesta/apps/routers/v1.py`). Its own OpenAPI document — the one the
+(`fiesta/backend/fiesta/apps/routers/v1.py`). Its own OpenAPI document — the one the
 legacy service published — is served unchanged at `/v1/openapi.yaml` (ReDoc at
 `/v1`); nothing under `/v1` appears in `/v2/openapi.json`. It only ever served
 MagIC and is tested against MagIC, though `{repository}` resolves any enabled

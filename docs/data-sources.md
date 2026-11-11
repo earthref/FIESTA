@@ -7,10 +7,10 @@ Every node runs in one of two modes, per deployment:
 | `public` | in FIESTA: upload, validate, publish, new versions | the system of record |
 | `source` | at the node's data source (until the cutover, its Meteor app) | a mirror: a sync script writes what the source holds; users read but do not upload or change contributions |
 
-The mode is `api.contributions_mode` in `config/fiesta.yaml`, overridden by
+The mode is `api.contributions_mode` in `configurations/fiesta.yaml`, overridden by
 `FIESTA_CONTRIBUTIONS_MODE`: one mode for every node plus `<slug>=<mode>`
 exceptions, e.g. `source`, `source,karar=public` (KArAr cut over, the rest
-still mirrored) or `public,kdd=source`. `config/fiesta.yaml` says `source`
+still mirrored) or `public,kdd=source`. `configurations/fiesta.yaml` says `source`
 until the cutover from Meteor, so every deployment mirrors; local stacks
 (`docker-compose.yml`, `make backend-dev` / `worker-dev`) and the tests set
 `public`. The node YAML is the same in both: the mode is about where a
@@ -56,11 +56,11 @@ and its revisions with their files' sha256. Both go through one importer,
 Each applied record queues the usual outbox event (parse, validate, summarize,
 index), so the node's worker must be running.
 
-## Per-node scripts (`sources/<slug>.py`)
+## Per-node scripts (`configurations/sources/<slug>.py`)
 
 A script reads its node's source and sends the changed records. It needs the
 source's read credentials and a node admin account, never FIESTA's database.
-The shared parts are in `backend/fiesta/sources/`: `client.SourceAPI` (the API
+The shared parts are in `fiesta/backend/fiesta/sources/`: `client.SourceAPI` (the API
 above) and `meteor` (a legacy Meteor node: its OpenSearch index and S3 archive
 bucket, read with the `fiesta legacy-inventory` reader into a state directory
 whose hash cache keeps unchanged S3 objects from being downloaded again, and
@@ -70,18 +70,18 @@ A node-specific fix-up of the source records belongs in the node's script.
 
 | Script | Source | Status |
 |---|---|---|
-| `sources/kdd.py` | Meteor KdD: index `kdd`, bucket `kdd-activated-contributions` | first; schedule `kdd-source`, off until `legacy.sync.enabled` |
-| `sources/karar.py` | Meteor KArAr: index `karar`, buckets `karar-activated-contributions`, `karar-contributions` | schedule `karar-source`, off until `legacy.sync.enabled`; continues from the `legacy-karar` bulk import |
-| `sources/cdr.py` | Meteor CDR: index `cdr-3` (no archive bucket; every record exported from the index) | schedule `cdr-source`, off until `legacy.sync.enabled`; needs the owner map (`cdr` handle → steward); `legacy.exclude_ids` withholds #88 |
-| `sources/magic.py` | Meteor MagIC: index `magic`, buckets `magic-activated-contributions`, `magic-contributions`, `magic-private-contributions` | schedule `magic-source`, on, hourly at :40; continues from the `legacy-magic` bulk import |
+| `configurations/sources/kdd.py` | Meteor KdD: index `kdd`, bucket `kdd-activated-contributions` | first; schedule `kdd-source`, off until `legacy.sync.enabled` |
+| `configurations/sources/karar.py` | Meteor KArAr: index `karar`, buckets `karar-activated-contributions`, `karar-contributions` | schedule `karar-source`, off until `legacy.sync.enabled`; continues from the `legacy-karar` bulk import |
+| `configurations/sources/cdr.py` | Meteor CDR: index `cdr-3` (no archive bucket; every record exported from the index) | schedule `cdr-source`, off until `legacy.sync.enabled`; needs the owner map (`cdr` handle → steward); `legacy.exclude_ids` withholds #88 |
+| `configurations/sources/magic.py` | Meteor MagIC: index `magic`, buckets `magic-activated-contributions`, `magic-contributions`, `magic-private-contributions` | schedule `magic-source`, on, hourly at :40; continues from the `legacy-magic` bulk import |
 
-Run one by hand from the repository root (`make fiesta` runs it in `backend/`
+Run one by hand from the repository root (`make fiesta` runs it in `fiesta/backend/`
 with that env file's legacy read credentials):
 
 ```bash
 FIESTA_SOURCE_EMAIL=<node admin> FIESTA_SOURCE_PASSWORD=<password> \
   make fiesta ENV_FILE=/abs/path/.env.prod NODE=kdd CMD=python \
-  ARGS="../sources/kdd.py --api http://localhost:18000 --dry-run"
+  ARGS="../../configurations/sources/kdd.py --api http://localhost:18000 --dry-run"
 ```
 
 | Option / variable | |
@@ -114,7 +114,7 @@ legacy:
 
 The admin node page's **Data source** tab (`/admin/nodes/<slug>?section=source`)
 edits it into the draft like any other setting (publish to apply), and shows
-the mode, whether the checkout has `sources/<slug>.py`, how many records are
+the mode, whether the checkout has `configurations/sources/<slug>.py`, how many records are
 synced, the ops scheduler's last run of the schedule (queued, running,
 succeeded or failed, also for a run that crashed before reporting) and the
 last 20 run reports with their counts and errors. **Run now** queues one run.
@@ -125,12 +125,12 @@ enabled by its `legacy.sync.enabled` (a disabled one still runs from Run now or
 `fiesta ops-run <slug>-source`). It reads the published node configuration
 every 30 s and, once no ops job is running, restarts on the new schedules, so a
 publication takes effect without a deploy. How this host runs the scripts is the
-`sources:` block of `config/ops/schedules.yaml`:
+`sources:` block of `configurations/ops/schedules.yaml`:
 
 ```yaml
 sources:
   python: null                                   # default: the ops worker's interpreter
-  cwd: null                                      # default: the checkout's backend/
+  cwd: null                                      # default: the checkout's fiesta/backend/
   env_file: /etc/fiesta/source-{slug}.env        # the variables above
   state_dir: /var/lib/fiesta-ops/sources/{slug}
   owner_map: /etc/fiesta/source-{slug}-owners.json   # --owner-map, when the file exists

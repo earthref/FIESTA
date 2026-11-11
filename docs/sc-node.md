@@ -69,12 +69,12 @@ linked it in `seamounts`. ERDA files and references are shared the same way.
 
 ## Vocabularies
 
-`config/sc/controlled_vocabularies.json` — `boolean`, `sc_version`,
+`configurations/sc/controlled_vocabularies.json` — `boolean`, `sc_version`,
 `seamount_type`, `size_class`, `tectonic_setting`, `oceanic_province`,
 `volcanic_activity`, `scale`, `bathymetry_type`, `map_product`: every value the
 legacy catalog uses, no more.
 
-`config/sc/suggested_vocabularies.json` — `region`, `plate`, `shape_class`:
+`configurations/sc/suggested_vocabularies.json` — `region`, `plate`, `shape_class`:
 the catalog's values, as warnings, since new seamounts bring new regions.
 
 ## Search
@@ -105,7 +105,7 @@ headline morphology.
 
 ## Legacy import
 
-`scripts/sc-legacy-catalog.py` reads the public pages (standard library only;
+`fiesta/scripts/sc-legacy-catalog.py` reads the public pages (standard library only;
 `--help` has the options). There is no structured source FIESTA can reach, the
 same as ERDA, and SC has no contributions to import record by record — the
 contributions are built here, one per region:
@@ -125,7 +125,7 @@ contributions are built here, one per region:
 Every response is cached under `--cache`, so re-runs are offline. The server
 drops requests whose User-Agent does not look like a browser.
 
-- `--seeds config/sc/seeds` writes `catalog/<region>.txt` and the `catalog-*`
+- `--seeds configurations/sc/seeds` writes `catalog/<region>.txt` and the `catalog-*`
   entries of `seeds/manifest.yaml`, so `make up FIESTA_NODE=sc` serves the
   whole catalog locally.
 - `--inventory ../migration/sc --owner <steward email>` writes `records/` and
