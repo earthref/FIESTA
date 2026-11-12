@@ -136,8 +136,8 @@ function ColorLegend({ scale, option }: { scale: ColorScale | null; option: MapC
   );
 }
 
-/** An area filter asked for (the sidebar's Geospatial filter or the map's
- * button), in a given view (`mode`), and zooming the map to it (`zoomTo`). */
+/** An area filter asked for (the Geospatial filter modal, on opening without
+ * one), in a given view (`mode`), and zooming the map to it (`zoomTo`). */
 export type AreaRequest = { mode?: Mode; zoomTo?: boolean };
 
 /**
@@ -156,8 +156,7 @@ export function SearchMap({
   has,
   area,
   onAreaChange,
-  areaRequest,
-  onRequestArea,
+  areaRequest = null,
   onAreaRequestDone,
   onSelect,
   color,
@@ -174,10 +173,9 @@ export function SearchMap({
   scope?: SearchScope;
   area: Area | null;
   onAreaChange: (area: Area | null) => void;
-  areaRequest: AreaRequest | null;
-  onRequestArea: () => void;
+  areaRequest?: AreaRequest | null;
   // Called when a request needs no new area (there is one already).
-  onAreaRequestDone: () => void;
+  onAreaRequestDone?: () => void;
   onSelect: (contributionId: string) => void;
   color: string;
 }) {
@@ -274,7 +272,7 @@ export function SearchMap({
     if (!areaPending) return;
     if (area) {
       if (areaRequest?.zoomTo) setZoomTo(area);
-      onAreaRequestDone();
+      onAreaRequestDone?.();
       return;
     }
     if (unfiltered) return;
@@ -343,7 +341,7 @@ export function SearchMap({
           counts={counts?.modes}
           emptyTitle={(each) => noneMapped(inMode(each))}
         />
-        {area ? (
+        {area && (
           <button
             type="button"
             onClick={() => onAreaChange(null)}
@@ -353,18 +351,6 @@ export function SearchMap({
             <Icon name="close" className="h-3 w-3" />
             Remove area
           </button>
-        ) : (
-          onEarth && (
-            <button
-              type="button"
-              onClick={onRequestArea}
-              title="Filter to an area you can move and resize on the map"
-              className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 font-bold ${buttonClass(false)}`}
-            >
-              <Icon name="map-marker" className="h-3 w-3" />
-              Filter by area
-            </button>
-          )
         )}
         {colorOptions.length > 0 && (
           <label className="inline-flex items-center gap-1.5 font-bold text-gray-700">

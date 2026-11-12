@@ -1332,8 +1332,8 @@ const areaOf = (b: Bounds): Area | null => {
 
 /**
  * The geospatial area: the search's records on a map (with a level that has
- * positions) where "Filter by area" adds an area to drag and resize, and its
- * bounds as numbers. Longitudes may run past ±180 across the antimeridian.
+ * positions) with an area to drag and resize, drawn around them on opening
+ * when there is none yet, and its bounds as numbers. Longitudes may run past ±180 across the antimeridian.
  */
 export function GeoModal({
   title,
@@ -1362,8 +1362,10 @@ export function GeoModal({
 }) {
   const [draft, setDraft] = useState<Area | null>(area);
   const [bounds, setBounds] = useState<Bounds>(boundsOf(area));
-  const [request, setRequest] = useState<AreaRequest | null>(null);
+  // Opened without an area, the map draws one around the search's records.
+  const [request, setRequest] = useState<AreaRequest | null>(area || !level.geo ? null : {});
   const fromMap = (next: Area | null) => {
+    setRequest(null);
     setDraft(next);
     setBounds(boundsOf(next));
   };
@@ -1417,7 +1419,6 @@ export function GeoModal({
               area={draft}
               onAreaChange={fromMap}
               areaRequest={request}
-              onRequestArea={() => setRequest({})}
               onAreaRequestDone={() => setRequest(null)}
               onSelect={() => {}}
               color={color}
@@ -1445,7 +1446,7 @@ export function GeoModal({
         ) : (
           <p className="text-[12px] text-ink-muted">
             {level.geo
-              ? "Use Filter by area on the map, then drag the outline or its corners, or type the bounds."
+              ? "Drag the outline on the map or its corners, or type the bounds."
               : "Type the bounds in degrees."}
           </p>
         )}
