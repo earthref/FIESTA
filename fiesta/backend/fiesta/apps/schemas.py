@@ -189,6 +189,15 @@ class NumberColumns(BaseModel):
     columns: dict[str, int]
 
 
+class FilterCounts(BaseModel):
+    """Of the docs matching a search (`total`), how many have a value for
+    each sidebar filter asked for (`counts`: key -> n, zero included): the
+    most records the filter can match, its label in the sidebar."""
+
+    total: int
+    counts: dict[str, int]
+
+
 class HasColumns(BaseModel):
     """One table's columns for the with/without data filter: of the docs
     matching a search (`total`), how many have the table (`with_table`) and

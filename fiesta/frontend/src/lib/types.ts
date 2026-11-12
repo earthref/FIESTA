@@ -406,3 +406,10 @@ export interface NumberColumns {
   total: number;
   columns: Record<string, number>;
 }
+
+/** GET /search/{table}/filters: of a search's docs, how many have a value for
+ * each sidebar filter asked for (`count=geo|bbox|numeric|exists|facet:<column>|range:<path>`). */
+export interface FilterCounts {
+  total: number;
+  counts: Record<string, number>;
+}

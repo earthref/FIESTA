@@ -572,6 +572,60 @@ def test_search_has_counts_one_table(magic_node, monkeypatch):
     ]
 
 
+def test_search_filter_counts(magic_node, monkeypatch):
+    """GET /search/{table}/filters: one request, a `filters` aggregation with
+    a clause per sidebar filter asked for (zero included); unknown keys 422."""
+    import asyncio
+
+    from fiesta.apps.routers import search as router
+
+    bodies = []
+
+    class Client:
+        async def search(self, index, body):
+            bodies.append(body)
+            return {
+                "hits": {"total": {"value": 10}},
+                "aggregations": {"filters": {"buckets": {"geo": {"doc_count": 4}}}},
+            }
+
+    async def unconstrained(*args):
+        return None
+
+    monkeypatch.setattr(router, "_constrain", unconstrained)
+    monkeypatch.setattr(router, "get_opensearch", lambda: Client())
+    facet = magic_node.search.facets[0]
+    run = lambda count: asyncio.run(  # noqa: E731
+        router.search_filter_counts(
+            None,
+            magic_node,
+            None,
+            "sites",
+            count=count,
+            query=None,
+            range_=None,
+            bbox=None,
+            filter_=None,
+            has=None,
+            contribution=None,
+            private_key=None,
+        )
+    )
+    keys = ["geo", "numeric", "exists", f"facet:{facet}", "range:summary._num.lat"]
+    out = run(keys)
+    assert out.total == 10
+    assert out.counts == {"geo": 4, **dict.fromkeys(keys[1:], 0)}
+    clauses = bodies[-1]["aggs"]["filters"]["filters"]["filters"]
+    assert clauses["geo"] == router.POSITIONED
+    assert clauses[f"facet:{facet}"]["bool"]["should"] == [
+        {"exists": {"field": f"summary._all.{facet}.raw"}}
+    ]
+    assert {"exists": {"field": "summary._has.sites"}} in clauses["exists"]["bool"]["should"]
+    for bad in ("facet:nope", "range:summary.sites.lat", "geo:x", "nope"):
+        with pytest.raises(router.HTTPException):
+            run([bad])
+
+
 def test_set_table_values():
     values = {"lab_names": "Lab A:Lab B", "description": "two\tlines\nhere"}
     text = set_table_values(MAGIC_TEXT, "contribution", values)

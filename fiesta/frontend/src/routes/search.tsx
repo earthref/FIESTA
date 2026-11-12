@@ -63,6 +63,7 @@ import { usePagedItems } from "../lib/paged";
 import type {
   ContributionOut,
   FacetBucket,
+  FilterCounts,
   GridColumn,
   SearchFilter,
   SearchLevel,
@@ -610,6 +611,79 @@ export function SearchPage() {
       : pluginTable === undefined && activeTab?.name === "Map"
         ? (bucket: FacetBucket) => bucket.mapped_count
         : undefined;
+  // The search's request params for a filter modal's counts: a plugin view's
+  // own docs, or the level's records (with the grid's column filters).
+  const levelParams = (query: string, rangeList: string[], hasList = activeHas) => ({
+    ...searchRequestParams(
+      query,
+      1,
+      0,
+      false,
+      activeTab?.render ? undefined : rangesFor(rangeList, filters),
+      queryBbox,
+      undefined,
+      gridFilterList,
+      activeTab?.render ? undefined : hasList,
+    ),
+    ...scope,
+  });
+  const modalParams = (query: string, rangeList: string[]) =>
+    pluginTable ? pluginParams(pluginTable, query, rangeList) : levelParams(query, rangeList);
+  // A range filter's docs: a plugin view's block (summary.<table>.*), else the level's.
+  const rangeTable = (filter: SearchFilter) => {
+    const block = (filter.field ?? "").split(".")[1];
+    return countedTabs.some((tab) => tab.countTable === block) ? block : (level?.table ?? "");
+  };
+
+  // The sidebar's count beside each filter: of the matches, how many have a
+  // value for it (the most it can match); a filter at zero is disabled. One
+  // request per table the filters count on (a plugin view's docs, a range on
+  // a plugin block, else the level's records).
+  const countKey = (filter: SearchFilter) =>
+    filter.type === "facet" || filter.type === "range"
+      ? `${filter.type}:${filter.field ?? ""}`
+      : filter.type;
+  const countGroups = new Map<string, { table: string; keys: string[]; params: object }>();
+  const countOn = (key: string, table: string, params: object) => {
+    const group = countGroups.get(table) ?? { table, keys: [], params };
+    if (!group.keys.includes(key)) group.keys.push(key);
+    countGroups.set(table, group);
+  };
+  if (level && !filtersPanel) {
+    const levelTable = pluginTable ?? level.table;
+    if (level.geo) countOn("geo", level.table, levelParams(q, ranges));
+    for (const filter of filters) {
+      if (filter.type === "range") {
+        // As its modal counts: a plugin block's docs, else the level's.
+        const table = rangeTable(filter);
+        countOn(
+          countKey(filter),
+          table,
+          table === level.table ? levelParams(q, ranges) : pluginParams(table, q, ranges),
+        );
+      } else if (filter.type === "numeric" || filter.type === "exists") {
+        countOn(countKey(filter), level.table, levelParams(q, ranges));
+      } else {
+        countOn(countKey(filter), levelTable, modalParams(q, ranges));
+      }
+    }
+  }
+  const countRequests = [...countGroups.values()];
+  const filterCountQueries = useQueries({
+    queries: countRequests.map(({ table, keys, params }) => ({
+      queryKey: ["search-filter-counts", table, keys, params],
+      queryFn: () =>
+        api<FilterCounts>(`/search/${table}/filters`, { params: { ...params, count: keys } }),
+      staleTime: 60_000,
+      placeholderData: keepPreviousData,
+    })),
+  });
+  // undefined while loading, null when it could not be counted.
+  const filterCount = (key: string): number | null | undefined => {
+    const query = filterCountQueries[countRequests.findIndex((group) => group.keys.includes(key))];
+    if (!query || query.isError) return null;
+    return query.data?.counts[key];
+  };
   const topContributionId =
     level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
 
@@ -713,30 +787,6 @@ export function SearchPage() {
             },
       );
     return <ColumnFilterButton label={column.label} active={active} onOpen={open} />;
-  };
-
-  // The search's request params for a filter modal's counts: a plugin view's
-  // own docs, or the level's records (with the grid's column filters).
-  const levelParams = (query: string, rangeList: string[], hasList = activeHas) => ({
-    ...searchRequestParams(
-      query,
-      1,
-      0,
-      false,
-      activeTab?.render ? undefined : rangesFor(rangeList, filters),
-      queryBbox,
-      undefined,
-      gridFilterList,
-      activeTab?.render ? undefined : hasList,
-    ),
-    ...scope,
-  });
-  const modalParams = (query: string, rangeList: string[]) =>
-    pluginTable ? pluginParams(pluginTable, query, rangeList) : levelParams(query, rangeList);
-  // A range filter's docs: a plugin view's block (summary.<table>.*), else the level's.
-  const rangeTable = (filter: SearchFilter) => {
-    const block = (filter.field ?? "").split(".")[1];
-    return countedTabs.some((tab) => tab.countTable === block) ? block : level.table;
   };
 
   // The sidebar: each filter with its applied values as chips.
@@ -1167,6 +1217,7 @@ export function SearchPage() {
                   {level.geo && (area || !filters.some((f) => f.type === "bbox")) && (
                     <FilterEntry
                       label="Geospatial"
+                      count={filterCount("geo")}
                       chips={
                         area
                           ? [{ key: "area", label: areaText(area), onRemove: () => setArea(null) }]
@@ -1181,6 +1232,7 @@ export function SearchPage() {
                     <FilterEntry
                       key={`${filter.type}-${filter.field ?? filterLabel(filter)}`}
                       label={filterLabel(filter)}
+                      count={filterCount(countKey(filter))}
                       chips={chipsFor(filter)}
                       onOpen={() => openFilter(filter)}
                     />

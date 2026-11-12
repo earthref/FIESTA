@@ -387,8 +387,8 @@ function ModalBody({
       render: () => <ContributionPanel {...ctx} />,
     },
   ];
-  // Tabs with nothing in them are hidden; one whose count is still loading
-  // shows a spinner until it is known.
+  // Tabs with nothing in them are hidden; the tab list holds back those whose
+  // count is still loading (see TabList).
   const pushIfAny = (next: Tab) => {
     if (next.isLoading || next.count === undefined || next.count > 0) tabs.push(next);
   };
@@ -469,9 +469,12 @@ function TabCount({ tab, active }: { tab: Tab; active: boolean }) {
         </span>
       ))}
       <span
-        className={cx(pill, active ? "bg-node text-white" : "border border-gray-300 text-gray-600")}
+        className={cx(
+          pill,
+          active && !tab.isLoading ? "bg-node text-white" : "border border-gray-300 text-gray-600",
+        )}
       >
-        {tab.isLoading ? <Spinner className="h-3 w-3" /> : formatNumber(tab.count)}
+        {tab.isLoading ? <Spinner size="xs" /> : formatNumber(tab.count)}
       </span>
     </span>
   );
@@ -490,6 +493,19 @@ function TabList({
     ["levels", "Records"],
     ["assets", "Assets"],
   ];
+  // While counts load, one "Loading…" row stands in for the tabs they decide
+  // (each would otherwise show a spinner, then vanish at zero): a group's
+  // counted tabs appear together once all its counts are known. Tabs without
+  // a count, and the open one, show throughout.
+  const loading = tabs.some((entry) => entry.isLoading);
+  const settled = (group: Tab["group"]) =>
+    !tabs.some((entry) => entry.group === group && entry.isLoading);
+  const shown = tabs.filter(
+    (entry) =>
+      settled(entry.group) ||
+      entry.key === current.key ||
+      (entry.count === undefined && !entry.isLoading),
+  );
   return (
     <>
       <nav
@@ -497,7 +513,7 @@ function TabList({
         className="hidden w-56 shrink-0 overflow-y-auto border-r border-gray-200 py-3 lg:block"
       >
         {groups.map(([group, heading]) => {
-          const members = tabs.filter((entry) => entry.group === group);
+          const members = shown.filter((entry) => entry.group === group);
           if (members.length === 0) return null;
           return (
             <div key={group} className="mb-3">
@@ -527,6 +543,12 @@ function TabList({
             </div>
           );
         })}
+        {loading && (
+          <div className="flex items-center gap-2 px-4 py-2 text-[13px] text-gray-500">
+            <Spinner size="xs" />
+            <span aria-hidden="true">Loading…</span>
+          </div>
+        )}
       </nav>
       <div className="shrink-0 border-b border-gray-200 px-4 py-2 lg:hidden">
         <label className="sr-only" htmlFor="contribution-tab">
@@ -538,7 +560,7 @@ function TabList({
           onChange={(event) => onSelect(event.target.value)}
           className="w-full rounded-sm border border-gray-300 bg-surface px-2 py-1.5 text-[13px] font-bold"
         >
-          {tabs.map((entry) => (
+          {shown.map((entry) => (
             <option key={entry.key} value={entry.key}>
               {entry.label}
               {entry.count !== undefined && !entry.isLoading
@@ -546,6 +568,7 @@ function TabList({
                 : ""}
             </option>
           ))}
+          {loading && <option disabled>Loading…</option>}
         </select>
       </div>
     </>
