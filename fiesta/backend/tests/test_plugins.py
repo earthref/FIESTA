@@ -53,7 +53,7 @@ def test_plugin_options_come_from_the_node_yaml(magic_node, karar_node):
     assert plugins["poles"].options(magic_node).base_level == "Locations"
     assert plugins["poles"].options(magic_node) == plugins["poles"].Options()
     assert plugins["poles"].frontend_config(magic_node)["age_color"]["selected"] == "#800080"
-    assert plugins["plateau-calculations"].options(karar_node).max_mswd == 2.5
+    assert plugins["plateau-calculations"].options(karar_node).specimen_levels == ["Specimens"]
 
     # Options are validated: unknown keys, out-of-range values, and (via
     # check) tables, columns or levels the node does not have.
@@ -62,8 +62,10 @@ def test_plugin_options_come_from_the_node_yaml(magic_node, karar_node):
 
     with pytest.raises(ValueError, match="poles.*Extra inputs"):
         plugins["poles"].options(with_options(magic_node, "poles", {"colour": "red"}))
-    with pytest.raises(ValueError, match="max_mswd"):
-        active_plugins(with_options(karar_node, "plateau-calculations", {"max_mswd": -1}))
+    with pytest.raises(ValueError, match="plateau-calculations.*not search levels"):
+        active_plugins(
+            with_options(karar_node, "plateau-calculations", {"specimen_levels": ["Moons"]})
+        )
     with pytest.raises(ValueError, match="not a search level"):
         active_plugins(with_options(magic_node, "poles", {"base_level": "Moons"}))
     # A MagIC-model plugin switched on for a node whose model lacks its tables

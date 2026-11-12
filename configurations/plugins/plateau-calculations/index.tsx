@@ -1,253 +1,63 @@
-import { useQuery } from "@tanstack/react-query";
+import { type ReactNode, useEffect, useRef } from "react";
 import { ErrorMessage } from "@/components/error-message";
 import { Cell, contributionId, NoDataCell } from "@/components/result-item";
 import { PageSpinner, Spinner } from "@/components/ui/spinner";
-import { api } from "@/lib/api";
 import { useOpenContribution } from "@/lib/contribution-modal";
-import type { NodeConfig, SearchPage, SearchResult } from "@/lib/types";
+import type { NodeConfig, SearchResult } from "@/lib/types";
 import { getPath } from "@/lib/utils";
 import type { PluginGridCellProps, PluginModule } from "@/plugins";
+import {
+  type ArgonData,
+  ageOf,
+  ageText,
+  type ContributedAge,
+  type Experiment,
+  hasIsochron,
+  type Specimen,
+  useArgon,
+} from "./argon-data";
+import { AgeSpectrum, Isochron, SpecimenSpectra, useSeriesColors } from "./argon-plots";
 
-interface AgeStep {
-  step: number | string;
-  temperature?: number;
-  age: number;
-  age_sigma: number;
-  cum_ar39: number;
-}
+const TAB = "age-spectra";
 
-interface PlateauInfo {
-  plateau_steps: number | (number | string)[];
-  plateau_age: number;
-  plateau_age_sigma: number;
-  mswd: number;
-  ar39_percent: number;
-}
+/** The `plot` param that scrolls the tab to an experiment or a specimen. */
+const experimentPlot = (name: string) => `e:${name}`;
+const specimenPlot = (name: string) => `s:${name}`;
 
-interface PlateauResponse {
-  age_data: AgeStep[];
-  plateau: PlateauInfo | null;
-}
-
-function experimentNameOf(hit: SearchResult): string | undefined {
-  const fromSummary = getPath(hit, "summary.experiments.experiment");
+function nameOf(hit: SearchResult, table: string, column: string): string | undefined {
+  const fromSummary = getPath(hit, `summary.${table}.${column}`);
   if (typeof fromSummary === "string" && fromSummary) return fromSummary;
   if (Array.isArray(fromSummary) && fromSummary.length > 0) return String(fromSummary[0]);
-  const rows = hit.rows;
-  if (Array.isArray(rows) && rows[0] && typeof rows[0] === "object") {
-    const experiment = (rows[0] as Record<string, unknown>).experiment;
-    if (typeof experiment === "string" && experiment) return experiment;
-  }
-  return undefined;
+  const row = Array.isArray(hit.rows) ? hit.rows[0] : undefined;
+  const value =
+    row && typeof row === "object" ? (row as Record<string, unknown>)[column] : undefined;
+  return typeof value === "string" && value ? value : undefined;
 }
 
-function plateauStepSet(plateau: PlateauInfo | null): Set<string> {
-  if (!plateau || !Array.isArray(plateau.plateau_steps)) return new Set();
-  return new Set(plateau.plateau_steps.map(String));
+function levelsOption(config: NodeConfig, key: string): string[] {
+  const levels = config.plugins["plateau-calculations"]?.[key];
+  return Array.isArray(levels) ? levels.map(String) : [];
 }
 
-/** Shared age-spectrum geometry: X = cumulative 39Ar %, Y = age ± 1σ steps. */
-function AgeSpectrum({
-  data,
-  width,
-  height,
-  detailed,
-}: {
-  data: PlateauResponse;
-  width: number;
-  height: number;
-  detailed?: boolean;
-}) {
-  const steps = [...data.age_data].sort((a, b) => a.cum_ar39 - b.cum_ar39);
-  if (steps.length === 0) return null;
-
-  const pad = detailed
-    ? { left: 48, right: 12, top: 12, bottom: 34 }
-    : { left: 2, right: 2, top: 2, bottom: 2 };
-  const innerW = width - pad.left - pad.right;
-  const innerH = height - pad.top - pad.bottom;
-
-  const ages = steps.flatMap((step) => [step.age - step.age_sigma, step.age + step.age_sigma]);
-  if (data.plateau) {
-    ages.push(
-      data.plateau.plateau_age - data.plateau.plateau_age_sigma,
-      data.plateau.plateau_age + data.plateau.plateau_age_sigma,
-    );
-  }
-  let yMin = Math.min(...ages);
-  let yMax = Math.max(...ages);
-  const yPad = (yMax - yMin || 1) * 0.05;
-  yMin -= yPad;
-  yMax += yPad;
-
-  const x = (cum: number) => pad.left + (Math.min(100, Math.max(0, cum)) / 100) * innerW;
-  const y = (age: number) => pad.top + ((yMax - age) / (yMax - yMin)) * innerH;
-
-  const inPlateau = plateauStepSet(data.plateau);
-
-  let prevCum = 0;
-  const rects = steps.map((step) => {
-    const x0 = x(prevCum);
-    const x1 = x(step.cum_ar39);
-    prevCum = step.cum_ar39;
-    const isPlateau = inPlateau.has(String(step.step));
-    return (
-      <rect
-        key={`step-${step.step}`}
-        x={x0}
-        y={y(step.age + step.age_sigma)}
-        width={Math.max(0.5, x1 - x0)}
-        height={Math.max(0.5, y(step.age - step.age_sigma) - y(step.age + step.age_sigma))}
-        fill={
-          isPlateau ? "color-mix(in srgb, #0066cc 10%, var(--er-surface))" : "var(--color-gray-200)"
-        }
-        stroke={isPlateau ? "#0066cc" : "var(--color-gray-400)"}
-        strokeWidth={detailed ? 1 : 0.5}
-      >
-        {detailed && (
-          <title>
-            Step {step.step}
-            {step.temperature !== undefined ? ` (${step.temperature}°)` : ""}: {step.age.toFixed(2)}{" "}
-            ± {step.age_sigma.toFixed(2)} Ma at {step.cum_ar39.toFixed(1)}% ³⁹Ar
-          </title>
-        )}
-      </rect>
-    );
-  });
-
-  return (
-    <svg
-      width={width}
-      height={height}
-      role="img"
-      aria-label="Age spectrum plot"
-      className="er-light bg-surface"
-    >
-      {data.plateau && (
-        <rect
-          x={pad.left}
-          y={y(data.plateau.plateau_age + data.plateau.plateau_age_sigma)}
-          width={innerW}
-          height={Math.max(
-            0.5,
-            y(data.plateau.plateau_age - data.plateau.plateau_age_sigma) -
-              y(data.plateau.plateau_age + data.plateau.plateau_age_sigma),
-          )}
-          fill="rgba(100,150,200,0.1)"
-        />
-      )}
-      {rects}
-      {data.plateau && (
-        <line
-          x1={pad.left}
-          y1={y(data.plateau.plateau_age)}
-          x2={pad.left + innerW}
-          y2={y(data.plateau.plateau_age)}
-          stroke="#cc3300"
-          strokeWidth={detailed ? 1.5 : 1}
-        />
-      )}
-      {detailed && (
-        <>
-          <line
-            x1={pad.left}
-            y1={pad.top + innerH}
-            x2={pad.left + innerW}
-            y2={pad.top + innerH}
-            stroke="var(--color-gray-500)"
-          />
-          <line
-            x1={pad.left}
-            y1={pad.top}
-            x2={pad.left}
-            y2={pad.top + innerH}
-            stroke="var(--color-gray-500)"
-          />
-          {[0, 25, 50, 75, 100].map((tick) => (
-            <text
-              key={`x-${tick}`}
-              x={x(tick)}
-              y={pad.top + innerH + 14}
-              textAnchor="middle"
-              fontSize={10}
-              fill="var(--color-gray-500)"
-            >
-              {tick}
-            </text>
-          ))}
-          <text
-            x={pad.left + innerW / 2}
-            y={height - 6}
-            textAnchor="middle"
-            fontSize={11}
-            fill="var(--color-gray-700)"
-          >
-            Cumulative ³⁹Ar (%)
-          </text>
-          {[yMin + yPad, (yMin + yMax) / 2, yMax - yPad].map((tick) => (
-            <text
-              key={`y-${tick}`}
-              x={pad.left - 6}
-              y={y(tick) + 3}
-              textAnchor="end"
-              fontSize={10}
-              fill="var(--color-gray-500)"
-            >
-              {tick.toFixed(1)}
-            </text>
-          ))}
-          <text
-            x={12}
-            y={pad.top + innerH / 2}
-            transform={`rotate(-90 12 ${pad.top + innerH / 2})`}
-            textAnchor="middle"
-            fontSize={11}
-            fill="var(--color-gray-700)"
-          >
-            Age (Ma)
-          </text>
-        </>
-      )}
-    </svg>
-  );
-}
-
-function plateauCaption(data: PlateauResponse): string {
-  const plateau = data.plateau;
-  if (!plateau) return "No plateau identified";
-  const steps = Array.isArray(plateau.plateau_steps)
-    ? plateau.plateau_steps.length
-    : plateau.plateau_steps;
-  return `Plateau age: ${plateau.plateau_age.toFixed(2)} ± ${plateau.plateau_age_sigma.toFixed(2)} Ma (MSWD ${plateau.mswd.toFixed(2)}, ${steps} steps, ${plateau.ar39_percent.toFixed(1)}% ³⁹Ar)`;
-}
-
-function usePlateau(id: string, experiment: string, privateKey?: string) {
-  return useQuery({
-    queryKey: ["plugin", "plateau", id, experiment, privateKey],
-    queryFn: () =>
-      api<PlateauResponse>(
-        `/plugins/plateau-calculations/contributions/${id}/experiments/${encodeURIComponent(experiment)}/plateau`,
-        { params: { private_key: privateKey } },
-      ),
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-}
-
-function PlateauCell({
+/** A grid tile: the plot, opening the modal tab at it. */
+function PlotTile({
   id,
-  experiment,
   privateKey,
   width,
+  plot,
+  label,
+  query,
+  render,
 }: {
   id: string;
-  experiment: string;
   privateKey?: string;
   width: number;
+  plot: string;
+  label: string;
+  query: ReturnType<typeof useArgon>;
+  render: (data: ArgonData) => ReactNode | null;
 }) {
   const openContribution = useOpenContribution();
-  const query = usePlateau(id, experiment, privateKey);
-
   if (query.isPending) {
     return (
       <Cell width={width}>
@@ -257,126 +67,390 @@ function PlateauCell({
       </Cell>
     );
   }
-
-  if (query.error || !query.data || query.data.age_data.length === 0) {
-    return <NoDataCell label="Plateau" width={width} />;
-  }
-
+  const content = query.data ? render(query.data) : null;
+  if (!content) return <NoDataCell label="Plot" width={width} />;
   return (
     <Cell width={width}>
       <button
         type="button"
-        onClick={() => openContribution(id, "age-spectra")}
-        aria-label={`Open the age spectra, including ${experiment}`}
+        onClick={() => openContribution(id, TAB, undefined, { plot, privateKey })}
+        aria-label={label}
         className="block cursor-pointer border border-gray-300 hover:border-node focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
       >
-        <AgeSpectrum data={query.data} width={width - 4} height={80} />
+        {content}
       </button>
     </Cell>
   );
 }
 
-/** One experiment's detailed age spectrum and plateau, in the modal's tab. */
-function PlateauPanel({
-  id,
-  experiment,
-  privateKey,
-}: {
+function ExperimentTile(props: {
   id: string;
   experiment: string;
   privateKey?: string;
+  width: number;
 }) {
-  const query = usePlateau(id, experiment, privateKey);
+  const query = useArgon(props.id, props.privateKey, { experiment: props.experiment });
   return (
-    <section className="mb-6 border-b border-gray-200 pb-4">
-      <h3 className="mb-2 text-[13px] font-bold">{experiment}</h3>
-      {query.isPending ? (
-        <Spinner />
-      ) : query.error || !query.data || query.data.age_data.length === 0 ? (
-        <p className="text-[13px] text-ink-faint">No age data for this experiment.</p>
-      ) : (
-        <>
-          <div className="overflow-x-auto">
-            <AgeSpectrum data={query.data} width={640} height={420} detailed />
-          </div>
-          <p className="mt-2 text-[13px] text-gray-700">{plateauCaption(query.data)}</p>
-        </>
-      )}
-    </section>
+    <PlotTile
+      {...props}
+      plot={experimentPlot(props.experiment)}
+      label={`Open the age plots of ${props.experiment}`}
+      query={query}
+      render={(data) =>
+        data.experiments[0] ? (
+          <AgeSpectrum experiment={data.experiments[0]} width={props.width - 4} height={80} />
+        ) : null
+      }
+    />
   );
 }
 
-/** The contribution modal's Age Spectra tab: every experiment's spectrum. */
-function AgeSpectraTab({
-  id,
-  privateKey,
-  table,
-}: {
-  id: string;
-  privateKey?: string;
-  table: string;
-}) {
-  const experiments = useQuery({
-    queryKey: ["plugin", "plateau", "experiments", id, table, privateKey],
-    queryFn: () =>
-      api<SearchPage>(`/search/${table}`, {
-        params: { contribution: id, private_key: privateKey || undefined, size: 1000 },
-      }),
-    staleTime: 5 * 60 * 1000,
-  });
-  if (experiments.isPending) return <PageSpinner label="Loading experiments…" />;
-  if (experiments.error) return <ErrorMessage error={experiments.error} className="m-4" />;
-  const names = [
-    ...new Set(experiments.data.results.flatMap((hit) => experimentNameOf(hit) ?? [])),
-  ];
+function SpecimenTile(props: { id: string; specimen: string; privateKey?: string; width: number }) {
+  const query = useArgon(props.id, props.privateKey, { specimen: props.specimen });
   return (
-    <div className="p-4 sm:p-6">
-      {names.map((experiment) => (
-        <PlateauPanel key={experiment} id={id} experiment={experiment} privateKey={privateKey} />
-      ))}
+    <PlotTile
+      {...props}
+      plot={specimenPlot(props.specimen)}
+      label={`Open the age plots of specimen ${props.specimen}`}
+      query={query}
+      render={(data) =>
+        data.specimens[0] ? (
+          <SpecimenSpectra
+            specimen={data.specimens[0]}
+            experiments={data.experiments}
+            width={props.width - 4}
+            height={80}
+          />
+        ) : null
+      }
+    />
+  );
+}
+
+const KIND_LABEL: Record<ContributedAge["kind"], string> = {
+  plateau: "Plateau",
+  normal_isochron: "Normal isochron",
+  inverse_isochron: "Inverse isochron",
+  total_fusion: "Total fusion",
+  other: "Other",
+};
+
+const num = (value: number | null, digits = 2) => (value == null ? "—" : value.toFixed(digits));
+
+/** Every age contributed for the experiment, as the contributor reported it. */
+function AgesTable({ experiment }: { experiment: Experiment }) {
+  if (experiment.ages.length === 0) {
+    return <p className="text-[13px] text-ink-faint">No ages contributed for this experiment.</p>;
+  }
+  return (
+    <div className="overflow-x-auto">
+      <table className="text-[12px]">
+        <thead>
+          <tr className="text-left text-ink-faint">
+            {[
+              "Method",
+              "Age",
+              "MSWD",
+              "Steps",
+              "³⁹Ar (%)",
+              "⁴⁰Ar/³⁹Ar",
+              "⁴⁰Ar/³⁶Ar",
+              "Preferred",
+            ].map((heading) => (
+              <th key={heading} className="pr-4 font-normal">
+                {heading}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {experiment.ages.map((age, i) => (
+            <tr key={`${age.method}-${i}`}>
+              <td className="pr-4">{age.method ?? KIND_LABEL[age.kind]}</td>
+              <td className="pr-4 whitespace-nowrap">
+                {ageText(age.age, age.age_sigma, age.age_unit ?? experiment.age_unit)}
+              </td>
+              <td className="pr-4">{num(age.mswd)}</td>
+              <td className="pr-4">{age.n ?? (age.steps.length || "—")}</td>
+              <td className="pr-4">{num(age.plateau_width, 1)}</td>
+              <td className="pr-4">{num(age.ar40_ar39, 3)}</td>
+              <td className="pr-4">{num(age.ar40_ar36 ?? age.trapped_ar40_ar36, 1)}</td>
+              <td className="pr-4">{age.preferred == null ? "—" : age.preferred ? "Yes" : "No"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-/** The search table of the first level the plugin is enabled on. */
-function plateauTable(config: NodeConfig): string | undefined {
-  const levels = config.plugins["plateau-calculations"]?.levels;
-  const names = Array.isArray(levels) ? levels.map(String) : [];
+/** What the spectrum shows and what it lacks, in words. */
+function spectrumNotes(experiment: Experiment): string[] {
+  const notes: string[] = [];
+  const plateau = ageOf(experiment, "plateau");
+  if (!plateau) notes.push("No plateau age contributed.");
+  else {
+    const names = new Set(experiment.steps.map((s) => s.measurement));
+    const missing = plateau.steps.filter((name) => !names.has(name)).length;
+    if (plateau.steps.length === 0) notes.push("The plateau's steps are not listed.");
+    else if (missing > 0)
+      notes.push(
+        `${missing} of the plateau's ${plateau.steps.length} listed steps are not among this experiment's measurements.`,
+      );
+  }
+  if (!experiment.ar39_source) notes.push("Step widths are equal: no ³⁹Ar amounts contributed.");
+  if (experiment.steps_without_age > 0)
+    notes.push(`${experiment.steps_without_age} steps have no contributed age and are left out.`);
+  return notes;
+}
+
+const ISOCHRON_NAME = { inverse: "Inverse isochron", normal: "Normal isochron" };
+
+/** The isochron's contributed age and what the plot lacks, in words. */
+function isochronCaption(experiment: Experiment, kind: "normal" | "inverse"): string {
+  const age = ageOf(experiment, kind === "normal" ? "normal_isochron" : "inverse_isochron");
+  const points = experiment.steps.some((s) => s[kind]);
+  const parts = [ISOCHRON_NAME[kind]];
+  if (!age) parts.push("(no isochron age contributed).");
+  else {
+    parts[0] += `: ${ageText(age.age, age.age_sigma, age.age_unit ?? experiment.age_unit)}`;
+    if (age.mswd != null) parts[0] += `, MSWD ${age.mswd.toFixed(2)}`;
+    if (age.ar40_ar36 != null)
+      parts[0] += `, ⁴⁰Ar/³⁶Ar intercept ${age.ar40_ar36.toFixed(1)}${age.ar40_ar36_sigma != null ? ` ± ${age.ar40_ar36_sigma.toFixed(1)}` : ""}`;
+    parts[0] += ".";
+  }
+  if (points) parts.push("1σ error ellipses; hollow = steps not used.");
+  if (age && (age.ar40_ar39 == null || age.ar40_ar36 == null))
+    parts.push("No isochron intercepts contributed, so no line.");
+  if (!points) parts.push("No corrected isochron ratios contributed, so no points.");
+  return parts.join(" ");
+}
+
+/** Isochron ages the experiment reports but has nothing to plot for. */
+function unplottedIsochrons(experiment: Experiment): string[] {
+  return (["inverse", "normal"] as const).flatMap((kind) =>
+    ageOf(experiment, kind === "normal" ? "normal_isochron" : "inverse_isochron") &&
+    !hasIsochron(experiment, kind)
+      ? [
+          `${ISOCHRON_NAME[kind]} not plotted: no corrected isochron ratios or intercepts contributed.`,
+        ]
+      : [],
+  );
+}
+
+/** A plot and its caption, as wide as the plot (narrower screens scroll it). */
+function PlotFigure({
+  caption,
+  width,
+  children,
+}: {
+  caption: string;
+  width: number;
+  children: ReactNode;
+}) {
+  return (
+    <figure className="m-0 max-w-full" style={{ width }}>
+      <div className="overflow-x-auto">{children}</div>
+      <figcaption className="mt-1 text-[12px] text-ink-faint">{caption}</figcaption>
+    </figure>
+  );
+}
+
+function ExperimentPanel({ experiment, selected }: { experiment: Experiment; selected?: boolean }) {
+  const ref = useScrollIntoView(selected);
+  const plateau = ageOf(experiment, "plateau");
+  const notes = spectrumNotes(experiment);
+  const plateauCaption = plateau
+    ? `Plateau: ${ageText(plateau.age, plateau.age_sigma, plateau.age_unit ?? experiment.age_unit)}` +
+      (plateau.mswd != null ? `, MSWD ${plateau.mswd.toFixed(2)}` : "") +
+      (plateau.plateau_width != null ? `, ${plateau.plateau_width.toFixed(1)}% ³⁹Ar` : "")
+    : "";
+  return (
+    <section ref={ref} className="mb-6 border-b border-gray-200 pb-4">
+      <h4 className="mb-2 text-[13px] font-bold">Experiment {experiment.experiment}</h4>
+      {experiment.steps.length === 0 ? (
+        <p className="text-[13px] text-ink-faint">No heating steps for this experiment.</p>
+      ) : (
+        <div className="flex flex-wrap gap-4">
+          <PlotFigure width={480} caption={[plateauCaption, ...notes].filter(Boolean).join(" ")}>
+            <AgeSpectrum experiment={experiment} width={480} height={300} detailed />
+          </PlotFigure>
+          {(["inverse", "normal"] as const).map((kind) =>
+            hasIsochron(experiment, kind) ? (
+              <PlotFigure key={kind} width={300} caption={isochronCaption(experiment, kind)}>
+                <Isochron experiment={experiment} kind={kind} width={300} height={300} />
+              </PlotFigure>
+            ) : null,
+          )}
+        </div>
+      )}
+      {experiment.steps.length > 0 &&
+        unplottedIsochrons(experiment).map((note) => (
+          <p key={note} className="mt-1 text-[12px] text-ink-faint">
+            {note}
+          </p>
+        ))}
+      <div className="mt-3">
+        <AgesTable experiment={experiment} />
+      </div>
+    </section>
+  );
+}
+
+function SpecimenLegend({ experiments }: { experiments: Experiment[] }) {
+  const colors = useSeriesColors(experiments.length);
+  return (
+    <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-faint">
+      {experiments.map((experiment, i) => {
+        const plateau = ageOf(experiment, "plateau");
+        return (
+          <li key={experiment.experiment} className="flex items-center gap-1.5">
+            <span className="inline-block h-[2px] w-4" style={{ background: colors[i] }} />
+            {experiment.experiment}
+            {plateau?.age != null &&
+              ` (plateau ${ageText(plateau.age, plateau.age_sigma, plateau.age_unit ?? experiment.age_unit)})`}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function SpecimenSection({
+  specimen,
+  experiments,
+  plot,
+}: {
+  specimen: Specimen;
+  experiments: Experiment[];
+  plot?: string;
+}) {
+  const ref = useScrollIntoView(plot === specimenPlot(specimen.specimen));
+  const details = [specimen.material, specimen.sample && `sample ${specimen.sample}`]
+    .filter(Boolean)
+    .join(", ");
+  return (
+    <section ref={ref} className="mb-8">
+      <h3 className="mb-1 text-[14px] font-bold">
+        Specimen {specimen.specimen}
+        {details && <span className="font-normal text-ink-faint"> · {details}</span>}
+      </h3>
+      <p className="mb-2 text-[13px]">
+        Preferred age {ageText(specimen.age, specimen.age_sigma, specimen.age_unit)}
+        {specimen.method && ` (${specimen.method})`}
+      </p>
+      {experiments.length > 1 && (
+        <div className="mb-4">
+          <PlotFigure
+            width={520}
+            caption="Its experiments' age spectra; the dashed line and band are the specimen's preferred age."
+          >
+            <SpecimenSpectra
+              specimen={specimen}
+              experiments={experiments}
+              width={520}
+              height={300}
+              detailed
+            />
+          </PlotFigure>
+          <SpecimenLegend experiments={experiments} />
+        </div>
+      )}
+      <div className="pl-3">
+        {experiments.map((experiment) => (
+          <ExperimentPanel
+            key={experiment.experiment}
+            experiment={experiment}
+            selected={plot === experimentPlot(experiment.experiment)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function useScrollIntoView(selected?: boolean) {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (selected) ref.current?.scrollIntoView({ block: "start" });
+  }, [selected]);
+  return ref;
+}
+
+/** The contribution modal's tab: every specimen and its experiments' plots,
+ * then the experiments no specimen lists. */
+function AgePlotsTab({ id, privateKey, plot }: { id: string; privateKey?: string; plot?: string }) {
+  const query = useArgon(id, privateKey);
+  if (query.isPending) return <PageSpinner label="Loading the age data…" />;
+  if (query.error) return <ErrorMessage error={query.error} className="m-4" />;
+  const byName = new Map(query.data.experiments.map((e) => [e.experiment, e]));
+  const listed = new Set(query.data.specimens.flatMap((s) => s.experiments));
+  const loose = query.data.experiments.filter((e) => !listed.has(e.experiment));
+  return (
+    <div className="p-4 sm:p-6">
+      {query.data.specimens.map((specimen) => (
+        <SpecimenSection
+          key={specimen.specimen}
+          specimen={specimen}
+          experiments={specimen.experiments.flatMap((name) => byName.get(name) ?? [])}
+          plot={plot}
+        />
+      ))}
+      {loose.length > 0 && (
+        <section>
+          {query.data.specimens.length > 0 && (
+            <h3 className="mb-2 text-[14px] font-bold">Experiments not listed by a specimen</h3>
+          )}
+          {loose.map((experiment) => (
+            <ExperimentPanel
+              key={experiment.experiment}
+              experiment={experiment}
+              selected={plot === experimentPlot(experiment.experiment)}
+            />
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
+
+/** The search table the tab counts: the first experiment level's. */
+function experimentTable(config: NodeConfig): string | undefined {
+  const names = levelsOption(config, "experiment_levels");
   return config.search_levels.find((level) => names.includes(level.name))?.table;
 }
 
 const plateauPlugin: PluginModule = {
   contributionTabs(config) {
-    const table = plateauTable(config);
+    const table = experimentTable(config);
     if (!table) return [];
     return [
       {
-        key: "age-spectra",
-        label: "Age Spectra",
+        key: TAB,
+        label: "Age Plots",
         countTable: table,
-        render: ({ id, privateKey }) => (
-          <AgeSpectraTab id={id} privateKey={privateKey} table={table} />
+        render: ({ id, privateKey, plot }) => (
+          <AgePlotsTab id={id} privateKey={privateKey} plot={plot} />
         ),
       },
     ];
   },
-  // The summary grid's plot tile: the experiment's age spectrum.
+  // The summary grid's plot tile: an experiment's age spectrum, or a
+  // specimen's experiments under its preferred age.
   gridCell(props: PluginGridCellProps) {
     if (props.column.cell !== "plot") return null;
-    const levels = props.config.plugins["plateau-calculations"]?.levels;
-    const enabled = Array.isArray(levels) ? levels.map(String) : [];
-    if (!enabled.includes(props.level.name)) return null;
-    const experiment = experimentNameOf(props.hit);
     const id = contributionId(props.hit);
-    if (!experiment || !id) return null;
-    return (
-      <PlateauCell
-        id={id}
-        experiment={experiment}
-        privateKey={props.privateKey}
-        width={props.column.width}
-      />
-    );
+    if (!id) return null;
+    const common = { id, privateKey: props.privateKey, width: props.column.width };
+    if (levelsOption(props.config, "experiment_levels").includes(props.level.name)) {
+      const experiment = nameOf(props.hit, props.level.table, "experiment");
+      return experiment ? <ExperimentTile {...common} experiment={experiment} /> : null;
+    }
+    if (levelsOption(props.config, "specimen_levels").includes(props.level.name)) {
+      const specimen = nameOf(props.hit, props.level.table, "specimen");
+      return specimen ? <SpecimenTile {...common} specimen={specimen} /> : null;
+    }
+    return null;
   },
 };
 

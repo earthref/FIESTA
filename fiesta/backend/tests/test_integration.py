@@ -721,9 +721,7 @@ async def test_v2_serves_every_enabled_node_from_one_process():
         plugin_routes = {
             "poles": "/plugins/poles/plate-boundaries",
             "depth-plot": "/plugins/depth-plot/contributions/1/measurements",
-            "plateau-calculations": (
-                "/plugins/plateau-calculations/contributions/1/experiments/x/plateau"
-            ),
+            "plateau-calculations": "/plugins/plateau-calculations/contributions/1",
         }
         for node in deployment.node_list:
             names = {plugin.name for plugin in active_plugins(node)}
