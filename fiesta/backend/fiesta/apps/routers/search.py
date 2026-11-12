@@ -19,6 +19,7 @@ from fiesta.apps.deps import (
     oauth2_scheme,
 )
 from fiesta.apps.schemas import (
+    FilterCounts,
     HasColumns,
     HistogramBin,
     MapPoints,
@@ -976,6 +977,92 @@ async def search_has(
         total=total,
         with_table=aggs["with_table"]["doc_count"],
         columns={c: counts.get(c, 0) for c in columns},
+    )
+
+
+def _filter_count_clause(node, table: str, key: str) -> dict:
+    """The docs a sidebar filter can match, as an OpenSearch filter: `geo`
+    (positioned, the Geospatial area), `bbox` (on summary._all._geo_point),
+    `numeric` (any number column), `exists` (any table the docs record),
+    `facet:<column>` (a facet's column) or `range:<path>` (a range filter's
+    field, or a number column's `summary._num.<column>`). 422 otherwise."""
+    kind, _, field = key.partition(":")
+    if kind == "geo" and not field:
+        return POSITIONED
+    if kind == "bbox" and not field:
+        return {"exists": {"field": GEO_FIELD}}
+    if kind == "numeric" and not field:
+        paths = [f"summary._num.{c}" for c in node.number_columns(table)]
+    elif kind == "exists" and not field:
+        paths = [f"{HAS_FIELD}.{t}" for t in node.exists_tables(table)]
+    elif kind == "facet" and field:
+        _facet_names(node, table, False, [field])
+        paths = [f"summary._all.{field}.raw"]
+    elif kind == "range" and field:
+        configured = {f.field for f in node.search.filters if f.type == "range"}
+        numbers = {f"summary._num.{c}" for c in node.number_columns(table)}
+        if field not in configured | numbers:
+            raise HTTPException(
+                422, f"range must be a range filter or number column, got {field!r}"
+            )
+        paths = [field]
+    else:
+        raise HTTPException(
+            422,
+            "count must be geo, bbox, numeric, exists, facet:<column> or range:<path>,"
+            f" got {key!r}",
+        )
+    if not paths:
+        return {"match_none": {}}
+    return {
+        "bool": {"should": [{"exists": {"field": p}} for p in paths], "minimum_should_match": 1}
+    }
+
+
+@router.get("/search/{table}/filters", response_model=FilterCounts)
+async def search_filter_counts(
+    session: SessionDep,
+    node: NodeDep,
+    scope: ScopeDep,
+    table: str,
+    count: Annotated[list[str], Query()],
+    query: str | None = None,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    bbox: str | None = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
+    contribution: int | None = None,
+    private_key: str | None = None,
+) -> FilterCounts:
+    """The sidebar filters' counts: of the docs matching a search, how many
+    have a value for each filter (`count=<key>`, see _filter_count_clause),
+    so a filter shows the most records it can match and is disabled at zero.
+    One request, a `filters` aggregation."""
+    if table not in _level_tables(node):
+        raise HTTPException(404, f"unknown search table {table!r}")
+    keys = list(dict.fromkeys(count))
+    clauses = {key: _filter_count_clause(node, table, key) for key in keys}
+    body = build_search_body(
+        table=table,
+        query=query,
+        size=0,
+        ranges=_parse_ranges(range_),
+        bbox=_parse_bbox(bbox),
+        column_filters=_grid_filters(node, table, filter_),
+        has=_parse_has(node, table, has),
+    )
+    await _constrain(session, node, body, query, contribution, private_key, scope)
+    body.pop("sort", None)
+    body["aggs"] = {"filters": {"filters": {"filters": clauses}}}
+    try:
+        response = await get_opensearch().search(index=node.search_index, body=body)
+    except NotFoundError:
+        return FilterCounts(total=0, counts=dict.fromkeys(keys, 0))
+    hits = response["hits"]
+    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+    buckets = response["aggregations"]["filters"]["buckets"]
+    return FilterCounts(
+        total=total, counts={key: buckets.get(key, {}).get("doc_count", 0) for key in keys}
     )
 
 

@@ -14,8 +14,9 @@
 
 import type { ReactNode } from "react";
 import type { NodeConfig, SearchFilter } from "../lib/types";
-import { cx, facetTitle } from "../lib/utils";
+import { cx, facetTitle, formatNumber } from "../lib/utils";
 import { Icon } from "./ui/icon";
+import { Spinner } from "./ui/spinner";
 
 /** The filters shown for a level + result view. */
 export function applicableFilters(
@@ -128,18 +129,24 @@ export type FilterChip = { key: string; label: ReactNode; title?: string; onRemo
 
 /**
  * One filter in the sidebar (legacy `styles.filter` block: padded, a 1px
- * divider): its name, which opens its modal, and its applied values.
+ * divider): its name, which opens its modal, how many of the matches have a
+ * value for it (`count`, the most it can match; a spinner while it loads,
+ * none when it could not be counted),
+ * and its applied values. At zero it is disabled, unless values are applied.
  */
 export function FilterEntry({
   label,
+  count,
   chips,
   onOpen,
 }: {
   label: string;
+  count?: number | null;
   chips: FilterChip[];
   onOpen: () => void;
 }) {
   const active = chips.length > 0;
+  const disabled = count === 0 && !active;
   return (
     <div
       className="text-[13px]"
@@ -148,9 +155,13 @@ export function FilterEntry({
       <button
         type="button"
         onClick={onOpen}
+        disabled={disabled}
         aria-haspopup="dialog"
-        title={`Filter by ${label}`}
-        className="flex w-full cursor-pointer items-center gap-1 pt-[0.5em] text-left hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+        title={disabled ? `No records to filter by ${label}` : `Filter by ${label}`}
+        className={cx(
+          "flex w-full items-center gap-1 pt-[0.5em] text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
+          disabled ? "cursor-default text-ink-faint" : "cursor-pointer hover:text-node-ink",
+        )}
         style={{ marginBottom: active ? "0.35em" : "0.1em" }}
       >
         <span className="grow whitespace-normal font-bold">{label}</span>
@@ -158,6 +169,18 @@ export function FilterEntry({
           <span className="rounded-full bg-node px-[0.45em] text-[10px] font-bold leading-[1.5] text-white">
             {chips.length}
             <span className="sr-only"> applied</span>
+          </span>
+        )}
+        {count !== null && (
+          <span className="inline-flex min-w-[2.2em] shrink-0 items-center justify-center rounded-full border border-edge px-[0.45em] text-[10px] font-bold leading-[1.5] text-ink-faint">
+            {count === undefined ? (
+              <Spinner size="xs" />
+            ) : (
+              <>
+                {formatNumber(count)}
+                <span className="sr-only"> records</span>
+              </>
+            )}
           </span>
         )}
         <Icon
