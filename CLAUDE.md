@@ -22,7 +22,7 @@ Linting:    ruff (Python), biome (TypeScript)
 ## Repo Layout
 
 ```
-configurations/        WHAT NODE DEVELOPERS EDIT. <node>.yaml + <node>/{data_models/*.json, vocabularies, assets, pages, seeds}; fiesta.yaml lists every node the API serves; ops/schedules.yaml
+configurations/        WHAT NODE DEVELOPERS EDIT. <node>.yaml + <node>/{README.md (the node's doc), data_models/*.json, vocabularies, assets, pages, seeds}; fiesta.yaml lists every node the API serves; ops/schedules.yaml
   plugins/<name>/      one folder per plugin: plugin.py (backend, imports as fiesta.plugins.<name_>) · index.tsx + views (UI) · test_<name_>.py · README.md
   sources/<slug>.py    per-node data-source sync scripts (data-source mode), built on fiesta/backend/fiesta/sources/
 fiesta/                THE PLATFORM (infra; node work does not belong here)
@@ -34,7 +34,7 @@ fiesta/                THE PLATFORM (infra; node work does not belong here)
   scripts/             e2e.sh (full workflow against a running stack), pg-node-readonly-role.sql
   docker-compose*.yml  the local stack; the Makefile runs compose with --project-directory . (paths in them are repo-root relative)
 docs/                  api.md (contract) · plugins.md · legacy-ux-spec.md (pixel-level Meteor UI parity spec) · ROADMAP.md
-                       development.md · deployment.md · <node>-node.md · OPERATOR_TODO.md (human-only actions)
+                       development.md · deployment.md · storage-and-migration.md · OPERATOR_TODO.md (human-only actions)
 .env / .env.example    local settings and secrets (root); Makefile, README.md, CLAUDE.md, LICENSE stay at the root too
 ../MagIC ../CDR ../KArAr ../KDD ../FIESTA-API   sibling legacy repos — reference for data models, vocab, UI, API
 .claude/skills/        /roadmap-next (reconcile docs/ROADMAP.md, propose next) · /operator-todo (docs/OPERATOR_TODO.md)
@@ -63,7 +63,7 @@ On this machine host ports 5432/8000/8001 are taken: `.env` publishes Postgres o
 
 ## Hard Rules (each links to its rationale)
 
-- **Postgres owns application state; the bucket preserves immutable contribution history; OpenSearch is a projection.** Save content through the revision service with optimistic concurrency and an idempotency key. Commit revision pointers and outbox events together. Never edit published revision content or erase retained history. `fiesta rebuild` rebuilds search only; full recovery needs Postgres plus S3. Local development uses Docker and per-node seed manifests, never production credentials. → [docs/phase-m.md](docs/phase-m.md)
+- **Postgres owns application state; the bucket preserves immutable contribution history; OpenSearch is a projection.** Save content through the revision service with optimistic concurrency and an idempotency key. Commit revision pointers and outbox events together. Never edit published revision content or erase retained history. `fiesta rebuild` rebuilds search only; full recovery needs Postgres plus S3. Local development uses Docker and per-node seed manifests, never production credentials. → [docs/storage-and-migration.md](docs/storage-and-migration.md)
 - **A node is configuration, never a code branch.** Identity, colors, index, bucket, data model, vocabularies, hierarchy, facets, and enabled features all live in `configurations/<node>.yaml` + `configurations/<node>/`; the loader validates it on startup and before every publication, and CI loads every YAML. No `if node == "magic"` in core code. The served copy is the node's published revision in Postgres: admins draft and publish in the admin UI (`fiesta.services.node_config`), publication writes the same files back to git (`FIESTA_CONFIG_PUBLISH`, a PR from `node-config/<slug>`), and `fiesta init` imports trees merged in git that Postgres never published. Change a node in either place, never in only the database. Roles: `users.is_admin` = super admin, `node_admins` = per-node admin; check them with `user.is_node_admin(slug)`, never `is_admin` alone. → [README.md](README.md), [docs/development.md](docs/development.md) "Adding or changing a node", [docs/api.md](docs/api.md) "Admin"
 - **Node-specific science is a plugin** (everything in one folder, `configurations/plugins/<name>/`: `plugin.py`, its UI, tests and README; the plugin API stays in core, `fiesta.plugins.base`/`util` and `fiesta/frontend/src/plugins/index.tsx`; activated by `features.plugins`, tuned per node under the YAML's `plugins.<name>` map, which its pydantic `Options` model validates). Poles, depth plots, age plateaus, record cards, digital objects — all plugins. New node feature ⇒ new plugin, not a core special case; a plugin never keys behaviour on a node name (the old `CARDS_BY_NODE` is what this rule forbids), it reads its options. → [docs/plugins.md](docs/plugins.md)
 - **Data models and vocabularies are the legacy repos' JSON, converted, not rewritten.** `configurations/<node>/data_models/<version>.json` comes from the Meteor repos' `export const` modules. MagIC 3.0 gotchas: no `experiments` table (it is a derived search level); longitudes are 0–360; `lab_names`, `citations`, `geologic_types`, `lithologies`, `age_unit`, `reference` are required — fixtures and seeds must satisfy them.

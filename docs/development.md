@@ -102,7 +102,7 @@ gets no public contributions. `FIESTA_SEED_PUBLIC=10` in `.env` changes the
 default count (`make seed FIESTA_SEED_PUBLIC=10` for one run; `0` skips the
 import), `ARGS="--public 10"` overrides both, `ARGS="--source https://…"` reads another FIESTA deployment, and
 `ARGS=--fixtures` loads the manifest's hand-made public examples instead,
-offline; the phase-m integration test uses that mode. Re-running the seed
+offline; the integration test uses that mode. Re-running the seed
 fetches only contributions published on the source since the last run. On page load, local development
 automatically signs in as Local Developer (`developer@example.test`), creating
 the manifest's two accounts first if `make seed` has not run yet;
@@ -130,9 +130,9 @@ line): the SPA stops offering uploads for KdD, `/admin/nodes/kdd?section=source`
 shows its sync, and `configurations/sources/kdd.py` can sync it from Meteor KdD. See
 [data-sources.md](data-sources.md).
 
-`make test-phase-m` builds and runs all-node seed, revision and migration checks in
+`make test-integration` builds and runs all-node seed, revision and migration checks in
 an isolated Docker network without external runtime connectivity. Image/dependency
-downloads occur during setup. See [Phase M operations](phase-m.md).
+downloads occur during setup. See [storage and migration](storage-and-migration.md).
 
 ## Base paths and the multi-node layout
 

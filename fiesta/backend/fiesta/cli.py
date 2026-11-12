@@ -521,7 +521,8 @@ def verify_index_command(fix: bool = False):
 
 @app.command("backfill-revisions")
 def backfill_revisions():
-    """Preserve pre-Phase-M FIESTA canonical files as initial immutable revisions."""
+    """Preserve FIESTA canonical files from before revisions (migration 0003) as
+    initial immutable revisions."""
     from sqlalchemy import select
 
     from fiesta.db.models import Contribution

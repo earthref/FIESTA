@@ -86,7 +86,7 @@ Last updated: 2026-11-11
 - [ ] **ERDA legacy import: apply** (decisions made 2026-09-29: a steward account,
       kept with every owner email in the gitignored `migration/erda/owner_map.json`;
       deferred and lost-file records metadata only; test record 2741 excluded; details
-      in `docs/erda-node.md` "Legacy import"; output in the ERDA import worktree's
+      in `configurations/erda/README.md` "Legacy import"; output in the ERDA import worktree's
       `migration/erda/`). Re-run `legacy-inventory erda … --max-file-mb 100 --owner-map
       ../migration/erda/owner_map.json` (reuses the page/file caches; check the report
       has no `default_owner … not in er_users` error), review `owner_mapping.json` (198 names by exact full name; 21
@@ -364,7 +364,7 @@ Every path outside the repo has to follow; the layout PR waits for the first ite
   `python3 fiesta/scripts/sc-legacy-catalog.py --cache ../migration/sc/pages
   --inventory ../migration/sc --owner <steward email>` and `make fiesta
   ENV_FILE=.env.prod NODE=sc ARGS="sync-legacy ../migration/sc/inventory.json"`
-  (add `--apply` once the dry run reads right). See `docs/sc-node.md`.
+  (add `--apply` once the dry run reads right). See `configurations/sc/README.md`.
 - [ ] **Find the map images and grids.** They were served from
   `erda.sdsc.edu/maps/<area>/{JPG,GRD}/` (404 now) and earthref.org answers the
   same paths with HTML. If they survive on MARFIK or an SDSC backup, say where;
@@ -693,4 +693,4 @@ created it, without a password, on the first record. The owner maps are in the
       rehearsal; set batch sizes and operational limits before enabling live traffic.
 - [ ] Approve per-node write freeze, final sync/reconciliation, traffic switch and
       rollback window. Disable legacy sync at cutover; preserve new FIESTA revisions
-      if rolling back after accepting writes. See [phase-m.md](phase-m.md).
+      if rolling back after accepting writes. See [storage-and-migration.md](storage-and-migration.md).

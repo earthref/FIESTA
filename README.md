@@ -31,7 +31,7 @@ rustfs      S3-compatible storage: canonical contribution files + manifests
 **Durability:** Postgres owns accounts, permissions, settings and contribution
 revision pointers. The bucket preserves immutable files, revision manifests and
 processing artifacts. `fiesta rebuild` rebuilds only OpenSearch; recovery requires
-Postgres backups plus the bucket. See [Phase M operations](docs/phase-m.md).
+Postgres backups plus the bucket. See [storage and migration](docs/storage-and-migration.md).
 
 ## Quick start
 
@@ -84,7 +84,7 @@ The repository splits what node developers work on from the platform itself:
 ```
 configurations/            what node developers edit
   fiesta.yaml              the nodes one API serves
-  <node>.yaml, <node>/     a node: identity, search, data models, vocabularies, pages, assets, seeds
+  <node>.yaml, <node>/     a node: identity, search, data models, vocabularies, pages, assets, seeds; <node>/README.md documents it
   plugins/<name>/          node-specific science and UI, one folder each: backend, UI, tests, docs (docs/plugins.md)
   sources/<slug>.py        a node's data-source sync script (docs/data-sources.md)
 fiesta/                    the platform (FIESTA infrastructure)

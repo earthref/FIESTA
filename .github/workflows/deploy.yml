@@ -1,7 +1,7 @@
 name: Deploy
 
 # Runs only after the CI workflow has succeeded on main -- a red e2e or
-# Phase M Docker job must never reach production (the deploy script itself
+# integration Docker job must never reach production (the deploy script itself
 # only re-runs the unit tests and the frontend build). Deliberately no
 # pull_request trigger: this repo is public and the runner is self-hosted on
 # the deploy host, so a workflow from a fork PR would execute untrusted code

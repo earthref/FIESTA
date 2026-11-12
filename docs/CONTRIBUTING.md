@@ -77,7 +77,7 @@ make e2e       # the upload → validate → publish → search workflow, agains
 ```
 
 CI runs all of these plus the offline seed and migration checks
-(`make test-phase-m`), so a green CI means they passed.
+(`make test-integration`), so a green CI means they passed.
 
 ## Pull requests
 

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Logical restore rehearsal for the isolated Phase M test project only.
-# Run make test-phase-m first. Never uses the main project's .env or database.
+# Logical restore rehearsal for the isolated integration test project only.
+# Run make test-integration first. Never uses the main project's .env or database.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-COMPOSE=(docker compose -p fiesta-phase-m-test --project-directory . -f fiesta/compose.phase-m-test.yml)
+COMPOSE=(docker compose -p fiesta-integration-test --project-directory . -f fiesta/compose.integration-test.yml)
 RESTORE_DATABASE="fiesta_restore_$(date +%s)_$$"
 DUMP=$(mktemp)
 cleanup() {

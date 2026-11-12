@@ -21,7 +21,7 @@ Standard library only; run it with any Python 3.11+:
     python3 fiesta/scripts/sc-legacy-catalog.py --cache ../migration/sc/pages \\
         --inventory ../migration/sc --owner STEWARD_EMAIL   # `fiesta sync-legacy`
 
-docs/sc-node.md maps the legacy fields onto data model 1.0.
+configurations/sc/README.md maps the legacy fields onto data model 1.0.
 """
 
 import argparse

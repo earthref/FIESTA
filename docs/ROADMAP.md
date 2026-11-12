@@ -253,7 +253,7 @@ Postgres settings/workspace permissions, immutable file revisions and undo, shar
 management routers, the SPA text/history/attachment editor, durable outbox processing,
 versioned validation/summary artifacts, config-driven offline seeds, explicit-inventory
 legacy import/sync, storage verification, and search-only rebuild. Local Docker
-verification is tracked in [phase-m.md](phase-m.md). Status remains IN
+verification is tracked in [storage-and-migration.md](storage-and-migration.md). Status remains IN
 PROGRESS until reviewed and merged; checkboxes below are not claims of deployment.
 Live source inventories/export mappings, production sizing and backup/cutover
 rehearsals remain operator gates in `OPERATOR_TODO.md`. Phase A's process
