@@ -10,7 +10,7 @@ export interface Portal {
 export const PORTALS: Portal[] = [
   { label: "EarthRef.org", url: "https://earthref.org/", color: "#006600" },
   { label: "MagIC", url: "https://earthref.org/MagIC", color: "#800080" },
-  { label: "KdD", url: "https://earthref.org/KdD", color: "#217e5c" },
+  { label: "KdD", url: "https://earthref.org/KdD", color: "#bb4b1c" },
   { label: "CDR", url: "https://earthref.org/CDR", color: "#e09f00" },
   { label: "KArAr", url: "https://earthref.org/KArAr", color: "#3030bb" },
   { label: "OSU-MGR", url: "https://osu-mgr.org", color: "#D73F09" },
