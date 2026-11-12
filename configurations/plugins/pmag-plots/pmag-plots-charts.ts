@@ -375,12 +375,14 @@ function xyAxis(name: string, extra: object = {}) {
   };
 }
 
-function xyOption(x: object, y: object, series: unknown[]): EChartsOption {
+/** A card (not `large`) gets fewer ticks, so its labels don't run together. */
+function xyOption(x: object, y: object, series: unknown[], large: boolean): EChartsOption {
+  const ticks = large ? {} : { splitNumber: 3 };
   return {
     animation: false,
     grid: { left: 52, right: 16, top: 16, bottom: 42 },
-    xAxis: x,
-    yAxis: { ...y, nameGap: 40 },
+    xAxis: { ...x, ...ticks },
+    yAxis: { ...y, ...ticks, nameGap: 40 },
     tooltip,
     series,
   } as EChartsOption;
@@ -406,7 +408,9 @@ export function demagOption(_size: Size, specimen: DemagSpecimen, large: boolean
   const unit = kind === "AF" ? "mT" : kind === "MW" ? "J" : "°C";
   return xyOption(
     xyAxis(`Treatment (${unit})`, { min: 0 }),
-    xyAxis(`M / Mmax (Mmax ${nf(max)} ${specimen.unit})`, { min: 0 }),
+    // ECharts keeps the axis name inside the chart, so on a card the long one
+    // squeezes the plot; Mmax is in the selected plot's name and the tooltip.
+    xyAxis(large ? `M / Mmax (Mmax ${nf(max)} ${specimen.unit})` : "M / Mmax", { min: 0 }),
     [
       {
         type: "line",
@@ -424,6 +428,7 @@ export function demagOption(_size: Size, specimen: DemagSpecimen, large: boolean
         })),
       },
     ],
+    large,
   );
 }
 
@@ -534,6 +539,7 @@ export function araiOption(_size: Size, specimen: AraiSpecimen, large: boolean):
     // A tail check's difference can fall below zero; then the axis follows it.
     xyAxis("NRM remaining / NRM₀", tails.y.some((y) => y < 0) ? {} : { min: 0 }),
     series,
+    large,
   );
 }
 
@@ -552,38 +558,45 @@ export function deremagOption(_size: Size, specimen: AraiSpecimen, large: boolea
       tip: `<b>${steps.order[i] === "NRM" ? "NRM" : `${nf(t)} °C`}</b><br/>${name} ${nf(values[i])}`,
     })),
   });
-  return xyOption(xyAxis("Temperature (°C)", { min: 0 }), xyAxis("Fraction of NRM₀", { min: 0 }), [
-    curve("NRM remaining", steps.y, RED, "circle"),
-    curve("pTRM gained", steps.x, BLUE, "rect"),
-  ]);
+  return xyOption(
+    xyAxis("Temperature (°C)", { min: 0 }),
+    xyAxis("Fraction of NRM₀", { min: 0 }),
+    [curve("NRM remaining", steps.y, RED, "circle"), curve("pTRM gained", steps.x, BLUE, "rect")],
+    large,
+  );
 }
 
 /** Moment against applied field, with lines through the origin (pmagplotlib.plot_hys). */
 export function hysteresisOption(_size: Size, loop: HystLoop, large: boolean): EChartsOption {
   const [f0, f1] = [Math.min(...loop.field), Math.max(...loop.field)];
   const [m0, m1] = [Math.min(...loop.m), Math.max(...loop.m)];
-  return xyOption(xyAxis("Field (mT)"), xyAxis(`M (${loop.unit})`), [
-    {
-      type: "line",
-      data: [[f0, 0], [f1, 0], "-", [0, m0], [0, m1]],
-      silent: true,
-      symbol: "none",
-      lineStyle: { color: pc().net, width: 1 },
-      tooltip: { show: false },
-    },
-    {
-      type: "line",
-      symbol: "circle",
-      symbolSize: large ? 3 : 2,
-      lineStyle: { color: pc().node, width: 1 },
-      itemStyle: { color: pc().node },
-      large: loop.field.length > 5000,
-      data: loop.field.map((field, i) => ({
-        value: [field, loop.m[i]],
-        tip: `${nf(field)} mT<br/>M ${nf(loop.m[i])} ${escapeHtml(loop.unit)}`,
-      })),
-    },
-  ]);
+  return xyOption(
+    xyAxis("Field (mT)"),
+    xyAxis(`M (${loop.unit})`),
+    [
+      {
+        type: "line",
+        data: [[f0, 0], [f1, 0], "-", [0, m0], [0, m1]],
+        silent: true,
+        symbol: "none",
+        lineStyle: { color: pc().net, width: 1 },
+        tooltip: { show: false },
+      },
+      {
+        type: "line",
+        symbol: "circle",
+        symbolSize: large ? 3 : 2,
+        lineStyle: { color: pc().node, width: 1 },
+        itemStyle: { color: pc().node },
+        large: loop.field.length > 5000,
+        data: loop.field.map((field, i) => ({
+          value: [field, loop.m[i]],
+          tip: `${nf(field)} mT<br/>M ${nf(loop.m[i])} ${escapeHtml(loop.unit)}`,
+        })),
+      },
+    ],
+    large,
+  );
 }
 
 function escapeHtml(value: string): string {
