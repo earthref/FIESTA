@@ -3,7 +3,7 @@ import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useAuth } from "../lib/auth";
 import { PORTAL } from "../lib/base";
 import { inkColor, useNodeConfig } from "../lib/config";
-import { EARTHREF, FIESTA_PORTAL, PORTALS, portalUrl } from "../lib/portals";
+import { FIESTA_PORTAL, isActivePortal, PORTALS, portalUrl } from "../lib/portals";
 import { useTheme } from "../lib/theme";
 import { useLoginModal } from "./login-modal";
 import { MobileDrawer } from "./mobile-drawer";
@@ -81,13 +81,13 @@ export function PortalBar() {
         {/* Wide (≥1024px): full portal bar */}
         <nav aria-label="EarthRef portals" className="hidden items-stretch lg:flex">
           {portals.map((portal) => {
-            const active = PORTAL ? portal === EARTHREF : portal.label === config?.key;
+            const active = isActivePortal(portal, pathname, config?.key);
             const style = {
               ...itemStyle,
               ...(active ? { color: inkColor(portal.color), borderBottomColor: portal.color } : {}),
             };
             return active ? (
-              <Link key={portal.label} to="/" className={itemClass} style={style}>
+              <Link key={portal.label} to={portal.path ?? "/"} className={itemClass} style={style}>
                 {portal.label}
               </Link>
             ) : (

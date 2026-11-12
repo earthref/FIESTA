@@ -7,7 +7,7 @@ import { NodeHeader } from "../components/node-header";
 import { NodeMenu } from "../components/node-menu";
 import { PortalBar } from "../components/portal-bar";
 import { PageSpinner } from "../components/ui/spinner";
-import { BUILD_BASE, NODE, nodeSiteUrl, PORTAL } from "../lib/base";
+import { BUILD_BASE, isPortalPath, NODE, nodeSiteUrl, PORTAL } from "../lib/base";
 import { applyNodeTheme, useNodeConfig } from "../lib/config";
 import { FIESTA_PORTAL } from "../lib/portals";
 
@@ -19,10 +19,11 @@ export function RootLayout() {
     if (config) applyNodeTheme(PORTAL ? FIESTA_PORTAL : config);
   }, [config]);
 
-  // The portal home is the only page outside a node: any other route it links
-  // to (Admin, the user's workspace) loads under the default node.
+  // The portal home, References and Users are the only pages outside a node:
+  // any other route they link to (Admin, the user's workspace) loads under
+  // the default node.
   useEffect(() => {
-    if (PORTAL && pathname !== "/") {
+    if (PORTAL && !isPortalPath(pathname)) {
       const { pathname: path, search, hash } = window.location;
       window.location.replace(
         nodeSiteUrl(NODE, `${path.slice(BUILD_BASE.length - 1)}${search}${hash}`),

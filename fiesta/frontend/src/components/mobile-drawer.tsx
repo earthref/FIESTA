@@ -1,8 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { PORTAL } from "../lib/base";
 import { inkColor, useNodeConfig } from "../lib/config";
-import { EARTHREF, PORTALS, portalUrl } from "../lib/portals";
+import { isActivePortal, PORTALS, portalUrl } from "../lib/portals";
 import { type NodeMenuItem, nodeMenuItems } from "./node-menu";
 import { Icon } from "./ui/icon";
 
@@ -17,6 +17,7 @@ interface MobileDrawerProps {
 export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProps) {
   const { data: nodeConfig } = useNodeConfig();
   const panelRef = useRef<HTMLDivElement>(null);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   // The portal home has no node menu and highlights EarthRef.org.
   const config = PORTAL ? undefined : nodeConfig;
   // Nodes whose web app production does not serve are left out (node YAML `publish.web`).
@@ -105,12 +106,18 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
         {/* All EarthRef portal links (brand colors, active bold) */}
         <nav aria-label="EarthRef portals" className="flex flex-col p-2">
           {portals.map((portal) => {
-            const active = PORTAL ? portal === EARTHREF : portal.label === config?.key;
+            const active = isActivePortal(portal, pathname, config?.key);
             const className =
               "rounded-sm px-3 py-1.5 text-sm hover:bg-gray-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node";
             const style = { color: inkColor(portal.color), fontWeight: active ? 700 : 500 };
             return active ? (
-              <Link key={portal.label} to="/" className={className} style={style} onClick={onClose}>
+              <Link
+                key={portal.label}
+                to={portal.path ?? "/"}
+                className={className}
+                style={style}
+                onClick={onClose}
+              >
                 {portal.label}
               </Link>
             ) : (

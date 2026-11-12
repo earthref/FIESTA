@@ -56,7 +56,13 @@ Two schemes are accepted; the private routes take either.
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in `developer@example.test` only against local dev infrastructure, first creating the seed manifest's accounts on an unseeded stack (`null` elsewhere) |
 | GET | `/v2/basemap/{world\|arctic}` | — | JPEG: Esri Ocean as a 1024×512 plate carrée world image (blank past ±85.05°) and its Arctic band; fetched from Esri once a day and cached in the API process, for the result thumbnails |
 | GET | `/v2/basemap/moon` | — | JPEG: the Moon (LROC WAC) as a 1024×512 plate carrée image, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on the Moon |
+| GET | `/v2/portal/users` | — | `{nodes, total, users: [{id, name, handle, orcid, counts, total}]}`: every user with a public contribution (activated, latest, not deleted) and how many they have per node; no email. Query `q` (every word in name/handle/ORCID), `sort` (`total`, a node slug, `name`, `handle`, `orcid`), `order` (`asc`\|`desc`), `offset`, `limit` (≤ 1000, default 100). The portal's Users page |
+| GET | `/v2/portal/references` | — | `{nodes, total, references: [{doi, citation, title, journal, year, long_citation, counts, total}]}`: every reference DOI (normalized, upper case) a public contribution cites and how many cite it per node; the metadata from the `doi_references` cache, `null` until fetched. Same query parameters (`sort` also `citation`, `title`, `year`, `doi`; blanks sort last). The portal's References page |
 | GET | `/v2/basemap/undersea-features` | — | GeoJSON `FeatureCollection` of the IHO-IOC GEBCO Gazetteer of Undersea Feature Names (NOAA NCEI's feature service), each `{name, kind: point\|line\|area}` with areas reduced to their middle point; fetched once a day and cached, for the Map tab's labels |
+
+In both `/v2/portal` lists `counts` maps a node slug to its number of public contributions (a node
+with none is absent) and `nodes` (`[{slug, key, color}]`) lists the nodes with any, among those whose
+web app the deployment serves; the per-node counts are cached in the API process for 5 minutes.
 
 `UserOut = {id, email, name, handle: string|null, orcid: string|null, has_password: bool, is_admin: bool, admin_nodes: string[]}` —
 `has_password` is false for an account imported without one (it sets a password without a current one);
