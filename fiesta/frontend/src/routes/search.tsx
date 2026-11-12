@@ -27,7 +27,7 @@ import {
   useNumberFilter,
 } from "../components/filter-modals";
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
-import { SearchMap } from "../components/map/search-map";
+import { type AreaRequest, SearchMap } from "../components/map/search-map";
 import { contributionId, ResultDivider } from "../components/result-item";
 import { columnsOf, RowsGrid, rowsOfHit } from "../components/rows-table";
 import {
@@ -400,8 +400,11 @@ export function SearchPage() {
   const area = parseArea(search.area);
   const areaBbox = (entry: SearchLevel | undefined) =>
     area && entry?.geo ? areaToBbox(area) : undefined;
+  // An area asked for by the Map tab's Filter by area button.
+  const [areaRequest, setAreaRequest] = useState<AreaRequest | null>(null);
   const [filterModal, setFilterModal] = useState<FilterModalState | null>(null);
   const setArea = (next: Area | null) => {
+    setAreaRequest(null);
     setSearch({ area: next?.join(",") });
   };
 
@@ -1281,6 +1284,9 @@ export function SearchPage() {
                   scope={scope}
                   area={area}
                   onAreaChange={setArea}
+                  areaRequest={areaRequest}
+                  onRequestArea={() => setAreaRequest({})}
+                  onAreaRequestDone={() => setAreaRequest(null)}
                   color={config.color}
                   onSelect={(id) => openContribution(id, level.table)}
                 />
