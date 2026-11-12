@@ -52,14 +52,8 @@ function formatLinks(links: Link[]): string {
     .join(LINKS_DELIMITER);
 }
 
-/** Attached-segment style shared with the private workspace's cards. */
-const segment = {
-  width: "calc(100% + 2px)",
-  marginLeft: -1,
-  padding: "0.5em",
-  border: "1px solid var(--er-line)",
-  borderTop: "none",
-} as const;
+/** One row of controls in a workspace card's Details column. */
+const segment = { marginBottom: "0.5em" } as const;
 
 const labelClass = (warn: boolean) =>
   cx(
@@ -312,7 +306,7 @@ export function WorkspaceFields({
   return (
     <>
       {(lists.length > 0 || links.length > 0) && (
-        <div className="flex flex-wrap items-center gap-y-2 bg-panel-hover" style={segment}>
+        <div className="flex flex-wrap items-center gap-y-2" style={segment}>
           {lists.map((field) => {
             const value = parseList(current(field.column));
             const warn = field.required && value.length === 0;
@@ -365,7 +359,7 @@ export function WorkspaceFields({
           <div
             // biome-ignore lint/suspicious/noArrayIndexKey: entries have no id; their order is their identity
             key={`${field.column}-${index}`}
-            className="flex flex-wrap items-center gap-y-2 bg-panel-hover"
+            className="flex flex-wrap items-center gap-y-2"
             style={segment}
           >
             <div className="flex min-w-0" style={{ flex: "1 1 16em" }}>
@@ -425,7 +419,7 @@ export function WorkspaceFields({
       })}
 
       {texts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-y-2 bg-panel-hover" style={segment}>
+        <div className="flex flex-wrap items-center gap-y-2" style={segment}>
           {texts.map((field, index) => {
             const warn = field.required && !current(field.column).trim();
             return (

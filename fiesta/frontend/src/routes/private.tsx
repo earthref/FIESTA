@@ -1,677 +1,22 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ContributionEditor } from "../components/contribution-editor";
+import { useEffect, useState } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { useLoginModal } from "../components/login-modal";
 import { isSourceMode, SourceModeNotice } from "../components/source-mode-notice";
-import { SummaryGrid } from "../components/summary-grid";
 import { Button } from "../components/ui/button";
 import { CountLabel } from "../components/ui/count-label";
 import { Icon } from "../components/ui/icon";
-import { Input } from "../components/ui/input";
-import { Modal } from "../components/ui/modal";
-import { PageSpinner, Spinner } from "../components/ui/spinner";
-import { WorkspaceFields } from "../components/workspace-fields";
-import { ApiError, api } from "../lib/api";
+import { PageSpinner } from "../components/ui/spinner";
+import { ContributionCard, isProcessing } from "../components/workspace-card";
+import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
-import type {
-  ContributionOut,
-  JobOut,
-  ReferenceCheck,
-  SearchResult,
-  ValidationIssue,
-  ValidationResult,
-} from "../lib/types";
-import { cx, formatDate } from "../lib/utils";
+import type { ContributionOut } from "../lib/types";
+import { cx } from "../lib/utils";
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function fetchValidation(id: number): Promise<ValidationResult | null> {
-  try {
-    return await api<ValidationResult>(`/private/contributions/${id}/validation`);
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return null;
-    throw err;
-  }
-}
-
-/** Attached-segment style: 1px borders bleeding 1px past the card edges. */
-const segmentBleed = { width: "calc(100% + 2px)", marginLeft: -1 } as const;
-
-// --- Validation results modal --------------------------------------------------
-
-function groupByTable(issues: ValidationIssue[]): [string, ValidationIssue[]][] {
-  const map = new Map<string, ValidationIssue[]>();
-  for (const issue of issues) {
-    const list = map.get(issue.table) ?? [];
-    list.push(issue);
-    map.set(issue.table, list);
-  }
-  return [...map.entries()];
-}
-
-function IssueGroup({
-  table,
-  issues,
-  tone,
-}: {
-  table: string;
-  issues: ValidationIssue[];
-  tone: "danger" | "warning";
-}) {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="rounded-sm border border-gray-200">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
-      >
-        <span
-          aria-hidden="true"
-          className={cx("text-gray-400 transition-transform", open && "rotate-90")}
-        >
-          <Icon name="caret-right" size="small" />
-        </span>
-        {table}
-        <span
-          className={cx(
-            "inline-block min-w-[3em] rounded-full border bg-surface px-2 py-0.5 text-center text-xs font-medium",
-            tone === "danger" ? "border-red-300 text-red-700" : "border-amber-300 text-amber-700",
-          )}
-        >
-          {issues.length}
-        </span>
-      </button>
-      {open && (
-        <ul className="divide-y divide-gray-100 border-t border-gray-100">
-          {issues.map((issue, index) => (
-            <li
-              // biome-ignore lint/suspicious/noArrayIndexKey: validation issues have no id and can repeat per row/column; list is static per result
-              key={`${issue.column}-${issue.row}-${index}`}
-              className="px-3 py-1.5 text-sm text-gray-700"
-            >
-              {issue.row !== null && <span className="text-gray-400">Row {issue.row}: </span>}
-              {issue.column && <span className="font-mono text-xs">{issue.column}</span>}{" "}
-              {issue.message}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function ValidationModal({
-  contribution,
-  onClose,
-}: {
-  contribution: ContributionOut;
-  onClose: () => void;
-}) {
-  const query = useQuery({
-    queryKey: ["private", "validation", contribution.id],
-    queryFn: () => fetchValidation(contribution.id),
-  });
-
-  const result = query.data;
-
-  return (
-    <Modal
-      open
-      onClose={onClose}
-      title={`Validation results — Contribution ${contribution.id}`}
-      wide
-    >
-      {query.isPending && <PageSpinner label="Loading validation results…" />}
-      {query.error && <ErrorMessage error={query.error} />}
-      {result === null && !query.isPending && !query.error && (
-        <p className="text-sm text-gray-600">
-          This contribution has not been validated yet. Use the Validate button on its card.
-        </p>
-      )}
-      {result && (
-        <div className="space-y-3">
-          {result.is_valid ? (
-            <p className="rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-800">
-              Validation passed successfully!
-            </p>
-          ) : (
-            <p className="rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-error-ink">
-              {result.errors.length} Validation Error{result.errors.length === 1 ? "" : "s"}
-            </p>
-          )}
-          <p className="text-xs text-gray-500">Validated {formatDate(result.validated_at)}</p>
-          {groupByTable(result.errors).map(([table, issues]) => (
-            <IssueGroup key={`error-${table}`} table={table} issues={issues} tone="danger" />
-          ))}
-          {result.warnings.length > 0 && (
-            <>
-              <h3 className="pt-2 text-sm font-semibold text-amber-700">
-                Warnings ({result.warnings.length})
-              </h3>
-              {groupByTable(result.warnings).map(([table, issues]) => (
-                <IssueGroup key={`warning-${table}`} table={table} issues={issues} tone="warning" />
-              ))}
-            </>
-          )}
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-// --- Contribution card (stacked attached segments) -------------------------------
-
-function ContributionCard({ contribution }: { contribution: ContributionOut }) {
-  const { data: config } = useNodeConfig();
-  const queryClient = useQueryClient();
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [name, setName] = useState(contribution.filename ?? `Contribution ${contribution.id}`);
-  const [doi, setDoi] = useState(contribution.reference_doi ?? "");
-  const [shareOpen, setShareOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [publishOpen, setPublishOpen] = useState(false);
-  const [resultsOpen, setResultsOpen] = useState(false);
-  const [validating, setValidating] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [actionError, setActionError] = useState<unknown>(null);
-
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["private", "contributions"] });
-
-  const validation = useQuery({
-    queryKey: ["private", "validation", contribution.id],
-    queryFn: () => fetchValidation(contribution.id),
-    enabled: contribution.status === "ready" && !contribution.is_activated,
-  });
-
-  const doiMutation = useMutation({
-    mutationFn: () =>
-      api<ContributionOut>(`/private/contributions/${contribution.id}/reference`, {
-        method: "PUT",
-        json: {
-          doi: doi.trim(),
-          expected_revision: contribution.head_revision,
-          request_key: crypto.randomUUID(),
-        },
-      }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["private", "reference", contribution.id] });
-      await invalidate();
-    },
-    onError: setActionError,
-  });
-
-  const activateMutation = useMutation({
-    mutationFn: () =>
-      api<ContributionOut>(`/private/contributions/${contribution.id}/activate`, {
-        method: "POST",
-      }),
-    onSuccess: () => {
-      setPublishOpen(false);
-      invalidate();
-    },
-    onError: (err) => {
-      setPublishOpen(false);
-      setActionError(err);
-    },
-  });
-
-  const deactivateMutation = useMutation({
-    mutationFn: () =>
-      api<ContributionOut>(`/private/contributions/${contribution.id}/deactivate`, {
-        method: "POST",
-      }),
-    onSuccess: invalidate,
-    onError: setActionError,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: () => api<void>(`/private/contributions/${contribution.id}`, { method: "DELETE" }),
-    onSuccess: () => {
-      setDeleteOpen(false);
-      invalidate();
-    },
-    onError: (err) => {
-      setDeleteOpen(false);
-      setActionError(err);
-    },
-  });
-
-  const validate = async () => {
-    setActionError(null);
-    setValidating(true);
-    try {
-      const before = (await fetchValidation(contribution.id))?.validated_at;
-      await api<JobOut>(`/private/contributions/${contribution.id}/validate`, {
-        method: "POST",
-      });
-      for (let attempt = 0; ; attempt++) {
-        await sleep(2000);
-        const result = await fetchValidation(contribution.id);
-        if (result && result.validated_at !== before) {
-          queryClient.setQueryData(["private", "validation", contribution.id], result);
-          setResultsOpen(true);
-          break;
-        }
-        if (attempt >= 60) throw new Error("Validation timed out; try refreshing later.");
-      }
-      invalidate();
-    } catch (err) {
-      setActionError(err);
-    } finally {
-      setValidating(false);
-    }
-  };
-
-  const shareUrl = `${window.location.origin}${siteUrl(`/contributions/${contribution.id}`)}?private_key=${contribution.private_key ?? ""}`;
-
-  const share = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      setActionError(err);
-    }
-  };
-
-  const busy =
-    validating ||
-    doiMutation.isPending ||
-    activateMutation.isPending ||
-    deactivateMutation.isPending ||
-    deleteMutation.isPending;
-  const isValid = validation.data?.is_valid === true;
-  const workspaceFields = config?.workspace?.fields ?? [];
-  // A node may require the DOI to resolve (Crossref / DataCite) before Publish.
-  const requireReference = config?.workspace?.require_reference ?? false;
-  const reference = useQuery({
-    queryKey: ["private", "reference", contribution.id, contribution.reference_doi],
-    queryFn: () => api<ReferenceCheck>(`/private/contributions/${contribution.id}/reference`),
-    enabled: requireReference && !contribution.is_activated && !!contribution.reference_doi,
-    staleTime: 60_000,
-  });
-  const referenceOk = !requireReference || reference.data?.status === "ok";
-  const doiMissing =
-    !contribution.is_activated &&
-    (!doi.trim() || (requireReference && !!reference.data && reference.data.status !== "ok"));
-
-  // The contribution's search doc (its level counts, what the Counts and Plot
-  // tiles read), refetched as the contribution changes; until it is indexed,
-  // a doc of the workspace's own fields, which stay the fresher either way.
-  const contributionLevel = config?.search_levels.find(
-    (entry) => entry.table === "contribution",
-  ) ?? { name: "Contributions", table: "contribution", count_field: null };
-  const indexed = useQuery({
-    queryKey: ["contribution", contribution.id, contribution.private_key, contribution.updated_at],
-    queryFn: () =>
-      api<SearchResult>(`/contributions/${contribution.id}`, {
-        params: { private_key: contribution.private_key || undefined },
-      }),
-    retry: false,
-  });
-  const indexedSummary = (indexed.data?.summary ?? {}) as Record<string, unknown>;
-  const doc: SearchResult = {
-    ...indexed.data,
-    _is_activated: contribution.is_activated,
-    summary: {
-      ...indexedSummary,
-      contribution: {
-        ...((indexedSummary.contribution as Record<string, unknown> | undefined) ?? {}),
-        id: contribution.id,
-        version: contribution.version,
-        timestamp: contribution.updated_at,
-        _contributor: contribution.contributor_name,
-      },
-    },
-  };
-
-  return (
-    <div style={{ marginBottom: "1.5em" }}>
-      {/* 1. Inverted node-color top attached segment */}
-      <div
-        className="flex flex-wrap items-center rounded-t-sm bg-node text-white"
-        style={{ ...segmentBleed, padding: "0.5em", border: "1px solid var(--er-line)" }}
-      >
-        <div className="flex min-w-0" style={{ flex: "1 1 auto" }}>
-          <label
-            htmlFor={`name-${contribution.id}`}
-            className="flex items-center whitespace-nowrap rounded-l-sm bg-panel-strong px-[0.8em] text-[12px] font-bold text-gray-700"
-          >
-            Private Contribution Name
-          </label>
-          <input
-            id={`name-${contribution.id}`}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="min-w-0 flex-1 bg-surface px-2 py-1 text-[13px] text-gray-900 focus:outline-hidden"
-            style={{ borderRadius: 0 }}
-          />
-          <button
-            type="button"
-            disabled
-            title="Renaming is coming soon"
-            className="cursor-not-allowed rounded-r-sm bg-danger px-2.5 py-1 text-[12px] font-medium text-white opacity-60"
-            style={{ marginRight: 0 }}
-          >
-            Save
-          </button>
-        </div>
-        {!contribution.is_activated && (
-          <>
-            <button
-              type="button"
-              onClick={() => setShareOpen(true)}
-              disabled={busy || !contribution.private_key}
-              className="rounded-sm bg-surface/95 px-2.5 py-1 text-[12px] font-medium text-gray-800 hover:bg-surface disabled:opacity-50"
-              style={{ margin: "0 0 0 0.5em" }}
-            >
-              Share
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeleteOpen(true)}
-              disabled={busy}
-              className="rounded-sm bg-surface/95 px-2.5 py-1 text-[12px] font-medium text-gray-800 hover:bg-surface disabled:opacity-50"
-              style={{ margin: "0 0 0 0.5em" }}
-            >
-              Delete
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* 2. The node's editable fields (YAML workspace.fields), in preparation only */}
-      {!contribution.is_activated && workspaceFields.length > 0 && (
-        <WorkspaceFields contribution={contribution} fields={workspaceFields} disabled={busy} />
-      )}
-
-      {/* 3. DOI + status/actions: ui attached secondary segment */}
-      <div
-        className="flex flex-wrap items-center bg-panel-hover"
-        style={{
-          ...segmentBleed,
-          padding: "0.5em",
-          border: "1px solid var(--er-line)",
-          borderTop: "none",
-        }}
-      >
-        <form
-          className="flex min-w-0"
-          style={{ flex: "1 1 auto" }}
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!doiMutation.isPending) doiMutation.mutate();
-          }}
-        >
-          <label
-            htmlFor={`doi-${contribution.id}`}
-            className={cx(
-              "flex items-center whitespace-nowrap rounded-l-sm px-[0.8em] text-[12px] font-bold",
-              doiMissing ? "bg-danger text-white" : "bg-panel-strong text-gray-700",
-            )}
-          >
-            DOI
-          </label>
-          <Input
-            id={`doi-${contribution.id}`}
-            value={doi}
-            onChange={(event) => setDoi(event.target.value)}
-            placeholder={requireReference ? "The study's DOI (required)" : "10.1029/…"}
-            title="After your paper is published, its DOI can take up to a day to register (usually an hour or two). Save the DOI again to check once more."
-            className={cx("flex-1 rounded-none py-1 text-[13px]", doiMissing && "border-danger")}
-          />
-          <button
-            type="submit"
-            disabled={
-              busy ||
-              (doi.trim() === (contribution.reference_doi ?? "") &&
-                !(requireReference && reference.data && reference.data.status !== "ok"))
-            }
-            className="rounded-r-sm border border-l-0 border-gray-300 bg-surface px-2.5 py-1 text-[12px] font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {doiMutation.isPending ? "Saving…" : "Save"}
-          </button>
-        </form>
-
-        <span className="flex items-center" style={{ margin: "0 0 0 0.5em" }}>
-          {validating ? (
-            <Spinner label="Validating…" />
-          ) : (
-            <span className="rounded-sm bg-gray-200 px-2 py-1 text-[12px] font-medium text-gray-700">
-              {contribution.status}
-            </span>
-          )}
-          {validation.data && (
-            <button
-              type="button"
-              onClick={() => setResultsOpen(true)}
-              className="ml-2 text-[12px] text-node-ink underline hover:opacity-80"
-            >
-              validation results
-            </button>
-          )}
-        </span>
-
-        <span className="flex items-center" style={{ margin: "0 0 0 0.5em" }}>
-          {contribution.is_activated ? (
-            <>
-              <button
-                type="button"
-                disabled
-                className="rounded-sm bg-success px-2.5 py-1 text-[12px] font-medium text-white"
-              >
-                Published
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => deactivateMutation.mutate()}
-                className="ml-2 rounded-sm border border-gray-300 bg-surface px-2.5 py-1 text-[12px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-              >
-                {deactivateMutation.isPending ? "Deactivating…" : "Deactivate"}
-              </button>
-            </>
-          ) : contribution.status === "ready" && isValid ? (
-            <button
-              type="button"
-              disabled={busy || !referenceOk}
-              onClick={() => setPublishOpen(true)}
-              title={referenceOk ? undefined : "Publishing needs a DOI that resolves"}
-              className={cx(
-                "rounded-sm px-2.5 py-1 text-[12px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50",
-                referenceOk ? "bg-node hover:bg-node-dark" : "bg-danger",
-              )}
-            >
-              Publish
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={busy || !contribution.filename}
-              onClick={validate}
-              className="rounded-sm bg-danger px-2.5 py-1 text-[12px] font-medium text-white hover:bg-danger-dark disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Validate
-            </button>
-          )}
-        </span>
-
-        {requireReference && !contribution.is_activated && contribution.reference_doi && (
-          <p className="mt-1.5 basis-full text-[12px]">
-            {reference.isPending ? (
-              <span className="text-gray-500">Checking the DOI…</span>
-            ) : reference.data?.status === "ok" ? (
-              <span className="text-gray-600" title={reference.data.title ?? undefined}>
-                <Icon name="check" size="small" /> {reference.data.citation ?? "DOI found"}
-                {reference.data.title && <> — {reference.data.title}</>}
-              </span>
-            ) : reference.data?.status === "not_found" ? (
-              <span className="text-error-ink">
-                This DOI is not registered at Crossref or DataCite yet. A new paper's DOI can take
-                up to a day to register; save the DOI again to check once more.
-              </span>
-            ) : reference.data ? (
-              <span className="text-error-ink">
-                The DOI registries could not be reached; save the DOI again to retry.
-              </span>
-            ) : null}
-          </p>
-        )}
-      </div>
-
-      {actionError !== null && (
-        <div style={{ ...segmentBleed, border: "1px solid var(--er-line)", borderTop: "none" }}>
-          <ErrorMessage error={actionError} />
-        </div>
-      )}
-
-      {/* 3. Bottom attached segment wrapping the collapsed result card */}
-      <div
-        className="rounded-b-sm bg-surface"
-        style={{
-          ...segmentBleed,
-          padding: "1px 1em 0",
-          border: "1px solid var(--er-line)",
-          borderTop: "none",
-        }}
-      >
-        <div className="overflow-x-auto">
-          <SummaryGrid
-            level={contributionLevel}
-            hits={[doc]}
-            privateKey={contribution.private_key}
-          />
-        </div>
-      </div>
-
-      <div className="my-2 flex gap-2">
-        <Button variant="secondary" onClick={() => setEditorOpen(true)}>
-          Edit / History / Files
-        </Button>
-        {contribution.published_revision && (
-          <Button
-            onClick={async () => {
-              try {
-                await api(`/private/contributions/${contribution.id}/versions`, {
-                  method: "POST",
-                });
-                await invalidate();
-              } catch (error) {
-                setActionError(error);
-              }
-            }}
-          >
-            Create new version
-          </Button>
-        )}
-      </div>
-      {editorOpen && (
-        <ContributionEditor
-          contribution={contribution}
-          onClose={() => {
-            setEditorOpen(false);
-            invalidate();
-          }}
-        />
-      )}
-      {/* Modals */}
-      {shareOpen && (
-        <Modal
-          open
-          onClose={() => setShareOpen(false)}
-          title={`Share Contribution ${contribution.id}`}
-          footer={
-            <>
-              <Button variant="secondary" onClick={() => setShareOpen(false)}>
-                Close
-              </Button>
-              <Button onClick={share}>{copied ? "Copied!" : "Copy"}</Button>
-            </>
-          }
-        >
-          <p className="mb-2 text-sm text-gray-600">
-            Anyone with this link can view this private contribution:
-          </p>
-          <Input readOnly value={shareUrl} onFocus={(event) => event.target.select()} />
-        </Modal>
-      )}
-
-      {deleteOpen && (
-        <Modal
-          open
-          onClose={() => setDeleteOpen(false)}
-          title={`Delete Contribution ${contribution.id}?`}
-          footer={
-            <>
-              <Button
-                variant="secondary"
-                onClick={() => setDeleteOpen(false)}
-                disabled={deleteMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                onClick={() => deleteMutation.mutate()}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? "Deleting…" : "Delete"}
-              </Button>
-            </>
-          }
-        >
-          <p className="text-sm font-medium text-error-ink">
-            Warning! You cannot undo this delete.
-          </p>
-        </Modal>
-      )}
-
-      {publishOpen && (
-        <Modal
-          open
-          onClose={() => setPublishOpen(false)}
-          title={`Publish Contribution ${contribution.id}?`}
-          footer={
-            <>
-              <Button
-                variant="secondary"
-                onClick={() => setPublishOpen(false)}
-                disabled={activateMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => activateMutation.mutate()}
-                disabled={activateMutation.isPending}
-              >
-                {activateMutation.isPending ? "Publishing…" : "Publish"}
-              </Button>
-            </>
-          }
-        >
-          <p className="text-sm font-medium text-gray-800">
-            Warning! Your data will be publicly visible.
-          </p>
-        </Modal>
-      )}
-
-      {resultsOpen && (
-        <ValidationModal contribution={contribution} onClose={() => setResultsOpen(false)} />
-      )}
-    </div>
-  );
-}
-
-// --- Page ---------------------------------------------------------------------
+const uploadClass =
+  "inline-flex items-center gap-1 rounded-sm bg-node px-3.5 py-2 text-[13px] font-medium text-white hover:bg-node-dark focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-2";
 
 export function PrivateWorkspacePage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -679,6 +24,8 @@ export function PrivateWorkspacePage() {
   const { data: config } = useNodeConfig();
   // One list at a time: in preparation (the default) or published.
   const [showing, setShowing] = useState<"preparation" | "published">("preparation");
+  // A card to scroll to once its list renders (Create new version, a version link).
+  const [scrollTo, setScrollTo] = useState<number | null>(null);
 
   const sourceMode = isSourceMode(config);
 
@@ -686,6 +33,17 @@ export function PrivateWorkspacePage() {
     queryKey: ["private", "contributions"],
     queryFn: () => api<ContributionOut[]>("/private/contributions"),
     enabled: !!user && !!config && !sourceMode,
+    // While any contribution is being processed, follow it to ready / failed.
+    refetchInterval: (query) => (query.state.data?.some(isProcessing) ? 3000 : false),
+  });
+  const contributions = list.data ?? [];
+
+  useEffect(() => {
+    if (scrollTo === null) return;
+    const card = document.getElementById(`contribution-${scrollTo}`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+    setScrollTo(null);
   });
 
   // Every write is refused while the node mirrors its source, so drafts made
@@ -713,16 +71,29 @@ export function PrivateWorkspacePage() {
     );
   }
 
-  const contributions = list.data ?? [];
   const preparationCount = contributions.filter((entry) => !entry.is_activated).length;
   const publishedCount = contributions.filter((entry) => entry.is_activated).length;
   const showPublished = showing === "published";
   // Published: newest publication first (activated_at; updated_at for rows
-  // published before it was recorded).
+  // published before it was recorded). In preparation: most recently changed.
   const publishedAt = (entry: ContributionOut) => entry.activated_at ?? entry.updated_at;
   const visible = contributions
     .filter((entry) => entry.is_activated === showPublished)
-    .sort((a, b) => (showPublished ? publishedAt(b).localeCompare(publishedAt(a)) : 0));
+    .sort((a, b) =>
+      showPublished
+        ? publishedAt(b).localeCompare(publishedAt(a))
+        : b.updated_at.localeCompare(a.updated_at),
+    );
+  const successorOf = (entry: ContributionOut) =>
+    contributions.find((other) => other.previous_id === entry.id);
+
+  const jump = (target: ContributionOut | number) => {
+    const entry =
+      typeof target === "number" ? contributions.find((other) => other.id === target) : target;
+    if (!entry) return;
+    setShowing(entry.is_activated ? "published" : "preparation");
+    setScrollTo(entry.id);
+  };
 
   const toggleClass = (active: boolean) =>
     cx(
@@ -735,11 +106,7 @@ export function PrivateWorkspacePage() {
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center" style={{ gap: "0 1em" }}>
-        <Link
-          to="/upload"
-          className="inline-flex items-center gap-1 rounded-sm bg-node px-3.5 py-2 text-[13px] font-medium text-white hover:bg-node-dark focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-2"
-          style={{ margin: "0 0 0.5em" }}
-        >
+        <Link to="/upload" className={uploadClass} style={{ margin: "0 0 0.5em" }}>
           <Icon name="plus" size="small" /> Upload Data Into Your Private Workspace
         </Link>
         <button
@@ -770,16 +137,31 @@ export function PrivateWorkspacePage() {
       {list.error && <ErrorMessage error={list.error} />}
 
       {!list.isPending && !list.error && visible.length === 0 && (
-        <div className="rounded-sm border border-amber-300 bg-amber-50 px-4">
-          <p className="py-10 text-center text-lg font-medium text-amber-800">
-            No Items to Display
+        <div className="rounded-md border border-gray-200 bg-surface px-4 py-10 text-center">
+          <p className="text-lg font-medium text-gray-800">
+            {showPublished ? "Nothing published yet" : "Nothing in preparation"}
           </p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-gray-600">
+            {showPublished
+              ? "Contributions you publish appear here, where you can share them, start a new version or unpublish them."
+              : "Upload a data file to start a contribution. It stays private while you complete its details, validate it and publish it."}
+          </p>
+          {!showPublished && (
+            <Link to="/upload" className={cx(uploadClass, "mt-4")}>
+              <Icon name="plus" size="small" /> Upload Data
+            </Link>
+          )}
         </div>
       )}
 
       <div>
         {visible.map((contribution) => (
-          <ContributionCard key={contribution.id} contribution={contribution} />
+          <ContributionCard
+            key={contribution.id}
+            contribution={contribution}
+            successor={successorOf(contribution)}
+            onJump={jump}
+          />
         ))}
       </div>
     </div>
