@@ -139,7 +139,7 @@ async def seed_node(node, *, fixtures=False, public=PUBLIC_COUNT, source=None):
     """The manifest's accounts and workspace, SOURCE's PUBLIC most recent public
     contributions the node does not have yet (public_import, default dev.earthref.org),
     and the manifest's unpublished fixtures. FIXTURES loads every manifest fixture
-    instead of importing, offline (the phase-m integration test)."""
+    instead of importing, offline (the integration test)."""
     require_local()
     root, manifest = load_seed(node)
     items = [i for i in manifest["contributions"] if fixtures or not i.get("published")]

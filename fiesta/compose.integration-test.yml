@@ -1,4 +1,4 @@
-name: fiesta-phase-m-test
+name: fiesta-integration-test
 services:
   postgres:
     image: postgres:16

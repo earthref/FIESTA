@@ -478,7 +478,7 @@ ValidationResult = {
 }
 ```
 
-See [Phase M revision management](#phase-m-revision-management) below for the
+See [Revision management](#revision-management) below for the
 concurrency and idempotency semantics of the mutating routes.
 
 Every save of the canonical file (upload, `PUT /content`, a new version, the
@@ -489,7 +489,7 @@ other table that the data model gives the columns, `contribution_id` and a
 Supplied values are overwritten, so a re-uploaded download is renumbered. A
 file that does not parse is stored as sent. Both columns stay out of
 `summary._all`. Files saved earlier are backfilled by `fiesta stamp-ids`
-([phase-m.md](phase-m.md#existing-fiesta-data-and-legacy-migration)).
+([storage-and-migration.md](storage-and-migration.md#existing-fiesta-data-and-legacy-migration)).
 
 ### Workspaces (`/v2/{repository}/workspaces`, Bearer or Basic)
 
@@ -600,7 +600,7 @@ level offers to its results, map, filter-modal counts and level-tab count, and
 keeps only those when switching levels. A new `_has` reaches an existing index
 only through `fiesta rebuild`.
 
-## Phase M revision management
+## Revision management
 
 All content mutations go through the revision service with optimistic
 concurrency and an idempotency key. File uploads (`PUT .../file`,
@@ -612,7 +612,7 @@ is rejected. Published-version content is immutable; `POST .../versions` creates
 a successor draft. `JobOut.job_id` for validation identifies a Postgres outbox
 event. Processing and indexing are separate: `status=ready` does not imply
 search is current. Publishing validates the exact current revision. See
-[Phase M API contract and examples](phase-m.md#revisions-and-apis) for details.
+[Revision API contract and examples](storage-and-migration.md#revisions-and-apis) for details.
 
 ## Legacy v1 (api.earthref.org contract)
 

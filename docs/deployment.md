@@ -118,7 +118,7 @@ Retain database base backups and WAL archives for PITR, the corresponding S3 obj
 versions, deployment configuration and application image. Never expire objects
 referenced by retained revisions. `fiesta rebuild` preserves users, settings and
 workspace permissions; it cannot recover lost Postgres state from contribution
-manifests. See [Phase M operations](phase-m.md) for migration and cutover gates.
+manifests. See [storage and migration](storage-and-migration.md) for migration and cutover gates.
 
 ## The production deploy script
 

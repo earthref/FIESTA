@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-# configurations/ at the repo root; the Phase M test image mounts it at /config.
+# configurations/ at the repo root; the integration test image mounts it at /config.
 CONFIG_DIR = next(
     (
         p / "configurations"

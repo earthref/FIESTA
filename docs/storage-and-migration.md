@@ -1,4 +1,4 @@
-# Phase M: development, storage and migration
+# Storage, revisions and migration
 
 Postgres is authoritative for accounts, settings, permissions, revision pointers,
 publication state and audit history. S3 stores immutable contribution files,
@@ -29,7 +29,7 @@ manifest's accounts, workspace and unpublished fixtures (the private draft and
 the invalid draft), after it imports the node's 50 most recent public contributions
 from dev.earthref.org that are not already local (`fiesta.services.public_import`;
 `--public N`, `--source URL`). `fiesta seed --fixtures` loads the whole manifest
-below instead and imports nothing; the offline `make test-phase-m` uses it.
+below instead and imports nothing; the offline `make test-integration` uses it.
 The manifest includes a private draft with revision history, two
 independent typical public examples (`typical-1`, `typical-2`), and an `all-fields`
 public example with a populated value for every column of every table in the
@@ -42,15 +42,15 @@ consistent study or an upload template (it also includes download-only fields).
 Repeated seeds skip existing contributions and preserve changed settings and edits.
 Seed manifests and credentials are never applied during normal server startup.
 
-`make test-phase-m` builds dependencies first, then runs all-node seeding, tests and
+`make test-integration` builds dependencies first, then runs all-node seeding, tests and
 storage verification on a Docker network with external connectivity disabled.
-`make test-phase-m-restore` then rehearses a logical Postgres backup/restore,
+`make test-integration-restore` then rehearses a logical Postgres backup/restore,
 compares complete account rows, verifies all retained file references, and builds
 separate search aliases. It drops only its temporary restored database; production
 PITR/WAL recovery must still be rehearsed by the operator.
 
-Its project is `fiesta-phase-m-test`. Tests execute inside the isolated network;
-local test ports are reserved but need not be reachable from the host. `docker compose -p fiesta-phase-m-test -f compose.phase-m-test.yml down -v` resets **only that
+Its project is `fiesta-integration-test`. Tests execute inside the isolated network;
+local test ports are reserved but need not be reachable from the host. `docker compose -p fiesta-integration-test -f compose.integration-test.yml down -v` resets **only that
 test project**; the normal developer stack is separate. No real DOI/OAuth/enrichment
 calls are needed for this suite; those integrations remain Phase C work.
 
@@ -151,7 +151,7 @@ optimization. Preserve the matching application image to reproduce the pipeline.
 ## Existing FIESTA data and legacy migration
 
 Apply migration 0003 with `fiesta init`. For contributions already in the new
-FIESTA database before Phase M, run `fiesta backfill-revisions`, then
+FIESTA database before revisions (migration 0003), run `fiesta backfill-revisions`, then
 `fiesta drain-outbox` and `fiesta verify-storage`. This preserves the available
 canonical file as an initial revision; it does not invent earlier edits.
 

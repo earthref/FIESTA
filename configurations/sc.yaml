@@ -5,7 +5,7 @@
 # measured from (one `maps` row per map, with its grid), linked ERDA files, and
 # the literature (ERR) on each seamount.
 # Ported from the legacy Perl CGI catalog at https://earthref.org/SC/ —
-# docs/sc-node.md has the field mapping and how the catalog is imported.
+# configurations/sc/README.md has the field mapping and how the catalog is imported.
 
 fiesta: 1
 deployment: node

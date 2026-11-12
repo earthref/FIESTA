@@ -1,7 +1,7 @@
 """The legacy /v1 (api.earthref.org) contract, exercised without infrastructure:
 the session dependency is a fake and OpenSearch is a stub, so these cover
 routing, error shapes, auth, content negotiation and result shaping. The
-Postgres/S3 round trip lives in test_phase_m_integration.py."""
+Postgres/S3 round trip lives in test_integration.py."""
 
 import base64
 import io

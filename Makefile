@@ -175,10 +175,10 @@ import-public: ## Copy public contributions into local dev: make import-public N
 	@test -n "$(NODE)" -a -n "$(IDS)" || { echo 'usage: make import-public NODE=magic IDS="20818 20848" [ARGS=--versions]'; exit 2; }
 	$(COMPOSE_OPS) run --rm api fiesta import-public $(NODE) $(IDS) $(ARGS)
 
-.PHONY: test-phase-m
-test-phase-m: ## Run all-node seeds and migration/revision integration tests without external services
-	docker compose -p fiesta-phase-m-test --project-directory . -f fiesta/compose.phase-m-test.yml run --build --rm tests
+.PHONY: test-integration
+test-integration: ## Run all-node seeds and migration/revision integration tests without external services
+	docker compose -p fiesta-integration-test --project-directory . -f fiesta/compose.integration-test.yml run --build --rm tests
 
-.PHONY: test-phase-m-restore
-test-phase-m-restore: ## Rehearse a logical database restore against the isolated Phase M test bucket
-	bash fiesta/scripts/rehearse-phase-m-restore.sh
+.PHONY: test-integration-restore
+test-integration-restore: ## Rehearse a logical database restore against the isolated integration test bucket
+	bash fiesta/scripts/rehearse-restore.sh
