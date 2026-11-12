@@ -14,6 +14,7 @@ import { LoginPage } from "./routes/login";
 import { NotFoundPage } from "./routes/not-found";
 import { ContentPage } from "./routes/page";
 import { PortalHomePage } from "./routes/portal-home";
+import { ReferencesPage, UsersPage } from "./routes/portal-pages";
 import { PrivateWorkspacePage } from "./routes/private";
 import { SearchPage } from "./routes/search";
 import { UploadPage } from "./routes/upload";
@@ -205,6 +206,20 @@ const pluginRoutes = pluginPages().map(({ plugin, page }) =>
   }),
 );
 
+// The portal's References and Users grids over every node (portals.ts `path`):
+// at the portal in the multi-node layout, under the node in a per-node build.
+const referencesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/references",
+  component: ReferencesPage,
+});
+
+const usersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/users",
+  component: UsersPage,
+});
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -267,6 +282,8 @@ const routeTree = rootRoute.addChildren([
   dataModelRoute,
   vocabulariesRoute,
   ...pluginRoutes,
+  referencesRoute,
+  usersRoute,
   loginRoute,
   contactRoute,
   adminRoute,

@@ -1,10 +1,13 @@
-import { BASE_PATH, BUILD_BASE, NODES } from "./base";
+import { BASE_PATH, BUILD_BASE, NODES, PORTAL, siteUrl } from "./base";
 
 /** EarthRef portal registry rendered in the fixed top portal bar. */
 export interface Portal {
   label: string;
   url: string;
   color: string;
+  /** A FIESTA page standing in for the portal (routes/portal-pages.tsx):
+   * the portal home's page in the multi-node layout, else this node's. */
+  path?: "/references" | "/users";
 }
 
 export const PORTALS: Portal[] = [
@@ -20,8 +23,8 @@ export const PORTALS: Portal[] = [
   { label: "SCC", url: "https://earthref.org/SCC/", color: "#8b216a" },
   { label: "ERESE", url: "https://earthref.org/ERESE/", color: "#3030bb" },
   { label: "ERDA", url: "https://earthref.org/ERDA/", color: "#006600" },
-  { label: "References", url: "https://earthref.org/ERR/", color: "#006600" },
-  { label: "Users", url: "https://earthref.org/ERML/", color: "#006600" },
+  { label: "References", url: "https://earthref.org/ERR/", color: "#006600", path: "/references" },
+  { label: "Users", url: "https://earthref.org/ERML/", color: "#006600", path: "/users" },
 ];
 
 /** The EarthRef.org entry: the FIESTA portal home stands in for it. */
@@ -60,8 +63,23 @@ export function portalUrl(portal: Portal, deploymentNodes: string[] = []): strin
   // Where this origin serves every node, EarthRef.org is the FIESTA portal home
   // at the build base (base.ts PORTAL).
   if (portal === EARTHREF && NODES.length) return BUILD_BASE;
+  // References and Users are FIESTA pages wherever FIESTA serves them; production
+  // keeps the legacy ones until the cutover.
+  if (portal.path && !productionHosts.has(location.hostname)) {
+    return NODES.length ? `${BUILD_BASE}${portal.path.slice(1)}` : siteUrl(portal.path);
+  }
   if (siblingBase === null || productionHosts.has(location.hostname)) return portal.url;
   const slug = portal.label.toLowerCase();
   const served = NODES.length ? NODES : deploymentNodes.map((key) => key.toLowerCase());
   return served.includes(slug) ? `${siblingBase}${portal.label}/` : portal.url;
+}
+
+/** The portal the bar highlights: the References or Users page being shown,
+ * else EarthRef.org on the portal home, else the node `nodeKey`. */
+export function isActivePortal(portal: Portal, pathname: string, nodeKey?: string): boolean {
+  const page = PORTALS.find(
+    (entry) => entry.path && (pathname === entry.path || pathname.startsWith(`${entry.path}/`)),
+  );
+  if (page) return portal === page;
+  return PORTAL ? portal === EARTHREF : portal.label === nodeKey;
 }

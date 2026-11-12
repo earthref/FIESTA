@@ -57,11 +57,25 @@ export const NODE: string = inNodePrefix ? segment.toLowerCase() : defaultNode;
 /** Path the SPA's routes live under (router basepath); ends with "/". */
 export const BASE_PATH: string = inNodePrefix ? `${BUILD_BASE}${segment}/` : BUILD_BASE;
 
-/** Multi-node layout, the build base itself (http://localhost:8080/): the
- * FIESTA portal home, which aggregates every node in NODES. NODE is still the
- * default node, for the node-less account routes the portal bar uses. */
+/** The pages the FIESTA portal serves besides its home, each over every node
+ * (routes/portal-pages.tsx). A per-node build serves them under the node. */
+export const PORTAL_PAGES: string[] = ["/references", "/users"];
+
+/** A router path ("/", "/users") the portal serves. */
+export function isPortalPath(path: string): boolean {
+  const trimmed = path.length > 1 ? path.replace(/\/+$/, "") : path;
+  return trimmed === "/" || PORTAL_PAGES.includes(trimmed);
+}
+
+/** Multi-node layout, the build base itself (http://localhost:8080/) or one of
+ * PORTAL_PAGES under it: the FIESTA portal, which aggregates every node in
+ * NODES. NODE is still the default node, for the node-less account routes the
+ * portal bar uses. */
 export const PORTAL: boolean =
-  !inNodePrefix && NODES.length > 0 && location.pathname === BUILD_BASE;
+  !inNodePrefix &&
+  NODES.length > 0 &&
+  location.pathname.startsWith(BUILD_BASE) &&
+  isPortalPath(location.pathname.slice(BUILD_BASE.length - 1));
 
 /** URL of a path ("/", "/contributions/1") on another node of this origin. */
 export function nodeSiteUrl(key: string, path = "/"): string {

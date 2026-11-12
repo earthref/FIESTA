@@ -49,6 +49,8 @@ RESERVED_PAGE_SLUGS = {
     "login",
     "contact",
     "admin",
+    "users",
+    "references",
 }
 
 
