@@ -41,7 +41,8 @@ import {
   whereOf,
 } from "./pmag-plots-data";
 
-const CARD_HEIGHT = 130;
+/** A card's chart: tall enough that its axis names leave the plot room. */
+const CARD_HEIGHT = 190;
 /** A card's narrowest width before the grid drops a column, and the gap. */
 const CARD_MIN_WIDTH = 150;
 const CARD_GAP = 8;
