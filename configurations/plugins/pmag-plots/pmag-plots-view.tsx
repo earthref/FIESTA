@@ -41,13 +41,12 @@ import {
   whereOf,
 } from "./pmag-plots-data";
 
-/** A card's chart: tall enough that its axis names leave the plot room. */
-const CARD_HEIGHT = 190;
-/** A card's narrowest width before the grid drops a column, and the gap. */
-const CARD_MIN_WIDTH = 150;
+/** A card's narrowest width before the grid drops a column (its chart is
+ * square, so wide enough that its axis names leave the plot room), and the gap. */
+const CARD_MIN_WIDTH = 190;
 const CARD_GAP = 8;
-/** A row of cards: the chart, its title and borders. */
-const CARD_ROW_ESTIMATE = CARD_HEIGHT + 28;
+/** A card's title and borders, around its square chart. */
+const CARD_CHROME = 28;
 const LARGE_HEIGHT = 520;
 /** The selected plot's header, note and hint around its chart. */
 const LARGE_CHROME = 90;
@@ -456,12 +455,13 @@ function PlotGrid({
       scrollRef={scroller}
       // Beside the plot, the cards scroll to the selected one.
       reveal={beside ? index : undefined}
-      render={(i) => {
+      render={(i, size) => {
         const item = shown[i];
         return (
           <PlotCard
             key={item.key}
             item={item}
+            size={size}
             coord={coordOf(item)}
             selected={item.key === current?.key}
             onSelect={() => choose(item)}
@@ -515,11 +515,14 @@ function VirtualCards({
   count: number;
   scrollRef: RefObject<HTMLDivElement | null>;
   reveal?: number;
-  render: (index: number) => ReactNode;
+  /** `size`: the side of a card's square chart. */
+  render: (index: number, size: number) => ReactNode;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
   // Unknown until the grid's width is measured (no rows until then).
   const [columns, setColumns] = useState<number | null>(null);
+  // A card's width (its chart is as tall, less the card's borders).
+  const [width, setWidth] = useState(CARD_MIN_WIDTH);
   // Where the grid starts inside the scroller (its padding, a plot above it).
   const [margin, setMargin] = useState(0);
   useLayoutEffect(() => {
@@ -527,7 +530,9 @@ function VirtualCards({
     if (!grid) return;
     const update = () => {
       const fit = Math.floor((grid.clientWidth + CARD_GAP) / (CARD_MIN_WIDTH + CARD_GAP));
-      setColumns(Math.max(1, Math.min(8, fit)));
+      const cols = Math.max(1, Math.min(8, fit));
+      setColumns(cols);
+      setWidth(Math.floor((grid.clientWidth - (cols - 1) * CARD_GAP) / cols));
     };
     update();
     const observer = new ResizeObserver(update);
@@ -540,10 +545,11 @@ function VirtualCards({
   });
   const perRow = columns ?? 1;
   const rows = columns ? Math.ceil(count / columns) : 0;
+  const rowEstimate = width + CARD_CHROME;
   const virtualizer = useVirtualizer({
     count: rows,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => CARD_ROW_ESTIMATE,
+    estimateSize: () => rowEstimate,
     overscan: 2,
     gap: CARD_GAP,
     scrollMargin: margin,
@@ -558,7 +564,7 @@ function VirtualCards({
     const scroller = scrollRef.current;
     if (!columns || pending.current === undefined || !scroller) return;
     const row = Math.floor(pending.current / columns);
-    const middle = margin + row * (CARD_ROW_ESTIMATE + CARD_GAP) + CARD_ROW_ESTIMATE / 2;
+    const middle = margin + row * (rowEstimate + CARD_GAP) + rowEstimate / 2;
     scroller.scrollTop = Math.max(0, middle - scroller.clientHeight / 2);
     pending.current = undefined;
   });
@@ -579,7 +585,7 @@ function VirtualCards({
           {Array.from(
             { length: Math.min(perRow, count - row.index * perRow) },
             (_, i) => row.index * perRow + i,
-          ).map(render)}
+          ).map((i) => render(i, width - 2))}
         </div>
       ))}
     </div>
@@ -633,11 +639,14 @@ function Choices<T extends string>({
  * (the selected plot is the interactive one). */
 function PlotCard({
   item,
+  size,
   coord,
   selected,
   onSelect,
 }: {
   item: PlotItem;
+  /** The side of its square chart. */
+  size: number;
   coord: Coord;
   selected: boolean;
   onSelect: () => void;
@@ -658,7 +667,7 @@ function PlotCard({
         {item.title}
       </span>
       <span className="pointer-events-none block">
-        <EChart build={build} height={CARD_HEIGHT} label={`${item.title} plot`} />
+        <EChart build={build} height={size} label={`${item.title} plot`} />
       </span>
     </button>
   );
