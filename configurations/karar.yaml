@@ -72,14 +72,10 @@ pages: []
 # edited in the admin UI's Plugins tab).
 plugins:
   plateau-calculations:
-    levels: [Experiments]
-    # Legacy constants (plateau_calculations.js): total decay constant, default
-    # J, and the plateau criteria (>= 3 steps, >= 50% 39Ar, MSWD <= 2.5).
-    default_lambda: 5.543e-10
-    default_j: 1.0e-3
-    min_plateau_steps: 3
-    max_mswd: 2.5
-    min_ar39_percent: 50.0
+    # Plots draw the contributed ages; nothing is recalculated, so there are
+    # no constants to set.
+    experiment_levels: [Experiments]
+    specimen_levels: [Specimens]
 
 features:
   plugins: [plateau-calculations, sample-tiles]

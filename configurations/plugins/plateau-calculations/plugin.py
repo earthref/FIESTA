@@ -1,66 +1,85 @@
-"""KArAr: ⁴⁰Ar/³⁹Ar age plateaus over step-heating experiments.
+"""KArAr: ⁴⁰Ar/³⁹Ar age spectra, isochrons and specimen ages, as contributed.
 
-Python port of the legacy KArAr `PlateauCalculations` class (client-side JS).
-Per-step ages come from the ⁴⁰Ar*/³⁹ArK ratio via the standard age equation;
-the plateau is the lowest-MSWD run of ≥3 consecutive steps spanning ≥50% of
-cumulative ³⁹Ar release with MSWD ≤ 2.5.
+Every value drawn comes from the contribution; nothing is refitted.
 
-Constants (legacy values, quoted from plateau_calculations.js):
-    atmospheric ⁴⁰Ar/³⁶Ar = 295.5
-    default total decay constant λ = 5.543e-10 / year
-    default J value = 1e-3
+- Step ages: `measurements.age` ± `age_sigma_analytical`.
+- Plateau, isochron and total-fusion ages: the `experiments` rows, one per
+  `age_calculation_method`, with the steps each one used (`age_steps`, the
+  measurement names). The isochron lines come from those rows'
+  `40ar_39ar_ratio` and `40ar_36ar_ratio` intercepts.
+- Isochron points: the measurements' corrected isochron ratios, with their
+  sigmas and error correlations.
+- Specimen ages: the `specimens` row's preferred age over the experiments in
+  its `age_experiments`.
+
+The legacy KArAr client (plateau_calculations.js) worked differently. It
+recomputed step ages with an assumed J of 1e-3 and searched for its own
+plateau, so its plots disagreed with the published ages.
+
+The only arithmetic here is presentation. Each step's share of the
+experiment's ³⁹Ar release is taken from the first ³⁹Ar column that every step
+fills, normalised to 100%. Steps are ordered by `sequence` when every step has
+one; otherwise they keep their order in the file.
 """
 
-import math
+import asyncio
+import json
+from collections import OrderedDict
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import Field
 
 from fiesta.apps.deps import NodeDep, SessionDep
+from fiesta.domain.parse import parse_text
 from fiesta.nodeconfig import NodeConfig
 from fiesta.plugins.base import FiestaPlugin, PluginOptions
-from fiesta.plugins.util import load_visible_parsed, to_float
-
-ATM_AR40_AR36 = 295.5
-DEFAULT_LAMBDA = 5.543e-10  # 1/years
-DEFAULT_J = 1e-3
-
-MIN_PLATEAU_STEPS = 3
-MAX_MSWD = 2.5
-MIN_AR39_PERCENT = 50.0
+from fiesta.plugins.util import load_visible_contribution, to_float
+from fiesta.services.contributions import load_file
 
 
-class PlateauOptions(PluginOptions):
-    """The legacy constants, per node."""
+class ArgonOptions(PluginOptions):
+    """Which search levels get which thumbnail."""
 
-    levels: list[str] = Field(
+    experiment_levels: list[str] = Field(
         default=["Experiments"],
-        description="Search levels whose result items get the age-spectrum thumbnail",
+        description="Search levels whose result items show the experiment's age spectrum",
     )
-    default_lambda: float = Field(
-        default=DEFAULT_LAMBDA, description="Total ⁴⁰K decay constant λ (1/year)"
-    )
-    default_j: float = Field(default=DEFAULT_J, description="Default irradiation J value")
-    min_plateau_steps: int = Field(
-        default=MIN_PLATEAU_STEPS, ge=2, description="Fewest consecutive steps in a plateau"
-    )
-    max_mswd: float = Field(default=MAX_MSWD, gt=0, description="Highest MSWD a plateau may have")
-    min_ar39_percent: float = Field(
-        default=MIN_AR39_PERCENT,
-        ge=0,
-        le=100,
-        description="Least cumulative ³⁹Ar release (%) a plateau must span",
+    specimen_levels: list[str] = Field(
+        default=["Specimens"],
+        description=(
+            "Search levels whose result items show the specimen's experiments' spectra "
+            "under its preferred age"
+        ),
     )
 
 
-TEMP_COLUMNS = ["measurement_step_heat_temperature", "temperature", "temp", "step_temperature"]
-AR39_COLUMNS = [
+# The ³⁹Ar release of a step, in order of preference. The first column that
+# every step fills sizes the steps; legacy imports fill fraction_39ar_k with
+# values that do not sum to 100, so the corrected amount comes first.
+AR39_COLUMNS = (
     "corrected_39ar_potassium",
-    "measurement_ar39_vol_stp",
-    "ar39_vol",
-    "intercept_39ar",  # raw ³⁹Ar intercept (real KArAr 1.0 data)
-]
+    "fraction_39ar_k",
+    "relative_abundance_39ar",
+    "intercept_39ar",
+)
+
+# Isochron coordinates per step: x, y and their error correlation.
+ISOCHRON_COLUMNS = {
+    "normal": (
+        "corrected_39ar_k_36ar_atm_ratio",
+        "corrected_40ar_rad_atm_36ar_atm_ratio",
+        "corr_coefficient_40_36_over_39_36",
+    ),
+    "inverse": (
+        "corrected_39ar_k_40ar_rad_atm_ratio",
+        "corrected_36ar_atm_40ar_rad_atm_ratio",
+        "corr_coefficient_36_40_over_39_40",
+    ),
+}
+
+TRUE = {"t", "true", "yes", "y", "1"}
+FALSE = {"f", "false", "no", "n", "0"}
 
 
 def experiment_matches(row_experiment: str | None, requested: str) -> bool:
@@ -74,213 +93,258 @@ def experiment_matches(row_experiment: str | None, requested: str) -> bool:
     return requested.startswith(f"{row_experiment}-") or row_experiment.startswith(f"{requested}-")
 
 
-def _get(row: dict, *columns: str) -> float | None:
-    return next((v for c in columns if (v := to_float(row.get(c))) is not None), None)
+def names(value: Any) -> list[str]:
+    """A colon-delimited list column (age_steps, age_experiments)."""
+    if not value:
+        return []
+    return [name.strip() for name in str(value).split(":") if name.strip()]
 
 
-def calculate_age(
-    row: dict, j_value: float = DEFAULT_J, lam: float = DEFAULT_LAMBDA
-) -> dict | None:
-    """Per-step age (Ma) and 1σ from a measurement row, or None if the row
-    lacks usable isotope data."""
-    # Pre-computed ages take precedence.
-    age = to_float(row.get("age"))
-    age_sigma = to_float(row.get("age_sigma_analytical"))
-    if age is not None and age_sigma is not None:
-        return {
-            "age": age,
-            "age_sigma": age_sigma,
-            "ar40rad_ar39": None,
-            "ar40rad_ar39_sigma": None,
-        }
-
-    ar36_ar39 = _get(row, "total_36ar_39ar_ratio", "measurement_36ar_39ar_ratio")
-    ar36_ar39_sigma = _get(row, "total_36ar_39ar_ratio_sigma", "measurement_36ar_39ar_ratio_sigma")
-    ar40_ar39 = to_float(row.get("measurement_40ar_39ar_ratio"))
-    ar40_ar39_sigma = to_float(row.get("measurement_40ar_39ar_ratio_sigma"))
-
-    ar40rad_ar39: float | None = None
-    ar40rad_ar39_sigma: float | None = None
-
-    # KArAr 1.0 provides the radiogenic ratio directly.
-    direct = to_float(row.get("corrected_40ar_rad_39ar_k_ratio"))
-    if direct is not None:
-        ar40rad_ar39 = direct
-        ar40rad_ar39_sigma = to_float(row.get("corrected_40ar_rad_39ar_k_ratio_sigma"))
-    elif ar40_ar39 is not None and ar36_ar39 is not None:
-        # Atmospheric correction: 40Ar*/39Ar = 40/39 - 295.5 * 36/39
-        ar40rad_ar39 = ar40_ar39 - ATM_AR40_AR36 * ar36_ar39
-        if ar40_ar39_sigma is not None and ar36_ar39_sigma is not None:
-            ar40rad_ar39_sigma = math.sqrt(
-                ar40_ar39_sigma**2 + (ATM_AR40_AR36 * ar36_ar39_sigma) ** 2
-            )
-    else:
-        rad40 = to_float(row.get("corrected_40ar_radiogenic"))
-        k39 = to_float(row.get("corrected_39ar_potassium"))
-        if rad40 is not None and k39 not in (None, 0):
-            ar40rad_ar39 = rad40 / k39
-            rad40_sigma = to_float(row.get("corrected_40ar_radiogenic_sigma"))
-            k39_sigma = to_float(row.get("corrected_39ar_potassium_sigma"))
-            if rad40_sigma is not None and k39_sigma is not None and rad40 != 0:
-                ar40rad_ar39_sigma = abs(ar40rad_ar39) * math.sqrt(
-                    (rad40_sigma / rad40) ** 2 + (k39_sigma / k39) ** 2
-                )
-
-    if ar40rad_ar39 is None or ar40rad_ar39 <= 0:
-        return None
-
-    # Age equation: t = (1/λ) ln(1 + J * 40Ar*/39ArK), reported in Ma.
-    age = (1.0 / lam) * math.log(1.0 + j_value * ar40rad_ar39) / 1e6
-    age_sigma = age * ar40rad_ar39_sigma / ar40rad_ar39 if ar40rad_ar39_sigma is not None else 0.0
-    return {
-        "age": age,
-        "age_sigma": age_sigma,
-        "ar40rad_ar39": ar40rad_ar39,
-        "ar40rad_ar39_sigma": ar40rad_ar39_sigma,
-    }
+def is_true(value: Any) -> bool | None:
+    text = str(value or "").strip().lower()
+    return True if text in TRUE else False if text in FALSE else None
 
 
-def cumulative_ar39_percent(rows: list[dict]) -> list[float]:
-    amounts = [(_get(row, *AR39_COLUMNS) or 0.0) for row in rows]
-    total = sum(amounts)
-    if total <= 0:
-        # Fall back to equal-release steps so plots still render.
-        n = len(rows)
-        return [100.0 * (i + 1) / n for i in range(n)] if n else []
-    cumulative: list[float] = []
-    running = 0.0
-    for amount in amounts:
-        running += amount
-        cumulative.append(100.0 * running / total)
-    return cumulative
+def age_kind(method: str | None) -> str:
+    """The plot an age belongs on, from its free-text calculation method
+    ("Plateau", "Age Plateau", "Inverse Isochron", "Total Gas Fusion", ...)."""
+    text = (method or "").lower()
+    if "plateau" in text:
+        return "plateau"
+    if "isochron" in text:
+        return "inverse_isochron" if "inverse" in text else "normal_isochron"
+    if "fusion" in text or "total gas" in text or "integrated" in text:
+        return "total_fusion"
+    return "other"
 
 
-def weighted_mean(steps: list[dict]) -> dict | None:
-    usable = [s for s in steps if s["age_sigma"] and s["age_sigma"] > 0]
-    if not usable:
-        return None
-    weights = [1.0 / s["age_sigma"] ** 2 for s in usable]
-    total_weight = sum(weights)
-    mean = sum(w * s["age"] for w, s in zip(weights, usable, strict=True)) / total_weight
-    mswd = (
-        sum(w * (s["age"] - mean) ** 2 for w, s in zip(weights, usable, strict=True))
-        / (len(usable) - 1)
-        if len(usable) > 1
-        else 0.0
+def _int(value: Any) -> int | None:
+    number = to_float(value)
+    return int(number) if number is not None else None
+
+
+def _sigma(row: dict) -> float | None:
+    return next(
+        (
+            v
+            for c in ("age_sigma_analytical", "age_sigma_internal", "age_sigma_external")
+            if (v := to_float(row.get(c))) is not None
+        ),
+        None,
     )
+
+
+def contributed_age(row: dict) -> dict:
+    """One experiments row: an age as the contributor calculated it."""
+    method = row.get("age_calculation_method")
     return {
-        "weighted_mean": mean,
-        "uncertainty": math.sqrt(1.0 / total_weight),
-        "mswd": mswd,
+        "method": method,
+        "kind": age_kind(method),
+        "preferred": is_true(row.get("age_is_preferred")),
+        "age": to_float(row.get("age")),
+        "age_sigma": _sigma(row),
+        "age_unit": row.get("age_unit") or None,
+        "mswd": to_float(row.get("age_mswd")),
+        "n": _int(row.get("age_n")),
+        "plateau_width": to_float(row.get("age_plateau_width")),
+        "steps": names(row.get("age_steps")),
+        "ar40_ar39": to_float(row.get("40ar_39ar_ratio")),
+        "ar40_ar39_sigma": to_float(row.get("40ar_39ar_ratio_sigma")),
+        "ar40_ar36": to_float(row.get("40ar_36ar_ratio")),
+        "ar40_ar36_sigma": to_float(row.get("40ar_36ar_ratio_sigma")),
+        "trapped_ar40_ar36": to_float(row.get("40ar_36ar_trapped")),
     }
 
 
-def identify_plateau(
-    age_data: list[dict],
-    min_steps: int = MIN_PLATEAU_STEPS,
-    min_ar39_percent: float = MIN_AR39_PERCENT,
-    max_mswd: float = MAX_MSWD,
-) -> dict | None:
-    """Lowest-MSWD run of >= min_steps consecutive steps spanning
-    >= min_ar39_percent of cumulative 39Ar with MSWD <= max_mswd."""
-    n = len(age_data)
-    best: dict | None = None
-    for start in range(n):
-        for end in range(start + min_steps - 1, n):
-            span_start = age_data[start - 1]["cum_ar39"] if start > 0 else 0.0
-            ar39_span = age_data[end]["cum_ar39"] - span_start
-            if ar39_span < min_ar39_percent:
-                continue
-            stats = weighted_mean(age_data[start : end + 1])
-            if stats is None or stats["mswd"] > max_mswd:
-                continue
-            if best is None or stats["mswd"] < best["mswd"]:
-                best = {
-                    "plateau_steps": list(range(start, end + 1)),
-                    "plateau_age": stats["weighted_mean"],
-                    "plateau_age_sigma": stats["uncertainty"],
-                    "mswd": stats["mswd"],
-                    "ar39_percent": ar39_span,
-                }
-    return best
+def _point(row: dict, kind: str) -> list[float | None] | None:
+    """[x, σx, y, σy, ρ] on the normal or inverse isochron, or None."""
+    x_col, y_col, rho_col = ISOCHRON_COLUMNS[kind]
+    x, y = to_float(row.get(x_col)), to_float(row.get(y_col))
+    if x is None or y is None:
+        return None
+    return [
+        x,
+        to_float(row.get(f"{x_col}_sigma")),
+        y,
+        to_float(row.get(f"{y_col}_sigma")),
+        to_float(row.get(rho_col)),
+    ]
 
 
-def deduplicate(rows: list[dict]) -> list[dict]:
-    seen: set[tuple] = set()
+def build_steps(rows: list[dict]) -> dict:
+    """An experiment's heating steps: the contributed age and isochron ratios
+    of each, placed on the cumulative ³⁹Ar axis."""
+    # Only identical rows are duplicates: legacy imports reuse a measurement
+    # name for different steps.
+    seen: set[str] = set()
     unique: list[dict] = []
     for row in rows:
-        key = tuple(
-            row.get(c)
-            for c in (
-                *TEMP_COLUMNS,
-                "measurement_40ar_39ar_ratio",
-                "total_36ar_39ar_ratio",
-                "corrected_40ar_radiogenic",
-                "age",
-            )
-        )
-        if key in seen:
+        key = json.dumps(row, sort_keys=True, default=str)
+        if key not in seen:
+            seen.add(key)
+            unique.append(row)
+    if unique and all(to_float(row.get("sequence")) is not None for row in unique):
+        unique.sort(key=lambda row: to_float(row.get("sequence")) or 0.0)
+
+    source = next(
+        (c for c in AR39_COLUMNS if unique and all(to_float(r.get(c)) is not None for r in unique)),
+        None,
+    )
+    amounts = [max(0.0, to_float(r.get(source)) or 0.0) for r in unique] if source else []
+    total = sum(amounts)
+    if total <= 0:
+        source, amounts, total = None, [1.0] * len(unique), float(len(unique) or 1)
+
+    steps: list[dict] = []
+    without_age = 0
+    cumulative = 0.0
+    for row, amount in zip(unique, amounts, strict=True):
+        start = cumulative
+        cumulative += 100.0 * amount / total
+        age = to_float(row.get("age"))
+        if age is None:
+            without_age += 1
             continue
-        seen.add(key)
-        unique.append(row)
-    return unique
-
-
-def process_plateau_data(
-    rows: list[dict],
-    j_value: float = DEFAULT_J,
-    lam: float = DEFAULT_LAMBDA,
-    options: PlateauOptions | None = None,
-) -> dict:
-    """Main entry point: raw measurement rows -> age spectrum + plateau
-    (plateau criteria from `options`, the legacy constants by default)."""
-    options = options or PlateauOptions()
-    total_steps = len(rows)
-    rows = deduplicate(rows)
-    rows.sort(key=lambda r: _get(r, *TEMP_COLUMNS) or 0.0)
-
-    age_data: list[dict[str, Any]] = []
-    for i, row in enumerate(rows):
-        result = calculate_age(row, j_value, lam)
-        if result is None:
-            continue
-        age_data.append(
+        steps.append(
             {
-                "step": len(age_data) + 1,
-                "temperature": _get(row, *TEMP_COLUMNS),
-                "age": result["age"],
-                "age_sigma": result["age_sigma"],
-                "ar40rad_ar39": result["ar40rad_ar39"],
-                "original_index": i,
+                "measurement": row.get("measurement") or None,
+                "sequence": _int(row.get("sequence")),
+                "temperature": to_float(row.get("temp")),
+                "temp_unit": row.get("temp_unit") or None,
+                "age": age,
+                "age_sigma": to_float(row.get("age_sigma_analytical")),
+                "ar39_start": start,
+                "ar39_end": cumulative,
+                "normal": _point(row, "normal"),
+                "inverse": _point(row, "inverse"),
             }
         )
-    cumulative = cumulative_ar39_percent([rows[d["original_index"]] for d in age_data])
-    for entry, cum in zip(age_data, cumulative, strict=True):
-        entry["cum_ar39"] = cum
-
     return {
-        "age_data": age_data,
-        "plateau": identify_plateau(
-            age_data, options.min_plateau_steps, options.min_ar39_percent, options.max_mswd
-        ),
-        "total_steps": total_steps,
-        "unique_steps": len(rows),
-        "duplicates_removed": total_steps - len(rows),
+        "steps": steps,
+        "steps_without_age": without_age,
+        "ar39_source": source,
+        "age_unit": next((r.get("age_unit") for r in unique if r.get("age_unit")), None),
     }
+
+
+def build_argon(tables: dict[str, list[dict]]) -> dict:
+    """Every experiment (its steps and contributed ages) and every specimen
+    (its preferred age and the experiments it rests on) of a contribution."""
+    measurements: dict[str, list[dict]] = {}
+    for row in tables.get("measurements", []):
+        measurements.setdefault(str(row.get("experiment") or ""), []).append(row)
+    rows_by_experiment: dict[str, list[dict]] = {}
+    for row in tables.get("experiments", []):
+        if row.get("experiment"):
+            rows_by_experiment.setdefault(str(row["experiment"]), []).append(row)
+
+    experiments: list[dict] = []
+    claimed: set[str] = set()
+    for name, rows in rows_by_experiment.items():
+        groups = (
+            [name]
+            if name in measurements
+            else [g for g in measurements if experiment_matches(g, name)]
+        )
+        claimed.update(groups)
+        steps = build_steps([row for group in groups for row in measurements[group]])
+        experiments.append(
+            {
+                "experiment": name,
+                "specimen": next((r["specimen"] for r in rows if r.get("specimen")), None),
+                **steps,
+                "age_unit": next((r["age_unit"] for r in rows if r.get("age_unit")), None)
+                or steps["age_unit"],
+                "ages": [contributed_age(row) for row in rows],
+            }
+        )
+    # Measurements whose experiment has no experiments row still have a spectrum.
+    for name, rows in measurements.items():
+        if name and name not in claimed:
+            experiments.append(
+                {"experiment": name, "specimen": None, **build_steps(rows), "ages": []}
+            )
+
+    known = [e["experiment"] for e in experiments]
+    specimens: list[dict] = []
+    rows_by_specimen: dict[str, list[dict]] = {}
+    for row in tables.get("specimens", []):
+        if row.get("specimen"):
+            rows_by_specimen.setdefault(str(row["specimen"]), []).append(row)
+    for name, rows in rows_by_specimen.items():
+        # Legacy imports repeat a specimen once per age method; the first row
+        # with an age is the preferred one.
+        row = next((r for r in rows if to_float(r.get("age")) is not None), rows[0])
+        listed = names(row.get("age_experiments"))
+        if listed:
+            members = [
+                e for e in known if any(e == want or experiment_matches(e, want) for want in listed)
+            ]
+        else:
+            members = [e["experiment"] for e in experiments if e["specimen"] == name]
+        specimens.append(
+            {
+                "specimen": name,
+                "sample": row.get("sample") or None,
+                "material": row.get("material_name") or row.get("material_type") or None,
+                "method": row.get("age_calculation_method") or None,
+                "age": to_float(row.get("age")),
+                "age_sigma": _sigma(row),
+                "age_unit": row.get("age_unit") or None,
+                "experiments": members,
+            }
+        )
+    return {"experiments": experiments, "specimens": specimens}
+
+
+# Built data per contribution revision. Concurrent requests for one
+# contribution (a page of its result tiles) share one task, so the file is
+# downloaded and parsed once.
+_CACHE: "OrderedDict[tuple, asyncio.Task]" = OrderedDict()
+_CACHE_SIZE = 32
+
+
+async def _argon(node: NodeConfig, contribution) -> dict:
+    key = (
+        node.node.slug,
+        contribution.id,
+        contribution.head_revision,
+        contribution.filename,
+        contribution.updated_at,
+    )
+    task = _CACHE.get(key)
+    loop = asyncio.get_running_loop()
+    if task is None or task.get_loop() is not loop or (task.done() and task.exception()):
+
+        async def build() -> dict:
+            raw = await load_file(node, contribution.id, contribution.filename)
+            parsed = parse_text(raw.decode("utf-8", errors="replace"))
+            return build_argon(parsed.tables)
+
+        task = _CACHE[key] = loop.create_task(build())
+        while len(_CACHE) > _CACHE_SIZE:
+            _CACHE.popitem(last=False)
+    _CACHE.move_to_end(key)
+    return await asyncio.shield(task)
 
 
 class PlateauPlugin(FiestaPlugin):
     name = "plateau-calculations"
     description = (
-        "⁴⁰Ar/³⁹Ar age spectra and plateaus computed from step-heating measurements, "
-        "shown on experiment result items."
+        "⁴⁰Ar/³⁹Ar age spectra, isochrons and specimen ages drawn from the contributed "
+        "step ages, plateau and isochron results, on experiment and specimen result items."
     )
-    Options = PlateauOptions
+    Options = ArgonOptions
 
     def check(self, node: NodeConfig, options: PluginOptions) -> None:
-        assert isinstance(options, PlateauOptions)
+        assert isinstance(options, ArgonOptions)
         levels = {lvl.name for lvl in node.search.levels}
-        if unknown := [lvl for lvl in options.levels if lvl not in levels]:
+        unknown = [
+            lvl
+            for lvl in (*options.experiment_levels, *options.specimen_levels)
+            if lvl not in levels
+        ]
+        if unknown:
             raise ValueError(
                 f"plugin 'plateau-calculations': levels {unknown} are not search levels"
             )
@@ -288,48 +352,51 @@ class PlateauPlugin(FiestaPlugin):
     def build_router(self) -> APIRouter:
         router = APIRouter()
 
-        @router.get("/contributions/{contribution_id}/experiments/{experiment}/plateau")
-        async def get_plateau(
+        @router.get("/contributions/{contribution_id}")
+        async def get_argon(
             session: SessionDep,
             node: NodeDep,
             contribution_id: int,
-            experiment: str,
             private_key: str | None = None,
-            j_value: float | None = None,
-            decay_constant: float | None = None,
+            experiment: str | None = None,
+            specimen: str | None = None,
         ) -> dict:
-            """The age spectrum and plateau; J and λ default to the node's options."""
-            options = self.options(node)
-            assert isinstance(options, PlateauOptions)
-            _, parsed = await load_visible_parsed(session, node, contribution_id, private_key)
-            rows = [
-                row
-                for row in parsed.tables.get("measurements", [])
-                if experiment_matches(row.get("experiment"), experiment)
-            ]
-            if not rows:
-                raise HTTPException(
-                    404, f"no measurements for experiment {experiment!r} in {contribution_id}"
-                )
-            return process_plateau_data(
-                rows,
-                options.default_j if j_value is None else j_value,
-                options.default_lambda if decay_constant is None else decay_constant,
-                options,
+            """A contribution's experiments (steps, isochron points and every
+            contributed age) and specimens (preferred age and its experiments).
+            `experiment` narrows it to that experiment, and `specimen` to that
+            specimen and its experiments. Both are query parameters because
+            the names can contain "/"."""
+            contribution = await load_visible_contribution(
+                session, node, contribution_id, private_key
             )
+            data = await _argon(node, contribution)
+            if specimen is not None:
+                found = [s for s in data["specimens"] if s["specimen"] == specimen]
+                if not found:
+                    raise HTTPException(404, f"no specimen {specimen!r} in {contribution_id}")
+                members = set(found[0]["experiments"])
+                return {
+                    "specimens": found,
+                    "experiments": [e for e in data["experiments"] if e["experiment"] in members],
+                }
+            if experiment is not None:
+                found = [e for e in data["experiments"] if e["experiment"] == experiment] or [
+                    e
+                    for e in data["experiments"]
+                    if experiment_matches(e["experiment"], experiment)
+                ]
+                if not found:
+                    raise HTTPException(404, f"no experiment {experiment!r} in {contribution_id}")
+                return {"experiments": found[:1], "specimens": []}
+            return data
 
         return router
 
     def frontend_config(self, node: NodeConfig) -> dict:
         options = self.options(node)
-        assert isinstance(options, PlateauOptions)
+        assert isinstance(options, ArgonOptions)
         return {
             "view": "age-spectrum",
-            # The age-spectrum thumbnail/modal attaches to these levels'
-            # result items, keyed by the row's experiment name.
-            "levels": options.levels,
-            "constants": {
-                "atm_ar40_ar36": ATM_AR40_AR36,
-                **options.model_dump(exclude={"levels"}),
-            },
+            "experiment_levels": options.experiment_levels,
+            "specimen_levels": options.specimen_levels,
         }

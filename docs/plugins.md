@@ -2,7 +2,7 @@
 
 Plugins isolate node-specific features — science that belongs to one
 repository (MagIC's paleomagnetic poles, CDR's core depth plots, KArAr's
-⁴⁰Ar/³⁹Ar age plateaus) — from the config-driven core. All plugin code ships
+⁴⁰Ar/³⁹Ar age spectra) — from the config-driven core. All plugin code ships
 with FIESTA; a node activates a plugin by listing it in its YAML:
 
 ```yaml
@@ -84,7 +84,7 @@ tests import it as `fiesta.plugins.<name>` with dashes as underscores
 | `derive_docs(node, parsed, meta)` | every (re)process and `fiesta rebuild` | extra search documents derived from contribution rows (e.g. one `poles` doc per location row with `pole_lat`/`pole_lon`) — always reproducible from the bucket |
 | `search_levels(node)` | config load | extra search tabs; merged into `GET /v2/{node}/config` `search_levels` and the search API's allowed tables |
 | `search_facets(node)` | every search request with `facet=` | extra columns the search API counts as facet buckets for the plugin's own sidebar filter (the periodic table's `element`); a pick is the usual `<column>:"<value>"` query token |
-| `build_router()` | app startup | API routes mounted once at `/v2/{repository}/plugins/{name}` (e.g. plot-ready measurement series, plateau computation); handlers read the node from `NodeDep`. The router is guarded so a node that does not activate the plugin gets a 404 |
+| `build_router()` | app startup | API routes mounted once at `/v2/{repository}/plugins/{name}` (e.g. plot-ready measurement series, age spectra); handlers read the node from `NodeDep`. The router is guarded so a node that does not activate the plugin gets a 404 |
 | `frontend_config(node)` | `GET /v2/{node}/config` | arbitrary JSON under `plugins[name]` telling the UI plugin what to mount and with which options |
 | `vocabularies(node)` | every validation | `{name: PluginVocabulary(items, case_insensitive)}`: the list a `cv("<name>")` data-model validation checks when the node's controlled vocabularies have none of that name (method codes) |
 | `grid_tiles` (class attribute) | config load | the summary grid tiles it adds, `GridTile(cell, label, width, hint, default)`: a node that activates it may name them in `search.levels[].columns`, and `default` ones are columns of every level that configures none (after the core's `geo`, before `citations`); the admin UI's Summary Grid tab offers them. Its UI renders them through `gridCell` |
@@ -163,7 +163,7 @@ net, surface for marker halos, the node color lightened in dark mode) inside
 | [`rock-mag`](../configurations/plugins/rock-mag/README.md) | MagIC | a `rock_mag` doc per rock-magnetic result; the linked panels (Day plot, squareness–coercivity, critical temperatures, Jelinek, V1/V3 stereonet) |
 | [`pmag-plots`](../configurations/plugins/pmag-plots/README.md) | MagIC | the PmagPy plots (equal area, Zijderveld, demagnetization, Arai, deremagnetization, hysteresis), drawn interactively |
 | [`depth-plot`](../configurations/plugins/depth-plot/README.md) | CDR | depth-sorted measurement tracks per core |
-| [`plateau-calculations`](../configurations/plugins/plateau-calculations/README.md) | KArAr | ⁴⁰Ar/³⁹Ar age spectra and plateaus |
+| [`plateau-calculations`](../configurations/plugins/plateau-calculations/README.md) | KArAr | ⁴⁰Ar/³⁹Ar age spectra, isochrons and specimen ages, as contributed |
 | [`method-codes`](../configurations/plugins/method-codes/README.md) | MagIC | the method-code vocabulary: the Method Codes page and home card, code definitions beside facet values, case-insensitive `cv()` validation |
 | [`sample-tiles`](../configurations/plugins/sample-tiles/README.md) | every node | the Geology, Age, Intensity and Method Codes summary grid tiles (the legacy result card's sample columns), default tiles after Geography |
 | [`periodic-table`](../configurations/plugins/periodic-table/README.md) | KdD | a periodic-table element filter in the search sidebar, each element counted in the search |
