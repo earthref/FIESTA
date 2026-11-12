@@ -11,7 +11,7 @@ node:
   title: GERM - Partition Coefficients Database (KdD)
   subtitle: >-
     Geochemical Earth Reference Model (GERM) partition coefficients from both experimental and empirical data for all types of rocks, minerals, and elements.
-  color: "#bb4b1c" # Semantic UI "green" family (EarthRef.org heritage)
+  color: "#bb4b1c" # Semantic UI "orange" in the legacy app (KDD lib/configs/portals.js)
   logo: logo.svg # configurations/kdd/assets/, on the FIESTA portal home
   links:
     website: https://earthref.org/KdD
