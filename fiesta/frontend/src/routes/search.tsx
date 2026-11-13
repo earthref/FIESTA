@@ -1335,7 +1335,7 @@ export function SearchPage() {
                     />
                   ))}
                   {findNeedle && sidebarEntries.length === 0 && (
-                    <p className="px-[1em] py-3 text-[12px] text-ink-faint">
+                    <p className="px-[1em] py-3 text-[13px] text-ink-faint">
                       No filter matches “{filterFind.trim()}”.
                     </p>
                   )}
@@ -1354,7 +1354,7 @@ export function SearchPage() {
                     </Fragment>
                   ))}
                   {filters.length === 0 && pluginFilters.length === 0 && !level.geo && (
-                    <p className="px-[1em] py-3 text-[12px] text-ink-faint">
+                    <p className="px-[1em] py-3 text-[13px] text-ink-faint">
                       No filters for this view.
                     </p>
                   )}
@@ -1405,7 +1405,7 @@ export function SearchPage() {
                   className="cursor-pointer appearance-none border-0 bg-node font-bold text-white focus:outline-hidden"
                   style={{
                     padding: "0.5em calc(1.86em - 8px) 0.5em 0.5em",
-                    fontSize: "0.85714286rem",
+                    fontSize: "0.92857143rem",
                     lineHeight: "1em",
                     borderRadius: "0.28571429rem",
                   }}

@@ -355,7 +355,7 @@ function ColorLegend({
           aria-hidden="true"
         />
         <div
-          className="flex flex-col justify-between text-[11px] text-gray-600"
+          className="flex flex-col justify-between text-[13px] text-gray-600"
           style={{ height: 150 }}
         >
           {labels.map((label, i) => (
@@ -364,7 +364,7 @@ function ColorLegend({
           ))}
         </div>
       </div>
-      <div className="mt-2 space-y-1 text-[11px] text-gray-600">
+      <div className="mt-2 space-y-1 text-[13px] text-gray-600">
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-3 w-3 rounded-full"
@@ -410,7 +410,7 @@ function SidePanel({
             type="button"
             onClick={() => setShowEllipses(true)}
             className={cx(
-              "flex-1 rounded-sm px-2 py-1 text-[12px] font-medium",
+              "flex-1 rounded-sm px-2 py-1 text-[13px] font-medium",
               showEllipses
                 ? "bg-node text-white"
                 : "border border-gray-300 bg-surface text-gray-600",
@@ -422,7 +422,7 @@ function SidePanel({
             type="button"
             onClick={() => setShowEllipses(false)}
             className={cx(
-              "flex-1 rounded-sm px-2 py-1 text-[12px] font-medium",
+              "flex-1 rounded-sm px-2 py-1 text-[13px] font-medium",
               !showEllipses
                 ? "bg-node text-white"
                 : "border border-gray-300 bg-surface text-gray-600",

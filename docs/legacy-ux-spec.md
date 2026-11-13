@@ -148,12 +148,20 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
   the 14px active item is 1px taller (43px bar); every active item has a **1px
   dashed #d4d4d5 bottom border**. Count pills: 11px bold, `line-height .7em`,
   padding .5em, min-width 4em, min-height 2em (22px), margin `-1em -1em -1em .5em`.
+  FIESTA (2026-11-12, a deliberate deviation): **no text on the search page or
+  in its filter modals is smaller than the results' 13px** — count pills, the
+  sort pill, the Rows grid's headers and cells, chips, badges, hints, the time
+  scale, the map legend and Labels control, buttons, and the plugin views and
+  thumbnails shown there; the count pills are 13px (26px tall). The sidebar's
+  filters show their count in the same white pill (min-width 3em, in the flow)
+  and no filter icon. Charts' canvas text (axis labels) keeps ECharts' sizes.
 - **Buttons**: `ui basic` buttons are weight 400 with a 1px inset box-shadow (no
   border), padding `.78571429em 1.5em`, line-height 1em, disabled opacity .45;
   icons 1em with margin `0 .43em 0 -.21em`. Search input 14px, padding
   `.678em 1em`, line-height 1.214em (38px tall); label icon margin-right .75em.
   Clear Filters: 13px, padding .5em, margin `-.5em 0` (26px pill in a 38px bar).
-  Sort: 12px bold pill, padding .5em, line-height 1em (24px), caret .857em.
+  Sort: 12px bold pill, padding .5em, line-height 1em (24px), caret .857em
+  (FIESTA: 13px, see the count pills above).
 - **Results row**: width = segment width − 10px; height = window − 79px − row top
   (legacy: `window − 60 − filtersSegment.top + 20`). Scroller padding `0 1em`,
   list margin `1em 0`, fitted dividers `.5em 0 1em`.

@@ -81,7 +81,7 @@ export function columnsOf(items: (GridRow[] | undefined)[]): string[] {
   return [...keys];
 }
 
-const TH = "whitespace-nowrap bg-gray-50 px-3 text-left text-xs";
+const TH = "whitespace-nowrap bg-gray-50 px-3 text-left text-[13px]";
 const TD = "whitespace-nowrap px-3 py-2 align-top text-gray-800";
 const UNDERLINE = { boxShadow: "inset 0 -1px 0 var(--er-line)" };
 
@@ -304,7 +304,7 @@ export function RowsGrid({
   return (
     <>
       <table
-        className="border-separate border-spacing-0 text-left text-sm"
+        className="border-separate border-spacing-0 text-left text-[13px]"
         style={{ tableLayout: "fixed", width: `max(${width}px, 100%)` }}
       >
         <colgroup>
@@ -382,7 +382,7 @@ export function RowsGrid({
                       <td
                         className={cx(
                           TD,
-                          "border-b border-gray-100 text-right text-xs text-gray-500 tabular-nums",
+                          "border-b border-gray-100 text-right text-[13px] text-gray-500 tabular-nums",
                           rowIssue && ISSUE_CLASS[rowIssue.severity],
                         )}
                       >

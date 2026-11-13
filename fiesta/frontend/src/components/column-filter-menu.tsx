@@ -31,7 +31,7 @@ export function ColumnFilterButton({
       <Icon name="filter" style={{ width: "0.85em", height: "0.85em" }} />
       {active > 0 && (
         <span
-          className="rounded-full bg-node px-[0.45em] text-[10px] font-bold leading-[1.5] text-white"
+          className="rounded-full bg-node px-[0.45em] text-[13px] font-bold leading-[1.5] text-white"
           aria-hidden="true"
         >
           {active}
