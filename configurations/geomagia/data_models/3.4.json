@@ -1,0 +1,1388 @@
+{
+ "data_model_version": "3.4",
+ "updated_day": "2026:11:13",
+ "published_day": "2026:11:13",
+ "tables": {
+  "contribution": {
+   "label": "Contribution",
+   "position": 1,
+   "description": "One GEOMAGIA50 reference (study)",
+   "notes": "Each GEOMAGIA50 publication is one contribution; its records are the sites below. Written by the GEOMAGIA data source sync.",
+   "columns": {
+    "id": {
+     "label": "Contribution ID",
+     "group": "Contribution",
+     "type": "Integer",
+     "position": 1,
+     "description": "Unique FIESTA contribution ID; the GEOMAGIA reference ID",
+     "validations": [
+      "downloadOnly()"
+     ]
+    },
+    "version": {
+     "label": "Version",
+     "group": "Contribution",
+     "type": "Integer",
+     "position": 2,
+     "description": "Contribution version number",
+     "validations": [
+      "downloadOnly()"
+     ]
+    },
+    "timestamp": {
+     "label": "Activation Timestamp",
+     "group": "Contribution",
+     "type": "Timestamp",
+     "position": 3,
+     "description": "Date and time of contribution activation",
+     "validations": [
+      "downloadOnly()"
+     ]
+    },
+    "contributor": {
+     "label": "Contributor",
+     "group": "Contribution",
+     "type": "String",
+     "position": 4,
+     "description": "Contributor's EarthRef handle",
+     "validations": [
+      "downloadOnly()"
+     ]
+    },
+    "data_model_version": {
+     "label": "Data Model Version",
+     "group": "Contribution",
+     "type": "String",
+     "position": 5,
+     "description": "FIESTA GEOMAGIA data model version",
+     "examples": [
+      "3.4"
+     ],
+     "validations": [
+      "required()"
+     ]
+    },
+    "geomagia_reference_id": {
+     "label": "GEOMAGIA Reference ID",
+     "group": "Reference",
+     "type": "Integer",
+     "position": 6,
+     "description": "GEOMAGIA50 reference (study) ID",
+     "validations": [
+      "required()"
+     ],
+     "previous_columns": [
+      {
+       "table": "REFS",
+       "column": "ID"
+      }
+     ]
+    },
+    "reference": {
+     "label": "Reference DOI",
+     "group": "Reference",
+     "type": "String",
+     "position": 7,
+     "description": "DOI of the publication, when it has one",
+     "examples": [
+      "10.1111/j.1475-4754.1973.tb00097.x"
+     ],
+     "previous_columns": [
+      {
+       "table": "REFS",
+       "column": "DOI"
+      }
+     ]
+    },
+    "citation": {
+     "label": "Citation",
+     "group": "Reference",
+     "type": "String",
+     "position": 8,
+     "description": "Short citation, first authors and year",
+     "examples": [
+      "Abrahamsen (1973)"
+     ]
+    },
+    "authors": {
+     "label": "Authors",
+     "group": "Reference",
+     "type": "String",
+     "position": 9,
+     "description": "Publication authors as GEOMAGIA lists them",
+     "previous_columns": [
+      {
+       "table": "REFS",
+       "column": "AUTHORS"
+      }
+     ]
+    },
+    "title": {
+     "label": "Title",
+     "group": "Reference",
+     "type": "String",
+     "position": 10,
+     "description": "Publication title",
+     "previous_columns": [
+      {
+       "table": "REFS",
+       "column": "TITLE"
+      }
+     ]
+    },
+    "year": {
+     "label": "Year",
+     "group": "Reference",
+     "type": "Integer",
+     "position": 11,
+     "description": "Publication year",
+     "previous_columns": [
+      {
+       "table": "REFS",
+       "column": "YEAR"
+      }
+     ]
+    },
+    "journal": {
+     "label": "Journal",
+     "group": "Reference",
+     "type": "String",
+     "position": 12,
+     "description": "Journal or other publication venue",
+     "previous_columns": [
+      {
+       "table": "REFS",
+       "column": "JOURNAL"
+      }
+     ]
+    },
+    "volume": {
+     "label": "Volume",
+     "group": "Reference",
+     "type": "String",
+     "position": 13,
+     "description": "Journal volume",
+     "previous_columns": [
+      {
+       "table": "REFS",
+       "column": "VOLUME"
+      }
+     ]
+    },
+    "pages": {
+     "label": "Pages",
+     "group": "Reference",
+     "type": "String",
+     "position": 14,
+     "description": "Page range",
+     "previous_columns": [
+      {
+       "table": "REFS",
+       "column": "PAGES"
+      }
+     ]
+    },
+    "magic_link": {
+     "label": "MagIC Link",
+     "group": "Reference",
+     "type": "String",
+     "position": 15,
+     "description": "Link to the study's MagIC contribution",
+     "previous_columns": [
+      {
+       "table": "REFS",
+       "column": "MAGIC_LINK"
+      }
+     ]
+    },
+    "geomagia_version": {
+     "label": "GEOMAGIA Version",
+     "group": "Contribution",
+     "type": "String",
+     "position": 16,
+     "description": "GEOMAGIA50 release the records were read from",
+     "examples": [
+      "v3.2 (2019-05-22 export)"
+     ]
+    },
+    "description": {
+     "label": "Description",
+     "group": "Contribution",
+     "type": "Text",
+     "position": 17,
+     "description": "Contribution description"
+    }
+   }
+  },
+  "sites": {
+   "label": "Sites",
+   "position": 2,
+   "description": "Archeomagnetic and volcanic site means (GEOMAGIA50 ARCHEODIJ records)",
+   "notes": "One row per GEOMAGIA UID: age, paleointensity and/or direction with their methods. Code columns (…_id) keep GEOMAGIA's lookup IDs; the named columns beside them resolve those IDs through the GEOMAGIA ID glossary.",
+   "columns": {
+    "site": {
+     "label": "Site",
+     "group": "Site",
+     "type": "String",
+     "position": 1,
+     "description": "GEOMAGIA record UID, the site mean's unique name",
+     "validations": [
+      "required()",
+      "unique()"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "UID"
+      }
+     ]
+    },
+    "uid": {
+     "label": "GEOMAGIA UID",
+     "group": "Site",
+     "type": "Integer",
+     "position": 2,
+     "description": "Unique GEOMAGIA50 record ID",
+     "validations": [
+      "required()",
+      "unique()"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "UID"
+      }
+     ]
+    },
+    "archeo_volcanic": {
+     "label": "Record Type",
+     "group": "Site",
+     "type": "String",
+     "position": 3,
+     "description": "Archeomagnetic or volcanic record",
+     "validations": [
+      "cv(\"archeo_volcanic\")"
+     ]
+    },
+    "site_name": {
+     "label": "Locality",
+     "group": "Site",
+     "type": "String",
+     "position": 4,
+     "description": "Locality (site) name",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SITE_NAME"
+      }
+     ]
+    },
+    "site_horizon": {
+     "label": "Site / Horizon",
+     "group": "Site",
+     "type": "String",
+     "position": 5,
+     "description": "Site, feature or horizon within the locality",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SITE_HORIZON"
+      }
+     ]
+    },
+    "sample_id": {
+     "label": "Sample Name",
+     "group": "Site",
+     "type": "String",
+     "position": 6,
+     "description": "The publication's own name for the sample or site",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SAMPLE_ID"
+      }
+     ]
+    },
+    "lat": {
+     "label": "Site Latitude",
+     "group": "Site",
+     "type": "Number",
+     "position": 7,
+     "unit": "Degrees",
+     "description": "Site latitude",
+     "validations": [
+      "min(-90)",
+      "max(90)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SITE_LAT"
+      }
+     ]
+    },
+    "lon": {
+     "label": "Site Longitude",
+     "group": "Site",
+     "type": "Number",
+     "position": 8,
+     "unit": "Degrees",
+     "description": "Site longitude, 0 to 360 east",
+     "validations": [
+      "min(0)",
+      "max(360)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SITE_LON"
+      }
+     ]
+    },
+    "site_id": {
+     "label": "Region/Country ID",
+     "group": "Site",
+     "type": "Integer",
+     "position": 9,
+     "description": "GEOMAGIA country/region code",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SITE_ID"
+      }
+     ]
+    },
+    "region_country": {
+     "label": "Region/Country",
+     "group": "Site",
+     "type": "String",
+     "position": 10,
+     "description": "Country or region of the site",
+     "validations": [
+      "cv(\"region_countries\")"
+     ]
+    },
+    "continent": {
+     "label": "Continent",
+     "group": "Site",
+     "type": "String",
+     "position": 11,
+     "description": "Continent of the country or region",
+     "validations": [
+      "cv(\"continents\")"
+     ]
+    },
+    "material_id": {
+     "label": "Material IDs",
+     "group": "Material",
+     "type": "List",
+     "position": 12,
+     "description": "GEOMAGIA material codes",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "MATERIAL_ID"
+      }
+     ]
+    },
+    "materials": {
+     "label": "Materials",
+     "group": "Material",
+     "type": "List",
+     "position": 13,
+     "description": "Materials sampled",
+     "validations": [
+      "cv(\"materials\")"
+     ]
+    },
+    "specimen_type_id": {
+     "label": "Specimen Type IDs",
+     "group": "Material",
+     "type": "List",
+     "position": 14,
+     "description": "GEOMAGIA specimen type codes",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SPECIMEN_TYPE_ID"
+      }
+     ]
+    },
+    "specimen_types": {
+     "label": "Specimen Types",
+     "group": "Material",
+     "type": "List",
+     "position": 15,
+     "description": "Specimen types",
+     "validations": [
+      "cv(\"specimen_types\")"
+     ]
+    },
+    "age": {
+     "label": "Age",
+     "group": "Age",
+     "type": "Number",
+     "position": 16,
+     "unit": "Years CE",
+     "description": "Age in years CE (negative for BCE)",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "AGE"
+      }
+     ]
+    },
+    "age_min": {
+     "label": "Negative Age Error",
+     "group": "Age",
+     "type": "Number",
+     "position": 17,
+     "unit": "Years",
+     "description": "Age uncertainty toward older ages",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "AGE_MIN"
+      }
+     ]
+    },
+    "age_max": {
+     "label": "Positive Age Error",
+     "group": "Age",
+     "type": "Number",
+     "position": 18,
+     "unit": "Years",
+     "description": "Age uncertainty toward younger ages",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "AGE_MAX"
+      }
+     ]
+    },
+    "num_sigmas": {
+     "label": "Age Number of Sigmas",
+     "group": "Age",
+     "type": "Integer",
+     "position": 19,
+     "description": "Number of standard deviations the age errors span",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_SIGMAS"
+      }
+     ]
+    },
+    "age_error_type_id": {
+     "label": "Age Error Type ID",
+     "group": "Age",
+     "type": "Integer",
+     "position": 20,
+     "description": "GEOMAGIA age error type code",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "AGE_ERROR_TYPE_ID"
+      }
+     ]
+    },
+    "age_error_type": {
+     "label": "Age Error Type",
+     "group": "Age",
+     "type": "String",
+     "position": 21,
+     "description": "Kind of age uncertainty",
+     "validations": [
+      "cv(\"age_error_types\")"
+     ]
+    },
+    "dating_method_id": {
+     "label": "Dating Method IDs",
+     "group": "Age",
+     "type": "List",
+     "position": 22,
+     "description": "GEOMAGIA dating method codes",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "DATING_METHOD_ID"
+      }
+     ]
+    },
+    "dating_methods": {
+     "label": "Dating Methods",
+     "group": "Age",
+     "type": "List",
+     "position": 23,
+     "description": "Dating methods",
+     "validations": [
+      "cv(\"dating_methods\")"
+     ]
+    },
+    "num_samples": {
+     "label": "Paleointensity Samples",
+     "group": "Paleointensity",
+     "type": "Integer",
+     "position": 24,
+     "description": "Number of samples used for the paleointensity",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_SAMPLES"
+      }
+     ]
+    },
+    "num_meas_spec": {
+     "label": "Paleointensity Specimens Measured",
+     "group": "Paleointensity",
+     "type": "Integer",
+     "position": 25,
+     "description": "Number of specimens measured for paleointensity",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_MEAS_SPEC"
+      }
+     ]
+    },
+    "num_acc_spec": {
+     "label": "Paleointensity Specimens Accepted",
+     "group": "Paleointensity",
+     "type": "Integer",
+     "position": 26,
+     "description": "Number of specimens accepted in the paleointensity mean",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_ACC_SPEC"
+      }
+     ]
+    },
+    "ba": {
+     "label": "Paleointensity",
+     "group": "Paleointensity",
+     "type": "Number",
+     "position": 27,
+     "unit": "μT",
+     "description": "Mean ancient field intensity",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "validations": [
+      "min(0)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "BA"
+      }
+     ]
+    },
+    "sigma_ba": {
+     "label": "Paleointensity Error",
+     "group": "Paleointensity",
+     "type": "Number",
+     "position": 28,
+     "unit": "μT",
+     "description": "Uncertainty of the mean ancient field intensity",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "validations": [
+      "min(0)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SIGMA_BA"
+      }
+     ]
+    },
+    "vadm": {
+     "label": "VADM",
+     "group": "Paleointensity",
+     "type": "Number",
+     "position": 29,
+     "unit": "10²² Am²",
+     "description": "Virtual axial dipole moment, calculated from the intensity and site latitude as the GEOMAGIA site does",
+     "validations": [
+      "min(0)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "VADM"
+      }
+     ]
+    },
+    "sigma_vadm": {
+     "label": "VADM Error",
+     "group": "Paleointensity",
+     "type": "Number",
+     "position": 30,
+     "unit": "10²² Am²",
+     "description": "VADM uncertainty from the intensity error",
+     "validations": [
+      "min(0)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SIGMA_VADM"
+      }
+     ]
+    },
+    "vdm": {
+     "label": "VDM",
+     "group": "Paleointensity",
+     "type": "Number",
+     "position": 31,
+     "unit": "10²² Am²",
+     "description": "Virtual dipole moment",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "validations": [
+      "min(0)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "VDM"
+      }
+     ]
+    },
+    "sigma_vdm": {
+     "label": "VDM Error",
+     "group": "Paleointensity",
+     "type": "Number",
+     "position": 32,
+     "unit": "10²² Am²",
+     "description": "Virtual dipole moment uncertainty",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "validations": [
+      "min(0)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SIGMA_VDM"
+      }
+     ]
+    },
+    "pi_method_id": {
+     "label": "Paleointensity Method IDs",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 33,
+     "description": "GEOMAGIA paleointensity method codes",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "PI_METHOD_ID"
+      }
+     ]
+    },
+    "pi_methods": {
+     "label": "Paleointensity Methods",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 34,
+     "description": "Paleointensity methods",
+     "validations": [
+      "cv(\"pi_methods\")"
+     ]
+    },
+    "ac_id": {
+     "label": "Alteration Check IDs",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 35,
+     "description": "GEOMAGIA alteration check codes",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "AC_ID"
+      }
+     ]
+    },
+    "alteration_checks": {
+     "label": "Alteration Checks",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 36,
+     "description": "Paleointensity alteration checks",
+     "validations": [
+      "cv(\"alteration_checks\")"
+     ]
+    },
+    "md_ck_id": {
+     "label": "Multi-Domain Check IDs",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 37,
+     "description": "GEOMAGIA multi-domain check codes",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "MD_CK_ID"
+      }
+     ]
+    },
+    "md_checks": {
+     "label": "Multi-Domain Checks",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 38,
+     "description": "Paleointensity multi-domain checks",
+     "validations": [
+      "cv(\"md_checks\")"
+     ]
+    },
+    "an_corr_set_id": {
+     "label": "Anisotropy Correction IDs",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 39,
+     "description": "GEOMAGIA anisotropy correction codes",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "AN_CORR_SET_ID"
+      }
+     ]
+    },
+    "anisotropy_corrections": {
+     "label": "Anisotropy Corrections",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 40,
+     "description": "Paleointensity anisotropy corrections",
+     "validations": [
+      "cv(\"anisotropy_corrections\")"
+     ]
+    },
+    "cr_corr_set_id": {
+     "label": "Cooling Rate Correction IDs",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 41,
+     "description": "GEOMAGIA cooling rate correction codes",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CR_CORR_SET_ID"
+      }
+     ]
+    },
+    "cooling_rate_corrections": {
+     "label": "Cooling Rate Corrections",
+     "group": "Paleointensity",
+     "type": "List",
+     "position": 42,
+     "description": "Paleointensity cooling rate corrections",
+     "validations": [
+      "cv(\"cooling_rate_corrections\")"
+     ]
+    },
+    "num_dir_samples": {
+     "label": "Directional Samples",
+     "group": "Direction",
+     "type": "Integer",
+     "position": 43,
+     "description": "Number of samples in the directional mean",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_DIR_SAMPLES"
+      }
+     ]
+    },
+    "num_dir_spec_collected": {
+     "label": "Directional Specimens Measured",
+     "group": "Direction",
+     "type": "Integer",
+     "position": 44,
+     "description": "Number of directional specimens measured",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_DIR_SPEC_COLLECTED"
+      }
+     ]
+    },
+    "num_dir_specimens": {
+     "label": "Directional Specimens Accepted",
+     "group": "Direction",
+     "type": "Integer",
+     "position": 45,
+     "description": "Number of specimens in the directional mean",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_DIR_SPECIMENS"
+      }
+     ]
+    },
+    "decl": {
+     "label": "Declination",
+     "group": "Direction",
+     "type": "Number",
+     "position": 46,
+     "unit": "Degrees",
+     "description": "Mean declination",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "validations": [
+      "min(-360)",
+      "max(360)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "DECL"
+      }
+     ]
+    },
+    "incl": {
+     "label": "Inclination",
+     "group": "Direction",
+     "type": "Number",
+     "position": 47,
+     "unit": "Degrees",
+     "description": "Mean inclination",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "validations": [
+      "min(-90)",
+      "max(90)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "INCL"
+      }
+     ]
+    },
+    "alpha_95": {
+     "label": "Alpha 95",
+     "group": "Direction",
+     "type": "Number",
+     "position": 48,
+     "unit": "Degrees",
+     "description": "Fisher 95% confidence cone of the mean direction",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "validations": [
+      "min(0)",
+      "max(180)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "ALPHA_95"
+      }
+     ]
+    },
+    "k": {
+     "label": "Precision Parameter k",
+     "group": "Direction",
+     "type": "Number",
+     "position": 49,
+     "description": "Fisher precision parameter",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "validations": [
+      "min(0)"
+     ],
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "K"
+      }
+     ]
+    },
+    "dm_method_id": {
+     "label": "Demagnetization Method ID",
+     "group": "Direction",
+     "type": "Integer",
+     "position": 50,
+     "description": "GEOMAGIA directional (demagnetization) method code",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "DM_METHOD_ID"
+      }
+     ]
+    },
+    "demag_method": {
+     "label": "Demagnetization Method",
+     "group": "Direction",
+     "type": "String",
+     "position": 51,
+     "description": "Demagnetization method",
+     "validations": [
+      "cv(\"demag_methods\")"
+     ]
+    },
+    "af_step": {
+     "label": "Maximum AF Step",
+     "group": "Direction",
+     "type": "Number",
+     "position": 52,
+     "unit": "mT",
+     "description": "Highest alternating-field demagnetization step",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "AF_STEP"
+      }
+     ]
+    },
+    "t_step": {
+     "label": "Maximum Thermal Step",
+     "group": "Direction",
+     "type": "Number",
+     "position": 53,
+     "unit": "°C",
+     "description": "Highest thermal demagnetization step",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "T_STEP"
+      }
+     ]
+    },
+    "dm_analysis_id": {
+     "label": "Directional Analysis ID",
+     "group": "Direction",
+     "type": "Integer",
+     "position": 54,
+     "description": "GEOMAGIA directional analysis code",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "DM_ANALYSIS_ID"
+      }
+     ]
+    },
+    "dir_analysis": {
+     "label": "Directional Analysis",
+     "group": "Direction",
+     "type": "String",
+     "position": 55,
+     "description": "How the mean direction was calculated",
+     "validations": [
+      "cv(\"dir_analyses\")"
+     ]
+    },
+    "num_14c_samples": {
+     "label": "Radiocarbon Samples",
+     "group": "Radiocarbon",
+     "type": "Integer",
+     "position": 56,
+     "description": "Number of radiocarbon samples",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_14C_SAMPLES"
+      }
+     ]
+    },
+    "c14_id": {
+     "label": "Radiocarbon Sample ID",
+     "group": "Radiocarbon",
+     "type": "Integer",
+     "position": 57,
+     "description": "GEOMAGIA radiocarbon (aa_14c_dates) record",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "C14_ID"
+      }
+     ]
+    },
+    "calib_14c_age": {
+     "label": "Calibrated Radiocarbon Age",
+     "group": "Radiocarbon",
+     "type": "Number",
+     "position": 58,
+     "description": "Calibrated radiocarbon age as published",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CALIB_14C_AGE"
+      }
+     ]
+    },
+    "calib_14c_age_sigma_min": {
+     "label": "Calibrated Radiocarbon Negative Error",
+     "group": "Radiocarbon",
+     "type": "Number",
+     "position": 59,
+     "description": "Negative error of the published calibrated age",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CALIB_14C_AGE_SIGMA_MIN"
+      }
+     ]
+    },
+    "calib_14c_age_sigma_max": {
+     "label": "Calibrated Radiocarbon Positive Error",
+     "group": "Radiocarbon",
+     "type": "Number",
+     "position": 60,
+     "description": "Positive error of the published calibrated age",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CALIB_14C_AGE_SIGMA_MAX"
+      }
+     ]
+    },
+    "num_14c_sigmas": {
+     "label": "Radiocarbon Number of Sigmas",
+     "group": "Radiocarbon",
+     "type": "Integer",
+     "position": 61,
+     "description": "Confidence level of the calibrated radiocarbon age",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_14C_SIGMAS"
+      }
+     ]
+    },
+    "c14_calib_software_id": {
+     "label": "Radiocarbon Calibration Software ID",
+     "group": "Radiocarbon",
+     "type": "Integer",
+     "position": 62,
+     "description": "GEOMAGIA calibration software code",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "C14_CALIB_SOFTWARE_ID"
+      }
+     ]
+    },
+    "c14_calib_software": {
+     "label": "Radiocarbon Calibration Software",
+     "group": "Radiocarbon",
+     "type": "String",
+     "position": 63,
+     "description": "Calibration software of the published age",
+     "validations": [
+      "cv(\"c14_calib_software\")"
+     ]
+    },
+    "c14_calib_dataset_id": {
+     "label": "Radiocarbon Calibration Dataset ID",
+     "group": "Radiocarbon",
+     "type": "Integer",
+     "position": 64,
+     "description": "GEOMAGIA calibration dataset code",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "C14_CALIB_DATASET_ID"
+      }
+     ]
+    },
+    "c14_calib_dataset": {
+     "label": "Radiocarbon Calibration Dataset",
+     "group": "Radiocarbon",
+     "type": "String",
+     "position": 65,
+     "description": "Calibration curve of the published age",
+     "validations": [
+      "cv(\"c14_calib_datasets\")"
+     ]
+    },
+    "calc_calib_14c_age": {
+     "label": "Recalculated Radiocarbon Age",
+     "group": "Radiocarbon",
+     "type": "Number",
+     "position": 66,
+     "description": "Calibrated radiocarbon age recalculated by GEOMAGIA",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CALC_CALIB_14C_AGE"
+      }
+     ]
+    },
+    "calc_calib_14c_age_sigma_min": {
+     "label": "Recalculated Radiocarbon Negative Error",
+     "group": "Radiocarbon",
+     "type": "Number",
+     "position": 67,
+     "description": "Negative error of the recalculated age",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CALC_CALIB_14C_AGE_SIGMA_MIN"
+      }
+     ]
+    },
+    "calc_calib_14c_age_sigma_max": {
+     "label": "Recalculated Radiocarbon Positive Error",
+     "group": "Radiocarbon",
+     "type": "Number",
+     "position": 68,
+     "description": "Positive error of the recalculated age",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CALC_CALIB_14C_AGE_SIGMA_MAX"
+      }
+     ]
+    },
+    "calc_14c_calib_software_id": {
+     "label": "Recalculation Software ID",
+     "group": "Radiocarbon",
+     "type": "Integer",
+     "position": 69,
+     "description": "GEOMAGIA code of the software used to recalculate",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CALC_14C_CALIB_SOFTWARE_ID"
+      }
+     ]
+    },
+    "calc_c14_calib_software": {
+     "label": "Recalculation Software",
+     "group": "Radiocarbon",
+     "type": "String",
+     "position": 70,
+     "description": "Software used to recalculate the age",
+     "validations": [
+      "cv(\"c14_calib_software\")"
+     ]
+    },
+    "calc_14c_calib_dataset_id": {
+     "label": "Recalculation Dataset ID",
+     "group": "Radiocarbon",
+     "type": "Integer",
+     "position": 71,
+     "description": "GEOMAGIA code of the curve used to recalculate",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CALC_14C_CALIB_DATASET_ID"
+      }
+     ]
+    },
+    "calc_c14_calib_dataset": {
+     "label": "Recalculation Dataset",
+     "group": "Radiocarbon",
+     "type": "String",
+     "position": 72,
+     "description": "Calibration curve used to recalculate the age",
+     "validations": [
+      "cv(\"c14_calib_datasets\")"
+     ]
+    },
+    "dendro_id": {
+     "label": "Dendrochronology ID",
+     "group": "Dendrochronology",
+     "type": "Integer",
+     "position": 73,
+     "description": "GEOMAGIA dendrochronology record",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "DENDRO_ID"
+      }
+     ]
+    },
+    "tot_num_dendro": {
+     "label": "Dendrochronology Samples",
+     "group": "Dendrochronology",
+     "type": "Integer",
+     "position": 74,
+     "description": "Total dendrochronological samples",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "TOT_NUM_DENDRO"
+      }
+     ]
+    },
+    "num_dendro_used": {
+     "label": "Dendrochronology Samples Used",
+     "group": "Dendrochronology",
+     "type": "Integer",
+     "position": 75,
+     "description": "Dendrochronological samples used",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "NUM_DENDRO_USED"
+      }
+     ]
+    },
+    "comp_ref": {
+     "label": "Compilation IDs",
+     "group": "Curation",
+     "type": "List",
+     "position": 76,
+     "description": "GEOMAGIA codes of compilations that include this record",
+     "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "COMP_REF"
+      }
+     ]
+    },
+    "compilations": {
+     "label": "Compilations",
+     "group": "Curation",
+     "type": "List",
+     "position": 77,
+     "description": "Compilations that include this record",
+     "validations": [
+      "cv(\"compilations\")"
+     ]
+    },
+    "superseeded": {
+     "label": "Superseded",
+     "group": "Curation",
+     "type": "Integer",
+     "position": 78,
+     "description": "Set when a later record supersedes this one",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "SUPERSEEDED"
+      }
+     ]
+    },
+    "cross_ref_id": {
+     "label": "See Also Reference IDs",
+     "group": "Curation",
+     "type": "List",
+     "position": 79,
+     "description": "GEOMAGIA reference IDs of related publications",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CROSS_REF_ID"
+      }
+     ]
+    },
+    "cross_uid": {
+     "label": "Companion Entries",
+     "group": "Curation",
+     "type": "List",
+     "position": 80,
+     "description": "UIDs of companion GEOMAGIA records",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "CROSS_UID"
+      }
+     ]
+    },
+    "upload_year": {
+     "label": "Upload Year",
+     "group": "Curation",
+     "type": "Integer",
+     "position": 81,
+     "description": "Year the record was added to GEOMAGIA",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "UPLOAD_YEAR"
+      }
+     ]
+    },
+    "upload_month": {
+     "label": "Upload Month",
+     "group": "Curation",
+     "type": "Integer",
+     "position": 82,
+     "description": "Month the record was added to GEOMAGIA",
+     "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "UPLOAD_MONTH"
+      }
+     ]
+    },
+    "uploader": {
+     "label": "Uploader",
+     "group": "Curation",
+     "type": "String",
+     "position": 83,
+     "description": "Who added the record to GEOMAGIA",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "UPLOADER"
+      }
+     ]
+    },
+    "editor": {
+     "label": "Editor",
+     "group": "Curation",
+     "type": "String",
+     "position": 84,
+     "description": "Who last edited the record",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "EDITOR"
+      }
+     ]
+    },
+    "edit_date": {
+     "label": "Last Edited",
+     "group": "Curation",
+     "type": "String",
+     "position": 85,
+     "description": "Date of the last edit",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "EDIT_DATE"
+      }
+     ]
+    }
+   }
+  }
+ }
+}

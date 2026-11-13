@@ -135,6 +135,35 @@ Last updated: 2026-11-11
       `make fiesta ENV_FILE=.env.prod ARGS="sync-legacy-users magic"` and again with
       `--apply`. Re-run until cutover to pick up legacy password changes (legacy wins).
 
+## 2026-11-13 — GEOMAGIA node
+
+`configurations/geomagia.yaml` hosts GEOMAGIA50's archeomagnetic and volcanic
+records (one contribution per reference, its records as sites), mirrored from the
+public 2019 CSV export by `configurations/sources/geomagia.py` until there is
+access to the MySQL catalogue. `publish.web: false`: dev serves its API, and its
+SPA only to local stacks. See configurations/geomagia/README.md.
+
+- [ ] **Ask Max for a full GEOMAGIA `mysqldump` with data.** At least the lookup
+      tables, `refs`, `aa_locations` and the current `archeodij`, plus DDL for
+      `measurement_use_status`, `journal_list`, `geomagnetic_models` and
+      `archeodij_edit_history` (the repo's `geomagia.sql` predates them). The public
+      CSV stops at v3.2 (May 2019) and misses the 2020/2021 v3.4 additions.
+- [ ] **A SELECT-only account on the GEOMAGIA MySQL catalogue** and a network path
+      from the ops host (`MARFIK3`), its credentials in `/etc/fiesta/source-geomagia.env`
+      (names only here). Unblocks the MySQL reader that replaces the CSV.
+- [ ] **Steward account**: Max's EarthRef account as the owner of every GEOMAGIA
+      contribution (`/etc/fiesta/source-geomagia-owners.json`, `default_owner`) and as
+      GEOMAGIA node admin.
+- [ ] **First sync on dev** from the CSV: put `geomagia.csv`
+      (`https://geomagia.gfz.de/docs/geomagia50_v3_24072017_download.csv`) and
+      `studies.html` (a saved `studies.php`) in the ops state dir
+      `/var/lib/fiesta-ops/sources/geomagia/`, then Run now on the admin page's Data
+      source tab (667 contributions), and drain dev's outbox.
+- [ ] **Ask Max about codes missing from the ID glossary**: `DirMethID` 101 (15
+      records) and 103 (2), and `SpecTypeID` -1 (2). They show as validation errors.
+- [ ] **Decide when GEOMAGIA goes public** (`publish.web: true` in geomagia.yaml),
+      with the GEOMAGIA team.
+
 ## 2026-11-11 — Repository layout: `configurations/` + `fiesta/`
 
 The repo now has `configurations/` (was `config/` and `sources/`), `fiesta/`

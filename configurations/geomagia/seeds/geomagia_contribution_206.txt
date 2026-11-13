@@ -1,0 +1,7 @@
+tab delimited	contribution
+data_model_version	geomagia_reference_id	reference	citation	authors	title	year	journal	volume	pages	magic_link	geomagia_version
+3.4	206	10.1016/S0079-1946(98)00135-9	Abrahamsen et al. (1998)	Abrahamsen N., Jacobsen U., Mejdahl V., Mejdahl U.	Magnetic investigations and dating of a brick kiln at Veldbaek near Esbjerg, Denmark	1998	Phys. Chem. Earth	23	1015-1019	http://earthref.org/cgi-bin/magic.cgi?mdt=m006382dt20071202153822	GEOMAGIA50.v3.2 export, May/22/2019
+>>>>>>>>>>
+tab delimited	sites
+site	uid	archeo_volcanic	site_name	lat	lon	site_id	region_country	continent	material_id	materials	specimen_type_id	specimen_types	age	age_min	age_max	age_error_type_id	age_error_type	dating_method_id	dating_methods	pi_method_id	pi_methods	ac_id	alteration_checks	md_ck_id	md_checks	an_corr_set_id	anisotropy_corrections	cr_corr_set_id	cooling_rate_corrections	num_dir_samples	decl	incl	alpha_95	k	dm_method_id	demag_method	dm_analysis_id	dir_analysis	comp_ref	compilations	upload_year	uploader
+4039	4039	Archeo	Veldbaek	55.4600	8.5000	55	Denmark	Europe	0	Not specified	0	Not specified	1795	20	20	1	Estimate	0	Not specified	-1	No measurement	-1	No measurement	-1	No measurement	-1	No measurement	-1	No measurement	39	331.00	73.70	2.00	125.00	0	Not specified	0	Not specified	1004	Schnepp E., Lanos Ph. (2006)	2009	Fabio Donadini

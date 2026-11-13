@@ -74,6 +74,11 @@ A node-specific fix-up of the source records belongs in the node's script.
 | `configurations/sources/karar.py` | Meteor KArAr: index `karar`, buckets `karar-activated-contributions`, `karar-contributions` | schedule `karar-source`, off until `legacy.sync.enabled`; continues from the `legacy-karar` bulk import |
 | `configurations/sources/cdr.py` | Meteor CDR: index `cdr-3` (no archive bucket; every record exported from the index) | schedule `cdr-source`, off until `legacy.sync.enabled`; needs the owner map (`cdr` handle → steward); `legacy.exclude_ids` withholds #88 |
 | `configurations/sources/magic.py` | Meteor MagIC: index `magic`, buckets `magic-activated-contributions`, `magic-contributions`, `magic-private-contributions` | schedule `magic-source`, on, hourly at :40; continues from the `legacy-magic` bulk import |
+| `configurations/sources/geomagia.py` | GEOMAGIA50 (not Meteor; `legacy.kind: script`): the public archeo/volcanic CSV export and studies page until there is read access to its MySQL catalogue; one contribution per reference | schedule `geomagia-source`, off; reads `geomagia.csv` / `studies.html` from `--state-dir` (configurations/geomagia/README.md) |
+
+A node whose source is not a Meteor app or an EarthRef CGI archive says
+`legacy: {kind: script, source_id: ...}`: only its own script reads the source, and
+`fiesta legacy-inventory` refuses it.
 
 Run one by hand from the repository root (`make fiesta` runs it in `fiesta/backend/`
 with that env file's legacy read credentials):

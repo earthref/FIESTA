@@ -22,3 +22,4 @@ api:
     - erda.yaml
     - osu-mgr.yaml
     - sc.yaml
+    - geomagia.yaml

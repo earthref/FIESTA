@@ -199,8 +199,9 @@ sources:
 
 
 def test_checked_in_source_scripts_are_scheduled(monkeypatch):
-    """Every `configurations/sources/<slug>.py` is a served node with a Meteor `legacy:` block,
-    so the ops worker gives it a schedule; MagIC's is on, hourly."""
+    """Every `configurations/sources/<slug>.py` is a served node with a `legacy:` block
+    (Meteor, or a script-only source such as GEOMAGIA's), so the ops worker gives it a
+    schedule; MagIC's is on, hourly."""
     from fiesta.ops.config import parse_ops_config
 
     sources = CONFIG_DIR / "sources"
@@ -210,10 +211,118 @@ def test_checked_in_source_scripts_are_scheduled(monkeypatch):
     scripts = sorted(p.stem for p in sources.glob("*.py"))
     assert {"kdd", "magic"} <= set(scripts)
     nodes = [load_deployment(CONFIG_DIR / "fiesta.yaml").node_for(s) for s in scripts]
-    assert all(n.legacy is not None and n.legacy.kind == "meteor" for n in nodes)
+    assert all(n.legacy is not None and n.legacy.kind in ("meteor", "script") for n in nodes)
     config = parse_ops_config("fiesta-ops: 1\n").with_sources(nodes)
     schedules = {s.name: s for s in config.schedules}
     assert set(schedules) == {f"{s}-source" for s in scripts}
     magic = schedules["magic-source"]
     assert magic.enabled and magic.cron == "40 * * * *"
     assert magic.command[1] == str(sources / "magic.py")
+
+
+# ---- GEOMAGIA: public CSV export -> one contribution per reference ----------
+
+GEOMAGIA_CSV = (
+    "Generated using GEOMAGIA50.v3.2 on May/22/2019\n"
+    "Age[yr.AD],Sigma-ve[yr.],Sigma+ve[yr.],SigmaAgeID,N_Ba,n_Ba[meas.],n_Ba[acc.],"
+    "Ba[microT],SigmaBa[microT],VDM[E22_AmE2],SigmaVDM[E22_AmE2],N_Dir,n_Dir[meas.],"
+    "n_Dir[acc.],Dec[deg.],Inc[deg.],Alpha95[deg.],K,MaxAF[mT],MaxTemp[deg.C],PubDataID,"
+    "SiteName,LocationName,SiteLat[deg.],SiteLon[deg.],CountryRegionID,ArcheoVolcanic,MatID,"
+    "PIMethID,AltMonID,MDMonID,CoolRID,AnisoID,DirMethID,DirAnalysisID,DatMethID,SpecTypeID,"
+    "RefID,CompilationID,UploadMonth,UploadYear,Uploader,Editor,LastEditDate,C14ID,UID\n"
+    # intensity only, two dating methods, in no compilation
+    "  1490,  -9999,  -9999,  1,  1,  -999,  3,  69.00,  1.00,  9.65,  0.14,  -999,  -999,"
+    "  -999,  -999.00,  -999.00,  -999.00,  -999.00,  -999,  -999,  -999,  -999,  Vologda,"
+    "  59.3000,  39.7000,  49,  Archeo,  1,  1,  -1,  -1,  -1,  -1,  0,  0,  101;102,  2,"
+    "  265,  -1,  -999,  2009,  Fabio Donadini,  -999,  -999,  -1,  1915\n"
+    # direction only, an unknown demagnetization code kept visible
+    "  1795,  20,  20,  1,  -999,  -999,  -999,  -999.00,  -999.00,  -999.00,  -999.00,  39,"
+    "  -999,  -999,  331.00,  73.70,  2.00,  125.00,  -999,  -999,  -999,  -999,  Veldbaek,"
+    "  55.4600,  8.5000,  55,  Archeo,  0,  -1,  -1,  -1,  -1,  -1,  101,  0,  0,  0,"
+    "  206,  1004;1006,  -999,  2009,  Fabio Donadini,  -999,  -999,  -1,  4039\n"
+)
+
+
+@pytest.fixture(scope="module")
+def geomagia_source():
+    import importlib.util
+
+    path = CONFIG_DIR / "sources" / "geomagia.py"
+    if not path.is_file():
+        pytest.skip("no configurations/sources/ in this checkout")
+    spec = importlib.util.spec_from_file_location("geomagia_source", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_geomagia_rows_keep_codes_and_drop_missing_markers(geomagia_source, tmp_path):
+    from fiesta.domain.parse import parse_text
+    from fiesta.domain.validate import validate_contribution
+
+    csv_path = tmp_path / "geomagia.csv"
+    csv_path.write_text(GEOMAGIA_CSV)
+    generated, texts, _meta = geomagia_source.build(csv_path, None)
+    assert generated.startswith("Generated using GEOMAGIA50.v3.2") and sorted(texts) == [206, 265]
+
+    node = load_deployment(CONFIG_DIR / "fiesta.yaml").node_for("geomagia")
+    parsed = parse_text(texts[265])
+    assert parsed.tables["contribution"][0]["geomagia_reference_id"] == "265"
+    (site,) = parsed.tables["sites"]
+    assert site["site"] == site["uid"] == "1915"
+    # Missing markers are blank; lookup sentinels (-1, 0) keep their IDs and names.
+    assert not site.get("age_min") and not site.get("decl")
+    assert site["ac_id"] == "-1" and site["alteration_checks"] == "No measurement"
+    assert site["dating_method_id"] == "101:102"
+    assert site["dating_methods"] == "Archeological Age:Calibrated 14 C Age"
+    assert not site.get("comp_ref")  # -1: in no compilation
+    assert (site["region_country"], site["continent"]) == ("Russia", "Asia")
+    # VADM from the intensity and site latitude, as the GEOMAGIA site calculates it.
+    assert (site["vadm"], site["sigma_vadm"]) == ("9.95", "0.14")
+    assert not validate_contribution(node, parsed, "3.4").errors
+
+    direction_parsed = parse_text(texts[206])
+    (direction,) = direction_parsed.tables["sites"]
+    assert direction["compilations"] == (
+        "Schnepp E., Lanos Ph. (2006):Donadini F., Korhonen K., Riisager P., Pesonen L.J. (2006)"
+    )
+    # A code missing from the glossary stays visible and fails validation.
+    assert direction["demag_method"] == "Unknown (ID 101)"
+    errors = validate_contribution(node, direction_parsed, "3.4").errors
+    assert [e.as_dict()["column"] for e in errors] == ["demag_method"]
+
+
+def test_geomagia_short_citation(geomagia_source):
+    cite = geomagia_source.short_citation
+    assert cite("Shaw J.", "1974") == "Shaw (1974)"
+    assert cite("Burlatskaya S.P., Chelidze Z.A.", "1990") == "Burlatskaya and Chelidze (1990)"
+    assert cite("Aitken M.J., Pesonen L.J., Leino M.A.H.", "1991") == "Aitken et al. (1991)"
+
+
+@pytest.mark.asyncio
+async def test_geomagia_sync_sends_only_changed_references(geomagia_source, tmp_path):
+    csv_path = tmp_path / "geomagia.csv"
+    csv_path.write_text(GEOMAGIA_CSV)
+    generated, texts, meta = geomagia_source.build(csv_path, None)
+    records = geomagia_source.source_records(texts, meta, generated, "steward@example.test")
+    unchanged = record_fingerprint(records[206])
+    sent = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            state = {"mode": "source", "source_id": "geomagia50", "checkpoints": {"206": unchanged}}
+            return httpx.Response(200, json=state)
+        assert request.url.path == "/v2/geomagia/source/records/265"
+        body = request.read()
+        assert b'name="geomagia/geomagia_contribution_265.txt"' in body
+        assert b'"steward@example.test"' in body
+        sent.append(265)
+        return httpx.Response(200, json={"status": "applied", "bytes": len(texts[265])})
+
+    api = SourceAPI("http://fiesta.test", "geomagia", transport=httpx.MockTransport(handler))
+    summary = await geomagia_source.sync(
+        api, texts, meta, generated, {"email": "steward@example.test"}
+    )
+    assert sent == [265] and summary["applied"] == 1 and summary["unchanged"] == 1
+    assert summary["errors"] == [] and summary["missing_from_source"] == []
+    assert records[265].created_at.date().isoformat() == "2019-05-22"
