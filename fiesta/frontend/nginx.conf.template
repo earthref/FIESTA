@@ -29,6 +29,13 @@ server {
         return 200 'window.__FIESTA__={"node":"${FIESTA_NODE}","apiUrl":"${API_URL}","nodes":"${FIESTA_NODES}"};';
     }
 
+    # The build id the update poller compares against the one in the running
+    # bundle (src/lib/use-update-available.ts): never cached.
+    location = ${BASE_PATH}version.json {
+        add_header Cache-Control "no-store";
+        try_files $uri =404;
+    }
+
     # Proxy API requests to the FIESTA API service. The URI part on proxy_pass
     # replaces the matched prefix, so the API always sees /v2/ whatever
     # BASE_PATH is.

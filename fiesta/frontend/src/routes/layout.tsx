@@ -1,5 +1,6 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { AutoReload } from "../components/auto-reload";
 import { ErrorMessage } from "../components/error-message";
 import { Footer } from "../components/footer";
 import { LoginModalProvider } from "../components/login-modal";
@@ -84,6 +85,7 @@ export function RootLayout() {
           </main>
         </div>
         <Footer />
+        <AutoReload />
       </div>
     </LoginModalProvider>
   );
