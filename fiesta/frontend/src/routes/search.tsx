@@ -353,9 +353,12 @@ export function SearchPage() {
     area?: string | undefined;
     mine?: SearchScope["mine"];
     versions?: SearchScope["versions"];
+    /** Replace the history entry (a view's default filter, not a user's pick). */
+    replace?: boolean;
   }) => {
     const filter = next.filter ?? gridFilterList;
     navigate({
+      replace: next.replace,
       search: {
         q: next.q !== undefined ? next.q || undefined : q || undefined,
         level: next.level ?? search.level,
@@ -1525,6 +1528,7 @@ export function SearchPage() {
                           ranges,
                           bbox,
                           scope,
+                          setRanges: (next) => setSearch({ ranges: next, replace: true }),
                         })}
                       </div>
                     )}

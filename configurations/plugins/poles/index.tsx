@@ -2,6 +2,7 @@ import { type UseQueryResult, useQueries, useQuery } from "@tanstack/react-query
 import {
   type ReactNode,
   type RefObject,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -10,10 +11,11 @@ import {
 } from "react";
 import { ErrorMessage } from "@/components/error-message";
 import { MapThumbnail } from "@/components/map-thumbnail";
-import { Cell, NoDataCell } from "@/components/result-item";
+import { Cell, contributionId, NoDataCell } from "@/components/result-item";
 import { SummaryGrid } from "@/components/summary-grid";
 import { PageSpinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
+import { useOpenContribution } from "@/lib/contribution-modal";
 import { usePagedItems } from "@/lib/paged";
 import type {
   GridColumn,
@@ -60,6 +62,12 @@ const MAP_FIELDS = [
 const GRID_HEADER = 33;
 const GRID_ROW = 129;
 const MIN_MAP = 300;
+// The map row's height over its map's: the toolbar (~28-30px), the paddings and
+// border, less the side padding and border the map's width loses. The map is
+// at most as tall as it is wide.
+const MAP_CHROME = 36;
+// The search field the default Pole A95 filter sets (the sidebar's control).
+const ALPHA95_FIELD = "summary.poles.pole_alpha95";
 
 interface PolesPluginConfig {
   base_level?: string;
@@ -68,6 +76,8 @@ interface PolesPluginConfig {
   has_plate_boundaries?: boolean;
   plate_boundary_color?: string;
   age_color?: Partial<AgeColors>;
+  default_alpha95_max?: number | null;
+  default_alpha95_above?: number;
 }
 
 function polesConfig(config: NodeConfig): PolesPluginConfig {
@@ -484,6 +494,7 @@ function PolesMapView({
   contribution,
   privateKey,
   scope,
+  setRanges,
 }: PluginSubTabContext) {
   // The selected pole: its grid row (a map point's `index`).
   const [selected, setSelected] = useState<number | null>(null);
@@ -491,9 +502,31 @@ function PolesMapView({
   const rootRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const available = useAvailableHeight(rootRef);
+  const [mapWidth, setMapWidth] = useState<number>();
+  const mapColumnRef = useCallback((element: HTMLDivElement | null) => {
+    if (!element) return;
+    const observer = new ResizeObserver(() => setMapWidth(element.clientWidth));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const openContribution = useOpenContribution();
 
   const pconfig = polesConfig(config);
   const colors: AgeColors = { ...DEFAULT_AGE_COLORS, ...pconfig.age_color };
+
+  // A search page arriving here with no filters, over more than
+  // `default_alpha95_above` poles, opens on the well-determined ones: it sets
+  // the sidebar's Pole A95 filter, which the user can clear. Decided once, on
+  // arrival ("undecided" until the first page says how many poles match, then
+  // "applying" until the filter reaches the search), so clearing the filters
+  // later shows every pole.
+  const [defaultPhase, setDefaultPhase] = useState<"undecided" | "applying" | "done">("undecided");
+  const alpha95Max = pconfig.default_alpha95_max;
+  const unfiltered =
+    !query && ranges.length === 0 && !bbox && !contribution && !scope?.mine && !scope?.versions;
+  const canDefault = setRanges !== undefined && alpha95Max != null && unfiltered;
+  const defaultPending =
+    (defaultPhase === "undecided" && canDefault) || defaultPhase === "applying";
 
   const params = {
     ...scope,
@@ -516,12 +549,26 @@ function PolesMapView({
     staleTime: 60_000,
   });
   const matched = firstMapPage.data?.total ?? 0;
+  const firstLoaded = firstMapPage.data !== undefined;
+  useEffect(() => {
+    if (defaultPhase === "applying" && !unfiltered) setDefaultPhase("done");
+    if (defaultPhase !== "undecided") return;
+    if (!canDefault) setDefaultPhase("done");
+    else if (firstLoaded) {
+      if (matched > (pconfig.default_alpha95_above ?? 1000)) {
+        setDefaultPhase("applying");
+        setRanges?.([`${ALPHA95_FIELD}::${alpha95Max}`]);
+      } else setDefaultPhase("done");
+    }
+  }, [defaultPhase, unfiltered, canDefault, firstLoaded, matched]);
   const shown = Math.min(matched, MAX_POLES);
   const restMapPages = useQueries({
     queries: Array.from({ length: Math.max(0, Math.ceil(shown / MAP_PAGE) - 1) }, (_, i) => ({
       queryKey: [...searchKey, "map", i + 1],
       queryFn: () => fetchMapPage(i + 1),
       staleTime: 60_000,
+      // Not the unfiltered poles the default filter is about to replace.
+      enabled: !defaultPending,
     })),
     combine: pagesOf,
   });
@@ -562,8 +609,12 @@ function PolesMapView({
   }, [poles]);
 
   const error = firstMapPage.error ?? restMapPages.error ?? grid.first.error;
-  // The map leaves room for the grid's header and two rows under it.
-  const mapHeight = Math.max(MIN_MAP, (available ?? 680) - GRID_HEADER - 2 * GRID_ROW);
+  // The map leaves room for the grid's header and two rows under it, and is no
+  // taller than it is wide (the rest goes to the grid's rows).
+  const mapHeight = Math.min(
+    Math.max(MIN_MAP, (available ?? 680) - GRID_HEADER - 2 * GRID_ROW),
+    mapWidth !== undefined ? Math.max(MIN_MAP, mapWidth + MAP_CHROME) : Number.POSITIVE_INFINITY,
+  );
   const height = Math.max(available ?? 680, mapHeight + GRID_HEADER + GRID_ROW);
 
   let body: ReactNode;
@@ -580,7 +631,7 @@ function PolesMapView({
       <>
         {/* Row 1 — map + side panel */}
         <div className="flex shrink-0" style={{ height: mapHeight }}>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div ref={mapColumnRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
             {boundaries.error && <ErrorMessage error={boundaries.error} className="m-2" />}
             <div className="min-h-0 flex-1">
               <PolesMap
@@ -615,7 +666,21 @@ function PolesMapView({
             scrollRef={gridRef}
             overscan={5}
             onRange={grid.onRange}
-            onOpen={(_doc, index) => setSelected(index)}
+            onOpen={(doc, index) => {
+              // A row's first click selects its pole; a click on the selected
+              // row opens its contribution on the location row.
+              if (index !== selected) {
+                setSelected(index);
+                return;
+              }
+              const id = contributionId(doc);
+              const hit = grid.items[index];
+              if (id) {
+                openContribution(id, "locations", hit ? locationRowOf(hit) : undefined, {
+                  privateKey,
+                });
+              }
+            }}
             selectedIndex={selected ?? undefined}
           />
         </div>

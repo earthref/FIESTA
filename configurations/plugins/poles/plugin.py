@@ -197,6 +197,16 @@ class PolesOptions(PluginOptions):
     plate_boundary_color: str = Field(
         default="#990000", description="Color of the plate boundary lines on the map"
     )
+    default_alpha95_max: float | None = Field(
+        default=10.0,
+        description="An unfiltered Poles view of more than `default_alpha95_above` poles "
+        "opens with a Pole A95 range filter up to this many degrees (null: never)",
+    )
+    default_alpha95_above: int = Field(
+        default=1000,
+        description="The pole count past which an unfiltered Poles view gets the default "
+        "Pole A95 filter",
+    )
     facet_columns: list[str] = Field(
         default=FACET_COLUMNS,
         description="Location columns copied (colon-delimited lists split) into a pole's "

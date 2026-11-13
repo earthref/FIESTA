@@ -34,12 +34,18 @@ view, in the map's order, so a pole's index is its row): the core tiles
 all read from the doc's location row) and the plugin's own via `gridCell`
 (the pole on a whole-globe thumbnail with its ring, pole statistics, age,
 direction). Choosing a pole on the map highlights and scrolls to its row,
-and a row click selects its pole. The Age / A95 / Geospatial filters are
-`search.filters` entries.
+a row's first click selects its pole (drawn on top of the others), and a
+second click on the selected row opens its contribution on the location row.
+The map is never taller than it is wide, leaving the grid at least two rows.
+The Age / A95 / Geospatial filters are `search.filters` entries; a search
+page arriving on the view with no filters and more than
+`default_alpha95_above` poles sets the Pole A95 filter to ≤
+`default_alpha95_max`° once (clearing it shows every pole).
 
 Options: `display_columns`, `base_level`, `after_sub_tab`, `age_color`,
-`plate_boundary_color`, `facet_columns` (the location columns a pole doc's
-`summary._all` carries, lists split).
+`plate_boundary_color`, `default_alpha95_max` (10; null for no default
+filter), `default_alpha95_above` (1000), `facet_columns` (the location
+columns a pole doc's `summary._all` carries, lists split).
 
 API: `GET /v2/{node}/plugins/poles/plate-boundaries`.
 
