@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
@@ -53,6 +54,39 @@ function fiestaEnv(): Plugin {
   };
 }
 
+// Identity of this build, for the update poller (src/lib/use-update-available.ts).
+// It goes to two places -- inlined into the bundle as the build the page is
+// RUNNING, and written to <base>version.json as the build the server is
+// SERVING -- and the poller compares them, so both come from this one constant.
+// The short commit SHA, so every node built by one deploy shares an id and
+// redeploying the same commit is not an update; a build outside a git checkout
+// (the Docker image) falls back to a per-build timestamp.
+const buildId =
+  (() => {
+    try {
+      return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+        .toString()
+        .trim();
+    } catch {
+      return "";
+    }
+  })() || `build-${Date.now()}`;
+
+/** Publishes the build id at <base>version.json for the update poller. */
+function buildVersion(): Plugin {
+  return {
+    name: "fiesta-build-version",
+    apply: "build", // the dev server has real HMR; nothing to poll for
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "version.json",
+        source: JSON.stringify({ build: buildId }),
+      });
+    },
+  };
+}
+
 // Dev-only proxy: with no VITE_API_URL the SPA calls <base>v2/... on its own
 // origin, so forward that to the API (any reverse proxy does the same in
 // production: nginx in the Docker image, or whatever fronts a static build).
@@ -61,8 +95,9 @@ export default defineConfig({
   define: {
     "import.meta.env.VITE_NODE": JSON.stringify(node),
     "import.meta.env.VITE_API_URL": JSON.stringify(apiUrl),
+    "import.meta.env.VITE_BUILD_ID": JSON.stringify(buildId),
   },
-  plugins: [react(), tailwindcss(), fiestaEnv()],
+  plugins: [react(), tailwindcss(), fiestaEnv(), buildVersion()],
   resolve: {
     alias: { "@/": `${src}/`, "@plugins/": `${pluginsDir}/` },
     dedupe: Object.keys(pkg.dependencies ?? {}),

@@ -52,6 +52,16 @@ paths and the multi-node layout":
   `deploy-fiesta.sh` does for the static bundles), each behind its own
   prefix location.
 
+Open tabs move onto a new deploy by themselves. Every build writes
+`<base>version.json` (`{"build": "<short SHA>"}`) and inlines the same id;
+the SPA polls the file every minute (`src/lib/use-update-available.ts`) and,
+once it differs, a hidden tab reloads at once, an active user's next link click
+becomes a full page load, and a tab left visible and idle for five minutes gets
+a toast counting a minute down into a reload (Reload / Postpone an hour; any
+input retreats it). Whatever serves the static bundles should send
+`version.json` with `Cache-Control: no-store` (the nginx image does); the
+poller also adds a cache-busting query string.
+
 Moving the FIESTA nodes from `dev.earthref.org/<Node>/` to
 `earthref.org/<Node>/` at cutover is then a reverse-proxy change only: the
 images, base paths, and containers stay the same.
