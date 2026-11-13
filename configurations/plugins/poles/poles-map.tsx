@@ -32,6 +32,8 @@ interface PolesMapProps {
   /** The selected pole's `index` (its grid row). */
   selected: number | null;
   onSelect: (index: number) => void;
+  /** Where to turn or pan the map to (a pole picked in the grid). */
+  centerOn?: { lon: number; lat: number } | null;
 }
 
 /**
@@ -52,6 +54,7 @@ export default function PolesMap({
   showEllipses,
   selected,
   onSelect,
+  centerOn,
 }: PolesMapProps) {
   const [mode, setMode] = useSavedMode("poles-map-mode");
 
@@ -116,6 +119,7 @@ export default function PolesMap({
             pointRadius={5}
             fit
             focusKey={poles}
+            centerOn={centerOn}
             onSelect={(id) => onSelect(Number(id))}
           />
         </Suspense>
