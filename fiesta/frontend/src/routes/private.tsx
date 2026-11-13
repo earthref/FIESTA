@@ -143,7 +143,7 @@ export function PrivateWorkspacePage() {
           </p>
           <p className="mx-auto mt-1 max-w-md text-sm text-gray-600">
             {showPublished
-              ? "Contributions you publish appear here, where you can share them, start a new version or unpublish them."
+              ? "Contributions you publish appear here, where you can share them or start a new version."
               : "Upload a data file to start a contribution. It stays private while you complete its details, validate it and publish it."}
           </p>
           {!showPublished && (

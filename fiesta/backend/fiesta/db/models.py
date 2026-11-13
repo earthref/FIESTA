@@ -105,6 +105,9 @@ class Contribution(Base):
     data_model_version: Mapped[str] = mapped_column(String(8))
     reference_doi: Mapped[str | None] = mapped_column(String(255))
     filename: Mapped[str | None] = mapped_column(String(255))
+    # The contributor's own label in the private workspace (legacy
+    # summary.contribution._name); application state, not revision content.
+    name: Mapped[str | None] = mapped_column(String(255))
     status: Mapped[ContributionStatus] = mapped_column(
         Enum(
             ContributionStatus,

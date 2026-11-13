@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from fiesta.apps.deps import CurrentUser, NodeDep, SessionDep, require_public_contributions
-from fiesta.apps.schemas import ContributionOut, JobOut, ReferenceIn, ValidationOut
+from fiesta.apps.schemas import ContributionOut, JobOut, NameIn, ReferenceIn, ValidationOut
 from fiesta.db.models import Contribution, ContributionStatus, Revision, User
 from fiesta.domain.parse import ParseError, parse_text, set_table_values
 from fiesta.jobs import tasks
@@ -188,6 +188,23 @@ async def set_reference(
     return _out(contribution, user)
 
 
+@router.put("/{contribution_id}/name", response_model=ContributionOut)
+async def set_name(
+    session: SessionDep,
+    node: NodeDep,
+    user: CurrentUser,
+    contribution_id: int,
+    payload: NameIn,
+) -> ContributionOut:
+    """The contributor's label for the contribution (published ones too): a
+    workspace field, not file content, so it saves no revision and no audit
+    event (which would mark a legacy-imported contribution as changed here)."""
+    contribution = await _own_contribution(session, node, user, contribution_id)
+    contribution.name = payload.name.strip() or None
+    await session.commit()
+    return _out(contribution, user)
+
+
 @router.get("/{contribution_id}/reference")
 async def check_reference(
     session: SessionDep, node: NodeDep, user: CurrentUser, contribution_id: int
@@ -323,6 +340,10 @@ async def activate(
 async def deactivate(
     session: SessionDep, node: NodeDep, user: CurrentUser, contribution_id: int
 ) -> ContributionOut:
+    # Published data is a public record: contributors correct it with a new
+    # version, and only a node admin withdraws it.
+    if not user.is_node_admin(node.node.slug):
+        raise HTTPException(403, "only a node admin can unpublish a contribution")
     contribution = await _own_contribution(session, node, user, contribution_id)
     if not contribution.is_activated:
         raise HTTPException(409, "contribution is not published")
@@ -523,6 +544,7 @@ async def new_version(session: SessionDep, node: NodeDep, user: CurrentUser, con
         data_model_version=original.data_model_version,
         reference_doi=original.reference_doi,
         workspace_id=original.workspace_id,
+        name=original.name,
     )
     session.add(c)
     await session.flush()

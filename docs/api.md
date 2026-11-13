@@ -447,7 +447,8 @@ When omitted the API sorts by relevance if the query has free text and by
 | GET | `/{id}/fields` | | `{column: cell}` for the node's `workspace.fields`, from the canonical file's `workspace.table` (`""` when empty) |
 | PUT | `/{id}/fields` | `{values: {column: cell}, expected_revision, request_key}` | `ContributionOut` (sets those columns in the canonical file as a new revision; 422 for a column not in `workspace.fields`; unpublished only) |
 | POST | `/{id}/activate` | | `ContributionOut` (publishes; requires `status=ready`, passing validation and, with `workspace.require_reference`, a DOI that resolves) |
-| POST | `/{id}/deactivate` | | `ContributionOut` |
+| POST | `/{id}/deactivate` | | `ContributionOut` (unpublishes; node admins only, 403 otherwise: contributors correct published data with a new version) |
+| PUT | `/{id}/name` | `{name}` | `ContributionOut` (the contributor's label, legacy `_name`; any version, published too; saves no revision; empty clears it) |
 | DELETE | `/{id}` | | 204 (private, unactivated only) |
 | GET | `/{id}/content` | `revision_id?` | `{revision_id, text}` (canonical file text) |
 | PUT | `/{id}/content` | `{text, expected_revision, request_key}` | `ContributionOut` (JSON edit) |

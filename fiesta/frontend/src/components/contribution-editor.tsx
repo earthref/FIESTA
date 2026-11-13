@@ -1,6 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { isNodeAdmin } from "../lib/admin";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/auth";
+import { useNodeConfig } from "../lib/config";
 import type { ContributionOut } from "../lib/types";
 import { ErrorMessage } from "./error-message";
 import { Button } from "./ui/button";
@@ -49,18 +52,26 @@ export function ContributionEditor({
     setDraft(null);
     setRequestKey(crypto.randomUUID());
   };
-  const run = async (action: () => Promise<unknown>) => {
+  /** Runs one change and refreshes; false (with the error shown) if it failed. */
+  const run = async (action: () => Promise<unknown>): Promise<boolean> => {
     setBusy(true);
     setError(null);
     try {
       await action();
       await refresh();
+      return true;
     } catch (e) {
       setError(e);
+      return false;
     } finally {
       setBusy(false);
     }
   };
+  // Only a node admin unpublishes (the API refuses everyone else).
+  const { user } = useAuth();
+  const { data: config } = useNodeConfig();
+  const admin = isNodeAdmin(user, config?.slug);
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false);
   return (
     <Modal open onClose={onClose} title={`Contribution ${contribution.id}: edit history`}>
       {immutable && <p>Published content is read-only. Create a new version to make changes.</p>}
@@ -169,6 +180,54 @@ export function ContributionEditor({
           </li>
         ))}
       </ul>
+      {admin && contribution.is_activated && (
+        <section
+          aria-labelledby={`admin-${contribution.id}`}
+          className="mt-4 rounded-md border border-red-200 bg-red-50 p-3"
+        >
+          <h3 id={`admin-${contribution.id}`} className="font-semibold text-red-800">
+            Admin
+          </h3>
+          <p className="my-1.5 text-sm text-gray-700">
+            Unpublishing takes the contribution out of search and stops its public link; the private
+            share link still works. It moves back to its contributor's In Preparation list, where it
+            can be published again or deleted. Contributors cannot do this themselves: they correct
+            published data with a new version.
+          </p>
+          {confirmUnpublish ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-red-800">
+                Unpublish Contribution {contribution.id}?
+              </span>
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={busy}
+                onClick={async () => {
+                  if (await run(() => api(`${base}/deactivate`, { method: "POST" }))) {
+                    setConfirmUnpublish(false);
+                    onClose();
+                  }
+                }}
+              >
+                {busy ? "Unpublishing…" : "Yes, unpublish"}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={busy}
+                onClick={() => setConfirmUnpublish(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button variant="danger" size="sm" onClick={() => setConfirmUnpublish(true)}>
+              Unpublish
+            </Button>
+          )}
+        </section>
+      )}
     </Modal>
   );
 }

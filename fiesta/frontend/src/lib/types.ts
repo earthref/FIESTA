@@ -274,6 +274,8 @@ export interface ContributionOut {
   data_model_version: string;
   reference_doi: string | null;
   filename: string | null;
+  /** The contributor's own label for it in the private workspace. */
+  name: string | null;
   status: ContributionStatus;
   created_at: string;
   updated_at: string;

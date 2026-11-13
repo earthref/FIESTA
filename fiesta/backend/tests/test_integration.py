@@ -279,6 +279,18 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
             )
         ).status_code == 404
 
+        # Only a node admin unpublishes; the name is a workspace label its editors set.
+        assert (
+            await client.post(newpath + "/deactivate", headers=viewer_headers)
+        ).status_code == 403
+        renamed = await client.put(newpath + "/name", json={"name": "  Hawaii lavas  "})
+        assert renamed.status_code == 200 and renamed.json()["name"] == "Hawaii lavas", renamed.text
+        assert (
+            await client.put(newpath + "/name", headers=viewer_headers, json={"name": "x"})
+        ).status_code == 404
+        cleared = await client.put(newpath + "/name", json={"name": " "})
+        assert cleared.json()["name"] is None
+
         # Index rebuild preserves accounts, settings and revision heads.
         async with get_sessionmaker("magic")() as session:
             before = (await session.get(Contribution, c["id"])).head_revision
