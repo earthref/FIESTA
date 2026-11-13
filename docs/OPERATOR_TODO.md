@@ -137,15 +137,20 @@ Last updated: 2026-11-11
 - [ ] **MagIC publications with more than one latest contribution** (2026-11-13,
       judgement call for the MagIC team): 61 reference DOIs on dev have 2 (60) or 3 (1)
       separate version chains, each with a latest version, so the References grid counts
-      them and the search shows them all. FIESTA copies legacy MagIC exactly (checked
-      against the live legacy search: the same chains are all latest there). Example
-      `10.1016/0031-9201(90)90268-3`: 9595→13855 (2013, 20 sites, Tamil Nadu),
-      8011→8065→14174→19189 and 7551→13156→19187 (2009 and 2007, 40 sites each, India: the
-      same dataset uploaded twice). For each DOI decide: separate datasets (leave), or one
-      history (link the older chain's latest under the newer, so only the newest stays
-      latest). List: References grid sorted by MagIC, rows with a count above 1. Versions
-      whose parent is missing from the legacy index (9595, 8065, 8011, 7551 here) were
-      imported unlinked by design.
+      them and the search shows them all. FIESTA copied legacy MagIC exactly (checked
+      against the live legacy search: the same chains are all latest there). Since
+      2026-11-13 the MagIC source's `heal_chains` mends the clear cases on every sync: 6
+      stale latest flags (a version another follows) and about 15 duplicate chains (the
+      same records uploaded again as a new contribution), about 20 DOIs; check its
+      `fixup` note in the first run's summary (`--dry-run` shows it without sending).
+      Example `10.1016/0031-9201(90)90268-3`: 7551→13156→19187 and 8011→8065→14174→19189
+      (2007 and 2009, 40 sites each, India) become one chain; 9595→13855 (2013, 20 sites,
+      Tamil Nadu) stays apart. **Left for you, about 41 DOIs** whose latest versions hold
+      different records: separate datasets of one publication (leave) or a re-upload that
+      also changed the data (say so, and it can be linked by ID in `heal_chains`). List:
+      References grid sorted by MagIC, rows with a count above 1. Versions whose parent is
+      missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
+      by design.
 
 ## 2026-11-13 — dev host unresponsive
 

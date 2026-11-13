@@ -326,3 +326,87 @@ async def test_geomagia_sync_sends_only_changed_references(geomagia_source, tmp_
     assert sent == [265] and summary["applied"] == 1 and summary["unchanged"] == 1
     assert summary["errors"] == [] and summary["missing_from_source"] == []
     assert records[265].created_at.date().isoformat() == "2019-05-22"
+
+
+@pytest.fixture(scope="module")
+def magic_source():
+    import importlib.util
+
+    path = CONFIG_DIR / "sources" / "magic.py"
+    if not path.is_file():
+        pytest.skip("no configurations/sources/ in this checkout")
+    spec = importlib.util.spec_from_file_location("magic_source", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.asyncio
+async def test_magic_heals_broken_version_chains(magic_source, magic_node):
+    """MagIC's fix-up of the legacy records: a version another one follows is
+    not the latest, and one publication's latest versions holding the same
+    records become one chain (oldest first, versions numbered on); those that
+    differ stay separate datasets."""
+    from fiesta.services.legacy import Inventory
+
+    def rec(cid, version, when, doi, previous=None, latest=True):
+        base = _record(cid, b"x")
+        return SourceRecord.model_validate(
+            base
+            | {
+                "version": version,
+                "previous_id": previous,
+                "latest": latest,
+                "activated_at": f"{when}T00:00:00+00:00",
+                "revisions": [base["revisions"][0] | {"reference_doi": doi}],
+            }
+        )
+
+    records = [
+        # A stale flag: 2 follows 1, yet 1 is still latest.
+        rec(1, 1, "2020-01-01", "10.1/a"),
+        rec(2, 2, "2021-01-01", "10.1/a", previous=1),
+        # One dataset twice: 10 -> 11 (v6) and later 12 (v4), the same records.
+        rec(10, 5, "2011-01-01", "10.1/b", latest=False),
+        rec(11, 6, "2011-08-09", "10.1/b", previous=10),
+        rec(12, 4, "2011-10-07", "10.1/B"),
+        # Another dataset of that publication (other records) stays apart.
+        rec(13, 1, "2012-01-01", "10.1/b"),
+    ]
+    held = {
+        11: {"sites": {"_n_results": 120}, "_all": {"location": ["Lanzarote"]}},
+        12: {"sites": {"_n_results": 120}, "_all": {"location": ["Lanzarote"]}},
+        13: {"sites": {"_n_results": 20}, "_all": {"location": ["Tenerife"]}},
+    }
+    asked = []
+
+    class Legacy:
+        async def search(self, index, body, request_timeout=None):
+            ids = body["query"]["bool"]["filter"][1]["terms"]["summary.contribution.id"]
+            asked.append(sorted(ids))
+            return {
+                "hits": {
+                    "hits": [
+                        {"_source": {"summary": {"contribution": {"id": i}} | held[i]}}
+                        for i in ids
+                        if i in held
+                    ]
+                }
+            }
+
+    inventory = Inventory(format=1, node="magic", source_id="legacy-magic", records=records)
+    healed, notes = await magic_source.heal_chains(magic_node, inventory, Legacy())
+    out = {r.id: r for r in healed.records}
+    assert [r.id for r in healed.records] == [1, 2, 10, 11, 12, 13]
+    assert not out[1].latest and out[2].latest
+    assert asked == [[11, 12, 13]]
+    assert not out[11].latest and out[12].latest and out[12].previous_id == 11
+    assert (out[10].version, out[11].version, out[12].version) == (5, 6, 7)
+    assert out[13].latest and out[13].previous_id is None
+    assert notes == {"stale_latest_cleared": 1, "chains_linked": 1, "links": [[11, 12]]}
+    # Healing again changes nothing: a run sends the healed records only once.
+    again, notes = await magic_source.heal_chains(magic_node, healed, Legacy())
+    assert [record_fingerprint(r) for r in again.records] == [
+        record_fingerprint(r) for r in healed.records
+    ]
+    assert notes["stale_latest_cleared"] == 0 and notes["chains_linked"] == 0

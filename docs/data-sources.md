@@ -66,7 +66,15 @@ bucket, read with the `fiesta legacy-inventory` reader into a state directory
 whose hash cache keeps unchanged S3 objects from being downloaded again, and
 contributions with no S3 object, exported from their indexed tables, from being
 fetched and exported again while their document's `_seq_no` is unchanged).
-A node-specific fix-up of the source records belongs in the node's script.
+A node-specific fix-up of the source records belongs in the node's script: a
+Meteor script passes `main(slug, ..., fixup=...)` an async function that gets
+the snapshot's records (and the source's OpenSearch client) before they are
+fingerprinted and returns the records to send and a JSON note for the run's
+summary (`fixup`), so what it changes is sent once and again only when the
+source changes. MagIC's `heal_chains` (2026-11-13) clears a latest flag on a
+version another version follows, and links one publication's latest versions
+that hold the same records (every level's count and the location names) into
+one chain, oldest first, the later versions numbered on from the earlier.
 
 | Script | Source | Status |
 |---|---|---|
