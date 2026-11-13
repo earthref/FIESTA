@@ -91,7 +91,9 @@ filter. The selected plot (the first, or `?plot=<key>`) is drawn large and
 interactive (wheel and box zoom, step values on hover), and every plot of the
 level is a small card to pick from (the selected one's border in the node
 color), below it or in a column beside it, whichever leaves the cards the
-larger view; the cards scroll virtually. A search grid's Plot tile opens its
+larger view; the cards scroll virtually (the layout is core
+`fiesta/frontend/src/components/plot-grid.tsx`, shared with KArAr's age
+plots). A search grid's Plot tile opens its
 contribution's tab with that plot selected (`?plot=`: a specimen's name, or an
 equal-area group's `<level>:<name>`, which the thumbnail carries as `level`).
 

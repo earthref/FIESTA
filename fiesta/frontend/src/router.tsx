@@ -81,6 +81,12 @@ function str(value: unknown): string | undefined {
   return typeof value === "string" && value !== "" ? value : undefined;
 }
 
+/** A name param: a record's name may be all digits (`?plot=34178`), which
+ * the router parses as a number. */
+function name(value: unknown): string | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? String(value) : str(value);
+}
+
 /** An id param (a number, so the URL reads `?contribution=16901`). */
 function id(value: unknown): number | undefined {
   const n = typeof value === "string" && /^\d+$/.test(value) ? Number(value) : value;
@@ -114,7 +120,7 @@ const searchRoute = createRoute({
     contribution: id(search.contribution),
     tab: str(search.tab),
     row: id(search.row),
-    plot: str(search.plot),
+    plot: name(search.plot),
     private_key: str(search.private_key),
     mine: search.mine === "in_prep" || search.mine === "published" ? search.mine : undefined,
     versions: search.versions === "all" ? "all" : undefined,

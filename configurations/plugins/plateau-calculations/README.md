@@ -26,11 +26,23 @@ matched to experiments exactly, or else on a hyphen-delimited prefix
 as the tiles do. The built data is cached per contribution revision, and
 concurrent requests share a single download and parse.
 
-UI: an experiment's spectrum on the `plot` tile of the levels in
-`experiment_levels`, and the specimen view on the levels in `specimen_levels`.
-Both tiles open the contribution modal's Age Plots tab at that item. The tab
-lists each specimen with its experiments' spectra, isochrons and contributed
-ages.
+UI: two contribution-modal asset tabs, laid out as MagIC's plot tabs are
+(`fiesta/frontend/src/components/plot-grid.tsx`, shared with `pmag-plots`):
+the selected plot drawn large, and every plot as a small card to pick from,
+below it or in a column beside it, with a name filter.
+
+- **Specimen Age Plots** (`specimen-age-plots`, counted by the first
+  `specimen_levels` level): a specimen's experiments' spectra under its
+  preferred age, with a legend and links to each experiment's plots.
+- **Experiment Age Plots** (`experiment-age-plots`, counted by the first
+  `experiment_levels` level): an experiment's spectrum and isochrons with their
+  captions, and every age contributed for it. The cards follow the specimens'
+  order, then the experiments no specimen lists.
+
+An experiment's spectrum is the `plot` tile of the levels in
+`experiment_levels`, and the specimen view is the tile of the levels in
+`specimen_levels`. A tile opens its tab with that item selected
+(`?plot=<name>`).
 
 Options (set in karar.yaml): `experiment_levels` and `specimen_levels`.
 
@@ -39,7 +51,8 @@ Options (set in karar.yaml): `experiment_levels` and `specimen_levels`.
 | `plugin.py` | `PlateauPlugin`: options, building the data from the parsed tables, the route |
 | `argon-data.ts` | Response types, the query hook, age helpers |
 | `argon-plots.tsx` | SVG age spectrum, isochrons and the specimen overlay |
-| `index.tsx` | The grid tiles and the modal tab |
+| `argon-view.tsx` | The two modal tabs: the selected plot, its captions and ages table, the cards |
+| `index.tsx` | The grid tiles and the tab registration |
 | `test_plateau_calculations.py` | Contributed ages, ³⁹Ar sizing, isochron points, experiment and specimen linking |
 
 See [docs/plugins.md](../../../docs/plugins.md) for the plugin API.
