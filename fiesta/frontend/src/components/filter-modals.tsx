@@ -56,6 +56,7 @@ import {
 import { TimescalePicker, TimescaleStrip } from "./timescale-strip";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
+import { SortSelect } from "./ui/sort-select";
 import { Spinner } from "./ui/spinner";
 
 export type SearchParams = Record<
@@ -138,6 +139,11 @@ function selectedIn(q: string, facets: FacetSpec[]): Record<string, string[]> {
 }
 
 type Row = { key: string; count: number; described?: Described };
+type ValueSort = "count" | "name";
+const VALUE_SORTS: { value: ValueSort; label: string }[] = [
+  { value: "count", label: "Most Records First" },
+  { value: "name", label: "Alphabetical" },
+];
 
 /**
  * A facet's values (several facets: a tab each), counted for the search
@@ -171,8 +177,7 @@ export function FacetModal({
   const [draft, setDraft] = useState(initial);
   const [tab, setTab] = useState(facets[0]?.field ?? "");
   const [find, setFind] = useState("");
-  const [sortBy, setSortBy] = useState<"count" | "name">("count");
-  const [selectedOnly, setSelectedOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<ValueSort>("count");
   const [textDraft, setTextDraft] = useState(text?.value ?? "");
   const { data: config } = useNodeConfig();
   const descriptions = usePluginFacetDescriptions(config);
@@ -202,7 +207,6 @@ export function FacetModal({
       ...(draft[tab] ?? []).filter((key) => !seen.has(key)).map((key) => ({ key, count: 0 })),
     ].map((row) => ({ ...row, described: descriptions.get(row.key) }));
     return all
-      .filter((row) => !selectedOnly || (draft[tab] ?? []).includes(row.key))
       .filter(
         (row) =>
           !needle ||
@@ -214,7 +218,7 @@ export function FacetModal({
           ? a.key.localeCompare(b.key)
           : b.count - a.count || a.key.localeCompare(b.key),
       );
-  }, [buckets.data, tab, count, draft, descriptions, selectedOnly, needle, sortBy]);
+  }, [buckets.data, tab, count, draft, descriptions, needle, sortBy]);
 
   // Values a plugin describes are grouped as it lists them; others aren't.
   const grouped = rows.some((row) => row.described);
@@ -324,26 +328,13 @@ export function FacetModal({
                 aria-label={`Find ${facets.find((f) => f.field === tab)?.label ?? ""} values`}
                 className={cx(inputClass, "min-w-48 flex-1")}
               />
-              <label className="flex items-center gap-1.5">
-                <span className="text-ink-muted">Sort</span>
-                <select
-                  value={sortBy}
-                  onChange={(event) => setSortBy(event.target.value as "count" | "name")}
-                  className="rounded-sm border border-gray-300 bg-surface px-1.5 py-1"
-                >
-                  <option value="count">Most records</option>
-                  <option value="name">A–Z</option>
-                </select>
-              </label>
-              <label className="flex cursor-pointer items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  checked={selectedOnly}
-                  onChange={() => setSelectedOnly(!selectedOnly)}
-                  className="h-4 w-4 accent-node"
-                />
-                Selected only
-              </label>
+              <SortSelect
+                id="facet-sort"
+                label="Sort values"
+                value={sortBy}
+                options={VALUE_SORTS}
+                onChange={setSortBy}
+              />
             </div>
             {selected.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
@@ -366,7 +357,7 @@ export function FacetModal({
               )}
               {!loading && !buckets.error && rows.length === 0 && (
                 <div className="p-6 text-center font-bold text-ink-muted">
-                  {needle || selectedOnly ? "No matches" : "No values for this search"}
+                  {needle ? "No matches" : "No values for this search"}
                 </div>
               )}
               {groups.map((group) => (
@@ -869,6 +860,11 @@ const SENSES: [boolean, string][] = [
   [true, "Without data"],
 ];
 type ColumnSort = "model" | "count" | "name";
+const COLUMN_SORTS: { value: ColumnSort; label: string }[] = [
+  { value: "model", label: "Data Model Order" },
+  { value: "count", label: "Most Records First" },
+  { value: "name", label: "Alphabetical" },
+];
 
 /**
  * The `exists` filter: a tab per table the level's records cover (Any Table
@@ -1093,18 +1089,13 @@ export function ExistsModal({
                 aria-label={`Find ${tableLabel} columns`}
                 className={cx(inputClass, "min-w-48 flex-1")}
               />
-              <label className="flex items-center gap-1.5">
-                <span className="text-ink-muted">Sort</span>
-                <select
-                  value={sortBy}
-                  onChange={(event) => setSortBy(event.target.value as ColumnSort)}
-                  className="rounded-sm border border-gray-300 bg-surface px-1.5 py-1"
-                >
-                  <option value="model">Data model order</option>
-                  <option value="count">Most records</option>
-                  <option value="name">A–Z</option>
-                </select>
-              </label>
+              <SortSelect
+                id="column-sort"
+                label="Sort columns"
+                value={sortBy}
+                options={COLUMN_SORTS}
+                onChange={setSortBy}
+              />
               <label className="flex cursor-pointer items-center gap-1.5">
                 <input
                   type="checkbox"

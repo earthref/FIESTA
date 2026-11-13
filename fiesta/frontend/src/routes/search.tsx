@@ -53,7 +53,7 @@ import {
 } from "../components/summary-grid";
 import { CountLabel } from "../components/ui/count-label";
 import { buttonIconStyle, SemanticIcon } from "../components/ui/fa-icon";
-import { Icon } from "../components/ui/icon";
+import { SortSelect } from "../components/ui/sort-select";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -1396,35 +1396,16 @@ export function SearchPage() {
                   </button>
                 );
               })}
-              <span className="relative ml-auto self-center" style={{ padding: "0 1em" }}>
-                <label htmlFor="sort-select" className="sr-only">
-                  Sort results
-                </label>
-                {/* Legacy `<color> ui dropdown label`: node-colored pill with a caret */}
-                <select
-                  id="sort-select"
-                  value={sort}
-                  onChange={(event) => setSearch({ sort: event.target.value })}
-                  className="cursor-pointer appearance-none border-0 bg-node font-bold text-white focus:outline-hidden"
-                  style={{
-                    padding: "0.5em calc(1.86em - 8px) 0.5em 0.5em",
-                    fontSize: "0.92857143rem",
-                    lineHeight: "1em",
-                    borderRadius: "0.28571429rem",
-                  }}
-                >
-                  {sortOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <Icon
-                  name="caret-down"
-                  className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-white"
-                  style={{ right: "1.5em", width: "0.857em", height: "0.857em" }}
-                />
-              </span>
+              {/* Legacy `<color> ui dropdown label`: node-colored pill with a caret */}
+              <SortSelect
+                id="sort-select"
+                label="Sort results"
+                value={sort}
+                options={sortOptions}
+                onChange={(next) => setSearch({ sort: next })}
+                className="ml-auto self-center"
+                style={{ margin: "0 1em" }}
+              />
             </div>
 
             {activeTab?.name === "Map" ? (
