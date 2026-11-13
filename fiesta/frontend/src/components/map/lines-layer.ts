@@ -7,10 +7,11 @@ import type * as maplibregl from "maplibre-gl";
 // through MapLibre's own projection code, whose Mercator-to-sphere step has no
 // latitude limit and which clips the far side of the globe. Each segment is a
 // quad widened across its direction on screen, with a pixel of antialiasing
-// at its edges.
+// at its edges. A line of one vertex is a round dot `width` across (a
+// zero-length segment, widened along the screen's x axis too).
 
 export type MapLine = {
-  /** [lon, lat] vertices; a line may cross the antimeridian. */
+  /** [lon, lat] vertices; a line may cross the antimeridian. One vertex: a dot. */
   coords: [number, number][];
   color: string;
   /** In CSS pixels. */
@@ -54,7 +55,7 @@ const STRIDE = 11;
 
 const buildMesh = (lines: MapLine[]) => {
   let segments = 0;
-  for (const line of lines) segments += Math.max(0, line.coords.length - 1);
+  for (const line of lines) segments += line.coords.length === 1 ? 1 : line.coords.length - 1;
   const vertices = new Float32Array(segments * 4 * STRIDE);
   const indices = new Uint32Array(segments * 6);
   let v = 0;
@@ -67,7 +68,9 @@ const buildMesh = (lines: MapLine[]) => {
     // Continuous longitudes, so a segment across the antimeridian is short.
     let lon = line.coords[0]?.[0] ?? 0;
     let prev: [number, number] | null = null;
-    for (const [rawLon, lat] of line.coords) {
+    // A dot: its vertex twice.
+    const coords = line.coords.length === 1 ? [line.coords[0], line.coords[0]] : line.coords;
+    for (const [rawLon, lat] of coords) {
       lon += ((((rawLon - lon) % 360) + 540) % 360) - 180;
       const point: [number, number] = [mercatorX(lon), mercatorY(lat)];
       if (prev) {
@@ -105,6 +108,7 @@ uniform float u_pixel_ratio;
 uniform float u_world_offset;
 out vec4 v_color;
 out float v_distance;
+out float v_along;
 out float v_half_width;
 void main() {
   vec4 start = projectTile(a_start + vec2(u_world_offset, 0.0));
@@ -112,12 +116,15 @@ void main() {
   vec4 position = a_corner.y > 0.5 ? end : start;
   vec2 direction = (end.xy / end.w - start.xy / start.w) * u_viewport;
   float len = length(direction);
+  // A dot (both ends one point) is widened along x as far as across.
+  float is_dot = a_start == a_end ? 1.0 : 0.0;
   direction = len > 0.0 ? direction / len : vec2(1.0, 0.0);
   vec2 normal = vec2(-direction.y, direction.x);
   v_half_width = a_width * u_pixel_ratio / 2.0;
   // Out to half the width and a pixel more, for the antialiased edge.
   v_distance = a_corner.x * (v_half_width + 1.0);
-  position.xy += normal * v_distance * 2.0 / u_viewport * position.w;
+  v_along = is_dot * (a_corner.y * 2.0 - 1.0) * (v_half_width + 1.0);
+  position.xy += (normal * v_distance + direction * v_along) * 2.0 / u_viewport * position.w;
   gl_Position = position;
   v_color = a_color;
 }`;
@@ -126,10 +133,12 @@ const FRAGMENT_SOURCE = `#version 300 es
 precision highp float;
 in vec4 v_color;
 in float v_distance;
+in float v_along;
 in float v_half_width;
 out vec4 fragColor;
 void main() {
-  float alpha = clamp(v_half_width + 0.5 - abs(v_distance), 0.0, 1.0);
+  // From the line's middle across it; from a dot's centre (round).
+  float alpha = clamp(v_half_width + 0.5 - length(vec2(v_distance, v_along)), 0.0, 1.0);
   if (alpha <= 0.0) discard;
   fragColor = v_color * alpha;
 }`;

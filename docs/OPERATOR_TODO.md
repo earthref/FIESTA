@@ -266,6 +266,16 @@ Every path outside the repo has to follow; the layout PR waits for the first ite
   treats blank as specimen coordinates (−1), which would drop the axes of every
   legacy row that leaves the column blank. Tensor-derived axes already follow PmagPy.
 
+## 2026-11-13 — VGPs on the Poles view
+
+- [ ] **Rebuild MagIC's search index on dev** once the "VGPs on the Poles view" PR has
+  deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`; the same
+  rebuild covers the 2026-11-10 PmagPy item above if that one is still open). Pole docs
+  then carry their sites' VGPs in `summary.poles._geometry.vgps`. The index mapping is
+  unchanged. Until the rebuild, the Poles map and the pole thumbnails show no VGPs and
+  the VGPs toggle stays hidden. Production needs the same rebuild at cutover. Claude
+  needs nothing after this.
+
 ## 2026-11-10 — Inherited geography and Plot tile thumbnails
 
 - [ ] **Rebuild each node's search index on dev** once the "inherit geography" and

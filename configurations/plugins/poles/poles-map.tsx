@@ -15,9 +15,32 @@ const MapLibreMap = lazy(() => import("@/components/map/maplibre-map"));
 const RING_SEGMENT_BUDGET = 100_000;
 const MIN_RING_SEGMENTS = 12;
 
+// The VGP dots' budget (a dot costs what a segment does): past it, each
+// pole's VGPs are thinned evenly by the same share. The selected pole's are
+// always all drawn.
+const VGP_BUDGET = 50_000;
+
 const ellipse = (pole: Pole, color: string, width: number, segments?: number): MapLine[] => {
   const coords = uncertaintyRing(pole, segments);
   return coords ? [{ coords, color, width, opacity: 0.9 }] : [];
+};
+
+/** A pole's VGPs as dots, `share` of them (evenly spaced in its list). */
+const vgpDots = (
+  pole: Pole,
+  color: string,
+  width: number,
+  opacity: number,
+  share = 1,
+): MapLine[] => {
+  const vgps = pole.vgps ?? [];
+  const count = share >= 1 ? vgps.length : Math.ceil(vgps.length * share);
+  return Array.from({ length: count }, (_, i) => ({
+    coords: [vgps[Math.floor((i * vgps.length) / count)]],
+    color,
+    width,
+    opacity,
+  }));
 };
 
 interface PolesMapProps {
@@ -29,6 +52,7 @@ interface PolesMapProps {
   plateColor: string;
   selectedColor: string;
   showEllipses: boolean;
+  showVgps: boolean;
   /** The selected pole's `index` (its grid row). */
   selected: number | null;
   onSelect: (index: number) => void;
@@ -40,7 +64,9 @@ interface PolesMapProps {
  * The poles on the search map's MapLibre views (globe, Mercator, and a globe
  * over either pole, where most poles crowd), with the plate boundaries and
  * each pole's uncertainty outline in its age colour (its a95 circle or dp/dm
- * ellipse, a ring the backend computed with PmagPy). Replaces the legacy
+ * ellipse, a ring the backend computed with PmagPy), over the VGPs averaged
+ * into it as dots in the same colour (the selected pole's on top in the
+ * selected colour). Replaces the legacy
  * pair of echarts-gl globes (view + antipode): the pole views show both
  * hemispheres' poles without one.
  */
@@ -52,6 +78,7 @@ export default function PolesMap({
   plateColor,
   selectedColor,
   showEllipses,
+  showVgps,
   selected,
   onSelect,
   centerOn,
@@ -93,12 +120,23 @@ export default function PolesMap({
     () => poles.flatMap((pole) => ellipse(pole, ageScale.color(pole.age), 2, segments)),
     [poles, ageScale, segments],
   );
+  // Every pole's VGPs in its age colour, under the ellipses.
+  const vgps = useMemo<MapLine[]>(() => {
+    const total = poles.reduce((n, pole) => n + (pole.vgps?.length ?? 0), 0);
+    const share = Math.min(1, VGP_BUDGET / Math.max(total, 1));
+    return poles.flatMap((pole) => vgpDots(pole, ageScale.color(pole.age), 4, 0.6, share));
+  }, [poles, ageScale]);
   const lines = useMemo<MapLine[]>(() => {
-    if (!showEllipses) return plates;
-    // The selected pole's ellipse on top, at full resolution.
+    // The selected pole's VGPs and ellipse on top, all of them, at full resolution.
     const chosen = selected !== null ? poles.find((pole) => pole.index === selected) : undefined;
-    return [...plates, ...ellipses, ...(chosen ? ellipse(chosen, selectedColor, 3) : [])];
-  }, [plates, ellipses, poles, showEllipses, selected, selectedColor]);
+    return [
+      ...plates,
+      ...(showVgps ? vgps : []),
+      ...(showEllipses ? ellipses : []),
+      ...(chosen && showVgps ? vgpDots(chosen, selectedColor, 5, 1) : []),
+      ...(chosen && showEllipses ? ellipse(chosen, selectedColor, 3) : []),
+    ];
+  }, [plates, vgps, ellipses, poles, showEllipses, showVgps, selected, selectedColor]);
 
   return (
     <div className="flex h-full flex-col gap-2 p-2">

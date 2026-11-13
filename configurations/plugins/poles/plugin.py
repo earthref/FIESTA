@@ -17,6 +17,14 @@ lat], ...]}` (a closed ring, longitudes in -180..180, 2 decimals), a field the
 index maps `enabled: false` (`fiesta.search.index`): returned with the doc,
 never searched, faceted or unioned into `summary._all`. A row whose α95 /
 dp / dm / position is blank, malformed or out of range just has no ring.
+
+The same object carries the pole's VGPs when its sites have them:
+`_geometry.vgps` = `[[lon, lat], ...]` (same rounding and longitudes), one
+per site averaged into it — the sites the location row lists in `sites`,
+else those whose `location` is its name — preferring rows with the
+location's `dir_tilt_correction`, leaving out bad results (`result_quality`
+b). A pole with VGPs and no ring has
+`_geometry` = `{"vgps": [...]}`.
 """
 
 import contextlib
@@ -136,6 +144,57 @@ def dp_dm_ring(
     return _ring([p[0] for p in points], [p[1] for p in points])
 
 
+def _names(value) -> list[str]:
+    return [v.strip() for v in str(value or "").split(":") if v.strip()]
+
+
+class SiteIndex:
+    """A contribution's sites rows, by site name and by location name."""
+
+    def __init__(self, sites: list[dict]):
+        self.by_site: dict[str, list[dict]] = {}
+        self.by_location: dict[str, list[dict]] = {}
+        for row in sites:
+            names = _names(row.get("site"))
+            if not names:
+                continue
+            self.by_site.setdefault(names[0], []).append(row)
+            for name in _names(row.get("location")):
+                self.by_location.setdefault(name, []).append(row)
+
+    def vgps(self, location: dict) -> list[list[float]]:
+        """The location's sites' VGPs, `[lon, lat]`, one per site (see the
+        module docstring); [] when none has one."""
+        listed = _names(location.get("sites"))
+        if listed:
+            rows = [row for name in listed for row in self.by_site.get(name, [])]
+        else:
+            rows = [
+                row
+                for name in _names(location.get("location"))[:1]
+                for row in self.by_location.get(name, [])
+            ]
+        # Rows in the location's coordinate system first, so they win a site
+        # recorded in several (one only in another still counts).
+        tilt = _finite(location.get("dir_tilt_correction"))
+        if tilt is not None:
+            rows = sorted(rows, key=lambda row: _finite(row.get("dir_tilt_correction")) != tilt)
+        points: list[list[float]] = []
+        seen: set[str] = set()
+        for row in rows:
+            site = _names(row.get("site"))[0]
+            lat, lon = _finite(row.get("vgp_lat")), _finite(row.get("vgp_lon"))
+            if site in seen or lat is None or lon is None or not -90 <= lat <= 90:
+                continue
+            # A bad result (result_quality b) is left out of a mean.
+            if str(row.get("result_quality") or "").strip().lower() == "b":
+                continue
+            seen.add(site)
+            lon = ((lon + 180) % 360) - 180
+            points.append([round(lon, RING_DECIMALS), round(lat, RING_DECIMALS)])
+        return points
+
+
 def uncertainty_ring(row: dict, pole_lat: float, pole_lon: float) -> dict | None:
     """A location row's pole outline, `{"kind", "ring"}`: its α95 circle, else
     its dp/dm ellipse, else None. Never raises: a malformed legacy row (or a
@@ -246,6 +305,7 @@ class PolesPlugin(FiestaPlugin):
     ) -> list[dict]:
         docs: list[dict] = []
         facet_columns = self.options(node).facet_columns
+        sites = SiteIndex(parsed.tables.get("sites", []))
         for row in parsed.tables.get("locations", []):
             pole_lat = _finite(row.get("pole_lat"))
             pole_lon = _finite(row.get("pole_lon"))
@@ -282,8 +342,11 @@ class PolesPlugin(FiestaPlugin):
             if age is not None:
                 numeric_block["age"] = age * unit_factor  # years before present
             # The outline the map draws (unindexed; see the module docstring).
-            geometry = uncertainty_ring(row, pole_lat, pole_lon)
-            if geometry is not None:
+            geometry = uncertainty_ring(row, pole_lat, pole_lon) or {}
+            vgps = sites.vgps(row)
+            if vgps:
+                geometry["vgps"] = vgps
+            if geometry:
                 numeric_block["_geometry"] = geometry
             docs.append(
                 {

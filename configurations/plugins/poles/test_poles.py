@@ -185,3 +185,86 @@ def test_out_of_range_pole_latitude_keeps_its_doc_without_ring(magic_node):
     (doc,) = _docs(magic_node, {"pole_lat": 95, "pole_lon": 10, "pole_alpha95": 3})
     assert _geometry(doc) is None
     assert "_geo_point" not in doc["summary"]["_all"]
+
+
+# --- VGPs ---------------------------------------------------------------------
+
+
+def _contribution_docs(magic_node, **tables: list[dict]) -> list[dict]:
+    blocks = ["tab delimited\tcontribution\nid\n99"]
+    for table, rows in tables.items():
+        columns = sorted({k for row in rows for k in row})
+        lines = [f"tab delimited\t{table}", "\t".join(columns)]
+        lines += ["\t".join(str(row.get(c, "")) for c in columns) for row in rows]
+        blocks.append("\n".join(lines))
+    text = "\n>>>>>>>>>>\n".join(blocks) + "\n"
+    return PolesPlugin().derive_docs(magic_node, parse_text(text), {"id": 99})
+
+
+POLE = {"pole_lat": "80", "pole_lon": "100"}
+
+
+def _site(site: str, lat: str, lon: str, location: str = "L", **extra: str) -> dict:
+    return {"site": site, "location": location, "vgp_lat": lat, "vgp_lon": lon, **extra}
+
+
+def test_vgps_are_the_listed_sites_once_each(magic_node):
+    (doc,) = _contribution_docs(
+        magic_node,
+        locations=[{"location": "L", "sites": "A:B:C", "pole_alpha95": "5", **POLE}],
+        sites=[
+            _site("A", "75", "200"),
+            _site("A", "70", "10"),
+            _site("B", "82.123", "90"),
+            _site("C", "", ""),
+            _site("D", "60", "0"),
+        ],
+    )
+    geometry = _geometry(doc)
+    assert geometry["kind"] == "alpha95"
+    # 200°E → -160; one per site (A's first row); C has none; D is not listed.
+    assert geometry["vgps"] == [[-160.0, 75.0], [90.0, 82.12]]
+
+
+def test_vgps_fall_back_to_the_sites_of_the_location(magic_node):
+    docs = _contribution_docs(
+        magic_node,
+        locations=[{"location": "L", **POLE}, {"location": "M", **POLE}],
+        sites=[_site("A", "75", "20"), _site("B", "76", "21", location="M")],
+    )
+    # No uncertainty, so no ring: the geometry is only the VGPs.
+    assert [_geometry(doc) for doc in docs] == [{"vgps": [[20.0, 75.0]]}, {"vgps": [[21.0, 76.0]]}]
+
+
+def test_vgps_prefer_the_location_tilt_correction(magic_node):
+    (doc,) = _contribution_docs(
+        magic_node,
+        locations=[{"location": "L", "dir_tilt_correction": "100", **POLE}],
+        sites=[
+            _site("A", "60", "1", dir_tilt_correction="0"),
+            _site("A", "70", "2", dir_tilt_correction="100"),
+            # Only in another coordinate system: still counted.
+            _site("B", "65", "3", dir_tilt_correction="0"),
+        ],
+    )
+    assert _geometry(doc)["vgps"] == [[2.0, 70.0], [3.0, 65.0]]
+
+
+def test_vgps_leave_out_bad_results(magic_node):
+    (doc,) = _contribution_docs(
+        magic_node,
+        locations=[{"location": "L", **POLE}],
+        sites=[
+            _site("A", "70", "1", result_quality="b"),
+            _site("A", "71", "2", result_quality="g"),
+            _site("B", "72", "3", result_quality="b"),
+        ],
+    )
+    assert _geometry(doc)["vgps"] == [[2.0, 71.0]]
+
+
+def test_no_usable_vgps_no_geometry(magic_node):
+    (doc,) = _contribution_docs(
+        magic_node, locations=[{"location": "L", **POLE}], sites=[_site("A", "95", "0")]
+    )
+    assert _geometry(doc) is None

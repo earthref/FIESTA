@@ -33,6 +33,13 @@ export interface MapRing {
   color: string;
 }
 
+/** Small [lon, lat] dots drawn under the rings (e.g. a pole's VGPs); they
+ * don't move the globe, which stays centred on the markers. */
+export interface MapDots {
+  points: [number, number][];
+  color: string;
+}
+
 // Each body's basemap as one low-resolution image of the whole body, shared
 // by every thumbnail on the page, from the API's cache (/v2/basemap). Earth's
 // stops at Web Mercator's limit, so past that the north comes from Esri's
@@ -101,12 +108,19 @@ function sphericalCentroid(markers: MapMarker[]): [number, number] {
   return [Math.atan2(y, x) / RAD, Math.atan2(z, Math.hypot(x, y)) / RAD];
 }
 
+/** Whether lat/lon is on the hemisphere facing the viewer. */
+const facing = (lat: number, lon: number, centerLat: number, centerLon: number) =>
+  Math.sin(lat * RAD) * Math.sin(centerLat * RAD) +
+    Math.cos(lat * RAD) * Math.cos(centerLat * RAD) * Math.cos((lon - centerLon) * RAD) >=
+  0;
+
 // The globe centred on the markers, drawn pixel by pixel from the basemap,
-// with the markers on top.
+// with any dots and rings, and the markers on top.
 function drawThumbnail(
   canvas: HTMLCanvasElement,
   markers: MapMarker[],
   rings: MapRing[],
+  dots: MapDots[],
   width: number,
   height: number,
   image: ImageData | null,
@@ -161,6 +175,25 @@ function drawThumbnail(
     }
   }
 
+  // The dots on the near hemisphere, under the rings, each over a white halo.
+  const dotRadius = 1.5 * scale;
+  for (const { points, color } of dots) {
+    for (const [lon, lat] of points) {
+      if (!facing(lat, lon, centerLat, centerLon)) continue;
+      const at = projection([lon, lat]);
+      if (!at) continue;
+      context.beginPath();
+      context.arc(at[0], at[1], dotRadius, 0, 2 * Math.PI);
+      context.fillStyle = color;
+      context.globalAlpha = 0.85;
+      context.fill();
+      context.globalAlpha = 1;
+      context.lineWidth = 0.75 * scale;
+      context.strokeStyle = "rgba(255,255,255,0.8)";
+      context.stroke();
+    }
+  }
+
   // The rings, clipped to the near hemisphere by the projection, each over a
   // white halo so it reads on any basemap colour.
   const path = geoPath(projection, context);
@@ -184,10 +217,7 @@ function drawThumbnail(
   context.lineWidth = scale;
   for (const { lat, lon, color } of markers) {
     // Skip markers on the far hemisphere rather than drawing them through the globe.
-    const cosAngle =
-      Math.sin(lat * RAD) * Math.sin(centerLat * RAD) +
-      Math.cos(lat * RAD) * Math.cos(centerLat * RAD) * Math.cos((lon - centerLon) * RAD);
-    if (cosAngle < 0) continue;
+    if (!facing(lat, lon, centerLat, centerLon)) continue;
     const at = projection([lon, lat]);
     if (!at) continue;
     context.beginPath();
@@ -206,16 +236,19 @@ function drawThumbnail(
 }
 
 const NO_RINGS: MapRing[] = [];
+const NO_DOTS: MapDots[] = [];
 
 export function MapThumbnail({
   markers,
   rings = NO_RINGS,
+  dots = NO_DOTS,
   width = 100,
   height = 100,
   label,
 }: {
   markers: MapMarker[];
   rings?: MapRing[];
+  dots?: MapDots[];
   width?: number;
   height?: number;
   /** Its accessible name (default: the result locations). */
@@ -245,9 +278,19 @@ export function MapThumbnail({
 
   useEffect(() => {
     if (canvasRef.current && image !== undefined) {
-      drawThumbnail(canvasRef.current, shown, rings, width, height, image, body, mapDim(theme));
+      drawThumbnail(
+        canvasRef.current,
+        shown,
+        rings,
+        dots,
+        width,
+        height,
+        image,
+        body,
+        mapDim(theme),
+      );
     }
-  }, [shown, rings, width, height, image, body, theme]);
+  }, [shown, rings, dots, width, height, image, body, theme]);
 
   return (
     <canvas
