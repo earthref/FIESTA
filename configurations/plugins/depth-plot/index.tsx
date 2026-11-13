@@ -59,6 +59,13 @@ function extractCores(data: unknown): CoreData[] {
     typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>) : null;
 
   const coresField = record?.cores;
+  // The plugin's route: `cores` maps each core name to its depth-sorted rows.
+  if (coresField && typeof coresField === "object" && !Array.isArray(coresField)) {
+    return Object.entries(coresField as Record<string, unknown>).map(([name, rows]) => ({
+      name: name || "Core",
+      rows: Array.isArray(rows) ? (rows as Record<string, unknown>[]) : [],
+    }));
+  }
   if (Array.isArray(coresField)) {
     return coresField
       .filter((core) => core && typeof core === "object")
