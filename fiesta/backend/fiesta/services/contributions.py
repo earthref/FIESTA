@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fiesta.db.models import Contribution, ContributionStatus, User, ValidationResult
@@ -310,3 +310,50 @@ async def delete_contribution(
     )
     enqueue(session, contribution, "index")
     await session.commit()
+
+
+async def find_account(session: AsyncSession, identifier: str) -> User | None:
+    """The EarthRef account with this email or handle (any case; a leading @
+    on a handle is ignored)."""
+    key = identifier.strip().removeprefix("@").lower()
+    if not key:
+        return None
+    return (
+        await session.execute(
+            select(User).where((func.lower(User.email) == key) | (func.lower(User.handle) == key))
+        )
+    ).scalar_one_or_none()
+
+
+async def reassign(
+    session: AsyncSession,
+    node: NodeConfig,
+    contribution: Contribution,
+    new_owner: User,
+    *,
+    actor_id: int,
+) -> Contribution:
+    """Hand a private contribution to another account. Ownership is workflow
+    state, not content, so no revision is written: the change is an audit event,
+    and the outbox event that re-indexes the search docs commits with it."""
+    from fastapi import HTTPException
+
+    from fiesta.db.models import AuditEvent
+    from fiesta.services.revisions import enqueue, locked
+
+    contribution = await locked(session, contribution.id)
+    if contribution.is_activated or contribution.deleted_at:
+        raise HTTPException(409, "only a private contribution can be reassigned")
+    previous = contribution.contributor_id
+    contribution.contributor_id = new_owner.id
+    session.add(
+        AuditEvent(
+            contribution_id=contribution.id,
+            actor_id=actor_id,
+            operation="reassign",
+            details={"from": previous, "to": new_owner.id},
+        )
+    )
+    enqueue(session, contribution, "index")
+    await session.commit()
+    return contribution

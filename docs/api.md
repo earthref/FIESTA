@@ -482,6 +482,8 @@ When omitted the API sorts by relevance if the query has free text and by
 | POST | `/{id}/deactivate` | | `ContributionOut` (unpublishes; node admins only, 403 otherwise: contributors correct published data with a new version) |
 | PUT | `/{id}/name` | `{name}` | `ContributionOut` (the contributor's label, legacy `_name`; any version, published too; saves no revision; empty clears it) |
 | DELETE | `/{id}` | | 204 (private, unactivated only) |
+| GET | `/{id}/download` | `revision_id?` | the canonical file (`text/plain`, `Content-Disposition: attachment` with its name) for anyone who may open the contribution here; 404 before the first upload |
+| PUT | `/{id}/contributor` | `{user}` (email or handle, any case, `@` optional) | `ContributionOut` (reassigns a private contribution: its contributor or a node admin only, 403 for a shared workspace's editor; 404 for an unknown account, 409 if published or already theirs; records a `reassign` audit event and re-indexes, no revision) |
 | GET | `/{id}/content` | `revision_id?` | `{revision_id, text}` (canonical file text) |
 | PUT | `/{id}/content` | `{text, expected_revision, request_key}` | `ContributionOut` (JSON edit) |
 | GET | `/{id}/revisions` | | revision history `[{id, parent_id, actor_id, operation, created_at, files}]` |

@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
-import { api } from "../lib/api";
+import { isNodeAdmin } from "../lib/admin";
+import { api, download } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
@@ -340,7 +342,14 @@ export function ContributionCard({
   const published = contribution.is_activated;
   const [editorOpen, setEditorOpen] = useState(false);
   const [doi, setDoi] = useState(contribution.reference_doi ?? "");
-  const [modal, setModal] = useState<null | "share" | "delete" | "publish" | "results">(null);
+  const [modal, setModal] = useState<
+    null | "share" | "delete" | "publish" | "results" | "reassign"
+  >(null);
+  const [reassignTo, setReassignTo] = useState("");
+  const { user } = useAuth();
+  // The contributor or a node admin may hand a private contribution to someone else.
+  const canReassign =
+    !published && (contribution.contributor_id === user?.id || isNodeAdmin(user, config?.slug));
   const [validating, setValidating] = useState(false);
   const [copied, setCopied] = useState<null | "private" | "public">(null);
   const [actionError, setActionError] = useState<unknown>(null);
@@ -413,6 +422,27 @@ export function ContributionCard({
   });
   const activateMutation = useMutation(mutationFor("/activate", "POST"));
   const deleteMutation = useMutation(mutationFor("", "DELETE"));
+  // Errors stay in the modal, where the address can be corrected.
+  const reassignMutation = useMutation({
+    mutationFn: () =>
+      api<ContributionOut>(`/private/contributions/${contribution.id}/contributor`, {
+        method: "PUT",
+        json: { user: reassignTo.trim() },
+      }),
+    onSuccess: async () => {
+      closeModal();
+      setReassignTo("");
+      await invalidate();
+    },
+  });
+  const downloadMutation = useMutation({
+    mutationFn: () =>
+      download(
+        `/private/contributions/${contribution.id}/download`,
+        contribution.filename ?? `contribution_${contribution.id}.txt`,
+      ),
+    onError: setActionError,
+  });
   const versionMutation = useMutation({
     mutationFn: () =>
       api<ContributionOut>(`/private/contributions/${contribution.id}/versions`, {
@@ -469,7 +499,24 @@ export function ContributionCard({
     doiMutation.isPending ||
     activateMutation.isPending ||
     deleteMutation.isPending ||
-    versionMutation.isPending;
+    versionMutation.isPending ||
+    reassignMutation.isPending;
+
+  // The current file, through the workspace's own access check.
+  const downloadButton = contribution.head_revision ? (
+    <Button
+      variant="secondary"
+      size="sm"
+      onClick={() => {
+        setActionError(null);
+        downloadMutation.mutate();
+      }}
+      disabled={downloadMutation.isPending}
+    >
+      <Icon name="download" size="small" />{" "}
+      {downloadMutation.isPending ? "Downloading…" : "Download"}
+    </Button>
+  ) : null;
 
   // --- What publishing still needs, in the order to do it ---------------------
   const steps: Step[] = [];
@@ -717,6 +764,7 @@ export function ContributionCard({
               <Button variant="secondary" size="sm" onClick={() => copy("public")}>
                 <Icon name="share" size="small" /> {copied === "public" ? "Copied!" : "Copy link"}
               </Button>
+              {downloadButton}
               <Button variant="secondary" size="sm" onClick={() => setEditorOpen(true)}>
                 <Icon name="folder-open" size="small" /> History · Files
               </Button>
@@ -734,6 +782,7 @@ export function ContributionCard({
               >
                 <Icon name="share" size="small" /> Share
               </Button>
+              {downloadButton}
               <Button
                 variant="secondary"
                 size="sm"
@@ -742,6 +791,16 @@ export function ContributionCard({
               >
                 <Icon name="edit" size="small" /> Edit · History · Files
               </Button>
+              {canReassign && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setModal("reassign")}
+                  disabled={busy}
+                >
+                  <Icon name="user" size="small" /> Reassign
+                </Button>
+              )}
               <Button variant="danger" size="sm" onClick={() => setModal("delete")} disabled={busy}>
                 <Icon name="trash" size="small" /> Delete
               </Button>
@@ -942,6 +1001,68 @@ export function ContributionCard({
             Anyone with this link can view this private contribution:
           </p>
           <Input readOnly value={privateUrl} onFocus={(event) => event.target.select()} />
+        </Modal>
+      )}
+
+      {modal === "reassign" && (
+        <Modal
+          open
+          onClose={() => {
+            closeModal();
+            reassignMutation.reset();
+          }}
+          title={`Reassign Contribution ${contribution.id}`}
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  closeModal();
+                  reassignMutation.reset();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => reassignMutation.mutate()}
+                disabled={!reassignTo.trim() || reassignMutation.isPending}
+              >
+                {reassignMutation.isPending ? "Reassigning…" : "Reassign"}
+              </Button>
+            </>
+          }
+        >
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (reassignTo.trim()) reassignMutation.mutate();
+            }}
+          >
+            <label
+              htmlFor={`reassign-${contribution.id}`}
+              className="mb-2 block text-sm text-gray-600"
+            >
+              Make another EarthRef user the contributor of this private contribution. Enter their
+              email address or handle:
+            </label>
+            <Input
+              id={`reassign-${contribution.id}`}
+              value={reassignTo}
+              onChange={(event) => setReassignTo(event.target.value)}
+              placeholder="name@example.org or handle"
+              autoFocus
+            />
+            {contribution.contributor_id === user?.id && (
+              <p className="mt-2 text-sm text-gray-600">
+                It leaves your workspace unless you share a workspace with them.
+              </p>
+            )}
+            {reassignMutation.error && (
+              <div className="mt-3">
+                <ErrorMessage error={reassignMutation.error} />
+              </div>
+            )}
+          </form>
         </Modal>
       )}
 

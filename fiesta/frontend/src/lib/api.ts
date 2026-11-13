@@ -121,3 +121,29 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
+
+/** Save a file from an authenticated route (a plain link can't send the
+ * Bearer token), named by its Content-Disposition, else `fallback`. */
+export async function download(path: string, fallback: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(nodeUrl(path), { headers });
+  if (!response.ok) {
+    let detail: unknown = response.statusText;
+    try {
+      detail = ((await response.json()) as { detail?: unknown }).detail ?? detail;
+    } catch {
+      // Non-JSON error body; keep the status text.
+    }
+    throw new ApiError(response.status, detail);
+  }
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const name = /filename="([^"]+)"/.exec(disposition)?.[1] ?? fallback;
+  const url = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
