@@ -621,6 +621,17 @@ def test_search_filter_counts(magic_node, monkeypatch):
         {"exists": {"field": f"summary._all.{facet}.raw"}}
     ]
     assert {"exists": {"field": "summary._has.sites"}} in clauses["exists"]["bool"]["should"]
+
+    # `text:*` / `numeric:*`: a key per text / number column of the level; a
+    # text column (not a sidebar facet) is a facet of its own.
+    text = magic_node.text_columns("sites")
+    assert "site" in text and "method_codes" in text and "lat" not in text
+    assert "contribution_id" not in text
+    out = run(["text:*", "numeric:*"])
+    assert set(out.counts) == {f"facet:{c}" for c in text} | {
+        f"range:summary._num.{c}" for c in magic_node.number_columns("sites")
+    }
+    assert router._facet_names(magic_node, "sites", False, ["site"]) == ["site"]
     for bad in ("facet:nope", "range:summary.sites.lat", "geo:x", "nope"):
         with pytest.raises(router.HTTPException):
             run([bad])

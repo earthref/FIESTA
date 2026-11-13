@@ -70,10 +70,11 @@ export interface HomeNews {
 /** One filter sidebar control (backend `SearchFilter`). `levels` / `views`
  * empty = shown on every search level / result view. */
 export interface SearchFilter {
-  type: "facet" | "range" | "bbox" | "numeric" | "exists";
+  type: "facet" | "range" | "bbox" | "numeric" | "text" | "exists";
   /** facet: a column name; range: a `summary.*` document path (a number
-   * column's `summary._num.<column>`); bbox, numeric (a picker of the
-   * level's number columns) and exists (the with/without data picker): null. */
+   * column's `summary._num.<column>`); bbox, numeric (a range filter per
+   * number column of the level), text (a facet per text column) and exists
+   * (the With Data and Without Data pickers): null. */
   field: string | null;
   label: string | null;
   levels: string[];

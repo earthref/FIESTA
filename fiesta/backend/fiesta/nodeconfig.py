@@ -27,6 +27,9 @@ BOX_COLUMNS = ("lon_w", "lat_s", "lon_e", "lat_n")
 NUMBER_TYPES = {"Number", "Integer"}
 # Number columns that are ids, not measurements (FIESTA's row stamps).
 NUMBER_ID_COLUMNS = {"contribution_id", "row_id"}
+# Data-model column types the `text` filter offers as facets (summary._all.<column>.raw);
+# Matrix and Dictionary values are structured, Timestamps dates.
+TEXT_TYPES = {"String", "List"}
 # The with/without data filter's "any table" tab (summary._has._any: the
 # union of a doc's tables' columns with data).
 ANY_TABLE = "_any"
@@ -173,8 +176,11 @@ class SearchFilter(BaseModel):
     `NUMBER_TYPES`), or a field a plugin indexes as a number
     (`summary.poles.age`); the merged rows under `summary.<level>` are text.
     `scale` multiplies the typed value before it is sent (Ma -> years).
-    `bbox`: the lat/lon box on `summary._all._geo_point`. `numeric`: a picker
-    of the level's `summary._num` columns, each one picked a range of its own.
+    `bbox`: the lat/lon box on `summary._all._geo_point`. `numeric`: each of
+    the level's `summary._num` columns as a range filter of its own (those no
+    `range` filter has). `text`: each of the level's text columns
+    (`NodeConfig.text_columns`) as a facet of its own (those no `facet`
+    filter has).
     `exists`: the with/without data picker, a tab per table the level's docs
     record (`NodeConfig.exists_tables`) listing its data-model columns, each
     ticked one `has=<table>:<column>` (with data) or `has=!<table>:<column>`
@@ -186,7 +192,7 @@ class SearchFilter(BaseModel):
     shortcut to its age range.
     """
 
-    type: Literal["facet", "range", "bbox", "numeric", "exists"]
+    type: Literal["facet", "range", "bbox", "numeric", "text", "exists"]
     field: str | None = None
     label: str | None = None  # facets default to the column's title in the UI
     levels: list[str] = []
@@ -203,7 +209,7 @@ class SearchFilter(BaseModel):
             if self.field:
                 raise ValueError("a bbox filter has no field (it uses summary._all._geo_point)")
             return self
-        if self.type in ("numeric", "exists"):
+        if self.type in ("numeric", "text", "exists"):
             if self.field:
                 raise ValueError(f"a {self.type} filter has no field (its columns are picked)")
             return self
@@ -801,6 +807,27 @@ class NodeConfig(BaseModel):
         for level in levels:
             for column, definition in tables.get(level, {}).get("columns", {}).items():
                 if definition.get("type") in NUMBER_TYPES and column not in NUMBER_ID_COLUMNS:
+                    out.setdefault(column)
+        return list(out)
+
+    def text_columns(self, table: str) -> list[str]:
+        """The text columns (TEXT_TYPES, ids and download-only ones left out)
+        of a hierarchy table whose values its docs' `summary._all` holds, in
+        position order: the `text` filter's facets. The contribution's are
+        every level's, as its doc unions them."""
+        tables = self.load_data_model(self.data_model.latest)["tables"]
+        levels = self.hierarchy[1:] if table == self.hierarchy[0] else [table]
+        out: dict[str, None] = {}
+        for level in levels:
+            columns = tables.get(level, {}).get("columns", {})
+            for column, definition in sorted(
+                columns.items(), key=lambda item: item[1].get("position", 0)
+            ):
+                if (
+                    definition.get("type") in TEXT_TYPES
+                    and column not in NUMBER_ID_COLUMNS
+                    and "downloadOnly()" not in (definition.get("validations") or [])
+                ):
                     out.setdefault(column)
         return list(out)
 

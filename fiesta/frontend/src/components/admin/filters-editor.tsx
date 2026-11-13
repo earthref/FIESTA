@@ -25,10 +25,10 @@ import { Spinner } from "../ui/spinner";
 import { Table, TBody, Td, THead, Th, Tr } from "../ui/table";
 import { Field } from "./admin-ui";
 
-const TYPES: SettingsFilter["type"][] = ["facet", "range", "bbox", "numeric", "exists"];
+const TYPES: SettingsFilter["type"][] = ["facet", "range", "bbox", "numeric", "text", "exists"];
 // Types without a field: the box is summary._all._geo_point; numeric and
-// exists (with/without data) pick columns.
-const NO_FIELD: SettingsFilter["type"][] = ["bbox", "numeric", "exists"];
+// text add a filter per column, exists (with/without data) picks columns.
+const NO_FIELD: SettingsFilter["type"][] = ["bbox", "numeric", "text", "exists"];
 const VIEWS = ["Summaries", "Rows", "Map"];
 
 // Stable keys so the list survives reordering without index-based keys.

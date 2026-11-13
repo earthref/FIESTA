@@ -8,22 +8,15 @@
 // - RangeModal: a numeric filter over its distribution (a histogram of the
 //   search's values, linear or log bins, of a chosen count) to brush or click,
 //   with min/max boxes.
-// - NumericModal: the `numeric` filter's picker of the level's number columns
-//   (summary._num.<column>), each then a RangeModal of its own.
-// - ExistsModal: the `exists` filter's columns with (or without) data, a tab
-//   per table the level's records cover and a With / Without switch.
+// - ExistsModal: the `exists` filter's columns with data (With Data) or
+//   without (Without Data), a tab per table the level's records cover.
 // - GeoModal: the geospatial area on the search's map, with its bounds as numbers.
 //
 // Each edits a draft and applies it with Apply, so a long list keeps its order
 // while values are picked and the search runs once.
-//
-// Opened from the sidebar, a modal has every filter down its left (FilterTabs,
-// with a Find box): the sidebar's entries are shortcuts to their tab. Moving to
-// another tab applies the open tab's changes first (the map's area aside: it
-// draws one by itself), so picks are never lost (2026-11-12).
 
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { useNodeConfig } from "../lib/config";
 import { dataModelQuery, unwrapModel } from "../lib/data-model";
@@ -33,7 +26,6 @@ import type {
   DataModelColumn,
   FacetBucket,
   HasColumns,
-  NumberColumns,
   SearchFilter,
   SearchHistogram,
   SearchLevel,
@@ -131,119 +123,6 @@ function Highlight({ text, needle }: { text: string; needle: string }) {
   );
 }
 
-// --- Filter tabs ----------------------------------------------------------------
-
-/** A modal's left menu, given the open tab's pending changes (applied before
- * another tab opens; undefined when there are none to keep). */
-export type FilterNav = (pending?: () => void) => ReactNode;
-
-export type FilterTab = {
-  key: string;
-  label: string;
-  /** As the sidebar's: the matches with a value (undefined loading, null uncounted). */
-  count?: number | null;
-  /** How many values it has applied. */
-  applied: number;
-};
-
-/**
- * Every filter as a tab down the modal's left, with a Find box over them
- * (Enter opens the first match). A filter nothing can match is disabled, as
- * in the sidebar, unless values are applied.
- */
-export function FilterTabs({
-  tabs,
-  active,
-  find,
-  onFind,
-  onSelect,
-}: {
-  tabs: FilterTab[];
-  active?: string;
-  find: string;
-  onFind: (find: string) => void;
-  onSelect: (key: string) => void;
-}) {
-  const activeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: "nearest" });
-  }, []);
-  const needle = find.trim().toLowerCase();
-  const shown = tabs.filter((tab) => !needle || tab.label.toLowerCase().includes(needle));
-  const enabled = (tab: FilterTab) => tab.count !== 0 || tab.applied > 0;
-  return (
-    <>
-      <div className="border-b border-gray-100 p-2">
-        <input
-          type="search"
-          value={find}
-          onChange={(event) => onFind(event.target.value)}
-          onKeyDown={(event) => {
-            const first = shown.find(enabled);
-            if (event.key === "Enter" && first && first.key !== active) onSelect(first.key);
-          }}
-          placeholder="Find a filter"
-          aria-label="Find a filter"
-          className={cx(inputClass, "w-full")}
-        />
-      </div>
-      <div
-        className="flex-1 overflow-y-auto py-1 text-[13px]"
-        role="tablist"
-        aria-orientation="vertical"
-      >
-        {shown.map((tab) => {
-          const selected = tab.key === active;
-          const disabled = !enabled(tab);
-          return (
-            <button
-              key={tab.key}
-              ref={selected ? activeRef : undefined}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              disabled={disabled}
-              title={disabled ? `No records to filter by ${tab.label}` : `Filter by ${tab.label}`}
-              onClick={() => !selected && onSelect(tab.key)}
-              className={cx(
-                "flex w-full items-center gap-1.5 border-l-[3px] py-1.5 pr-2 pl-[calc(0.75rem-3px)] text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-node",
-                selected
-                  ? "border-node bg-surface font-bold text-ink-strong"
-                  : disabled
-                    ? "cursor-default border-transparent text-ink-faint"
-                    : "cursor-pointer border-transparent text-ink hover:bg-surface hover:text-node-ink",
-              )}
-            >
-              <span className="min-w-0 grow break-words">{tab.label}</span>
-              {tab.applied > 0 && (
-                <span className="rounded-full bg-node px-[0.45em] text-[10px] font-bold leading-[1.5] text-white">
-                  {tab.applied}
-                  <span className="sr-only"> applied</span>
-                </span>
-              )}
-              {tab.count !== null && (
-                <span className="inline-flex min-w-[2.2em] shrink-0 items-center justify-center rounded-full border border-edge px-[0.45em] text-[10px] font-bold leading-[1.5] text-ink-faint">
-                  {tab.count === undefined ? (
-                    <Spinner size="xs" />
-                  ) : (
-                    <>
-                      {abbreviateNumber(tab.count)}
-                      <span className="sr-only"> records</span>
-                    </>
-                  )}
-                </span>
-              )}
-            </button>
-          );
-        })}
-        {shown.length === 0 && (
-          <p className="px-3 py-2 text-[12px] text-ink-faint">No filter matches “{find.trim()}”.</p>
-        )}
-      </div>
-    </>
-  );
-}
-
 // --- Facets ---------------------------------------------------------------------
 
 export type FacetSpec = { field: string; label: string };
@@ -273,13 +152,11 @@ export function FacetModal({
   paramsFor,
   count,
   text,
-  nav,
   onApply,
   onClose,
 }: {
   title: string;
   facets: FacetSpec[];
-  nav?: FilterNav;
   table: string;
   q: string;
   /** The search's request params for a query string. */
@@ -375,7 +252,6 @@ export function FacetModal({
       open
       xl
       largeTitle
-      nav={nav?.(changed ? apply : undefined)}
       onClose={onClose}
       title={title}
       footer={
@@ -580,9 +456,7 @@ export function RangeModal({
   ranges,
   paramsFor,
   color,
-  nav,
   onApply,
-  onBack,
   onClose,
 }: {
   filter: SearchFilter;
@@ -591,10 +465,7 @@ export function RangeModal({
   /** The search's request params with these ranges. */
   paramsFor: (ranges: string[]) => SearchParams;
   color: string;
-  nav?: FilterNav;
   onApply: (ranges: string[]) => void;
-  /** Back to the list it was picked from (the numeric filter's columns). */
-  onBack?: () => void;
   onClose: () => void;
 }) {
   const field = filter.field ?? "";
@@ -749,7 +620,6 @@ export function RangeModal({
       open
       xl
       largeTitle
-      nav={nav?.(changed && valid ? apply : undefined)}
       onClose={onClose}
       title={label}
       footer={
@@ -763,15 +633,6 @@ export function RangeModal({
       }
     >
       <div className="flex flex-col gap-3 text-[13px] text-ink">
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex cursor-pointer items-center gap-1 self-start text-node-ink hover:underline"
-          >
-            ← All number columns
-          </button>
-        )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <fieldset className="m-0 inline-flex overflow-hidden rounded-sm border border-gray-300 p-0">
             <legend className="sr-only">Bin scale</legend>
@@ -903,7 +764,7 @@ export function RangeModal({
   );
 }
 
-// --- Number columns (the `numeric` filter's picker) ---------------------------
+// --- Number columns (the `numeric` filter's) -----------------------------------
 
 /** A data-model unit as a label: "Am^2" -> "Am²", Degrees -> °, none for Custom. */
 function unitLabel(unit: string | undefined): string | null {
@@ -912,8 +773,8 @@ function unitLabel(unit: string | undefined): string | null {
   return unit.replace(/\^2/g, "²").replace(/\^3/g, "³").replace(/\^-1/g, "⁻¹");
 }
 
-/** A number column's definition: the level table's, or (the contribution
- * level, whose docs union every level's) the first table's that has it. */
+/** A column's definition: the level table's, or (the contribution level,
+ * whose docs union every level's) the first table's that has it. */
 function columnDef(
   model: DataModel | null | undefined,
   table: string,
@@ -960,6 +821,16 @@ export function useNumberFilter(table: string): (field: string) => SearchFilter 
   );
 }
 
+/** A text column's name as a filter (the `text` filter's): the data model's
+ * label, else the column's title. */
+export function useColumnLabel(table: string): (column: string) => string {
+  const model = useLatestDataModel();
+  return useCallback(
+    (column: string) => columnDef(model, table, column)?.label ?? facetTitle(column),
+    [model, table],
+  );
+}
+
 /** A range entry's bounds as a chip's text, in the filter's units. */
 export function rangeText(filter: SearchFilter, entry: { gte: string; lte: string }): string {
   const scale = filter.scale || 1;
@@ -967,173 +838,6 @@ export function rangeText(filter: SearchFilter, entry: { gte: string; lte: strin
   const unit = filter.unit ? ` ${filter.unit}` : "";
   const [gte, lte] = [shown(entry.gte), shown(entry.lte)];
   return gte && lte ? `${gte} to ${lte}${unit}` : gte ? `≥ ${gte}${unit}` : `≤ ${lte}${unit}`;
-}
-
-/**
- * The `numeric` filter's column picker: the level's data-model number
- * columns, each with how many of the search's records have a value (those
- * without any hidden unless asked for), found by label, name or
- * description. Picking one opens its range (`onPick`).
- */
-export function NumericModal({
-  title,
-  table,
-  ranges,
-  paramsFor,
-  nav,
-  onPick,
-  onClose,
-}: {
-  title: string;
-  table: string;
-  ranges: string[];
-  /** The search's request params with these ranges. */
-  paramsFor: (ranges: string[]) => SearchParams;
-  nav?: FilterNav;
-  onPick: (filter: SearchFilter) => void;
-  onClose: () => void;
-}) {
-  const { data: config } = useNodeConfig();
-  const { data: model } = useQuery({
-    ...dataModelQuery(config?.data_model_latest ?? ""),
-    enabled: !!config,
-    select: unwrapModel,
-  });
-  const filterFor = useNumberFilter(table);
-  const [find, setFind] = useState("");
-  const [showEmpty, setShowEmpty] = useState(false);
-  const params = paramsFor(ranges);
-  const numbers = useQuery({
-    queryKey: ["filter-modal-numbers", table, params],
-    queryFn: () =>
-      api<NumberColumns>(`/search/${table}/numbers`, { params: { ...params, size: undefined } }),
-    staleTime: 60_000,
-  });
-  const applied = useMemo(
-    () => new Map(ranges.map(parseRange).map((entry) => [entry.field, entry])),
-    [ranges],
-  );
-
-  const needle = find.trim().toLowerCase();
-  const all = useMemo(
-    () =>
-      Object.entries(numbers.data?.columns ?? {}).map(([column, count]) => {
-        const def = columnDef(model, table, column);
-        const field = `${NUMBER_PREFIX}${column}`;
-        return { column, field, count, def, filter: filterFor(field) };
-      }),
-    [numbers.data, model, table, filterFor],
-  );
-  const empty = all.filter((row) => row.count === 0 && !applied.has(row.field)).length;
-  const rows = all.filter(
-    (row) =>
-      (showEmpty || row.count > 0 || applied.has(row.field)) &&
-      (!needle ||
-        row.column.toLowerCase().includes(needle) ||
-        (row.def?.label ?? "").toLowerCase().includes(needle) ||
-        (row.def?.description ?? "").toLowerCase().includes(needle)),
-  );
-
-  return (
-    <Modal
-      open
-      xl
-      largeTitle
-      nav={nav?.()}
-      onClose={onClose}
-      title={title}
-      footer={
-        <Button variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-      }
-    >
-      <div className="flex flex-col gap-3 text-[13px] text-ink">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="search"
-            value={find}
-            onChange={(event) => setFind(event.target.value)}
-            placeholder="Find a column by name or description"
-            aria-label="Find a number column"
-            className={cx(inputClass, "min-w-48 flex-1")}
-          />
-          <label className="flex cursor-pointer items-center gap-1.5">
-            <input
-              type="checkbox"
-              checked={showEmpty}
-              onChange={() => setShowEmpty(!showEmpty)}
-              className="h-4 w-4 accent-node"
-            />
-            Columns without values{empty > 0 ? ` (${empty})` : ""}
-          </label>
-        </div>
-        <div
-          className="min-h-40 overflow-y-auto rounded-sm border border-line"
-          style={{ maxHeight: "55vh" }}
-        >
-          {numbers.isPending && (
-            <div className="flex items-center justify-center gap-2 p-6 text-ink-muted">
-              <Spinner /> Loading the columns…
-            </div>
-          )}
-          {numbers.error && (
-            <div className="p-4 text-center text-red-700">Could not load the columns.</div>
-          )}
-          {numbers.data && rows.length === 0 && (
-            <div className="p-6 text-center font-bold text-ink-muted">
-              {needle || !showEmpty ? "No matching columns with values" : "No number columns"}
-            </div>
-          )}
-          {rows.map((row) => {
-            const entry = applied.get(row.field);
-            return (
-              <button
-                key={row.column}
-                type="button"
-                onClick={() => onPick(row.filter)}
-                title={`Filter by ${row.filter.label ?? row.column}`}
-                className={cx(
-                  "flex w-full cursor-pointer items-start gap-2 border-b border-line/60 px-3 py-1.5 text-left last:border-b-0 hover:bg-node-soft",
-                  entry && "bg-node-soft/60",
-                  row.count === 0 && "text-ink-muted",
-                )}
-              >
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="font-bold">
-                      <Highlight text={row.def?.label ?? row.column} needle={needle} />
-                    </span>
-                    <span className="font-mono text-[12px] text-ink-muted">
-                      <Highlight text={row.column} needle={needle} />
-                    </span>
-                    {row.filter.unit && (
-                      <span className="text-[12px] text-ink-muted">in {row.filter.unit}</span>
-                    )}
-                    {entry && (
-                      <span className="rounded-sm bg-node-soft px-1.5 text-[12px] font-bold text-node-ink">
-                        {rangeText(row.filter, entry)}
-                      </span>
-                    )}
-                  </span>
-                  {row.def?.description && (
-                    <span className="text-[12px] text-ink-muted">
-                      <Highlight text={row.def.description} needle={needle} />
-                    </span>
-                  )}
-                </span>
-                <CountBadge n={row.count} />
-              </button>
-            );
-          })}
-        </div>
-        <div className="text-[12px] text-ink-muted">
-          {rows.length.toLocaleString()} column{rows.length === 1 ? "" : "s"} shown · counts are the
-          search's records with a value · choose one to filter by its range
-        </div>
-      </div>
-    </Modal>
-  );
 }
 
 // --- With / without data (the `exists` filter) ------------------------------------
@@ -1180,13 +884,16 @@ export function ExistsModal({
   levelName,
   tabs,
   has,
+  sense,
   paramsFor,
-  nav,
   onApply,
   onClose,
 }: {
   title: string;
-  nav?: FilterNav;
+  /** Only columns with data (false: With Data) or without (true: Without
+   * Data), the other sense's entries kept as they are; both, with a switch,
+   * when undefined. */
+  sense?: boolean;
   /** The search level's table, whose docs are counted. */
   table: string;
   /** The level's name (Sites), for the counts' hover text. */
@@ -1202,9 +909,12 @@ export function ExistsModal({
   const model = useLatestDataModel();
   const [draft, setDraft] = useState<HasEntry[]>(() => has.map(parseHas));
   // The first tab with a choice, in its sense; else Any Table, With.
-  const first = draft.find((entry) => tabs.includes(entry.table));
+  const first = draft.find(
+    (entry) => tabs.includes(entry.table) && (sense === undefined || entry.without === sense),
+  );
   const [tab, setTab] = useState(first?.table ?? tabs[0] ?? "");
-  const [without, setWithout] = useState(first?.without ?? false);
+  const [without, setWithout] = useState(sense ?? first?.without ?? false);
+  const ofSense = (entry: HasEntry) => sense === undefined || entry.without === sense;
   const [find, setFind] = useState("");
   const [sortBy, setSortBy] = useState<ColumnSort>("model");
   const [selectedOnly, setSelectedOnly] = useState(false);
@@ -1299,13 +1009,12 @@ export function ExistsModal({
       open
       xl
       largeTitle
-      nav={nav?.(changed ? () => onApply(next) : undefined)}
       onClose={onClose}
       title={title}
       footer={
         <Footer
-          onClear={() => setDraft([])}
-          clearDisabled={draft.length === 0}
+          onClear={() => setDraft(draft.filter((entry) => !ofSense(entry)))}
+          clearDisabled={!draft.some(ofSense)}
           onCancel={onClose}
           onApply={() => onApply(next)}
           applyDisabled={!changed}
@@ -1316,7 +1025,7 @@ export function ExistsModal({
         {tabs.length > 1 && (
           <div className="flex flex-wrap gap-1 border-b border-line" role="tablist">
             {tabs.map((name) => {
-              const n = countOf(name);
+              const n = countOf(name, sense);
               const active = name === tab;
               return (
                 <button
@@ -1346,34 +1055,36 @@ export function ExistsModal({
         {tab && (
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <fieldset className="m-0 inline-flex overflow-hidden rounded-sm border border-gray-300 p-0">
-                <legend className="sr-only">With or without data</legend>
-                {SENSES.map(([value, name]) => {
-                  const n = countOf(tab, value);
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      aria-pressed={without === value}
-                      title={
-                        value
-                          ? `${levelName} with the ${tableLabel} table but no data in a ticked column`
-                          : `${levelName} with data in a ticked column`
-                      }
-                      onClick={() => setWithout(value)}
-                      className={cx(
-                        "cursor-pointer px-2.5 py-1",
-                        without === value
-                          ? "bg-node font-bold text-white"
-                          : "bg-surface hover:bg-panel",
-                      )}
-                    >
-                      {name}
-                      {n > 0 && ` (${n})`}
-                    </button>
-                  );
-                })}
-              </fieldset>
+              {sense === undefined && (
+                <fieldset className="m-0 inline-flex overflow-hidden rounded-sm border border-gray-300 p-0">
+                  <legend className="sr-only">With or without data</legend>
+                  {SENSES.map(([value, name]) => {
+                    const n = countOf(tab, value);
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        aria-pressed={without === value}
+                        title={
+                          value
+                            ? `${levelName} with the ${tableLabel} table but no data in a ticked column`
+                            : `${levelName} with data in a ticked column`
+                        }
+                        onClick={() => setWithout(value)}
+                        className={cx(
+                          "cursor-pointer px-2.5 py-1",
+                          without === value
+                            ? "bg-node font-bold text-white"
+                            : "bg-surface hover:bg-panel",
+                        )}
+                      >
+                        {name}
+                        {n > 0 && ` (${n})`}
+                      </button>
+                    );
+                  })}
+                </fieldset>
+              )}
               <input
                 type="search"
                 value={find}
@@ -1532,12 +1243,10 @@ export function GeoModal({
   has,
   area,
   color,
-  nav,
   onApply,
   onClose,
 }: {
   title: string;
-  nav?: FilterNav;
   /** Its records are mapped when it has positions. */
   level: SearchLevel;
   query: string;
@@ -1582,13 +1291,10 @@ export function GeoModal({
   );
 
   return (
-    // An area the map drew by itself is no pick, so moving to another tab
-    // applies nothing here.
     <Modal
       open
       xl
       largeTitle
-      nav={nav?.()}
       onClose={onClose}
       title={title}
       footer={
