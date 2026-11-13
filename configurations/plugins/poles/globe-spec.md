@@ -10,7 +10,10 @@
 > it; `/plugins/poles/base-texture` is gone) and centring the globe on the
 > selected pole. Since 2026-11-12 the detail bar (a carousel of one pole's
 > card) is a scrolling grid of every pole under the map, and the "Displayed
-> Poles" limit is gone: the map draws every match (see README.md). The rest
+> Poles" limit is gone: the map draws every match (see README.md). Since
+> 2026-11-13 the map always opens on the whole globe (the world in Mercator)
+> turned to the poles' centroid, and re-centres that way on each new search;
+> it never zooms in to fit the poles, as the geospatial maps may. The rest
 > of this file records the legacy view.
 
 Source: `MagIC/client/modules/magic/components/search_poles_view.jsx`. The

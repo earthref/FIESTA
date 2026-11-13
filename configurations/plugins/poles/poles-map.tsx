@@ -117,7 +117,8 @@ export default function PolesMap({
             points={points}
             lines={lines}
             pointRadius={5}
-            fit
+            // Not `fit`: a pole map always opens on the whole globe (the world
+            // in Mercator), turned to the poles' centroid, never zoomed in on them.
             focusKey={poles}
             centerOn={centerOn}
             onSelect={(id) => onSelect(Number(id))}
