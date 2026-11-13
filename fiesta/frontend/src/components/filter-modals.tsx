@@ -103,7 +103,7 @@ function Footer({
 function CountBadge({ n }: { n: number }) {
   return (
     <span
-      className="inline-block shrink-0 self-start rounded-full border border-line bg-surface text-center text-[13px] font-bold text-ink"
+      className="inline-block shrink-0 self-start rounded-full border border-line bg-surface text-center text-[11px] font-bold text-ink"
       style={{ lineHeight: "0.7em", padding: "0.5em", minWidth: "2em", minHeight: "2em" }}
     >
       {abbreviateNumber(n)}
@@ -304,7 +304,7 @@ export function FacetModal({
                 >
                   {facet.label}
                   {n > 0 && (
-                    <span className="ml-1.5 rounded-full bg-node px-[0.45em] text-[13px] font-bold text-white">
+                    <span className="ml-1.5 rounded-full bg-node px-[0.45em] text-[11px] font-bold text-white">
                       {n}
                     </span>
                   )}
@@ -1043,7 +1043,7 @@ export function ExistsModal({
                 >
                   {existsTableLabel(model, name)}
                   {n > 0 && (
-                    <span className="ml-1.5 rounded-full bg-node px-[0.45em] text-[13px] font-bold text-white">
+                    <span className="ml-1.5 rounded-full bg-node px-[0.45em] text-[11px] font-bold text-white">
                       {n}
                     </span>
                   )}
