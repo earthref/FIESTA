@@ -10,6 +10,10 @@ Records whose legacy owner has no account are quarantined (counted, not
 errors) exactly as in the bulk import; a record that disappears from the
 source is reported as `missing_from_source` and left alone (absence is never a
 deletion).
+
+A node's `configurations/sources/<slug>.py` may pass a `fixup`: it gets the
+snapshot's records before they are fingerprinted, so what it changes (a
+version chain it heals) is sent, and sent again only when the source changes.
 """
 
 import argparse
@@ -17,15 +21,21 @@ import asyncio
 import json
 import os
 import sys
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
-from fiesta.services.legacy import SourceRecord, load_inventory, record_fingerprint
+from fiesta.services.legacy import Inventory, SourceRecord, load_inventory, record_fingerprint
 from fiesta.services.seed import local_file
 from fiesta.sources.client import SourceAPI, SourceAPIError
 from fiesta.storage import Storage
 
 QUARANTINE_PREFIX = "no account for contributor"
+
+# (node, inventory, OpenSearch client of the source or None) -> (the records to
+# send, a JSON summary of what it changed for the run's report).
+Fixup = Callable[[Any, Inventory, Any], Awaitable[tuple[Inventory, dict]]]
 
 
 async def _files(record: SourceRecord, state_dir: Path) -> dict[str, bytes]:
@@ -41,10 +51,18 @@ async def _files(record: SourceRecord, state_dir: Path) -> dict[str, bytes]:
 
 
 async def sync_meteor(
-    node, api: SourceAPI, state_dir: Path, *, dry_run: bool = False, ids=None, client=None
+    node,
+    api: SourceAPI,
+    state_dir: Path,
+    *,
+    dry_run: bool = False,
+    ids=None,
+    client=None,
+    fixup: Fixup | None = None,
 ) -> dict:
     """Mirror NODE's Meteor source through API. IDS limits the run to those
-    contribution IDs (the snapshot still covers the whole source)."""
+    contribution IDs (the snapshot still covers the whole source); FIXUP is
+    the node's fix-up of the snapshot's records (see the module docstring)."""
     from fiesta.services.legacy_inventory import build_inventory
 
     state = await api.state()
@@ -68,6 +86,8 @@ async def sync_meteor(
         "bytes": 0,
         "excluded": [],
     }
+    if fixup is not None:
+        inventory, summary["fixup"] = await fixup(node, inventory, client)
 
     wanted = set(ids or ())
     excluded = set(node.legacy.exclude_ids)
@@ -128,8 +148,9 @@ async def _report_run(api: SourceAPI, started: datetime, summary: dict) -> None:
         print(f"could not report the run: {exc}", file=sys.stderr, flush=True)
 
 
-def main(slug: str, description: str | None = None) -> None:
-    """Command line of a Meteor node's `configurations/sources/<slug>.py`."""
+def main(slug: str, description: str | None = None, fixup: Fixup | None = None) -> None:
+    """Command line of a Meteor node's `configurations/sources/<slug>.py` (FIXUP: its
+    fix-up of the records, see the module docstring)."""
     parser = argparse.ArgumentParser(description=description or f"Sync {slug} from Meteor.")
     parser.add_argument(
         "--api",
@@ -178,7 +199,12 @@ def main(slug: str, description: str | None = None) -> None:
             await api.login(email, password)
             try:
                 summary = await sync_meteor(
-                    node, api, args.state_dir.resolve(), dry_run=args.dry_run, ids=args.ids
+                    node,
+                    api,
+                    args.state_dir.resolve(),
+                    dry_run=args.dry_run,
+                    ids=args.ids,
+                    fixup=fixup,
                 )
             except Exception as exc:  # reported, then re-raised
                 summary["failed"] = f"{type(exc).__name__}: {exc}"
