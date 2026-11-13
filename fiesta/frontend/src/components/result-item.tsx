@@ -292,7 +292,6 @@ export function ResultCardFrame({
   const { data: config } = useNodeConfig();
   const openContribution = useOpenContribution();
   const id = contributionId(doc);
-  const version = getPath(doc, "summary.contribution.version");
   const breadcrumb = breadcrumbOf(doc, level, config?.search_levels ?? []);
   const contributor = firstString(getPath(doc, "summary.contribution._contributor"));
   return (
@@ -305,8 +304,7 @@ export function ResultCardFrame({
         style={{ paddingBottom: "0.5em" }}
       >
         <span className="whitespace-nowrap font-bold group-hover:text-node-ink">
-          {citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown")}
-          {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
+          {citationLabel(doc)}
         </span>
         <span className="mx-[0.5em] flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
           {breadcrumb.map((part, index) => (
@@ -450,16 +448,18 @@ function Clamped({
   );
 }
 
-/** "Behar et al. (2019) v. 2", bold. */
-function CitationText({ doc }: { doc: SearchResult }) {
+/** "Behar et al. (2019) v. 2". */
+function citationLabel(doc: SearchResult): string {
   const id = contributionId(doc);
   const version = getPath(doc, "summary.contribution.version");
-  return (
-    <b>
-      {citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown")}
-      {version !== undefined && version !== null ? ` v. ${String(version)}` : ""}
-    </b>
-  );
+  return `${citationOf(doc) ?? (id ? `Contribution ${id}` : "Unknown")}${
+    version !== undefined && version !== null ? ` v. ${String(version)}` : ""
+  }`;
+}
+
+/** "Behar et al. (2019) v. 2", bold. */
+function CitationText({ doc }: { doc: SearchResult }) {
+  return <b>{citationLabel(doc)}</b>;
 }
 
 /** Contributor text with inline markup (<sup>, <i>, …) rendered after
@@ -554,21 +554,42 @@ function BuiltinCell({
   const id = contributionId(doc);
 
   switch (column.cell) {
-    // Citation, then title / name, then date and contributor bottom-right, in one column
-    case "record":
+    // One column: a contribution's citation over up to 4 lines of its reference
+    // title; a record's name over "{citation} ⇒ {ancestors}" bottom-right; both
+    // ending with the date and contributor bottom-right.
+    case "record": {
+      if (level.table === "contribution")
+        return (
+          <OpenCell id={id} table={level.table} width={width} fill>
+            <Clamped lines={2}>
+              <CitationText doc={doc} />
+            </Clamped>
+            <Clamped lines={4}>
+              <NameText doc={doc} level={level} levels={config.search_levels} />
+            </Clamped>
+            <Clamped lines={2} className="mt-auto text-right text-ink-muted">
+              <ContributedText doc={doc} />
+            </Clamped>
+          </OpenCell>
+        );
+      const breadcrumb = breadcrumbOf(doc, level, config.search_levels);
+      const name = breadcrumb[breadcrumb.length - 1];
       return (
         <OpenCell id={id} table={level.table} width={width} fill>
           <Clamped lines={2}>
-            <CitationText doc={doc} />
+            <b>{name ?? "Unnamed"}</b>
           </Clamped>
-          <Clamped lines={2}>
-            <NameText doc={doc} level={level} levels={config.search_levels} />
-          </Clamped>
-          <Clamped lines={2} className="mt-auto text-right text-ink-muted">
-            <ContributedText doc={doc} />
-          </Clamped>
+          <span className="mt-auto text-right text-ink-muted">
+            <Clamped lines={2}>
+              {[citationLabel(doc), ...breadcrumb.slice(0, -1)].join(" ⇒ ")}
+            </Clamped>
+            <Clamped lines={2}>
+              <ContributedText doc={doc} />
+            </Clamped>
+          </span>
         </OpenCell>
       );
+    }
 
     case "citation":
       return (

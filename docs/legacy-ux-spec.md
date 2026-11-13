@@ -199,7 +199,11 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
   codes, citations; the card header's citation, title or name breadcrumb and
   date/contributor are stacked in the first column, "Contribution" on the
   Contributions level and the level's record ("Site") elsewhere, whose filter
-  matches any of them), each row capped at 105px. A sticky header
+  matches any of them; since 2026-11-12 a contribution shows its citation
+  over up to 4 lines of the reference title, and a lower level's record its
+  name top-left with "{citation} ⇒ {location}" (not bold) bottom-right above
+  the date and contributor), each row capped at 105px, its columns 1em apart
+  (2em before 2026-11-12). A sticky header
   names the columns; a sortable column sorts the search on a click (ascending,
   descending, back to the dropdown's order; the dropdown shows the header sort
   while it applies), a filterable one has a filter icon after its label (as on
