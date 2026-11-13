@@ -26,6 +26,8 @@ CONTRIBUTION_TERMS = {
 # The contribution-block terms a facet filter can be on (every node's
 # Contribution ID and Contributor filters); never the private key.
 CONTRIBUTION_FACETS = {"id", "contributor", "doi", "orcid"}
+# Search doc fields no search response returns.
+PRIVATE_SOURCE = ["summary.contribution._private_key"]
 # Date fields: a range filter's bounds and histogram are epoch milliseconds.
 DATE_FIELDS = {"summary.contribution.timestamp"}
 
@@ -209,6 +211,10 @@ def build_search_body(
     body: dict[str, Any] = {
         "size": size,
         "from": from_,
+        # A doc's private key is indexed (a `private_key:` token matches it)
+        # but never returned: only its owner or an admin may see it (the
+        # private workspace API). A caller listing `_source` fields replaces this.
+        "_source": {"excludes": PRIVATE_SOURCE},
         # Exact totals: the level tabs count past OpenSearch's default 10,000.
         "track_total_hits": True,
         "query": {"bool": {"filter": filters, "must": must}},
