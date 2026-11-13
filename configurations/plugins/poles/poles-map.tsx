@@ -8,13 +8,28 @@ import { type AgeScale, boundaryRings, formatAge, type Pole, uncertaintyRing } f
 // MapLibre (~800 KB) loads with the first map.
 const MapLibreMap = lazy(() => import("@/components/map/maplibre-map"));
 
+// The uncertainty outlines' segment budget: each costs ~200 bytes of GPU
+// buffer, rebuilt on every selection, so past ~1,000 poles their ~100-vertex
+// rings are thinned (to no fewer than MIN_RING_SEGMENTS; still a smooth
+// ellipse at map scale).
+const RING_SEGMENT_BUDGET = 100_000;
+const MIN_RING_SEGMENTS = 12;
+
+const ellipse = (pole: Pole, color: string, width: number, segments?: number): MapLine[] => {
+  const coords = uncertaintyRing(pole, segments);
+  return coords ? [{ coords, color, width, opacity: 0.9 }] : [];
+};
+
 interface PolesMapProps {
   poles: Pole[];
+  /** Every match, when the search window cut the poles short (the count). */
+  matched?: number;
   ageScale: AgeScale;
   boundaries: unknown | null;
   plateColor: string;
   selectedColor: string;
   showEllipses: boolean;
+  /** The selected pole's `index` (its grid row). */
   selected: number | null;
   onSelect: (index: number) => void;
 }
@@ -29,6 +44,7 @@ interface PolesMapProps {
  */
 export default function PolesMap({
   poles,
+  matched,
   ageScale,
   boundaries,
   plateColor,
@@ -41,12 +57,12 @@ export default function PolesMap({
 
   const points = useMemo<MapPoint[]>(
     () =>
-      poles.map((pole, index) => ({
-        id: String(index),
+      poles.map((pole) => ({
+        id: String(pole.index),
         contribution: pole.contributionId,
         name: pole.name,
         label: pole.age !== undefined ? `pole, ${formatAge(pole.age)}` : "pole, unknown age",
-        color: index === selected ? selectedColor : ageScale.color(pole.age),
+        color: pole.index === selected ? selectedColor : ageScale.color(pole.age),
         lat: pole.lat,
         lon: pole.lon,
       })),
@@ -64,29 +80,33 @@ export default function PolesMap({
     [boundaries, plateColor],
   );
 
+  const segments = Math.max(
+    MIN_RING_SEGMENTS,
+    Math.floor(RING_SEGMENT_BUDGET / Math.max(poles.length, 1)),
+  );
+  // Every pole's ellipse in its age colour (not rebuilt on selection).
+  const ellipses = useMemo<MapLine[]>(
+    () => poles.flatMap((pole) => ellipse(pole, ageScale.color(pole.age), 2, segments)),
+    [poles, ageScale, segments],
+  );
   const lines = useMemo<MapLine[]>(() => {
     if (!showEllipses) return plates;
-    const ellipse = (pole: Pole, color: string, width: number): MapLine[] => {
-      const coords = uncertaintyRing(pole);
-      return coords ? [{ coords, color, width, opacity: 0.9 }] : [];
-    };
-    const others = poles.flatMap((pole, index) =>
-      index === selected ? [] : ellipse(pole, ageScale.color(pole.age), 2),
-    );
-    // The selected pole's ellipse on top.
-    const chosen = selected !== null && poles[selected] ? poles[selected] : null;
-    return [...plates, ...others, ...(chosen ? ellipse(chosen, selectedColor, 3) : [])];
-  }, [plates, poles, ageScale, showEllipses, selected, selectedColor]);
+    // The selected pole's ellipse on top, at full resolution.
+    const chosen = selected !== null ? poles.find((pole) => pole.index === selected) : undefined;
+    return [...plates, ...ellipses, ...(chosen ? ellipse(chosen, selectedColor, 3) : [])];
+  }, [plates, ellipses, poles, showEllipses, selected, selectedColor]);
 
   return (
     <div className="flex h-full flex-col gap-2 p-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
         <ModeButtons mode={mode} setMode={setMode} />
         <span className="text-gray-600">
-          {poles.length.toLocaleString()} {poles.length === 1 ? "pole" : "poles"}
+          {matched !== undefined
+            ? `The first ${poles.length.toLocaleString()} of ${matched.toLocaleString()} poles`
+            : `${poles.length.toLocaleString()} ${poles.length === 1 ? "pole" : "poles"}`}
         </span>
       </div>
-      <div className="relative min-h-[300px] flex-1 overflow-hidden rounded-sm border border-gray-300">
+      <div className="relative min-h-0 flex-1 overflow-hidden rounded-sm border border-gray-300">
         <Suspense fallback={<Spinner />}>
           <MapLibreMap
             mode={mode}

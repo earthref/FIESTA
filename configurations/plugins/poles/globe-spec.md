@@ -4,12 +4,14 @@
 > globes (view + antipode) was replaced by the search map's MapLibre views
 > (globe, Mercator, north and south pole; `poles-map.tsx`): the
 > pole views show normal and reversed poles without an antipodal globe. Kept
-> from this spec: the detail bar, the side panel (displayed poles, ellipse
-> toggle, age legend), the age colouring (now the YAML's `age_color`), the
+> from this spec: the side panel (ellipse toggle, age legend), the age colouring (now the YAML's `age_color`), the
 > plate boundaries and the a95 circle (now computed by PmagPy, below). Added:
 > dp/dm ellipses for poles without an a95. Dropped: the earth-relief texture (the basemap replaces
 > it; `/plugins/poles/base-texture` is gone) and centring the globe on the
-> selected pole. The rest of this file records the legacy view.
+> selected pole. Since 2026-11-12 the detail bar (a carousel of one pole's
+> card) is a scrolling grid of every pole under the map, and the "Displayed
+> Poles" limit is gone: the map draws every match (see README.md). The rest
+> of this file records the legacy view.
 
 Source: `MagIC/client/modules/magic/components/search_poles_view.jsx`. The
 rebuild's poles view should match this. Backend already provides everything:

@@ -699,6 +699,19 @@ async def test_v2_serves_every_enabled_node_from_one_process():
             assert search.status_code == 200, search.text
             for hit in search.json()["results"]:
                 assert hit["summary"]["contribution"]["_is_activated"] is True
+            # `source` trims each result to the named summary fields.
+            trimmed = await client.get(
+                f"/v2/{slug}/search/contribution",
+                params={"size": 5, "source": "summary.contribution.id"},
+            )
+            assert trimmed.status_code == 200, trimmed.text
+            for hit in trimmed.json()["results"]:
+                assert set(hit) == {"summary"} and set(hit["summary"]["contribution"]) == {"id"}
+            private = await client.get(
+                f"/v2/{slug}/search/contribution",
+                params={"source": "summary.contribution._private_key"},
+            )
+            assert private.status_code == 422
             unknown = await client.get(f"/v2/{slug}/search/not-a-table")
             assert unknown.status_code == 404
             # Ids are per node schema, so isolation shows as counts: creating

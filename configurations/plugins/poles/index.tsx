@@ -1,12 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { type UseQueryResult, useQueries, useQuery } from "@tanstack/react-query";
+import {
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ErrorMessage } from "@/components/error-message";
 import { MapThumbnail } from "@/components/map-thumbnail";
 import { Cell, NoDataCell } from "@/components/result-item";
 import { SummaryGrid } from "@/components/summary-grid";
-import { Icon } from "@/components/ui/icon";
 import { PageSpinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
+import { usePagedItems } from "@/lib/paged";
 import type {
   GridColumn,
   NodeConfig,
@@ -31,7 +39,27 @@ import {
 import PolesMap from "./poles-map";
 
 const POLES_LEVEL: SearchLevel = { name: "Poles", table: "poles", count_field: null };
-const DEFAULT_MAX_POLES = 100;
+
+// The map draws every matching pole, fetched MAP_PAGE at a time (the search's
+// largest page) with only the fields it needs, up to OpenSearch's from + size
+// window; the grid under it fetches the full docs of the rows in view.
+const MAP_PAGE = 1000;
+const MAX_POLES = 10_000;
+const GRID_PAGE = 25;
+const MAP_FIELDS = [
+  "summary.poles.pole_lat",
+  "summary.poles.pole_lon",
+  "summary.poles.age",
+  "summary.poles._geometry",
+  "summary.contribution.id",
+  "summary.locations.location",
+];
+// The grid's sticky header and a thumbnail row (SummaryGrid's estimate): the
+// map leaves room for the header and two rows under it, down to MIN_MAP (its
+// toolbar included), when the grid shrinks to what is left, at least a row.
+const GRID_HEADER = 33;
+const GRID_ROW = 129;
+const MIN_MAP = 300;
 
 interface PolesPluginConfig {
   base_level?: string;
@@ -46,7 +74,7 @@ function polesConfig(config: NodeConfig): PolesPluginConfig {
   return (config.plugins.poles ?? {}) as PolesPluginConfig;
 }
 
-// --- Detail card: the selected pole as a Summaries grid row ----------------------
+// --- The grid: a pole per Summaries row ----------------------------------------------
 
 function firstNumber(value: unknown): number | undefined {
   const candidate = Array.isArray(value) ? value[0] : value;
@@ -83,7 +111,7 @@ function siteOf(row: Record<string, unknown>): { lat: number; lon: number } | un
 
 // Location columns the core tiles (geo, geology, method codes, citations) read
 // from `summary._all`. A pole doc's `_all` holds only the facet columns, so the
-// card fills in the rest from its location row.
+// grid fills in the rest from its location row.
 const ALL_COLUMNS = [
   "plate_blocks",
   "terranes",
@@ -104,7 +132,7 @@ const ALL_COLUMNS = [
   "citations",
 ];
 
-/** The hit as the card's grid reads it: `_all` completed from the location row,
+/** The hit as the grid reads it: `_all` completed from the location row,
  * and its `_geo_point` the location (for the core map tile), not the pole. */
 function cardDocOf(hit: SearchResult): SearchResult {
   const row = locationRowOf(hit);
@@ -141,7 +169,7 @@ const tile = (key: string, cell: GridColumn["cell"], label: string, width: numbe
   geospatial: false,
 });
 
-// The card's tiles: the core Summaries tiles plus the plugin's own (rendered by
+// The grid's tiles: the core Summaries tiles plus the plugin's own (rendered by
 // `gridCell`, matched on their keys), in the legacy result card's order.
 const CARD_TILES = new Set(["pole_map", "pole", "pole_age", "direction"]);
 const CARD_LEVEL: SearchLevel = {
@@ -179,7 +207,7 @@ function Lines({ lines }: { lines: [string, string | undefined][] }) {
   );
 }
 
-/** The pole on a globe centred on it, magnified to its uncertainty outline
+/** The pole on the whole globe, centred on it, with its uncertainty outline
  * (none on a doc indexed before the rings: `fiesta rebuild`). */
 function PoleMapTile({ hit, color, width }: { hit: SearchResult; color: string; width: number }) {
   const [pole] = useMemo(() => polesFromHits([hit]), [hit]);
@@ -194,7 +222,6 @@ function PoleMapTile({ hit, color, width }: { hit: SearchResult; color: string; 
       <MapThumbnail
         markers={markers}
         rings={rings}
-        zoomToRings
         label="Map of the pole and its uncertainty outline"
       />
     </Cell>
@@ -298,15 +325,7 @@ function DirectionTile({ hit, width }: { hit: SearchResult; width: number }) {
   );
 }
 
-/** The selected pole as one Summaries grid row: the core record, location map,
- * geography, geology, method codes and citations tiles, and the plugin's pole
- * map, pole, age and direction tiles. */
-function PoleCard({ hit, privateKey }: { hit: SearchResult; privateKey?: string }) {
-  const doc = useMemo(() => cardDocOf(hit), [hit]);
-  return <SummaryGrid level={CARD_LEVEL} hits={[doc]} header={false} privateKey={privateKey} />;
-}
-
-// --- Side panel (max poles, ellipse toggle, color legend) -------------------------
+// --- Side panel (ellipse toggle, color legend) ------------------------------------
 
 function ColorLegend({
   minAge,
@@ -366,8 +385,6 @@ function ColorLegend({
 }
 
 function SidePanel({
-  maxPoles,
-  setMaxPoles,
   showEllipses,
   setShowEllipses,
   minAge,
@@ -375,8 +392,6 @@ function SidePanel({
   hasAges,
   colors,
 }: {
-  maxPoles: number;
-  setMaxPoles: (n: number) => void;
   showEllipses: boolean;
   setShowEllipses: (show: boolean) => void;
   minAge: number;
@@ -388,23 +403,6 @@ function SidePanel({
   const heading = "mb-1 text-[13px] font-bold text-ink";
   return (
     <aside className="w-[180px] shrink-0 overflow-y-auto border-l border-edge bg-surface">
-      <div className={section} style={{ padding: "0.25em 1em 0.5em" }}>
-        <h5 className={heading}>Displayed Poles</h5>
-        <label className="sr-only" htmlFor="poles-max">
-          Maximum displayed poles
-        </label>
-        <input
-          id="poles-max"
-          type="number"
-          min={1}
-          value={maxPoles}
-          onChange={(event) => {
-            const n = Number(event.target.value);
-            if (Number.isFinite(n) && n >= 1) setMaxPoles(Math.floor(n));
-          }}
-          className="w-full rounded-sm border border-gray-300 px-2 py-1 text-[12px] focus:border-node focus:outline-hidden"
-        />
-      </div>
       <div className={section} style={{ padding: "0.25em 1em 0.5em" }}>
         <h5 className={heading}>Uncertainty Ellipses</h5>
         <div className="flex gap-1">
@@ -442,7 +440,41 @@ function SidePanel({
   );
 }
 
-// --- Poles map sub-tab: detail bar + map + side panel -------------------------------
+// --- Poles map sub-tab: map + side panel over a grid of the poles -------------------
+
+/** The height from `ref`'s top to the bottom of its scrolling ancestor (the
+ * search page's view, the contribution modal's tab), kept as either resizes. */
+function useAvailableHeight(ref: RefObject<HTMLElement | null>): number | undefined {
+  const [height, setHeight] = useState<number>();
+  useLayoutEffect(() => {
+    const element = ref.current;
+    let scroller = element?.parentElement ?? null;
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) {
+      scroller = scroller.parentElement;
+    }
+    if (!element || !scroller) return;
+    const host = scroller;
+    const update = () => {
+      const top =
+        element.getBoundingClientRect().top - host.getBoundingClientRect().top + host.scrollTop;
+      const padding = Number.parseFloat(getComputedStyle(host).paddingBottom) || 0;
+      setHeight(Math.floor(host.clientHeight - top - padding));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [ref]);
+  return height;
+}
+
+type PolesPage = UseQueryResult<SearchPageData>;
+const pagesOf = (results: PolesPage[]) => ({
+  pages: results.map((result) => result.data),
+  error: results.find((result) => result.error)?.error ?? null,
+});
+const pageTotal = (page: SearchPageData) => page.total;
+const pageResults = (page: SearchPageData) => page.results;
 
 function PolesMapView({
   query,
@@ -453,29 +485,60 @@ function PolesMapView({
   privateKey,
   scope,
 }: PluginSubTabContext) {
+  // The selected pole: its grid row (a map point's `index`).
   const [selected, setSelected] = useState<number | null>(null);
-  const [maxPoles, setMaxPoles] = useState(DEFAULT_MAX_POLES);
   const [showEllipses, setShowEllipses] = useState(true);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const available = useAvailableHeight(rootRef);
 
   const pconfig = polesConfig(config);
   const colors: AgeColors = { ...DEFAULT_AGE_COLORS, ...pconfig.age_color };
 
-  const polesQuery = useQuery({
-    queryKey: ["plugin", "poles", "search", query, ranges, bbox, maxPoles, contribution, scope],
-    queryFn: () =>
-      api<SearchPageData>("/search/poles", {
-        params: {
-          ...scope,
-          query: query || undefined,
-          size: maxPoles,
-          range: ranges.length > 0 ? ranges : undefined,
-          bbox: bbox || undefined,
-          contribution,
-          private_key: contribution ? privateKey : undefined,
-        },
-      }),
+  const params = {
+    ...scope,
+    query: query || undefined,
+    range: ranges.length > 0 ? ranges : undefined,
+    bbox: bbox || undefined,
+    contribution,
+    private_key: contribution ? privateKey : undefined,
+  };
+  const searchKey = ["plugin", "poles", "search", query, ranges, bbox, contribution, scope];
+  // The map's poles and the grid's rows are the same search in the same
+  // (default) order, so a pole's position is its row.
+  const fetchMapPage = (page: number) =>
+    api<SearchPageData>("/search/poles", {
+      params: { ...params, size: MAP_PAGE, from: page * MAP_PAGE, source: MAP_FIELDS },
+    });
+  const firstMapPage = useQuery({
+    queryKey: [...searchKey, "map", 0],
+    queryFn: () => fetchMapPage(0),
     staleTime: 60_000,
   });
+  const matched = firstMapPage.data?.total ?? 0;
+  const shown = Math.min(matched, MAX_POLES);
+  const restMapPages = useQueries({
+    queries: Array.from({ length: Math.max(0, Math.ceil(shown / MAP_PAGE) - 1) }, (_, i) => ({
+      queryKey: [...searchKey, "map", i + 1],
+      queryFn: () => fetchMapPage(i + 1),
+      staleTime: 60_000,
+    })),
+    combine: pagesOf,
+  });
+  const mapLoaded = firstMapPage.data !== undefined && restMapPages.pages.every(Boolean);
+
+  const grid = usePagedItems({
+    queryKey: [...searchKey, "grid"],
+    pageSize: GRID_PAGE,
+    fetchPage: (page) =>
+      api<SearchPageData>("/search/poles", {
+        params: { ...params, size: GRID_PAGE, from: page * GRID_PAGE },
+      }),
+    totalOf: pageTotal,
+    itemsOf: pageResults,
+    limit: MAX_POLES,
+  });
+  const rows = useMemo(() => grid.items.map((hit) => hit && cardDocOf(hit)), [grid.items]);
 
   const boundaries = useQuery({
     queryKey: ["plugin", "poles", "plate-boundaries"],
@@ -484,95 +547,85 @@ function PolesMapView({
     staleTime: Number.POSITIVE_INFINITY,
   });
 
-  const poles = useMemo<Pole[]>(
-    () => polesFromHits(polesQuery.data?.results ?? []),
-    [polesQuery.data],
-  );
+  const poles = useMemo<Pole[]>(() => {
+    if (!mapLoaded || !firstMapPage.data) return [];
+    const hits = [firstMapPage.data, ...restMapPages.pages].flatMap((page) => page?.results ?? []);
+    return polesFromHits(hits.slice(0, MAX_POLES));
+  }, [mapLoaded, firstMapPage.data, restMapPages.pages]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: the colors by value
   const ageScale = useMemo(() => makeAgeScale(poles, colors), [poles, JSON.stringify(colors)]);
 
-  // Reset selection when the pole set changes.
+  // A new search clears the selection.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset only when the list identity changes
   useEffect(() => {
     setSelected(null);
   }, [poles]);
 
-  // The first pole until another is chosen, so the detail card always shows one.
-  const current = selected !== null && selected < poles.length ? selected : 0;
-  const selectedPole = poles[current];
-  const canPrev = current > 0;
-  const canNext = current < poles.length - 1;
+  const error = firstMapPage.error ?? restMapPages.error ?? grid.first.error;
+  // The map leaves room for the grid's header and two rows under it.
+  const mapHeight = Math.max(MIN_MAP, (available ?? 680) - GRID_HEADER - 2 * GRID_ROW);
+  const height = Math.max(available ?? 680, mapHeight + GRID_HEADER + GRID_ROW);
 
-  const chevronButton = (dir: "left" | "right", disabled: boolean, onClick: () => void) => (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      aria-label={dir === "left" ? "Previous pole" : "Next pole"}
-      className={cx(
-        "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border",
-        disabled
-          ? "cursor-not-allowed border-gray-200 text-gray-300"
-          : "border-gray-300 text-gray-600 hover:bg-gray-50",
-      )}
-    >
-      <Icon name={dir === "left" ? "chevron-left" : "chevron-right"} size="large" />
-    </button>
-  );
-
-  if (polesQuery.isPending) return <PageSpinner label="Loading poles…" />;
-  if (polesQuery.error) return <ErrorMessage error={polesQuery.error} className="my-3" />;
-
-  if (poles.length === 0) {
-    return (
+  let body: ReactNode;
+  if (error) body = <ErrorMessage error={error} className="my-3" />;
+  else if (!mapLoaded) body = <PageSpinner label="Loading poles…" />;
+  else if (poles.length === 0) {
+    body = (
       <p className="py-8 text-center text-[13px] text-gray-500">
         No poles with coordinates for this query.
       </p>
     );
+  } else {
+    body = (
+      <>
+        {/* Row 1 — map + side panel */}
+        <div className="flex shrink-0" style={{ height: mapHeight }}>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {boundaries.error && <ErrorMessage error={boundaries.error} className="m-2" />}
+            <div className="min-h-0 flex-1">
+              <PolesMap
+                poles={poles}
+                matched={matched > MAX_POLES ? matched : undefined}
+                ageScale={ageScale}
+                boundaries={boundaries.data ?? null}
+                plateColor={pconfig.plate_boundary_color ?? "#990000"}
+                selectedColor={colors.selected}
+                showEllipses={showEllipses}
+                selected={selected}
+                onSelect={setSelected}
+              />
+            </div>
+          </div>
+          <SidePanel
+            showEllipses={showEllipses}
+            setShowEllipses={setShowEllipses}
+            minAge={ageScale.minAge}
+            maxAge={ageScale.maxAge}
+            hasAges={ageScale.hasAges}
+            colors={colors}
+          />
+        </div>
+
+        {/* Row 2 — the poles as Summaries rows, scrolling under the map */}
+        <div ref={gridRef} className="min-h-0 flex-1 overflow-y-auto border-t border-edge">
+          <SummaryGrid
+            level={CARD_LEVEL}
+            hits={rows}
+            privateKey={privateKey}
+            scrollRef={gridRef}
+            overscan={5}
+            onRange={grid.onRange}
+            onOpen={(_doc, index) => setSelected(index)}
+            selectedIndex={selected ?? undefined}
+          />
+        </div>
+      </>
+    );
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 680 }}>
-      {/* Row 1 — the selected pole's card, as a Summaries row */}
-      <div
-        className="flex shrink-0 items-center gap-[10px] border-b border-edge bg-surface"
-        style={{ padding: "4px 10px" }}
-      >
-        {chevronButton("left", !canPrev, () => setSelected(current - 1))}
-        <div className="min-w-0 flex-1 overflow-x-auto">
-          {selectedPole && <PoleCard hit={selectedPole.hit} privateKey={privateKey} />}
-        </div>
-        {chevronButton("right", !canNext, () => setSelected(current + 1))}
-      </div>
-
-      {/* Row 2 — map + side panel */}
-      <div className="flex min-h-0 flex-1">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {boundaries.error && <ErrorMessage error={boundaries.error} className="m-2" />}
-          <div className="min-h-0 flex-1">
-            <PolesMap
-              poles={poles}
-              ageScale={ageScale}
-              boundaries={boundaries.data ?? null}
-              plateColor={pconfig.plate_boundary_color ?? "#990000"}
-              selectedColor={colors.selected}
-              showEllipses={showEllipses}
-              selected={current}
-              onSelect={setSelected}
-            />
-          </div>
-        </div>
-        <SidePanel
-          maxPoles={maxPoles}
-          setMaxPoles={setMaxPoles}
-          showEllipses={showEllipses}
-          setShowEllipses={setShowEllipses}
-          minAge={ageScale.minAge}
-          maxAge={ageScale.maxAge}
-          hasAges={ageScale.hasAges}
-          colors={colors}
-        />
-      </div>
+    <div ref={rootRef} className="flex flex-col" style={{ height }}>
+      {body}
     </div>
   );
 }
@@ -580,7 +633,7 @@ function PolesMapView({
 // --- Plugin module -------------------------------------------------------------------
 
 const polesPlugin: PluginModule = {
-  // The detail card's own tiles (only on its level; every other cell is core's).
+  // The grid's own tiles (only on its level; every other cell is core's).
   gridCell({ column, hit, level, config }) {
     if (level.table !== POLES_LEVEL.table || !CARD_TILES.has(column.key)) return null;
     const width = column.width;
