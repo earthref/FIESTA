@@ -68,8 +68,8 @@ export function formatGridFilters(filters: Record<string, string>): string[] {
 }
 
 const BORDER = "1px solid var(--er-line)";
-// Padding on each side of a cell: 1em of the 13px cells (the legacy cells' right margin).
-const GAP = 13;
+// Padding on each side of a cell: half of 1em of the 13px cells, so columns sit 1em apart.
+const GAP = 6.5;
 
 /** A click on a link, button or form control inside a row is its own, as is
  * the end of a text selection. */
