@@ -144,6 +144,11 @@ class SearchPage(BaseModel):
     mapped_total: int | None = None
 
 
+class MapPointParent(BaseModel):
+    table: str  # a hierarchy level above the point's ("locations")
+    name: str  # its row's key column
+
+
 class MapPoint(BaseModel):
     id: Any = None  # the contribution
     name: str | None = None  # the level row's key column
@@ -152,12 +157,21 @@ class MapPoint(BaseModel):
     count: int | None = None  # records at this location (the aggregated map)
     value: float | None = None  # its `color_by` number (a location's records' mean)
     body: str | None = None  # another planetary body it is on ("moon"); None: Earth
+    parents: list[MapPointParent] | None = None  # the rows above it, top first
+
+
+class MapPointContribution(BaseModel):
+    citation: str | None = None
+    contributor: str | None = None
+    timestamp: str | None = None
 
 
 class MapPoints(BaseModel):
     total: int
     points: list[MapPoint]
     truncated: bool = False
+    # The points' contributions by id, for their tooltips.
+    contributions: dict[str, MapPointContribution] = {}
 
 
 class SearchValues(BaseModel):

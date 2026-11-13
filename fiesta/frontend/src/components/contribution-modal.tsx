@@ -19,7 +19,12 @@ import { type ContributionTab, pluginContributionTabs, type TabCountQuery } from
 import { ErrorMessage } from "./error-message";
 import { bodiesOf } from "./map/bodies";
 import { BodyButtons, useBody } from "./map/map-mode";
-import { type ApiMapPoint, type MapPoint, toMapPoint } from "./map/map-points";
+import {
+  type ApiMapContribution,
+  type ApiMapPoint,
+  type MapPoint,
+  toMapPoint,
+} from "./map/map-points";
 import { citationOf, DefinitionTable, firstString, formatDateLL, InlineHtml } from "./result-item";
 import { type GridRow, RowsGrid } from "./rows-table";
 import type { GridSort } from "./summary-grid";
@@ -360,18 +365,28 @@ function ModalBody({
     queries: geoLevels.map((level) => ({
       queryKey: ["contribution-points", id, level.table, privateKey],
       queryFn: () =>
-        api<{ points: ApiMapPoint[] }>(`/search/${level.table}/points`, {
-          params: scope(id, privateKey),
-        }),
+        api<{ points: ApiMapPoint[]; contributions?: Record<string, ApiMapContribution> }>(
+          `/search/${level.table}/points`,
+          { params: scope(id, privateKey) },
+        ),
       enabled: (countOf(level.table).count ?? 0) > 0,
       staleTime: 60_000,
     })),
   });
+  // One contribution's records name their level and the rows above them; its
+  // own point is its citation, date and contributor.
+  const levelLabel = (table: string) =>
+    singularize(levels.find((l) => l.table === table)?.name ?? table);
   const mapLayers = geoLevels
     .map((level, index) => ({
       level,
       points: (pointQueries[index].data?.points ?? []).flatMap(
-        (p) => toMapPoint(p, singularize(level.name), config.color) ?? [],
+        (p) =>
+          toMapPoint(p, singularize(level.name), config.color, undefined, {
+            table: level.table,
+            contributions: pointQueries[index].data?.contributions,
+            levelLabel,
+          }) ?? [],
       ),
     }))
     .filter((layer) => layer.points.length > 0);

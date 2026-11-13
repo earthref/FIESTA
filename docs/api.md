@@ -259,10 +259,17 @@ table.
 ```json
 MapPoints = {
   "total": 410,
-  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "count": 12?, "value": 1.5e6?, "body": "moon"?}],
-  "truncated": false
+  "points": [{"id": 106, "name": "S106-0", "lat": 0.07, "lon": 175.9, "count": 12?, "value": 1.5e6?, "body": "moon"?,
+              "parents": [{"table": "locations", "name": "L1"}]?}],
+  "truncated": false,
+  "contributions": {"106": {"citation": "Smith et al. (2020)"?, "contributor": "@smith"?, "timestamp": "2020-01-02T00:00:00Z"?}}
 }
 ```
+
+`parents` names the rows above a point's (its hierarchy levels below the
+contribution, top first) that its search doc carries, from their summary block
+or `summary._all`; `contributions` labels every point's contribution (its
+`_reference` citation, `_contributor` and `timestamp`) for the map's tooltips.
 
 `points` is every match with a `summary._all._geo_point` or `_body_point`, up
 to 50,000 (`truncated` past that), for the search page's Map tab: `id` is the

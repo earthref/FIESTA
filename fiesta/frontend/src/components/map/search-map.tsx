@@ -19,6 +19,7 @@ import {
 } from "./map-colors";
 import { BodyButtons, ModeButtons, mapButtonClass, useBody, useSavedMode } from "./map-mode";
 import {
+  type ApiMapContribution,
   type ApiMapPoint,
   type Area,
   areaAround,
@@ -38,6 +39,7 @@ interface MapPointsPage {
   total: number;
   points: ApiMapPoint[];
   truncated?: boolean;
+  contributions?: Record<string, ApiMapContribution>;
 }
 
 // The field the markers are colored by (a node `map_colors` field, or "" for
@@ -74,6 +76,7 @@ function usePoints(
   colorBy?: string,
   scope?: SearchScope,
 ) {
+  const levels = useNodeConfig().data?.search_levels ?? [];
   return useQuery({
     queryKey: ["search-points", level.table, query, ranges, filters, has, bbox, colorBy, scope],
     queryFn: () =>
@@ -88,14 +91,28 @@ function usePoints(
           color_by: colorBy,
         },
       }),
-    select: (page) => ({
-      ...page,
-      points: page.points.flatMap(
-        (p) =>
-          toMapPoint(p, singularize(level.name).toLowerCase(), color, level.name.toLowerCase()) ??
-          [],
-      ),
-    }),
+    select: (page) => {
+      const context = {
+        table: level.table,
+        contributions: page.contributions,
+        levelLabel: (table: string) =>
+          singularize(levels.find((l) => l.table === table)?.name ?? table).toLowerCase(),
+        withSource: true,
+      };
+      return {
+        ...page,
+        points: page.points.flatMap(
+          (p) =>
+            toMapPoint(
+              p,
+              singularize(level.name).toLowerCase(),
+              color,
+              level.name.toLowerCase(),
+              context,
+            ) ?? [],
+        ),
+      };
+    },
     enabled,
     staleTime: 60_000,
     placeholderData: keepPreviousData,
