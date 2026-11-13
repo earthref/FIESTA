@@ -162,22 +162,53 @@ Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend
       editors for search levels, hierarchy, home cards/news and method codes (today:
       the YAML/JSON file editor); the deploy script builds a frontend for every
       published node, including nodes whose PR is not merged yet.
+- [ ] **G5 Curation tools.** After cutover, fixing published data means an admin
+      creating a new revision of someone's contribution, attributed to both. Transfer
+      ownership (MagIC #154); only the contributor or an admin creates a new version
+      (#329, verify `/versions`); lab names locked after activation (#506); correct a
+      reference's metadata over `doi_references` (#88); batch fixes across many
+      contributions (#374, #301, #331, #610); a report of duplicate contributions and
+      DOIs with more than one contribution (#552, #527); users request new method
+      codes and vocabulary entries for the node admins (#27).
 
 ## Phase C — Port the remaining legacy features
 
 Reference: `old-backend/` (Koa) and the sibling `../FIESTA-API`, `../MagIC` repos.
 Each item is independent and PR-sized; good subagent-in-worktree work.
 
+*2026-11-13: the 181 open issues in `earthref/MagIC` were reviewed against FIESTA. The
+ones FIESTA still has to solve are folded into C1, C3, C5, C8–C10, G5, D5, M2/M3 and
+M8 below, cited as "MagIC #n". Data-model questions (#619, #620, #623, #630, #309,
+#325, #326, #379) and one-off fixes to specific legacy contributions stay in that repo;
+the latter become G5 work after cutover.*
+
 - [ ] **C1 DOI minting (EZID)** on activation when `doi.prefix` is set. Credentials —
-      **BLOCKED (operator)** for the live path; build against a fake first.
+      **BLOCKED (operator)** for the live path; build against a fake first. Make the
+      DOI public at activation (MagIC #17). Before porting, audit the existing data
+      DOIs: pre-3.0 ones do not resolve (#585) and many contributions have none
+      (#511). DOI hygiene with it: fill the reference DOI from an uploaded
+      contribution table (#279, #395, #284); store `https://doi.org/…` as a bare DOI
+      (#373); re-check private contributions whose DOI was not yet on Crossref and
+      email the contributor when it is (#3, on C6's schedule); publisher links and
+      DataCite related identifiers (#228, #229); schema.org `unitCode` (#508).
+      Decision: publishing with a URL instead of a DOI (#16) — today a resolving
+      DOI is required.
 - [ ] **C2 ORCID OAuth login** (the `users.orcid` column exists; no flow). Client
       registration — **BLOCKED (operator)**.
 - [ ] **C3 Contribution upgrade** 2.x → 3.0 (MagIC) — port the upgrade maps from the
-      legacy data-model JSON.
+      legacy data-model JSON. Let the contributor ignore or rename unknown columns
+      (MagIC #308) and accept or convert the old model's blank values (#521).
 - [ ] **C4 Derived experiment docs** — MagIC's `experiments` search level is derived
       from measurements, not a table; port `summarize_contribution.js`'s experiment
       grouping as a plugin `derive_docs` hook or core summarizer step.
-- [ ] **C5 Excel upload** (`.xlsx` → contribution text) in the upload wizard.
+- [ ] **C5 Tabular import** — the legacy upload's "Step 2": `.xlsx`/`.xls`/`.csv`
+      → contribution text in the upload wizard, with sheet/table detection, header
+      rows, a column-name suggester, skipping tables, worksheets and columns, value
+      rounding with a warning for too many significant digits, and saved import
+      templates covering every table (MagIC #10, #11, #12, #13, #127, #133, #149,
+      #231, #248, #253, #273, #274, #283, #310, #344, #398, #425, #426, #428,
+      #490, #558; dropping a folder #40). Lab file formats (BGC and the other
+      legacy converters, #588) as plugins that convert to contribution text.
 - [x] **C6 Reference enrichment** (2026-09-28) — Crossref, then DataCite, for
       each `reference_doi`, cached in the shared `doi_references` table and set on
       the search docs as the legacy `_reference` (title, journal, year, citation,
@@ -192,6 +223,25 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
       unit-tested without infra (`tests/test_v1.py`) and round-tripped in the
       Phase M integration suite. `reference_title` matches `_reference.title`
       (filled by C6).
+- [ ] **C8 Finish the validator.** `domain/validate.py` accepts but does not enforce
+      `requiredIf`/`requiredUnless` variants, `in`, `matrix` and `type`. Enforce
+      them, `requiredIfGroup` per row, not per table (MagIC #564, which is why the
+      legacy rules were pulled from the data model). An empty `recommended()`
+      column warns, never fails (#590). Fix or reject capitalisation errors (#453)
+      and upper-case column names (#363); keep large integers from breaking the
+      OpenSearch mapping (#485); catch the missing-table errors legacy missed
+      (#423). Data-model defaults for blank cells (#410) and a "maybe required"
+      label (#259). Clearer messages (#399, #454, #491). Warnings plus calculated
+      values, and fixing values on the validation page (#263, #441, #518).
+      MagIC-specific consistency checks (directions recomputed from `magn_x/y/z`
+      to catch frame and sign-convention errors, #622) go in a plugin.
+- [ ] **C9 Downloads.** Expose the stored sha256 checksums (MagIC #613); strip a
+      leading UTF-8 BOM from served legacy files (#621); the contribution ID and
+      metadata in every downloaded file (#291, #315); no stray `>>>>` separators
+      (#311); text cells starting with `@` survive Excel (#497). Compressed and
+      multi-contribution downloads (#463, #343) and a download dialog (#509, #316).
+- [ ] **C10 Usage statistics.** Download counts per contribution (MagIC #135) and
+      an internal contribution statistics page (#365).
 
 ## Phase D — UI parity and the stub pages
 
@@ -209,6 +259,19 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
       boundaries and a95 / dp-dm outlines (deviations at the top of
       `configurations/plugins/poles/globe-spec.md`). A Rock Magnetism view (`rock-mag` plugin) shipped
       alongside it on the Specimens level.
+- [ ] **D5 Search and contribution-page issues from legacy MagIC.** Part of D2,
+      listed so none are lost. Filters: lower levels return only matching rows
+      (MagIC #213), the age range filter (#350), "contains" for ranges (#349), sort
+      by the filtered value (#206), external IDs (#574), case-insensitive authors and
+      isotopic stages / chron boundaries in the timescale filter (#517), say so when a
+      DOI search finds nothing (#137). Map: every location shown (#95, #520), the
+      geospatial boundary drawn (#186, #332). Contribution page: group by level
+      (#194), hide empty columns (#269), all method codes (#290), pole count on the
+      summary (#282). Plots: captions (#446) and loading at scale (#452, #546, #550).
+      Formatting: author names (#152), significant digits (#189), age units and age 0
+      (#280, #288), long DOIs (#304). Accounts: contributor names link to ORCID
+      (#400), return to the page after login (#496). Poles: re-test #582, #583, #584
+      on the MapLibre view.
 
 ## Phase M — Data migration and redesign — **IN PROGRESS**
 
@@ -342,7 +405,12 @@ the same API authorization checks.
       objects before committing a revision and its outbox event in one Postgres
       transaction; reconcile abandoned uploads and interrupted operations. Bind
       validation and publication to the exact revision so stale successful
-      validation cannot publish newer unvalidated edits.
+      validation cannot publish newer unvalidated edits. From legacy MagIC: a diff
+      between versions (MagIC #34); the online editor's gaps — delete a row, undo
+      and redo, vocabulary pulldowns and links, a hint that tables are editable
+      (#547); the contribution's history of completed and running actions (#427);
+      supplemental data links and images as attachments (#504, #347). #434 and #435
+      (private files in S3, rollback) close when M2/M3 ship.
 - [ ] **M4 Durable processing and Postgres → OpenSearch sync.** Process revision
       events asynchronously with retries, deduplication, per-contribution ordering,
       stale-job protection, failure visibility, and reconciliation. Persist M's
@@ -399,6 +467,8 @@ the same API authorization checks.
       Next: a MySQL reader once there is a SELECT-only account (OPERATOR_TODO), an
       age-curve plugin (intensity / inclination / declination against age), then the
       sediment database. GEOMAGIA's field-model engine stays in its Django service.
+      Interop with MagIC (MagIC #628): links both ways between matching records,
+      and GEOMAGIA datasets missing from MagIC queued for import.
 
 Acceptance: a fresh checkout starts and seeds selected nodes in Docker without
 MARFIK/AWS access, supports local login/edit/upload/undo/search, and repeats seed
