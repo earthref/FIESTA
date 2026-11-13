@@ -147,6 +147,16 @@ Last updated: 2026-11-11
       whose parent is missing from the legacy index (9595, 8065, 8011, 7551 here) were
       imported unlinked by design.
 
+## 2026-11-13 — dev host unresponsive
+
+- [ ] **Check fiesta-ct (dev.earthref.org).** From about 20:51 UTC every API request
+      timed out (MagIC included), and deploy run 43505392525 (main bd2ee6f) hung in
+      "Pull, test, build, swap" for 27 minutes, then failed with no log, as when the
+      runner loses contact. The previous deploy (ea5d284, 20:43) was healthy. Look at
+      the host's memory/load and the API, runner and Postgres/OpenSearch services; once
+      the runner is back, the queued deploy (or a re-run of the latest main) brings dev
+      up to date, including GEOMAGIA data model 1.0 (PR #191).
+
 ## 2026-11-13 — GEOMAGIA node
 
 `configurations/geomagia.yaml` hosts GEOMAGIA50's archeomagnetic and volcanic
