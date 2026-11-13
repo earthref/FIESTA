@@ -38,6 +38,10 @@ search:
     - { type: facet, field: lab_names, label: Lab }
     - { type: facet, field: method_codes, label: Method Codes }
     - { type: facet, field: instrument_codes, label: Instrument Codes }
+    # Every node's contribution filters (the contribution block's id, contributor, timestamp).
+    - { type: facet, field: id, label: Contribution ID }
+    - { type: facet, field: contributor, label: Contributor }
+    - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
   # The Map view's "Color by" menu, the same as MagIC's (no `bodies`: every core
   # is on Earth). A column is offered only on the levels whose table has it, so
   # until CDR's cores carry ages or magnetic columns the Cores map offers

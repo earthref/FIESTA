@@ -222,7 +222,7 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet, a text column of the level (the `text` filter's), or a facet of the level's grid columns, else 422), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below), `source` (repeatable `summary.<block>.<name>`, 1–50: each result holds only those fields, for a view paging through thousands of matches) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet, a text column of the level (the `text` filter's), or a facet of the level's grid columns, else 422; `id` and `contributor` aggregate the contribution block's `summary.contribution.id` / `_contributor.raw`, keys always strings), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below), `source` (repeatable `summary.<block>.<name>`, 1–50: each result holds only those fields, for a view paging through thousands of matches) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (1–200; default from how many values there are, 2·n^⅓ between 10 and 100), `log` (bool), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `SearchHistogram` |
@@ -325,7 +325,9 @@ value in a bin; a field no match has has no bins, and a text field (row values
 are strings) is a 422 — a data-model number column's histogram is on its
 `summary._num.<column>`. Field rules and visibility are as for `values`.
 A `range` on a multi-valued field (`summary._num`) matches a doc with any value
-inside it.
+inside it. The date field `summary.contribution.timestamp` (Contributed On)
+works the same in epoch milliseconds (a `range`'s bounds are rounded to whole
+milliseconds; its histogram has no `log`, `positive_min` null).
 
 Positions (`summary._all._geo_point`, one `{lat, lon}` or a list): a record's
 rows' own `lat`/`lon` (a box that is a single point counts as one). A record of

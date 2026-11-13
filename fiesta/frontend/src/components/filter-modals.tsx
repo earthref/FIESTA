@@ -441,6 +441,14 @@ export const formatValue = (value: number) =>
     : String(Number(value.toPrecision(4)));
 /** A bin edge as a typed bound: precise enough that the bin stays selected. */
 const edgeValue = (value: number) => String(Number(value.toPrecision(6)));
+/** A date filter's value (epoch ms) as its day, YYYY-MM-DD (UTC). */
+export const dateText = (ms: number) =>
+  Number.isFinite(ms) ? new Date(ms).toISOString().slice(0, 10) : "";
+const DAY = 86_400_000;
+/** A value as the histogram's axis and tooltip show it. */
+const showValue = (date: boolean, v: number) => (date ? dateText(v) : formatValue(v));
+/** A bin edge as a bound (a date's to the millisecond). */
+const edgeFor = (date: boolean, v: number) => (date ? String(Math.round(v)) : edgeValue(v));
 /** Whether a bin is inside [lo, hi], allowing for edgeValue's rounding. */
 const within = (bar: { lo: number; hi: number }, lo: number, hi: number) =>
   bar.lo >= lo - 1e-5 * Math.abs(lo) && bar.hi <= hi + 1e-5 * Math.abs(hi);
@@ -448,7 +456,8 @@ const within = (bar: { lo: number; hi: number }, lo: number, hi: number) =>
 /**
  * A numeric filter over the search's values: the histogram (the search
  * without this filter's own range) to brush or click, whose bins snap the
- * selection, and min/max boxes. Values show in the filter's units (`scale`).
+ * selection, and min/max boxes. Values show in the filter's units (`scale`);
+ * a date filter's (`date`, epoch ms) as days, typed in date boxes.
  */
 export function RangeModal({
   filter,
@@ -477,7 +486,10 @@ export function RangeModal({
     [ranges, field],
   );
   const stored = ranges.map(parseRange).find((entry) => entry.field === field);
-  const shown = (v: string | undefined) => (v ? formatValue(Number(v) / scale) : "");
+  const date = !!filter.date;
+  // The draft holds what the boxes type (a date's epoch ms, its box shows the day).
+  const shown = (v: string | undefined) =>
+    v ? (date ? String(Number(v)) : formatValue(Number(v) / scale)) : "";
   const initial = { gte: shown(stored?.gte), lte: shown(stored?.lte) };
   const [draft, setDraft] = useState(initial);
   const [log, setLog] = useState(false);
@@ -518,11 +530,11 @@ export function RangeModal({
       const covered = bars.filter((bar) => bar.hi > Math.min(x0, x1) && bar.lo < Math.max(x0, x1));
       if (!covered.length) return;
       setDraft({
-        gte: edgeValue(covered[0].lo),
-        lte: edgeValue(covered[covered.length - 1].hi),
+        gte: edgeFor(date, covered[0].lo),
+        lte: edgeFor(date, covered[covered.length - 1].hi),
       });
     },
-    [bars],
+    [bars, date],
   );
   const onBrush = useCallback((range: BrushRange) => selectBins(...range.x), [selectBins]);
   const onClick = useCallback(
@@ -563,7 +575,7 @@ export function RangeModal({
         max: bars[bars.length - 1]?.hi,
         scale: true,
         ...axisColors,
-        axisLabel: { color: colors.text, formatter: (v: number) => formatValue(v) },
+        axisLabel: { color: colors.text, formatter: (v: number) => showValue(date, v) },
         splitLine: { show: false },
       },
       yAxis: { type: "value", name: "Records", minInterval: 1, nameGap: 12, ...axisColors },
@@ -588,12 +600,12 @@ export function RangeModal({
           },
           tooltip: {
             formatter: (item: { value: number[] }) =>
-              `${formatValue(item.value[0])} – ${formatValue(item.value[1])}${unit}: ${item.value[3].toLocaleString()}`,
+              `${showValue(date, item.value[0])} – ${showValue(date, item.value[1])}${unit}: ${item.value[3].toLocaleString()}`,
           },
         },
       ],
     } as EChartsOption;
-  }, [bars, flags, xLog, label, filter.unit, unit, color]);
+  }, [bars, flags, xLog, label, filter.unit, unit, color, date]);
 
   const changed = draft.gte !== initial.gte || draft.lte !== initial.lte;
   const apply = () => {
@@ -602,18 +614,34 @@ export function RangeModal({
       anySelection ? [...others, `${field}:${store(draft.gte)}:${store(draft.lte)}`] : others,
     );
   };
-  const rangeInput = (which: "gte" | "lte", placeholder: string) => (
-    <input
-      type="number"
-      value={draft[which]}
-      placeholder={placeholder}
-      aria-label={`${label} ${which === "gte" ? "minimum" : "maximum"}`}
-      onChange={(event) => setDraft({ ...draft, [which]: event.target.value })}
-      className={cx(inputClass, "w-32")}
-    />
-  );
+  const rangeInput = (which: "gte" | "lte", placeholder: string) =>
+    date ? (
+      <input
+        type="date"
+        value={draft[which] === "" ? "" : dateText(Number(draft[which]))}
+        aria-label={`${label} ${which === "gte" ? "from" : "to"}`}
+        // From the start of the first day to the end of the last.
+        onChange={(event) => {
+          const day = Date.parse(event.target.value);
+          setDraft({
+            ...draft,
+            [which]: Number.isNaN(day) ? "" : String(which === "lte" ? day + DAY - 1 : day),
+          });
+        }}
+        className={cx(inputClass, "w-40")}
+      />
+    ) : (
+      <input
+        type="number"
+        value={draft[which]}
+        placeholder={placeholder}
+        aria-label={`${label} ${which === "gte" ? "minimum" : "maximum"}`}
+        onChange={(event) => setDraft({ ...draft, [which]: event.target.value })}
+        className={cx(inputClass, "w-32")}
+      />
+    );
   const extent = (v: number | null | undefined) =>
-    v === null || v === undefined ? "" : formatValue(v / scale);
+    v === null || v === undefined ? "" : date ? dateText(v) : formatValue(v / scale);
 
   return (
     <Modal
@@ -634,25 +662,27 @@ export function RangeModal({
     >
       <div className="flex flex-col gap-3 text-[13px] text-ink">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <fieldset className="m-0 inline-flex overflow-hidden rounded-sm border border-gray-300 p-0">
-            <legend className="sr-only">Bin scale</legend>
-            {SCALES.map(([value, name]) => (
-              <button
-                key={name}
-                type="button"
-                aria-pressed={log === value}
-                disabled={value && data !== undefined && data.positive_min === null}
-                title={value ? "Bins equal in log10 (values above zero)" : "Bins of equal width"}
-                onClick={() => setLog(value)}
-                className={cx(
-                  "cursor-pointer px-2.5 py-1 disabled:cursor-default disabled:opacity-45",
-                  log === value ? "bg-node font-bold text-white" : "bg-surface hover:bg-panel",
-                )}
-              >
-                {name}
-              </button>
-            ))}
-          </fieldset>
+          {!date && (
+            <fieldset className="m-0 inline-flex overflow-hidden rounded-sm border border-gray-300 p-0">
+              <legend className="sr-only">Bin scale</legend>
+              {SCALES.map(([value, name]) => (
+                <button
+                  key={name}
+                  type="button"
+                  aria-pressed={log === value}
+                  disabled={value && data !== undefined && data.positive_min === null}
+                  title={value ? "Bins equal in log10 (values above zero)" : "Bins of equal width"}
+                  onClick={() => setLog(value)}
+                  className={cx(
+                    "cursor-pointer px-2.5 py-1 disabled:cursor-default disabled:opacity-45",
+                    log === value ? "bg-node font-bold text-white" : "bg-surface hover:bg-panel",
+                  )}
+                >
+                  {name}
+                </button>
+              ))}
+            </fieldset>
+          )}
           <label className="flex items-center gap-1.5">
             <span className="text-ink-muted">Bins</span>
             <select
@@ -834,7 +864,8 @@ export function useColumnLabel(table: string): (column: string) => string {
 /** A range entry's bounds as a chip's text, in the filter's units. */
 export function rangeText(filter: SearchFilter, entry: { gte: string; lte: string }): string {
   const scale = filter.scale || 1;
-  const shown = (v: string) => (v === "" ? "" : formatValue(Number(v) / scale));
+  const shown = (v: string) =>
+    v === "" ? "" : filter.date ? dateText(Number(v)) : formatValue(Number(v) / scale);
   const unit = filter.unit ? ` ${filter.unit}` : "";
   const [gte, lte] = [shown(entry.gte), shown(entry.lte)];
   return gte && lte ? `${gte} to ${lte}${unit}` : gte ? `≥ ${gte}${unit}` : `≤ ${lte}${unit}`;
@@ -1317,6 +1348,7 @@ export function GeoModal({
               filters={filters}
               has={has}
               area={draft}
+              editArea
               onAreaChange={fromMap}
               areaRequest={request}
               onRequestArea={() => setRequest({})}

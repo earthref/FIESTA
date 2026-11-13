@@ -137,16 +137,18 @@ function ColorLegend({ scale, option }: { scale: ColorScale | null; option: MapC
 }
 
 /** An area filter asked for (the Geospatial filter modal on opening without
- * one, or the map's Filter by area button), in a given view (`mode`), and zooming the map to it (`zoomTo`). */
+ * one, or its map's Filter by area button), in a given view (`mode`), and zooming the map to it (`zoomTo`). */
 export type AreaRequest = { mode?: Mode; zoomTo?: boolean };
 
 /**
  * The Map tab (ported from osu-mgr.org's search map): every positioned
  * record at this level matching the search, on a globe, a Mercator map or a
- * globe over either pole, over Esri's Ocean basemap. The area filter narrows
- * the search to a box that can be moved and resized on the map; the records
- * it leaves out stay on the map in grey. Records on the Moon are on
- * its map (the Earth / Moon buttons); the area is on Earth.
+ * globe over either pole, over Esri's Ocean basemap. With `editArea` (the
+ * Geospatial filter modal's map) the area filter is a box that can be moved
+ * and resized on the map, and the records it leaves out stay on the map in
+ * grey; the Map tab only shows the search, an area included (2026-11-13).
+ * Records on the Moon are on its map (the Earth / Moon buttons); the area is
+ * on Earth.
  */
 export function SearchMap({
   level,
@@ -155,9 +157,10 @@ export function SearchMap({
   filters,
   has,
   area,
-  onAreaChange,
+  editArea = false,
+  onAreaChange = () => {},
   areaRequest = null,
-  onRequestArea,
+  onRequestArea = () => {},
   onAreaRequestDone,
   onSelect,
   color,
@@ -173,9 +176,11 @@ export function SearchMap({
   /** The search's scope filters (My contributions, Previous versions). */
   scope?: SearchScope;
   area: Area | null;
-  onAreaChange: (area: Area | null) => void;
+  /** The area is drawn, moved and resized here (the Geospatial filter's map). */
+  editArea?: boolean;
+  onAreaChange?: (area: Area | null) => void;
   areaRequest?: AreaRequest | null;
-  onRequestArea: () => void;
+  onRequestArea?: () => void;
   // Called when a request needs no new area (there is one already).
   onAreaRequestDone?: () => void;
   onSelect: (contributionId: string) => void;
@@ -226,7 +231,7 @@ export function SearchMap({
     has,
     undefined,
     color,
-    Boolean(area),
+    editArea && Boolean(area),
     undefined,
     scope,
   );
@@ -254,13 +259,13 @@ export function SearchMap({
     [colored, body],
   );
   const context = useMemo<MapPoint[]>(() => {
-    if (!area || !all.data) return [];
+    if (!editArea || !area || !all.data) return [];
     // A record, or a location's records in a contribution (whose name is their
     // number, which differs between the two searches).
     const key = (p: MapPoint) => `${p.id}|${p.count === undefined ? p.name : ""}|${pointKey(p)}`;
     const plotted = new Set(points.map(key));
     return all.data.points.filter((p) => (p.body ?? "earth") === body && !plotted.has(key(p)));
-  }, [area, all.data, points, body]);
+  }, [area, all.data, points, body, editArea]);
 
   // An area asked for, in the view asked for, once the search's records have
   // loaded (as on osu-mgr.org): around them, or, for an unfiltered search,
@@ -343,7 +348,7 @@ export function SearchMap({
           counts={counts?.modes}
           emptyTitle={(each) => noneMapped(inMode(each))}
         />
-        {area ? (
+        {!editArea ? null : area ? (
           <button
             type="button"
             onClick={() => onAreaChange(null)}
@@ -396,9 +401,9 @@ export function SearchMap({
             body={body}
             points={points}
             onSelect={onSelect}
-            area={onEarth ? area : null}
+            area={editArea && onEarth ? area : null}
             onAreaChange={onAreaChange}
-            requestViewArea={onEarth && requestViewArea}
+            requestViewArea={editArea && onEarth && requestViewArea}
             zoomTo={onEarth ? zoomTo : null}
             focusKey={focusKey}
             context={context}

@@ -23,6 +23,8 @@ from fiesta.settings import get_settings
 LAT_COLUMNS = ("lat", "lat_s", "lat_n")
 LON_COLUMNS = ("lon", "lon_w", "lon_e")
 BOX_COLUMNS = ("lon_w", "lat_s", "lon_e", "lat_n")
+# All of them: the Geospatial filter's, so no `numeric` filter of their own.
+POSITION_COLUMNS = frozenset(LAT_COLUMNS + LON_COLUMNS)
 # Data-model column types also indexed as numbers, in summary._num.<column>.
 NUMBER_TYPES = {"Number", "Integer"}
 # Number columns that are ids, not measurements (FIESTA's row stamps).
@@ -180,7 +182,11 @@ class SearchFilter(BaseModel):
     the level's `summary._num` columns as a range filter of its own (those no
     `range` filter has). `text`: each of the level's text columns
     (`NodeConfig.text_columns`) as a facet of its own (those no `facet`
-    filter has).
+    filter has). A facet on `id` or `contributor` (search/queries.py
+    CONTRIBUTION_FACETS) is on the contribution block, not `_all`: every
+    node's Contribution ID and Contributor filters. `date` (range, on a date
+    field: summary.contribution.timestamp, Contributed On): bounds in epoch
+    milliseconds, typed and shown as dates.
     `exists`: the with/without data picker, a tab per table the level's docs
     record (`NodeConfig.exists_tables`) listing its data-model columns, each
     ticked one `has=<table>:<column>` (with data) or `has=!<table>:<column>`
@@ -202,9 +208,14 @@ class SearchFilter(BaseModel):
     min: float | None = None
     max: float | None = None
     timescale: bool = False
+    date: bool = False
 
     @model_validator(mode="after")
     def _check_field(self) -> "SearchFilter":
+        if self.date and self.type != "range":
+            raise ValueError("only a range filter can be a date")
+        if self.type == "facet" and self.field == "private_key":
+            raise ValueError("a facet can never list contributions' private keys")
         if self.type == "bbox":
             if self.field:
                 raise ValueError("a bbox filter has no field (it uses summary._all._geo_point)")

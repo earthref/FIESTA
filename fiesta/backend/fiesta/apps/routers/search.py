@@ -29,7 +29,7 @@ from fiesta.apps.schemas import (
     SearchValues,
 )
 from fiesta.db.models import Contribution, User
-from fiesta.nodeconfig import ANY_TABLE, MapColor
+from fiesta.nodeconfig import ANY_TABLE, POSITION_COLUMNS, MapColor
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import (
     ROW_SORT_PREFIX,
@@ -38,7 +38,13 @@ from fiesta.search.grid import (
     row_sort_clauses,
     sort_clauses,
 )
-from fiesta.search.queries import HAS_FIELD, SORT_OPTIONS, build_search_body
+from fiesta.search.queries import (
+    DATE_FIELDS,
+    HAS_FIELD,
+    SORT_OPTIONS,
+    build_search_body,
+    facet_path,
+)
 from fiesta.services.access import constrain_search
 from fiesta.services.contributions import load_file
 from fiesta.services.history import locate_row, row_stats, table_page, versions
@@ -259,7 +265,8 @@ async def _constrain(
 def _facet_bucket(bucket: dict) -> dict:
     """A facet value's docs, its rows (levels with a count_field) and, with
     `totals`, its positioned docs: the sidebar counts follow the sub-tab."""
-    out = {"key": bucket["key"], "doc_count": bucket["doc_count"]}
+    # A number field's keys (a contribution ID) as text, as query tokens are.
+    out = {"key": str(bucket["key"]), "doc_count": bucket["doc_count"]}
     if "count" in bucket:
         # An index that has never held the count field sums to 0: one row each.
         out["rows_count"] = int(bucket["count"]["value"] or 0) or bucket["doc_count"]
@@ -819,12 +826,13 @@ async def search_histogram(
     )
     await _constrain(session, node, body, query, contribution, private_key, scope)
     body.pop("sort", None)
-    body["aggs"] = {
-        "all": {"stats": {"field": path}},
+    date = path in DATE_FIELDS
+    body["aggs"] = {"all": {"stats": {"field": path}}}
+    if not date:
         # The least value above zero of the docs with one: of each doc's
         # values only those above zero (a multi-valued field, summary._num,
-        # can hold negatives beside them).
-        "positive": {
+        # can hold negatives beside them). A date has no log scale.
+        body["aggs"]["positive"] = {
             "filter": {"range": {path: {"gt": 0}}},
             "aggs": {
                 "s": {
@@ -836,8 +844,7 @@ async def search_histogram(
                     }
                 }
             },
-        },
-    }
+        }
     client = get_opensearch()
     try:
         response = await client.search(index=node.search_index, body=body)
@@ -852,7 +859,8 @@ async def search_histogram(
     total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
     stats = response["aggregations"]["all"]
     lo, hi = stats.get("min"), stats.get("max")
-    positive_min = response["aggregations"]["positive"]["s"].get("value")
+    positive = response["aggregations"].get("positive")
+    positive_min = positive["s"].get("value") if positive else None
     if positive_min is not None and not (0 < positive_min < math.inf):
         positive_min = None
     if lo is None or hi is None:
@@ -1012,7 +1020,7 @@ def _filter_count_clause(node, table: str, key: str) -> dict:
         paths = [f"{HAS_FIELD}.{t}" for t in node.exists_tables(table)]
     elif kind == "facet" and field:
         _facet_names(node, table, False, [field])
-        paths = [f"summary._all.{field}.raw"]
+        paths = [facet_path(field)]
     elif kind == "range" and field:
         configured = {f.field for f in node.search.filters if f.type == "range"}
         numbers = {f"summary._num.{c}" for c in node.number_columns(table)}
@@ -1063,7 +1071,12 @@ async def search_filter_counts(
         if key == "text:*":
             expanded += [f"facet:{c}" for c in node.text_columns(table)]
         elif key == "numeric:*":
-            expanded += [f"range:summary._num.{c}" for c in node.number_columns(table)]
+            # Not the position columns: the Geospatial filter is theirs.
+            expanded += [
+                f"range:summary._num.{c}"
+                for c in node.number_columns(table)
+                if c not in POSITION_COLUMNS
+            ]
         else:
             expanded.append(key)
     keys = list(dict.fromkeys(expanded))

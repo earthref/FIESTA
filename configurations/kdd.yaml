@@ -23,7 +23,11 @@ search:
     - {name: Contributions, table: contribution}
     - {name: Partition Coefficients, table: kds, count_field: summary.kds._n_results}
   extra_types: []
-  filters: []
+  filters:
+    # Every node's contribution filters (the contribution block's id, contributor, timestamp).
+    - { type: facet, field: id, label: Contribution ID }
+    - { type: facet, field: contributor, label: Contributor }
+    - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
 
 storage:
   bucket: kdd

@@ -23,6 +23,20 @@ CONTRIBUTION_TERMS = {
     "contributor": "summary.contribution._contributor.raw",
     "orcid": "summary.contribution._reference.authors._orcid.raw",
 }
+# The contribution-block terms a facet filter can be on (every node's
+# Contribution ID and Contributor filters); never the private key.
+CONTRIBUTION_FACETS = {"id", "contributor", "doi", "orcid"}
+# Date fields: a range filter's bounds and histogram are epoch milliseconds.
+DATE_FIELDS = {"summary.contribution.timestamp"}
+
+
+def facet_path(field: str) -> str:
+    """A facet's keyword field: a contribution-block term's, else the doc's
+    `_all` roll-up of that column."""
+    if field in CONTRIBUTION_FACETS:
+        return CONTRIBUTION_TERMS[field]
+    return f"summary._all.{field}.raw"
+
 
 # Free text searches the contribution block and each doc's `_all` roll-up
 # (which already unions the doc's own level values), never every field: the
@@ -158,6 +172,9 @@ def build_search_body(
         if not field.startswith("summary."):
             continue
         bounds = {op: range_filter[op] for op in ("gte", "lte") if range_filter.get(op) is not None}
+        if field in DATE_FIELDS:
+            # Whole epoch milliseconds (the date format's epoch_millis).
+            bounds = {op: int(value) for op, value in bounds.items()}
         if bounds:
             filters.append({"range": {field: bounds}})
 
@@ -203,9 +220,7 @@ def build_search_body(
     if facets:
         aggs: dict[str, Any] = {}
         for facet in facets:
-            agg: dict[str, Any] = {
-                "terms": {"field": f"summary._all.{facet}.raw", "size": facet_size}
-            }
+            agg: dict[str, Any] = {"terms": {"field": facet_path(facet), "size": facet_size}}
             if count_field:
                 # Each value's rows, for the Rows sub-tab (a doc without the
                 # count field is one row, as in the router's `_n_rows`).
