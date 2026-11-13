@@ -10,9 +10,6 @@ interface ModalProps {
   wide?: boolean;
   /** Wider still, for a filter's list, histogram or map. */
   xl?: boolean;
-  /** A menu down the left (the search's filters, one tab each); the modal
-   * then keeps its height as the tabs change. */
-  nav?: ReactNode;
   /** The title as large as the search's level tabs (the filter modals). */
   largeTitle?: boolean;
 }
@@ -25,7 +22,6 @@ export function Modal({
   footer,
   wide,
   xl,
-  nav,
   largeTitle,
 }: ModalProps) {
   const panelRef = useRef<HTMLDialogElement>(null);
@@ -59,7 +55,7 @@ export function Modal({
         tabIndex={-1}
         className={cx(
           "relative m-0 flex max-h-[85vh] w-full flex-col rounded-lg border-0 bg-surface p-0 shadow-xl outline-hidden",
-          nav ? "h-[85vh] max-w-6xl" : xl ? "max-w-5xl" : wide ? "max-w-3xl" : "max-w-lg",
+          xl ? "max-w-5xl" : wide ? "max-w-3xl" : "max-w-lg",
         )}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
@@ -83,32 +79,9 @@ export function Modal({
             </svg>
           </button>
         </div>
-        {nav ? (
-          <div className="flex min-h-0 flex-1">
-            <nav
-              aria-label="Filters"
-              className="flex w-56 shrink-0 flex-col border-r border-gray-100 bg-panel"
-            >
-              {nav}
-            </nav>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
-              {footer && (
-                <div className="flex justify-end gap-2 border-t border-gray-100 px-4 py-3">
-                  {footer}
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-y-auto px-4 py-4">{children}</div>
-            {footer && (
-              <div className="flex justify-end gap-2 border-t border-gray-100 px-4 py-3">
-                {footer}
-              </div>
-            )}
-          </>
+        <div className="overflow-y-auto px-4 py-4">{children}</div>
+        {footer && (
+          <div className="flex justify-end gap-2 border-t border-gray-100 px-4 py-3">{footer}</div>
         )}
       </dialog>
     </div>

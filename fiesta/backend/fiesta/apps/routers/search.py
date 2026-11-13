@@ -111,13 +111,14 @@ def _grid_filters(node, table: str, filters: list[str] | None) -> list[dict]:
 
 def _facet_names(node, table: str, facets: bool, facet: list[str] | None) -> list[str]:
     """The columns aggregated as facet buckets: `facet=<column>` (a sidebar
-    facet, a facet of a grid column's header menu on the level, or an active
-    plugin's `search_facets`), else with `facets` the sidebar's."""
+    facet, a text column of the level (the `text` filter's), a facet of a grid
+    column's header menu on the level, or an active plugin's `search_facets`),
+    else with `facets` the sidebar's."""
     from fiesta.plugins import active_plugins
 
     if not facet:
         return node.search.facets if facets else []
-    allowed = set(node.search.facets)
+    allowed = set(node.search.facets) | set(node.text_columns(table))
     for column in _grid_columns(node, table).values():
         allowed.update(column.facets)
     for plugin in active_plugins(node):
@@ -1050,11 +1051,22 @@ async def search_filter_counts(
 ) -> FilterCounts:
     """The sidebar filters' counts: of the docs matching a search, how many
     have a value for each filter (`count=<key>`, see _filter_count_clause),
-    so a filter shows the most records it can match and is disabled at zero.
-    One request, a `filters` aggregation."""
+    so a filter shows the most records it can match and is hidden at zero.
+    `text:*` counts each of the level's text columns (`facet:<column>`) and
+    `numeric:*` each number column (`range:summary._num.<column>`): the
+    `text` and `numeric` filters' entries, one per column, whose list this
+    gives too. One request, a `filters` aggregation."""
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
-    keys = list(dict.fromkeys(count))
+    expanded: list[str] = []
+    for key in count:
+        if key == "text:*":
+            expanded += [f"facet:{c}" for c in node.text_columns(table)]
+        elif key == "numeric:*":
+            expanded += [f"range:summary._num.{c}" for c in node.number_columns(table)]
+        else:
+            expanded.append(key)
+    keys = list(dict.fromkeys(expanded))
     clauses = {key: _filter_count_clause(node, table, key) for key in keys}
     body = build_search_body(
         table=table,

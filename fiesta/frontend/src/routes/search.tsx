@@ -18,14 +18,11 @@ import {
   ExistsModal,
   FacetModal,
   type FacetSpec,
-  type FilterNav,
-  type FilterTab,
-  FilterTabs,
   GeoModal,
   hasText,
-  NumericModal,
   RangeModal,
   rangeText,
+  useColumnLabel,
   useLatestDataModel,
   useNumberFilter,
 } from "../components/filter-modals";
@@ -40,6 +37,7 @@ import {
   FilterEntry,
   filterLabel,
   hasFor,
+  NUMBER_PREFIX,
   parseHas,
   parseRange,
   pickedRanges,
@@ -206,23 +204,27 @@ function searchRequestParams(
 
 /** The filter modal open over the search: a facet list (the sidebar's, or a
  * grid column's with its text box), a numeric range, or the geospatial area
- * (`area`, every level with positions) / a bbox filter (`bbox`, a plugin view).
- * `tab`: the sidebar filter it is the tab of (filterKey); opened from a grid
- * column it has none, and no tabs down its left. */
-type FilterModalState = (
+ * (`area`, every level with positions) / a bbox filter (`bbox`, a plugin view),
+ * or the columns with data (`sense` false) or without (true). */
+type FilterModalState =
   | { kind: "facet"; title: string; facets: FacetSpec[]; column?: GridColumn }
-  // `back`: the numeric filter whose picker it was chosen from.
-  | { kind: "range"; filter: SearchFilter; back?: SearchFilter }
-  | { kind: "numeric"; filter: SearchFilter }
-  | { kind: "exists"; filter: SearchFilter }
-  | { kind: "geo"; title: string; target: "area" | "bbox" }
-) & { tab?: string };
+  | { kind: "range"; filter: SearchFilter }
+  | { kind: "exists"; sense: boolean }
+  | { kind: "geo"; title: string; target: "area" | "bbox" };
 
-/** The sidebar's Geospatial entry's tab. */
-const GEO_TAB = "geo";
+/** One filter in the sidebar: its count (undefined loading, null uncounted),
+ * applied values and modal. */
+type SidebarEntry = {
+  key: string;
+  label: string;
+  count: number | null | undefined;
+  chips: FilterChip[];
+  open: () => void;
+};
 
-/** A sidebar filter's key, and its tab's in the filter modal. */
-const filterKey = (filter: SearchFilter) => `${filter.type}-${filter.field ?? filterLabel(filter)}`;
+/** Query tokens on the contribution block (search/queries.py
+ * CONTRIBUTION_TERMS), never a text column's facet. */
+const CONTRIBUTION_TOKENS = new Set(["id", "private_key", "doi", "contributor", "orcid"]);
 
 /** An area's extent as one chip's text. */
 function areaText(area: Area): string {
@@ -416,7 +418,7 @@ export function SearchPage() {
   // An area asked for by the Map tab's Filter by area button.
   const [areaRequest, setAreaRequest] = useState<AreaRequest | null>(null);
   const [filterModal, setFilterModal] = useState<FilterModalState | null>(null);
-  // The filter modal's Find box over its tabs (kept as the tabs change).
+  // The sidebar's Find box over its filters.
   const [filterFind, setFilterFind] = useState("");
   const setArea = (next: Area | null) => {
     setAreaRequest(null);
@@ -551,6 +553,8 @@ export function SearchPage() {
   const dataModel = useLatestDataModel();
   // A picked number column as a range filter (its label and unit).
   const numberFilter = useNumberFilter(level?.table ?? "");
+  // A text column's name (the `text` filter's facets).
+  const columnLabel = useColumnLabel(level?.table ?? "");
 
   // The grids are sized to every match (up to MAX_RESULTS) and fetch the
   // pages under their visible rows; page 0 carries the totals. Facet values
@@ -650,9 +654,11 @@ export function SearchPage() {
   };
 
   // The sidebar's count beside each filter: of the matches, how many have a
-  // value for it (the most it can match); a filter at zero is disabled. One
+  // value for it (the most it can match); a filter at zero is hidden. One
   // request per table the filters count on (a plugin view's docs, a range on
-  // a plugin block, else the level's records).
+  // a plugin block, else the level's records). The `numeric` and `text`
+  // filters count every number / text column of the level (`numeric:*`,
+  // `text:*`), and those counts' keys list the columns.
   const countKey = (filter: SearchFilter) =>
     filter.type === "facet" || filter.type === "range"
       ? `${filter.type}:${filter.field ?? ""}`
@@ -675,7 +681,9 @@ export function SearchPage() {
           table,
           table === level.table ? levelParams(q, ranges) : pluginParams(table, q, ranges),
         );
-      } else if (filter.type === "numeric" || filter.type === "exists") {
+      } else if (filter.type === "numeric" || filter.type === "text") {
+        countOn(`${filter.type}:*`, level.table, levelParams(q, ranges));
+      } else if (filter.type === "exists") {
         countOn(countKey(filter), level.table, levelParams(q, ranges));
       } else {
         countOn(countKey(filter), levelTable, modalParams(q, ranges));
@@ -692,12 +700,52 @@ export function SearchPage() {
       placeholderData: keepPreviousData,
     })),
   });
-  // undefined while loading, null when it could not be counted.
+  // undefined while loading, null when it could not be counted. A column's
+  // count is in its `numeric:*` / `text:*` request's.
+  const starKey = (key: string) =>
+    key.startsWith("facet:")
+      ? "text:*"
+      : key.startsWith(`range:${NUMBER_PREFIX}`)
+        ? "numeric:*"
+        : undefined;
   const filterCount = (key: string): number | null | undefined => {
-    const query = filterCountQueries[countRequests.findIndex((group) => group.keys.includes(key))];
+    let index = countRequests.findIndex((group) => group.keys.includes(key));
+    const star = starKey(key);
+    if (index < 0 && star) index = countRequests.findIndex((group) => group.keys.includes(star));
+    const query = filterCountQueries[index];
     if (!query || query.isError) return null;
-    return query.data?.counts[key];
+    return query.data ? (query.data.counts[key] ?? null) : undefined;
   };
+  // The level's number and text columns, as its `numeric:*` / `text:*` counts list them.
+  const columnCounts = Object.keys(
+    filterCountQueries[countRequests.findIndex((group) => group.table === level?.table)]?.data
+      ?.counts ?? {},
+  );
+  const showText = filters.some((f) => f.type === "text");
+  const sidebarFacets = new Set(facetFields);
+  // A text column's facet: the level's text columns, and any other token
+  // applied (from another level), so it can be seen and removed.
+  const textColumns = showText
+    ? [
+        ...new Set([
+          ...columnCounts.filter((key) => key.startsWith("facet:")).map((key) => key.slice(6)),
+          ...parseQueryTokens(q)
+            .tokens.map(([field]) => field)
+            .filter((field) => !CONTRIBUTION_TOKENS.has(field)),
+        ]),
+      ].filter((column) => !sidebarFacets.has(column))
+    : [];
+  const rangeFields = new Set(filters.filter((f) => f.type === "range").map((f) => f.field));
+  const numberFields = filters.some((f) => f.type === "numeric")
+    ? [
+        ...new Set([
+          ...columnCounts
+            .filter((key) => key.startsWith(`range:${NUMBER_PREFIX}`))
+            .map((key) => key.slice(6)),
+          ...pickedRanges(ranges, filters).map((entry) => parseRange(entry).field),
+        ]),
+      ].filter((field) => !rangeFields.has(field))
+    : [];
   const topContributionId =
     level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
 
@@ -714,7 +762,7 @@ export function SearchPage() {
   const clearFilters = () => {
     const keptRanges = ranges.filter((entry) => !activeRanges.includes(entry));
     setSearch({
-      q: queryWithout(q, clearedFacets),
+      q: queryWithout(q, [...clearedFacets, ...textColumns]),
       ranges: keptRanges,
       filter: [],
       has: has.filter((entry) => !activeHas.includes(entry)),
@@ -726,6 +774,7 @@ export function SearchPage() {
   };
   const clearActive =
     hasFacetFilters ||
+    parseQueryTokens(q).tokens.some(([field]) => textColumns.includes(field)) ||
     activeRanges.length > 0 ||
     activeHas.length > 0 ||
     !!activeBbox ||
@@ -803,44 +852,37 @@ export function SearchPage() {
     return <ColumnFilterButton label={column.label} active={active} onOpen={open} />;
   };
 
-  // The sidebar: each filter with its applied values as chips.
-  const chipsFor = (filter: SearchFilter): FilterChip[] => {
-    if (filter.type === "facet") {
-      const field = filter.field ?? "";
-      return queryTokens
-        .filter(([f]) => f === field)
-        .map(([, value]) => ({
-          key: value,
-          label: value,
-          onRemove: () => setSearch({ q: toggleQueryToken(q, field, value) }),
-        }));
-    }
-    const removeRange = (field: string) => () =>
-      setSearch({ ranges: ranges.filter((r) => parseRange(r).field !== field) });
-    if (filter.type === "range") {
-      const entry = ranges.map(parseRange).find((r) => r.field === filter.field);
-      if (!entry) return [];
-      const text = rangeText(filter, entry);
-      return [
-        {
-          key: "range",
-          label: text,
-          title: `${filterLabel(filter)} ${text}`,
-          onRemove: removeRange(entry.field),
-        },
-      ];
-    }
-    if (filter.type === "numeric") {
-      // Each picked column's range, named.
-      return pickedRanges(ranges, filters).map((spec) => {
-        const entry = parseRange(spec);
-        const picked = numberFilter(entry.field);
-        const text = `${filterLabel(picked)} ${rangeText(picked, entry)}`;
-        return { key: entry.field, label: text, title: text, onRemove: removeRange(entry.field) };
-      });
-    }
-    if (filter.type === "exists") {
-      return activeHas.map((entry) => {
+  // The sidebar's entries: Geospatial, each configured filter, the
+  // `numeric` filter's number columns and the `text` filter's text columns
+  // each a filter of its own (those no range / facet filter has), and the
+  // `exists` filter as With Data and Without Data. Applied ones lead, then
+  // the most records; those no record has a value for are hidden.
+  const facetChips = (field: string): FilterChip[] =>
+    queryTokens
+      .filter(([f]) => f === field)
+      .map(([, value]) => ({
+        key: value,
+        label: value,
+        onRemove: () => setSearch({ q: toggleQueryToken(q, field, value) }),
+      }));
+  const rangeChips = (filter: SearchFilter): FilterChip[] => {
+    const entry = ranges.map(parseRange).find((r) => r.field === filter.field);
+    if (!entry) return [];
+    const text = rangeText(filter, entry);
+    return [
+      {
+        key: "range",
+        label: text,
+        title: `${filterLabel(filter)} ${text}`,
+        onRemove: () =>
+          setSearch({ ranges: ranges.filter((r) => parseRange(r).field !== entry.field) }),
+      },
+    ];
+  };
+  const hasChips = (without: boolean): FilterChip[] =>
+    activeHas
+      .filter((entry) => parseHas(entry).without === without)
+      .map((entry) => {
         const text = hasText(dataModel, parseHas(entry));
         return {
           key: entry,
@@ -849,85 +891,87 @@ export function SearchPage() {
           onRemove: () => setSearch({ has: has.filter((e) => e !== entry) }),
         };
       });
-    }
-    const box = parseArea(bbox);
-    return box
-      ? [{ key: "bbox", label: areaText(box), onRemove: () => setSearch({ bbox: undefined }) }]
-      : [];
-  };
-  const openFilter = (filter: SearchFilter) => {
-    const tab = filterKey(filter);
-    setFilterModal(
-      filter.type === "facet"
-        ? {
-            kind: "facet",
-            title: filterLabel(filter),
-            facets: [{ field: filter.field ?? "", label: filterLabel(filter) }],
-            tab,
-          }
-        : filter.type === "range"
-          ? { kind: "range", filter, tab }
-          : filter.type === "numeric"
-            ? { kind: "numeric", filter, tab }
-            : filter.type === "exists"
-              ? { kind: "exists", filter, tab }
-              : { kind: "geo", title: filterLabel(filter), target: "bbox", tab },
-    );
-  };
-
-  // The sidebar's filters, each also a tab down the filter modal's left. A
-  // view with its own bbox filter (Poles) shows the area only while set.
+  const facetEntry = (field: string, label: string): SidebarEntry => ({
+    key: `facet:${field}`,
+    label,
+    count: filterCount(`facet:${field}`),
+    chips: facetChips(field),
+    open: () => setFilterModal({ kind: "facet", title: label, facets: [{ field, label }] }),
+  });
+  const rangeEntry = (filter: SearchFilter): SidebarEntry => ({
+    key: `range:${filter.field}`,
+    label: filterLabel(filter),
+    count: filterCount(`range:${filter.field}`),
+    chips: rangeChips(filter),
+    open: () => setFilterModal({ kind: "range", filter }),
+  });
+  // A view with its own bbox filter (Poles) shows the area only while set.
   const showGeo = !!level.geo && (!!area || !filters.some((f) => f.type === "bbox"));
-  const filterTabs: FilterTab[] = [
-    ...(showGeo
-      ? [{ key: GEO_TAB, label: "Geospatial", count: filterCount("geo"), applied: area ? 1 : 0 }]
-      : []),
-    ...filters.map((filter) => ({
-      key: filterKey(filter),
-      label: filterLabel(filter),
-      count: filterCount(countKey(filter)),
-      applied: chipsFor(filter).length,
-    })),
-  ];
-  const openTab = (key: string) => {
-    if (key === GEO_TAB) {
-      setFilterModal({ kind: "geo", title: "Geospatial", target: "area", tab: GEO_TAB });
-      return;
+  const entries: SidebarEntry[] = showGeo
+    ? [
+        {
+          key: "geo",
+          label: "Geospatial",
+          count: filterCount("geo"),
+          chips: area
+            ? [{ key: "area", label: areaText(area), onRemove: () => setArea(null) }]
+            : [],
+          open: () => setFilterModal({ kind: "geo", title: "Geospatial", target: "area" }),
+        },
+      ]
+    : [];
+  for (const filter of filters) {
+    if (filter.type === "facet") {
+      entries.push(facetEntry(filter.field ?? "", filterLabel(filter)));
+    } else if (filter.type === "range") {
+      entries.push(rangeEntry(filter));
+    } else if (filter.type === "numeric") {
+      entries.push(...numberFields.map((field) => rangeEntry(numberFilter(field))));
+    } else if (filter.type === "text") {
+      entries.push(...textColumns.map((column) => facetEntry(column, columnLabel(column))));
+    } else if (filter.type === "exists") {
+      for (const without of [false, true]) {
+        entries.push({
+          key: `exists:${without}`,
+          label: without ? "Without Data" : "With Data",
+          count: filterCount("exists"),
+          chips: hasChips(without),
+          open: () => setFilterModal({ kind: "exists", sense: without }),
+        });
+      }
+    } else {
+      const box = parseArea(bbox);
+      entries.push({
+        key: "bbox",
+        label: filterLabel(filter),
+        count: filterCount("bbox"),
+        chips: box
+          ? [{ key: "bbox", label: areaText(box), onRemove: () => setSearch({ bbox: undefined }) }]
+          : [],
+        open: () => setFilterModal({ kind: "geo", title: filterLabel(filter), target: "bbox" }),
+      });
     }
-    const filter = filters.find((f) => filterKey(f) === key);
-    if (filter) openFilter(filter);
-  };
-  const openFromSidebar = (key: string) => {
-    setFilterFind("");
-    openTab(key);
-  };
+  }
+  const findNeedle = filterFind.trim().toLowerCase();
+  const sidebarEntries = entries
+    .map((entry, order) => ({ entry, order, applied: entry.chips.length > 0 }))
+    .filter(({ entry, applied }) => applied || entry.count !== 0)
+    .filter(({ entry }) => !findNeedle || entry.label.toLowerCase().includes(findNeedle))
+    .sort(
+      (a, b) =>
+        Number(b.applied) - Number(a.applied) ||
+        (b.entry.count ?? -1) - (a.entry.count ?? -1) ||
+        a.order - b.order,
+    )
+    .map(({ entry }) => entry);
 
   const renderFilterModal = () => {
     if (!filterModal) return null;
     const close = () => setFilterModal(null);
-    const { tab } = filterModal;
-    // Another tab applies this one's changes first (its onApply closes it,
-    // and the tab's modal opens in its place).
-    const nav: FilterNav | undefined = tab
-      ? (pending) => (
-          <FilterTabs
-            tabs={filterTabs}
-            active={tab}
-            find={filterFind}
-            onFind={setFilterFind}
-            onSelect={(key) => {
-              pending?.();
-              openTab(key);
-            }}
-          />
-        )
-      : undefined;
     if (filterModal.kind === "facet") {
       const { column } = filterModal;
       return (
         <FacetModal
-          key={tab ?? `column-${column?.key}`}
-          nav={nav}
           title={filterModal.title}
           facets={filterModal.facets}
           // A column's lists count the level's records (the Summaries grid).
@@ -954,11 +998,11 @@ export function SearchPage() {
       );
     }
     if (filterModal.kind === "exists") {
+      const { sense } = filterModal;
       return (
         <ExistsModal
-          key={tab}
-          nav={nav}
-          title={filterLabel(filterModal.filter)}
+          title={sense ? "Without Data" : "With Data"}
+          sense={sense}
           table={level.table}
           levelName={level.name}
           tabs={existsTabs}
@@ -972,29 +1016,12 @@ export function SearchPage() {
         />
       );
     }
-    if (filterModal.kind === "numeric") {
-      const picker = filterModal.filter;
-      return (
-        <NumericModal
-          key={tab}
-          nav={nav}
-          title={filterLabel(picker)}
-          table={level.table}
-          ranges={ranges}
-          paramsFor={(rangeList) => levelParams(q, rangeList)}
-          onPick={(filter) => setFilterModal({ kind: "range", filter, back: picker, tab })}
-          onClose={close}
-        />
-      );
-    }
     if (filterModal.kind === "range") {
-      const { filter, back } = filterModal;
+      const { filter } = filterModal;
       return (
         <RangeModal
           key={filter.field}
-          nav={nav}
           filter={filter}
-          onBack={back ? () => setFilterModal({ kind: "numeric", filter: back, tab }) : undefined}
           table={rangeTable(filter)}
           ranges={ranges}
           paramsFor={(rangeList) =>
@@ -1015,7 +1042,6 @@ export function SearchPage() {
     return (
       <GeoModal
         key={filterModal.target}
-        nav={nav}
         title={filterModal.title}
         level={level}
         query={q}
@@ -1239,6 +1265,22 @@ export function SearchPage() {
                 </button>
               </span>
             </div>
+            {/* Find a filter by name (new in FIESTA: a filter per data-model column). */}
+            {!filtersPanel && (
+              <div style={{ padding: "0.5em 1em", borderBottom: "1px solid var(--er-edge)" }}>
+                <input
+                  type="search"
+                  value={filterFind}
+                  onChange={(event) => setFilterFind(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") sidebarEntries[0]?.open();
+                  }}
+                  placeholder="Find a filter"
+                  aria-label="Find a filter"
+                  className="w-full rounded-sm border border-gray-300 bg-surface px-[0.8em] py-[0.45em] text-[13px] placeholder:text-ink-faint focus:border-node focus:outline-hidden"
+                />
+              </div>
+            )}
             {/* `ui small basic attached segment`: transparent, borderless, scrolls */}
             <div
               className="flex-1 overflow-y-scroll whitespace-nowrap"
@@ -1283,28 +1325,20 @@ export function SearchPage() {
               />
               {filtersPanel ?? (
                 <>
-                  {/* Each entry opens the filter modal on its tab. */}
-                  {showGeo && (
+                  {sidebarEntries.map((entry) => (
                     <FilterEntry
-                      label="Geospatial"
-                      count={filterCount("geo")}
-                      chips={
-                        area
-                          ? [{ key: "area", label: areaText(area), onRemove: () => setArea(null) }]
-                          : []
-                      }
-                      onOpen={() => openFromSidebar(GEO_TAB)}
-                    />
-                  )}
-                  {filters.map((filter) => (
-                    <FilterEntry
-                      key={filterKey(filter)}
-                      label={filterLabel(filter)}
-                      count={filterCount(countKey(filter))}
-                      chips={chipsFor(filter)}
-                      onOpen={() => openFromSidebar(filterKey(filter))}
+                      key={entry.key}
+                      label={entry.label}
+                      count={entry.count}
+                      chips={entry.chips}
+                      onOpen={entry.open}
                     />
                   ))}
+                  {findNeedle && sidebarEntries.length === 0 && (
+                    <p className="px-[1em] py-3 text-[12px] text-ink-faint">
+                      No filter matches “{filterFind.trim()}”.
+                    </p>
+                  )}
                   {pluginFilters.map((filter) => (
                     <Fragment key={filter.key}>
                       {filter.render({
