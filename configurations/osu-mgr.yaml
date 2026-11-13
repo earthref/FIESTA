@@ -35,7 +35,34 @@ search:
   # in the admin UI's Summary Grid tab; a level without them shows the default
   # tiles. `{ column, label, width }` is a data column; `cell` names a tile.
   levels:
-    - { name: Contributions, table: contribution }
+    - name: Contributions
+      table: contribution
+      # No geography, geology, ages, intensities, method codes or plots: the
+      # collection's vessels, materials and depths instead (2026-11-13).
+      columns:
+        - { cell: record }
+        - { cell: download }
+        - { cell: links }
+        - { cell: counts }
+        - { cell: map }
+        - cell: fields
+          label: Cruises
+          show: values
+          columns:
+            - { column: rv_name, label: Vessel }
+            - { column: pi, label: PI }
+        - cell: fields
+          label: Samples
+          show: values
+          columns:
+            - { column: material, label: Material }
+            - { column: area, label: Area }
+        - cell: fields
+          label: Depths
+          show: range
+          columns:
+            - { column: water_depth, label: Water }
+            - { column: length, label: Core Length }
     - name: Cruises
       table: cruises
       count_field: summary.cruises._n_results

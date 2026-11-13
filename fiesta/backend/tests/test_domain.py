@@ -1288,6 +1288,7 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
 
     # No `columns`: the default tiles; download and links only on contributions.
     contributions, sites = magic_node.search.levels[0], magic_node.search.levels[2]
+    sites = sites.model_copy(update={"columns": None})
     columns = level_columns(magic_node, contributions)
     assert [c.key for c in columns[:3]] == ["record", "download", "links"]
     # The record column: citation, title and contributed, filtered on all three.
@@ -1393,6 +1394,97 @@ def test_summary_grid_columns(magic_node, osu_mgr_node):
                 "search": {**osu_mgr_node.search.model_dump(), "levels": levels},
             }
         )
+
+
+def test_summary_grid_fields_and_show(magic_node):
+    from fiesta.nodeconfig import GridColumn, SearchLevel
+    from fiesta.search.grid import level_columns, sort_clauses
+
+    # A fields tile: its lines take the data-model label and display unit, or
+    # their own; its header is the lines' shared group; it sorts on the first
+    # line and filters on all; its key joins the columns.
+    level = SearchLevel(
+        name="Measurements",
+        table="measurements",
+        columns=[
+            GridColumn(cell="fields", columns=["dir_dec", "dir_inc"]),
+            GridColumn(
+                cell="fields",
+                label="Treatment",
+                columns=[{"column": "treat_ac_field", "label": "AC", "unit": "mT", "scale": 1e-3}],
+            ),
+            GridColumn(column="experiment", show="value"),
+            GridColumn(column="magn_moment"),
+        ],
+    )
+    direction, treatment, experiment, moment = level_columns(magic_node, level)
+    assert direction.key == "dir_dec-dir_inc" and direction.label == "Direction"
+    assert direction.lines == [
+        {"column": "dir_dec", "label": "Declination", "number": True, "unit": "°"},
+        {"column": "dir_inc", "label": "Inclination", "number": True, "unit": "°"},
+    ]
+    assert direction.sort.fields == ["summary.measurements.dir_dec.raw"]
+    assert direction.sort.type == "number"
+    assert direction.filter_fields == [
+        "summary.measurements.dir_dec",
+        "summary.measurements.dir_inc",
+    ]
+    assert treatment.lines == [
+        {"column": "treat_ac_field", "label": "AC", "number": True, "unit": "mT", "scale": 1e-3}
+    ]
+    # A text field lists its values; a field without `show` keeps the value as
+    # typed (no unit, no number formatting), as before.
+    assert experiment.facets == ["experiment"] and experiment.public()["show"] == "value"
+    assert moment.lines == [{"column": "magn_moment", "label": "Magnetic Moment", "number": False}]
+
+    # On Contributions, `values` reads every table's values and `range` the
+    # numbers (in a unit conversion's base unit), sorted by script, unfiltered.
+    level = SearchLevel(
+        name="Contributions",
+        table="contribution",
+        columns=[
+            GridColumn(column="lithologies", show="values"),
+            GridColumn(cell="fields", show="range", columns=["age", "magn_moment"]),
+        ],
+    )
+    lithologies, ranges = level_columns(magic_node, level)
+    assert lithologies.sort.fields == ["summary._all.lithologies.raw"]
+    assert lithologies.facets == ["lithologies"]
+    assert ranges.lines[0]["unit"] == "years BP" and ranges.lines[1]["unit"] == "Am²"
+    assert ranges.sort.fields == ["summary._num.age"] and not ranges.filter_fields
+    (script, _) = sort_clauses(ranges, "asc")
+    assert script["_script"]["script"]["params"]["fields"] == ["summary._num.age"]
+
+    # Config errors.
+    with pytest.raises(ValueError, match="needs columns"):
+        GridColumn(cell="fields")
+    with pytest.raises(ValueError, match="repeats columns"):
+        GridColumn(cell="fields", columns=["a", "a"])
+    with pytest.raises(ValueError, match="takes no columns"):
+        GridColumn(column="a", columns=["b"])
+    with pytest.raises(ValueError, match="takes no show"):
+        GridColumn(cell="geo", show="values")
+
+    def node_with(table: str, column: GridColumn):
+        levels = [
+            lvl.model_copy(update={"columns": [column]}) if lvl.table == table else lvl
+            for lvl in magic_node.search.levels
+        ]
+        return magic_node.model_validate(
+            {
+                **magic_node.model_dump(),
+                "search": {**magic_node.search.model_dump(), "levels": levels},
+            }
+        )
+
+    # A range needs numbers; a record's values its own table's columns or its
+    # geography; only a contribution's span every table.
+    with pytest.raises(ValueError, match=r"range of columns \['experiment'\]"):
+        node_with("measurements", GridColumn(column="experiment", show="range"))
+    with pytest.raises(ValueError, match=r"names columns \['age'\]"):
+        node_with("measurements", GridColumn(column="age", show="values"))
+    node_with("measurements", GridColumn(column="country", show="values"))
+    node_with("contribution", GridColumn(column="treat_temp", show="range"))
 
 
 def test_magic_home_config(magic_node):

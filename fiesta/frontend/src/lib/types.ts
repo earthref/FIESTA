@@ -24,7 +24,24 @@ export type CoreGridCell =
   | "geo"
   | "citations"
   | "field"
+  | "fields"
   | "title";
+
+/** What a field / fields tile shows of each column: the record's own (first
+ * row's) value, every distinct value (summary._all) or the least–greatest
+ * number (summary._num). */
+export type GridShow = "value" | "values" | "range";
+
+/** One data column of a field / fields tile, resolved by the API. */
+export interface GridLine {
+  column: string;
+  label: string;
+  /** A display unit ("°", "Am²"); absent when it says nothing. */
+  unit?: string;
+  /** A number column: formatted, divided by `scale` when set. */
+  number: boolean;
+  scale?: number;
+}
 
 /** The tile a summary grid column shows: a core tile or a plugin's
  * (FiestaPlugin.grid_tiles, rendered by its `gridCell`). */
@@ -41,6 +58,10 @@ export interface GridColumn {
   column?: string;
   subtitle_column?: string;
   format?: "bytes";
+  /** field / fields cells: what each line shows (absent: the record's value). */
+  show?: GridShow;
+  /** field / fields cells: their data columns (a field's one). */
+  lines?: GridLine[];
   sortable: boolean;
   /** Its header menu has a text box (`filter=<key>:<text>`). */
   filterable: boolean;

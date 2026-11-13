@@ -30,7 +30,33 @@ search:
   # One contribution per legacy region (a seamount trail or ocean basin); each
   # level's `columns` are its Summaries grid, edited in the Summary Grid tab.
   levels:
-    - { name: Contributions, table: contribution }
+    - name: Contributions
+      table: contribution
+      # No geology, intensities, method codes, citations or plots: the
+      # region's seamount types and sizes instead (2026-11-13).
+      columns:
+        - { cell: record }
+        - { cell: download }
+        - { cell: links }
+        - { cell: counts }
+        - { cell: map }
+        - { cell: geo }
+        - cell: fields
+          label: Seamounts
+          show: values
+          width: 180
+          columns:
+            - { column: seamount_type, label: Type }
+            - { column: plate, label: Plate }
+            - { column: tectonic_setting, label: Setting }
+        - cell: fields
+          label: Sizes
+          show: range
+          columns:
+            - { column: height, label: Height }
+            - { column: summit_depth, label: Summit }
+            - { column: volume, label: Volume }
+        - { cell: age }
     - name: Seamounts
       table: seamounts
       count_field: summary.seamounts._n_results

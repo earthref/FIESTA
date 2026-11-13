@@ -27,7 +27,26 @@ search:
   # in the admin UI's Summary Grid tab; a level without them shows the default
   # tiles. `{ column, label, width }` is a data column; `cell` names a tile.
   levels:
-    - { name: Contributions, table: contribution }
+    - name: Contributions
+      table: contribution
+      # No geography, geology, ages, intensities, method codes or plots: the
+      # contribution's object types and keywords and its files' formats
+      # instead (2026-11-13).
+      columns:
+        - { cell: record }
+        - { cell: download }
+        - { cell: links }
+        - { cell: counts }
+        - { cell: map }
+        - cell: fields
+          label: Digital Objects
+          show: values
+          width: 200
+          columns:
+            - { column: data_types, label: Types }
+            - { column: keywords, label: Keywords }
+        - { cell: field, column: format, label: File Formats, show: values, width: 140 }
+        - { cell: citations }
     - name: Digital Objects
       table: objects
       count_field: summary.objects._n_results

@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import { useAuth } from "./auth";
-import type { GridCellKind, UserOut } from "./types";
+import type { GridCellKind, GridShow, UserOut } from "./types";
 
 export function isAnyAdmin(user: UserOut | null): boolean {
   return !!user && (user.is_admin || user.admin_nodes.length > 0);
@@ -185,12 +185,23 @@ export interface SettingsFilter {
   max?: number;
 }
 
+/** One line of a fields tile as written in the YAML (GridLine). */
+export interface SettingsLine {
+  column: string;
+  label?: string;
+  unit?: string;
+  scale?: number;
+}
+
 /** A `search.levels[].columns` entry (a summary grid column) as written in the
  * YAML; unset fields take the tile's defaults (fiesta.search.grid). */
 export interface SettingsColumn {
   cell?: GridCellKind;
   column?: string;
+  /** A fields tile's lines: a column's name, or {column, label?, unit?, scale?}. */
+  columns?: (string | SettingsLine)[];
   subtitle_column?: string;
+  show?: GridShow;
   label?: string;
   width?: number;
   format?: "bytes";

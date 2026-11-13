@@ -19,9 +19,58 @@ node:
 
 search:
   index: kdd
+  # `columns` are each level's Summaries tiles (fiesta.search.grid). KdD has
+  # no positions, geography, geology, ages or method codes, so its tiles are
+  # the elements, phases and partition coefficients (2026-11-13).
   levels:
-    - {name: Contributions, table: contribution}
-    - {name: Partition Coefficients, table: kds, count_field: summary.kds._n_results}
+    - name: Contributions
+      table: contribution
+      columns:
+        - { cell: record }
+        - { cell: download }
+        - { cell: links }
+        - { cell: counts }
+        - { cell: field, column: element, label: Elements, show: values, width: 160 }
+        - cell: fields
+          label: Phases
+          show: values
+          width: 200
+          columns:
+            - { column: minerals, label: Minerals }
+            - { column: rock_types, label: Rocks }
+        - cell: fields
+          label: Kd
+          show: range
+          columns:
+            - { column: kd, label: Kd }
+            - { column: kd_low, label: Low }
+            - { column: kd_high, label: High }
+        - { cell: field, column: kd_types, label: Kd Types, show: values, width: 140 }
+    - name: Partition Coefficients
+      table: kds
+      count_field: summary.kds._n_results
+      columns:
+        - { cell: record }
+        - { cell: field, column: element, label: Element, width: 90 }
+        - cell: fields
+          label: Phases
+          width: 200
+          columns:
+            - { column: minerals, label: Minerals }
+            - { column: rock_types, label: Rocks }
+        - cell: fields
+          label: Kd
+          columns:
+            - { column: kd, label: Kd }
+            - { column: kd_sigma, label: σ }
+            - { column: kd_low, label: Low }
+            - { column: kd_high, label: High }
+        - cell: fields
+          label: Definition
+          width: 180
+          columns:
+            - { column: kd_types, label: Types }
+            - { column: kd_definition, label: Definition }
   extra_types: []
   filters:
     # Every node's contribution filters (the contribution block's id, contributor, timestamp).

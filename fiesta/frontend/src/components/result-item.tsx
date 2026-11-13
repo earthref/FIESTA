@@ -11,7 +11,14 @@ import { apiUrl, nodeSiteUrl, nodeUrl, siteUrl } from "../lib/base";
 import { NodeConfigScope, useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
 import { sanitizeInlineHtml } from "../lib/sanitize";
-import type { GridColumn, NodeConfig, SearchLevel, SearchResult } from "../lib/types";
+import type {
+  GridColumn,
+  GridLine,
+  GridShow,
+  NodeConfig,
+  SearchLevel,
+  SearchResult,
+} from "../lib/types";
 import { abbreviateNumber, cx, getPath, singularize } from "../lib/utils";
 import { pluginGridCell } from "../plugins";
 import { type MapMarker, MapThumbnail, markersFromGeoPoint } from "./map-thumbnail";
@@ -400,6 +407,49 @@ function formatBytes(value: unknown): string {
     unit += 1;
   }
   return `${unit === 0 ? size : size.toFixed(2)} ${units[unit]}`;
+}
+
+/** A number as a tile shows it: 4 significant digits ("293", "0.0821"),
+ * scientific when tiny or huge ("4.64e-8"). */
+function formatNumber(value: number): string {
+  const abs = Math.abs(value);
+  if (abs !== 0 && (abs >= 1e6 || abs < 1e-3))
+    return value
+      .toExponential(2)
+      .replace(/\.?0+e/, "e")
+      .replace("e+", "e");
+  return String(Number(value.toPrecision(4)));
+}
+
+/** A typed value of a number line, scaled; text that is no number as typed. */
+function numberText(value: string, scale = 1): string {
+  const number = Number(value);
+  return value.trim() && Number.isFinite(number) ? formatNumber(number / scale) : value;
+}
+
+/** What a field / fields tile shows of one line for one record, with its
+ * unit ("208.1°", "0.02 – 12.3 m"), or "" without a value. */
+function lineText(doc: SearchResult, level: SearchLevel, line: GridLine, show?: GridShow): string {
+  let text: string;
+  if (show === "range") {
+    // summary._num: the record's numbers, sorted, always with both ends.
+    const raw = getPath(doc, `summary._num.${line.column}`);
+    const numbers = (Array.isArray(raw) ? raw : [raw]).filter(
+      (n): n is number => typeof n === "number" && Number.isFinite(n),
+    );
+    if (numbers.length === 0) return "";
+    const scaled = (n: number) => formatNumber(n / (line.scale ?? 1));
+    const low = Math.min(...numbers);
+    const high = Math.max(...numbers);
+    text = low === high ? scaled(low) : `${scaled(low)} – ${scaled(high)}`;
+  } else {
+    const path =
+      show === "values" ? `summary._all.${line.column}` : `summary.${level.table}.${line.column}`;
+    const values = listOf(getPath(doc, path));
+    text = values.map((v) => (line.number ? numberText(v, line.scale) : v)).join(", ");
+  }
+  if (!text || !line.unit) return text;
+  return line.unit === "°" || line.unit === "%" ? `${text}${line.unit}` : `${text} ${line.unit}`;
 }
 
 /** A cell that opens the record's contribution in its modal, at this level's tab.
@@ -868,17 +918,42 @@ function BuiltinCell({
       );
     }
 
-    // One column of the level's summary block: "Label: value"
+    // Several data columns under one header, a "Label: value" line each;
+    // lines without a value are left out.
+    case "fields": {
+      const lines = (column.lines ?? [])
+        .map((line) => ({ line, text: lineText(doc, level, line, column.show) }))
+        .filter((item) => item.text);
+      if (lines.length === 0) return <NoDataCell label={column.label} width={width} />;
+      return (
+        <Cell width={width} wrap>
+          <b>{column.label}</b>
+          {lines.map(({ line, text }) => (
+            <Clamped key={line.column} lines={column.show === "values" ? 3 : 2}>
+              <span className="text-ink-muted">{line.label}:</span> {text}
+            </Clamped>
+          ))}
+        </Cell>
+      );
+    }
+
+    // One data column: "Label: value" (with `show`, formatted with its unit)
     default: {
       const block = (getPath(doc, `summary.${level.table}`) ?? {}) as Record<string, unknown>;
       const value = block[column.column ?? ""];
-      const text = column.format === "bytes" ? formatBytes(value) : joined(value);
+      const line = column.lines?.[0];
+      const text =
+        column.format === "bytes"
+          ? formatBytes(value)
+          : column.show && line
+            ? lineText(doc, level, line, column.show)
+            : joined(value);
       if (!text) return <NoDataCell label={column.label} width={width} />;
       return (
         <Cell width={width} wrap>
           <b>{column.label}:</b>
           <br />
-          {text}
+          <Clamped lines={5}>{text}</Clamped>
         </Cell>
       );
     }

@@ -100,8 +100,21 @@ CORE_GRID_CELLS = (
     "geo",
     "citations",
     "field",
+    "fields",
     "title",
 )
+
+
+class GridLine(BaseModel):
+    """One line of a `fields` tile: a data column, under its data-model label
+    or `label` (YAML: the column's name alone, or {column, label, ...}). A
+    number shows in its data-model unit (a range in a unit conversion's base
+    unit), or divided by `scale` in `unit`, as a range filter's (mT: 1.0e-3)."""
+
+    column: str = Field(pattern=r"^\w+$")
+    label: str | None = None
+    unit: str | None = None
+    scale: float | None = Field(default=None, gt=0)
 
 
 class GridColumn(BaseModel):
@@ -111,8 +124,14 @@ class GridColumn(BaseModel):
     which stacks citation, name and contributed in one column; citation, name,
     contributed, download, links, counts, map, plot, geo, citations), a tile an
     active plugin adds (checked by fiesta.plugins.active_plugins), `field` (one
-    column of the level's summary block, "Label: value") or `title` (a column
-    in bold over an optional `subtitle_column`). Each tile has a default
+    data column, "Label: value"), `fields` (several `columns` under one header,
+    a "Label: value" line each, blank ones left out) or `title` (a column in
+    bold over an optional `subtitle_column`). On `field` and `fields`, `show`
+    picks what a record shows of a column: `value`, its own (its first row's,
+    `summary.<table>`); `values`, every distinct value of its rows and, on
+    Contributions, of the whole contribution (`summary._all`); or `range`, the
+    least to greatest of a number column's (`summary._num`, in the base unit of
+    a unit conversion). Each tile has a default
     header label, width, sort and filters (fiesta.search.grid); `sortable` /
     `filterable` switch them off, and
     `sort_field` (a `.raw` keyword path, or with `numeric` any string path),
@@ -123,7 +142,10 @@ class GridColumn(BaseModel):
 
     cell: str = Field(default="field", pattern=r"^\w+$")
     column: str | None = None
+    # At most 5 lines: with its header, what a grid row's height shows.
+    columns: list[GridLine] | None = Field(default=None, min_length=1, max_length=5)
     subtitle_column: str | None = None
+    show: Literal["value", "values", "range"] | None = None
     label: str | None = None
     width: int | None = Field(default=None, ge=40)
     format: Literal["bytes"] | None = None
@@ -134,12 +156,30 @@ class GridColumn(BaseModel):
     filter_fields: list[str] | None = None
     facets: list[str] | None = None
 
+    @field_validator("columns", mode="before")
+    @classmethod
+    def _lines(cls, value: Any) -> Any:
+        """A `fields` line may be just its column's name."""
+        if isinstance(value, list):
+            return [{"column": v} if isinstance(v, str) else v for v in value]
+        return value
+
     @model_validator(mode="after")
     def _check(self) -> "GridColumn":
         if self.cell in ("field", "title") and not self.column:
             raise ValueError(f"a {self.cell} column needs a column")
         if self.cell not in ("field", "title") and (self.column or self.subtitle_column):
             raise ValueError(f"a {self.cell} column takes no column")
+        if self.cell == "fields":
+            if not self.columns:
+                raise ValueError("a fields column needs columns")
+            names = self.data_columns
+            if len(set(names)) != len(names):
+                raise ValueError(f"a fields column repeats columns: {names}")
+        elif self.columns is not None:
+            raise ValueError(f"a {self.cell} column takes no columns (a fields column does)")
+        if self.show is not None and self.cell not in ("field", "fields"):
+            raise ValueError(f"a {self.cell} column takes no show (field and fields do)")
         paths = [self.sort_field or "summary.", *(self.filter_fields or [])]
         if bad := [p for p in paths if not p.startswith("summary.")]:
             raise ValueError(f"grid sort/filter fields must be summary.* paths: {bad}")
@@ -148,8 +188,18 @@ class GridColumn(BaseModel):
         return self
 
     @property
+    def data_columns(self) -> list[str]:
+        """The data-model columns it shows (none for a summary tile)."""
+        if self.cell == "fields":
+            return [line.column for line in self.columns or []]
+        return [n for n in (self.column, self.subtitle_column) if n]
+
+    @property
     def key(self) -> str:
-        """The column's name in sort/filter requests: its data column, or its tile."""
+        """The column's name in sort/filter requests: its data column, its
+        columns joined by "-" (never in a column name), or its tile."""
+        if self.cell == "fields" and self.columns:
+            return "-".join(self.data_columns)
         return self.column if self.cell in ("field", "title") and self.column else self.cell
 
 
@@ -726,18 +776,36 @@ class NodeConfig(BaseModel):
 
     def _check_grid_columns(self) -> None:
         # A grid column naming a column its level's table does not have would
-        # show an empty cell forever: catch the typo before publishing.
+        # show an empty cell forever: catch the typo before publishing. A
+        # record's `values` also hold the geography of the records above it,
+        # and a contribution's `values` / `range` every table's; a `range`
+        # needs a number column.
         tables = self.load_data_model(self.data_model.latest)["tables"]
+        every = {k: v for t in tables.values() for k, v in t.get("columns", {}).items()}
+        geography = {g: every.get(g, {}) for g in self.search.geography.columns}
         for level in self.search.levels:
             columns = tables.get(level.table, {}).get("columns")
             if columns is None:
                 continue
-            named = [n for c in level.columns or [] for n in (c.column, c.subtitle_column) if n]
-            if missing := [n for n in named if n not in columns]:
-                raise ValueError(
-                    f"search level {level.name!r} grid names columns {missing} "
-                    f"the {level.table} table does not have"
-                )
+            for col in level.columns or []:
+                show = col.show or "value"
+                known = columns
+                if show != "value" and level.table == "contribution":
+                    known = every
+                elif show == "values":
+                    known = {**geography, **columns}
+                if missing := [n for n in col.data_columns if n not in known]:
+                    raise ValueError(
+                        f"search level {level.name!r} grid names columns {missing} "
+                        f"the {level.table} table does not have"
+                    )
+                numbers = ("Number", "Integer")
+                text = [n for n in col.data_columns if known[n].get("type") not in numbers]
+                if show == "range" and text:
+                    raise ValueError(
+                        f"search level {level.name!r} grid shows a range of "
+                        f"columns {text}, which are not numbers"
+                    )
 
     def _load_json(self, rel: str) -> Any:
         if rel not in self._asset_cache:

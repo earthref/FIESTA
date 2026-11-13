@@ -13,9 +13,10 @@ import {
   patchSettings,
   readFile,
   type SettingsColumn,
+  type SettingsLine,
 } from "../../lib/admin";
 import { ApiError } from "../../lib/api";
-import type { GridCellKind } from "../../lib/types";
+import type { GridCellKind, GridShow } from "../../lib/types";
 import { cx } from "../../lib/utils";
 import { ErrorMessage } from "../error-message";
 import { Badge } from "../ui/badge";
@@ -32,6 +33,11 @@ type Tile = { cell: GridCellKind; label: string; hint: string };
 /** The core's tiles (fiesta.search.grid); the node's plugins add theirs. */
 const CORE_TILES: Tile[] = [
   { cell: "field", label: "Data column", hint: "One column of the level's rows: Label: value" },
+  {
+    cell: "fields",
+    label: "Data columns",
+    hint: "Several columns under one header, a Label: value line each (blank ones left out)",
+  },
   { cell: "title", label: "Title", hint: "A column in bold over an optional subtitle column" },
   {
     cell: "record",
@@ -84,9 +90,29 @@ function nodeTiles(settings: NodeSettings, plugins: PluginInfo[]) {
 
 const isData = (column: SettingsColumn) =>
   (column.cell ?? "field") === "field" || column.cell === "title";
+/** A fields tile's lines, each as {column, …} (the YAML may give just a name). */
+const linesOf = (column: SettingsColumn): SettingsLine[] =>
+  (column.columns ?? []).map((line) => (typeof line === "string" ? { column: line } : line));
+/** The data-model columns a column shows. */
+const namesOf = (column: SettingsColumn): string[] =>
+  column.cell === "fields"
+    ? linesOf(column).map((line) => line.column)
+    : isData(column)
+      ? [column.column, column.subtitle_column].filter((n): n is string => !!n)
+      : [];
 /** The column's name in sort/filter requests (GridColumn.key). */
 const keyOf = (column: SettingsColumn) =>
-  isData(column) ? (column.column ?? "") : (column.cell ?? "field");
+  column.cell === "fields"
+    ? namesOf(column).join("-")
+    : isData(column)
+      ? (column.column ?? "")
+      : (column.cell ?? "field");
+
+const SHOW_LABELS: Record<GridShow, string> = {
+  value: "the record's value",
+  values: "every value",
+  range: "range of numbers",
+};
 
 let counter = 0;
 const nextId = () => `column-${counter++}`;
@@ -145,14 +171,27 @@ export function GridEditor({
     () => model.data?.tables[level?.table ?? ""]?.columns ?? {},
     [model.data, level?.table],
   );
+  // Every table's columns: a contribution's values / range span them all.
+  const allColumns = useMemo(
+    () => ({
+      ...Object.assign({}, ...Object.values(model.data?.tables ?? {}).map((t) => t.columns)),
+      ...tableColumns,
+    }),
+    [model.data, tableColumns],
+  ) as Record<string, { label?: string; type?: string }>;
+  // A record's values also hold its ancestors' geography (the API checks which).
+  const columnsFor = (column: SettingsColumn) =>
+    column.show === "values" || (column.show === "range" && level?.table === "contribution")
+      ? allColumns
+      : tableColumns;
 
   const current = rows?.map((r) => r.column) ?? null;
   const dirty = JSON.stringify(current) !== JSON.stringify(initial);
   const keys = (current ?? []).map(keyOf);
   const duplicates = [...new Set(keys.filter((key, i) => keys.indexOf(key) !== i))];
-  const unknown = (current ?? [])
-    .flatMap((c) => (isData(c) ? [c.column, c.subtitle_column] : []))
-    .filter((name): name is string => !!name && model.data != null && !(name in tableColumns));
+  const unknown = (current ?? []).flatMap((c) =>
+    namesOf(c).filter((name) => model.data != null && !(name in columnsFor(c))),
+  );
 
   const save = useMutation({
     mutationFn: () =>
@@ -288,8 +327,11 @@ export function GridEditor({
                       <Badge variant="node">{tileLabel(c.cell ?? "field")}</Badge>
                     </Td>
                     <Td className="font-mono text-xs">
-                      {c.column ?? "—"}
+                      {c.cell === "fields" ? namesOf(c).join(", ") : (c.column ?? "—")}
                       {c.subtitle_column && ` / ${c.subtitle_column}`}
+                      {c.show && (
+                        <span className="block font-sans text-gray-500">{SHOW_LABELS[c.show]}</span>
+                      )}
                     </Td>
                     <Td>
                       {c.label ?? (c.column ? tableColumns[c.column]?.label : undefined) ?? (
@@ -382,6 +424,7 @@ export function GridEditor({
           column={editing.column}
           tiles={tiles}
           tableColumns={tableColumns}
+          columnsFor={columnsFor}
           onClose={() => setEditing(null)}
           onApply={apply}
         />
@@ -396,6 +439,7 @@ function ColumnModal({
   column,
   tiles,
   tableColumns,
+  columnsFor,
   onClose,
   onApply,
 }: {
@@ -403,11 +447,26 @@ function ColumnModal({
   column: SettingsColumn;
   tiles: Tile[];
   tableColumns: Record<string, { label?: string; type?: string }>;
+  /** The columns a column with this `show` may name. */
+  columnsFor: (column: SettingsColumn) => Record<string, { label?: string; type?: string }>;
   onClose: () => void;
   onApply: (id: string | null, column: SettingsColumn) => void;
 }) {
   const [cell, setCell] = useState<GridCellKind>(column.cell ?? "field");
   const [name, setName] = useState(column.column ?? "");
+  const [show, setShow] = useState<GridShow | "">(column.show ?? "");
+  // A fields tile's lines, numbers as strings while typing.
+  const [lines, setLines] = useState(() =>
+    linesOf(column).map((line) => ({
+      key: nextId(),
+      column: line.column,
+      label: line.label ?? "",
+      unit: line.unit ?? "",
+      scale: line.scale != null ? String(line.scale) : "",
+    })),
+  );
+  const editLine = (key: string, patch: Partial<(typeof lines)[number]>) =>
+    setLines(lines.map((line) => (line.key === key ? { ...line, ...patch } : line)));
   const [subtitle, setSubtitle] = useState(column.subtitle_column ?? "");
   const [label, setLabel] = useState(column.label ?? "");
   const [width, setWidth] = useState(column.width != null ? String(column.width) : "");
@@ -423,10 +482,23 @@ function ColumnModal({
   const [facets, setFacets] = useState<string[] | undefined>(column.facets);
   const columnListId = useId();
   const data = cell === "field" || cell === "title";
+  const shows = cell === "field" || cell === "fields";
+  const pickable = shows ? columnsFor({ show: show || undefined }) : tableColumns;
+  const filled = lines.filter((line) => line.column.trim());
 
   const submit = () => {
     const out: SettingsColumn = cell === "field" ? {} : { cell };
     if (data) out.column = name.trim();
+    if (cell === "fields")
+      out.columns = filled.map((line) => {
+        const entry: SettingsLine = { column: line.column.trim() };
+        if (line.label.trim()) entry.label = line.label.trim();
+        if (line.unit.trim()) entry.unit = line.unit.trim();
+        if (line.scale.trim()) entry.scale = Number(line.scale);
+        // Just the name when nothing else is set, as the YAML writes it.
+        return Object.keys(entry).length === 1 ? entry.column : entry;
+      });
+    if (shows && show) out.show = show;
     if (cell === "title" && subtitle.trim()) out.subtitle_column = subtitle.trim();
     if (label.trim()) out.label = label.trim();
     const w = Number(width);
@@ -448,6 +520,11 @@ function ColumnModal({
   const widthNumber = Number(width);
   const errors = [
     data && !name.trim() ? "Pick the column it shows." : null,
+    cell === "fields" && filled.length === 0 ? "Add the columns it shows." : null,
+    cell === "fields" && filled.length > 5 ? "A tile shows at most 5 lines." : null,
+    filled.some((line) => line.scale.trim() && !(Number(line.scale) > 0))
+      ? "A scale is a positive number (mT: 0.001)."
+      : null,
     width.trim() && !(Number.isInteger(widthNumber) && widthNumber >= 40)
       ? "Width is a whole number of pixels, at least 40."
       : null,
@@ -461,7 +538,7 @@ function ColumnModal({
 
   const columnOptions = (
     <datalist id={columnListId}>
-      {Object.entries(tableColumns)
+      {Object.entries(pickable)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, def]) => (
           <option key={key} value={key} label={def.label} />
@@ -517,7 +594,100 @@ function ColumnModal({
             />
           </Field>
         )}
-        {data && columnOptions}
+        {shows && (
+          <Field
+            label="Show"
+            hint="Of each column, per record; a range reads numbers in a unit conversion's base unit"
+          >
+            <select
+              value={show}
+              onChange={(e) => setShow(e.target.value as GridShow | "")}
+              className="w-full rounded-md border border-gray-300 px-3 py-2"
+            >
+              <option value="">The record's value (its first row's)</option>
+              <option value="values">
+                Every value (on Contributions: the whole contribution's)
+              </option>
+              <option value="range">Range of numbers (least – greatest)</option>
+            </select>
+          </Field>
+        )}
+        {cell === "fields" && (
+          <fieldset className="rounded-md border border-gray-200 p-3 sm:col-span-2">
+            <legend className="px-1 text-xs font-semibold text-gray-700">Lines</legend>
+            <p className="mb-2 text-xs text-gray-500">
+              One "Label: value" line per column, in order; blank labels take the data-model label,
+              blank units the data model's. A scale divides numbers (0.001 with unit mT shows tesla
+              as millitesla).
+            </p>
+            <div className="space-y-2">
+              {lines.map((line, index) => (
+                <div key={line.key} className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] gap-2">
+                  <Input
+                    list={columnListId}
+                    aria-label="Column"
+                    placeholder="dir_dec"
+                    value={line.column}
+                    onChange={(e) => editLine(line.key, { column: e.target.value })}
+                  />
+                  <Input
+                    aria-label="Label"
+                    placeholder={pickable[line.column]?.label ?? "Label"}
+                    value={line.label}
+                    onChange={(e) => editLine(line.key, { label: e.target.value })}
+                  />
+                  <Input
+                    aria-label="Unit"
+                    placeholder="unit"
+                    value={line.unit}
+                    onChange={(e) => editLine(line.key, { unit: e.target.value })}
+                  />
+                  <Input
+                    aria-label="Scale"
+                    placeholder="scale"
+                    value={line.scale}
+                    onChange={(e) => editLine(line.key, { scale: e.target.value })}
+                  />
+                  <span className="whitespace-nowrap">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label="Move up"
+                      disabled={index === 0}
+                      onClick={() => {
+                        const next = [...lines];
+                        [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                        setLines(next);
+                      }}
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label="Remove line"
+                      onClick={() => setLines(lines.filter((l) => l.key !== line.key))}
+                    >
+                      ✕
+                    </Button>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="mt-2"
+              disabled={lines.length >= 5}
+              onClick={() =>
+                setLines([...lines, { key: nextId(), column: "", label: "", unit: "", scale: "" }])
+              }
+            >
+              + Add Line
+            </Button>
+          </fieldset>
+        )}
+        {(data || cell === "fields") && columnOptions}
         <Field label="Width" hint="Pixels; blank = the tile's default">
           <Input type="number" min={40} value={width} onChange={(e) => setWidth(e.target.value)} />
         </Field>
