@@ -2167,7 +2167,7 @@ def test_reference_metadata_in_the_legacy_shape():
     )
     assert ref["authors"][0]["_orcid"] == "0000-0002-4837-8200"
 
-    # A fetch's outcome: fetched again in a month; an error retries sooner,
+    # A fetch's outcome: fetched again in a week; an error retries sooner,
     # and a failed refresh keeps the metadata it had.
     row = DoiReference(doi="10.1029/2019GC008479", status="pending", attempts=0)
     assert asyncio.run(refs._apply(row, ("ok", "crossref", crossref)))
@@ -2196,6 +2196,78 @@ def test_reference_metadata_in_the_legacy_shape():
 
     assert contribution_meta(Row(), Person())["_reference"] == {"doi": "10.1029/2019gc008479"}
     assert contribution_meta(Row(), Person(), row.reference)["_reference"]["year"] == 2019
+
+
+def test_reference_openalex_fills_orcids_citations_and_details():
+    """OpenAlex's ORCIDs fill in authors the registry has none for (by position
+    and family name, accents folded), `n_citations` is the larger count, and the
+    rest of the work is only in `details`; a failed lookup keeps the old work."""
+    import asyncio
+
+    from fiesta.db.models import DoiReference
+    from fiesta.services import references as refs
+
+    crossref = {
+        "DOI": "10.1029/2019gc008479",
+        "title": ["Paleomagnetism of the Golan Heights"],
+        "issued": {"date-parts": [[2019]]},
+        "is-referenced-by-count": 29,
+        "abstract": "<jats:title>Abstract</jats:title><jats:p>Lavas &amp; dikes.</jats:p>",
+        "author": [
+            {
+                "given": "Nicole",
+                "family": "Behar",
+                "ORCID": "https://orcid.org/0000-0002-6374-2277",
+            },
+            {"given": "Ron", "family": "Shaar"},
+            {"given": "Lisa", "family": "Tauxé"},
+            {"given": "Ann", "family": "Smith"},
+        ],
+    }
+    work = {
+        "id": "https://openalex.org/W1",
+        "cited_by_count": 32,
+        "counts_by_year": [
+            {"year": 2021, "cited_by_count": 5},
+            {"year": 2020, "cited_by_count": 3},
+        ],
+        "authorships": [
+            {"raw_author_name": "N. Behar", "author": {"orcid": "https://orcid.org/0000-0009"}},
+            {"raw_author_name": "Lisa Tauxe", "author": {"orcid": "https://orcid.org/0000-0002"}},
+            {"raw_author_name": "Ron Shaar", "author": {"orcid": "https://orcid.org/0000-0003"}},
+            {"raw_author_name": "Someone Else", "author": {"orcid": None}},
+        ],
+        "abstract_inverted_index": {"OpenAlex": [0], "text": [1]},
+        "open_access": {"is_oa": True, "oa_status": "green", "oa_url": "https://x/oa"},
+        "best_oa_location": {"pdf_url": "https://x/paper.pdf"},
+        "topics": [{"display_name": "Geomagnetism"}],
+        "keywords": [{"display_name": "Paleomagnetism"}],
+    }
+    ref = refs.build("crossref", crossref, work)
+    orcids = [a.get("_orcid") for a in ref["authors"]]
+    # The registry's ORCID stays; Shaar and Tauxé are found out of position.
+    assert orcids == ["0000-0002-6374-2277", "0000-0003", "0000-0002", None]
+    assert ref["n_citations"] == 32
+    assert "abstract" not in ref and "topics" not in ref
+    assert refs.build("crossref", crossref, {"cited_by_count": 3})["n_citations"] == 29
+
+    row = DoiReference(doi="10.1029/2019GC008479", status="pending", attempts=0)
+    assert asyncio.run(refs._apply(row, ("ok", "crossref", crossref, work)))
+    assert row.openalex == work and row.reference == ref
+    info = refs.details(row)
+    assert info["abstract"] == "Lavas & dikes."  # the registry's first
+    assert info["citations_by_year"] == [{"year": 2020, "count": 3}, {"year": 2021, "count": 5}]
+    assert info["open_access"] == {"url": "https://x/paper.pdf", "status": "green"}
+    assert (info["topics"], info["keywords"]) == (["Geomagnetism"], ["Paleomagnetism"])
+    row.raw = {**crossref, "abstract": None}
+    assert refs.details(row)["abstract"] == "OpenAlex text"
+
+    # OpenAlex down: the registry fetch still counts, the old work is kept.
+    assert not asyncio.run(refs._apply(row, ("ok", "crossref", crossref, refs.KEEP)))
+    assert row.openalex == work
+    # Not in OpenAlex: just the registry's record.
+    asyncio.run(refs._apply(row, ("ok", "crossref", crossref, {})))
+    assert row.reference["n_citations"] == 29 and "openalex" not in refs.details(row)
 
 
 def test_reference_corrections_override_the_registry(tmp_path, monkeypatch):

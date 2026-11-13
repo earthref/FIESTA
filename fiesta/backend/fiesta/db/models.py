@@ -301,8 +301,9 @@ class DoiReference(Base):
     reads it but never calls out, and it can always be fetched again.
 
     status: pending (never fetched) | ok | not_found | error. A row is fetched
-    again once `due_at` passes: a month after a success (n_citations moves),
-    sooner after an error."""
+    again once `due_at` passes: a week after a success (n_citations moves),
+    sooner after an error. `openalex` is the OpenAlex work for the DOI (ORCIDs,
+    citations, abstract, open access), `{}` when OpenAlex doesn't have it."""
 
     __tablename__ = "doi_references"
     __table_args__ = {"schema": SHARED_SCHEMA}
@@ -311,6 +312,7 @@ class DoiReference(Base):
     source: Mapped[str | None] = mapped_column(String(16))  # crossref | datacite
     reference: Mapped[dict | None] = mapped_column(JSON)  # the legacy _reference shape
     raw: Mapped[dict | None] = mapped_column(JSON)  # the registry's record as fetched
+    openalex: Mapped[dict | None] = mapped_column(JSON)  # the OpenAlex work, as fetched
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     error: Mapped[str | None] = mapped_column(Text)
     fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

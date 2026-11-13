@@ -131,6 +131,10 @@ class Settings(BaseSettings):
     smtp_port: int = 1025
     smtp_from: str = "noreply@earthref.org"
 
+    # OpenAlex API key (openalex.org/settings/api), sent with the reference
+    # lookups when set; empty uses the anonymous allowance.
+    openalex_api_key: str = ""
+
     cors_origins: list[str] = ["http://localhost:5173"]
 
     # Path prefix the API is published under when a reverse proxy strips one

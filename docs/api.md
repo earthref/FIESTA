@@ -58,6 +58,7 @@ Two schemes are accepted; the private routes take either.
 | GET | `/v2/basemap/moon` | — | JPEG: the Moon (LROC WAC) as a 1024×512 plate carrée image, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on the Moon |
 | GET | `/v2/portal/users` | — | `{nodes, total, users: [{id, name, handle, orcid, counts, total}]}`: every user with a public contribution (activated, latest, not deleted) and how many they have per node; no email. Query `q` (every word in name/handle/ORCID), `sort` (`total`, a node slug, `name`, `handle`, `orcid`), `order` (`asc`\|`desc`), `offset`, `limit` (≤ 1000, default 100). The portal's Users page |
 | GET | `/v2/portal/references` | — | `{nodes, total, references: [{doi, citation, title, journal, year, long_citation, counts, total}]}`: every reference DOI (normalized, upper case) a public contribution cites and how many cite it per node; the metadata from the `doi_references` cache, `null` until fetched. Same query parameters (`sort` also `citation`, `title`, `year`, `doi`; blanks sort last). The portal's References page |
+| GET | `/v2/portal/references/{doi}` | — | one cached DOI's `{reference, abstract?, openalex?, citations_by_year?, topics?, keywords?, open_access?}` (see "Search & retrieval", `summary.contribution._reference`); 404 until fetched. The contribution panel's Reference section |
 | GET | `/v2/basemap/undersea-features` | — | GeoJSON `FeatureCollection` of the IHO-IOC GEBCO Gazetteer of Undersea Feature Names (NOAA NCEI's feature service), each `{name, kind: point\|line\|area}` with areas reduced to their middle point; fetched once a day and cached, for the Map tab's labels |
 
 In both `/v2/portal` lists `counts` maps a node slug to its number of public contributions (a node
@@ -429,8 +430,16 @@ case), `title`, `journal`, `year`, `keywords`, `citation` ("Behar et al.
 `long_authors`, `n_citations`, `long_citation` (the full reference as text) and
 `html`. Until its DOI is fetched (or when neither registry has it) it is just
 `{doi}`. The worker fetches a DOI when a revision first names it and again every
-30 days (so `n_citations` stays current), into the shared `doi_references`
+7 days (so `n_citations` stays current), into the shared `doi_references`
 table; indexing and `fiesta rebuild` read that table and never call out.
+OpenAlex is asked for the same DOI: its ORCIDs fill in authors the registry
+gives none, and `n_citations` is the larger of the registry's and OpenAlex's
+counts. The rest of the OpenAlex work stays out of the search docs (every row
+of a contribution carries `_reference`) and is served by
+`GET /v2/portal/references/{doi}`: `{reference, abstract?, openalex?,
+citations_by_year?: [{year, count}], topics?, keywords?, open_access?: {url,
+status}}`, the abstract from the registry or else OpenAlex; 404 until the DOI
+is fetched. `FIESTA_OPENALEX_API_KEY` is sent when set.
 Where a registry's record is wrong (a publisher deposit with U+FFFD for an
 accented letter), `configurations/references/corrections.yaml` overrides its
 title, journal, year, volume, issue or page for every node; `fiesta init`
