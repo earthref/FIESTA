@@ -238,7 +238,7 @@ def enrich_references(
 ):
     """Fetch the publication metadata (Crossref, then DataCite) of every
     contribution's reference DOI and set it on their search docs. The outbox
-    worker does this for new DOIs and monthly refreshes; this is the backfill."""
+    worker does this for new DOIs and weekly refreshes; this is the backfill."""
     from fiesta.search.client import get_opensearch
     from fiesta.services import references
 

@@ -596,6 +596,96 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
   );
 }
 
+interface ReferenceAuthor {
+  family?: string;
+  given?: string;
+  _orcid?: string;
+}
+
+/** `/v2/portal/references/{doi}`: what the DOI cache knows beyond `_reference`. */
+interface ReferenceDetailsOut {
+  abstract?: string;
+  openalex?: string;
+  citations_by_year?: { year: number; count: number }[];
+  topics?: string[];
+  keywords?: string[];
+  open_access?: { url: string; status?: string };
+}
+
+/** The publication's authors (an ORCID iD links each one that has one), its
+ * citation count, free-to-read copy, topics and abstract. */
+function ReferenceDetails({ reference }: { reference: Record<string, unknown> }) {
+  const doi = firstString(reference.doi);
+  const { data } = useQuery({
+    queryKey: ["reference-details", doi],
+    queryFn: () => api<ReferenceDetailsOut>(`/v2/portal/references/${encodeURI(doi ?? "")}`),
+    enabled: Boolean(doi),
+    retry: false,
+    staleTime: 60 * 60 * 1000,
+  });
+  const authors = (Array.isArray(reference.authors) ? reference.authors : []) as ReferenceAuthor[];
+  const citations = Number(reference.n_citations) || 0;
+  const subjects = [...(data?.topics ?? []), ...(data?.keywords ?? [])].filter(
+    (subject, index, all) => all.indexOf(subject) === index,
+  );
+  return (
+    <>
+      {authors.some((author) => author._orcid) && (
+        <p className="m-0 mt-1 text-gray-700">
+          {authors.map((author, index) => {
+            const name = [author.given, author.family].filter(Boolean).join(" ");
+            return (
+              // biome-ignore lint/suspicious/noArrayIndexKey: author order is the publication's and static
+              <span key={`${index}-${name}`}>
+                {index > 0 && ", "}
+                {name}
+                {author._orcid && (
+                  <a
+                    href={`https://orcid.org/${author._orcid}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={`ORCID ${author._orcid}`}
+                    className="ml-0.5 align-super text-[10px] font-bold text-[#a6ce39] hover:underline"
+                  >
+                    iD
+                  </a>
+                )}
+              </span>
+            );
+          })}
+        </p>
+      )}
+      {(citations > 0 || data?.open_access) && (
+        <p className="m-0 mt-1 text-gray-700">
+          {citations > 0 &&
+            (data?.openalex ? (
+              <ExternalLink
+                href={`https://openalex.org/works?filter=cites:${data.openalex.split("/").pop()}`}
+              >
+                Cited by {formatNumber(citations)}
+              </ExternalLink>
+            ) : (
+              `Cited by ${formatNumber(citations)}`
+            ))}
+          {citations > 0 && data?.open_access && " · "}
+          {data?.open_access && (
+            <ExternalLink href={data.open_access.url}>Free to read</ExternalLink>
+          )}
+        </p>
+      )}
+      {subjects.length > 0 && (
+        <p className="m-0 mt-1 text-gray-500">{subjects.slice(0, 6).join(" · ")}</p>
+      )}
+      {data?.abstract && (
+        <details className="mt-1">
+          <summary className="cursor-pointer text-node-ink">Abstract</summary>
+          <p className="m-0 mt-1 text-gray-700">{data.abstract}</p>
+        </details>
+      )}
+    </>
+  );
+}
+
 function ContributionPanel({
   id,
   privateKey,
@@ -631,6 +721,7 @@ function ContributionPanel({
             <InlineHtml html={firstString(reference.title)} />
           </p>
         )}
+        <ReferenceDetails reference={reference} />
         {description && <p className="m-0 mt-2 text-gray-700">{description}</p>}
       </Section>
 

@@ -182,7 +182,10 @@ Each item is independent and PR-sized; good subagent-in-worktree work.
       each `reference_doi`, cached in the shared `doi_references` table and set on
       the search docs as the legacy `_reference` (title, journal, year, citation,
       authors with ORCIDs, n_citations, html). Fetched by the outbox worker when a
-      revision names a DOI and monthly after; `fiesta enrich-references` backfills.
+      revision names a DOI and weekly after (monthly until 2026-11-13, when OpenAlex
+      was added: more ORCIDs, the larger citation count, and an abstract, citations
+      per year, topics and open-access link on the contribution panel);
+      `fiesta enrich-references` backfills.
 - [x] **C7 Legacy `/v1` contract** (2026-09-13). FIESTA's own API moved to `/v2`;
       `/v1` is a port of `old-backend`'s api.earthref.org surface (`routers/v1.py`,
       its published YAML at `/v1/openapi.yaml`, Koa error bodies, HTTP Basic),

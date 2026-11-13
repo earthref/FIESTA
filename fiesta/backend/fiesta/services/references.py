@@ -6,8 +6,15 @@ the outbox worker fetches due DOIs (`drain`) into the shared `doi_references`
 cache and sets `summary.contribution._reference` on the search docs of every
 contribution citing them, falling back to reindex events when search is down.
 Indexing reads the cache (`lookup`) and never calls out, so a registry outage
-only leaves `_reference` as `{doi}`. Each DOI is fetched again a month later,
+only leaves `_reference` as `{doi}`. Each DOI is fetched again a week later,
 which keeps `n_citations` current.
+
+OpenAlex is asked too (`fetch_openalex`): its ORCIDs fill in authors the
+registry has none for, and `n_citations` is the larger of the registry's and
+OpenAlex's counts (each sees only the citing works it indexes). The rest of
+its work (abstract, citations per year, topics, open access) stays out of the
+search docs, which every row of a contribution carries: `details` serves it
+from the cache (`/v2/portal/references/{doi}`).
 
 `_reference` keeps the legacy shape: source, doi, title, journal, year,
 keywords, citation ("Smith et al. (2014)"), authors [{family, given, _name,
@@ -21,8 +28,10 @@ cache and search docs up to date with that file.
 """
 
 import asyncio
+import html
 import logging
 import re
+import unicodedata
 from datetime import UTC, datetime, timedelta
 from functools import cache
 from urllib.parse import quote
@@ -41,7 +50,14 @@ logger = logging.getLogger(__name__)
 DOI_RE = re.compile(r"10\.\d{4,9}/\S+")
 CROSSREF = "https://api.crossref.org/works/"
 DATACITE = "https://api.datacite.org/dois/"
-REFRESH = timedelta(days=30)
+OPENALEX = "https://api.openalex.org/works/doi:"
+OPENALEX_FIELDS = (
+    "id,cited_by_count,counts_by_year,authorships,abstract_inverted_index,"
+    "open_access,best_oa_location,topics,keywords"
+)
+# An OpenAlex lookup that failed: the row keeps the work it had.
+KEEP = object()
+REFRESH = timedelta(days=7)
 RETRY = timedelta(hours=1)
 MAX_RETRY = timedelta(days=7)
 BATCH = 20
@@ -156,8 +172,7 @@ async def apply_corrections() -> int:
             .all()
         )
         for row in rows:
-            build = from_crossref if row.source == "crossref" else from_datacite
-            if (reference := build(row.raw)) != row.reference:
+            if (reference := build(row.source, row.raw, row.openalex)) != row.reference:
                 row.reference = changed[row.doi] = reference
         await session.commit()
     return await update_contributions(changed) if changed else 0
@@ -330,23 +345,162 @@ def from_datacite(d: dict) -> dict:
     )
 
 
+# --- OpenAlex ------------------------------------------------------------------
+
+
+def _fold(text: str) -> str:
+    """Lower case without accents, for comparing names across sources."""
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().casefold()
+
+
+def _openalex_orcids(authors: list[dict], authorships: list[dict]) -> dict[int, str]:
+    """ORCIDs for the registry's authors that have none, by index: the
+    OpenAlex author in the same position when the family name matches, else
+    the only OpenAlex author with that family name. An ORCID is used once."""
+    names = [
+        (
+            f"{_fold(a.get('raw_author_name') or '')} "
+            f"{_fold((a.get('author') or {}).get('display_name') or '')}",
+            ((a.get("author") or {}).get("orcid") or "").rstrip("/").rsplit("/", 1)[-1],
+        )
+        for a in authorships
+    ]
+    used = {a["_orcid"] for a in authors if a.get("_orcid")}
+    found: dict[int, str] = {}
+    for i, author in enumerate(authors):
+        family = _fold(author.get("family") or "")
+        if author.get("_orcid") or not family:
+            continue
+        pattern = re.compile(rf"\b{re.escape(family)}\b")
+        if i < len(names) and pattern.search(names[i][0]):
+            candidates = [i]
+        else:
+            candidates = [j for j, (name, _) in enumerate(names) if pattern.search(name)]
+        if len(candidates) == 1 and (orcid := names[candidates[0]][1]) and orcid not in used:
+            found[i] = orcid
+            used.add(orcid)
+    return found
+
+
+def with_openalex(ref: dict, work: dict | None) -> dict:
+    """The registry's `_reference` with OpenAlex's ORCIDs filled in and the
+    larger of the two citation counts."""
+    if not work:
+        return ref
+    ref = dict(ref)
+    if counts := [n for n in (ref.get("n_citations"), work.get("cited_by_count")) if n]:
+        ref["n_citations"] = max(counts)
+    if (authors := ref.get("authors")) and (
+        orcids := _openalex_orcids(authors, work.get("authorships") or [])
+    ):
+        ref["authors"] = [
+            {**a, "_orcid": orcids[i]} if i in orcids else a for i, a in enumerate(authors)
+        ]
+    return ref
+
+
+def build(source: str | None, raw: dict, openalex: dict | None = None) -> dict:
+    """A cached DOI's `_reference`: its registry record, its correction, and
+    its OpenAlex work."""
+    ref = from_crossref(raw) if source == "crossref" else from_datacite(raw)
+    return with_openalex(ref, openalex)
+
+
+def _plain(markup: str | None) -> str | None:
+    """Text of a JATS / HTML abstract, without a leading "Abstract" heading."""
+    if not markup:
+        return None
+    text = html.unescape(re.sub(r"<[^>]+>", " ", markup))
+    text = re.sub(r"^\s*abstract\b[:.]?", "", " ".join(text.split()), flags=re.IGNORECASE)
+    return text.strip() or None
+
+
+def _uninvert(index: dict | None) -> str | None:
+    """OpenAlex's abstract_inverted_index ({word: [positions]}) as text."""
+    if not index:
+        return None
+    words = sorted((p, word) for word, positions in index.items() for p in positions)
+    return " ".join(word for _, word in words) or None
+
+
+def details(row: DoiReference) -> dict:
+    """What the contribution page shows about a cached DOI beyond `_reference`:
+    the abstract (the registry's, else OpenAlex's), and OpenAlex's citations per
+    year, topics, keywords and free-to-read copy."""
+    raw, work = row.raw or {}, row.openalex or {}
+    if row.source == "crossref":
+        abstract = _plain(raw.get("abstract"))
+    else:
+        abstract = next(
+            (
+                _plain(d.get("description"))
+                for d in raw.get("descriptions") or []
+                if d.get("descriptionType") == "Abstract"
+            ),
+            None,
+        )
+    out: dict = {"reference": row.reference or {"doi": row.doi}}
+    if abstract := abstract or _uninvert(work.get("abstract_inverted_index")):
+        out["abstract"] = abstract
+    if not work:
+        return out
+    out["openalex"] = work.get("id")
+    out["citations_by_year"] = sorted(
+        (
+            {"year": c["year"], "count": c.get("cited_by_count") or 0}
+            for c in work.get("counts_by_year") or []
+            if c.get("year")
+        ),
+        key=lambda c: c["year"],
+    )
+    out["topics"] = [t["display_name"] for t in work.get("topics") or [] if t.get("display_name")]
+    out["keywords"] = [
+        k["display_name"] for k in work.get("keywords") or [] if k.get("display_name")
+    ]
+    access, best = work.get("open_access") or {}, work.get("best_oa_location") or {}
+    url = best.get("pdf_url") or best.get("landing_page_url") or access.get("oa_url")
+    if access.get("is_oa") and url:
+        out["open_access"] = {"url": url, "status": access.get("oa_status")}
+    return out
+
+
 # --- Fetching ------------------------------------------------------------------
 
 
-async def fetch(client: httpx.AsyncClient, doi: str) -> tuple[str, str | None, dict | None]:
-    """(status, source, raw record): ok, not_found (in neither registry), or
-    error (to retry). Crossref first; DataCite for DOIs it doesn't know."""
+async def fetch_openalex(client: httpx.AsyncClient, doi: str):
+    """The OpenAlex work for a DOI, `{}` when OpenAlex doesn't have it, or
+    KEEP when the lookup failed (it never fails the registry fetch)."""
+    params = {"select": OPENALEX_FIELDS}
+    if key := get_settings().openalex_api_key:
+        params["api_key"] = key
+    try:
+        response = await client.get(OPENALEX + quote(doi.lower(), safe="/"), params=params)
+        if response.status_code == 404:
+            return {}
+        response.raise_for_status()
+        return response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("openalex %s: %s", doi, exc)
+        return KEEP
+
+
+async def fetch(client: httpx.AsyncClient, doi: str) -> tuple:
+    """(status, source, raw record, OpenAlex work): ok, not_found (in neither
+    registry), or error (to retry). Crossref first; DataCite for DOIs it
+    doesn't know; OpenAlex for a DOI either has."""
     response = await client.get(CROSSREF + quote(doi, safe="/"))
     if response.status_code == 200:
-        return "ok", "crossref", response.json()["message"]
+        raw = response.json()["message"]
+        return "ok", "crossref", raw, await fetch_openalex(client, doi)
     if response.status_code != 404:
         response.raise_for_status()
         raise httpx.HTTPError(f"crossref answered {response.status_code}")
     response = await client.get(DATACITE + quote(doi, safe="/"))
     if response.status_code == 200:
-        return "ok", "datacite", response.json()["data"]["attributes"]
+        raw = response.json()["data"]["attributes"]
+        return "ok", "datacite", raw, await fetch_openalex(client, doi)
     if response.status_code == 404:
-        return "not_found", None, None
+        return "not_found", None, None, KEEP
     response.raise_for_status()
     raise httpx.HTTPError(f"datacite answered {response.status_code}")
 
@@ -367,7 +521,8 @@ async def _apply(row: DoiReference, outcome) -> bool:
         row.error = f"{type(outcome).__name__}: {outcome}"[:1000]
         row.due_at = now + min(RETRY * 2 ** (row.attempts - 1), MAX_RETRY)
         return False
-    status, source, raw = outcome
+    status, source, raw, *rest = outcome
+    work = rest[0] if rest and rest[0] is not KEEP else row.openalex
     row.error = None
     row.attempts = 0
     row.fetched_at = now
@@ -376,7 +531,7 @@ async def _apply(row: DoiReference, outcome) -> bool:
         row.status = status
         return False
     try:
-        reference = from_crossref(raw) if source == "crossref" else from_datacite(raw)
+        reference = build(source, raw, work)
     except (KeyError, TypeError, ValueError, IndexError, AttributeError) as exc:
         if row.status != "ok":
             row.status = "error"
@@ -384,6 +539,7 @@ async def _apply(row: DoiReference, outcome) -> bool:
         return False
     changed = row.status != "ok" or row.reference != reference
     row.status, row.source, row.raw, row.reference = "ok", source, raw, reference
+    row.openalex = work
     return changed
 
 

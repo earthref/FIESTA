@@ -164,6 +164,23 @@ SPA only to local stacks. See configurations/geomagia/README.md.
 - [ ] **Decide when GEOMAGIA goes public** (`publish.web: true` in geomagia.yaml),
       with the GEOMAGIA team.
 
+## 2026-11-13 — OpenAlex reference metadata
+
+Each reference DOI is now also looked up in OpenAlex (more author ORCIDs, the
+larger citation count, abstract / citations per year / open access on the
+contribution panel), and refreshed weekly instead of monthly. Migration 0007
+made every cached DOI due, so the next reference drain fetches all ~2,500 again.
+
+- [ ] **Drain the references on dev once** (until the worker below runs as a
+      service): `fiesta enrich-references` against dev's database from a machine
+      with its credentials. About 2,500 DOIs, two requests each; a few minutes.
+- [ ] **Optional: an OpenAlex API key** (free, openalex.org/settings/api) as
+      `FIESTA_OPENALEX_API_KEY` in the API and worker environment. Without one the
+      lookups use OpenAlex's anonymous allowance, which covered these requests on
+      2026-11-13; check openalex.org's current terms for regular use.
+- [ ] **Allow outbound HTTPS to `api.openalex.org`** from the worker host (beside
+      Crossref and DataCite, below).
+
 ## 2026-11-11 — Repository layout: `configurations/` + `fiesta/`
 
 The repo now has `configurations/` (was `config/` and `sources/`), `fiesta/`

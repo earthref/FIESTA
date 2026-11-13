@@ -15,13 +15,13 @@ paging happen over that cached list.
 import time
 from typing import Any, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
 
 from fiesta.db.models import Contribution, DoiReference, User
 from fiesta.db.session import get_sessionmaker
 from fiesta.nodeconfig import get_deployment
-from fiesta.services.references import normalize
+from fiesta.services.references import details, normalize
 
 router = APIRouter(prefix="/portal", tags=["portal"])
 
@@ -223,3 +223,17 @@ async def list_references(
         limit=limit,
     )
     return {"nodes": _columns(rows), "total": page["total"], "references": page["rows"]}
+
+
+@router.get("/references/{doi:path}")
+async def reference_details(doi: str) -> dict:
+    """A publication's cached metadata beyond a search doc's `_reference`:
+    `{reference, abstract?, openalex?, citations_by_year?, topics?, keywords?,
+    open_access?: {url, status}}` (fiesta.services.references.details). 404
+    until the DOI has been fetched."""
+    key = normalize(doi)
+    async with get_sessionmaker()() as session:
+        row = await session.get(DoiReference, key) if key else None
+    if row is None or row.status != "ok":
+        raise HTTPException(404, "No metadata for this DOI yet")
+    return details(row)
