@@ -167,7 +167,7 @@ export function FilterEntry({
       >
         <span className="grow whitespace-normal font-bold">{label}</span>
         {active && (
-          <span className="shrink-0 rounded-full bg-node px-[0.55em] text-[13px] font-bold leading-[1.6] text-white">
+          <span className="shrink-0 rounded-full bg-node px-[0.55em] text-[11px] font-bold leading-[1.6] text-white">
             {chips.length}
             <span className="sr-only"> applied</span>
           </span>

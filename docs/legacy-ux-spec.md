@@ -149,12 +149,14 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
   dashed #d4d4d5 bottom border**. Count pills: 11px bold, `line-height .7em`,
   padding .5em, min-width 4em, min-height 2em (22px), margin `-1em -1em -1em .5em`.
   FIESTA (2026-11-12, a deliberate deviation): **no text on the search page or
-  in its filter modals is smaller than the results' 13px** — count pills, the
-  sort pill, the Rows grid's headers and cells, chips, badges, hints, the time
-  scale, the map legend and Labels control, buttons, and the plugin views and
-  thumbnails shown there; the count pills are 13px (26px tall). The sidebar's
-  filters show their count in the same white pill (min-width 3em, in the flow)
-  and no filter icon. Charts' canvas text (axis labels) keeps ECharts' sizes.
+  in its filter modals is smaller than the results' 13px** — the sort pill,
+  the Rows grid's headers and cells, chips, hints, the time scale, the map
+  legend and Labels control, buttons, and the plugin views and thumbnails
+  shown there — **except the count pills**, which stay 11px: the tabs' and
+  sidebar's white pills, the modals' value counts and the node-colored
+  "applied" badges. The sidebar's filters show their count in the tabs' white
+  pill (min-width 3em, in the flow) and no filter icon. Charts' canvas text
+  (axis labels) keeps ECharts' sizes.
 - **Buttons**: `ui basic` buttons are weight 400 with a 1px inset box-shadow (no
   border), padding `.78571429em 1.5em`, line-height 1em, disabled opacity .45;
   icons 1em with margin `0 .43em 0 -.21em`. Search input 14px, padding
