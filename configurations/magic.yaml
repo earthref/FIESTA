@@ -90,6 +90,10 @@ search:
     - { type: range, label: "Anisotropy P′", field: summary.rock_mag.pj, levels: [Specimens], views: [Rock Magnetism] }
     - { type: range, label: Anisotropy Shape T, field: summary.rock_mag.t, levels: [Specimens], views: [Rock Magnetism] }
     - { type: bbox, label: Geospatial, levels: [Specimens], views: [Rock Magnetism] }
+    # Every node's contribution filters (the contribution block's id, contributor, timestamp).
+    - { type: facet, field: id, label: Contribution ID, views: [Summaries, Rows, Map] }
+    - { type: facet, field: contributor, label: Contributor, views: [Summaries, Rows, Map] }
+    - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true, views: [Summaries, Rows, Map] }
   # The Map view's "Color by" menu: a column (offered on the levels whose table
   # has it) or a summary.* path, parsed as a number; `scale` as a range
   # filter's. Ages are put in years BP by their age_unit (unit_conversions

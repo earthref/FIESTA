@@ -36,6 +36,10 @@ search:
     - { type: facet, field: lithology }
     - { type: facet, field: material }
     - { type: facet, field: method_codes }
+    # Every node's contribution filters (the contribution block's id, contributor, timestamp).
+    - { type: facet, field: id, label: Contribution ID }
+    - { type: facet, field: contributor, label: Contributor }
+    - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
   # Samples on another planetary body, by their location_type: they and their
   # specimens, ... are mapped on that body's globe, not Earth's.
   # Martian is left out: those samples are meteorites, mapped where found.

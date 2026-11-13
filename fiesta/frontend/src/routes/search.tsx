@@ -27,7 +27,7 @@ import {
   useNumberFilter,
 } from "../components/filter-modals";
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
-import { type AreaRequest, SearchMap } from "../components/map/search-map";
+import { SearchMap } from "../components/map/search-map";
 import { contributionId, ResultDivider } from "../components/result-item";
 import { columnsOf, RowsGrid, rowsOfHit } from "../components/rows-table";
 import {
@@ -412,21 +412,16 @@ export function SearchPage() {
   );
   // The Rows grid's row last opened, highlighted (a new search replaces the rows).
   const [openedRow, setOpenedRow] = useState<string>();
-  // The geospatial filter (the Map tab's area, the sidebar's Geospatial
-  // checkbox) narrows every level with positions, and each level tab's count;
-  // it stays across level tabs.
+  // The geospatial filter (the sidebar's Geospatial filter and its modal's
+  // map) narrows every level with positions, and each level tab's count; it
+  // stays across level tabs. The Map tab shows it but does not edit it.
   const area = parseArea(search.area);
   const areaBbox = (entry: SearchLevel | undefined) =>
     area && entry?.geo ? areaToBbox(area) : undefined;
-  // An area asked for by the Map tab's Filter by area button.
-  const [areaRequest, setAreaRequest] = useState<AreaRequest | null>(null);
   const [filterModal, setFilterModal] = useState<FilterModalState | null>(null);
   // The sidebar's Find box over its filters.
   const [filterFind, setFilterFind] = useState("");
-  const setArea = (next: Area | null) => {
-    setAreaRequest(null);
-    setSearch({ area: next?.join(",") });
-  };
+  const setArea = (next: Area | null) => setSearch({ area: next?.join(",") });
 
   // The with/without data entries a level's search applies on a view: those
   // on the tables its records cover, while an `exists` filter shows there.
@@ -1440,10 +1435,6 @@ export function SearchPage() {
                   has={queryHas}
                   scope={scope}
                   area={area}
-                  onAreaChange={setArea}
-                  areaRequest={areaRequest}
-                  onRequestArea={() => setAreaRequest({})}
-                  onAreaRequestDone={() => setAreaRequest(null)}
                   color={config.color}
                   onSelect={(id) => openContribution(id, level.table)}
                 />

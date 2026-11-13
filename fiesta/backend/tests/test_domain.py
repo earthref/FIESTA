@@ -13,6 +13,7 @@ from fiesta.domain.parse import (
 from fiesta.domain.summarize import summarize
 from fiesta.domain.validate import guess_data_model_version, validate_contribution
 from fiesta.nodeconfig import load_deployment
+from fiesta.search.queries import CONTRIBUTION_FACETS
 
 # Longitudes are 0-360 per the MagIC data model (min 0.0).
 MAGIC_TEXT = """tab delimited\tcontribution
@@ -628,9 +629,13 @@ def test_search_filter_counts(magic_node, monkeypatch):
     assert "site" in text and "method_codes" in text and "lat" not in text
     assert "contribution_id" not in text
     out = run(["text:*", "numeric:*"])
+    # Positions are the Geospatial filter's, not number filters of their own.
     assert set(out.counts) == {f"facet:{c}" for c in text} | {
-        f"range:summary._num.{c}" for c in magic_node.number_columns("sites")
+        f"range:summary._num.{c}"
+        for c in magic_node.number_columns("sites")
+        if c not in ("lat", "lon")
     }
+    assert "range:summary._num.lat" not in out.counts
     assert router._facet_names(magic_node, "sites", False, ["site"]) == ["site"]
     for bad in ("facet:nope", "range:summary.sites.lat", "geo:x", "nope"):
         with pytest.raises(router.HTTPException):
@@ -832,7 +837,7 @@ def test_erda_facets_are_summarized_columns(erda_node):
     """Every configured facet must be a real column, or its bucket is always empty."""
     model = erda_node.load_data_model(erda_node.data_model.latest)
     columns = {c for table in model["tables"].values() for c in table["columns"]}
-    assert set(erda_node.search.facets) <= columns
+    assert set(erda_node.search.facets) - CONTRIBUTION_FACETS <= columns
 
 
 # An OSU-MGR contribution: one cruise's holdings, spanning both hierarchy
@@ -1058,7 +1063,7 @@ def test_osu_mgr_summarize_both_branches(osu_mgr_node):
 def test_osu_mgr_facets_are_summarized_columns(osu_mgr_node):
     model = osu_mgr_node.load_data_model(osu_mgr_node.data_model.latest)
     columns = {c for table in model["tables"].values() for c in table["columns"]}
-    assert set(osu_mgr_node.search.facets) <= columns
+    assert set(osu_mgr_node.search.facets) - CONTRIBUTION_FACETS <= columns
 
 
 def test_osu_mgr_extra_types_are_hierarchy_tables(osu_mgr_node):
@@ -1181,7 +1186,7 @@ def test_sc_config_loads(sc_node):
     assert {"seamounts", "contours", "maps"} <= sc_node.geo_tables
     model = sc_node.load_data_model(sc_node.data_model.latest)
     columns = {c for table in model["tables"].values() for c in table["columns"]}
-    assert set(sc_node.search.facets) <= columns
+    assert set(sc_node.search.facets) - CONTRIBUTION_FACETS <= columns
     assert set(sc_node.search.extra_types) <= set(sc_node.hierarchy)
 
 
@@ -1210,6 +1215,42 @@ def test_sc_summarize_positions_maps_by_seamount(sc_node):
     assert "_geo_point" not in regional
     assert set(regional["seamounts"]) == {"SMNT-025N-1729E", "SMNT-026S-1768E"}
     assert "Pacific Plate" in by_type["contribution"][0]["summary"]["_all"]["plate"]
+
+
+def test_contribution_filters_on_every_node():
+    """Every node filters by Contribution ID and Contributor (facets on the
+    contribution block, not `_all`) and Contributed On (a date range whose
+    bounds are whole epoch milliseconds); a facet never lists private keys."""
+    import pytest
+    from pydantic import ValidationError
+
+    from fiesta.nodeconfig import SearchFilter
+    from fiesta.search.queries import build_search_body, facet_path
+
+    for node in load_deployment().nodes.values():
+        filters = node.search.filters
+        assert {"id", "contributor"} <= set(node.search.facets), node.slug
+        assert any(
+            f.type == "range" and f.date and f.field == "summary.contribution.timestamp"
+            for f in filters
+        ), node.slug
+    assert facet_path("id") == "summary.contribution.id"
+    assert facet_path("contributor") == "summary.contribution._contributor.raw"
+    assert facet_path("site") == "summary._all.site.raw"
+    body = build_search_body(
+        table="sites",
+        query=None,
+        facets=["contributor"],
+        ranges=[{"field": "summary.contribution.timestamp", "gte": 1.7e12, "lte": None}],
+    )
+    assert body["aggs"]["contributor"]["terms"]["field"] == facet_path("contributor")
+    assert {"range": {"summary.contribution.timestamp": {"gte": 1700000000000}}} in body["query"][
+        "bool"
+    ]["filter"]
+    with pytest.raises(ValidationError):
+        SearchFilter(type="facet", field="private_key")
+    with pytest.raises(ValidationError):
+        SearchFilter(type="facet", field="id", date=True)
 
 
 def test_search_body_sort_options():

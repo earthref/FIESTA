@@ -87,6 +87,9 @@ export interface SearchFilter {
   /** range: show the geologic time scale under the histogram as shortcuts
    * (the field holds ages in years). */
   timescale?: boolean;
+  /** range: the field is a date (summary.contribution.timestamp), its bounds
+   * epoch milliseconds, typed and shown as days. */
+  date?: boolean;
 }
 
 /** A number the search map can color its markers by (backend `MapColor`),
