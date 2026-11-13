@@ -34,7 +34,8 @@ view, in the map's order, so a pole's index is its row): the core tiles
 all read from the doc's location row) and the plugin's own via `gridCell`
 (the pole on a whole-globe thumbnail with its ring, pole statistics, age,
 direction). Choosing a pole on the map highlights and scrolls to its row,
-a row's first click selects its pole (drawn on top of the others), and a
+a row's first click selects its pole (drawn on top of the others, the map
+turning or panning to centre it), and a
 second click on the selected row opens its contribution on the location row.
 The map is never taller than it is wide, leaving the grid at least two rows.
 The Age / A95 / Geospatial filters are `search.filters` entries; a search

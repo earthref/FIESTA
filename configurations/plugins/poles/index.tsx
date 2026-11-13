@@ -498,6 +498,9 @@ function PolesMapView({
 }: PluginSubTabContext) {
   // The selected pole: its grid row (a map point's `index`).
   const [selected, setSelected] = useState<number | null>(null);
+  // The pole a grid row picked, which the map turns or pans to (a new object
+  // per pick, so every pick moves the map, even back to the same pole).
+  const [centerOn, setCenterOn] = useState<{ lon: number; lat: number } | null>(null);
   const [showEllipses, setShowEllipses] = useState(true);
   const rootRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -606,6 +609,7 @@ function PolesMapView({
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset only when the list identity changes
   useEffect(() => {
     setSelected(null);
+    setCenterOn(null);
   }, [poles]);
 
   const error = firstMapPage.error ?? restMapPages.error ?? grid.first.error;
@@ -644,6 +648,7 @@ function PolesMapView({
                 showEllipses={showEllipses}
                 selected={selected}
                 onSelect={setSelected}
+                centerOn={centerOn}
               />
             </div>
           </div>
@@ -671,6 +676,8 @@ function PolesMapView({
               // row opens its contribution on the location row.
               if (index !== selected) {
                 setSelected(index);
+                const pole = poles.find((p) => p.index === index);
+                if (pole) setCenterOn({ lon: pole.lon, lat: pole.lat });
                 return;
               }
               const id = contributionId(doc);

@@ -545,6 +545,11 @@ const MapLibreMap: FC<{
   // Zooms (when it changes) so this area fills about the middle quarter of the
   // view, outside the pole views.
   zoomTo?: Area | null;
+  // Turns the globe, pans the Mercator map or slides a pole view (when it
+  // changes, by identity) to put this position in the middle, at the same
+  // zoom: a record chosen outside the map. A pole view leaves the other
+  // hemisphere's positions alone.
+  centerOn?: { lon: number; lat: number } | null;
   // The view re-centres on the points when they next change after this does,
   // so that editing the area doesn't move it. By default it re-centres
   // whenever the points change.
@@ -569,6 +574,7 @@ const MapLibreMap: FC<{
   onAreaChange,
   requestViewArea,
   zoomTo,
+  centerOn,
   focusKey,
   context,
   lines,
@@ -591,6 +597,10 @@ const MapLibreMap: FC<{
   const zoomToRef = useRef(zoomTo ?? null);
   zoomToRef.current = zoomTo ?? null;
   const zoomToAreaRef = useRef<(() => void) | null>(null);
+  // The latest position to centre on, and centres on it once the style has loaded.
+  const centerOnRef = useRef(centerOn ?? null);
+  centerOnRef.current = centerOn ?? null;
+  const centerOnPointRef = useRef<(() => void) | null>(null);
   const contextRef = useRef(context || []);
   contextRef.current = context || [];
   // Plots the latest context points once the style has loaded.
@@ -1012,6 +1022,7 @@ const MapLibreMap: FC<{
       syncAreaRef.current = syncArea;
       zoomToAreaRef.current = zoomToArea;
       zoomToArea();
+      centerOnPointRef.current = centerOnPoint;
       syncArea();
       setContextRef.current = setContext;
       setContext();
@@ -1229,6 +1240,28 @@ const MapLibreMap: FC<{
       );
       if (camera) map.easeTo({ ...camera, duration: 800 });
     };
+    // A rebuilt map (a new mode) opens on the points, not the last position.
+    let centered = centerOnRef.current;
+    const centerOnPoint = () => {
+      const target = centerOnRef.current;
+      if (!target || target === centered) return;
+      centered = target;
+      autoFit = false;
+      if (sign) {
+        // Seen from above the pole, a position lies cos(lat) globe radii from
+        // it, at the screen angle orientation + SIGN * lon.
+        if (!polar || target.lat * sign <= 0) return;
+        const r = Math.cos(target.lat / DEGREES);
+        const angle = (polar.orientation + sign * target.lon) / DEGREES;
+        animatePolar({ offset: [r * Math.sin(angle), r * Math.cos(angle)] });
+        return;
+      }
+      const lat =
+        mode === "flat"
+          ? Math.min(Math.max(target.lat, -MAX_FLAT_CENTER_LAT), MAX_FLAT_CENTER_LAT)
+          : target.lat;
+      map.easeTo({ center: [target.lon, lat], duration: 800 });
+    };
     const syncArea = () => {
       if (dragging) return;
       const { area, requestViewArea } = areaRef.current;
@@ -1418,6 +1451,11 @@ const MapLibreMap: FC<{
   useEffect(() => {
     zoomToAreaRef.current?.();
   }, [zoomTo?.join()]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the position reaches the map through centerOnRef
+  useEffect(() => {
+    centerOnPointRef.current?.();
+  }, [centerOn]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: context reaches the map through contextRef
   useEffect(() => {
