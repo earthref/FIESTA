@@ -1,6 +1,6 @@
 tab delimited	contribution
 data_model_version	geomagia_reference_id	citation	authors	title	year	journal	volume	pages	magic_link	geomagia_version
-3.4	64	Nodia et al. (1971)	Nodia M.Z., Afakidze A.M., Celidze Z.A.	Ergebnisse der Erforschung des Erdmagnetfeldes mit Hilfe der archaeomagnetischen Methode auf dem Territorium der Georgischen SSR	1971	Gerlands Beitr. Geophysik	80	497-502	http://earthref.org/cgi-bin/magic.cgi?mdt=m001094dt20070724104856	GEOMAGIA50.v3.2 export, May/22/2019
+1.0	64	Nodia et al. (1971)	Nodia M.Z., Afakidze A.M., Celidze Z.A.	Ergebnisse der Erforschung des Erdmagnetfeldes mit Hilfe der archaeomagnetischen Methode auf dem Territorium der Georgischen SSR	1971	Gerlands Beitr. Geophysik	80	497-502	http://earthref.org/cgi-bin/magic.cgi?mdt=m001094dt20070724104856	GEOMAGIA50.v3.2 export, May/22/2019
 >>>>>>>>>>
 tab delimited	sites
 site	uid	archeo_volcanic	site_name	lat	lon	site_id	region_country	continent	material_id	materials	specimen_type_id	specimen_types	age	age_min	age_max	age_error_type_id	age_error_type	dating_method_id	dating_methods	num_samples	num_acc_spec	ba	vadm	vdm	pi_method_id	pi_methods	ac_id	alteration_checks	md_ck_id	md_checks	an_corr_set_id	anisotropy_corrections	cr_corr_set_id	cooling_rate_corrections	num_dir_samples	decl	incl	dm_method_id	demag_method	dm_analysis_id	dir_analysis	comp_ref	compilations	upload_year	uploader

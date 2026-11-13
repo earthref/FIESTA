@@ -1,6 +1,6 @@
 tab delimited	contribution
 data_model_version	geomagia_reference_id	citation	authors	title	year	journal	volume	pages	magic_link	geomagia_version
-3.4	16	Odah (1999)	Odah H.	Improvement of the secular variation curve of the geomagnetic field in Egypt during the last 6000 years	1999	Earth Planets Space	51	1325-1329	http://earthref.org/cgi-bin/magic.cgi?mdt=m001094dt20070717104513	GEOMAGIA50.v3.2 export, May/22/2019
+1.0	16	Odah (1999)	Odah H.	Improvement of the secular variation curve of the geomagnetic field in Egypt during the last 6000 years	1999	Earth Planets Space	51	1325-1329	http://earthref.org/cgi-bin/magic.cgi?mdt=m001094dt20070717104513	GEOMAGIA50.v3.2 export, May/22/2019
 >>>>>>>>>>
 tab delimited	sites
 site	uid	archeo_volcanic	site_name	sample_id	lat	lon	site_id	region_country	continent	material_id	materials	specimen_type_id	specimen_types	age	age_min	age_max	age_error_type_id	age_error_type	dating_method_id	dating_methods	num_samples	num_acc_spec	ba	sigma_ba	vadm	sigma_vadm	pi_method_id	pi_methods	ac_id	alteration_checks	md_ck_id	md_checks	an_corr_set_id	anisotropy_corrections	cr_corr_set_id	cooling_rate_corrections	dm_method_id	demag_method	dm_analysis_id	dir_analysis	comp_ref	compilations	upload_year	uploader	editor	edit_date
