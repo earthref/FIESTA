@@ -202,7 +202,8 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
   date/contributor are stacked in the first column, "Contribution" on the
   Contributions level and the level's record ("Site") elsewhere, whose filter
   matches any of them; since 2026-11-12 a contribution shows its citation
-  over up to 4 lines of the reference title, and a lower level's record its
+  over up to 4 lines of the reference title (3 when the date and contributor
+  wrap onto a second line), and a lower level's record its
   name top-left with "{citation} ⇒ {location}" (not bold) bottom-right above
   the date and contributor), each row capped at 105px, its columns 1em apart
   (2em before 2026-11-12). A sticky header
