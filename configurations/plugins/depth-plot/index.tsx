@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { ErrorMessage } from "@/components/error-message";
-import { contributionId } from "@/components/result-item";
-import { PageSpinner } from "@/components/ui/spinner";
+import { contributionId, NoPlotsCell } from "@/components/result-item";
+import { PageSpinner, Spinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
+import { useOpenContribution } from "@/lib/contribution-modal";
 import type { NodeConfig } from "@/lib/types";
+import { getPath } from "@/lib/utils";
 import type { PluginModule, PluginSubTabContext } from "@/plugins";
 
 interface SeriesDef {
@@ -234,6 +237,155 @@ function CoreTracks({ core, defs }: { core: CoreData; defs: SeriesDef[] }) {
   );
 }
 
+/** A contribution's measurements (the plugin route), shared by the modal, the
+ * Plots sub-tab and the summary grid's thumbnails. */
+function useMeasurements(id: string, privateKey?: string) {
+  return useQuery({
+    queryKey: ["plugin", "depth-plot", id, privateKey],
+    queryFn: () =>
+      api<unknown>(`/plugins/depth-plot/contributions/${id}/measurements`, {
+        params: { private_key: privateKey },
+      }),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+const THUMB_HEIGHT = 98;
+const THUMB_GAP = 2;
+/** At most this many points per series in a thumbnail (a core has thousands). */
+const THUMB_POINTS = 300;
+
+/** Legacy CDR `renderDepthThumbnailSVG`: one panel per series with data,
+ * depth increasing downward, no ticks or labels; negative depths
+ * (calibration) left out; null when no series has a value. */
+function depthThumbnail(
+  rows: Record<string, unknown>[],
+  defs: SeriesDef[],
+  width: number,
+): ReactNode | null {
+  const points = rows
+    .map((row) => ({ row, depth: depthOf(row) }))
+    .filter(
+      (entry): entry is { row: Record<string, unknown>; depth: number } =>
+        entry.depth !== undefined && entry.depth >= 0,
+    )
+    .sort((a, b) => a.depth - b.depth);
+  const series = defs
+    .map((def) => {
+      const all = points.filter((entry) => Number.isFinite(Number(entry.row[def.key])));
+      const step = Math.ceil(all.length / THUMB_POINTS);
+      return {
+        def,
+        points: all
+          .filter((_, i) => i % step === 0)
+          .map((entry) => ({ depth: entry.depth, value: Number(entry.row[def.key]) })),
+      };
+    })
+    .filter((entry) => entry.points.length > 0);
+  if (series.length === 0) return null;
+
+  const depths = points.map((entry) => entry.depth);
+  const depthMin = depths[0];
+  const depthSpan = depths[depths.length - 1] - depthMin || 1;
+  const y = (depth: number) => ((depth - depthMin) / depthSpan) * THUMB_HEIGHT;
+  const panel = Math.max(8, (width - THUMB_GAP * (series.length - 1)) / series.length);
+
+  return (
+    <svg
+      width={width}
+      height={THUMB_HEIGHT}
+      aria-hidden="true"
+      className="er-light block bg-surface"
+    >
+      {series.map((entry, index) => {
+        const x0 = index * (panel + THUMB_GAP);
+        const values = entry.points.map((point) => point.value);
+        const valueMin = Math.min(...values);
+        const valueSpan = Math.max(...values) - valueMin || 1;
+        const path = entry.points
+          .map(
+            (point) =>
+              `${(x0 + ((point.value - valueMin) / valueSpan) * panel).toFixed(1)},${y(point.depth).toFixed(1)}`,
+          )
+          .join(" ");
+        return (
+          <g key={entry.def.key}>
+            <rect
+              x={x0}
+              y={0}
+              width={panel}
+              height={THUMB_HEIGHT}
+              fill="none"
+              stroke="var(--color-gray-200)"
+            />
+            <polyline points={path} fill="none" stroke={entry.def.color} strokeWidth={1} />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/** The summary grid's plot tile: the contribution's tracks, or on a core's
+ * card that core's; opens the modal's Depth Plots tab. */
+function DepthPlotTile({
+  id,
+  core,
+  privateKey,
+  config,
+  width,
+}: {
+  id: string;
+  core?: string;
+  privateKey?: string;
+  config: NodeConfig;
+  width: number;
+}) {
+  const openContribution = useOpenContribution();
+  const query = useMeasurements(id, privateKey);
+  if (query.isPending) {
+    return (
+      <NoPlotsCell width={width}>
+        <div className="flex h-[98px] items-center justify-center">
+          <Spinner />
+        </div>
+      </NoPlotsCell>
+    );
+  }
+  const cores = extractCores(query.data);
+  const rows =
+    (core && cores.find((entry) => entry.name === core)?.rows) ||
+    cores.flatMap((entry) => entry.rows);
+  const thumbnail = depthThumbnail(rows, seriesDefsOf(config), width - 2);
+  if (!thumbnail) {
+    return (
+      <NoPlotsCell width={width}>
+        <br />
+        No
+        <br />
+        <b>
+          Depth
+          <br />
+          Plots
+        </b>
+      </NoPlotsCell>
+    );
+  }
+  return (
+    <NoPlotsCell width={width}>
+      <button
+        type="button"
+        onClick={() => openContribution(id, "depth-plots", undefined, { privateKey })}
+        title="Open the depth plots"
+        aria-label={`Open the depth plots of ${core ? `core ${core}` : `contribution ${id}`}`}
+        className="block size-full cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+      >
+        {thumbnail}
+      </button>
+    </NoPlotsCell>
+  );
+}
+
 function ContributionDepthPlots({
   id,
   privateKey,
@@ -243,14 +395,7 @@ function ContributionDepthPlots({
   privateKey?: string;
   config: NodeConfig;
 }) {
-  const query = useQuery({
-    queryKey: ["plugin", "depth-plot", id, privateKey],
-    queryFn: () =>
-      api<unknown>(`/plugins/depth-plot/contributions/${id}/measurements`, {
-        params: { private_key: privateKey },
-      }),
-    staleTime: 5 * 60 * 1000,
-  });
+  const query = useMeasurements(id, privateKey);
 
   const defs = seriesDefsOf(config);
   const cores = extractCores(query.data);
@@ -311,6 +456,23 @@ const depthPlotPlugin: PluginModule = {
     const enabled = Array.isArray(levels) ? levels.map(String) : [];
     if (!enabled.includes(level.name)) return [];
     return [{ name: "Plots", render: (ctx) => <DepthPlotsView {...ctx} /> }];
+  },
+  // The summary grid's plot tile (legacy CDR's depth thumbnail), wherever the
+  // node YAML places a `plot` cell.
+  gridCell({ column, hit, level, config, privateKey }) {
+    if (column.cell !== "plot") return null;
+    const id = contributionId(hit);
+    if (!id) return null;
+    const core = level.table === "cores" ? getPath(hit, "summary.cores.core") : undefined;
+    return (
+      <DepthPlotTile
+        id={id}
+        core={typeof core === "string" && core ? core : undefined}
+        privateKey={privateKey}
+        config={config}
+        width={column.width}
+      />
+    );
   },
 };
 

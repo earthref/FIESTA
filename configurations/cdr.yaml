@@ -23,9 +23,10 @@ search:
   geography:
     geographic: [continent_ocean, country, ocean_sea, region, village_city]
   # `columns` are each level's Summaries tiles (fiesta.search.grid). CDR has
-  # no geology, age, intensity, method-code or citation data and no plot
-  # thumbnail, so its tiles are the cruise, core, section and measurement
-  # columns instead; Geography lives on cores (2026-11-13).
+  # no geology, age, intensity, method-code or citation data, so its tiles are
+  # the cruise, core, section and measurement columns instead; Geography lives
+  # on cores (2026-11-13). The plot tile is depth-plot's thumbnail, after the
+  # map on contributions and cores as in legacy CDR.
   levels:
     - name: Contributions
       table: contribution
@@ -35,6 +36,7 @@ search:
         - { cell: links }
         - { cell: counts }
         - { cell: map }
+        - { cell: plot }
         - cell: fields
           label: Cruises
           show: values
@@ -61,6 +63,7 @@ search:
       columns:
         - { cell: record }
         - { cell: map }
+        - { cell: plot }
         - cell: fields
           label: Cruise
           columns:
