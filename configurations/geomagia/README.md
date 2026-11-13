@@ -17,7 +17,11 @@ The node runs in data-source mode: GEOMAGIA's curators keep the catalogue, and
 (docs/data-sources.md). Nobody uploads to it in FIESTA. `publish.web: false`
 keeps it off production's SPA and portal until the GEOMAGIA team signs off.
 
-## Data model (`data_models/3.4.json`)
+## Data model (`data_models/1.0.json`)
+
+The version is FIESTA's own numbering of this model, not GEOMAGIA50's release
+number (v3.2 for the public CSV, v3.4 for the catalogue): a release adds records,
+and the model only changes when its columns do.
 
 Converted from the GEOMAGIA MySQL schema (`geomagia.sql`, `ARCHEODIJ` and `REFS`,
 in the GEOMAGIA Django repository) rather than a legacy Meteor model. GEOMAGIA has
@@ -51,7 +55,7 @@ does, rather than taken from the stored column.
 |---|---|
 | `lookups.json` | all 38 tables of the GEOMAGIA ID glossary (https://geomagia.gfz.de/ID_glossary.php, Wayback copy of 2026-07-19; the live page's database was down) |
 | `controlled_vocabularies.json` | the glossary tables the archeo/volcanic model uses, by name |
-| `data_models/3.4.json` | `ARCHEODIJ` + `REFS` columns, labels from the GEOMAGIA site's own download headings |
+| `data_models/1.0.json` | `ARCHEODIJ` + `REFS` columns, labels from the GEOMAGIA site's own download headings |
 | `seeds/` | six real references from the public CSV export, written by `sources/geomagia.py --out` |
 
 ## Data source

@@ -81,8 +81,8 @@ storage:
   bucket: geomagia
 
 data_model:
-  versions: ["3.4"]
-  latest: "3.4"
+  versions: ["1.0"]
+  latest: "1.0"
   dir: geomagia/data_models
 
 vocabularies:

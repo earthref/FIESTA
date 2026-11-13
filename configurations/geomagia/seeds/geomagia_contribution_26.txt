@@ -1,6 +1,6 @@
 tab delimited	contribution
 data_model_version	geomagia_reference_id	reference	citation	authors	title	year	journal	volume	pages	magic_link	geomagia_version
-3.4	26	10.1016/j.epsl.2006.04.026	Pressling et al. (2006)	Pressling N., Laj C., Kissel C., Champion D., Gubbins D.	Palaeomagnetic intensities from 14C-dated lava flows on the Big Island, Hawaii: 0-21 kyr	2006	Earth Planet. Sci. Lett.	247	26-40	http://earthref.org/cgi-bin/magic.cgi?mdt=m001094dt20070717105715	GEOMAGIA50.v3.2 export, May/22/2019
+1.0	26	10.1016/j.epsl.2006.04.026	Pressling et al. (2006)	Pressling N., Laj C., Kissel C., Champion D., Gubbins D.	Palaeomagnetic intensities from 14C-dated lava flows on the Big Island, Hawaii: 0-21 kyr	2006	Earth Planet. Sci. Lett.	247	26-40	http://earthref.org/cgi-bin/magic.cgi?mdt=m001094dt20070717105715	GEOMAGIA50.v3.2 export, May/22/2019
 >>>>>>>>>>
 tab delimited	sites
 site	uid	archeo_volcanic	site_name	site_horizon	lat	lon	site_id	region_country	continent	material_id	materials	specimen_type_id	specimen_types	age	age_min	age_max	age_error_type_id	age_error_type	dating_method_id	dating_methods	num_samples	num_acc_spec	ba	sigma_ba	vadm	sigma_vadm	vdm	sigma_vdm	pi_method_id	pi_methods	ac_id	alteration_checks	md_ck_id	md_checks	an_corr_set_id	anisotropy_corrections	cr_corr_set_id	cooling_rate_corrections	decl	incl	alpha_95	dm_method_id	demag_method	dm_analysis_id	dir_analysis	c14_id	comp_ref	compilations	upload_year	uploader	editor	edit_date

@@ -279,7 +279,7 @@ def test_geomagia_rows_keep_codes_and_drop_missing_markers(geomagia_source, tmp_
     assert (site["region_country"], site["continent"]) == ("Russia", "Asia")
     # VADM from the intensity and site latitude, as the GEOMAGIA site calculates it.
     assert (site["vadm"], site["sigma_vadm"]) == ("9.95", "0.14")
-    assert not validate_contribution(node, parsed, "3.4").errors
+    assert not validate_contribution(node, parsed, "1.0").errors
 
     direction_parsed = parse_text(texts[206])
     (direction,) = direction_parsed.tables["sites"]
@@ -288,7 +288,7 @@ def test_geomagia_rows_keep_codes_and_drop_missing_markers(geomagia_source, tmp_
     )
     # A code missing from the glossary stays visible and fails validation.
     assert direction["demag_method"] == "Unknown (ID 101)"
-    errors = validate_contribution(node, direction_parsed, "3.4").errors
+    errors = validate_contribution(node, direction_parsed, "1.0").errors
     assert [e.as_dict()["column"] for e in errors] == ["demag_method"]
 
 

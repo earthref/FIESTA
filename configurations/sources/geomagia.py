@@ -42,7 +42,7 @@ from pathlib import Path
 
 SLUG = "geomagia"
 CONFIG = Path(__file__).resolve().parents[1] / SLUG
-DATA_MODEL_VERSION = "3.4"
+DATA_MODEL_VERSION = "1.0"
 REVISION_KEY = "geomagia"
 VADM_EARTH_RADIUS_M = 6_371_200.0
 
