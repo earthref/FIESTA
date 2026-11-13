@@ -223,6 +223,31 @@ the latter become G5 work after cutover.*
       unit-tested without infra (`tests/test_v1.py`) and round-tripped in the
       Phase M integration suite. `reference_title` matches `_reference.title`
       (filled by C6).
+- [ ] **C11 Upload and online-editing parity with legacy MagIC** (inventory
+      2026-11-13 against `MagIC/client/modules`: `upload_contribution.jsx`,
+      `common/components/data_importer.jsx`, `private_contributions.jsx`,
+      `fiesta/components/edit_contribution_modal.tsx`). Already at parity: the
+      workspace list, name, DOI with citation lookup, description / lab names /
+      funding / supplement fields, delete, share link and preview, validate with
+      errors and warnings per table, publish gated on zero errors and a DOI. FIESTA
+      adds revisions with restore, attachments, new versions of published
+      contributions and per-revision validation. Missing:
+      - [ ] Intake: several files at once; `.xlsx`/`.xls` (one table per sheet, the
+            MagIC Excel template's 3 header rows and group column skipped); single-table
+            tab- and comma-delimited files; a file-type override; example files (C5).
+      - [ ] Import step: table name per sheet, a column suggester (model name or
+            label, case-insensitive), a column picker that flags unknown and duplicate
+            targets, header-row count, excluding columns, rows and tables, value
+            normalisation (Integer `.0`, booleans, controlled-vocabulary case and
+            one-letter typos), and refusing two measurements tables (C5).
+      - [ ] Import templates: save, load, rename and delete per user (C5).
+      - [ ] Upload into an existing private contribution, replacing the tables the
+            new file contains ("Add Data to This Contribution", MagIC #327).
+      - [ ] Grid editor: tables as tabs, cell editing with edited cells marked, add
+            and delete rows, undo and redo, vocabulary pulldowns, show/hide empty
+            columns, paging, and validation errors on the cells (M3, MagIC #547).
+      - [ ] Workspace card: a New Contribution button, a download button, and
+            reassigning a private contribution to another user (G5).
 - [ ] **C8 Finish the validator.** `domain/validate.py` accepts but does not enforce
       `requiredIf`/`requiredUnless` variants, `in`, `matrix` and `type`. Enforce
       them, `requiredIfGroup` per row, not per table (MagIC #564, which is why the
