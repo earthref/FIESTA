@@ -270,9 +270,9 @@ function ModalHeader({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+          className="rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
         >
-          <Icon name="close" className="h-4 w-4" />
+          <Icon name="close" style={{ width: 20, height: 20 }} />
         </button>
       </div>
     </div>
