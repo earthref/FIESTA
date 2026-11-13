@@ -101,6 +101,11 @@ export const API_URL: string = (runtime.apiUrl || import.meta.env.VITE_API_URL |
   "",
 );
 
+/** The SPA is served from this machine (a local stack or Vite), not a deployment. */
+export const IS_LOCAL_HOST: boolean = ["localhost", "127.0.0.1", "[::1]"].includes(
+  window.location.hostname,
+);
+
 /** Resolve a root-relative SPA path ("/contributions/1") under this node's base path. */
 export function siteUrl(path: string): string {
   return `${BASE_PATH.replace(/\/$/, "")}${path}`;

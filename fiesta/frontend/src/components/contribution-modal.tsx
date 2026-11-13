@@ -1,7 +1,7 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { lazy, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
-import { nodeUrl, siteUrl } from "../lib/base";
+import { IS_LOCAL_HOST, nodeUrl, siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { type RowMatch, useOpenContribution } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
@@ -45,21 +45,26 @@ type Tab = {
   render: () => ReactNode;
 };
 
-/** A level's badges: rows with validation errors (red) and warnings (yellow),
- * and rows added or changed since the previous version (node color). */
-function rowFlags(stats: ContributionRowStats | undefined, table: string): Flag[] {
+/** A level's badges: rows with validation errors (red) and warnings (yellow)
+ * when `showIssues`, and rows added or changed since the previous version
+ * (node color). */
+function rowFlags(
+  stats: ContributionRowStats | undefined,
+  table: string,
+  showIssues: boolean,
+): Flag[] {
   const entry = stats?.tables[table];
   if (!entry) return [];
   const rows = (n: number) => `${formatNumber(n)} row${n === 1 ? "" : "s"}`;
   const flags: Flag[] = [];
-  if (entry.errors)
+  if (showIssues && entry.errors)
     flags.push({
       key: "errors",
       text: formatNumber(entry.errors),
       title: `${rows(entry.errors)} with validation errors`,
-      className: "bg-red-600 text-white",
+      className: "bg-danger text-white",
     });
-  if (entry.warnings)
+  if (showIssues && entry.warnings)
     flags.push({
       key: "warnings",
       text: formatNumber(entry.warnings),
@@ -308,6 +313,9 @@ function ModalBody({
 }) {
   const levels = config.search_levels.filter((level) => level.table !== "contribution");
   const plugins = pluginContributionTabs(config);
+  // Validation errors and warnings are for the contributor: a deployment
+  // shows them only on a private contribution; a local stack always does.
+  const showIssues = IS_LOCAL_HOST || getPath(doc, "summary.contribution._is_activated") === false;
   // Every table counted (the levels', and plugin tabs' countTable), once each.
   const countTables = [
     ...new Set([...levels.map((l) => l.table), ...plugins.flatMap((t) => t.countTable ?? [])]),
@@ -400,7 +408,7 @@ function ModalBody({
       group: "levels",
       count: count ?? 0,
       isLoading,
-      flags: rowFlags(rowStats, level.table),
+      flags: rowFlags(rowStats, level.table, showIssues),
       render: () => (
         <LevelPanel
           // A level's sort and scroll are its own.
@@ -408,6 +416,7 @@ function ModalBody({
           level={level}
           id={id}
           privateKey={privateKey}
+          showIssues={showIssues}
           selected={row}
           match={
             rowMatch?.id === id && rowMatch.table === level.table ? rowMatch.values : undefined
@@ -927,20 +936,25 @@ function VersionsTable({
 const tableTotal = (page: TablePage) => page.total;
 /** A file table's rows as grid items, one row each, labelled with its row in
  * the file (what validation names). */
-const tableItems = (page: TablePage): GridRow[][] =>
-  page.rows.map((row) => [
-    {
-      key: String(row.row),
-      label: formatNumber(row.row),
-      values: row.values,
-      issues: row.issues,
-    },
-  ]);
+const tableItemsOf =
+  (showIssues: boolean) =>
+  (page: TablePage): GridRow[][] =>
+    page.rows.map((row) => [
+      {
+        key: String(row.row),
+        label: formatNumber(row.row),
+        values: row.values,
+        issues: showIssues ? row.issues : undefined,
+      },
+    ]);
+const tableItems = tableItemsOf(true);
+const tableItemsNoIssues = tableItemsOf(false);
 
 function LevelPanel({
   level,
   id,
   privateKey,
+  showIssues,
   selected,
   match,
   onSelect,
@@ -948,6 +962,8 @@ function LevelPanel({
   level: SearchLevel;
   id: string;
   privateKey?: string;
+  /** Color cells by their validation errors and warnings. */
+  showIssues: boolean;
   /** The selected row: its 1-based place in the file's table. */
   selected?: number;
   /** A search row's values to find in the table, then select. */
@@ -989,7 +1005,7 @@ function LevelPanel({
         },
       }),
     totalOf: tableTotal,
-    itemsOf: tableItems,
+    itemsOf: showIssues ? tableItems : tableItemsNoIssues,
   });
   const first = table.first.data;
 
@@ -1010,7 +1026,7 @@ function LevelPanel({
         onRowClick={(row) => onSelect(Number(row.key))}
         // Each item is one row of the file's table.
         scrollTo={sort ? undefined : target}
-        columnIssues={first?.column_issues}
+        columnIssues={showIssues ? first?.column_issues : undefined}
         sort={sort}
         onSort={(next) => {
           setSort(next);

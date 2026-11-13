@@ -243,7 +243,11 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
   come from the file (`/contributions/{id}/tables/{table}`) with their row
   numbers, and cells with validation issues take the online editor's colors
   (errors red, warnings amber, the messages as a tooltip; a whole-row issue
-  tints the row).
+  tints the row), and a level tab counts its rows with errors (`bg-danger`,
+  the workspace's dark red) and warnings (yellow). Both are for the
+  contributor (2026-11-13): a deployment shows them only on a private
+  (unactivated) contribution; a local stack (localhost) shows them on every
+  contribution.
   Both run edge to edge of their view (the cells carry the padding, as on
   Summaries) under a three-row sticky header per column: its name (the data
   model's label, sorting), field (the column in the file) and type ("Number
@@ -363,7 +367,7 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
 - **Title row layout** (`:313-324`): `i.dropdown icon` caret LEFT → `<span>{position}.` number → `<span>{label}<span class=table>, tableKey</span>` (tableKey `font-weight:normal`, `less:62-65`) → `div.ui.circular.small.basic.label.data-model-table-count` (count badge, right of label) → `<span class=description>` (grows, ellipsis, normal weight; `less:41-49`). Direct children forced `white-space:nowrap; flex-shrink:0; margin-right:0.5em` (`less:34-39`).
 - **Group title**: `title group-title` with `background:#aaaaaa !important` and inset white shadow `inset 0px -5px 35px 15px white` (`less:29-32`). Group count badge `data-model-group-count`.
 - **Column title** (`data_model_column.jsx:328-355`): caret, `{tablePos}.{colPos}` number, `{label}<span class=column>, col</span>`, a `ui basic horizontal small label` for type/unit, description, then a series of colored horizontal small labels by validation.
-- **Badge colors** (all `ui <color> horizontal small label`, `data_model_column.jsx`): Required = **red**; Recommended = **yellow**; Download Only = **black**; Found In = **teal**; Validation = **purple**; Vocabulary = **orange**; Required(?) = **green** (`:337-354` and `formatValidation`). Type/unit badge = `basic` (grey outline). Labels forced `font-weight:normal; color:rgba(0,0,0,0.6); padding:0.4em` (`less:71-75`).
+- **Badge colors** (all `ui <color> horizontal small label`, `data_model_column.jsx`): Required = **red**; Recommended = **yellow**; Download Only = **black**; Found In = **teal**; Validation = **purple**; Vocabulary = **orange**; Required(?) = **green** (`:337-354` and `formatValidation`). Type/unit badge = `basic` (grey outline). Colors are the EarthRef Semantic theme's (`public/lib/semantic-ui/compiled/2.4.2/semantic.css`), not stock Semantic: red `#9f0202`, yellow `#f0ad4e`, black `#1c1c1c`, teal `#005b87`, purple `#800080`, orange `#bb4b1c`, green `#006600`, all with white text. `less:71-75` sets `font-weight:normal; color:rgba(0,0,0,0.6); padding:0.4em`, but its color loses to `.ui.<color>.label`'s higher-specificity `!important`, so the text stays white.
 - **Expanded table**: `ui very basic small compact table` (`:357`); left cells `top aligned collapsing` bold labels (Description/Notes/Type/Unit/Links/Examples/Validations/version Column/previous Column).
 - **Indentation per nesting**: `.accordion .content { padding:0em 1.75em 0.5em !important }` (`less:67-69`) — each level indents content ~1.75em (24.5px). Active column hides its description (`visibility:hidden`, `less:51-53`). No-match rows `display:none` (`less:77-81`).
 
