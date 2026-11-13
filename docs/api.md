@@ -573,6 +573,9 @@ _all}, rows}`. `summary._all` unions row values (capped 500/column) for
 free-text search; the workflow flags `_is_activated` / `_is_latest` /
 `_private_key` live in `summary.contribution`. Public reads are always
 `_is_latest` and `_is_activated` unless a matching private key is supplied.
+No search response returns `_private_key` (2026-11-13; it is still indexed, so
+a `private_key:"…"` token matches): only the private workspace API gives a
+contribution's key, to its owner or an admin.
 
 A level's doc is one named record, as in the legacy index: a contribution's
 rows of that level sharing a name (its key column, `site` for sites) are one

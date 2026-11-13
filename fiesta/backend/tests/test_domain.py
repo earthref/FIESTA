@@ -1217,6 +1217,16 @@ def test_sc_summarize_positions_maps_by_seamount(sc_node):
     assert "Pacific Plate" in by_type["contribution"][0]["summary"]["_all"]["plate"]
 
 
+def test_search_never_returns_private_keys():
+    """Search docs index the private key (a `private_key:` token matches it)
+    but no search response returns it: only its owner or an admin sees it."""
+    from fiesta.search.queries import build_search_body
+
+    for query in (None, 'private_key:"00000000-0000-0000-0000-000000000000"', "basalt"):
+        body = build_search_body(table="contribution", query=query)
+        assert body["_source"] == {"excludes": ["summary.contribution._private_key"]}
+
+
 def test_contribution_filters_on_every_node():
     """Every node filters by Contribution ID, Contribution DOI and Contributor (facets on the
     contribution block, not `_all`) and Contributed On (a date range whose
