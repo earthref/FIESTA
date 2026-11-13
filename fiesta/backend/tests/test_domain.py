@@ -2197,6 +2197,40 @@ def test_reference_metadata_in_the_legacy_shape():
     assert contribution_meta(Row(), Person(), row.reference)["_reference"]["year"] == 2019
 
 
+def test_reference_corrections_override_the_registry(tmp_path, monkeypatch):
+    """configurations/references/corrections.yaml loads, and its fields replace
+    the registry's in every place they appear (title, citations)."""
+    from fiesta.services import references as refs
+    from fiesta.settings import get_settings
+
+    refs.corrections.cache_clear()
+    fixes = refs.corrections()
+    assert fixes, "the repository's corrections file should load"
+    assert all(refs.normalize(doi) == doi and "\ufffd" not in str(f) for doi, f in fixes.items())
+
+    ref = refs.from_crossref(
+        {
+            "DOI": "10.1111/j.1365-246x.1983.tb03321.x",
+            "title": ["Palaeomagnetism of the Midsommers\ufffd Dolerites"],
+            "author": [{"given": "Christian", "family": "Marcussen"}],
+            "issued": {"date-parts": [[1983]]},
+        }
+    )
+    assert "Midsommersø Dolerites" in ref["title"]
+    assert "\ufffd" not in ref["long_citation"] + ref["html"]
+
+    # A malformed file is refused.
+    (tmp_path / "references").mkdir()
+    (tmp_path / "references" / "corrections.yaml").write_text("10.1234/x:\n  titel: oops\n")
+    monkeypatch.setattr(get_settings(), "config_file", tmp_path / "fiesta.yaml")
+    refs.corrections.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="unknown fields"):
+            refs.corrections()
+    finally:
+        refs.corrections.cache_clear()
+
+
 def test_issue_rows_counts_distinct_rows_per_table():
     issues = [
         {"table": "sites", "row": 1, "column": "lat", "message": "a"},

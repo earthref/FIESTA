@@ -13,15 +13,22 @@ which keeps `n_citations` current.
 keywords, citation ("Smith et al. (2014)"), authors [{family, given, _name,
 affiliation, _orcid}], long_authors, n_citations, html, and long_citation
 (the html citation as plain text).
+
+Where a registry holds a record wrongly (a publisher's deposit with U+FFFD
+for an accented letter), `configurations/references/corrections.yaml`
+overrides its fields; `apply_corrections` (run by `fiesta init`) brings the
+cache and search docs up to date with that file.
 """
 
 import asyncio
 import logging
 import re
 from datetime import UTC, datetime, timedelta
+from functools import cache
 from urllib.parse import quote
 
 import httpx
+import yaml
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
@@ -102,6 +109,60 @@ async def retry(session, doi: str | None) -> None:
         row.status, row.fetched_at, row.due_at = "pending", None, datetime.now(UTC)
 
 
+# --- Corrections to the registries' records -------------------------------------
+
+CORRECTABLE = ("title", "journal", "year", "volume", "issue", "page")
+
+
+@cache
+def corrections() -> dict[str, dict]:
+    """`configurations/references/corrections.yaml` (beside the config file),
+    keyed by normalized DOI; empty when there is no such file. A malformed
+    entry raises (test_domain loads the file, so CI refuses it)."""
+    path = get_settings().config_file.resolve().parent / "references" / "corrections.yaml"
+    if not path.is_file():
+        return {}
+    fixes: dict[str, dict] = {}
+    for doi, fields in (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).items():
+        key = normalize(str(doi))
+        if not key or not isinstance(fields, dict):
+            raise ValueError(f"{path.name}: {doi!r} is not a DOI with fields to correct")
+        if unknown := set(fields) - {*CORRECTABLE, "note"}:
+            raise ValueError(f"{path.name}: {doi}: unknown fields {sorted(unknown)}")
+        if key in fixes:
+            raise ValueError(f"{path.name}: {doi} is listed twice")
+        fixes[key] = {k: v for k, v in fields.items() if k in CORRECTABLE}
+    return fixes
+
+
+async def apply_corrections() -> int:
+    """Rebuild each cached reference with a correction from its stored registry
+    record, and set the ones that changed on their contributions' search docs
+    (a reindex where search is down). Idempotent; returns the number of
+    contributions updated."""
+    if not (fixes := corrections()):
+        return 0
+    changed = {}
+    async with get_sessionmaker()() as session:
+        rows = (
+            (
+                await session.execute(
+                    select(DoiReference).where(
+                        DoiReference.doi.in_(list(fixes)), DoiReference.status == "ok"
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for row in rows:
+            build = from_crossref if row.source == "crossref" else from_datacite
+            if (reference := build(row.raw)) != row.reference:
+                row.reference = changed[row.doi] = reference
+        await session.commit()
+    return await update_contributions(changed) if changed else 0
+
+
 # --- The registries' records, in the legacy shape ------------------------------
 
 
@@ -124,6 +185,13 @@ def _reference(
     issue: str | None = None,
     page: str | None = None,
 ) -> dict:
+    if fix := corrections().get(normalize(doi) or ""):
+        title = fix.get("title", title)
+        journal = fix.get("journal", journal)
+        year = int(fix["year"]) if "year" in fix else year
+        volume = str(fix["volume"]) if "volume" in fix else volume
+        issue = str(fix["issue"]) if "issue" in fix else issue
+        page = str(fix["page"]) if "page" in fix else page
     ref: dict = {"source": source, "doi": doi.upper()}
     if title:
         ref["title"] = title

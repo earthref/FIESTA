@@ -93,6 +93,13 @@ def init(with_admin: bool = typer.Option(False, help="create an initial admin ac
                 f"ensured bucket {node.bucket!r} (prefix {node.storage_prefix!r}) "
                 f"and index {node.search_index!r}"
             )
+        from fiesta.services import references
+
+        try:
+            updated = await references.apply_corrections()
+            typer.echo(f"reference corrections applied: {updated} contributions updated")
+        except Exception as exc:  # noqa: BLE001 - a deploy must not stop on it
+            typer.echo(f"reference corrections not applied: {exc}", err=True)
         await client.close()
 
     asyncio.run(ensure())
