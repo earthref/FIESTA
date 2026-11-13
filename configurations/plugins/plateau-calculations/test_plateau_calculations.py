@@ -127,3 +127,65 @@ def test_build_argon_links_experiments_specimens_and_contributed_ages():
     assert specimens["SP1"]["experiments"] == ["E1"]
     assert specimens["SP1"]["age"] == 10.05
     assert specimens["SP2"]["experiments"] == ["33922-01"]
+
+
+def test_companion_spectra_are_the_contributed_step_values():
+    rows = [
+        _step(
+            "A",
+            1,
+            10,
+            4,
+            k_ca_ratio="0.5",
+            fraction_40ar_radiogenic="0.8",
+            corrected_38ar_chlorine="0.2",
+        ),
+        _step("B", 2, 10, 2, k_ca_ratio="0.25", fraction_40ar_radiogenic="0.95"),
+    ]
+    a, b = build_steps(rows)["steps"]
+    assert (a["k_ca"], b["k_ca"]) == (0.5, 0.25)
+    # Fractions of 1 are shown as percentages.
+    assert (a["ar40_rad"], b["ar40_rad"]) == (80.0, 95.0)
+    # ³⁸Ar(Cl) / ³⁹Ar(K); a step without ³⁸Ar(Cl) has none.
+    assert a["cl_k"] == 0.05 and b["cl_k"] is None
+
+
+def test_percent_radiogenic_is_kept():
+    step = build_steps([_step("A", 1, 10, 1, fraction_40ar_radiogenic="63.4")])["steps"][0]
+    assert step["ar40_rad"] == 63.4
+
+
+def test_specimen_irradiation_and_sample_sections():
+    data = build_argon(
+        {
+            "specimens": [
+                {
+                    "specimen": "M1",
+                    "sample": "S1",
+                    "age": "1.2",
+                    "age_calculation_method": "Plateau",
+                },
+                {
+                    "specimen": "M1",
+                    "j_value": "0.0021",
+                    "j_value_sigma": "0.00001",
+                    "irrad_name": "OSU-1",
+                    "irrad_position": "4",
+                    "irrad_z": "12.5",
+                    "is_flux_monitor": "true",
+                },
+            ],
+            "samples": [{"sample": "S1", "elevation": "1207", "height": "3.5", "core_depth": ""}],
+        }
+    )
+    (specimen,) = data["specimens"]
+    assert specimen["age"] == 1.2
+    assert (specimen["j_value"], specimen["j_value_sigma"]) == (0.0021, 0.00001)
+    assert (specimen["irrad_name"], specimen["irrad_position"], specimen["irrad_z"]) == (
+        "OSU-1",
+        "4",
+        12.5,
+    )
+    assert specimen["is_flux_monitor"] is True
+    (sample,) = data["samples"]
+    assert (sample["elevation"], sample["height"], sample["core_depth"]) == (1207.0, 3.5, None)

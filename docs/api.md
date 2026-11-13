@@ -545,7 +545,7 @@ loading), which enforces the same visibility rules as the core API.
 | GET | `/v2/{repository}/plugins/method-codes` | `method-codes` (MagIC) — `{<group>: {label, codes: [{code, definition, ...}]}}` (404 if the node has no codes file); was `/config/method-codes` until 2026-11-11 |
 | GET | `/v2/{repository}/plugins/pmag-plots/contributions/{id}/{kind}` | `pmag-plots` (MagIC) — plot data, `kind` ∈ `demag`, `eqarea`, `arai`, `hyst`; counts are `summary.pmag_plots` of `GET /search/pmag_plots?contribution={id}` |
 | GET | `/v2/{repository}/plugins/depth-plot/contributions/{id}/measurements` | `depth-plot` (CDR) |
-| GET | `/v2/{repository}/plugins/plateau-calculations/contributions/{id}` | `plateau-calculations` (KArAr) — `{experiments: [{experiment, specimen, steps, ages, ...}], specimens: [{specimen, age, experiments, ...}]}`, every value as contributed; `?experiment=` or `?specimen=` narrows it (query params: names contain `/`); replaced `.../experiments/{name}/plateau` on 2026-11-12 |
+| GET | `/v2/{repository}/plugins/plateau-calculations/contributions/{id}` | `plateau-calculations` (KArAr) — `{experiments: [{experiment, specimen, steps, ages, ...}], specimens: [{specimen, age, experiments, j_value, irrad_*, is_flux_monitor, ...}], samples: [{sample, elevation, height, core_depth, composite_depth, ...}]}` (steps also carry `k_ca`, `ar40_rad` in %, and `cl_k` = ³⁸Ar(Cl)/³⁹Ar(K)), every value as contributed; `?experiment=` or `?specimen=` narrows it (query params: names contain `/`); replaced `.../experiments/{name}/plateau` on 2026-11-12 |
 
 ## Search document shape
 

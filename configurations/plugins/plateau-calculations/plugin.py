@@ -19,7 +19,10 @@ plateau, so its plots disagreed with the published ages.
 The only arithmetic here is presentation. Each step's share of the
 experiment's ³⁹Ar release is taken from the first ³⁹Ar column that every step
 fills, normalised to 100%. Steps are ordered by `sequence` when every step has
-one; otherwise they keep their order in the file.
+one; otherwise they keep their order in the file. The companion spectra show
+each step's contributed `k_ca_ratio` and `fraction_40ar_radiogenic` (in
+percent, when an experiment gives fractions of 1) and its corrected ³⁸Ar(Cl)
+over ³⁹Ar(K), which is proportional to Cl/K.
 """
 
 import asyncio
@@ -171,6 +174,16 @@ def _point(row: dict, kind: str) -> list[float | None] | None:
     ]
 
 
+def _cl_k(row: dict) -> float | None:
+    """³⁸Ar(Cl)/³⁹Ar(K), proportional to Cl/K (the production factor that
+    converts it is the lab's, so it is not applied)."""
+    cl, k = (
+        to_float(row.get("corrected_38ar_chlorine")),
+        to_float(row.get("corrected_39ar_potassium")),
+    )
+    return cl / k if cl is not None and k else None
+
+
 def build_steps(rows: list[dict]) -> dict:
     """An experiment's heating steps: the contributed age and isochron ratios
     of each, placed on the cumulative ³⁹Ar axis."""
@@ -217,8 +230,19 @@ def build_steps(rows: list[dict]) -> dict:
                 "ar39_end": cumulative,
                 "normal": _point(row, "normal"),
                 "inverse": _point(row, "inverse"),
+                "k_ca": to_float(row.get("k_ca_ratio")),
+                "k_ca_sigma": to_float(row.get("k_ca_ratio_sigma")),
+                "ar40_rad": to_float(row.get("fraction_40ar_radiogenic")),
+                "cl_k": _cl_k(row),
             }
         )
+    # ⁴⁰Ar* is a percentage; an experiment that gives every step as a
+    # fraction of 1 is shown in percent too.
+    radiogenic = [s["ar40_rad"] for s in steps if s["ar40_rad"] is not None]
+    if radiogenic and max(radiogenic) <= 1.0 and max(radiogenic) > 0:
+        for step in steps:
+            if step["ar40_rad"] is not None:
+                step["ar40_rad"] *= 100.0
     return {
         "steps": steps,
         "steps_without_age": without_age,
@@ -292,9 +316,54 @@ def build_argon(tables: dict[str, list[dict]]) -> dict:
                 "age_sigma": _sigma(row),
                 "age_unit": row.get("age_unit") or None,
                 "experiments": members,
+                # The irradiation, from whichever of its rows fills it.
+                "j_value": _first_float(rows, "j_value"),
+                "j_value_sigma": _first_float(rows, "j_value_sigma"),
+                "irrad_name": _first(rows, "irrad_name"),
+                "irrad_position": _first(rows, "irrad_position"),
+                "irrad_x": _first_float(rows, "irrad_x"),
+                "irrad_y": _first_float(rows, "irrad_y"),
+                "irrad_z": _first_float(rows, "irrad_z"),
+                "is_flux_monitor": next(
+                    (v for r in rows if (v := is_true(r.get("is_flux_monitor"))) is not None),
+                    None,
+                ),
             }
         )
-    return {"experiments": experiments, "specimens": specimens}
+    return {
+        "experiments": experiments,
+        "specimens": specimens,
+        "samples": build_samples(tables.get("samples", [])),
+    }
+
+
+def _first(rows: list[dict], column: str) -> str | None:
+    return next((str(r[column]) for r in rows if r.get(column) not in (None, "")), None)
+
+
+def _first_float(rows: list[dict], column: str) -> float | None:
+    return next((v for r in rows if (v := to_float(r.get(column))) is not None), None)
+
+
+def build_samples(rows: list[dict]) -> list[dict]:
+    """Each sample's place in a section: elevation, stratigraphic height and
+    core depth, for plotting its specimens' ages against them."""
+    by_name: dict[str, list[dict]] = {}
+    for row in rows:
+        if row.get("sample"):
+            by_name.setdefault(str(row["sample"]), []).append(row)
+    return [
+        {
+            "sample": name,
+            "location": _first(group, "location"),
+            "elevation": _first_float(group, "elevation"),
+            "height": _first_float(group, "height"),
+            "height_sigma": _first_float(group, "height_sigma"),
+            "core_depth": _first_float(group, "core_depth"),
+            "composite_depth": _first_float(group, "composite_depth"),
+        }
+        for name, group in by_name.items()
+    ]
 
 
 # Built data per contribution revision. Concurrent requests for one
@@ -378,6 +447,7 @@ class PlateauPlugin(FiestaPlugin):
                 return {
                     "specimens": found,
                     "experiments": [e for e in data["experiments"] if e["experiment"] in members],
+                    "samples": [s for s in data["samples"] if s["sample"] == found[0]["sample"]],
                 }
             if experiment is not None:
                 found = [e for e in data["experiments"] if e["experiment"] == experiment] or [
@@ -387,7 +457,7 @@ class PlateauPlugin(FiestaPlugin):
                 ]
                 if not found:
                     raise HTTPException(404, f"no experiment {experiment!r} in {contribution_id}")
-                return {"experiments": found[:1], "specimens": []}
+                return {"experiments": found[:1], "specimens": [], "samples": []}
             return data
 
         return router
