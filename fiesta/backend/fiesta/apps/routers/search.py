@@ -288,6 +288,9 @@ async def search(
     contribution: int | None = None,
     private_key: str | None = None,
     totals: bool = False,
+    # Only these summary fields of each doc (`summary.<block>.<name>`), for a
+    # view that pages through thousands of matches (the poles map).
+    source: Annotated[list[str] | None, Query(max_length=50)] = None,
 ) -> SearchPage:
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
@@ -309,6 +312,8 @@ async def search(
         has=_parse_has(node, table, has),
     )
     await _constrain(session, node, body, query, contribution, private_key, scope)
+    if source:
+        body["_source"] = [_value_field(f) for f in source]
     if totals:
         # The result sub-tabs' counts: the matches' rows (a doc without a
         # count_field is one row) and those with a position.

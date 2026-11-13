@@ -4,6 +4,8 @@ import {
   type MouseEvent,
   type ReactNode,
   type RefObject,
+  useEffect,
+  useRef,
   useState,
 } from "react";
 import type { GridColumn, SearchLevel, SearchResult } from "../lib/types";
@@ -157,7 +159,8 @@ function HeaderCell({
  * DOM; `hits` may then be sparse (one entry per match, undefined until its
  * page arrives: a placeholder row), and `onRange` hears the rendered indexes
  * so their pages can be fetched. With `onOpen` a row is clickable: it
- * highlights and opens its record.
+ * highlights and opens its record. `selectedIndex` highlights a row chosen
+ * elsewhere (a map's point) instead, and scrolls it into view.
  */
 export function SummaryGrid({
   level,
@@ -172,6 +175,7 @@ export function SummaryGrid({
   overscan = 10,
   onOpen,
   onRange,
+  selectedIndex,
 }: {
   level: SearchLevel;
   hits: (SearchResult | undefined)[];
@@ -185,25 +189,47 @@ export function SummaryGrid({
   footer?: ReactNode;
   scrollRef?: RefObject<HTMLElement | null>;
   overscan?: number;
-  onOpen?: (doc: SearchResult) => void;
+  onOpen?: (doc: SearchResult, index: number) => void;
   onRange?: (start: number, end: number) => void;
+  /** The highlighted row, controlled by the caller (scrolled into view when
+   * it changes and is not already). */
+  selectedIndex?: number;
 }) {
   const columns = level.columns ?? [];
   // The row last opened, highlighted (a new search replaces the records).
   const [selected, setSelected] = useState<SearchResult | null>(null);
   // A row with a thumbnail tile is its 105px cap tall; otherwise one line.
   const estimate = columns.some((c) => c.cell === "map" || c.cell === "plot") ? 129 : 41;
-  const { startRef, indexes, measure, padTop, padBottom } = useVirtualRows({
+  const { startRef, indexes, measure, padTop, padBottom, scrollToIndex } = useVirtualRows({
     count: hits.length,
     scrollRef,
     estimateSize: () => estimate,
     overscan,
     onRange,
   });
-  const open = (doc: SearchResult) => {
+  const open = (doc: SearchResult, index: number) => {
     setSelected(doc);
-    onOpen?.(doc);
+    onOpen?.(doc, index);
   };
+  const isSelected = (doc: SearchResult, index: number) =>
+    selectedIndex !== undefined ? index === selectedIndex : selected === doc;
+  // A row selected elsewhere: scrolled to the middle unless already in view
+  // (below the sticky header).
+  const scrollBy = useRef(scrollToIndex);
+  scrollBy.current = scrollToIndex;
+  useEffect(() => {
+    const scroller = scrollRef?.current;
+    if (selectedIndex === undefined || !scroller) return;
+    const row = scroller.querySelector(`[data-index="${selectedIndex}"]`);
+    if (row) {
+      const box = row.getBoundingClientRect();
+      const view = scroller.getBoundingClientRect();
+      const top = view.top + (scroller.querySelector("thead")?.getBoundingClientRect().height ?? 0);
+      if (box.top >= top && box.bottom <= view.bottom) return;
+    }
+    const frame = requestAnimationFrame(() => scrollBy.current(selectedIndex));
+    return () => cancelAnimationFrame(frame);
+  }, [selectedIndex, scrollRef]);
   const spacer = (height: number, ref?: typeof startRef) => (
     <tr ref={ref}>
       <td colSpan={columns.length} style={{ height, padding: 0 }} />
@@ -276,19 +302,21 @@ export function SummaryGrid({
                 data-index={index}
                 ref={measure}
                 tabIndex={onOpen ? 0 : undefined}
-                aria-selected={onOpen ? selected === doc : undefined}
-                onClick={onOpen && ((event) => isRowClick(event) && open(doc))}
+                aria-selected={onOpen ? isSelected(doc, index) : undefined}
+                onClick={onOpen && ((event) => isRowClick(event) && open(doc, index))}
                 onKeyDown={
                   onOpen &&
                   ((event) => {
-                    if (event.key === "Enter" && event.target === event.currentTarget) open(doc);
+                    if (event.key === "Enter" && event.target === event.currentTarget) {
+                      open(doc, index);
+                    }
                   })
                 }
                 className={cx(
                   onOpen &&
                     "cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-node",
-                  onOpen && selected !== doc && "hover:bg-gray-50",
-                  selected === doc && "bg-node-soft",
+                  onOpen && !isSelected(doc, index) && "hover:bg-gray-50",
+                  isSelected(doc, index) && "bg-node-soft",
                 )}
               >
                 {columns.map((column) => (

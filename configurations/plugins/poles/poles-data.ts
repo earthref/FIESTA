@@ -13,8 +13,8 @@ export interface Pole {
   citation: string;
   contributionId?: string;
   poleId: string;
-  /** The source search hit, for the detail card. */
-  hit: SearchResult;
+  /** Its hit's position in the search: the grid row it is. */
+  index: number;
 }
 
 function firstNumber(value: unknown): number | undefined {
@@ -84,7 +84,7 @@ function ringOf(geometry: unknown): [number, number][] | undefined {
 
 export function polesFromHits(hits: SearchResult[]): Pole[] {
   const poles: Pole[] = [];
-  for (const hit of hits) {
+  for (const [index, hit] of hits.entries()) {
     const block = poleBlockOf(hit);
     const lat = firstNumber(block?.pole_lat);
     const lonRaw = firstNumber(block?.pole_lon);
@@ -103,7 +103,11 @@ export function polesFromHits(hits: SearchResult[]): Pole[] {
     const citation =
       refCitation ?? (contributionId ? `Contribution ${contributionId}` : "Contribution");
 
-    const name = firstString(block?.pole) ?? firstString(block?.location) ?? "Pole";
+    const name =
+      firstString(block?.pole) ??
+      firstString(block?.location) ??
+      firstString(getPath(hit, "summary.locations.location")) ??
+      "Pole";
 
     poles.push({
       lat,
@@ -114,8 +118,8 @@ export function polesFromHits(hits: SearchResult[]): Pole[] {
       name,
       citation,
       contributionId,
-      poleId: `${contributionId ?? "c"}-${name}-${poles.length}`,
-      hit,
+      poleId: `${contributionId ?? "c"}-${name}-${index}`,
+      index,
     });
   }
   return poles;
@@ -176,9 +180,16 @@ export function makeAgeScale(poles: Pole[], colors: AgeColors = DEFAULT_AGE_COLO
   };
 }
 
-/** A pole's uncertainty outline, ready to draw (the backend's ring), or null. */
-export function uncertaintyRing(pole: Pole): [number, number][] | null {
-  return pole.ring ?? null;
+/** A pole's uncertainty outline, ready to draw (the backend's ring), or null;
+ * with `segments`, thinned to about that many (every k-th vertex, closed). */
+export function uncertaintyRing(pole: Pole, segments?: number): [number, number][] | null {
+  const ring = pole.ring;
+  if (!ring) return null;
+  const step = segments ? Math.ceil((ring.length - 1) / segments) : 1;
+  if (step <= 1) return ring;
+  const thinned = ring.filter((_, i) => i % step === 0);
+  if (thinned[thinned.length - 1] !== ring[ring.length - 1]) thinned.push(ring[ring.length - 1]);
+  return thinned;
 }
 
 /** Split a lon/lat ring wherever an adjacent-vertex jump exceeds 180° (date line). */
