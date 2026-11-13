@@ -83,6 +83,9 @@ export interface SearchFilter {
   scale: number;
   min: number | null;
   max: number | null;
+  /** range: show the geologic time scale under the histogram as shortcuts
+   * (the field holds ages in years). */
+  timescale?: boolean;
 }
 
 /** A number the search map can color its markers by (backend `MapColor`),

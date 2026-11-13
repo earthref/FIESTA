@@ -71,6 +71,8 @@ const WHEEL_STEP = 1.2;
  * axis zooms and pans by decades, which echarts' dataZoom does not do. "x" zooms
  * only the x axis; "square" keeps both axes at one scale (a stereonet). The view
  * survives rebuilds and resets when an axis's type, name or limits change.
+ * `onXWindow` gets the x range shown after every build, zoom and pan (for
+ * something drawn outside the chart that lines up with its x axis).
  */
 export function EChart({
   build,
@@ -79,6 +81,7 @@ export function EChart({
   onBrush,
   onClick,
   zoom,
+  onXWindow,
   label,
 }: {
   build: (size: Size) => EChartsOption;
@@ -87,6 +90,7 @@ export function EChart({
   onBrush?: (range: BrushRange) => void;
   onClick?: (value: unknown) => void;
   zoom?: "xy" | "x" | "square";
+  onXWindow?: (x: Range | undefined) => void;
   label: string;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
@@ -98,8 +102,8 @@ export function EChart({
   const [zoomed, setZoomed] = useState(false);
   const zoomAxes: AxisKey[] = zoom === "x" ? ["x"] : zoom ? ["x", "y"] : [];
   // Read from the chart's event handlers, which are bound once.
-  const live = useRef({ onBrush, onClick, mode, zoom, zoomAxes });
-  live.current = { onBrush, onClick, mode, zoom, zoomAxes };
+  const live = useRef({ onBrush, onClick, onXWindow, mode, zoom, zoomAxes });
+  live.current = { onBrush, onClick, onXWindow, mode, zoom, zoomAxes };
   const base = useRef<{ x?: BaseAxis; y?: BaseAxis; key?: string }>({});
   const view = useRef<View>({});
 
@@ -137,6 +141,7 @@ export function EChart({
       { xAxis: axisOption("x"), yAxis: axisOption("y") },
       { lazyUpdate: true },
     );
+    live.current.onXWindow?.(windowOf("x"));
   };
 
   // Scale every zoomed axis's window by `factor` about a point (in data coordinates).
@@ -307,6 +312,7 @@ export function EChart({
           brushMode: "single",
         },
       });
+    live.current.onXWindow?.(windowOf("x"));
   }, [build, size, brush, zoom, mode, theme]);
 
   const tools: [Mode, IconDefinition, string][] = [
