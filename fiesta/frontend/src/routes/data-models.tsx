@@ -26,31 +26,30 @@ export function DataModelsIndex() {
 interface StatusBadge {
   label: string;
   background: string;
-  color?: string;
 }
 
-/** ui <color> horizontal small label: font-weight normal, color rgba(0,0,0,.6), padding .4em */
+/** ui <color> horizontal small label in the EarthRef Semantic theme
+ * (public/lib/semantic-ui/compiled/2.4.2/semantic.css): white text on the
+ * theme's dark colors, font-weight normal, padding .4em. data_model.less's
+ * `.data-model .label { color: rgba(0,0,0,.6) }` loses to `.ui.red.label`'s
+ * higher specificity, so the text stays white. */
 function validationBadges(validations: string[] | undefined): StatusBadge[] {
   const badges = new Map<string, StatusBadge>();
   for (const validation of validations ?? []) {
     if (/^(required\(|key\()/.test(validation)) {
-      badges.set("required", { label: "Required", background: "#db2828" });
+      badges.set("required", { label: "Required", background: "#9f0202" });
     } else if (/^required/i.test(validation)) {
-      badges.set("required-if", { label: "Required (?)", background: "#21ba45" });
+      badges.set("required-if", { label: "Required (?)", background: "#006600" });
     } else if (/^recommended/i.test(validation)) {
-      badges.set("recommended", { label: "Recommended", background: "#fbbd08" });
+      badges.set("recommended", { label: "Recommended", background: "#f0ad4e" });
     } else if (/^downloadOnly/i.test(validation)) {
-      badges.set("download", {
-        label: "Download Only",
-        background: "#1b1c1d",
-        color: "rgba(255,255,255,0.9)",
-      });
+      badges.set("download", { label: "Download Only", background: "#1c1c1c" });
     } else if (/^foundIn/i.test(validation)) {
-      badges.set("found-in", { label: "Found In", background: "#00b5ad" });
+      badges.set("found-in", { label: "Found In", background: "#005b87" });
     } else if (/^(cv\(|sv\()/.test(validation)) {
-      badges.set("vocabulary", { label: "Vocabulary", background: "#f2711c" });
+      badges.set("vocabulary", { label: "Vocabulary", background: "#bb4b1c" });
     } else if (/^(min\(|max\(|type\(|in\(|unique\(|matches\()/.test(validation)) {
-      badges.set("validation", { label: "Validation", background: "#a333c8" });
+      badges.set("validation", { label: "Validation", background: "#800080" });
     }
   }
   return [...badges.values()];
@@ -62,7 +61,7 @@ function StatusLabel({ badge }: { badge: StatusBadge }) {
       className="rounded-sm text-[11px]"
       style={{
         backgroundColor: badge.background,
-        color: badge.color ?? "var(--er-ink-muted)",
+        color: "#ffffff",
         fontWeight: "normal",
         padding: "0.4em",
       }}
