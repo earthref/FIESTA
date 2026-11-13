@@ -181,7 +181,9 @@ class SearchFilter(BaseModel):
     (has the table, not that column) on `summary._has.<table>`.
     `levels` / `views` restrict where the control shows: search level names and
     result sub-tab names (Summaries, Rows, Map on levels with positions, a plugin
-    tab); empty means everywhere.
+    tab); empty means everywhere. `timescale` (range, on a field of ages in
+    years): the geologic time scale's units under the histogram, each a
+    shortcut to its age range.
     """
 
     type: Literal["facet", "range", "bbox", "numeric", "exists"]
@@ -193,6 +195,7 @@ class SearchFilter(BaseModel):
     scale: float = 1.0
     min: float | None = None
     max: float | None = None
+    timescale: bool = False
 
     @model_validator(mode="after")
     def _check_field(self) -> "SearchFilter":

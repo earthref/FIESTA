@@ -56,6 +56,7 @@ import {
   parseHas,
   parseRange,
 } from "./search-filters";
+import { TimescaleStrip } from "./timescale-strip";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 import { Spinner } from "./ui/spinner";
@@ -431,6 +432,9 @@ const SCALES: [boolean, string][] = [
   [true, "Log"],
 ];
 
+/** The range histogram's grid margins, which the timescale under it lines up with. */
+const GRID = { left: 56, right: 24 };
+
 /** A value to show or type: 4 significant digits, no trailing zeros. */
 export const formatValue = (value: number) =>
   Math.abs(value) >= 1e6 || (value !== 0 && Math.abs(value) < 1e-3)
@@ -532,6 +536,13 @@ export function RangeModal({
   );
 
   const xLog = !!data?.log;
+  // The x range the chart shows (zoomed or not), for the timescale under it.
+  const [xWindow, setXWindow] = useState<[number, number]>();
+  const onXWindow = useCallback(
+    (x: [number, number] | undefined) =>
+      setXWindow((prev) => (prev && x && prev[0] === x[0] && prev[1] === x[1] ? prev : x)),
+    [],
+  );
   const build = useCallback(() => {
     // Read per build (a canvas takes no CSS variables); EChart rebuilds on a theme switch.
     const colors = plotColors();
@@ -544,7 +555,7 @@ export function RangeModal({
     };
     return {
       animation: false,
-      grid: { left: 56, right: 24, top: 16, bottom: 48 },
+      grid: { left: GRID.left, right: GRID.right, top: 16, bottom: 48 },
       tooltip: { trigger: "item", confine: true, textStyle: { fontSize: 12 } },
       xAxis: {
         type: xLog ? "log" : "value",
@@ -562,6 +573,8 @@ export function RangeModal({
       series: [
         {
           type: "custom",
+          // A zoomed axis cuts the bins at the grid's edges.
+          clip: true,
           data: bars.map((bar) => [bar.lo, bar.hi, 0, bar.count]),
           encode: { x: [0, 1], y: [2, 3] },
           renderItem: (
@@ -696,7 +709,24 @@ export function RangeModal({
               zoom="x"
               onBrush={onBrush}
               onClick={onClick}
+              onXWindow={filter.timescale ? onXWindow : undefined}
               label={`Distribution of ${label}`}
+            />
+          )}
+          {filter.timescale && bars.length > 0 && xWindow && (
+            <TimescaleStrip
+              window={xWindow}
+              log={xLog}
+              left={GRID.left}
+              right={GRID.right}
+              toValue={(ma) => (ma * 1e6) / scale}
+              selected={{ lo, hi }}
+              onPick={(unit) =>
+                setDraft({
+                  gte: edgeValue((unit.min * 1e6) / scale),
+                  lte: edgeValue((unit.max * 1e6) / scale),
+                })
+              }
             />
           )}
         </div>
@@ -716,8 +746,9 @@ export function RangeModal({
           )}
         </div>
         <p className="text-[12px] text-ink-muted">
-          Drag across the histogram or click a bar to select whole bins; type a bound for an exact
-          one. Leave a box empty for no limit.
+          Drag across the histogram or click a bar to select whole bins
+          {filter.timescale && ", or click a geologic time unit for its age range"}; type a bound
+          for an exact one. Leave a box empty for no limit.
         </p>
       </div>
     </Modal>
