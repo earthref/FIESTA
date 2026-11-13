@@ -389,6 +389,13 @@ the same API authorization checks.
       window. Rollback after FIESTA accepts writes requires preserving/replaying
       those revisions, not just switching traffic back. Coordinate live access,
       write freezes, and cutover approvals through `OPERATOR_TODO.md`.
+- [ ] **M8 GEOMAGIA (new node, 2026-11-13).** GEOMAGIA50's archeomagnetic and
+      volcanic records are hosted as `geomagia`: data model from its MySQL schema,
+      vocabularies from its ID glossary, mirrored from the public 2019 CSV export by
+      `configurations/sources/geomagia.py` (`legacy.kind: script`); `publish.web: false`.
+      Next: a MySQL reader once there is a SELECT-only account (OPERATOR_TODO), an
+      age-curve plugin (intensity / inclination / declination against age), then the
+      sediment database. GEOMAGIA's field-model engine stays in its Django service.
 
 Acceptance: a fresh checkout starts and seeds selected nodes in Docker without
 MARFIK/AWS access, supports local login/edit/upload/undo/search, and repeats seed

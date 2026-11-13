@@ -1,0 +1,115 @@
+# FIESTA deployment configuration — GEOMAGIA node
+# (GEOMAGIA50 archeomagnetic and volcanic data. Data model converted from the
+# GEOMAGIA MySQL schema (ARCHEODIJ + REFS) and the public ID glossary,
+# 2026-11-13; see configurations/geomagia/README.md.)
+
+fiesta: 1
+deployment: node
+
+node:
+  key: GEOMAGIA
+  slug: geomagia
+  title: GEOMAGIA50 Archeomagnetic and Volcanic Database (GEOMAGIA)
+  subtitle: >-
+    Archeomagnetic and volcanic paleomagnetic directions and intensities of
+    the past 50,000 years, compiled from the published literature.
+  color: "#00579b" # the GEOMAGIA50 site's blue
+  logo: logo.svg # configurations/geomagia/assets/, on the FIESTA portal home
+  links:
+    website: https://geomagia.gfz.de
+
+search:
+  index: geomagia
+  # A site's geography, listed by the summary grid's Geography tile.
+  geography:
+    geographic: [continent, region_country, site_name]
+  placeholder: 'e.g. pottery Thellier "baked clay"'
+  levels:
+    - name: Contributions
+      table: contribution
+      columns:
+        - { cell: title, column: citation, subtitle_column: title }
+        - { column: journal, label: Journal, width: 180 }
+        - { column: year, label: Year, width: 80, facets: [] }
+        - { cell: counts }
+        - { cell: map }
+        - { cell: contributed }
+    - name: Sites
+      table: sites
+      count_field: summary.sites._n_results
+      columns:
+        - { cell: title, column: site, subtitle_column: site_name }
+        - { column: archeo_volcanic, label: Type, width: 90 }
+        - { column: region_country, label: Region/Country, width: 140 }
+        - { column: materials, label: Materials, width: 150 }
+        - { column: age, label: Age (CE), width: 90 }
+        - { column: ba, label: Intensity (μT), width: 110 }
+        - { column: vadm, label: VADM (10²² Am²), width: 130 }
+        - { column: decl, label: Dec, width: 70 }
+        - { column: incl, label: Inc, width: 70 }
+        - { column: alpha_95, label: α95, width: 70 }
+        - { cell: citation }
+  extra_types: []
+  filters:
+    # Every node's contribution filters (the contribution block's id, contributor, timestamp).
+    - { type: facet, field: id, label: Contribution ID }
+    - { type: facet, field: contributor, label: Contributor }
+    - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
+    - { type: range, label: Age, field: summary._num.age, unit: yr CE, levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: Paleointensity, field: summary._num.ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: VADM, field: summary._num.vadm, unit: 10²² Am², levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: Declination, field: summary._num.decl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: Inclination, field: summary._num.incl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: Direction α95, field: summary._num.alpha_95, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
+    - { type: facet, field: archeo_volcanic, views: [Summaries, Rows, Map] }
+    - { type: facet, field: materials, views: [Summaries, Rows, Map] }
+    - { type: facet, field: dating_methods, views: [Summaries, Rows, Map] }
+    - { type: facet, field: pi_methods, views: [Summaries, Rows, Map] }
+    - { type: facet, field: region_country, views: [Summaries, Rows, Map] }
+    - { type: facet, field: continent, views: [Summaries, Rows, Map] }
+    - { type: numeric, label: Numeric, views: [Summaries, Rows, Map] }
+    - { type: text, label: Text, views: [Summaries, Rows, Map] }
+    - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map] }
+  map_colors:
+    - { label: Age, field: age, unit: yr CE }
+    - { label: Paleointensity, field: ba, unit: μT }
+    - { label: VADM, field: vadm, unit: 10²² Am² }
+    - { label: Inclination, field: incl, unit: "°" }
+
+storage:
+  bucket: geomagia
+
+data_model:
+  versions: ["3.4"]
+  latest: "3.4"
+  dir: geomagia/data_models
+
+vocabularies:
+  controlled: geomagia/controlled_vocabularies.json
+
+hierarchy:
+  - contribution
+  - sites
+
+# Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
+pages: []
+
+features:
+  plugins: []
+
+# The API serves it (so its data source can sync it); production's SPA and
+# portal bar do not list it until the GEOMAGIA team signs off. Local stacks
+# serve it either way.
+publish:
+  api: true
+  web: false
+
+# The data source, read only by configurations/sources/geomagia.py: the public
+# GEOMAGIA50 exports until there is read access to the MySQL catalogue.
+legacy:
+  kind: script
+  source_id: geomagia50
+
+# Local fixtures only; never read during normal application startup.
+development:
+  seed_manifest: geomagia/seeds/manifest.yaml

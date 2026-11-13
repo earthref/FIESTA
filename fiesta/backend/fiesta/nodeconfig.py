@@ -580,10 +580,12 @@ class LegacySourceConfig(BaseModel):
     contributions with no object in any bucket (private workspaces) are exported
     from the indexed tables instead. `kind: earthref-cgi`: a Perl CGI archive
     read from its public record pages `<base_url>/<id>/` for ids `1..max_id`
-    (fiesta.services.legacy_cgi).
+    (fiesta.services.legacy_cgi). `kind: script`: a source only the node's own
+    `configurations/sources/<slug>.py` reads (e.g. GEOMAGIA's MySQL catalogue);
+    there is nothing for `legacy-inventory` to snapshot.
     """
 
-    kind: Literal["meteor", "earthref-cgi"] = "meteor"
+    kind: Literal["meteor", "earthref-cgi", "script"] = "meteor"
     source_id: str
     index: str | None = None
     base_url: str | None = None  # earthref-cgi

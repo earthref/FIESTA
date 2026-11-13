@@ -404,6 +404,10 @@ def legacy_inventory(
     target = get_deployment().node_for(node)
     if target.legacy is None:
         raise typer.BadParameter(f"{node} has no `legacy:` block")
+    if target.legacy.kind == "script":
+        raise typer.BadParameter(
+            f"{node}'s source is read only by its configurations/sources/ script"
+        )
     out_dir = Path(out).resolve()
     if owner_map:  # operator owner mapping for this run, never in checked-in config
         legacy = target.legacy.with_owner_map(json.loads(Path(owner_map).read_text()))

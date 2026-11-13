@@ -1,0 +1,2422 @@
+{
+ "AgeErrorID": {
+  "title": "Age Errors",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Estimate",
+   "2": "Standard Deviation",
+   "3": "Standard Error",
+   "4": "Probability Envelope",
+   "5": "One Standard Deviation",
+   "6": "Two Standard Deviations",
+   "7": "Counting Statistics",
+   "8": "99% Confidence interval"
+  }
+ },
+ "AgeModelID": {
+  "title": "Age Types and Models",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "101": "Estimate",
+   "102": "Mean intercept",
+   "103": "Median intercept",
+   "104": "Median probability",
+   "105": "Weighted Mean probability",
+   "106": "Mode",
+   "107": "Linear Interpolation",
+   "108": "Linear Least Squares",
+   "109": "Polynomial fit",
+   "110": "Bayesian Modelling",
+   "111": "Palaeomagnetic correlation to other dated record(s) (see publication)",
+   "112": "Oxygen isotope match",
+   "113": "Proxy match to oxygen isotope record",
+   "114": "Proxy match to dated record",
+   "115": "Transfer of 14C age by proxy correlation",
+   "116": "Correlation Program (see publication)",
+   "117": "Correlation to dated tephras",
+   "118": "Spline fit",
+   "119": "Correlation to pollen record based upon uncalibrated 14C ages"
+  }
+ },
+ "C14DataSet": {
+  "title": "Radiocarbon Calibration Dataset",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Intcal09 (Reimer et al., 2009)",
+   "2": "Intcal04 (Reimer et al., 2004)",
+   "3": "SHCal04 (McCormac et al., 2004)",
+   "4": "Marine04 (Hughen et al., 2004)",
+   "5": "Clark, 1975",
+   "6": "Intcal98 (Stuiver et al., 1998)",
+   "7": "CalPal (http://www.calpal-online.de/)",
+   "8": "Bard et al., 1990",
+   "9": "Laj et al., 1996",
+   "10": "Lake Suigetsu calibration curve (Kitagawa and van der Plicht, 1998)",
+   "11": "Stuiver and Reimer, 1993"
+  }
+ },
+ "C14LabCode": {
+  "title": "Radiocarbon Laboratory Codes",
+  "columns": [
+   "Lab Code",
+   "Name",
+   "Country",
+   "Active"
+  ],
+  "rows": {
+   "A": [
+    "Arizona",
+    "USA",
+    "Yes"
+   ],
+   "AA": [
+    "NSF-Arizona AMS Facility",
+    "USA",
+    "Yes"
+   ],
+   "ANU": [
+    "Australian National University",
+    "Australia",
+    "No"
+   ],
+   "ANUA": [
+    "Australian National University Accelerator",
+    "Australia",
+    "Yes"
+   ],
+   "Beta": [
+    "Beta Analytic",
+    "USA",
+    "Yes"
+   ],
+   "CAMS": [
+    "Center for Accelerator Mass Spectrometry",
+    "USA",
+    "Yes"
+   ],
+   "Erl": [
+    "Erlangen AMS Facility",
+    "Germany",
+    "Yes"
+   ],
+   "ETH": [
+    "ETH-Hoenggerberg",
+    "Switzerland",
+    "Yes"
+   ],
+   "GAK": [
+    "Gakushuin University",
+    "Japan",
+    "Yes"
+   ],
+   "GU": [
+    "Scottish Universities Research & Reactor Centre, Glasgow University",
+    "Scotland",
+    "No"
+   ],
+   "GX": [
+    "Geochron Laboratories, Cambridge",
+    "USA",
+    "Yes"
+   ],
+   "KIA": [
+    "Kiel AMS",
+    "Germany",
+    "Yes"
+   ],
+   "LuS": [
+    "Lund Radiocarbon Dating Laboratory",
+    "Sweden",
+    "Yes"
+   ],
+   "N": [
+    "Nishina Memorial",
+    "Japan",
+    "No"
+   ],
+   "NOSAMS": [
+    "National Ocean Sciences AMS Facility, Woods Hole Oceanographic Inst.",
+    "USA",
+    "Yes"
+   ],
+   "Null": [
+    "No Information",
+    "NA",
+    "NA"
+   ],
+   "NUTA": [
+    "Tandetron AMS Laboratory, Center for Chronological Research, Nagoya University",
+    "Japan",
+    "Yes"
+   ],
+   "OBDY": [
+    "ORSTOM Bondy",
+    "France",
+    "No"
+   ],
+   "Poz": [
+    "Poznan Radiocarbon Laboratory",
+    "Poland",
+    "Yes"
+   ],
+   "QL": [
+    "Quaternary Reserach Center, Seattle",
+    "USA",
+    "Yes"
+   ],
+   "SRR": [
+    "NERC Radicarbon Laboratory",
+    "Scotland",
+    "No"
+   ],
+   "SUERC": [
+    "Scottish Universities Environmental Research Centre",
+    "Scotland",
+    "Yes"
+   ],
+   "TRa": [
+    "Trondheim(AMS)",
+    "Norway",
+    "Yes"
+   ],
+   "UtC": [
+    "Utrecht van der Graaf Laboratorium",
+    "Netherlands",
+    "No"
+   ]
+  }
+ },
+ "C14Soft": {
+  "title": "Radiocarbon Calibration Software",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Oxcal 4.1",
+   "2": "Calib 5.0",
+   "3": "Oxcal 3.1",
+   "4": "Oxcal 4.0",
+   "5": "Calpal",
+   "6": "Calib 6.0",
+   "7": "Calib 4.3",
+   "8": "Oxcal 3.8",
+   "9": "Calib 4.5",
+   "10": "Oxcal 3.5"
+  }
+ },
+ "CRID": {
+  "title": "Country/Region",
+  "columns": [
+   "ID",
+   "Country/Region",
+   "Continent",
+   "Latitude",
+   "Longitude"
+  ],
+  "rows": {
+   "1": [
+    "Egypt",
+    "Africa",
+    "27",
+    "30"
+   ],
+   "2": [
+    "Japan",
+    "Asia",
+    "36",
+    "138"
+   ],
+   "3": [
+    "France",
+    "Europe",
+    "48.5",
+    "2"
+   ],
+   "5": [
+    "Ukraine",
+    "Asia",
+    "49",
+    "32"
+   ],
+   "6": [
+    "India",
+    "Asia",
+    "20",
+    "77"
+   ],
+   "7": [
+    "China",
+    "Asia",
+    "35",
+    "105"
+   ],
+   "8": [
+    "Finland",
+    "Europe",
+    "64",
+    "26"
+   ],
+   "9": [
+    "Greece",
+    "Europe",
+    "39",
+    "22"
+   ],
+   "11": [
+    "Italy",
+    "Europe",
+    "43",
+    "13"
+   ],
+   "12": [
+    "Switzerland",
+    "Europe",
+    "47",
+    "8"
+   ],
+   "13": [
+    "Bulgaria",
+    "Europe",
+    "43",
+    "25"
+   ],
+   "14": [
+    "Syria",
+    "Europe",
+    "35",
+    "38"
+   ],
+   "15": [
+    "Hungary",
+    "Europe",
+    "47",
+    "20"
+   ],
+   "17": [
+    "East Pacific Ridge",
+    "Pacific Ocean",
+    "-21",
+    "247"
+   ],
+   "18": [
+    "Hawaii",
+    "Pacific Ocean",
+    "21",
+    "202.5"
+   ],
+   "19": [
+    "Morocco",
+    "Africa",
+    "32",
+    "355"
+   ],
+   "20": [
+    "Australia",
+    "Oceania",
+    "-27",
+    "133"
+   ],
+   "21": [
+    "Georgia",
+    "Europe",
+    "42",
+    "43.5"
+   ],
+   "22": [
+    "Azerbaijan",
+    "Europe",
+    "40.5",
+    "47.5"
+   ],
+   "24": [
+    "Spain",
+    "Europe",
+    "40",
+    "356"
+   ],
+   "25": [
+    "England",
+    "Europe",
+    "53.5",
+    "358.5"
+   ],
+   "26": [
+    "Czech Republic",
+    "Europe",
+    "49.8",
+    "15.5"
+   ],
+   "27": [
+    "Mexico",
+    "North America",
+    "23",
+    "258"
+   ],
+   "28": [
+    "Iraq",
+    "Asia",
+    "33",
+    "44"
+   ],
+   "29": [
+    "Israel",
+    "Asia",
+    "31.5",
+    "34.8"
+   ],
+   "30": [
+    "Iran",
+    "Asia",
+    "32",
+    "53"
+   ],
+   "31": [
+    "Uzbekistan",
+    "Asia",
+    "41",
+    "64"
+   ],
+   "32": [
+    "Turkmenistan",
+    "Asia",
+    "40",
+    "60"
+   ],
+   "33": [
+    "Mongolia",
+    "Asia",
+    "46",
+    "105"
+   ],
+   "34": [
+    "Iceland",
+    "Europe",
+    "65",
+    "342"
+   ],
+   "35": [
+    "New Zealand",
+    "Oceania",
+    "-41",
+    "174"
+   ],
+   "36": [
+    "Amsterdam Island",
+    "Indian Ocean",
+    "-37.5",
+    "77.5"
+   ],
+   "37": [
+    "Guadeloupe",
+    "Caribbean",
+    "16.2",
+    "298.5"
+   ],
+   "38": [
+    "Mid Atlantic Ridge",
+    "Atlantic Ocean",
+    "0",
+    "335"
+   ],
+   "39": [
+    "Austria",
+    "Europe",
+    "47.3",
+    "13.3"
+   ],
+   "40": [
+    "Belgium",
+    "Europe",
+    "50.8",
+    "4"
+   ],
+   "41": [
+    "Romania",
+    "Europe",
+    "46",
+    "25"
+   ],
+   "42": [
+    "Guatemala",
+    "North America",
+    "15.5",
+    "269.8"
+   ],
+   "43": [
+    "El Salvador",
+    "North America",
+    "13.8",
+    "271.1"
+   ],
+   "45": [
+    "Canary Islands",
+    "Europe",
+    "28.1",
+    "344.6"
+   ],
+   "46": [
+    "Moldova",
+    "Europe",
+    "47",
+    "29"
+   ],
+   "47": [
+    "Latvia",
+    "Europe",
+    "57",
+    "25"
+   ],
+   "48": [
+    "Lithuania",
+    "Europe",
+    "55.3",
+    "24.2"
+   ],
+   "49": [
+    "Russia",
+    "Asia",
+    "60",
+    "100"
+   ],
+   "51": [
+    "Germany",
+    "Europe",
+    "51",
+    "9"
+   ],
+   "52": [
+    "Martinique",
+    "Caribbean",
+    "14.6",
+    "299"
+   ],
+   "53": [
+    "Netherlands",
+    "Europe",
+    "52.3",
+    "4.8"
+   ],
+   "54": [
+    "Turkey",
+    "Europe",
+    "39",
+    "35"
+   ],
+   "55": [
+    "Denmark",
+    "Europe",
+    "56",
+    "10"
+   ],
+   "56": [
+    "Cameroon",
+    "Africa",
+    "5",
+    "12"
+   ],
+   "57": [
+    "Honduras",
+    "North America",
+    "14.8",
+    "273.5"
+   ],
+   "58": [
+    "Jordan",
+    "Asia",
+    "31",
+    "36"
+   ],
+   "59": [
+    "Brazil",
+    "South America",
+    "-10",
+    "305"
+   ],
+   "61": [
+    "Estonia",
+    "Europe",
+    "59",
+    "26"
+   ],
+   "62": [
+    "Sweden",
+    "Europe",
+    "62",
+    "15"
+   ],
+   "63": [
+    "Peru",
+    "South America",
+    "-10",
+    "284"
+   ],
+   "64": [
+    "Bolivia",
+    "South America",
+    "-17",
+    "275"
+   ],
+   "65": [
+    "Ecuador",
+    "South America",
+    "-2",
+    "282.5"
+   ],
+   "66": [
+    "Ontario",
+    "North America",
+    "50",
+    "274"
+   ],
+   "67": [
+    "New Mexico",
+    "North America",
+    "34.5",
+    "254"
+   ],
+   "68": [
+    "Arizona",
+    "North America",
+    "33",
+    "248.2"
+   ],
+   "69": [
+    "California",
+    "North America",
+    "37",
+    "240"
+   ],
+   "70": [
+    "Colorado",
+    "North America",
+    "39",
+    "254.4"
+   ],
+   "71": [
+    "Utah",
+    "North America",
+    "39.4",
+    "248.3"
+   ],
+   "72": [
+    "Washington",
+    "North America",
+    "47.3",
+    "239.7"
+   ],
+   "73": [
+    "Oregon",
+    "North America",
+    "44",
+    "239"
+   ],
+   "74": [
+    "British Columbia",
+    "North America",
+    "54",
+    "236"
+   ],
+   "75": [
+    "Idaho",
+    "North America",
+    "44.3",
+    "245"
+   ],
+   "76": [
+    "Arkansas",
+    "North America",
+    "34.8",
+    "268"
+   ],
+   "78": [
+    "Tennessee",
+    "North America",
+    "36",
+    "274"
+   ],
+   "79": [
+    "Serbia",
+    "Europe",
+    "44",
+    "21"
+   ],
+   "80": [
+    "Kosovo",
+    "Europe",
+    "42.6",
+    "21.2"
+   ],
+   "81": [
+    "Portugal",
+    "Europe",
+    "39.5",
+    "362"
+   ],
+   "82": [
+    "Thailand",
+    "Asia",
+    "14",
+    "100"
+   ],
+   "83": [
+    "South Korea",
+    "Asia",
+    "37",
+    "127.5"
+   ],
+   "84": [
+    "Kazakhstan",
+    "Asia",
+    "48",
+    "68"
+   ],
+   "85": [
+    "Nebraska",
+    "North America",
+    "41.5",
+    "260"
+   ],
+   "86": [
+    "La Reunion",
+    "Indian Ocean",
+    "-21.1",
+    "55.5"
+   ],
+   "87": [
+    "Cyprus",
+    "Europe",
+    "35.2",
+    "33.4"
+   ],
+   "88": [
+    "Papua New Guinea",
+    "Oceania",
+    "-6",
+    "147"
+   ],
+   "89": [
+    "Vanuatu",
+    "Oceania",
+    "-15.4",
+    "167"
+   ],
+   "90": [
+    "Fiji",
+    "Oceania",
+    "-17.8",
+    "178"
+   ],
+   "91": [
+    "Argentina",
+    "South America",
+    "-34",
+    "296"
+   ],
+   "92": [
+    "Tunisia",
+    "Africa",
+    "34",
+    "9"
+   ],
+   "93": [
+    "Mali",
+    "Africa",
+    "16.77",
+    "353"
+   ],
+   "94": [
+    "Burkina Faso",
+    "Africa",
+    "12.35",
+    "-1.53"
+   ],
+   "95": [
+    "Senegal",
+    "Africa",
+    "14.67",
+    "342.28"
+   ],
+   "96": [
+    "Alaska",
+    "North America",
+    "64.7",
+    "207.5"
+   ],
+   "97": [
+    "North Atlantic",
+    "Atlantic Ocean",
+    "30",
+    "320"
+   ],
+   "98": [
+    "South Atlantic",
+    "Atlantic Ocean",
+    "-30",
+    "345"
+   ],
+   "99": [
+    "Beaufort Sea",
+    "Arctic Ocean",
+    "72",
+    "215"
+   ],
+   "100": [
+    "Chukchi Sea",
+    "Arctic Ocean",
+    "69",
+    "188"
+   ],
+   "101": [
+    "Kyrgyzstan",
+    "Asia",
+    "41",
+    "75"
+   ],
+   "102": [
+    "Indonesia",
+    "Asia",
+    "-5",
+    "120"
+   ],
+   "103": [
+    "Azores",
+    "Atlantic Ocean",
+    "37.7",
+    "334.3"
+   ],
+   "104": [
+    "Quebec",
+    "North America",
+    "52",
+    "288"
+   ],
+   "105": [
+    "Norway",
+    "Europe",
+    "62",
+    "10"
+   ],
+   "106": [
+    "Northern Ireland",
+    "Europe",
+    "54.6",
+    "353.32"
+   ],
+   "107": [
+    "Wales",
+    "Europe",
+    "52.33",
+    "356.23"
+   ],
+   "108": [
+    "Scotland",
+    "Europe",
+    "56.82",
+    "355.82"
+   ],
+   "109": [
+    "Virginia",
+    "North America",
+    "37.51",
+    "281.375"
+   ],
+   "110": [
+    "North West Pacific",
+    "Pacific Ocean",
+    "32",
+    "160"
+   ],
+   "111": [
+    "Mediterranean",
+    "Europe",
+    "37",
+    "16"
+   ],
+   "121": [
+    "Slovakia",
+    "Europe",
+    "48.6",
+    "19.5"
+   ],
+   "122": [
+    "Republic of Ireland",
+    "Europe",
+    "53",
+    "352"
+   ],
+   "123": [
+    "Isle of Man",
+    "Europe",
+    "54",
+    "355.52"
+   ],
+   "124": [
+    "Poland",
+    "Europe",
+    "52.07",
+    "19.48"
+   ],
+   "125": [
+    "South Africa",
+    "Europe",
+    "-33.6",
+    "22.9"
+   ],
+   "126": [
+    "Illinois",
+    "North America",
+    "39.9",
+    "270.4"
+   ],
+   "127": [
+    "Zimbabwe",
+    "Africa",
+    "-19.45",
+    "29.8"
+   ],
+   "128": [
+    "Botswana",
+    "Africa",
+    "-22.3",
+    "23.8"
+   ],
+   "129": [
+    "Colombia",
+    "South America",
+    "-4",
+    "290"
+   ],
+   "130": [
+    "Ethiopia",
+    "Africa",
+    "9",
+    "39"
+   ],
+   "131": [
+    "Kenya",
+    "Africa",
+    "0.5",
+    "38"
+   ],
+   "132": [
+    "Chile",
+    "South America",
+    "-33",
+    "289"
+   ],
+   "133": [
+    "Venezuela",
+    "South America",
+    "7",
+    "294"
+   ],
+   "134": [
+    "Uruguay",
+    "South America",
+    "-32.6",
+    "305"
+   ],
+   "135": [
+    "Ivory Coast",
+    "Africa",
+    "7.8",
+    "354.4"
+   ]
+  }
+ },
+ "CalC14ID": {
+  "title": "Calibrated Radiocarbon Age Types",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "101": "Estimate",
+   "102": "Mean intercept",
+   "103": "Median intercept",
+   "104": "Median probability",
+   "105": "Weighted Mean probability",
+   "106": "Mode",
+   "107": "Linear Interpolation",
+   "108": "Linear Least Squares",
+   "109": "Polynomial fit",
+   "110": "Bayesian Modelling",
+   "111": "Palaeomagnetic correlation to other dated record(s) (see publication)",
+   "112": "Oxygen isotope match",
+   "113": "Proxy match to oxygen isotope record",
+   "114": "Proxy match to dated record",
+   "115": "Transfer of 14C age by proxy correlation",
+   "116": "Correlation Program (see publication)",
+   "117": "Correlation to dated tephras",
+   "118": "Spline fit",
+   "119": "Correlation to pollen record based upon uncalibrated 14C ages"
+  }
+ },
+ "CompID": {
+  "title": "Compilations",
+  "columns": [
+   "ID",
+   "Authors",
+   "Title",
+   "Year",
+   "Journal",
+   "Volume",
+   "Pages"
+  ],
+  "rows": {
+   "1000": [
+    "Tarling D.H.",
+    "The ARCHEO00 Database",
+    "2000",
+    "",
+    "",
+    "Unpublished Data"
+   ],
+   "1001": [
+    "Korte M., Genevey A., Constable C.G., Frank U., Schnepp E.",
+    "Continuous geomagnetic field models for the past 7 millenia: 1. A new global data compilation",
+    "2005",
+    "Geochem., Geophys., Geosyst.",
+    "6",
+    "doi:10.1029/2004GC000800"
+   ],
+   "1002": [
+    "Zananiri I., Batt C.M., Lanos Ph., Tarling D.H., Linford P.",
+    "Archeomagnetic secular variation in the UK during the past 4000 years and its application to archeomagnetic dating",
+    "2007",
+    "Phys. Earth Planet. Inter.",
+    "167",
+    "97-107"
+   ],
+   "1003": [
+    "Tema E., Hedley I., Lanos Ph.",
+    "Archaeomagnetism in Italy: a compilation of data including new results and a preliminary Italian secular variation curve",
+    "2006",
+    "Geophys. J. Int.",
+    "167",
+    "1160-1171"
+   ],
+   "1004": [
+    "Schnepp E., Lanos Ph.",
+    "A preliminary secular variation reference curve for archaeomagnetic dating in Austria",
+    "2006",
+    "Geophys. J. Int.",
+    "166",
+    "91-96"
+   ],
+   "1005": [
+    "Lanza R., Meloni A., Tema E.",
+    "Historical measurements of the Earth s magnetic field compared with remanence directions from lava flows in Italy over the last",
+    "2005",
+    "Phys. Earth Planet. Inter.",
+    "148",
+    "97-107"
+   ],
+   "1006": [
+    "Donadini F., Korhonen K., Riisager P., Pesonen L.J.",
+    "Database for Holocene geomagnetic intensity information",
+    "2006",
+    "EOS Trans.",
+    "87",
+    "137"
+   ],
+   "1007": [
+    "Gomez-Paccard M., Catanzariti G., Ruiz-Martinez V.C., McIntosh G., Nunez J.I., Osete M.L., Chauvin A., Lanos Ph., Tarling D.H.,",
+    "A catalogue of Spanish Archeomagnetic data",
+    "2006",
+    "Geophys. J. Int.",
+    "166",
+    "1125-1143"
+   ],
+   "1008": [
+    "Marton P., Ferencz E.",
+    "Hierarchical versus stratification statistical analysis of archeomagnetic directions: the secular variation curve for Hungary",
+    "2006",
+    "Geophys. J. Int.",
+    "164",
+    "484-494"
+   ],
+   "1009": [
+    "Kovacheva M., Boyadziev Y., Kostadinova-Avramova M., Jordanova N., Donadini F.",
+    "Updated archeomagnetic data set of the past eight millenia from the Sofia laboratory, Bulgaria",
+    "2009",
+    "Geochem., Geophys., Geosyst.",
+    "10",
+    "doi:10.1029/2008GC002347"
+   ],
+   "1010": [
+    "Genevey A., Gallet Y., Constable C., Korte M., Hulot G.",
+    "ArcheoInt: an upgraded compilation of geomagnetic field intensity data for the past ten millenia",
+    "2008",
+    "Geochem., Geophys., Geosyst.",
+    "9",
+    "doi:10.1029/2007GC001881"
+   ],
+   "1011": [
+    "Perrin M., Schnepp E.",
+    "IAGA paleointensity database: distribution and quality of the dataset.",
+    "2004",
+    "Phys. Earth Planet. Inter.",
+    "147",
+    "255-267"
+   ],
+   "1012": [
+    "Kovacheva M., Kostadinova-Avramova M., Jordanova N., Ph. Lanos, Boyadziev Y.",
+    "Extended and Revised Archaeomagnetic Database and secular variation curves from Bulgaria for the Last Eight Millennia",
+    "2014",
+    "Phys. Earth Planet. Inter.",
+    "236",
+    "79-94"
+   ],
+   "1013": [
+    "Batt C., Brown M., Clelland S.J., Korte M., Linford P., Outram Z.",
+    "Advances in archaeomagnetic dating in Britain: New data, new approaches and a new calibration curve",
+    "2017",
+    "J. Archaeological Sci.",
+    "",
+    "doi:10.1016/j.jas.2017.07.002"
+   ]
+  }
+ },
+ "D18PSpec": {
+  "title": "18 O Planktic and Benthic Species",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "None",
+   "0": "Not specified",
+   "301": "Neogloboquadrina pachyderma sinistral",
+   "302": "Cibicidoides wuellerstorfi",
+   "303": "Cibicidoides kullenbergi"
+  }
+ },
+ "D18RCurve": {
+  "title": "18 O Reference Curve",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "None",
+   "0": "Not specified",
+   "201": "SPECMAP (Imbrie et al., 1984)",
+   "202": "Martinson et al. (1987)",
+   "203": "Shackleton et al. (1990)",
+   "204": "Vidal. (1997)",
+   "205": "Shackleton(2000)",
+   "206": "Shackleton et al. (2004)",
+   "207": "LR04 (Lisiecki and Raymo, 2005)",
+   "208": "NGRIP GICC05 time scale (Svensson et al.,2006, 2008)",
+   "209": "Tandem correlation of PISO-1500 RPI stack (Channell et al., 2009) and LR04 benthic δ 18 O stack (Lisiecki and Raymo, 2005)",
+   "210": "Match to a radiocarbon dated core",
+   "220": "Other (see publication)"
+  }
+ },
+ "DatMatID1": {
+  "title": "Radiocarbon Dating Materials Detailed",
+  "columns": [
+   "ID",
+   "Name",
+   "Short Name"
+  ],
+  "rows": {
+   "-1": [
+    "No Measurement",
+    "No Meas."
+   ],
+   "0": [
+    "Not Specified",
+    "No Spec."
+   ],
+   "1": [
+    "Mixed species",
+    "Mixed species"
+   ],
+   "101": [
+    "Mesquite",
+    "Prosopsis"
+   ],
+   "102": [
+    "Corn",
+    "Zea Mays"
+   ],
+   "103": [
+    "Bean",
+    "Bean Unspec."
+   ],
+   "104": [
+    "Palo verde",
+    "Cercidium sp."
+   ],
+   "105": [
+    "Ironwood",
+    "Olinea Tesota"
+   ],
+   "106": [
+    "Australian Reed",
+    "Phragmites Australis"
+   ],
+   "107": [
+    "Tepary Bean",
+    "Phaseolous sp."
+   ],
+   "108": [
+    "Grass",
+    "Graminae"
+   ],
+   "109": [
+    "Acacia",
+    "Acacia sp."
+   ],
+   "110": [
+    "Sage",
+    "Salvia sp."
+   ],
+   "111": [
+    "Common Reed",
+    "Phragmites Communis"
+   ],
+   "112": [
+    "Conifer Wood",
+    "Conifer Wood"
+   ],
+   "113": [
+    "Charcoal, undefined",
+    "Charcoal, undef."
+   ],
+   "114": [
+    "Root, undefined",
+    "Root, undef."
+   ],
+   "115": [
+    "Log, undefined",
+    "Log, undef."
+   ],
+   "116": [
+    "Soot",
+    "Soot"
+   ],
+   "117": [
+    "Moss, undefined",
+    "Moss, undef."
+   ],
+   "118": [
+    "Pynus Sylvestris",
+    "P. sylv."
+   ],
+   "119": [
+    "B. Pub.",
+    "B. Pub."
+   ],
+   "120": [
+    "Mollusc Shell, undefined",
+    "Shell, undef"
+   ],
+   "121": [
+    "Bone",
+    "Bone"
+   ],
+   "122": [
+    "Seed",
+    "Seed"
+   ],
+   "123": [
+    "Tooth",
+    "Tooth"
+   ],
+   "124": [
+    "Wood, undefined",
+    "Wood Gen."
+   ],
+   "125": [
+    "Carbon Bearing Pollen",
+    "C. Pollen"
+   ],
+   "126": [
+    "Yoldia myalis",
+    "Yoldia myalis"
+   ],
+   "127": [
+    "Buccinum sp.",
+    "Buccinum sp."
+   ],
+   "128": [
+    "Shell fragment, undefined",
+    "Shell Frag, undefined"
+   ],
+   "129": [
+    "Thyasira sp.",
+    "Thyasira sp."
+   ],
+   "130": [
+    "Yolida sp.",
+    "Yolida sp."
+   ],
+   "131": [
+    "Portlandia sp.",
+    "Portlandia sp."
+   ],
+   "132": [
+    "Bivalve, undefined",
+    "Bivalve, undefined"
+   ],
+   "133": [
+    "Gastropod, undefined",
+    "Gastropod, undefined"
+   ],
+   "134": [
+    "Cephalopod, undefined",
+    "Cephalopod, undefined"
+   ],
+   "135": [
+    "Monoplacophora, undefined",
+    "Monoplacophora, undefined"
+   ],
+   "136": [
+    "Chiton, undefined",
+    "Chiton, undefined"
+   ],
+   "137": [
+    "Scaphopod, undefined",
+    "Scaphopod, undefined"
+   ],
+   "138": [
+    "Ostracod, undefined",
+    "Ostracod, undefined"
+   ],
+   "139": [
+    "Foraminifera, undefined",
+    "Foraminifera, undefined"
+   ],
+   "140": [
+    "Gyttja",
+    "Gyttja"
+   ],
+   "141": [
+    "Neogloboquadrina pachyderma left-coiled",
+    "Npl"
+   ],
+   "142": [
+    "Neogloboquadrina pachyderma right-coiled",
+    "Npr"
+   ],
+   "143": [
+    "Myriophyllum alterniflorum",
+    "Myr.Alt"
+   ],
+   "144": [
+    "Potamogeton sp.",
+    "Pot.sp"
+   ],
+   "145": [
+    "Water plant, undefined",
+    "W.Plant, undefined"
+   ],
+   "146": [
+    "Nymphaea seed",
+    "Aquatic Seed"
+   ],
+   "147": [
+    "Abies seed",
+    "Fir Seed"
+   ],
+   "148": [
+    "Terrestrial plant, undefined",
+    "T.Plant, undefined"
+   ],
+   "149": [
+    "Betula seed",
+    "Birch Seed"
+   ],
+   "150": [
+    "Clam, Diplodon",
+    "Clam, Diplodon"
+   ],
+   "151": [
+    "Leaf, undefined",
+    "Leaf, undefined"
+   ],
+   "152": [
+    "organic mud",
+    "Mud, organic"
+   ],
+   "153": [
+    "Nuculana buccata",
+    "Nuculana buccata"
+   ],
+   "154": [
+    "Nuculana pernula",
+    "Nuculana pernula"
+   ],
+   "155": [
+    "G. auriculata",
+    "G. auriculata"
+   ],
+   "156": [
+    "Astarte sp.",
+    "Astarte sp."
+   ],
+   "157": [
+    "Colus turgidulus",
+    "Colus turgidulus"
+   ],
+   "158": [
+    "Bathyarca glacialis",
+    "Bathyarca glacialis"
+   ],
+   "159": [
+    "Foraminfera, benthic",
+    "Foraminifera, benthic"
+   ],
+   "160": [
+    "Arca glacialis",
+    "Arca glacialis"
+   ],
+   "161": [
+    "Macoma sp",
+    "Macoma sp"
+   ],
+   "162": [
+    "cf. Macoma balthica",
+    "cf. Macoma balthica"
+   ],
+   "163": [
+    "cf. Yoldia glacialis",
+    "cf. Yoldia glacialis"
+   ],
+   "164": [
+    "Yoldia cf. myalis",
+    "Yoldia cf. myalis"
+   ],
+   "165": [
+    "Yoldia sp.",
+    "Yoldia sp."
+   ],
+   "166": [
+    "cf. Nucula",
+    "cf. Nucula"
+   ],
+   "167": [
+    "Yoldia cf. lenticula",
+    "Yoldia cf. lenticula"
+   ],
+   "168": [
+    "N. labradorica",
+    "N. labradorica"
+   ],
+   "169": [
+    "Foraminifera, planktonic",
+    "Foraminifera, planktonic"
+   ],
+   "170": [
+    "Ostracods and Gastropods",
+    "Ostracods and Gastropods"
+   ],
+   "171": [
+    "Globigerina bulloides",
+    "Globigerina bulloides"
+   ],
+   "172": [
+    "Gastropod Natica",
+    "Gastropod Natica"
+   ],
+   "173": [
+    "Bivalve Nucolana",
+    "Bivalve Nucolana"
+   ],
+   "174": [
+    "C. pachyderma",
+    "C. pachyderma"
+   ]
+  }
+ },
+ "DatMatID2": {
+  "title": "Radiocarbon Dating Materials Vague",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No Measurement",
+   "0": "Not Specified",
+   "1": "Carbonate Fraction",
+   "2": "Organic Fraction",
+   "3": "Macrofossil",
+   "4": "Bulk Sample",
+   "5": "Tephra",
+   "6": "Other"
+  }
+ },
+ "DatMethod": {
+  "title": "Dating Methods",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "None",
+   "0": "Not specified",
+   "101": "Archeological Age",
+   "102": "Calibrated 14 C Age",
+   "103": "Uncalibrated 14 C Age",
+   "104": "Thermoluminescence Age",
+   "105": "Historical Age",
+   "106": "Archeomagnetic-Paleomagnetic age",
+   "107": "Argon-Argon age",
+   "108": "Tephrochronology",
+   "109": "Stratigraphy",
+   "110": "Relative Chronology",
+   "111": "Dendrochrnology",
+   "112": "Radium-Thorium Age",
+   "113": "K-Ar Age",
+   "114": "U-Th Age",
+   "115": "Fission Track Age",
+   "116": "14 C Accelerator Mass Spectrometer (AMS)",
+   "117": "Optically stimulated luminiscence (OSL) age",
+   "118": "3 He surface exposure age",
+   "119": "Varve Age",
+   "120": "137 Cs Age",
+   "121": "210 Pb Age",
+   "122": "14 C Classical Age",
+   "123": "Oxygen Isotope Age",
+   "124": "Pollen Stratigraphy",
+   "125": "Rehydroxilation",
+   "126": "Tuning of alkenone SST record to AAIC (2012) d 18 O record",
+   "127": "Geological Estimate",
+   "128": "36Cl age",
+   "129": "Obsidian hydration dating",
+   "130": "226 Radium"
+  }
+ },
+ "DecAdj": {
+  "title": "Declination Adjustments",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "101": "Zero-mean variation",
+   "102": "Absolute direction",
+   "103": "Denham rotation",
+   "104": "Detrended",
+   "105": "Arbitrary",
+   "106": "A rotation (see publication for further details)",
+   "107": "Zero-mean variation for each core segment",
+   "108": "The curves first maxima was set to zero. See paper for details.",
+   "109": "Declination values are centred around the average declination",
+   "110": "A rotation (not described fully in publication)",
+   "111": "Rotated to match gufm1 (Jackson et al., 2000)"
+  }
+ },
+ "DirErrID": {
+  "title": "Directional Uncertainty",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Error of mean",
+   "2": "Standard deviation",
+   "3": "Alpha 95",
+   "4": "MAD"
+  }
+ },
+ "DirID": {
+  "title": "Directional Analysis",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Principal Component Analysis (Kirschvink, 1980)",
+   "2": "Blanket demagnetization",
+   "3": "Fisher Statistics (Fisher, 1953)",
+   "4": "LINEFIND (Kent et al., 1983)",
+   "5": "PCA with outlier rejection (Kapper et al., 2013)",
+   "6": "NRM",
+   "7": "Best fit line"
+  }
+ },
+ "DirMethID": {
+  "title": "Directional Methods",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Alternating field",
+   "2": "Thermal",
+   "3": "Alternating field and thermal",
+   "4": "Chemical",
+   "5": "Microwave",
+   "6": "Viscosity Cleaning"
+  }
+ },
+ "EnvironID": {
+  "title": "Depositional Environments",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "Not specified",
+   "1": "Maar Lake",
+   "2": "Glacial Lake",
+   "3": "Tectonic Lake",
+   "4": "Marine",
+   "5": "Brackish Lagoon",
+   "6": "Endorheic Lake"
+  }
+ },
+ "IncAdj": {
+  "title": "Inclination Adjustments",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "Not specified",
+   "0": "Not Adjusted",
+   "1": "Rotation of core",
+   "2": "Coring at oblique angle",
+   "3": "GAD"
+  }
+ },
+ "MagMin": {
+  "title": "Magnetic Minerals",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measuremen",
+   "0": "Not specified",
+   "101": "Magnetite",
+   "102": "Titanomagnetite",
+   "103": "Hematite",
+   "104": "Greigite",
+   "105": "Goethite",
+   "106": "Siderite",
+   "107": "Vivianite",
+   "108": "Pyrrhotite",
+   "109": "Maghemite"
+  }
+ },
+ "MatID": {
+  "title": "Materials",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "0": "Not specified",
+   "1": "Brick",
+   "2": "Baked clay",
+   "3": "Tile",
+   "4": "Lava",
+   "5": "Pottery",
+   "6": "Sun dried object",
+   "7": "Porcelain",
+   "8": "Ceramic",
+   "9": "Kiln",
+   "10": "Oven or hearth",
+   "11": "Mixed archeological objects",
+   "12": "Slag",
+   "13": "Baked rock",
+   "14": "Fresco",
+   "15": "Mosaic",
+   "16": "Wall",
+   "17": "Bath",
+   "18": "Burnt floor",
+   "19": "Funeral pyre",
+   "20": "Hypocaust",
+   "21": "Burnt pit",
+   "22": "Bell mould",
+   "23": "Smoking chamber",
+   "24": "Baked mud",
+   "25": "Volcanic ash deposit",
+   "26": "Burnt structure",
+   "27": "Burnt castle wall",
+   "28": "Charcoal pile",
+   "29": "Burnt earth",
+   "30": "Vitrified material",
+   "31": "Unbaked sediment",
+   "32": "Tuyere",
+   "33": "Sauna",
+   "35": "Pit structure",
+   "36": "Room",
+   "37": "Pit house",
+   "38": "Salt kiln",
+   "39": "Burnt sediment",
+   "40": "Archeological ashes",
+   "41": "Other or undefined volcanic",
+   "42": "Mural",
+   "43": "Vitrified stone",
+   "44": "Soil",
+   "45": "Kamadogu",
+   "46": "Foundry",
+   "47": "Obsidian",
+   "48": "Chert",
+   "49": "Burnt Daub",
+   "50": "Amphora",
+   "51": "Granite",
+   "52": "Volcanic Glass",
+   "53": "Furnace",
+   "54": "Roasting Pit",
+   "55": "Speleothem",
+   "56": "Stamped jar handle",
+   "57": "Fireplace",
+   "58": "Praefurnium",
+   "59": "Drying Pit or Area",
+   "61": "Hangi Stone"
+  }
+ },
+ "NoteID": {
+  "title": "Notes",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No correction",
+   "0": "Not specified",
+   "101": "Site or core latitude and longitude corrected. Reported coordinates do not match the site using the WGS84 datum in Google Earth.",
+   "102": "Site or core latitude and longitude added using the WGS84 datum in Google Earth. Coordinates were not given in the publication.",
+   "103": "Mean site latitude and longitude calculated using the WGS84 datum in Google Earth. No coordinates given in publication for composite record.",
+   "104": "Caution: three depths scales used in publication. We report two only. This has resulted in differences with some published figures.",
+   "105": "Units in the data appear different to those in the publication.",
+   "106": "The depth is gap corrected.",
+   "201": "Prefered time series is from Frank (1999), with varve ages and 7 radiocarbon ages from Ramrath et al. (1999)",
+   "202": "The time series is taken from Frank et al., 2007, Geophys. J. Int., 168, 904-920. New 14C ages from Schwab et al., 2004, Quat. Sci. Rev., 23, 1723-1731, were used to construct an updated time-series, which spans to approx. 6.5 ka rather than 4.3 ka in Frank et al., 2002.",
+   "203": "The mean of each core was set to 1 before stacking.",
+   "204": "We used the adjusted depth (+80cm)",
+   "205": "The age-model of Core ET99-M63 was developed by transferring three 14C points from Core ET99-M11 on the basis of susceptibility profile correlation.",
+   "206": "The ages of Core CSS00-07 by Cattaneo et al. (2003) were recalibrated by Vigliotti (2008).",
+   "207": "The age model of this core was developed using inclination features from Daly and Le Goff (1996), Gallet et al. (2002) and Vigliotti (2006).",
+   "208": "This may be the same age as in Lebamba (2012), but uncertainty and depth are slightly different.",
+   "209": "Standard deviation of uncalibrated age: +220, -210",
+   "210": "Standard deviation of uncalibrated age: +310, -300",
+   "211": "Standard deviation of uncalibrated age: +440, -420",
+   "212": "Standard deviation of uncalibrated age: +500, -470",
+   "213": "Standard deviation of uncalibrated age: +1020, -910",
+   "214": "Standard deviation of uncalibrated age: +1810, -1480",
+   "215": "Standard deviation of uncalibrated age: +5860, -3360",
+   "216": "Standard deviation of uncalibrated age: +1340, -1150",
+   "217": "In the paper, data of the cores BE7, BE8 and BE9 are shown. Database provides data for core no. 4 and 7. No data of core 4 except the radiocarbon age was shown in the publication.",
+   "218": "Estimated sedimentation rate of less than 100 cm/ka (Creer et al., 1981).",
+   "219": "B1-B63 are pieces of one core. Only upper depths of the core pieces were given, other depths were estimated assuming equal spacing for the single core pieces.",
+   "220": "Ages are from nearby core by Horie et al. (1971), In: Contribution from the Geological Institute, Kanazawa University, 18, 745-762, in Japanese.",
+   "222": "alpha95 confidence limits were calculated using a 25 yr moving window.",
+   "223": "Owing to inaccuraties in digitization, there are 141 entries for declination with age, but 146 entries for declination on depth.",
+   "235": "Transferred from core CM92-43.",
+   "236": "Tephra radiocarbon ages calibrated using chronology of Schove, D.J., 1983. Dating and related problems, Tree rings and varves, in Geomagnetism of Baked Clays and Recent Sediments, pp. 45-56, eds Creer, K.M., Tucholka, P. & Barton, C.E., Elsevier, Amsterdam."
+  }
+ },
+ "PIANID": {
+  "title": "Paleointensity Anisotropy Corrections",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Susceptibility tensor",
+   "2": "ARM tensor",
+   "3": "TRM tensor",
+   "4": "NRM parallel to Blab",
+   "5": "Other Anisotropy correction",
+   "6": "IRM tensor",
+   "7": "TRM tensor calculated, but not applied"
+  }
+ },
+ "PIAltID": {
+  "title": "Paleointensity Alteration Checks",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "pTRM check",
+   "2": "Susceptibility monitoring",
+   "3": "Rolph and Shaw",
+   "4": "Walton",
+   "5": "Tanguy",
+   "6": "Other corrections",
+   "7": "Fabian and Leonhardt MSP assessment",
+   "8": "Triaxe linearity test"
+  }
+ },
+ "PICRID": {
+  "title": "Paleointensity Cooling Rate Corrections",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Cooling rate experiment",
+   "2": "Cooling rate guessed",
+   "3": "Kosareva et al. (2020) calculation"
+  }
+ },
+ "PIID": {
+  "title": "Paleointensity Methods",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Thellier and Thellier (1959)",
+   "2": "Coe (1967)",
+   "3": "Aitken et al. (1988)",
+   "4": "IZZI (Yu et al., 2004)",
+   "5": "Thellier two specimen method (Doumen, 1977)",
+   "6": "Shaw (1974)",
+   "7": "Microwave perpendicular method (see, Hill and Shaw, 2007)",
+   "8": "Microwave Coe method (see, Hill and Shaw, 1999)",
+   "9": "Vibrating Triaxe (Le Goff and Gallet, 2004)",
+   "10": "Multispecimen parallel differential pTRM (Dekkers and Boehnel, 2006)",
+   "11": "Thermal quasi perpendicular (Biggin et al., 2007)",
+   "12": "Other double heating",
+   "13": "Extended multispecimen parallel differential pTRM protocol (Fabian and Leonhardt, 2010)",
+   "14": "Calibrated Pseudo-Thellier (de Groot et al., 2013)",
+   "15": "Microwave Thellier-Thellier protocol",
+   "16": "Microwave quasi-perpendicular protocol",
+   "17": "Microwave IZZI protocol",
+   "19": "Microwave Aitken protocol",
+   "20": "LTD-DHT Shaw method (Yamamoto et al., 2003)",
+   "21": "DHT Shaw method (Tsunakawa and Shaw 1994)",
+   "22": "Shaw method with ARM correction (Rolph and Shaw 1985)",
+   "23": "Shaw method with Shaw et al. (1995) modification",
+   "24": "Shaw method with ARM correction (Kono 1978)",
+   "25": "Modified Thellier Method MT4 (Leonhardt et al., 2004)",
+   "26": "Walton (1977)",
+   "27": "Microwave Walton (1977)",
+   "28": "Wilson (1961)",
+   "29": "Van Zijl (1962)"
+  }
+ },
+ "PIMDID": {
+  "title": "Paleointensity Multi-Domain Checks",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "pTRM tail check",
+   "2": "Low T demagnetization",
+   "3": "Kosareva et al. (2020) equality of (un)blocking temperature test",
+   "4": "Triaxe exeperimental mitigation"
+  }
+ },
+ "RPIErrorID": {
+  "title": "Relative Paleointensity Errors",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Estimate",
+   "2": "Standard Deviation",
+   "3": "Standard Error",
+   "4": "Probability Envelope",
+   "5": "One Standard Deviation",
+   "6": "Two Standard Deviations",
+   "7": "Counting Statistics",
+   "8": "99% Confidence interval"
+  }
+ },
+ "RPIID": {
+  "title": "Relative Paleointensity Methods",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurements",
+   "0": "Not specified",
+   "101": "NRM/k",
+   "102": "NRM/ARM at specified AF demagnetization step",
+   "103": "NRM/IRM at specified AF demagnetization step",
+   "104": "Pseudothellier",
+   "105": "Mean of NRM-ARM demag spectrum",
+   "106": "Mean of NRM-IRM demag spectrum",
+   "107": "Slope of NRM-ARM demag spectrum",
+   "108": "Slope of NRM-IRM demag spectrum",
+   "109": "VDM",
+   "110": "VADM",
+   "111": "Vector subtracted NRM-ARM",
+   "112": "Vector subtracted NRM-IRM",
+   "113": "Variation around zero-mean RPI",
+   "114": "Variation around mean RPI averaged to 1"
+  }
+ },
+ "RSADMod": {
+  "title": "Reconstructed Age-Depth Models",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "None",
+   "0": "Not specified",
+   "101": "Bacon Bayesian algorithm (Blaauw and Christen, 2011)"
+  }
+ },
+ "RSID": {
+  "title": "Sediment Reconstruction Methods",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "None",
+   "0": "Not specified",
+   "101": "Additional palaeomagnetic data",
+   "102": "Additional chronological data",
+   "103": "New inter-core correlation",
+   "104": "New age-depth model",
+   "105": "New adjustment of declination",
+   "106": "New adjustment of inclination",
+   "107": "Del. 13C correction of 14C ages",
+   "108": "Incoporation of reservoir effect in 14C age calculation",
+   "109": "New radiocarbon calibration curve",
+   "110": "New oxygen isotope reference curve"
+  }
+ },
+ "SRID": {
+  "title": "S-ratio Methods",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Thompson and Oldfield (1986)",
+   "2": "Bloemendal (1992)",
+   "3": "Other (see publication)"
+  }
+ },
+ "SedCorrID": {
+  "title": "Sediment Core Correlation Methods",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "None",
+   "0": "Not specified",
+   "101": "Manual correlation"
+  }
+ },
+ "SedLocCode": {
+  "title": "Location Codes For Sediments",
+  "columns": [
+   "Location Code",
+   "Site Name",
+   "Location Name",
+   "Country/State/Region/Sea",
+   "Continent"
+  ],
+  "rows": {
+   "AAC": [
+    "Alaskan Arctic Margin",
+    "Alaskan Arctic Margin",
+    "Chukchi Sea",
+    "Arctic Ocean"
+   ],
+   "AAM": [
+    "Alaskan Arctic Margin",
+    "Alaskan Arctic Margin",
+    "Chukchi Sea",
+    "Arctic Ocean"
+   ],
+   "AD1": [
+    "Adriatic Sea",
+    "Adriatic Sea",
+    "Mediterranean",
+    "Europe"
+   ],
+   "AD2": [
+    "Adriatic Sea",
+    "Adriatic Sea",
+    "Mediterranean",
+    "Europe"
+   ],
+   "AD3": [
+    "Meso-Adriatic Depression",
+    "Adriatic Sea",
+    "Mediterranean",
+    "Europe"
+   ],
+   "AD4": [
+    "Adriatic Sea",
+    "Adriatic Sea",
+    "Mediterranean",
+    "Europe"
+   ],
+   "AD5": [
+    "Adriatic Sea",
+    "Adriatic Sea",
+    "Mediterranean",
+    "Europe"
+   ],
+   "AD6": [
+    "Adriatic Sea",
+    "Adriatic Sea",
+    "Mediterranean",
+    "Europe"
+   ],
+   "AD7": [
+    "Southern Adriatic",
+    "Adriatic Sea",
+    "Mediterranean",
+    "Europe"
+   ],
+   "ANN": [
+    "Petit Lac and Grand Lac",
+    "Lac Annecy",
+    "France",
+    "Europe"
+   ],
+   "AR1": [
+    "N Agulhas Ridge",
+    "Agulhas Ridge",
+    "South Atlantic",
+    "Atlantic Ocean"
+   ],
+   "AR2": [
+    "N Agulhas Ridge",
+    "Agulhas Ridge",
+    "South Atlantic",
+    "Atlantic Ocean"
+   ],
+   "AR3": [
+    "N Agulhas Ridge",
+    "Agulhas Ridge",
+    "South Atlantic",
+    "Atlantic Ocean"
+   ],
+   "AR4": [
+    "N Agulhas Ridge",
+    "Agulhas Ridge",
+    "South Atlantic",
+    "Atlantic Ocean"
+   ],
+   "ARA": [
+    "Chernyshov Bay",
+    "Aral Sea",
+    "Kazakhstan",
+    "Asia"
+   ],
+   "ASL": [
+    "Lake Aslikul",
+    "Lake Aslikul",
+    "Russia",
+    "Asia"
+   ],
+   "BAI": [
+    "Selenga Delta",
+    "Lake Baikal",
+    "Russia",
+    "Asia"
+   ],
+   "BAM": [
+    "Lake Barombi Mbo",
+    "Lake Barombi Mbo",
+    "Cameroon",
+    "Africa"
+   ],
+   "BB1": [
+    "Baffin Bay",
+    "Baffin Bay",
+    "North Atlantic",
+    "Atlantic Ocean"
+   ],
+   "BB2": [
+    "Baffin Bay",
+    "Baffin Bay",
+    "North Atlantic",
+    "Atlantic Ocean"
+   ],
+   "BEA": [
+    "Beaufort Sea",
+    "Beaufort Sea",
+    "Beaufort Sea",
+    "Arctic Ocean"
+   ],
+   "BEG": [
+    "Lake Begoritis",
+    "Lake Begoritis (Vegoritida)",
+    "Greece",
+    "Europe"
+   ],
+   "BEP": [
+    "Beppu Bay",
+    "Beppu Bay",
+    "Japan",
+    "Asia"
+   ],
+   "BER": [
+    "Bermuda Rise",
+    "Bermuda Rise",
+    "North Atlantic",
+    "Atlantic Ocean"
+   ],
+   "BI2": [
+    "BIW95 Site-2",
+    "Lake Biwa",
+    "Japan",
+    "Asia"
+   ],
+   "BI3": [
+    "Lake Biwa Site 1",
+    "Lake Biwa",
+    "Japan",
+    "Asia"
+   ],
+   "BIR": [
+    "Birkat Ram",
+    "Birkat Ram",
+    "Israel",
+    "Asia"
+   ],
+   "BIW": [
+    "BIW95 Site-3",
+    "Lake Biwa",
+    "Japan",
+    "Asia"
+   ],
+   "BJO": [
+    "Bjorn Drift",
+    "Bjorn Drift",
+    "North Atlantic",
+    "Atlantic Ocean"
+   ],
+   "BYE": [
+    "Byestadsjon",
+    "Byestadsjon",
+    "Sweden",
+    "Europe"
+   ],
+   "CHU": [
+    "Chukchi Sea",
+    "Chukchi Sea",
+    "Chukchi Sea",
+    "Arctic Ocean"
+   ],
+   "CNA": [
+    "Central North Atlantic",
+    "Central North Atlantic",
+    "North Atlantic",
+    "Atlantic Ocean"
+   ],
+   "DSE": [
+    "Ein Gedi",
+    "Dead Sea",
+    "Israel",
+    "Asia"
+   ],
+   "DSF": [
+    "Ein Feshka",
+    "Dead Sea",
+    "Israel",
+    "Asia"
+   ],
+   "DSZ": [
+    "Zeelim",
+    "Dead Sea",
+    "Israel",
+    "Asia"
+   ],
+   "EIR": [
+    "Eirik Drift",
+    "Eirik Drift",
+    "North Atlantic",
+    "Atlantic Ocean"
+   ],
+   "ERL": [
+    "Erlongwan",
+    "Erlongwan",
+    "China",
+    "Asia"
+   ],
+   "FRG": [
+    "Frangsjon",
+    "Frangsjon",
+    "Sweden",
+    "Europe"
+   ],
+   "FUR": [
+    "Furskogstjarnet",
+    "Furskogstjarnet",
+    "Sweden",
+    "Europe"
+   ],
+   "GAR": [
+    "Gardar Drift",
+    "Gardar Drift",
+    "North Atlantic",
+    "Atlantic Ocean"
+   ],
+   "GFL": [
+    "Grandfather Lake",
+    "Grandfather Lake",
+    "Alaska",
+    "North America"
+   ],
+   "GYL": [
+    "Gyltigesjon",
+    "Gyltigesjon",
+    "Sweden",
+    "Europe"
+   ],
+   "IRM": [
+    "Irminger Basin",
+    "Irminger Basin",
+    "North Atlantic",
+    "Atlantic Ocean"
+   ],
+   "ISS": [
+    "Lake Issyk-Kul",
+    "Lake Issyk-Kul",
+    "Kyrgyzstan",
+    "Asia"
+   ],
+   "JON": [
+    "Ionian Sea",
+    "Ionian Sea",
+    "Mediterranean",
+    "Europe"
+   ],
+   "KAL": [
+    "Lake Kalimpaa",
+    "Lake Kalimpaa",
+    "Indonesia",
+    "Asia"
+   ],
+   "KAS": [
+    "Lake Kasumigaura",
+    "Lake Kasumigaura",
+    "Japan",
+    "Asia"
+   ],
+   "KEI": [
+    "Lake Keilambete",
+    "Lake Keilambete",
+    "Australia",
+    "Oceania"
+   ],
+   "KLK": [
+    "Kalksjon",
+    "Kalksjon",
+    "Sweden",
+    "Europe"
+   ],
+   "KRT": [
+    "Korttajarvi",
+    "Korttajarvi",
+    "Finland",
+    "Europe"
+   ],
+   "LAM": [
+    "Lake Lama",
+    "Lake Lama",
+    "Russia",
+    "Asia"
+   ],
+   "MET": [
+    "Meteor Rise",
+    "Meteor Rise",
+    "South Atlantic",
+    "Atlantic Ocean"
+   ],
+   "MEZ": [
+    "Lago di Mezzano",
+    "Lago di Mezzano",
+    "Italy",
+    "Europe"
+   ],
+   "MON": [
+    "Lago Grande di Monticchio",
+    "Lago Grande di Monticchio",
+    "Italy",
+    "Europe"
+   ],
+   "MOT": [
+    "Motterudstjarnet",
+    "Motterudstjarnet",
+    "Sweden",
+    "Europe"
+   ],
+   "NAM": [
+    "Lake Nam Co",
+    "Lake Nam Co",
+    "China",
+    "Asia"
+   ],
+   "NAU": [
+    "Nautajarvi",
+    "Nautajarvi",
+    "Finland",
+    "Europe"
+   ],
+   "NEM": [
+    "Lago di Nemi",
+    "Lago di Nemi",
+    "Italy",
+    "Europe"
+   ],
+   "NWP": [
+    "North West Pacific Stack",
+    "North West Pacific Stack",
+    "North West Pacific",
+    "Pacific Ocean"
+   ],
+   "ORP": [
+    "Orphan Knoll",
+    "Orphan Knoll",
+    "North Atlantic",
+    "Atlantic Ocean"
+   ],
+   "SAR": [
+    "Sarsjon",
+    "Sarsjon",
+    "Sweden",
+    "Europe"
+   ],
+   "SAV": [
+    "Alimmainen Savijarvi",
+    "Alimmainen Savijarvi",
+    "Finland",
+    "Europe"
+   ],
+   "TY1": [
+    "Tyrrhenian Sea",
+    "Tyrrhenian Sea",
+    "Mediterranean",
+    "Europe"
+   ],
+   "TY2": [
+    "Tyrrhenian Sea",
+    "Tyrrhenian Sea",
+    "Mediterranean",
+    "Europe"
+   ]
+  }
+ },
+ "SedSampID": {
+  "title": "Sediment Sampling Types",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Continuous",
+   "2": "Discrete"
+  }
+ },
+ "SmoothID": {
+  "title": "Smoothing/Averaging Type",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "1": "Stacked",
+   "2": "Discrete Arithmetic Mean",
+   "3": "Discrete Fisher Mean",
+   "4": "Moving Arithmetic Mean",
+   "5": "Moving Fisher Mean",
+   "6": "Weighted Moving Mean",
+   "7": "Weighted Moving Fisher Mean",
+   "8": "Median",
+   "9": "Spline",
+   "10": "Polynomial",
+   "11": "Vectorial Running Mean",
+   "12": "Multiple stack procedure (see publication)",
+   "13": "Weighted vector mean"
+  }
+ },
+ "SpecID": {
+  "title": "Specimens",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "0": "Not specified",
+   "1": "Standard cylinders",
+   "2": "Standard cubes",
+   "3": "Minisamples or Chip",
+   "4": "Single crystal",
+   "5": "U-channels",
+   "6": "Large Sample Method (cubes)"
+  }
+ },
+ "UpModID": {
+  "title": "Data Sources",
+  "columns": [
+   "ID",
+   "Name"
+  ],
+  "rows": {
+   "-1": "No measurement",
+   "0": "Not specified",
+   "101": "Digitized from Publication",
+   "102": "From Publication",
+   "103": "From Author",
+   "104": "PANGAEA Database (see www.pangaea.de)",
+   "105": "SECVR00 Database",
+   "106": "From Publication Supplementary Material",
+   "107": "World Data Center for Paleoclimatology and NOAA Paleoclimatology Program",
+   "108": "IODP Janus Data (see Janus)",
+   "109": "IODP LIMS Data (see LIMS)"
+  }
+ }
+}

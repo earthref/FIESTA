@@ -1,0 +1,1172 @@
+{
+ "age_error_types": {
+  "label": "Age Error Types",
+  "database_column": "age_error_types",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Estimate"
+   },
+   {
+    "item": "Standard Deviation"
+   },
+   {
+    "item": "Standard Error"
+   },
+   {
+    "item": "Probability Envelope"
+   },
+   {
+    "item": "One Standard Deviation"
+   },
+   {
+    "item": "Two Standard Deviations"
+   },
+   {
+    "item": "Counting Statistics"
+   },
+   {
+    "item": "99% Confidence interval"
+   }
+  ]
+ },
+ "dating_methods": {
+  "label": "Dating Methods",
+  "database_column": "dating_methods",
+  "items": [
+   {
+    "item": "None"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Archeological Age"
+   },
+   {
+    "item": "Calibrated 14 C Age"
+   },
+   {
+    "item": "Uncalibrated 14 C Age"
+   },
+   {
+    "item": "Thermoluminescence Age"
+   },
+   {
+    "item": "Historical Age"
+   },
+   {
+    "item": "Archeomagnetic-Paleomagnetic age"
+   },
+   {
+    "item": "Argon-Argon age"
+   },
+   {
+    "item": "Tephrochronology"
+   },
+   {
+    "item": "Stratigraphy"
+   },
+   {
+    "item": "Relative Chronology"
+   },
+   {
+    "item": "Dendrochrnology"
+   },
+   {
+    "item": "Radium-Thorium Age"
+   },
+   {
+    "item": "K-Ar Age"
+   },
+   {
+    "item": "U-Th Age"
+   },
+   {
+    "item": "Fission Track Age"
+   },
+   {
+    "item": "14 C Accelerator Mass Spectrometer (AMS)"
+   },
+   {
+    "item": "Optically stimulated luminiscence (OSL) age"
+   },
+   {
+    "item": "3 He surface exposure age"
+   },
+   {
+    "item": "Varve Age"
+   },
+   {
+    "item": "137 Cs Age"
+   },
+   {
+    "item": "210 Pb Age"
+   },
+   {
+    "item": "14 C Classical Age"
+   },
+   {
+    "item": "Oxygen Isotope Age"
+   },
+   {
+    "item": "Pollen Stratigraphy"
+   },
+   {
+    "item": "Rehydroxilation"
+   },
+   {
+    "item": "Tuning of alkenone SST record to AAIC (2012) d 18 O record"
+   },
+   {
+    "item": "Geological Estimate"
+   },
+   {
+    "item": "36Cl age"
+   },
+   {
+    "item": "Obsidian hydration dating"
+   },
+   {
+    "item": "226 Radium"
+   }
+  ]
+ },
+ "pi_methods": {
+  "label": "Paleointensity Methods",
+  "database_column": "pi_methods",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Thellier and Thellier (1959)"
+   },
+   {
+    "item": "Coe (1967)"
+   },
+   {
+    "item": "Aitken et al. (1988)"
+   },
+   {
+    "item": "IZZI (Yu et al., 2004)"
+   },
+   {
+    "item": "Thellier two specimen method (Doumen, 1977)"
+   },
+   {
+    "item": "Shaw (1974)"
+   },
+   {
+    "item": "Microwave perpendicular method (see, Hill and Shaw, 2007)"
+   },
+   {
+    "item": "Microwave Coe method (see, Hill and Shaw, 1999)"
+   },
+   {
+    "item": "Vibrating Triaxe (Le Goff and Gallet, 2004)"
+   },
+   {
+    "item": "Multispecimen parallel differential pTRM (Dekkers and Boehnel, 2006)"
+   },
+   {
+    "item": "Thermal quasi perpendicular (Biggin et al., 2007)"
+   },
+   {
+    "item": "Other double heating"
+   },
+   {
+    "item": "Extended multispecimen parallel differential pTRM protocol (Fabian and Leonhardt, 2010)"
+   },
+   {
+    "item": "Calibrated Pseudo-Thellier (de Groot et al., 2013)"
+   },
+   {
+    "item": "Microwave Thellier-Thellier protocol"
+   },
+   {
+    "item": "Microwave quasi-perpendicular protocol"
+   },
+   {
+    "item": "Microwave IZZI protocol"
+   },
+   {
+    "item": "Microwave Aitken protocol"
+   },
+   {
+    "item": "LTD-DHT Shaw method (Yamamoto et al., 2003)"
+   },
+   {
+    "item": "DHT Shaw method (Tsunakawa and Shaw 1994)"
+   },
+   {
+    "item": "Shaw method with ARM correction (Rolph and Shaw 1985)"
+   },
+   {
+    "item": "Shaw method with Shaw et al. (1995) modification"
+   },
+   {
+    "item": "Shaw method with ARM correction (Kono 1978)"
+   },
+   {
+    "item": "Modified Thellier Method MT4 (Leonhardt et al., 2004)"
+   },
+   {
+    "item": "Walton (1977)"
+   },
+   {
+    "item": "Microwave Walton (1977)"
+   },
+   {
+    "item": "Wilson (1961)"
+   },
+   {
+    "item": "Van Zijl (1962)"
+   }
+  ]
+ },
+ "alteration_checks": {
+  "label": "Paleointensity Alteration Checks",
+  "database_column": "alteration_checks",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "pTRM check"
+   },
+   {
+    "item": "Susceptibility monitoring"
+   },
+   {
+    "item": "Rolph and Shaw"
+   },
+   {
+    "item": "Walton"
+   },
+   {
+    "item": "Tanguy"
+   },
+   {
+    "item": "Other corrections"
+   },
+   {
+    "item": "Fabian and Leonhardt MSP assessment"
+   },
+   {
+    "item": "Triaxe linearity test"
+   }
+  ]
+ },
+ "md_checks": {
+  "label": "Paleointensity Multi-Domain Checks",
+  "database_column": "md_checks",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "pTRM tail check"
+   },
+   {
+    "item": "Low T demagnetization"
+   },
+   {
+    "item": "Kosareva et al. (2020) equality of (un)blocking temperature test"
+   },
+   {
+    "item": "Triaxe exeperimental mitigation"
+   }
+  ]
+ },
+ "anisotropy_corrections": {
+  "label": "Paleointensity Anisotropy Corrections",
+  "database_column": "anisotropy_corrections",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Susceptibility tensor"
+   },
+   {
+    "item": "ARM tensor"
+   },
+   {
+    "item": "TRM tensor"
+   },
+   {
+    "item": "NRM parallel to Blab"
+   },
+   {
+    "item": "Other Anisotropy correction"
+   },
+   {
+    "item": "IRM tensor"
+   },
+   {
+    "item": "TRM tensor calculated, but not applied"
+   }
+  ]
+ },
+ "cooling_rate_corrections": {
+  "label": "Paleointensity Cooling Rate Corrections",
+  "database_column": "cooling_rate_corrections",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Cooling rate experiment"
+   },
+   {
+    "item": "Cooling rate guessed"
+   },
+   {
+    "item": "Kosareva et al. (2020) calculation"
+   }
+  ]
+ },
+ "demag_methods": {
+  "label": "Directional (Demagnetization) Methods",
+  "database_column": "demag_methods",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Alternating field"
+   },
+   {
+    "item": "Thermal"
+   },
+   {
+    "item": "Alternating field and thermal"
+   },
+   {
+    "item": "Chemical"
+   },
+   {
+    "item": "Microwave"
+   },
+   {
+    "item": "Viscosity Cleaning"
+   }
+  ]
+ },
+ "dir_analyses": {
+  "label": "Directional Analysis",
+  "database_column": "dir_analyses",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Principal Component Analysis (Kirschvink, 1980)"
+   },
+   {
+    "item": "Blanket demagnetization"
+   },
+   {
+    "item": "Fisher Statistics (Fisher, 1953)"
+   },
+   {
+    "item": "LINEFIND (Kent et al., 1983)"
+   },
+   {
+    "item": "PCA with outlier rejection (Kapper et al., 2013)"
+   },
+   {
+    "item": "NRM"
+   },
+   {
+    "item": "Best fit line"
+   }
+  ]
+ },
+ "specimen_types": {
+  "label": "Specimen Types",
+  "database_column": "specimen_types",
+  "items": [
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Standard cylinders"
+   },
+   {
+    "item": "Standard cubes"
+   },
+   {
+    "item": "Minisamples or Chip"
+   },
+   {
+    "item": "Single crystal"
+   },
+   {
+    "item": "U-channels"
+   },
+   {
+    "item": "Large Sample Method (cubes)"
+   }
+  ]
+ },
+ "materials": {
+  "label": "Materials",
+  "database_column": "materials",
+  "items": [
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Brick"
+   },
+   {
+    "item": "Baked clay"
+   },
+   {
+    "item": "Tile"
+   },
+   {
+    "item": "Lava"
+   },
+   {
+    "item": "Pottery"
+   },
+   {
+    "item": "Sun dried object"
+   },
+   {
+    "item": "Porcelain"
+   },
+   {
+    "item": "Ceramic"
+   },
+   {
+    "item": "Kiln"
+   },
+   {
+    "item": "Oven or hearth"
+   },
+   {
+    "item": "Mixed archeological objects"
+   },
+   {
+    "item": "Slag"
+   },
+   {
+    "item": "Baked rock"
+   },
+   {
+    "item": "Fresco"
+   },
+   {
+    "item": "Mosaic"
+   },
+   {
+    "item": "Wall"
+   },
+   {
+    "item": "Bath"
+   },
+   {
+    "item": "Burnt floor"
+   },
+   {
+    "item": "Funeral pyre"
+   },
+   {
+    "item": "Hypocaust"
+   },
+   {
+    "item": "Burnt pit"
+   },
+   {
+    "item": "Bell mould"
+   },
+   {
+    "item": "Smoking chamber"
+   },
+   {
+    "item": "Baked mud"
+   },
+   {
+    "item": "Volcanic ash deposit"
+   },
+   {
+    "item": "Burnt structure"
+   },
+   {
+    "item": "Burnt castle wall"
+   },
+   {
+    "item": "Charcoal pile"
+   },
+   {
+    "item": "Burnt earth"
+   },
+   {
+    "item": "Vitrified material"
+   },
+   {
+    "item": "Unbaked sediment"
+   },
+   {
+    "item": "Tuyere"
+   },
+   {
+    "item": "Sauna"
+   },
+   {
+    "item": "Pit structure"
+   },
+   {
+    "item": "Room"
+   },
+   {
+    "item": "Pit house"
+   },
+   {
+    "item": "Salt kiln"
+   },
+   {
+    "item": "Burnt sediment"
+   },
+   {
+    "item": "Archeological ashes"
+   },
+   {
+    "item": "Other or undefined volcanic"
+   },
+   {
+    "item": "Mural"
+   },
+   {
+    "item": "Vitrified stone"
+   },
+   {
+    "item": "Soil"
+   },
+   {
+    "item": "Kamadogu"
+   },
+   {
+    "item": "Foundry"
+   },
+   {
+    "item": "Obsidian"
+   },
+   {
+    "item": "Chert"
+   },
+   {
+    "item": "Burnt Daub"
+   },
+   {
+    "item": "Amphora"
+   },
+   {
+    "item": "Granite"
+   },
+   {
+    "item": "Volcanic Glass"
+   },
+   {
+    "item": "Furnace"
+   },
+   {
+    "item": "Roasting Pit"
+   },
+   {
+    "item": "Speleothem"
+   },
+   {
+    "item": "Stamped jar handle"
+   },
+   {
+    "item": "Fireplace"
+   },
+   {
+    "item": "Praefurnium"
+   },
+   {
+    "item": "Drying Pit or Area"
+   },
+   {
+    "item": "Hangi Stone"
+   }
+  ]
+ },
+ "region_countries": {
+  "label": "Countries / Regions",
+  "database_column": "region_countries",
+  "items": [
+   {
+    "item": "Egypt"
+   },
+   {
+    "item": "Japan"
+   },
+   {
+    "item": "France"
+   },
+   {
+    "item": "Ukraine"
+   },
+   {
+    "item": "India"
+   },
+   {
+    "item": "China"
+   },
+   {
+    "item": "Finland"
+   },
+   {
+    "item": "Greece"
+   },
+   {
+    "item": "Italy"
+   },
+   {
+    "item": "Switzerland"
+   },
+   {
+    "item": "Bulgaria"
+   },
+   {
+    "item": "Syria"
+   },
+   {
+    "item": "Hungary"
+   },
+   {
+    "item": "East Pacific Ridge"
+   },
+   {
+    "item": "Hawaii"
+   },
+   {
+    "item": "Morocco"
+   },
+   {
+    "item": "Australia"
+   },
+   {
+    "item": "Georgia"
+   },
+   {
+    "item": "Azerbaijan"
+   },
+   {
+    "item": "Spain"
+   },
+   {
+    "item": "England"
+   },
+   {
+    "item": "Czech Republic"
+   },
+   {
+    "item": "Mexico"
+   },
+   {
+    "item": "Iraq"
+   },
+   {
+    "item": "Israel"
+   },
+   {
+    "item": "Iran"
+   },
+   {
+    "item": "Uzbekistan"
+   },
+   {
+    "item": "Turkmenistan"
+   },
+   {
+    "item": "Mongolia"
+   },
+   {
+    "item": "Iceland"
+   },
+   {
+    "item": "New Zealand"
+   },
+   {
+    "item": "Amsterdam Island"
+   },
+   {
+    "item": "Guadeloupe"
+   },
+   {
+    "item": "Mid Atlantic Ridge"
+   },
+   {
+    "item": "Austria"
+   },
+   {
+    "item": "Belgium"
+   },
+   {
+    "item": "Romania"
+   },
+   {
+    "item": "Guatemala"
+   },
+   {
+    "item": "El Salvador"
+   },
+   {
+    "item": "Canary Islands"
+   },
+   {
+    "item": "Moldova"
+   },
+   {
+    "item": "Latvia"
+   },
+   {
+    "item": "Lithuania"
+   },
+   {
+    "item": "Russia"
+   },
+   {
+    "item": "Germany"
+   },
+   {
+    "item": "Martinique"
+   },
+   {
+    "item": "Netherlands"
+   },
+   {
+    "item": "Turkey"
+   },
+   {
+    "item": "Denmark"
+   },
+   {
+    "item": "Cameroon"
+   },
+   {
+    "item": "Honduras"
+   },
+   {
+    "item": "Jordan"
+   },
+   {
+    "item": "Brazil"
+   },
+   {
+    "item": "Estonia"
+   },
+   {
+    "item": "Sweden"
+   },
+   {
+    "item": "Peru"
+   },
+   {
+    "item": "Bolivia"
+   },
+   {
+    "item": "Ecuador"
+   },
+   {
+    "item": "Ontario"
+   },
+   {
+    "item": "New Mexico"
+   },
+   {
+    "item": "Arizona"
+   },
+   {
+    "item": "California"
+   },
+   {
+    "item": "Colorado"
+   },
+   {
+    "item": "Utah"
+   },
+   {
+    "item": "Washington"
+   },
+   {
+    "item": "Oregon"
+   },
+   {
+    "item": "British Columbia"
+   },
+   {
+    "item": "Idaho"
+   },
+   {
+    "item": "Arkansas"
+   },
+   {
+    "item": "Tennessee"
+   },
+   {
+    "item": "Serbia"
+   },
+   {
+    "item": "Kosovo"
+   },
+   {
+    "item": "Portugal"
+   },
+   {
+    "item": "Thailand"
+   },
+   {
+    "item": "South Korea"
+   },
+   {
+    "item": "Kazakhstan"
+   },
+   {
+    "item": "Nebraska"
+   },
+   {
+    "item": "La Reunion"
+   },
+   {
+    "item": "Cyprus"
+   },
+   {
+    "item": "Papua New Guinea"
+   },
+   {
+    "item": "Vanuatu"
+   },
+   {
+    "item": "Fiji"
+   },
+   {
+    "item": "Argentina"
+   },
+   {
+    "item": "Tunisia"
+   },
+   {
+    "item": "Mali"
+   },
+   {
+    "item": "Burkina Faso"
+   },
+   {
+    "item": "Senegal"
+   },
+   {
+    "item": "Alaska"
+   },
+   {
+    "item": "North Atlantic"
+   },
+   {
+    "item": "South Atlantic"
+   },
+   {
+    "item": "Beaufort Sea"
+   },
+   {
+    "item": "Chukchi Sea"
+   },
+   {
+    "item": "Kyrgyzstan"
+   },
+   {
+    "item": "Indonesia"
+   },
+   {
+    "item": "Azores"
+   },
+   {
+    "item": "Quebec"
+   },
+   {
+    "item": "Norway"
+   },
+   {
+    "item": "Northern Ireland"
+   },
+   {
+    "item": "Wales"
+   },
+   {
+    "item": "Scotland"
+   },
+   {
+    "item": "Virginia"
+   },
+   {
+    "item": "North West Pacific"
+   },
+   {
+    "item": "Mediterranean"
+   },
+   {
+    "item": "Slovakia"
+   },
+   {
+    "item": "Republic of Ireland"
+   },
+   {
+    "item": "Isle of Man"
+   },
+   {
+    "item": "Poland"
+   },
+   {
+    "item": "South Africa"
+   },
+   {
+    "item": "Illinois"
+   },
+   {
+    "item": "Zimbabwe"
+   },
+   {
+    "item": "Botswana"
+   },
+   {
+    "item": "Colombia"
+   },
+   {
+    "item": "Ethiopia"
+   },
+   {
+    "item": "Kenya"
+   },
+   {
+    "item": "Chile"
+   },
+   {
+    "item": "Venezuela"
+   },
+   {
+    "item": "Uruguay"
+   },
+   {
+    "item": "Ivory Coast"
+   }
+  ]
+ },
+ "c14_calib_software": {
+  "label": "Radiocarbon Calibration Software",
+  "database_column": "c14_calib_software",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Oxcal 4.1"
+   },
+   {
+    "item": "Calib 5.0"
+   },
+   {
+    "item": "Oxcal 3.1"
+   },
+   {
+    "item": "Oxcal 4.0"
+   },
+   {
+    "item": "Calpal"
+   },
+   {
+    "item": "Calib 6.0"
+   },
+   {
+    "item": "Calib 4.3"
+   },
+   {
+    "item": "Oxcal 3.8"
+   },
+   {
+    "item": "Calib 4.5"
+   },
+   {
+    "item": "Oxcal 3.5"
+   }
+  ]
+ },
+ "c14_calib_datasets": {
+  "label": "Radiocarbon Calibration Datasets",
+  "database_column": "c14_calib_datasets",
+  "items": [
+   {
+    "item": "No measurement"
+   },
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Intcal09 (Reimer et al., 2009)"
+   },
+   {
+    "item": "Intcal04 (Reimer et al., 2004)"
+   },
+   {
+    "item": "SHCal04 (McCormac et al., 2004)"
+   },
+   {
+    "item": "Marine04 (Hughen et al., 2004)"
+   },
+   {
+    "item": "Clark, 1975"
+   },
+   {
+    "item": "Intcal98 (Stuiver et al., 1998)"
+   },
+   {
+    "item": "CalPal (http://www.calpal-online.de/)"
+   },
+   {
+    "item": "Bard et al., 1990"
+   },
+   {
+    "item": "Laj et al., 1996"
+   },
+   {
+    "item": "Lake Suigetsu calibration curve (Kitagawa and van der Plicht, 1998)"
+   },
+   {
+    "item": "Stuiver and Reimer, 1993"
+   }
+  ]
+ },
+ "compilations": {
+  "label": "Compilations",
+  "database_column": "compilations",
+  "items": [
+   {
+    "item": "Tarling D.H. (2000)"
+   },
+   {
+    "item": "Korte M., Genevey A., Constable C.G., Frank U., Schnepp E. (2005)"
+   },
+   {
+    "item": "Zananiri I., Batt C.M., Lanos Ph., Tarling D.H., Linford P. (2007)"
+   },
+   {
+    "item": "Tema E., Hedley I., Lanos Ph. (2006)"
+   },
+   {
+    "item": "Schnepp E., Lanos Ph. (2006)"
+   },
+   {
+    "item": "Lanza R., Meloni A., Tema E. (2005)"
+   },
+   {
+    "item": "Donadini F., Korhonen K., Riisager P., Pesonen L.J. (2006)"
+   },
+   {
+    "item": "Gomez-Paccard M., Catanzariti G., Ruiz-Martinez V.C., McIntosh G., Nunez J.I., Osete M.L., Chauvin A., Lanos Ph., Tarling D.H. (2006)"
+   },
+   {
+    "item": "Marton P., Ferencz E. (2006)"
+   },
+   {
+    "item": "Kovacheva M., Boyadziev Y., Kostadinova-Avramova M., Jordanova N., Donadini F. (2009)"
+   },
+   {
+    "item": "Genevey A., Gallet Y., Constable C., Korte M., Hulot G. (2008)"
+   },
+   {
+    "item": "Perrin M., Schnepp E. (2004)"
+   },
+   {
+    "item": "Kovacheva M., Kostadinova-Avramova M., Jordanova N., Ph. Lanos, Boyadziev Y. (2014)"
+   },
+   {
+    "item": "Batt C., Brown M., Clelland S.J., Korte M., Linford P., Outram Z. (2017)"
+   }
+  ]
+ },
+ "continents": {
+  "label": "Continents",
+  "database_column": "continent",
+  "items": [
+   {
+    "item": "Africa"
+   },
+   {
+    "item": "Arctic Ocean"
+   },
+   {
+    "item": "Asia"
+   },
+   {
+    "item": "Atlantic Ocean"
+   },
+   {
+    "item": "Caribbean"
+   },
+   {
+    "item": "Europe"
+   },
+   {
+    "item": "Indian Ocean"
+   },
+   {
+    "item": "North America"
+   },
+   {
+    "item": "Oceania"
+   },
+   {
+    "item": "Pacific Ocean"
+   },
+   {
+    "item": "South America"
+   }
+  ]
+ },
+ "archeo_volcanic": {
+  "label": "Record Types",
+  "database_column": "archeo_volcanic",
+  "items": [
+   {
+    "item": "Archeo"
+   },
+   {
+    "item": "Volcanic"
+   }
+  ]
+ }
+}

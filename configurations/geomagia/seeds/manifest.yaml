@@ -1,0 +1,67 @@
+# Local GEOMAGIA fixtures: six real references from the public GEOMAGIA50 CSV
+# export (v3.2, 2019-05-22), written by configurations/sources/geomagia.py --out.
+# 7 France (intensity + direction, DOI) · 16 Egypt (intensity, no DOI) ·
+# 26 Hawaii (volcanic) · 64 Georgia (no DOI) · 80 Shaw 1974 (archeo + volcanic,
+# three countries) · 206 Denmark (direction only).
+version: 1
+accounts:
+- key: owner
+  email: developer@example.test
+  name: Local Developer
+  admin: true
+  password: local-fiesta-only
+  settings:
+    theme: system
+- key: viewer
+  email: viewer@example.test
+  name: Local Viewer
+  password: local-fiesta-only
+workspace:
+  name: Local demo workspace
+  owner: owner
+  members:
+  - user: viewer
+    role: viewer
+contributions:
+- key: ref-7
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: geomagia_contribution_7.txt
+- key: ref-16
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: geomagia_contribution_16.txt
+- key: ref-26
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: geomagia_contribution_26.txt
+- key: ref-64
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: geomagia_contribution_64.txt
+- key: ref-80
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: geomagia_contribution_80.txt
+- key: ref-206
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: geomagia_contribution_206.txt
