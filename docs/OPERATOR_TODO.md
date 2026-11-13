@@ -134,6 +134,18 @@ Last updated: 2026-11-11
       without passwords, so every EarthRef login fails. Dry run, then apply:
       `make fiesta ENV_FILE=.env.prod ARGS="sync-legacy-users magic"` and again with
       `--apply`. Re-run until cutover to pick up legacy password changes (legacy wins).
+- [ ] **MagIC publications with more than one latest contribution** (2026-11-13,
+      judgement call for the MagIC team): 61 reference DOIs on dev have 2 (60) or 3 (1)
+      separate version chains, each with a latest version, so the References grid counts
+      them and the search shows them all. FIESTA copies legacy MagIC exactly (checked
+      against the live legacy search: the same chains are all latest there). Example
+      `10.1016/0031-9201(90)90268-3`: 9595→13855 (2013, 20 sites, Tamil Nadu),
+      8011→8065→14174→19189 and 7551→13156→19187 (2009 and 2007, 40 sites each, India: the
+      same dataset uploaded twice). For each DOI decide: separate datasets (leave), or one
+      history (link the older chain's latest under the newer, so only the newest stays
+      latest). List: References grid sorted by MagIC, rows with a count above 1. Versions
+      whose parent is missing from the legacy index (9595, 8065, 8011, 7551 here) were
+      imported unlinked by design.
 
 ## 2026-11-13 — GEOMAGIA node
 

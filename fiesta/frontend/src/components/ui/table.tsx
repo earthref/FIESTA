@@ -4,7 +4,7 @@ import { cx } from "../../lib/utils";
 export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
   return (
     <div className="overflow-x-auto">
-      <table className={cx("w-full border-collapse text-left text-sm", className)} {...props} />
+      <table className={cx("w-full border-collapse text-left text-[13px]", className)} {...props} />
     </div>
   );
 }
@@ -25,7 +25,7 @@ export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
   return (
     <th
       className={cx(
-        "whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600",
+        "whitespace-nowrap px-3 py-2 text-[13px] font-semibold uppercase tracking-wide text-gray-600",
         className,
       )}
       {...props}

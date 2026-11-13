@@ -5,10 +5,11 @@
 // /v2/portal (fiesta.apps.routers.portal).
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { type CSSProperties, type ReactNode, useDeferredValue, useState } from "react";
+import { type ReactNode, useDeferredValue, useState } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { InlineHtml } from "../components/result-item";
 import { Button } from "../components/ui/button";
+import { CountLabel } from "../components/ui/count-label";
 import { Input } from "../components/ui/input";
 import { Spinner } from "../components/ui/spinner";
 import { Table, TBody, Td, THead, Th, Tr } from "../components/ui/table";
@@ -74,17 +75,6 @@ interface GridProps<T extends Counted> {
   search: (row: T) => string;
 }
 
-/** A count in a node's colors: a tint of it behind a dark shade of it, legible
- * for the light ones (CDR's yellow) and in dark mode. */
-function countStyle(color: string): CSSProperties {
-  const mix = (percent: number, other: string) =>
-    `color-mix(in srgb, ${color} ${percent}%, ${other})`;
-  return {
-    color: `light-dark(${mix(70, "black")}, ${mix(45, "white")})`,
-    backgroundColor: `light-dark(${mix(14, "white")}, ${mix(30, "#181a1f")})`,
-  };
-}
-
 function SortHeader({
   label,
   active,
@@ -108,8 +98,8 @@ function SortHeader({
       <button
         type="button"
         onClick={onClick}
-        // A node's key keeps its case (KdD, KArAr).
-        className={`inline-flex items-center gap-1 hover:underline ${color ? "normal-case" : "uppercase"}`}
+        // As the search grids' headers: as written (a node's key keeps its case, KdD).
+        className="inline-flex items-center gap-1 normal-case tracking-normal hover:underline"
         style={color ? { color: inkColor(color) } : undefined}
       >
         {label}
@@ -160,7 +150,7 @@ function NodeGrid<T extends Counted>({
   return (
     <div className="pb-6">
       <h2 className="mb-1 text-xl font-semibold">{title}</h2>
-      <p className="mb-3 text-sm text-gray-600">{intro}</p>
+      <p className="mb-3 text-[13px] text-gray-600">{intro}</p>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Input
           className="max-w-sm"
@@ -172,7 +162,7 @@ function NodeGrid<T extends Counted>({
             setOffset(0);
           }}
         />
-        <span className="text-sm text-gray-500">
+        <span className="text-[13px] text-gray-500">
           {query.data ? `${total.toLocaleString()} ${noun}` : ""}
         </span>
         {query.isFetching && <Spinner />}
@@ -227,13 +217,13 @@ function NodeGrid<T extends Counted>({
                   return (
                     <Td key={node.slug} className="text-right tabular-nums">
                       {count ? (
+                        // The search page's count pill, a link to them in that node's search.
                         <a
                           href={nodeSearchUrl(node, search(row))}
-                          className="inline-block min-w-[2.5em] rounded-sm px-1.5 font-semibold hover:underline"
-                          style={countStyle(node.color)}
+                          className="inline-block rounded-full hover:opacity-75 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
                           title={`${count} ${node.key} contribution${count === 1 ? "" : "s"}`}
                         >
-                          {count.toLocaleString()}
+                          <CountLabel inline>{count.toLocaleString()}</CountLabel>
                         </a>
                       ) : (
                         <span className="text-gray-300">·</span>
@@ -241,8 +231,8 @@ function NodeGrid<T extends Counted>({
                     </Td>
                   );
                 })}
-                <Td className="text-right font-semibold tabular-nums">
-                  {row.total.toLocaleString()}
+                <Td className="text-right tabular-nums">
+                  <CountLabel inline>{row.total.toLocaleString()}</CountLabel>
                 </Td>
               </Tr>
             ))}
@@ -257,7 +247,7 @@ function NodeGrid<T extends Counted>({
         </Table>
       )}
       {total > PAGE && (
-        <div className="mt-3 flex items-center gap-2 text-sm">
+        <div className="mt-3 flex items-center gap-2 text-[13px]">
           <Button
             size="sm"
             variant="secondary"
@@ -339,7 +329,7 @@ export function ReferencesPage() {
             <div>
               <div className="font-semibold">{ref.citation ?? "Unknown reference"}</div>
               {ref.title && <InlineHtml html={ref.title} className="block text-gray-700" />}
-              {ref.journal && <div className="text-xs italic text-gray-500">{ref.journal}</div>}
+              {ref.journal && <div className="italic text-gray-500">{ref.journal}</div>}
             </div>
           ),
         },

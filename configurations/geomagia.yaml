@@ -51,8 +51,9 @@ search:
         - { cell: citation }
   extra_types: []
   filters:
-    # Every node's contribution filters (the contribution block's id, contributor, timestamp).
+    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
+    - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
     - { type: range, label: Age, field: summary._num.age, unit: yr CE, levels: [Contributions, Sites], views: [Summaries, Rows, Map] }

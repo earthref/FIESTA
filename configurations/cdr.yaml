@@ -38,8 +38,9 @@ search:
     - { type: facet, field: lab_names, label: Lab }
     - { type: facet, field: method_codes, label: Method Codes }
     - { type: facet, field: instrument_codes, label: Instrument Codes }
-    # Every node's contribution filters (the contribution block's id, contributor, timestamp).
+    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
+    - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
   # The Map view's "Color by" menu, the same as MagIC's (no `bodies`: every core
