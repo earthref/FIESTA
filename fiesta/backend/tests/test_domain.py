@@ -1211,6 +1211,9 @@ def test_search_body_sort_options():
     assert body["track_total_hits"] is True
     body = build_search_body(table="contribution", query="basalt")
     assert body["sort"] == SORT_OPTIONS["relevance"]
+    # Free text is scoped, not expanded to every field (OpenSearch's 1,024 cap).
+    text_clause = body["query"]["bool"]["must"][0]["simple_query_string"]
+    assert text_clause["fields"] == ["summary.contribution.*", "summary._all.*"]
     # A token-only query has no free text, so it still sorts newest first.
     body = build_search_body(table="contribution", query='id:"1"')
     assert body["sort"] == SORT_OPTIONS["recent"]

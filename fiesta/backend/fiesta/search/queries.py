@@ -24,6 +24,12 @@ CONTRIBUTION_TERMS = {
     "orcid": "summary.contribution._reference.authors._orcid.raw",
 }
 
+# Free text searches the contribution block and each doc's `_all` roll-up
+# (which already unions the doc's own level values), never every field: the
+# per-level summaries and `_num` push an index past OpenSearch's 1,024-field
+# expansion limit, and an unscoped query then fails for every search box.
+TEXT_FIELDS = ["summary.contribution.*", "summary._all.*"]
+
 _TIMESTAMP = "summary.contribution.timestamp"
 _REFERENCE = "summary.contribution._reference"
 
@@ -176,7 +182,9 @@ def build_search_body(
             {
                 "simple_query_string": {
                     "query": text,
+                    "fields": TEXT_FIELDS,
                     "default_operator": "and",
+                    "lenient": True,
                 }
             }
         )
