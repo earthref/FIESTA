@@ -1,4 +1,12 @@
-import { type CSSProperties, type ReactNode, useContext } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  type Ref,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { apiUrl, nodeSiteUrl, nodeUrl, siteUrl } from "../lib/base";
 import { NodeConfigScope, useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
@@ -433,13 +441,16 @@ function Clamped({
   lines,
   className,
   children,
+  ref,
 }: {
   lines: number;
   className?: string;
   children: ReactNode;
+  ref?: Ref<HTMLSpanElement>;
 }) {
   return (
     <span
+      ref={ref}
       className={cx("overflow-hidden", className)}
       style={{ display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical" }}
     >
@@ -518,6 +529,45 @@ function ContributedText({ doc, breakLine }: { doc: SearchResult; breakLine?: bo
   );
 }
 
+/** A contribution's record cell: citation, up to 4 lines of the reference
+ * title (3 when the date and contributor wrap onto a second line, so the cell
+ * stays within its 104px), then the date and contributor bottom-right. */
+function ContributionRecord({
+  doc,
+  level,
+  levels,
+}: {
+  doc: SearchResult;
+  level: SearchLevel;
+  levels: SearchLevel[];
+}) {
+  const contributed = useRef<HTMLSpanElement>(null);
+  const [wrapped, setWrapped] = useState(false);
+  useLayoutEffect(() => {
+    const element = contributed.current;
+    if (!element) return;
+    // One 16px line, or more; re-measured when web fonts land.
+    const measure = () => setWrapped(element.offsetHeight > 20);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <>
+      <Clamped lines={2}>
+        <CitationText doc={doc} />
+      </Clamped>
+      <Clamped lines={wrapped ? 3 : 4}>
+        <NameText doc={doc} level={level} levels={levels} />
+      </Clamped>
+      <Clamped ref={contributed} lines={2} className="mt-auto text-right text-ink-muted">
+        <ContributedText doc={doc} />
+      </Clamped>
+    </>
+  );
+}
+
 export interface SummaryCellProps {
   column: GridColumn;
   doc: SearchResult;
@@ -561,15 +611,7 @@ function BuiltinCell({
       if (level.table === "contribution")
         return (
           <OpenCell id={id} table={level.table} width={width} fill>
-            <Clamped lines={2}>
-              <CitationText doc={doc} />
-            </Clamped>
-            <Clamped lines={4}>
-              <NameText doc={doc} level={level} levels={config.search_levels} />
-            </Clamped>
-            <Clamped lines={2} className="mt-auto text-right text-ink-muted">
-              <ContributedText doc={doc} />
-            </Clamped>
+            <ContributionRecord doc={doc} level={level} levels={config.search_levels} />
           </OpenCell>
         );
       const breadcrumb = breadcrumbOf(doc, level, config.search_levels);
