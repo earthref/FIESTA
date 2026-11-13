@@ -1,0 +1,30 @@
+# Corrections to publication metadata that the registries (Crossref, DataCite)
+# hold wrongly, for every node: fiesta.services.references applies them when it
+# builds a DOI's `_reference`, and `fiesta init` (every deploy) re-applies them
+# to the cached references and their contributions' search docs. Not a node:
+# this directory is not a node tree, and no node may be called `references`.
+#
+# Keys are DOIs (any case, bare or as a doi.org URL). Fields: title, journal,
+# year, volume, issue, page; `note` says why (not shown). Check a correction
+# against the publisher's page or another index first. Ask the publisher to fix
+# their Crossref deposit too, then drop the entry once Crossref has it right.
+
+10.1007/BF00240570:
+  title: "Stratigraphy and paleomagnetism of a 3-km-thick Miocene lava pile in the Mjoifjördur area, eastern Iceland"
+  note: Crossref has U+FFFD for ö (Semantic Scholar has it right, 2026-11-13)
+
+10.1007/BF00623094:
+  title: "Ergebnisse bei partieller Entmagnetisierung des natürlichen Magnetismus isländischer Basalte"
+  note: Crossref has U+FFFD for ü and ä (Semantic Scholar has it right, 2026-11-13)
+
+10.1007/S00531-004-0409-4:
+  title: "Stratigraphy and paleomagnetism of a 2.9-km composite lava section in Eyjafjördur, Northern Iceland: a reconnaissance study"
+  note: Crossref has U+FFFD for ö (Semantic Scholar has it right, 2026-11-13)
+
+10.1111/J.1365-246X.1983.TB03321.X:
+  title: "Palaeomagnetism of the Proterozoic Zig-Zag Dal Basalt and the Midsommersø Dolerites, eastern North Greenland"
+  note: Crossref has U+FFFD for ø (Semantic Scholar has it right, 2026-11-13)
+
+10.1111/J.1365-246X.1978.TB05493.X:
+  title: "Palaeomagnetism of alkaline lava flows from El Salto-Almafuerte, Córdoba Province, Argentina"
+  note: Crossref has U+FFFD for ó (Semantic Scholar has it right, 2026-11-13)

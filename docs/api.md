@@ -429,6 +429,10 @@ case), `title`, `journal`, `year`, `keywords`, `citation` ("Behar et al.
 `{doi}`. The worker fetches a DOI when a revision first names it and again every
 30 days (so `n_citations` stays current), into the shared `doi_references`
 table; indexing and `fiesta rebuild` read that table and never call out.
+Where a registry's record is wrong (a publisher deposit with U+FFFD for an
+accented letter), `configurations/references/corrections.yaml` overrides its
+title, journal, year, volume, issue or page for every node; `fiesta init`
+re-applies the file to the cached references and their search docs.
 When omitted the API sorts by relevance if the query has free text and by
 `recent` otherwise.
 
