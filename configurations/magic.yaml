@@ -190,6 +190,9 @@ plugins:
     # black for unknown age, purple for the selected pole.
     age_color: { young: "#ffff00", old: "#ff0000", unknown: "#000000", selected: "#800080" }
     plate_boundary_color: "#990000"
+    # With no filters and more than 1,000 poles, the view opens filtered to Pole A95 ≤ 10°.
+    default_alpha95_max: 10
+    default_alpha95_above: 1000
     facet_columns: [method_codes, geologic_classes, geologic_types, lithologies, location_type, plate_blocks, tectonic_settings, citations]
   rock-mag:
     base_level: Specimens # the Rock Magnetism view is a sub-tab of this level

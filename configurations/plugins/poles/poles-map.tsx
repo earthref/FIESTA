@@ -55,19 +55,20 @@ export default function PolesMap({
 }: PolesMapProps) {
   const [mode, setMode] = useSavedMode("poles-map-mode");
 
-  const points = useMemo<MapPoint[]>(
-    () =>
-      poles.map((pole) => ({
-        id: String(pole.index),
-        contribution: pole.contributionId,
-        name: pole.name,
-        label: pole.age !== undefined ? `pole, ${formatAge(pole.age)}` : "pole, unknown age",
-        color: pole.index === selected ? selectedColor : ageScale.color(pole.age),
-        lat: pole.lat,
-        lon: pole.lon,
-      })),
-    [poles, ageScale, selected, selectedColor],
-  );
+  // The selected pole last, so it draws on top of the poles around it.
+  const points = useMemo<MapPoint[]>(() => {
+    const all = poles.map((pole) => ({
+      id: String(pole.index),
+      contribution: pole.contributionId,
+      name: pole.name,
+      label: pole.age !== undefined ? `pole, ${formatAge(pole.age)}` : "pole, unknown age",
+      color: pole.index === selected ? selectedColor : ageScale.color(pole.age),
+      lat: pole.lat,
+      lon: pole.lon,
+    }));
+    const at = selected !== null ? poles.findIndex((pole) => pole.index === selected) : -1;
+    return at < 0 ? all : [...all.slice(0, at), ...all.slice(at + 1), all[at]];
+  }, [poles, ageScale, selected, selectedColor]);
 
   const plates = useMemo<MapLine[]>(
     () =>

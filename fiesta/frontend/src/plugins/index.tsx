@@ -39,6 +39,9 @@ export interface PluginSubTabContext {
   /** The search's scope filters (My contributions, Previous versions): add
    * them to the view's own search requests (and their query keys). */
   scope?: SearchScope;
+  /** Replace the search's range filters (the sidebar shows them); absent
+   * where the view is not on the search page (a contribution's modal). */
+  setRanges?: (ranges: string[]) => void;
 }
 
 export interface PluginSubTab {
