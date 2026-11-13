@@ -22,7 +22,8 @@ const variants: Record<Variant, string> = {
 
 const sizes: Record<Size, string> = {
   sm: "px-2.5 py-1 text-xs",
-  md: "px-3.5 py-2 text-sm",
+  // 13px: the search results' size, the least on the search page (its modals' buttons).
+  md: "px-3.5 py-2 text-[13px]",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(

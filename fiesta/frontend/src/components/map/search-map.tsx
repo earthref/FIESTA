@@ -106,7 +106,7 @@ function usePoints(
  * color of records without one. */
 function ColorLegend({ scale, option }: { scale: ColorScale | null; option: MapColorOption }) {
   return (
-    <div className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-surface/90 px-2 py-1.5 text-xs text-gray-700 shadow">
+    <div className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-surface/90 px-2 py-1.5 text-[13px] text-gray-700 shadow">
       <div className="font-bold">
         {option.label}
         {option.log && <span className="font-normal text-gray-500"> (log scale)</span>}
@@ -409,7 +409,7 @@ export function SearchMap({
         )}
         {showLoading ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/40">
-            <span className="flex items-center gap-2 rounded-sm bg-surface/90 px-3 py-1.5 text-sm shadow">
+            <span className="flex items-center gap-2 rounded-sm bg-surface/90 px-3 py-1.5 text-[13px] shadow">
               <Spinner />
               Loading…
             </span>
@@ -418,7 +418,7 @@ export function SearchMap({
           !inArea.isFetching &&
           points.length === 0 && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="rounded-sm bg-surface/90 px-3 py-1.5 text-sm text-gray-500 shadow">
+              <span className="rounded-sm bg-surface/90 px-3 py-1.5 text-[13px] text-gray-500 shadow">
                 {inArea.error
                   ? "The map's records could not be loaded"
                   : "No mapped locations match this search"}

@@ -272,7 +272,7 @@ function PeriodicTableModal({
                     <span className="text-[15px] font-bold leading-none">{element.symbol}</span>
                     <span
                       className={cx(
-                        "w-full border-t text-center text-[10px] leading-[1.6]",
+                        "w-full border-t text-center text-[13px] leading-[1.6]",
                         selected ? "border-white/40 bg-node-dark" : "border-line bg-surface",
                       )}
                     >

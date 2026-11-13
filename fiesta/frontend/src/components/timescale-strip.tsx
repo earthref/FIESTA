@@ -13,9 +13,9 @@ import {
 } from "../lib/timescale";
 import { cx } from "../lib/utils";
 
-const ROW = 22;
+const ROW = 24;
 /** A cell narrower than this (px) shows no name; hover still names it. */
-const MIN_LABEL = 26;
+const MIN_LABEL = 30;
 
 const boundary = (ma: number, sigma?: number) =>
   `${ma.toLocaleString()}${sigma ? ` ± ${sigma}` : ""} Ma`;
@@ -69,7 +69,7 @@ export function TimescaleStrip({
   if (!(t1 > t0)) return null;
 
   return (
-    <div className="relative select-none pt-1 pb-2 text-[11px]">
+    <div className="relative select-none pt-1 pb-2 text-[13px]">
       {TIMESCALE_RANKS.map((rank, row) => (
         <div key={rank} className="flex" style={{ height: ROW }}>
           <span
@@ -118,7 +118,7 @@ export function TimescaleStrip({
       {hover && (
         <div
           role="tooltip"
-          className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-sm border border-line bg-surface px-2 py-1 text-[12px] text-ink shadow-md"
+          className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-sm border border-line bg-surface px-2 py-1 text-[13px] text-ink shadow-md"
           style={{
             left: `calc(${left}px + (100% - ${left + right}px) * ${Math.min(88, Math.max(12, hover.center)) / 100})`,
             top: hover.row * ROW,
@@ -259,7 +259,7 @@ export function TimescalePicker({
                 <span className="font-bold">{unit.name}</span>{" "}
                 <span className="text-ink-muted">{unit.rank}</span>
               </span>
-              <span className="shrink-0 text-[11px] text-ink-muted">
+              <span className="shrink-0 text-[13px] text-ink-muted">
                 {unit.min.toLocaleString()}–{unit.max.toLocaleString()} Ma
               </span>
             </div>

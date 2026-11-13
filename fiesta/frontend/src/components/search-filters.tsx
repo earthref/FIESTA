@@ -15,6 +15,7 @@
 import type { ReactNode } from "react";
 import type { NodeConfig, SearchFilter } from "../lib/types";
 import { cx, facetTitle, formatNumber } from "../lib/utils";
+import { CountLabel } from "./ui/count-label";
 import { Icon } from "./ui/icon";
 import { Spinner } from "./ui/spinner";
 
@@ -106,7 +107,7 @@ export function Chip({
   return (
     <span
       title={title}
-      className="inline-flex max-w-full items-start gap-1 whitespace-normal rounded-sm bg-node-soft px-1.5 py-0.5 text-[12px] font-bold text-node-ink"
+      className="inline-flex max-w-full items-start gap-1 whitespace-normal rounded-sm bg-node-soft px-1.5 py-0.5 text-[13px] font-bold text-node-ink"
     >
       <span className="min-w-0 break-words">{label}</span>
       <button
@@ -166,13 +167,14 @@ export function FilterEntry({
       >
         <span className="grow whitespace-normal font-bold">{label}</span>
         {active && (
-          <span className="rounded-full bg-node px-[0.45em] text-[10px] font-bold leading-[1.5] text-white">
+          <span className="shrink-0 rounded-full bg-node px-[0.55em] text-[13px] font-bold leading-[1.6] text-white">
             {chips.length}
             <span className="sr-only"> applied</span>
           </span>
         )}
         {count !== null && (
-          <span className="inline-flex min-w-[2.2em] shrink-0 items-center justify-center rounded-full border border-edge px-[0.45em] text-[10px] font-bold leading-[1.5] text-ink-faint">
+          // As the level and result tabs' counts.
+          <CountLabel inline>
             {count === undefined ? (
               <Spinner size="xs" />
             ) : (
@@ -181,13 +183,8 @@ export function FilterEntry({
                 <span className="sr-only"> records</span>
               </>
             )}
-          </span>
+          </CountLabel>
         )}
-        <Icon
-          name="filter"
-          className={cx("shrink-0", active ? "text-node-ink" : "text-ink-faint")}
-          style={{ width: "0.85em", height: "0.85em" }}
-        />
       </button>
       {active && (
         <div className="flex flex-wrap gap-1">

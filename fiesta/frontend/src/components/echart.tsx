@@ -342,7 +342,7 @@ export function EChart({
           role="toolbar"
           aria-label={`${label}: tools`}
           className={cx(
-            "absolute top-0 right-1 flex gap-px rounded-sm border border-gray-200 bg-surface/90 p-px text-[12px] text-gray-600 transition-opacity",
+            "absolute top-0 right-1 flex gap-px rounded-sm border border-gray-200 bg-surface/90 p-px text-[13px] text-gray-600 transition-opacity",
             "opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100",
             (zoomed || mode !== (brush ? "select" : null)) && "opacity-100",
           )}

@@ -457,7 +457,7 @@ const labelsControl = (initial: boolean, onChange: (on: boolean) => void): mapli
       const show = () => {
         button.title = on ? "Hide labels" : "Show labels";
         button.setAttribute("aria-pressed", String(on));
-        button.style.cssText = `font:bold 12px/29px sans-serif;color:#333;opacity:${on ? 1 : 0.45};text-decoration:${on ? "none" : "line-through"}`;
+        button.style.cssText = `font:bold 13px/29px sans-serif;color:#333;opacity:${on ? 1 : 0.45};text-decoration:${on ? "none" : "line-through"}`;
       };
       show();
       button.onclick = () => {

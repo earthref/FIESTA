@@ -103,7 +103,7 @@ function Footer({
 function CountBadge({ n }: { n: number }) {
   return (
     <span
-      className="inline-block shrink-0 self-start rounded-full border border-line bg-surface text-center text-[11px] font-bold text-ink"
+      className="inline-block shrink-0 self-start rounded-full border border-line bg-surface text-center text-[13px] font-bold text-ink"
       style={{ lineHeight: "0.7em", padding: "0.5em", minWidth: "2em", minHeight: "2em" }}
     >
       {abbreviateNumber(n)}
@@ -304,7 +304,7 @@ export function FacetModal({
                 >
                   {facet.label}
                   {n > 0 && (
-                    <span className="ml-1.5 rounded-full bg-node px-[0.45em] text-[10px] font-bold text-white">
+                    <span className="ml-1.5 rounded-full bg-node px-[0.45em] text-[13px] font-bold text-white">
                       {n}
                     </span>
                   )}
@@ -372,7 +372,7 @@ export function FacetModal({
               {groups.map((group) => (
                 <div key={group.name || "values"}>
                   {group.name && (
-                    <div className="sticky top-0 z-10 border-b border-line bg-panel px-3 py-1 text-[12px] font-bold text-ink-muted">
+                    <div className="sticky top-0 z-10 border-b border-line bg-panel px-3 py-1 text-[13px] font-bold text-ink-muted">
                       {group.name}
                       <span className="ml-1 font-normal">({group.rows.length})</span>
                     </div>
@@ -394,7 +394,7 @@ export function FacetModal({
                       <span
                         className={cx(
                           "shrink-0 break-words",
-                          grouped ? "w-36 font-mono text-[12px]" : "min-w-0 flex-1",
+                          grouped ? "w-36 font-mono text-[13px]" : "min-w-0 flex-1",
                           selectedSet.has(row.key) && "font-bold",
                         )}
                       >
@@ -411,7 +411,7 @@ export function FacetModal({
                 </div>
               ))}
             </div>
-            <div className="text-[12px] text-ink-muted">
+            <div className="text-[13px] text-ink-muted">
               {rows.length.toLocaleString()} value{rows.length === 1 ? "" : "s"} shown · counts are
               the records each value adds to the search
             </div>
@@ -553,7 +553,7 @@ export function RangeModal({
     return {
       animation: false,
       grid: { left: GRID.left, right: GRID.right, top: 16, bottom: 48 },
-      tooltip: { trigger: "item", confine: true, textStyle: { fontSize: 12 } },
+      tooltip: { trigger: "item", confine: true, textStyle: { fontSize: 13 } },
       xAxis: {
         type: xLog ? "log" : "value",
         name: `${label}${filter.unit ? ` (${filter.unit})` : ""}`,
@@ -754,7 +754,7 @@ export function RangeModal({
             <span className="ml-auto text-red-700">The minimum is above the maximum.</span>
           )}
         </div>
-        <p className="text-[12px] text-ink-muted">
+        <p className="text-[13px] text-ink-muted">
           Drag across the histogram or click a bar to select whole bins
           {filter.timescale && ", or click or find a geologic time unit for its age range"}; type a
           bound for an exact one. Leave a box empty for no limit.
@@ -1043,7 +1043,7 @@ export function ExistsModal({
                 >
                   {existsTableLabel(model, name)}
                   {n > 0 && (
-                    <span className="ml-1.5 rounded-full bg-node px-[0.45em] text-[10px] font-bold text-white">
+                    <span className="ml-1.5 rounded-full bg-node px-[0.45em] text-[13px] font-bold text-white">
                       {n}
                     </span>
                   )}
@@ -1175,12 +1175,12 @@ export function ExistsModal({
                         <span className={cx(on && "font-bold")}>
                           <Highlight text={row.def?.label ?? row.column} needle={needle} />
                         </span>
-                        <span className="font-mono text-[12px] text-ink-muted">
+                        <span className="font-mono text-[13px] text-ink-muted">
                           <Highlight text={row.column} needle={needle} />
                         </span>
                       </span>
                       {row.def?.description && (
-                        <span className="text-[12px] text-ink-muted">
+                        <span className="text-[13px] text-ink-muted">
                           <Highlight text={row.def.description} needle={needle} />
                         </span>
                       )}
@@ -1190,7 +1190,7 @@ export function ExistsModal({
                 );
               })}
             </div>
-            <div className="text-[12px] text-ink-muted">
+            <div className="text-[13px] text-ink-muted">
               {rows.length.toLocaleString()} column{rows.length === 1 ? "" : "s"} shown · counts are
               the search's {records}{" "}
               {without ? `with the ${tableLabel} table but no data in` : "with data in"} each column
@@ -1345,7 +1345,7 @@ export function GeoModal({
             may pass 180 to cross the antimeridian).
           </p>
         ) : (
-          <p className="text-[12px] text-ink-muted">
+          <p className="text-[13px] text-ink-muted">
             {level.geo
               ? "Drag the outline on the map or its corners, or type the bounds. Filter by area draws a new one."
               : "Type the bounds in degrees."}

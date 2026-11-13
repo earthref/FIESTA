@@ -291,7 +291,7 @@ export function PmagPlotThumbnail({
       </button>
       {thumbnail && (
         <span
-          className="pointer-events-none absolute top-0 right-0 border-b border-l bg-surface px-1.5 py-0.5 text-[12px] font-bold text-node-ink"
+          className="pointer-events-none absolute top-0 right-0 border-b border-l bg-surface px-1.5 py-0.5 text-[13px] font-bold text-node-ink"
           style={{ borderColor: "rgba(0,0,0,.1)" }}
         >
           {abbreviateNumber(total)}

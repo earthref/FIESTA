@@ -1,19 +1,22 @@
 import type { ReactNode } from "react";
 
 /** `ui circular small basic label` + legacy `styles.countLabel`: white bg, 1px
- * border, bold 11px text, min-width 4em, pulled into the tab's padding. Shared
- * by the search level tabs and the private workspace's toggles. */
-export function CountLabel({ children }: { children: ReactNode }) {
+ * border, bold text, min-width 4em, pulled into the tab's padding. Shared by
+ * the search level tabs, the search sidebar's filters (`inline`: in the flow,
+ * not pulled into a tab's padding) and the private workspace's toggles. 13px,
+ * the search results' size (legacy 11px; nothing on the search page is
+ * smaller, 2026-11-12). */
+export function CountLabel({ children, inline }: { children: ReactNode; inline?: boolean }) {
   return (
     <span
-      className="inline-block rounded-full border bg-surface text-center font-bold"
+      className="inline-block shrink-0 rounded-full border bg-surface text-center font-bold"
       style={{
         color: "var(--er-ink-heading)",
         borderColor: "var(--er-line)",
-        margin: "-1em -1em -1em 0.5em",
-        minWidth: "4em",
+        margin: inline ? 0 : "-1em -1em -1em 0.5em",
+        minWidth: inline ? "3em" : "4em",
         minHeight: "2em",
-        fontSize: 11,
+        fontSize: 13,
         lineHeight: "0.7em",
         padding: "0.5em",
       }}

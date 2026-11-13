@@ -255,7 +255,7 @@ function Panel({
     <section className="min-w-0 rounded-sm border border-gray-300 bg-surface">
       <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-gray-200 px-3 py-2">
         <h4 className="text-[14px] font-bold text-gray-900">{title}</h4>
-        {subtitle && <span className="text-[12px] text-gray-500">{subtitle}</span>}
+        {subtitle && <span className="text-[13px] text-gray-500">{subtitle}</span>}
         {controls && <div className="ml-auto flex flex-wrap items-center gap-2">{controls}</div>}
       </header>
       <div className="px-1">{children}</div>
@@ -272,7 +272,7 @@ const LogToggle = ({
   setLog: (log: boolean) => void;
   label: string;
 }) => (
-  <label className="flex items-center gap-1 text-[12px] text-gray-600">
+  <label className="flex items-center gap-1 text-[13px] text-gray-600">
     <input type="checkbox" checked={log} onChange={(e) => setLog(e.target.checked)} />
     {label}
   </label>
@@ -287,12 +287,12 @@ const ParamSelect = ({
   onChange: (key: ParamKey) => void;
   label: string;
 }) => (
-  <label className="flex items-center gap-1 text-[12px] text-gray-600">
+  <label className="flex items-center gap-1 text-[13px] text-gray-600">
     {label}
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as ParamKey)}
-      className="rounded-sm border border-gray-300 px-1 py-0.5 text-[12px]"
+      className="rounded-sm border border-gray-300 px-1 py-0.5 text-[13px]"
     >
       {PARAMS.map((p) => (
         <option key={p.key} value={p.key}>
@@ -415,7 +415,7 @@ function tooltip(specimens: Specimen[], x: Param | string, y: Param | string) {
   return {
     trigger: "item",
     confine: true,
-    textStyle: { fontSize: 12 },
+    textStyle: { fontSize: 13 },
     formatter: (params: { value?: unknown[] }) => {
       const value = params.value ?? [];
       const s = specimens[Number(value[value.length - 1])];
@@ -859,7 +859,7 @@ function Histogram({
       ({
         animation: false,
         grid: GRID,
-        tooltip: { trigger: "item", confine: true, textStyle: { fontSize: 12 } },
+        tooltip: { trigger: "item", confine: true, textStyle: { fontSize: 13 } },
         xAxis: axis(axisName(param), log, range),
         // Counts up to a round number echarts picks.
         yAxis: axis("Results", false, [0, undefined], { nameGap: 40, minInterval: 1 }),
@@ -1032,7 +1032,7 @@ function StereonetPanel({ groups, specimens, selected, open }: PanelProps) {
         tooltip: {
           trigger: "item",
           confine: true,
-          textStyle: { fontSize: 12 },
+          textStyle: { fontSize: 13 },
           formatter: (params: { value?: number[]; seriesName?: string }) => {
             const v = params.value ?? [];
             const s = specimens[v[4]];
@@ -1137,23 +1137,23 @@ function SelectionTable({
         <button
           type="button"
           onClick={() => downloadCsv(specimens)}
-          className="rounded-sm border border-gray-300 px-2 py-0.5 text-[12px] font-bold text-gray-700 hover:bg-gray-50"
+          className="rounded-sm border border-gray-300 px-2 py-0.5 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
         >
           Download CSV
         </button>
         <button
           type="button"
           onClick={onClear}
-          className="rounded-sm border border-gray-300 px-2 py-0.5 text-[12px] font-bold text-gray-700 hover:bg-gray-50"
+          className="rounded-sm border border-gray-300 px-2 py-0.5 text-[13px] font-bold text-gray-700 hover:bg-gray-50"
         >
           Clear selection
         </button>
         {specimens.length > TABLE_LIMIT && (
-          <span className="text-[12px] text-gray-500">The first {TABLE_LIMIT} are listed.</span>
+          <span className="text-[13px] text-gray-500">The first {TABLE_LIMIT} are listed.</span>
         )}
       </header>
       <div className="overflow-x-auto">
-        <table className="w-full text-[12px]">
+        <table className="w-full text-[13px]">
           <thead className="bg-gray-50 text-gray-700">
             <tr>
               <th className={cell}>Specimen</th>
