@@ -1977,6 +1977,7 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     assert router.histogram_edges(0, 10, 5, False) == [0, 2, 4, 6, 8, 10]
     assert router.histogram_edges(1, 1000, 3, True) == pytest.approx([1, 10, 100, 1000])
     assert router.histogram_edges(7, 7, 40, False) == [7, 7]
+    assert [router.auto_bins(n) for n in (0, 9, 1000, 10**5, 10**7)] == [10, 10, 20, 93, 100]
 
     bodies = []
 
@@ -2028,6 +2029,8 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     monkeypatch.setattr(router, "get_opensearch", lambda: client_for(None))
     out = run(bins=4, log=True)
     assert not out.log and out.bins[0].lo == -5.0 and out.bins[-1].hi == 1000.0
+    # No `bins`: as many as the values call for (9 here, so the floor of 10).
+    assert len(run(bins=None, log=False).bins) == 10
 
     # Only summary fields, never a private one.
     with pytest.raises(router.HTTPException):

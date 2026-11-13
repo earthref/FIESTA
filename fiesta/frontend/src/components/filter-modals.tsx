@@ -16,9 +16,14 @@
 //
 // Each edits a draft and applies it with Apply, so a long list keeps its order
 // while values are picked and the search runs once.
+//
+// Opened from the sidebar, a modal has every filter down its left (FilterTabs,
+// with a Find box): the sidebar's entries are shortcuts to their tab. Moving to
+// another tab applies the open tab's changes first (the map's area aside: it
+// draws one by itself), so picks are never lost (2026-11-12).
 
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { useNodeConfig } from "../lib/config";
 import { dataModelQuery, unwrapModel } from "../lib/data-model";
@@ -56,7 +61,7 @@ import {
   parseHas,
   parseRange,
 } from "./search-filters";
-import { TimescaleStrip } from "./timescale-strip";
+import { TimescalePicker, TimescaleStrip } from "./timescale-strip";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 import { Spinner } from "./ui/spinner";
@@ -126,6 +131,119 @@ function Highlight({ text, needle }: { text: string; needle: string }) {
   );
 }
 
+// --- Filter tabs ----------------------------------------------------------------
+
+/** A modal's left menu, given the open tab's pending changes (applied before
+ * another tab opens; undefined when there are none to keep). */
+export type FilterNav = (pending?: () => void) => ReactNode;
+
+export type FilterTab = {
+  key: string;
+  label: string;
+  /** As the sidebar's: the matches with a value (undefined loading, null uncounted). */
+  count?: number | null;
+  /** How many values it has applied. */
+  applied: number;
+};
+
+/**
+ * Every filter as a tab down the modal's left, with a Find box over them
+ * (Enter opens the first match). A filter nothing can match is disabled, as
+ * in the sidebar, unless values are applied.
+ */
+export function FilterTabs({
+  tabs,
+  active,
+  find,
+  onFind,
+  onSelect,
+}: {
+  tabs: FilterTab[];
+  active?: string;
+  find: string;
+  onFind: (find: string) => void;
+  onSelect: (key: string) => void;
+}) {
+  const activeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: "nearest" });
+  }, []);
+  const needle = find.trim().toLowerCase();
+  const shown = tabs.filter((tab) => !needle || tab.label.toLowerCase().includes(needle));
+  const enabled = (tab: FilterTab) => tab.count !== 0 || tab.applied > 0;
+  return (
+    <>
+      <div className="border-b border-gray-100 p-2">
+        <input
+          type="search"
+          value={find}
+          onChange={(event) => onFind(event.target.value)}
+          onKeyDown={(event) => {
+            const first = shown.find(enabled);
+            if (event.key === "Enter" && first && first.key !== active) onSelect(first.key);
+          }}
+          placeholder="Find a filter"
+          aria-label="Find a filter"
+          className={cx(inputClass, "w-full")}
+        />
+      </div>
+      <div
+        className="flex-1 overflow-y-auto py-1 text-[13px]"
+        role="tablist"
+        aria-orientation="vertical"
+      >
+        {shown.map((tab) => {
+          const selected = tab.key === active;
+          const disabled = !enabled(tab);
+          return (
+            <button
+              key={tab.key}
+              ref={selected ? activeRef : undefined}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              disabled={disabled}
+              title={disabled ? `No records to filter by ${tab.label}` : `Filter by ${tab.label}`}
+              onClick={() => !selected && onSelect(tab.key)}
+              className={cx(
+                "flex w-full items-center gap-1.5 border-l-[3px] py-1.5 pr-2 pl-[calc(0.75rem-3px)] text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-node",
+                selected
+                  ? "border-node bg-surface font-bold text-ink-strong"
+                  : disabled
+                    ? "cursor-default border-transparent text-ink-faint"
+                    : "cursor-pointer border-transparent text-ink hover:bg-surface hover:text-node-ink",
+              )}
+            >
+              <span className="min-w-0 grow break-words">{tab.label}</span>
+              {tab.applied > 0 && (
+                <span className="rounded-full bg-node px-[0.45em] text-[10px] font-bold leading-[1.5] text-white">
+                  {tab.applied}
+                  <span className="sr-only"> applied</span>
+                </span>
+              )}
+              {tab.count !== null && (
+                <span className="inline-flex min-w-[2.2em] shrink-0 items-center justify-center rounded-full border border-edge px-[0.45em] text-[10px] font-bold leading-[1.5] text-ink-faint">
+                  {tab.count === undefined ? (
+                    <Spinner size="xs" />
+                  ) : (
+                    <>
+                      {abbreviateNumber(tab.count)}
+                      <span className="sr-only"> records</span>
+                    </>
+                  )}
+                </span>
+              )}
+            </button>
+          );
+        })}
+        {shown.length === 0 && (
+          <p className="px-3 py-2 text-[12px] text-ink-faint">No filter matches “{find.trim()}”.</p>
+        )}
+      </div>
+    </>
+  );
+}
+
 // --- Facets ---------------------------------------------------------------------
 
 export type FacetSpec = { field: string; label: string };
@@ -155,11 +273,13 @@ export function FacetModal({
   paramsFor,
   count,
   text,
+  nav,
   onApply,
   onClose,
 }: {
   title: string;
   facets: FacetSpec[];
+  nav?: FilterNav;
   table: string;
   q: string;
   /** The search's request params for a query string. */
@@ -254,6 +374,8 @@ export function FacetModal({
     <Modal
       open
       xl
+      largeTitle
+      nav={nav?.(changed ? apply : undefined)}
       onClose={onClose}
       title={title}
       footer={
@@ -426,7 +548,8 @@ export function FacetModal({
 
 // --- Numeric ranges --------------------------------------------------------------
 
-const BIN_CHOICES = [20, 40, 80];
+/** Bin counts to pick; without one the API picks from how many values there are. */
+const BIN_CHOICES = [10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 150, 200];
 const SCALES: [boolean, string][] = [
   [false, "Linear"],
   [true, "Log"],
@@ -457,6 +580,7 @@ export function RangeModal({
   ranges,
   paramsFor,
   color,
+  nav,
   onApply,
   onBack,
   onClose,
@@ -467,6 +591,7 @@ export function RangeModal({
   /** The search's request params with these ranges. */
   paramsFor: (ranges: string[]) => SearchParams;
   color: string;
+  nav?: FilterNav;
   onApply: (ranges: string[]) => void;
   /** Back to the list it was picked from (the numeric filter's columns). */
   onBack?: () => void;
@@ -485,7 +610,8 @@ export function RangeModal({
   const initial = { gte: shown(stored?.gte), lte: shown(stored?.lte) };
   const [draft, setDraft] = useState(initial);
   const [log, setLog] = useState(false);
-  const [bins, setBins] = useState(40);
+  // undefined: Auto, as many as the values call for.
+  const [bins, setBins] = useState<number>();
 
   const params = paramsFor(others);
   const histogram = useQuery({
@@ -622,6 +748,8 @@ export function RangeModal({
     <Modal
       open
       xl
+      largeTitle
+      nav={nav?.(changed && valid ? apply : undefined)}
       onClose={onClose}
       title={label}
       footer={
@@ -667,10 +795,15 @@ export function RangeModal({
           <label className="flex items-center gap-1.5">
             <span className="text-ink-muted">Bins</span>
             <select
-              value={bins}
-              onChange={(event) => setBins(Number(event.target.value))}
+              value={bins ?? ""}
+              onChange={(event) =>
+                setBins(event.target.value ? Number(event.target.value) : undefined)
+              }
               className="rounded-sm border border-gray-300 bg-surface px-1.5 py-1"
             >
+              <option value="">
+                Auto{bins === undefined && bars.length ? ` (${bars.length})` : ""}
+              </option>
               {BIN_CHOICES.map((n) => (
                 <option key={n} value={n}>
                   {n}
@@ -687,7 +820,7 @@ export function RangeModal({
             </span>
           )}
         </div>
-        <div className="relative rounded-sm border border-line" style={{ minHeight: 280 }}>
+        <div className="relative" style={{ minHeight: 280 }}>
           {histogram.isPending && (
             <div className="absolute inset-0 flex items-center justify-center gap-2 text-ink-muted">
               <Spinner /> Loading the distribution…
@@ -736,6 +869,21 @@ export function RangeModal({
           <span>and</span>
           {rangeInput("lte", data?.max != null ? extent(data.max) : "max")}
           {filter.unit && <span className="text-ink-muted">{filter.unit}</span>}
+          {filter.timescale && (
+            <>
+              <span className="ml-2">or</span>
+              <TimescalePicker
+                toValue={(ma) => (ma * 1e6) / scale}
+                selected={{ lo, hi }}
+                onPick={(unit) =>
+                  setDraft({
+                    gte: edgeValue((unit.min * 1e6) / scale),
+                    lte: edgeValue((unit.max * 1e6) / scale),
+                  })
+                }
+              />
+            </>
+          )}
           {anySelection && valid && selectedCount > 0 && (
             <span className="ml-auto text-ink-muted">
               ≈ {selectedCount.toLocaleString()} records in the selected bins
@@ -747,8 +895,8 @@ export function RangeModal({
         </div>
         <p className="text-[12px] text-ink-muted">
           Drag across the histogram or click a bar to select whole bins
-          {filter.timescale && ", or click a geologic time unit for its age range"}; type a bound
-          for an exact one. Leave a box empty for no limit.
+          {filter.timescale && ", or click or find a geologic time unit for its age range"}; type a
+          bound for an exact one. Leave a box empty for no limit.
         </p>
       </div>
     </Modal>
@@ -832,6 +980,7 @@ export function NumericModal({
   table,
   ranges,
   paramsFor,
+  nav,
   onPick,
   onClose,
 }: {
@@ -840,6 +989,7 @@ export function NumericModal({
   ranges: string[];
   /** The search's request params with these ranges. */
   paramsFor: (ranges: string[]) => SearchParams;
+  nav?: FilterNav;
   onPick: (filter: SearchFilter) => void;
   onClose: () => void;
 }) {
@@ -888,6 +1038,8 @@ export function NumericModal({
     <Modal
       open
       xl
+      largeTitle
+      nav={nav?.()}
       onClose={onClose}
       title={title}
       footer={
@@ -1029,10 +1181,12 @@ export function ExistsModal({
   tabs,
   has,
   paramsFor,
+  nav,
   onApply,
   onClose,
 }: {
   title: string;
+  nav?: FilterNav;
   /** The search level's table, whose docs are counted. */
   table: string;
   /** The level's name (Sites), for the counts' hover text. */
@@ -1144,6 +1298,8 @@ export function ExistsModal({
     <Modal
       open
       xl
+      largeTitle
+      nav={nav?.(changed ? () => onApply(next) : undefined)}
       onClose={onClose}
       title={title}
       footer={
@@ -1376,10 +1532,12 @@ export function GeoModal({
   has,
   area,
   color,
+  nav,
   onApply,
   onClose,
 }: {
   title: string;
+  nav?: FilterNav;
   /** Its records are mapped when it has positions. */
   level: SearchLevel;
   query: string;
@@ -1424,9 +1582,13 @@ export function GeoModal({
   );
 
   return (
+    // An area the map drew by itself is no pick, so moving to another tab
+    // applies nothing here.
     <Modal
       open
       xl
+      largeTitle
+      nav={nav?.()}
       onClose={onClose}
       title={title}
       footer={

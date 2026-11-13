@@ -18,6 +18,9 @@ import {
   ExistsModal,
   FacetModal,
   type FacetSpec,
+  type FilterNav,
+  type FilterTab,
+  FilterTabs,
   GeoModal,
   hasText,
   NumericModal,
@@ -203,14 +206,23 @@ function searchRequestParams(
 
 /** The filter modal open over the search: a facet list (the sidebar's, or a
  * grid column's with its text box), a numeric range, or the geospatial area
- * (`area`, every level with positions) / a bbox filter (`bbox`, a plugin view). */
-type FilterModalState =
+ * (`area`, every level with positions) / a bbox filter (`bbox`, a plugin view).
+ * `tab`: the sidebar filter it is the tab of (filterKey); opened from a grid
+ * column it has none, and no tabs down its left. */
+type FilterModalState = (
   | { kind: "facet"; title: string; facets: FacetSpec[]; column?: GridColumn }
   // `back`: the numeric filter whose picker it was chosen from.
   | { kind: "range"; filter: SearchFilter; back?: SearchFilter }
   | { kind: "numeric"; filter: SearchFilter }
   | { kind: "exists"; filter: SearchFilter }
-  | { kind: "geo"; title: string; target: "area" | "bbox" };
+  | { kind: "geo"; title: string; target: "area" | "bbox" }
+) & { tab?: string };
+
+/** The sidebar's Geospatial entry's tab. */
+const GEO_TAB = "geo";
+
+/** A sidebar filter's key, and its tab's in the filter modal. */
+const filterKey = (filter: SearchFilter) => `${filter.type}-${filter.field ?? filterLabel(filter)}`;
 
 /** An area's extent as one chip's text. */
 function areaText(area: Area): string {
@@ -404,6 +416,8 @@ export function SearchPage() {
   // An area asked for by the Map tab's Filter by area button.
   const [areaRequest, setAreaRequest] = useState<AreaRequest | null>(null);
   const [filterModal, setFilterModal] = useState<FilterModalState | null>(null);
+  // The filter modal's Find box over its tabs (kept as the tabs change).
+  const [filterFind, setFilterFind] = useState("");
   const setArea = (next: Area | null) => {
     setAreaRequest(null);
     setSearch({ area: next?.join(",") });
@@ -841,30 +855,79 @@ export function SearchPage() {
       ? [{ key: "bbox", label: areaText(box), onRemove: () => setSearch({ bbox: undefined }) }]
       : [];
   };
-  const openFilter = (filter: SearchFilter) =>
+  const openFilter = (filter: SearchFilter) => {
+    const tab = filterKey(filter);
     setFilterModal(
       filter.type === "facet"
         ? {
             kind: "facet",
             title: filterLabel(filter),
             facets: [{ field: filter.field ?? "", label: filterLabel(filter) }],
+            tab,
           }
         : filter.type === "range"
-          ? { kind: "range", filter }
+          ? { kind: "range", filter, tab }
           : filter.type === "numeric"
-            ? { kind: "numeric", filter }
+            ? { kind: "numeric", filter, tab }
             : filter.type === "exists"
-              ? { kind: "exists", filter }
-              : { kind: "geo", title: filterLabel(filter), target: "bbox" },
+              ? { kind: "exists", filter, tab }
+              : { kind: "geo", title: filterLabel(filter), target: "bbox", tab },
     );
+  };
+
+  // The sidebar's filters, each also a tab down the filter modal's left. A
+  // view with its own bbox filter (Poles) shows the area only while set.
+  const showGeo = !!level.geo && (!!area || !filters.some((f) => f.type === "bbox"));
+  const filterTabs: FilterTab[] = [
+    ...(showGeo
+      ? [{ key: GEO_TAB, label: "Geospatial", count: filterCount("geo"), applied: area ? 1 : 0 }]
+      : []),
+    ...filters.map((filter) => ({
+      key: filterKey(filter),
+      label: filterLabel(filter),
+      count: filterCount(countKey(filter)),
+      applied: chipsFor(filter).length,
+    })),
+  ];
+  const openTab = (key: string) => {
+    if (key === GEO_TAB) {
+      setFilterModal({ kind: "geo", title: "Geospatial", target: "area", tab: GEO_TAB });
+      return;
+    }
+    const filter = filters.find((f) => filterKey(f) === key);
+    if (filter) openFilter(filter);
+  };
+  const openFromSidebar = (key: string) => {
+    setFilterFind("");
+    openTab(key);
+  };
 
   const renderFilterModal = () => {
     if (!filterModal) return null;
     const close = () => setFilterModal(null);
+    const { tab } = filterModal;
+    // Another tab applies this one's changes first (its onApply closes it,
+    // and the tab's modal opens in its place).
+    const nav: FilterNav | undefined = tab
+      ? (pending) => (
+          <FilterTabs
+            tabs={filterTabs}
+            active={tab}
+            find={filterFind}
+            onFind={setFilterFind}
+            onSelect={(key) => {
+              pending?.();
+              openTab(key);
+            }}
+          />
+        )
+      : undefined;
     if (filterModal.kind === "facet") {
       const { column } = filterModal;
       return (
         <FacetModal
+          key={tab ?? `column-${column?.key}`}
+          nav={nav}
           title={filterModal.title}
           facets={filterModal.facets}
           // A column's lists count the level's records (the Summaries grid).
@@ -893,6 +956,8 @@ export function SearchPage() {
     if (filterModal.kind === "exists") {
       return (
         <ExistsModal
+          key={tab}
+          nav={nav}
           title={filterLabel(filterModal.filter)}
           table={level.table}
           levelName={level.name}
@@ -911,11 +976,13 @@ export function SearchPage() {
       const picker = filterModal.filter;
       return (
         <NumericModal
+          key={tab}
+          nav={nav}
           title={filterLabel(picker)}
           table={level.table}
           ranges={ranges}
           paramsFor={(rangeList) => levelParams(q, rangeList)}
-          onPick={(filter) => setFilterModal({ kind: "range", filter, back: picker })}
+          onPick={(filter) => setFilterModal({ kind: "range", filter, back: picker, tab })}
           onClose={close}
         />
       );
@@ -925,8 +992,9 @@ export function SearchPage() {
       return (
         <RangeModal
           key={filter.field}
+          nav={nav}
           filter={filter}
-          onBack={back ? () => setFilterModal({ kind: "numeric", filter: back }) : undefined}
+          onBack={back ? () => setFilterModal({ kind: "numeric", filter: back, tab }) : undefined}
           table={rangeTable(filter)}
           ranges={ranges}
           paramsFor={(rangeList) =>
@@ -946,6 +1014,8 @@ export function SearchPage() {
     const isArea = filterModal.target === "area";
     return (
       <GeoModal
+        key={filterModal.target}
+        nav={nav}
         title={filterModal.title}
         level={level}
         query={q}
@@ -1213,8 +1283,8 @@ export function SearchPage() {
               />
               {filtersPanel ?? (
                 <>
-                  {/* A view with its own bbox filter (Poles) shows the area only while set. */}
-                  {level.geo && (area || !filters.some((f) => f.type === "bbox")) && (
+                  {/* Each entry opens the filter modal on its tab. */}
+                  {showGeo && (
                     <FilterEntry
                       label="Geospatial"
                       count={filterCount("geo")}
@@ -1223,18 +1293,16 @@ export function SearchPage() {
                           ? [{ key: "area", label: areaText(area), onRemove: () => setArea(null) }]
                           : []
                       }
-                      onOpen={() =>
-                        setFilterModal({ kind: "geo", title: "Geospatial", target: "area" })
-                      }
+                      onOpen={() => openFromSidebar(GEO_TAB)}
                     />
                   )}
                   {filters.map((filter) => (
                     <FilterEntry
-                      key={`${filter.type}-${filter.field ?? filterLabel(filter)}`}
+                      key={filterKey(filter)}
                       label={filterLabel(filter)}
                       count={filterCount(countKey(filter))}
                       chips={chipsFor(filter)}
-                      onOpen={() => openFilter(filter)}
+                      onOpen={() => openFromSidebar(filterKey(filter))}
                     />
                   ))}
                   {pluginFilters.map((filter) => (

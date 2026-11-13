@@ -776,6 +776,12 @@ def histogram_edges(lo: float, hi: float, bins: int, log: bool) -> list[float]:
     return edges
 
 
+def auto_bins(values: int) -> int:
+    """A histogram's bin count for `values` values when the caller names none:
+    the Rice rule (2·n^⅓), between 10 and 100."""
+    return min(100, max(10, math.ceil(2 * max(values, 1) ** (1 / 3))))
+
+
 @router.get("/search/{table}/histogram", response_model=SearchHistogram)
 async def search_histogram(
     session: SessionDep,
@@ -783,7 +789,7 @@ async def search_histogram(
     scope: ScopeDep,
     table: str,
     field: str,
-    bins: int = Query(40, ge=1, le=200),
+    bins: int | None = Query(None, ge=1, le=200),
     log: bool = False,
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
@@ -796,7 +802,8 @@ async def search_histogram(
     """A numeric summary field's distribution over the docs matching a search
     (the filter modal's range histogram; the caller leaves the field's own
     range out of `range`). `log` bins in log10 space over the values above
-    zero, and falls back to linear bins when there are none."""
+    zero, and falls back to linear bins when there are none. Without `bins`
+    the count follows how many values there are (auto_bins)."""
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
     path = _value_field(field)
@@ -852,6 +859,8 @@ async def search_histogram(
             total=total, counted=0, min=None, max=None, positive_min=None, log=False, bins=[]
         )
     use_log = log and positive_min is not None and hi > 0
+    if bins is None:
+        bins = auto_bins(int(stats.get("count") or total))
     edges = histogram_edges(positive_min if use_log else lo, hi, bins, use_log)
     # Each bin holds [from, to); the last is open above so it keeps the max.
     ranges = [
