@@ -3,14 +3,16 @@ import { type ReactNode, useState } from "react";
 import { api } from "../lib/api";
 import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
+import { useOpenContribution } from "../lib/contribution-modal";
 import type {
   ContributionOut,
   ContributionStatus,
   JobOut,
   ReferenceCheck,
+  SearchLevel,
   SearchResult,
 } from "../lib/types";
-import { cx, formatDate } from "../lib/utils";
+import { abbreviateNumber, cx, formatDate, getPath, singularize } from "../lib/utils";
 import { ContributionEditor } from "./contribution-editor";
 import { ErrorMessage } from "./error-message";
 import { SummaryGrid } from "./summary-grid";
@@ -168,6 +170,158 @@ function ConfirmModal({
   );
 }
 
+/** The card's title: the contributor's name for it (else its file name),
+ * renamed in place. */
+function NameTitle({
+  contribution,
+  disabled,
+  status,
+}: {
+  contribution: ContributionOut;
+  disabled: boolean;
+  status: ReactNode;
+}) {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const save = useMutation({
+    mutationFn: (name: string) =>
+      api<ContributionOut>(`/private/contributions/${contribution.id}/name`, {
+        method: "PUT",
+        json: { name },
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["private", "contributions"] });
+      setEditing(false);
+    },
+  });
+  const title = contribution.name || contribution.filename || `Contribution ${contribution.id}`;
+  const inputId = `name-${contribution.id}`;
+
+  if (editing) {
+    return (
+      <form
+        className="flex min-w-0 flex-1 flex-wrap gap-y-1"
+        style={{ flexBasis: "20em" }}
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!save.isPending) save.mutate(draft);
+        }}
+      >
+        <label htmlFor={inputId} className="sr-only">
+          Contribution name
+        </label>
+        <div className="flex min-w-0 flex-1">
+          <input
+            id={inputId}
+            // biome-ignore lint/a11y/noAutofocus: opened by the Rename button, so focus follows the click
+            autoFocus
+            value={draft}
+            maxLength={255}
+            placeholder="A name to help you remember which contribution you are working on"
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setEditing(false);
+            }}
+            className="min-w-0 flex-1 rounded-l-sm border border-gray-300 bg-surface px-2 py-1 text-[14px] font-semibold text-gray-900 placeholder:font-normal placeholder:text-ink-faint focus:border-node focus:outline-hidden"
+          />
+          <button
+            type="submit"
+            disabled={save.isPending}
+            className="shrink-0 bg-node px-2.5 py-1 text-[12px] font-medium text-white hover:bg-node-dark disabled:opacity-60"
+          >
+            {save.isPending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="shrink-0 rounded-r-sm border border-l-0 border-gray-300 bg-surface px-2.5 py-1 text-[12px] font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+        </div>
+        {save.error && <ErrorMessage error={save.error} className="basis-full" />}
+      </form>
+    );
+  }
+  return (
+    <>
+      <h2 className="min-w-0 truncate text-[15px] font-semibold text-gray-900" title={title}>
+        {title}
+      </h2>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          setDraft(contribution.name ?? "");
+          save.reset();
+          setEditing(true);
+        }}
+        title="Give this contribution a name of your own"
+        className="inline-flex items-center gap-1 rounded-sm px-1 text-[12px] text-gray-500 hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node disabled:opacity-50"
+      >
+        <Icon name="edit" size="small" /> Rename
+      </button>
+      {status}
+    </>
+  );
+}
+
+/** In preparation, the record counts per search level (what search's Counts
+ * tile shows), each opening the private preview at that level. */
+function Contents({
+  contribution,
+  doc,
+  processing,
+}: {
+  contribution: ContributionOut;
+  doc: SearchResult;
+  processing: boolean;
+}) {
+  const { data: config } = useNodeConfig();
+  const openContribution = useOpenContribution();
+  const counts = (config?.search_levels ?? [])
+    .filter((entry) => entry.count_field)
+    .map((entry) => ({ entry, count: getPath(doc, entry.count_field as string) }))
+    .filter(
+      (item): item is { entry: SearchLevel; count: number } =>
+        typeof item.count === "number" && item.count > 0,
+    );
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-b-md border-t border-gray-100 px-4 py-2 text-[13px]">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+        Contents
+      </span>
+      {counts.length === 0 ? (
+        <span className="text-gray-500">
+          {processing
+            ? "Counted once the file is processed."
+            : contribution.filename
+              ? "No records counted."
+              : "No data file yet."}
+        </span>
+      ) : (
+        counts.map(({ entry, count }) => (
+          <button
+            key={entry.name}
+            type="button"
+            onClick={() =>
+              openContribution(String(contribution.id), entry.table, undefined, {
+                privateKey: contribution.private_key,
+              })
+            }
+            title={`Show this contribution's ${entry.name}`}
+            className="text-gray-700 hover:text-node-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+          >
+            <span className="font-semibold">{abbreviateNumber(count)}</span>{" "}
+            {count === 1 ? singularize(entry.name) : entry.name}
+          </button>
+        ))
+      )}
+    </div>
+  );
+}
+
 // --- The card ---------------------------------------------------------------------
 
 export function ContributionCard({
@@ -186,9 +340,7 @@ export function ContributionCard({
   const published = contribution.is_activated;
   const [editorOpen, setEditorOpen] = useState(false);
   const [doi, setDoi] = useState(contribution.reference_doi ?? "");
-  const [modal, setModal] = useState<
-    null | "share" | "delete" | "publish" | "unpublish" | "results"
-  >(null);
+  const [modal, setModal] = useState<null | "share" | "delete" | "publish" | "results">(null);
   const [validating, setValidating] = useState(false);
   const [copied, setCopied] = useState<null | "private" | "public">(null);
   const [actionError, setActionError] = useState<unknown>(null);
@@ -260,7 +412,6 @@ export function ContributionCard({
     },
   });
   const activateMutation = useMutation(mutationFor("/activate", "POST"));
-  const deactivateMutation = useMutation(mutationFor("/deactivate", "POST"));
   const deleteMutation = useMutation(mutationFor("", "DELETE"));
   const versionMutation = useMutation({
     mutationFn: () =>
@@ -317,7 +468,6 @@ export function ContributionCard({
     validating ||
     doiMutation.isPending ||
     activateMutation.isPending ||
-    deactivateMutation.isPending ||
     deleteMutation.isPending ||
     versionMutation.isPending;
 
@@ -464,7 +614,6 @@ export function ContributionCard({
   const canValidate = !!contribution.filename && !processing && !busy;
 
   // --- Header -------------------------------------------------------------------
-  const title = contribution.filename ?? `Contribution ${contribution.id}`;
   const superseded = published && successor?.is_activated;
   const status: ReactNode = published ? (
     superseded ? (
@@ -486,6 +635,8 @@ export function ContributionCard({
     </Badge>
   );
   const meta = [
+    // Once named, the file name moves down here.
+    contribution.name && contribution.filename,
     `Contribution ${contribution.id}`,
     `Version ${contribution.version}`,
     published && contribution.activated_at
@@ -539,10 +690,7 @@ export function ContributionCard({
       <header className="flex flex-wrap items-start gap-x-4 gap-y-2 border-b border-gray-100 px-4 py-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="min-w-0 truncate text-[15px] font-semibold text-gray-900" title={title}>
-              {title}
-            </h2>
-            {status}
+            <NameTitle contribution={contribution} disabled={busy} status={status} />
           </div>
           <p className="mt-0.5 text-[12px] text-gray-500">
             {meta.join(" · ")}
@@ -635,9 +783,6 @@ export function ContributionCard({
                 {versionMutation.isPending ? "Creating…" : "Create new version"}
               </Button>
             )}
-            <Button variant="danger" onClick={() => setModal("unpublish")} disabled={busy}>
-              Unpublish
-            </Button>
           </div>
         </div>
       ) : (
@@ -753,10 +898,19 @@ export function ContributionCard({
         </div>
       )}
 
-      {/* The contribution's summary row, as search shows it */}
-      <div className="overflow-x-auto rounded-b-md border-t border-gray-100 px-4 pt-px">
-        <SummaryGrid level={contributionLevel} hits={[doc]} privateKey={contribution.private_key} />
-      </div>
+      {published ? (
+        /* A published contribution's summary row, as search shows it */
+        <div className="overflow-x-auto rounded-b-md border-t border-gray-100 px-4 pt-px">
+          <SummaryGrid
+            level={contributionLevel}
+            hits={[doc]}
+            privateKey={contribution.private_key}
+          />
+        </div>
+      ) : (
+        /* In preparation, only what it holds */
+        <Contents contribution={contribution} doc={doc} processing={processing || validating} />
+      )}
 
       {editorOpen && (
         <ContributionEditor
@@ -816,23 +970,6 @@ export function ContributionCard({
         >
           <p className="font-medium text-gray-800">Warning! Your data will be publicly visible.</p>
           <p>Published data can't be changed. To correct it later, create a new version.</p>
-        </ConfirmModal>
-      )}
-
-      {modal === "unpublish" && (
-        <ConfirmModal
-          title={`Unpublish Contribution ${contribution.id}?`}
-          confirm="Unpublish"
-          pendingLabel="Unpublishing…"
-          pending={deactivateMutation.isPending}
-          danger
-          onConfirm={() => deactivateMutation.mutate()}
-          onClose={closeModal}
-        >
-          <p>
-            It leaves search and its public link stops working; the private share link still works.
-            It moves back to In Preparation, where you can publish it again or delete it.
-          </p>
         </ConfirmModal>
       )}
 

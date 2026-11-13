@@ -74,6 +74,7 @@ class ContributionOut(BaseModel):
     data_model_version: str
     reference_doi: str | None
     filename: str | None
+    name: str | None = None
     status: str
     head_revision: str | None = None
     published_revision: str | None = None
@@ -99,6 +100,7 @@ class ContributionOut(BaseModel):
             data_model_version=c.data_model_version,
             reference_doi=c.reference_doi,
             filename=c.filename,
+            name=c.name,
             status=c.status.value,
             error=c.error,
             head_revision=c.head_revision,
@@ -108,6 +110,12 @@ class ContributionOut(BaseModel):
             updated_at=c.updated_at,
             activated_at=c.activated_at,
         )
+
+
+class NameIn(BaseModel):
+    """The contributor's label for a contribution; empty clears it."""
+
+    name: str = Field(max_length=255)
 
 
 class ReferenceIn(BaseModel):
