@@ -226,13 +226,19 @@ function PoleMapTile({ hit, color, width }: { hit: SearchResult; color: string; 
     [pole, color],
   );
   const rings = useMemo(() => (pole?.ring ? [{ points: pole.ring, color }] : []), [pole, color]);
+  const dots = useMemo(() => (pole?.vgps ? [{ points: pole.vgps, color }] : []), [pole, color]);
   if (!pole) return <NoDataCell label="Pole" width={width} />;
   return (
     <Cell width={width} style={{ height: 104 }}>
       <MapThumbnail
         markers={markers}
         rings={rings}
-        label="Map of the pole and its uncertainty outline"
+        dots={dots}
+        label={
+          pole.vgps
+            ? "Map of the pole, its uncertainty outline and its VGPs"
+            : "Map of the pole and its uncertainty outline"
+        }
       />
     </Cell>
   );
@@ -394,9 +400,49 @@ function ColorLegend({
   );
 }
 
+const SECTION_STYLE = { padding: "0.25em 1em 0.5em" };
+const HEADING = "mb-1 text-[13px] font-bold text-ink";
+
+/** A side-panel section's Show / Hide pair. */
+function ShowHide({
+  title,
+  show,
+  setShow,
+}: {
+  title: string;
+  show: boolean;
+  setShow: (show: boolean) => void;
+}) {
+  return (
+    <div className="border-b border-edge" style={SECTION_STYLE}>
+      <h5 className={HEADING}>{title}</h5>
+      <div className="flex gap-1">
+        {[true, false].map((value) => (
+          <button
+            key={String(value)}
+            type="button"
+            aria-pressed={show === value}
+            onClick={() => setShow(value)}
+            className={cx(
+              "flex-1 rounded-sm px-2 py-1 text-[13px] font-medium",
+              show === value
+                ? "bg-node text-white"
+                : "border border-gray-300 bg-surface text-gray-600",
+            )}
+          >
+            {value ? "Show" : "Hide"}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SidePanel({
   showEllipses,
   setShowEllipses,
+  showVgps,
+  setShowVgps,
   minAge,
   maxAge,
   hasAges,
@@ -404,46 +450,20 @@ function SidePanel({
 }: {
   showEllipses: boolean;
   setShowEllipses: (show: boolean) => void;
+  /** Absent when no pole has VGPs (no toggle). */
+  showVgps?: boolean;
+  setShowVgps: (show: boolean) => void;
   minAge: number;
   maxAge: number;
   hasAges: boolean;
   colors: AgeColors;
 }) {
-  const section = "border-b border-edge";
-  const heading = "mb-1 text-[13px] font-bold text-ink";
   return (
     <aside className="w-[180px] shrink-0 overflow-y-auto border-l border-edge bg-surface">
-      <div className={section} style={{ padding: "0.25em 1em 0.5em" }}>
-        <h5 className={heading}>Uncertainty Ellipses</h5>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => setShowEllipses(true)}
-            className={cx(
-              "flex-1 rounded-sm px-2 py-1 text-[13px] font-medium",
-              showEllipses
-                ? "bg-node text-white"
-                : "border border-gray-300 bg-surface text-gray-600",
-            )}
-          >
-            Show
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowEllipses(false)}
-            className={cx(
-              "flex-1 rounded-sm px-2 py-1 text-[13px] font-medium",
-              !showEllipses
-                ? "bg-node text-white"
-                : "border border-gray-300 bg-surface text-gray-600",
-            )}
-          >
-            Hide
-          </button>
-        </div>
-      </div>
-      <div style={{ padding: "0.25em 1em 0.5em" }}>
-        <h5 className={heading}>Color Legend</h5>
+      <ShowHide title="Uncertainty Ellipses" show={showEllipses} setShow={setShowEllipses} />
+      {showVgps !== undefined && <ShowHide title="VGPs" show={showVgps} setShow={setShowVgps} />}
+      <div style={SECTION_STYLE}>
+        <h5 className={HEADING}>Color Legend</h5>
         <ColorLegend minAge={minAge} maxAge={maxAge} hasAges={hasAges} colors={colors} />
       </div>
     </aside>
@@ -502,6 +522,7 @@ function PolesMapView({
   // per pick, so every pick moves the map, even back to the same pole).
   const [centerOn, setCenterOn] = useState<{ lon: number; lat: number } | null>(null);
   const [showEllipses, setShowEllipses] = useState(true);
+  const [showVgps, setShowVgps] = useState(true);
   const rootRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const available = useAvailableHeight(rootRef);
@@ -604,6 +625,8 @@ function PolesMapView({
   }, [mapLoaded, firstMapPage.data, restMapPages.pages]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: the colors by value
   const ageScale = useMemo(() => makeAgeScale(poles, colors), [poles, JSON.stringify(colors)]);
+  // The VGPs toggle shows only when some pole has VGPs.
+  const hasVgps = useMemo(() => poles.some((pole) => pole.vgps), [poles]);
 
   // A new search clears the selection.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset only when the list identity changes
@@ -646,6 +669,7 @@ function PolesMapView({
                 plateColor={pconfig.plate_boundary_color ?? "#990000"}
                 selectedColor={colors.selected}
                 showEllipses={showEllipses}
+                showVgps={hasVgps && showVgps}
                 selected={selected}
                 onSelect={setSelected}
                 centerOn={centerOn}
@@ -655,6 +679,8 @@ function PolesMapView({
           <SidePanel
             showEllipses={showEllipses}
             setShowEllipses={setShowEllipses}
+            showVgps={hasVgps ? showVgps : undefined}
+            setShowVgps={setShowVgps}
             minAge={ageScale.minAge}
             maxAge={ageScale.maxAge}
             hasAges={ageScale.hasAges}

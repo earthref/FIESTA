@@ -7,6 +7,8 @@ export interface Pole {
   /** The uncertainty outline (closed [lon, lat] ring) the backend computed
    * with PmagPy: the a95 circle, else the dp/dm ellipse. */
   ring?: [number, number][];
+  /** The [lon, lat] VGPs of the sites averaged into it, when they have them. */
+  vgps?: [number, number][];
   age?: number;
   ageUnit?: string;
   name: string;
@@ -69,17 +71,28 @@ export function poleBlockOf(hit: SearchResult): Record<string, unknown> | undefi
  * stored by the backend (PmagPy) when the doc was derived. Docs indexed before
  * that have none, and draw no outline until the index is rebuilt.
  */
-function ringOf(geometry: unknown): [number, number][] | undefined {
-  const ring =
+function lonLatsOf(geometry: unknown, key: "ring" | "vgps"): [number, number][] {
+  const list =
     geometry && typeof geometry === "object"
-      ? (geometry as Record<string, unknown>).ring
+      ? (geometry as Record<string, unknown>)[key]
       : undefined;
-  if (!Array.isArray(ring)) return undefined;
-  const points = ring.filter(
+  if (!Array.isArray(list)) return [];
+  return list.filter(
     (point): point is [number, number] =>
       Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1]),
   );
+}
+
+function ringOf(geometry: unknown): [number, number][] | undefined {
+  const points = lonLatsOf(geometry, "ring");
   return points.length > 1 ? points : undefined;
+}
+
+/** A pole doc's VGPs, `summary.poles._geometry.vgps` (also derived by the
+ * backend; docs indexed before that have none). */
+function vgpsOf(geometry: unknown): [number, number][] | undefined {
+  const points = lonLatsOf(geometry, "vgps");
+  return points.length > 0 ? points : undefined;
 }
 
 export function polesFromHits(hits: SearchResult[]): Pole[] {
@@ -113,6 +126,7 @@ export function polesFromHits(hits: SearchResult[]): Pole[] {
       lat,
       lon: normalizeLon(lonRaw),
       ring: ringOf(block?._geometry),
+      vgps: vgpsOf(block?._geometry),
       age: firstNumber(block?.age ?? block?.pole_age),
       ageUnit: firstString(block?.age_unit),
       name,

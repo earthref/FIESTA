@@ -18,9 +18,20 @@ searched, faceted or in `summary._all`. A blank, malformed or out-of-range
 one row only drops that row's ring. Docs indexed before the rings existed draw
 no outline until `fiesta rebuild`.
 
+The same object carries the pole's VGPs, `_geometry.vgps` = `[[lon, lat],
+...]`, one per site averaged into it: the sites the location row lists in
+`sites`, else every site whose `location` is its name, preferring rows in the
+location's `dir_tilt_correction` and leaving out bad results
+(`result_quality` b). A location that lists none of its sites gets all of its
+location's (more than its `dir_n_sites` when only some were averaged). Docs
+indexed before the VGPs existed show none until `fiesta rebuild`.
+
 UI: pole result items + the search map's MapLibre views (globe, Mercator,
 north and south pole) with the plate boundaries and each pole's uncertainty
-outline (the doc's ring) in its age colour, drawn by a custom WebGL line
+outline (the doc's ring) and its VGPs as dots under it, in its age colour
+(the selected pole's on top in the selected colour; Show / Hide toggles for
+each, the VGPs one only when some pole has them; past 50,000 VGPs each
+pole's are thinned evenly, the selected pole's never), drawn by a custom WebGL line
 layer that, unlike
 MapLibre's GeoJSON lines, reaches past ±85° (core
 `fiesta/frontend/src/components/map/lines-layer.ts`); also the contribution modal's
@@ -32,7 +43,7 @@ row of a scrolling, virtual Summaries grid (full docs fetched for the rows in
 view, in the map's order, so a pole's index is its row): the core tiles
 (record, the location's map, geography, geology, method codes, citations,
 all read from the doc's location row) and the plugin's own via `gridCell`
-(the pole on a whole-globe thumbnail with its ring, pole statistics, age,
+(the pole on a whole-globe thumbnail with its ring and VGPs, pole statistics, age,
 direction). Choosing a pole on the map highlights and scrolls to its row,
 a row's first click selects its pole (drawn on top of the others, the map
 turning or panning to centre it), and a
