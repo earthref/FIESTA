@@ -273,9 +273,16 @@ indexed as a number (row values are text): a data-model number column's
 `numeric` picks any other number column, `exists` columns with or without data
 per table (`summary._has.<table>`, see api.md). Each search level's
 Summaries grid is its `columns` (tiles such as `citation`, `counts`, `map`,
-`age`, or `{ column, label, width }` for a data column; each with its own
+`age`, `{ column, label, width }` for a data column, or `{ cell: fields,
+label, columns: [...] }` for up to 5 data columns stacked in one tile, each
+line a column name or `{ column, label, unit, scale }`; `show: values` /
+`range` on a data tile shows every value / the least–greatest number of a
+record, on Contributions of the whole contribution; each with its own
 header, width, sort and filter, defaults in `fiesta.search.grid`), edited in
-the Summary Grid tab; a level without `columns` shows the default tiles.
+the Summary Grid tab; a level without `columns` shows the default tiles. Pick
+the tiles a level's data can fill: the defaults are MagIC's, and on another
+node or a leaf level most of them are always "No … Data" (every node's YAML
+names its levels' tiles since 2026-11-13).
 
 Home page content is YAML too: `features.home.resources` lists the resource
 cards (title, Semantic icon name, optional corner icon, `to` for an SPA route

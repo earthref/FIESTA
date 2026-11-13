@@ -30,13 +30,138 @@ search:
   placeholder: 'e.g. metamorphic "field intensity" -precambrian'
   # Ordered search tabs; `table` is the doc `type` in the index and the
   # data-model table the rows come from.
+  # `columns` are each level's Summaries tiles (fiesta.search.grid; none = the
+  # default tiles). Records leave out Counts (it only counts the rows sharing
+  # the record's name: always 1 on Measurements) and tiles whose columns the
+  # level's table does not have (no ages below Sites; no geology, age or
+  # intensity on Measurements; pmag-plots draws no measurements), and show the
+  # level's own results instead (2026-11-13).
   levels:
     - { name: Contributions, table: contribution }
-    - { name: Locations, table: locations, count_field: summary.locations._n_results }
-    - { name: Sites, table: sites, count_field: summary.sites._n_results }
-    - { name: Samples, table: samples, count_field: summary.samples._n_results }
-    - { name: Specimens, table: specimens, count_field: summary.specimens._n_results }
-    - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
+    - name: Locations
+      table: locations
+      count_field: summary.locations._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - { cell: plot }
+        - { cell: geo }
+        - { cell: geology }
+        - { cell: age }
+        - cell: fields
+          label: Pole
+          columns:
+            - { column: pole_lat, label: Lat }
+            - { column: pole_lon, label: Lon }
+            - { column: pole_alpha95, label: A95 }
+            - { column: pole_n_sites, label: N Sites }
+        - { cell: intensity }
+        - { cell: method_codes }
+        - { cell: citations }
+    - name: Sites
+      table: sites
+      count_field: summary.sites._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - { cell: plot }
+        - { cell: geo }
+        - { cell: geology }
+        - { cell: age }
+        - cell: fields
+          label: Direction
+          columns:
+            - { column: dir_dec, label: Dec }
+            - { column: dir_inc, label: Inc }
+            - { column: dir_alpha95, label: α95 }
+            - { column: dir_n_samples, label: N Samples }
+        - cell: fields
+          label: VGP
+          columns:
+            - { column: vgp_lat, label: Lat }
+            - { column: vgp_lon, label: Lon }
+            - { column: vgp_dp, label: dp }
+            - { column: vgp_dm, label: dm }
+        - { cell: intensity }
+        - { cell: method_codes }
+        - { cell: citations }
+    - name: Samples
+      table: samples
+      count_field: summary.samples._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - { cell: plot }
+        - { cell: geo }
+        - { cell: geology }
+        - cell: fields
+          label: Orientation
+          columns:
+            - { column: azimuth, label: Azimuth }
+            - { column: dip, label: Dip }
+            - { column: bed_dip_direction, label: Bed Dip Dir. }
+            - { column: bed_dip, label: Bed Dip }
+            - { column: height, label: Height }
+        - { cell: intensity }
+        - { cell: method_codes }
+        - { cell: citations }
+    - name: Specimens
+      table: specimens
+      count_field: summary.specimens._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - { cell: plot }
+        - { cell: geo }
+        - { cell: geology }
+        - cell: fields
+          label: Direction
+          columns:
+            - { column: dir_dec, label: Dec }
+            - { column: dir_inc, label: Inc }
+            - { column: dir_mad_free, label: MAD }
+            - { column: dir_n_measurements, label: N Steps }
+        - cell: fields
+          label: Properties
+          columns:
+            - { column: susc_chi_volume, label: χ Volume }
+            - { column: susc_chi_mass, label: χ Mass }
+            - { column: volume, label: Volume }
+            - { column: weight, label: Weight }
+        - { cell: intensity }
+        - { cell: method_codes }
+        - { cell: citations }
+    - name: Measurements
+      table: measurements
+      count_field: summary.measurements._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - { cell: field, column: experiment, label: Experiment, width: 150 }
+        - cell: fields
+          label: Treatment
+          columns:
+            - { column: treat_step_num, label: Step }
+            - { column: treat_temp, label: Temp }
+            - { column: treat_ac_field, label: AC Field, unit: mT, scale: 1.0e-3 }
+            - { column: treat_dc_field, label: DC Field, unit: μT, scale: 1.0e-6 }
+        - cell: fields
+          label: Result
+          columns:
+            - { column: dir_dec, label: Dec }
+            - { column: dir_inc, label: Inc }
+            - { column: magn_moment, label: Moment }
+            - { column: magn_volume, label: Magn. }
+            - { column: susc_chi_volume, label: χ Volume }
+        - cell: fields
+          label: Conditions
+          columns:
+            - { column: quality, label: Quality }
+            - { column: standard, label: Standard }
+            - { column: meas_temp, label: Temp }
+            - { column: instrument_codes, label: Instruments }
+        - { cell: geo }
+        - { cell: method_codes }
   # (The Poles search level is contributed by the `poles` plugin below.)
   extra_types: []
   # Filter sidebar controls (facet / range / bbox / numeric / exists), edited in the admin
@@ -104,8 +229,8 @@ search:
     - { label: Age, field: age, unit: Ma, scale: 1.0e6, log: true, unit_column: age_unit }
     - { label: Paleointensity, field: int_abs, unit: μT, scale: 1.0e-6 }
     - { label: VADM, field: vadm, unit: ZAm², scale: 1.0e21 }
-    - { label: Inclination, field: dir_inc, unit: "°" }
-    - { label: VGP Latitude, field: vgp_lat, unit: "°" }
+    - { label: Inclination, field: dir_inc }
+    - { label: VGP Latitude, field: vgp_lat }
     - { label: Magnetic Moment, field: magn_moment, unit: Am², log: true }
     - { label: Mass Susceptibility, field: susc_chi_mass, unit: m³/kg, log: true }
   # Number columns whose unit is another column of the row, put in one base

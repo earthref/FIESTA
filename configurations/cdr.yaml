@@ -22,11 +22,103 @@ search:
   # listed by the summary grid's Geography tile.
   geography:
     geographic: [continent_ocean, country, ocean_sea, region, village_city]
+  # `columns` are each level's Summaries tiles (fiesta.search.grid). CDR has
+  # no geology, age, intensity, method-code or citation data and no plot
+  # thumbnail, so its tiles are the cruise, core, section and measurement
+  # columns instead; Geography lives on cores (2026-11-13).
   levels:
-    - { name: Contributions, table: contribution }
-    - { name: Cores, table: cores, count_field: summary.cores._n_results }
-    - { name: Sections, table: sections, count_field: summary.sections._n_results }
-    - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
+    - name: Contributions
+      table: contribution
+      columns:
+        - { cell: record }
+        - { cell: download }
+        - { cell: links }
+        - { cell: counts }
+        - { cell: map }
+        - cell: fields
+          label: Cruises
+          show: values
+          columns:
+            - { column: cruise, label: Cruise }
+            - { column: research_vessel, label: Vessel }
+            - { column: pis, label: PIs }
+        - cell: fields
+          label: Cores
+          show: values
+          columns:
+            - { column: material, label: Material }
+            - { column: method, label: Method }
+        - cell: fields
+          label: Depths
+          show: range
+          columns:
+            - { column: length, label: Core Length }
+            - { column: depth, label: Measured }
+        - { cell: geo }
+    - name: Cores
+      table: cores
+      count_field: summary.cores._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - cell: fields
+          label: Cruise
+          columns:
+            - { column: cruise, label: Cruise }
+            - { column: research_vessel, label: Vessel }
+            - { column: pis, label: PIs }
+        - cell: fields
+          label: Coring
+          columns:
+            - { column: material, label: Material }
+            - { column: method, label: Method }
+            - { column: length, label: Length }
+            - { column: diameter, label: Diameter }
+            - { column: mbs_top, label: Top Depth }
+        - { cell: field, column: start_timestamp, label: Drilled, width: 130 }
+        - { cell: geo }
+    - name: Sections
+      table: sections
+      count_field: summary.sections._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - cell: fields
+          label: Interval
+          columns:
+            - { column: number, label: Number }
+            - { column: type, label: Type }
+            - { column: depth_top, label: Top }
+            - { column: depth_bottom, label: Bottom }
+            - { column: igsn, label: IGSN }
+    - name: Measurements
+      table: measurements
+      count_field: summary.measurements._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - cell: fields
+          label: Depth
+          columns:
+            - { column: depth, label: Depth }
+            - { column: mbs_corrected, label: Corrected }
+        - cell: fields
+          label: Physical Properties
+          width: 190
+          columns:
+            - { column: gamma_density, label: Density }
+            - { column: mag_susc_chi_mass, label: χ Mass }
+            - { column: pwave_v, label: P-Wave }
+            - { column: res, label: Resistivity }
+            - { column: fp, label: Porosity }
+        - cell: fields
+          label: XRF
+          columns:
+            - { column: fe, label: Fe }
+            - { column: ca, label: Ca }
+            - { column: ti, label: Ti }
+            - { column: k, label: K }
+            - { column: sr, label: Sr }
   extra_types: []
   # The legacy CDR sidebar's bucket filters (search.jsx), on CDR columns.
   filters:

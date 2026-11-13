@@ -22,12 +22,105 @@ search:
   # listed by the summary grid's Geography tile.
   geography:
     geographic: [continent_ocean, country, region, village_city, location, location_type, location_alternatives]
+  # `columns` are each level's Summaries tiles (fiesta.search.grid). KArAr
+  # has no paleointensity or citation columns, the age-spectrum plot draws
+  # only specimens and experiments, and a sample's geology (sample-tiles
+  # options below) is not passed down to its specimens; each level shows its
+  # own irradiation, experiment or step columns instead (2026-11-13).
   levels:
-    - { name: Contributions, table: contribution }
-    - { name: Samples, table: samples, count_field: summary.samples._n_results }
-    - { name: Specimens, table: specimens, count_field: summary.specimens._n_results }
-    - { name: Experiments, table: experiments, count_field: summary.experiments._n_results }
-    - { name: Measurements, table: measurements, count_field: summary.measurements._n_results }
+    - name: Contributions
+      table: contribution
+      columns:
+        - { cell: record }
+        - { cell: download }
+        - { cell: links }
+        - { cell: counts }
+        - { cell: map }
+        - { cell: geo }
+        - { cell: geology }
+        - { cell: age }
+        - cell: fields
+          label: Experiments
+          show: values
+          columns:
+            - { column: experiment_type, label: Type }
+            - { column: extraction_method, label: Extraction }
+            - { column: material_name, label: Material }
+        - { cell: method_codes }
+    - name: Samples
+      table: samples
+      count_field: summary.samples._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - { cell: geo }
+        - { cell: geology }
+        - cell: fields
+          label: Details
+          columns:
+            - { column: igsn, label: IGSN }
+            - { column: dir_polarity, label: Polarity }
+            - { column: elevation, label: Elevation }
+        - { cell: method_codes }
+    - name: Specimens
+      table: specimens
+      count_field: summary.specimens._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - { cell: plot }
+        - { cell: age }
+        - cell: fields
+          label: Irradiation
+          width: 180
+          columns:
+            - { column: material_name, label: Material }
+            - { column: j_value, label: J }
+            - { column: stnd_name, label: Standard }
+            - { column: is_flux_monitor, label: Flux Monitor }
+        - { cell: geo }
+        - { cell: method_codes }
+    - name: Experiments
+      table: experiments
+      count_field: summary.experiments._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - { cell: plot }
+        - { cell: age }
+        - cell: fields
+          label: Method
+          width: 180
+          columns:
+            - { column: experiment_type, label: Type }
+            - { column: extraction_method, label: Extraction }
+            - { column: age_calculation_method, label: Age From }
+            - { column: age_n, label: N Steps }
+        - { cell: geo }
+        - { cell: method_codes }
+    - name: Measurements
+      table: measurements
+      count_field: summary.measurements._n_results
+      columns:
+        - { cell: record }
+        - { cell: map }
+        - { cell: field, column: experiment, label: Experiment, width: 150 }
+        - { cell: age }
+        - cell: fields
+          label: Step
+          columns:
+            - { column: temp, label: Temp }
+            - { column: fraction_40ar_radiogenic, label: ⁴⁰Ar* }
+            - { column: fraction_39ar_k, label: ³⁹Ar(K) }
+        - cell: fields
+          label: Intercepts
+          columns:
+            - { column: intercept_40ar, label: ⁴⁰Ar }
+            - { column: intercept_39ar, label: ³⁹Ar }
+            - { column: intercept_38ar, label: ³⁸Ar }
+            - { column: intercept_37ar, label: ³⁷Ar }
+            - { column: intercept_36ar, label: ³⁶Ar }
+        - { cell: geo }
   extra_types: []
   # (The MagIC-style geologic_classes/geologic_types/lithologies facets the
   # legacy app listed are not KArAr columns and never had buckets.)
@@ -81,6 +174,11 @@ plugins:
     # no constants to set.
     experiment_levels: [Experiments]
     specimen_levels: [Specimens]
+  # The Geology tile on KArAr's sample columns (the defaults are MagIC's).
+  sample-tiles:
+    geologic_class_columns: [material_classification]
+    geologic_type_columns: [material]
+    lithology_columns: [lithology]
 
 features:
   plugins: [plateau-calculations, sample-tiles]

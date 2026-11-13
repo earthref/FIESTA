@@ -17,6 +17,9 @@ def _with(node, options=None, plugins=None):
     update: dict = {"plugins": {**node.plugins, PLUGIN: options or {}}}
     if plugins is not None:
         update["features"] = node.features.model_copy(update={"plugins": plugins})
+        # The default tiles, so no level names a switched-off plugin's.
+        levels = [lvl.model_copy(update={"columns": None}) for lvl in node.search.levels]
+        update["search"] = node.search.model_copy(update={"levels": levels})
     return node.model_copy(update=update)
 
 

@@ -394,14 +394,24 @@ orders each record's rows the same way — a record's rows stay together.
 
 **Summary grid.** Each search level in `GET /config` carries `columns`, its
 Summaries grid in order: `{key, cell, label, width, column?, subtitle_column?,
-format?, sortable, filterable, facets, geospatial}`. `cell` names the tile (`record` — citation, then
+format?, show?, lines?, sortable, filterable, facets, geospatial}`. `cell` names the tile (`record` — citation, then
 title or the record's name, then date and contributor, one column filtered on
 all of them; the default first column —, `citation`, `name`,
 `contributed`, `download`, `links`, `counts`, `map`, `plot`, `geo` (the node
 YAML's `search.geography` columns), `citations`, a tile an active plugin adds
-(`sample-tiles`: `geology`, `age`, `intensity`, `method_codes`), or `field` /
-`title` for a `column` of the level's summary block); `key` is the column
-(field/title) or the tile. They come from the node YAML's
+(`sample-tiles`: `geology`, `age`, `intensity`, `method_codes`), `field` /
+`title` for a `column` of the level's summary block, or `fields` for up to 5
+data columns under one header, a "Label: value" line each); `key` is the column
+(field/title), the `fields` columns joined by `-`, or the tile. A `field` /
+`fields` column's `lines` are `{column, label, unit?, number, scale?}` (the
+data-model label and display unit — "°", "Am²" — unless the YAML line sets
+them; a number is divided by `scale`), and `show` says what a record shows of
+each: absent or `value`, its own (first row's) `summary.<table>.<column>`;
+`values`, every distinct `summary._all.<column>` (on Contributions the whole
+contribution's, any table's column); `range`, least – greatest of
+`summary._num.<column>` (a unit conversion's columns in its base unit), sorted
+by script on those doubles and not text-filterable. A plain `field` without
+`show` shows the value as typed, without a unit. They come from the node YAML's
 `search.levels[].columns` (admin Summary Grid tab), each unset field filled
 from the tile's defaults (`fiesta.search.grid`, or the plugin's
 `grid_tile_fields`), or the default tiles when a level sets none (the core's,

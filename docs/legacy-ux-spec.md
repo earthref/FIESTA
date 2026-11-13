@@ -218,7 +218,18 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
   and Map views and is cleared by switching levels), and on the map tile the
   Geospatial area. Clear Filters clears them all. Columns, headers, widths, sorting and filtering are set
   per level in the node YAML (`search.levels[].columns`) and the admin Summary
-  Grid tab; a level without them shows the default tiles. The expand caret is
+  Grid tab; a level without them shows the default tiles. Deviation
+  (2026-11-13): the legacy card gave every level of every node the same cells,
+  most of them always "No … Data" below Contributions and on the non-MagIC
+  nodes (Counts is always "1 Measurement" on a measurement). Each node's YAML
+  now names its levels' tiles: records drop Counts and the tiles their table
+  has no columns for, and gain `fields` tiles of their own results (MagIC
+  Sites: Direction and VGP; Measurements: Treatment, Result, Conditions; CDR:
+  cruise, coring, depth and track data; KdD: elements, phases, Kd ranges;
+  KArAr: irradiation, experiment, step and intercept columns, its Geology on
+  its lithology/material columns); Contributions keep the legacy cells on
+  MagIC, and elsewhere show what the contribution holds (values) and spans
+  (ranges). The expand caret is
   gone (the modal below replaced it); a count ("2 Locations") opens the
   contribution's modal at that level's tab. The home page's recent
   contributions and the private workspace's contribution use the same grid

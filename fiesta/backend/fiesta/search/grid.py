@@ -13,14 +13,15 @@ filter fields instead; configured `filter_fields` add one to a faceted column.
 
 Summary values are indexed as strings (text + `.raw` keyword), so a numeric
 column sorts through a script that parses its `.raw` values; the rest sort on
-the keyword (or the typed timestamp / id).
+the keyword (or the typed timestamp / id). A `show: range` data tile sorts on
+the same script over the typed `summary._num` doubles and has no text filter.
 """
 
 import re
 from dataclasses import dataclass, field
 from typing import Literal
 
-from fiesta.nodeconfig import GridColumn, NodeConfig, SearchLevel
+from fiesta.nodeconfig import GridColumn, GridLine, NodeConfig, SearchLevel
 
 SortType = Literal["keyword", "number", "date", "long"]
 
@@ -54,6 +55,9 @@ class ResolvedColumn:
     filter_fields: list[str] = field(default_factory=list)
     facets: list[str] = field(default_factory=list)
     geospatial: bool = False
+    show: str | None = None
+    # A field / fields tile's lines: {column, label, unit?, number}.
+    lines: list[dict] = field(default_factory=list)
 
     def public(self) -> dict:
         out = {
@@ -66,7 +70,7 @@ class ResolvedColumn:
             "facets": self.facets,
             "geospatial": self.geospatial,
         }
-        for name in ("column", "subtitle_column", "format"):
+        for name in ("column", "subtitle_column", "format", "show", "lines"):
             if value := getattr(self, name):
                 out[name] = value
         return out
@@ -82,6 +86,88 @@ def _singular(name: str) -> str:
 
 # Data-model types whose values are worth listing as facet buckets.
 _FACET_TYPES = {"String", "List"}
+_NUMBER_TYPES = {"Number", "Integer"}
+# Data-model units that say nothing next to a value (an age's is its row's
+# age_unit, a flag's its vocabulary).
+_SILENT_UNITS = {"", "Custom", "Dimensionless", "SI Dimensionless", "Flag", "Number"}
+
+
+_SUPERSCRIPTS = str.maketrans("-0123456789", "⁻⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+_UNIT_SYMBOLS = {
+    "Degrees": "°",
+    "Meters": "m",
+    "Centimeters": "cm",
+    "Millimeters": "mm",
+    "Kilometers": "km",
+    "Square Kilometers": "km²",
+    "Cubic Kilometers": "km³",
+    "Kilograms": "kg",
+    "Grams": "g",
+}
+
+
+def _display_unit(unit: str) -> str:
+    """A data-model unit as a tile shows it: "Degrees" → "°", "Am^2" → "Am²"."""
+    if unit in _UNIT_SYMBOLS:
+        return _UNIT_SYMBOLS[unit]
+    return re.sub(r"\^(-?\d+)", lambda m: m.group(1).translate(_SUPERSCRIPTS), unit)
+
+
+@dataclass
+class _Line:
+    """One data column of a field / fields tile, resolved for its `show`."""
+
+    public: dict
+    sort: Sort | None
+    filters: list[str]
+    facets: list[str]
+
+
+def _line(node: NodeConfig, table: str, spec: GridLine, show: str, columns: dict) -> _Line:
+    name = spec.column
+    definition = columns.get(name, {})
+    kind = definition.get("type")
+    number = kind in _NUMBER_TYPES
+    unit = definition.get("unit") or ""
+    if show == "range":
+        # summary._num holds a unit conversion's columns in its base unit.
+        base = {c: conv.unit for conv in node.search.unit_conversions for c in conv.all_columns}
+        unit = base.get(name) or unit
+        sort, filters, facets = Sort([f"summary._num.{name}"], "number"), [], []
+    else:
+        path = f"summary.{table}.{name}" if show == "value" else f"summary._all.{name}"
+        sort = Sort([f"{path}.raw"], "number" if number else "keyword")
+        filters = [path]
+        facets = [name] if kind in _FACET_TYPES else []
+    label = spec.label or definition.get("label") or name
+    public: dict = {"column": name, "label": label, "number": number}
+    if spec.unit is not None:
+        unit = spec.unit
+    if unit not in _SILENT_UNITS:
+        public["unit"] = _display_unit(unit)
+    if spec.scale is not None:
+        public["scale"] = spec.scale
+    return _Line(public, sort, filters, facets)
+
+
+def _data_lines(node: NodeConfig, level: SearchLevel, col: GridColumn, columns: dict) -> list:
+    """A field / fields tile's lines (a title has none)."""
+    if col.cell == "fields":
+        specs = list(col.columns or [])
+    elif col.cell == "field" and col.column:
+        specs = [GridLine(column=col.column)]
+    else:
+        return []
+    show = col.show or "value"
+    lines = [_line(node, level.table, spec, show, columns) for spec in specs]
+    if col.cell == "field" and col.show is None:
+        # As before `show`: the value as typed, its unit in the header.
+        for line in lines:
+            line.public.pop("unit", None)
+            line.public["number"] = False
+    return lines
 
 
 def _defaults(
@@ -165,19 +251,29 @@ def _defaults(
             return "Geography", 125, None, _all(*geography), geography
         case "citations":
             return "Citations", 125, None, _all("citations", "citation_dois"), ["citations"]
-        case "field" | "title":  # one column of the level's summary block
+        case "field" | "fields":
+            # Sorted on its first line, filtered on all of them; the header is
+            # the field's label, or the lines' shared data-model group
+            # ("Direction"), else the first line's.
+            lines = _data_lines(node, level, col, columns)
+            groups = {columns.get(line.public["column"], {}).get("group") for line in lines}
+            label = lines[0].public["label"]
+            if col.cell == "fields" and len(groups) == 1 and None not in groups:
+                label = str(groups.pop())
+            width = 160 if col.cell == "fields" else 120
+            filters = list(dict.fromkeys(f for line in lines for f in line.filters))
+            facets = list(dict.fromkeys(f for line in lines for f in line.facets))
+            return label, width, lines[0].sort, filters, facets
+        case "title":  # one column of the level's summary block, in bold
             path = f"summary.{table}.{col.column}"
             kind = columns.get(col.column, {}).get("type")
             label = columns.get(col.column, {}).get("label") or str(col.column)
             sort = Sort([f"{path}.raw"], "number" if kind == "Number" else "keyword")
-            width = 300 if col.cell == "title" else 120
             filters = [path]
-            if col.cell == "title" and col.subtitle_column:
+            if col.subtitle_column:
                 filters.append(f"summary.{table}.{col.subtitle_column}")
-            # A text value lists its values (a vessel, an institution); a
-            # title (one per record), number or date is typed into a text box.
-            facets = [str(col.column)] if col.cell == "field" and kind in _FACET_TYPES else []
-            return label, width, sort, filters, facets
+            # One per record: typed into a text box, not listed as facets.
+            return label, 300, sort, filters, []
         case cell:  # a plugin's tile (fiesta.plugins.active_plugins checked the name)
             if cell not in tiles:
                 raise ValueError(f"no grid tile {cell!r} on node {node.node.key!r}")
@@ -208,7 +304,12 @@ def level_columns(node: NodeConfig, level: SearchLevel) -> list[ResolvedColumn]:
             if level.table == "contribution" or cell not in CONTRIBUTION_ONLY
         ]
     tables = node.load_data_model(node.data_model.latest)["tables"]
-    columns = tables.get(level.table, {}).get("columns", {})
+    # The level's columns, then (for a contribution's values, a record's
+    # geography) the other tables'.
+    columns = {
+        **{k: v for t in tables.values() for k, v in t.get("columns", {}).items()},
+        **tables.get(level.table, {}).get("columns", {}),
+    }
     # A map tile's menu holds the Map tab's area, on levels with positions.
     geo = level.table in node.geo_tables
     out = []
@@ -238,6 +339,8 @@ def level_columns(node: NodeConfig, level: SearchLevel) -> list[ResolvedColumn]:
                 filter_fields=filter_fields,
                 facets=facets,
                 geospatial=col.cell == "map" and col.filterable and geo,
+                show=col.show,
+                lines=[line.public for line in _data_lines(node, level, col, columns)],
             )
         )
     return out

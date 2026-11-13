@@ -33,7 +33,8 @@ def test_plugin_pages_and_grid_tiles_are_checked(magic_node, sc_node):
     level = magic_node.search.levels[2].model_copy(
         update={"columns": [GridColumn(cell="geo"), GridColumn(cell="intensity")]}
     )
-    levels = [*magic_node.search.levels]
+    # (The other levels on their default tiles, whatever magic.yaml configures.)
+    levels = [lvl.model_copy(update={"columns": None}) for lvl in magic_node.search.levels]
     levels[2] = level
     search = magic_node.search.model_copy(update={"levels": levels})
     active_plugins(magic_node.model_copy(update={"search": search}))

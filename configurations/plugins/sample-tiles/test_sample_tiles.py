@@ -31,8 +31,11 @@ def test_tiles_follow_the_options_and_activation(magic_node):
     sites = node.search.levels[2]
     age = {c.key: c for c in level_columns(node, sites)}["age"]
     assert age.filter_fields == ["summary._all.age"]
-    # Switched off, a level without columns shows only the core tiles.
+    # Switched off, a level without columns shows only the core tiles (no
+    # level may name the plugin's tiles then: magic.yaml's are cleared).
     features = magic_node.features.model_copy(update={"plugins": ["poles"]})
-    off = magic_node.model_copy(update={"features": features})
-    keys = [c.key for c in level_columns(off, sites)]
+    levels = [lvl.model_copy(update={"columns": None}) for lvl in magic_node.search.levels]
+    search = magic_node.search.model_copy(update={"levels": levels})
+    off = magic_node.model_copy(update={"features": features, "search": search})
+    keys = [c.key for c in level_columns(off, levels[2])]
     assert keys == ["record", "counts", "map", "plot", "geo", "citations"]
