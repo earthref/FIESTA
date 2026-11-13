@@ -1919,6 +1919,41 @@ def test_map_points_from_a_search_doc():
     assert len(_map_points(contribution, "contribution", (170, -5, -170, 5))) == 1
 
 
+def test_map_points_name_the_rows_above_and_their_contribution():
+    """A record's tooltip names its parents (from their blocks, else `_all`)
+    and its contribution's citation, contributor and date."""
+    from fiesta.apps.routers.search import _contribution_label, _map_points, _parent_levels
+
+    class Node:
+        hierarchy = ["contribution", "locations", "sites", "samples"]
+
+    assert _parent_levels(Node, "samples") == ("locations", "sites")
+    assert _parent_levels(Node, "contribution") == ()
+    assert _parent_levels(Node, "measurements") == ()
+    sample = {
+        "summary": {
+            "contribution": {"id": 7},
+            "samples": {"sample": "A1"},
+            "sites": {"site": ["S1"]},
+            "_all": {"location": ["L1", "L2"], "_geo_point": {"lat": 1, "lon": 2}},
+        }
+    }
+    assert _map_points(sample, "samples", parents=("locations", "sites"))[0]["parents"] == [
+        {"table": "locations", "name": "L1"},
+        {"table": "sites", "name": "S1"},
+    ]
+    when = "2020-01-02T00:00:00Z"
+    assert _contribution_label(
+        {
+            "_reference": {"citation": "Smith et al. (2020)", "title": "T"},
+            "_contributor": ["@smith"],
+            "timestamp": when,
+        }
+    ) == {"citation": "Smith et al. (2020)", "contributor": "@smith", "timestamp": when}
+    assert _contribution_label({"_reference": "10.1000/x"})["citation"] == "10.1000/x"
+    assert _contribution_label({})["citation"] is None
+
+
 def test_map_colors_are_node_configuration(magic_node):
     """magic.yaml's map colors: a column is offered on the levels whose table
     has it, a summary.* path on every level with positions; a record's value

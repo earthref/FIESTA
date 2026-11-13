@@ -484,25 +484,51 @@ def _inside(lat: float, lon: float, bbox: tuple[float, float, float, float] | No
     return min_lat <= lat <= max_lat and in_lon
 
 
+def _first_text(value: Any) -> str | None:
+    """A summary value as text (a list's first entry); None when empty."""
+    if isinstance(value, list):
+        value = value[0] if value else None
+    return None if value in (None, "") else str(value)
+
+
+def _row_name(summary: dict, table: str) -> str | None:
+    """A level's row name in a doc: its key column ("sites" -> "site") in the
+    level's summary block, else among the doc's `_all` values (a sites doc
+    has no `locations` block, but its `_all.location` names the parent)."""
+    key = table.removesuffix("s")
+    return _first_text((summary.get(table) or {}).get(key)) or _first_text(
+        (summary.get("_all") or {}).get(key)
+    )
+
+
 def _map_points(
     source: dict,
     table: str,
     bbox: tuple[float, float, float, float] | None = None,
     color: MapColor | None = None,
+    parents: tuple[str, ...] = (),
 ) -> list[dict]:
     """A doc's positions for the map: its `_geo_point` (a contribution's are
     all of its rows', and only those inside `bbox` are drawn) and, without a
     `bbox` (an area on Earth), its `_body_point`s with their `body`; what to
-    call it, and its `color` value."""
+    call it, the names of the rows above it (at its `parents` levels, top
+    first), and its `color` value."""
     summary = source.get("summary") or {}
     geo = (summary.get("_all") or {}).get("_geo_point") or []
     elsewhere = (summary.get("_all") or {}).get("_body_point") or []
     row = summary.get(table) or {}
     base: dict[str, Any] = {"id": (summary.get("contribution") or {}).get("id")}
     # A level row is named by its own key column ("sites" -> "site").
-    name = row.get(table.removesuffix("s")) if table != "contribution" else None
-    if name not in (None, ""):
-        base["name"] = str(name[0] if isinstance(name, list) else name)
+    name = _first_text(row.get(table.removesuffix("s"))) if table != "contribution" else None
+    if name is not None:
+        base["name"] = name
+    ancestors = [
+        {"table": parent, "name": found}
+        for parent in parents
+        if (found := _row_name(summary, parent)) is not None
+    ]
+    if ancestors:
+        base["parents"] = ancestors
     if color is not None and (value := _color_value(source, table, color)) is not None:
         base["value"] = value
     points = []
@@ -617,11 +643,17 @@ async def search_points(
     )
     await _constrain(session, node, body, query, contribution, private_key, scope)
     body["query"]["bool"]["filter"].append(POSITIONED)
+    parents = _parent_levels(node, table)
     body["_source"] = [
         GEO_FIELD,
         BODY_FIELD,
         "summary.contribution.id",
         f"summary.{table}.{table.removesuffix('s')}",
+        *(
+            f"summary.{block}.{parent.removesuffix('s')}"
+            for parent in parents
+            for block in (parent, "_all")
+        ),
     ]
     if color is not None:
         body["_source"].append(color.path(table))
@@ -647,20 +679,97 @@ async def search_points(
             await _scroll(
                 node,
                 elsewhere,
-                lambda source: points.extend(_map_points(source, table, area, color)),
+                lambda source: points.extend(_map_points(source, table, area, color, parents)),
                 lambda: len(points) >= MAX_MAP_POINTS,
             )
+            points = points[:MAX_MAP_POINTS]
             return MapPoints(
-                total=count["count"], points=points[:MAX_MAP_POINTS], truncated=truncated
+                total=count["count"],
+                points=points,
+                truncated=truncated,
+                contributions=await _contribution_labels(node, points),
             )
     points: list[dict] = []
     total = await _scroll(
         node,
         body,
-        lambda source: points.extend(_map_points(source, table, area, color)),
+        lambda source: points.extend(_map_points(source, table, area, color, parents)),
         lambda: len(points) >= MAX_MAP_POINTS,
     )
-    return MapPoints(total=total, points=points[:MAX_MAP_POINTS], truncated=total > MAX_MAP_POINTS)
+    points = points[:MAX_MAP_POINTS]
+    return MapPoints(
+        total=total,
+        points=points,
+        truncated=total > MAX_MAP_POINTS,
+        contributions=await _contribution_labels(node, points),
+    )
+
+
+def _parent_levels(node, table: str) -> tuple[str, ...]:
+    """The hierarchy levels above a table's, below the contribution, top first
+    (a MagIC sample's: locations, sites); none for a table off the hierarchy."""
+    if table not in node.hierarchy:
+        return ()
+    above = node.hierarchy[: node.hierarchy.index(table)]
+    return tuple(t for t in above if t != "contribution")
+
+
+def _citation(reference: Any) -> str | None:
+    """A contribution's `_reference` as its short citation (as the search
+    results label it): its citation, long citation or title, or the text."""
+    if isinstance(reference, dict):
+        return next(
+            (str(reference[k]) for k in ("citation", "long_citation", "title") if reference.get(k)),
+            None,
+        )
+    return _first_text(reference)
+
+
+def _contribution_label(summary: dict) -> dict:
+    """A doc's `summary.contribution` as its map tooltip's lines."""
+    return {
+        "citation": _citation(summary.get("_reference")),
+        "contributor": _first_text(summary.get("_contributor")),
+        "timestamp": _first_text(summary.get("timestamp")),
+    }
+
+
+async def _contribution_labels(node, points: list[dict]) -> dict[str, dict]:
+    """The map's contributions by id (citation, contributor, date) for their
+    points' tooltips. The ids come from a search already constrained to what
+    the caller may see, so looking them up by id reveals nothing more."""
+    ids = sorted({str(p["id"]) for p in points if p.get("id") is not None})
+    if not ids:
+        return {}
+    labels: dict[str, dict] = {}
+
+    def collect(source: dict) -> None:
+        summary = (source.get("summary") or {}).get("contribution") or {}
+        if summary.get("id") is not None:
+            labels[str(summary["id"])] = _contribution_label(summary)
+
+    await _scroll(
+        node,
+        {
+            "query": {
+                "bool": {
+                    "filter": [
+                        {"term": {"type": "contribution"}},
+                        {"terms": {"summary.contribution.id": ids}},
+                    ]
+                }
+            },
+            "_source": [
+                "summary.contribution.id",
+                "summary.contribution._reference",
+                "summary.contribution._contributor",
+                "summary.contribution.timestamp",
+            ],
+        },
+        collect,
+        lambda: False,
+    )
+    return labels
 
 
 async def _scroll(node, body: dict, collect, full) -> int:
