@@ -5,9 +5,20 @@ import { useOpenContribution } from "@/lib/contribution-modal";
 import type { NodeConfig, SearchResult } from "@/lib/types";
 import { getPath } from "@/lib/utils";
 import type { ContributionTab, PluginGridCellProps, PluginModule } from "@/plugins";
-import { type ArgonData, useArgon } from "./argon-data";
-import { AgeSpectrum, SpecimenSpectra } from "./argon-plots";
-import { EXPERIMENT_TAB, ExperimentAgePlots, SPECIMEN_TAB, SpecimenAgePlots } from "./argon-view";
+import { type ArgonData, argonQuery, useArgon } from "./argon-data";
+import { AgeSpectrum } from "./argon-plots";
+import { AgeDistributionView } from "./argon-search";
+import {
+  CONTRIBUTION_TAB,
+  ContributionAgePlots,
+  EXPERIMENT_TAB,
+  ExperimentAgePlots,
+  hasThumbnail,
+  SPECIMEN_TAB,
+  SpecimenAgePlots,
+  SpecimenThumbnail,
+  summaryCount,
+} from "./argon-view";
 
 function nameOf(hit: SearchResult, table: string, column: string): string | undefined {
   const fromSummary = getPath(hit, `summary.${table}.${column}`);
@@ -103,8 +114,8 @@ function SpecimenTile(props: { id: string; specimen: string; privateKey?: string
       label={`Open the age plots of specimen ${props.specimen}`}
       query={query}
       render={(data) =>
-        data.specimens[0] ? (
-          <SpecimenSpectra
+        data.specimens[0] && hasThumbnail(data.experiments) ? (
+          <SpecimenThumbnail
             specimen={data.specimens[0]}
             experiments={data.experiments}
             width={props.width - 4}
@@ -123,9 +134,9 @@ function levelTable(config: NodeConfig, key: string): string | undefined {
 }
 
 const plateauPlugin: PluginModule = {
-  // Two asset tabs, each counted by its level's records: Specimen Age Plots
-  // (a specimen's experiments under its preferred age) and Experiment Age
-  // Plots (an experiment's spectrum, isochrons and ages).
+  // Three asset tabs: Specimen Age Plots and Experiment Age Plots, counted by
+  // their level's records, and Contribution Age Plots (its specimens
+  // together), counted by the plots it has data for.
   contributionTabs(config) {
     const tabs: ContributionTab[] = [];
     const specimens = levelTable(config, "specimen_levels");
@@ -148,7 +159,23 @@ const plateauPlugin: PluginModule = {
           <ExperimentAgePlots id={id} privateKey={privateKey} plot={plot} onPlot={onPlot} />
         ),
       });
+    tabs.push({
+      key: CONTRIBUTION_TAB,
+      label: "Contribution Age Plots",
+      countQuery: (id, privateKey) => ({
+        ...argonQuery(id, privateKey),
+        select: (data) => summaryCount(data as ArgonData),
+      }),
+      render: ({ id, privateKey, plot, onPlot }) => (
+        <ContributionAgePlots id={id} privateKey={privateKey} plot={plot} onPlot={onPlot} />
+      ),
+    });
     return tabs;
+  },
+  // The specimen levels' search results: every matching specimen's age.
+  levelSubTabs(level, config) {
+    if (!levelsOption(config, "specimen_levels").includes(level.name)) return [];
+    return [{ name: "Age Distribution", render: (ctx) => <AgeDistributionView {...ctx} /> }];
   },
   // The summary grid's plot tile: an experiment's age spectrum, or a
   // specimen's experiments under its preferred age.

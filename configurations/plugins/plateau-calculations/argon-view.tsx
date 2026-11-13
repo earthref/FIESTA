@@ -1,9 +1,12 @@
 /**
- * The contribution modal's two age plot tabs, laid out as pmag-plots lays
+ * The contribution modal's three age plot tabs, laid out as pmag-plots lays
  * out MagIC's: the selected plot large, and every plot as a card to pick from
- * (`@/components/plot-grid`). Experiment Age Plots: an experiment's spectrum,
- * isochrons and contributed ages. Specimen Age Plots: a specimen's
- * experiments' spectra under its preferred age.
+ * (`@/components/plot-grid`). Experiment Age Plots: an experiment's spectrum
+ * with its K/Ca, ⁴⁰Ar* and Cl/K spectra, isochrons, release curve and
+ * contributed ages. Specimen Age Plots: a specimen's experiments' spectra,
+ * ranked ages and ideogram under its preferred age. Contribution Age Plots:
+ * the specimens' ages together, against their section, and J against
+ * irradiation position.
  */
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorMessage } from "@/components/error-message";
@@ -11,24 +14,38 @@ import { PlotCard, PlotFilter, PlotLayout, useSize } from "@/components/plot-gri
 import { PageSpinner } from "@/components/ui/spinner";
 import { useOpenContribution } from "@/lib/contribution-modal";
 import {
+  COMPANIONS,
+  type DatedItem,
+  hasReleaseCurve,
+  hasSeries,
+  Ideogram,
+  RankedAges,
+  ReleaseCurve,
+  StepValueSpectrum,
+  XYErrorPlot,
+} from "./argon-charts";
+import {
   type ArgonData,
   ageOf,
   ageText,
   type ContributedAge,
   type Experiment,
+  experimentAge,
   hasIsochron,
   type Specimen,
   useArgon,
 } from "./argon-data";
 import { AgeSpectrum, Isochron, SpecimenSpectra, useSeriesColors } from "./argon-plots";
+import { inUnit, type SummaryPlot, summaryPlots } from "./argon-summary";
 
 /** The tabs' keys (the `tab` search param); a tile opens one at its plot. */
 export const EXPERIMENT_TAB = "experiment-age-plots";
 export const SPECIMEN_TAB = "specimen-age-plots";
+export const CONTRIBUTION_TAB = "contribution-age-plots";
 
-/** The selected plot's height with its header, captions and table, which
- * decides whether the cards go beside it or below. */
-const LARGE_HEIGHT = 620;
+/** Each tab's selected plot's height with its header, captions and table,
+ * which decides whether the cards go beside it or below. */
+const LARGE_HEIGHT = { experiment: 1000, specimen: 900, contribution: 560 };
 /** The cards' charts: wider than tall, as the spectra are. */
 const CARD_MIN_WIDTH = 200;
 const CARD_ASPECT = 0.6;
@@ -271,6 +288,7 @@ function AgePlotGrid({
   onSelect,
   legend,
   filterLabel,
+  largeHeight,
   renderLarge,
   renderCard,
 }: {
@@ -278,6 +296,7 @@ function AgePlotGrid({
   selected?: string;
   onSelect?: (key: string) => void;
   legend: string;
+  largeHeight: number;
   filterLabel: string;
   renderLarge: (item: Item, width: number) => ReactNode;
   renderCard: (item: Item, size: { width: number; height: number }) => ReactNode;
@@ -334,7 +353,7 @@ function AgePlotGrid({
       count={shown.length}
       index={index}
       scrollRef={scroller}
-      largeHeight={LARGE_HEIGHT}
+      largeHeight={largeHeight}
       cardMinWidth={CARD_MIN_WIDTH}
       cardAspect={CARD_ASPECT}
       empty={items.length === 0 ? "Nothing to plot." : "No plots match the filter."}
@@ -368,17 +387,36 @@ function ExperimentDetail({ experiment, width }: { experiment: Experiment; width
     : "";
   const spectrumWidth = Math.min(width, 640);
   const isochronWidth = Math.min(width, 320);
+  const companions = COMPANIONS.filter((series) => hasSeries(experiment, series));
   return (
     <>
       {experiment.steps.length === 0 ? (
         <p className="text-[13px] text-ink-faint">No heating steps for this experiment.</p>
       ) : (
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap items-start gap-4">
+          {/* The spectrum and its companions share the ³⁹Ar axis. */}
           <PlotFigure
             width={spectrumWidth}
-            caption={[plateauCaption, ...notes].filter(Boolean).join(" ")}
+            caption={[
+              plateauCaption,
+              ...notes,
+              companions.length > 0 &&
+                `Below: each step's contributed ${companions.map((s) => s.label).join(", ")} on the same ³⁹Ar axis${companions.some((s) => s.key === "cl_k") ? " (³⁸Ar(Cl)/³⁹Ar(K) is proportional to Cl/K)" : ""}.`,
+            ]
+              .filter(Boolean)
+              .join(" ")}
           >
             <AgeSpectrum experiment={experiment} width={spectrumWidth} height={320} detailed />
+            {companions.map((series) => (
+              <StepValueSpectrum
+                key={series.key}
+                experiment={experiment}
+                series={series}
+                width={spectrumWidth}
+                height={120}
+                detailed
+              />
+            ))}
           </PlotFigure>
           {(["inverse", "normal"] as const).map((kind) =>
             hasIsochron(experiment, kind) ? (
@@ -396,6 +434,14 @@ function ExperimentDetail({ experiment, width }: { experiment: Experiment; width
               </PlotFigure>
             ) : null,
           )}
+          {hasReleaseCurve(experiment) && (
+            <PlotFigure
+              width={isochronWidth}
+              caption="Release curve: the ³⁹Ar released by the end of each heating step, against its temperature."
+            >
+              <ReleaseCurve experiment={experiment} width={isochronWidth} height={isochronWidth} />
+            </PlotFigure>
+          )}
         </div>
       )}
       {experiment.steps.length > 0 &&
@@ -411,8 +457,78 @@ function ExperimentDetail({ experiment, width }: { experiment: Experiment; width
   );
 }
 
+/** The unit a specimen's comparison plots use: its own, else its experiments'. */
+function specimenUnit(specimen: Specimen, experiments: Experiment[]): string {
+  return (
+    specimen.age_unit ??
+    experiments.map((e) => experimentAge(e)?.age_unit ?? e.age_unit).find(Boolean) ??
+    "Ma"
+  );
+}
+
+/** Each experiment's contributed age (experimentAge), in `unit`. */
+function experimentAges(experiments: Experiment[], unit: string): DatedItem[] {
+  return experiments.flatMap((e) => {
+    const age = experimentAge(e);
+    if (age?.age == null) return [];
+    return [
+      {
+        name: e.experiment,
+        ...inUnit(age.age, age.age_sigma, age.age_unit ?? e.age_unit, unit),
+      },
+    ];
+  });
+}
+
+const specimenReference = (specimen: Specimen, unit: string) =>
+  specimen.age != null
+    ? inUnit(specimen.age, specimen.age_sigma, specimen.age_unit, unit)
+    : undefined;
+
+/** Whether SpecimenThumbnail draws anything: steps, or ages to rank. */
+export const hasThumbnail = (experiments: Experiment[]) =>
+  hasSteps(experiments) || experiments.some((e) => experimentAge(e)?.age != null);
+
+/** A specimen small (a card, a search grid tile): its experiments' spectra,
+ * else (total fusions, no steps) their ages ranked, else nothing. */
+export function SpecimenThumbnail({
+  specimen,
+  experiments,
+  width,
+  height,
+}: {
+  specimen: Specimen;
+  experiments: Experiment[];
+  width: number;
+  height: number;
+}) {
+  if (hasSteps(experiments))
+    return (
+      <SpecimenSpectra
+        specimen={specimen}
+        experiments={experiments}
+        width={width}
+        height={height}
+      />
+    );
+  const unit = specimenUnit(specimen, experiments);
+  const ages = experimentAges(experiments, unit);
+  if (ages.length === 0) return null;
+  return (
+    <RankedAges
+      items={ages}
+      unit={unit}
+      reference={specimenReference(specimen, unit)}
+      width={width}
+      height={height}
+      label={`Ranked experiment ages of specimen ${specimen.specimen}`}
+    />
+  );
+}
+
 /** A specimen drawn large: its preferred age, its experiments' spectra under
- * it, and a link to each experiment's own plots. */
+ * it, their ages ranked and as an ideogram, and a link to each experiment's
+ * own plots. */
 function SpecimenDetail({
   id,
   specimen,
@@ -426,7 +542,11 @@ function SpecimenDetail({
 }) {
   const openContribution = useOpenContribution();
   const plotWidth = Math.min(width, 720);
+  const halfWidth = width >= 2 * 340 + 16 ? Math.min(Math.floor((width - 16) / 2), 440) : plotWidth;
   const drawn = hasSteps(experiments);
+  const unit = specimenUnit(specimen, experiments);
+  const ages = experimentAges(experiments, unit);
+  const reference = specimenReference(specimen, unit);
   return (
     <>
       <p className="mb-2 text-[13px]">
@@ -451,6 +571,42 @@ function SpecimenDetail({
           />
           <SpecimenLegend experiments={experiments} />
         </PlotFigure>
+      )}
+      {ages.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-start gap-4">
+          <PlotFigure
+            width={halfWidth}
+            caption={`Each experiment's contributed age (its preferred one, else its plateau) ± 1σ, youngest first; the dashed line and band are the specimen's preferred age.${ages.length < experiments.length ? ` ${experiments.length - ages.length} of its experiments have no contributed age.` : ""}`}
+          >
+            <RankedAges
+              items={ages}
+              unit={unit}
+              reference={reference}
+              width={halfWidth}
+              height={260}
+              detailed
+              label={`Ranked experiment ages of specimen ${specimen.specimen}`}
+            />
+          </PlotFigure>
+          <PlotFigure
+            width={halfWidth}
+            caption={
+              ages.some((a) => a.sigma)
+                ? "Ideogram: the sum of the experiments' age curves (each age ± σ as a normal curve), each one faint, the ages as ticks."
+                : "Ideogram: no σ contributed with these ages, so only their ticks."
+            }
+          >
+            <Ideogram
+              items={ages}
+              unit={unit}
+              reference={reference}
+              width={halfWidth}
+              height={260}
+              detailed
+              label={`Ideogram of specimen ${specimen.specimen}`}
+            />
+          </PlotFigure>
+        </div>
       )}
       {experiments.length > 0 && (
         <div className="mt-3 text-[13px]">
@@ -514,8 +670,9 @@ export function ExperimentAgePlots({ id, privateKey, plot, onPlot }: TabProps) {
       items={items}
       selected={plot}
       onSelect={onPlot}
-      legend="Age spectrum: each step's contributed age ± σ over the ³⁹Ar it released; the plateau's steps are filled, its age ± σ the band · isochrons: 1σ error ellipses, hollow = steps not used"
+      legend="Age spectrum: each step's contributed age ± σ over the ³⁹Ar it released; the plateau's steps are filled, its age ± σ the band; under it, the steps' K/Ca, ⁴⁰Ar* and Cl/K · isochrons: 1σ error ellipses, hollow = steps not used · release curve: ³⁹Ar released against temperature"
       filterLabel="Filter plots by experiment, specimen or sample"
+      largeHeight={LARGE_HEIGHT.experiment}
       renderLarge={(item, width) => {
         const experiment = byName.get(item.key);
         return experiment ? <ExperimentDetail experiment={experiment} width={width} /> : null;
@@ -567,8 +724,9 @@ export function SpecimenAgePlots({ id, privateKey, plot, onPlot }: TabProps) {
       items={items}
       selected={plot}
       onSelect={onPlot}
-      legend="Each experiment's age spectrum in its own colour; the dashed line and band are the specimen's preferred age ± σ"
+      legend="Each experiment's age spectrum in its own colour, then their ages ranked and as an ideogram; the dashed line and band are the specimen's preferred age ± σ"
       filterLabel="Filter plots by specimen, sample or experiment"
+      largeHeight={LARGE_HEIGHT.specimen}
       renderLarge={(item, width) => {
         const specimen = specimens.get(item.key);
         return specimen ? (
@@ -586,11 +744,11 @@ export function SpecimenAgePlots({ id, privateKey, plot, onPlot }: TabProps) {
         return (
           <CardChart
             size={size}
-            note={experiments.length ? "No heating steps" : "No experiments"}
+            note={experiments.length ? "No heating steps or ages" : "No experiments"}
             chart={
               specimen &&
-              hasSteps(experiments) && (
-                <SpecimenSpectra
+              hasThumbnail(experiments) && (
+                <SpecimenThumbnail
                   specimen={specimen}
                   experiments={experiments}
                   width={size.width}
@@ -598,6 +756,100 @@ export function SpecimenAgePlots({ id, privateKey, plot, onPlot }: TabProps) {
                 />
               )
             }
+          />
+        );
+      }}
+    />
+  );
+}
+
+/** A contribution-wide plot, large (`detailed`) or as a card. */
+function SummaryChart({
+  plot,
+  width,
+  height,
+  detailed,
+}: {
+  plot: SummaryPlot;
+  width: number;
+  height: number;
+  detailed?: boolean;
+}) {
+  return plot.kind === "ages" ? (
+    <Ideogram
+      items={plot.items}
+      unit={plot.unit}
+      width={width}
+      height={height}
+      detailed={detailed}
+      withHistogram
+      label={plot.title}
+    />
+  ) : (
+    <XYErrorPlot
+      points={plot.points}
+      xLabel={plot.xLabel}
+      yLabel={plot.yLabel}
+      reverseY={plot.reverseY}
+      width={width}
+      height={height}
+      detailed={detailed}
+      label={plot.title}
+    />
+  );
+}
+
+function summaryCaption(plot: SummaryPlot): string {
+  if (plot.kind === "xy") return plot.caption;
+  const withSigma = plot.items.filter((d) => d.sigma).length;
+  return (
+    "Histogram of the specimens' preferred ages, with their ideogram (each age ± σ as a normal curve, summed and scaled to the tallest bin) and the ages as ticks." +
+    (withSigma < plot.items.length
+      ? ` ${plot.items.length - withSigma} ages have no σ and are in the histogram only.`
+      : "")
+  );
+}
+
+/** How many contribution-wide plots there are (the tab's count). */
+export const summaryCount = (data: ArgonData) => summaryPlots(data).length;
+
+/** Contribution Age Plots: the specimens' ages together, against their
+ * samples' section, and J against irradiation position. */
+export function ContributionAgePlots({ id, privateKey, plot, onPlot }: TabProps) {
+  const query = useArgon(id, privateKey);
+  const plots = useMemo(() => (query.data ? summaryPlots(query.data) : []), [query.data]);
+  const byKey = useMemo(() => new Map(plots.map((p) => [p.key, p])), [plots]);
+  const items = useMemo(
+    () => plots.map((p) => ({ key: p.key, title: p.title, where: p.where, names: names(p.title) })),
+    [plots],
+  );
+  if (query.isPending) return <PageSpinner label="Loading the age data…" />;
+  if (query.error) return <ErrorMessage error={query.error} className="m-4" />;
+  return (
+    <AgePlotGrid
+      items={items}
+      selected={plot}
+      onSelect={onPlot}
+      legend="The contribution's specimens together: their ages as a histogram and ideogram, against their samples' elevation, height or depth, and their J values against irradiation position"
+      filterLabel="Filter plots by name"
+      largeHeight={LARGE_HEIGHT.contribution}
+      renderLarge={(item, width) => {
+        const p = byKey.get(item.key);
+        if (!p) return null;
+        const w = Math.min(width, 720);
+        return (
+          <PlotFigure width={w} caption={summaryCaption(p)}>
+            <SummaryChart plot={p} width={w} height={400} detailed />
+          </PlotFigure>
+        );
+      }}
+      renderCard={(item, size) => {
+        const p = byKey.get(item.key);
+        return (
+          <CardChart
+            size={size}
+            note="Nothing to plot"
+            chart={p && <SummaryChart plot={p} width={size.width} height={size.height} />}
           />
         );
       }}

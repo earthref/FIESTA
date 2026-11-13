@@ -13,10 +13,10 @@ const SERIES = {
 };
 const OTHER = "var(--er-plot-muted)";
 
-const ACCENT = "var(--node-ink)";
-const accentFill = (percent: number) =>
+export const ACCENT = "var(--node-ink)";
+export const accentFill = (percent: number) =>
   `color-mix(in srgb, var(--node-ink) ${percent}%, var(--er-plot-surface))`;
-const strongFill = (percent: number) =>
+export const strongFill = (percent: number) =>
   `color-mix(in srgb, var(--er-plot-strong) ${percent}%, transparent)`;
 
 export function useSeriesColors(count: number): string[] {
@@ -25,18 +25,22 @@ export function useSeriesColors(count: number): string[] {
   return Array.from({ length: count }, (_, i) => palette[i] ?? OTHER);
 }
 
-interface Pad {
+export interface Pad {
   left: number;
   right: number;
   top: number;
   bottom: number;
 }
 
-const DETAILED_PAD: Pad = { left: 56, right: 14, top: 12, bottom: 40 };
+export const DETAILED_PAD: Pad = { left: 56, right: 14, top: 12, bottom: 40 };
 const THUMB_PAD: Pad = { left: 2, right: 2, top: 2, bottom: 2 };
 
 /** Round tick values covering [min, max], and the decimals they need. */
-function niceTicks(min: number, max: number, count = 5): { ticks: number[]; decimals: number } {
+export function niceTicks(
+  min: number,
+  max: number,
+  count = 5,
+): { ticks: number[]; decimals: number } {
   const span = max - min || Math.abs(max) || 1;
   const raw = span / count;
   const magnitude = 10 ** Math.floor(Math.log10(raw));
@@ -45,10 +49,17 @@ function niceTicks(min: number, max: number, count = 5): { ticks: number[]; deci
   for (let tick = Math.ceil(min / step) * step; tick <= max + step * 1e-9; tick += step) {
     ticks.push(Math.abs(tick) < step * 1e-9 ? 0 : tick);
   }
-  return { ticks, decimals: Math.max(0, -Math.floor(Math.log10(step) + 1e-9)) };
+  // Enough decimals for the step itself (0.25, not 0.3).
+  let decimals = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+  while (
+    decimals < 10 &&
+    Math.abs(step * 10 ** decimals - Math.round(step * 10 ** decimals)) > 1e-6
+  )
+    decimals++;
+  return { ticks, decimals };
 }
 
-interface Frame {
+export interface Frame {
   x: (value: number) => number;
   y: (value: number) => number;
   pad: Pad;
@@ -56,14 +67,15 @@ interface Frame {
   innerH: number;
 }
 
-function frame(
+export function frame(
   width: number,
   height: number,
   [xMin, xMax]: [number, number],
   [yMin, yMax]: [number, number],
   detailed?: boolean,
+  padding?: Pad,
 ): Frame {
-  const pad = detailed ? DETAILED_PAD : THUMB_PAD;
+  const pad = padding ?? (detailed ? DETAILED_PAD : THUMB_PAD);
   const innerW = width - pad.left - pad.right;
   const innerH = height - pad.top - pad.bottom;
   return {
@@ -75,14 +87,42 @@ function frame(
   };
 }
 
+/** Ticks with their labels: round values, or (on a log axis, whose domain is
+ * in log10) the powers of ten. */
+interface Ticks {
+  ticks: number[];
+  label: (tick: number) => string;
+}
+
+function linearTicks(domain: [number, number]): Ticks {
+  const t = niceTicks(...domain);
+  return { ticks: t.ticks, label: (tick) => tick.toFixed(t.decimals) };
+}
+
+function logTicks([lo, hi]: [number, number]): Ticks {
+  const ticks: number[] = [];
+  for (let p = Math.ceil(lo); p <= Math.floor(hi); p++) ticks.push(p);
+  // Under one decade: the linear ticks of the values, placed on the log axis.
+  if (ticks.length < 2) {
+    const t = niceTicks(10 ** lo, 10 ** hi, 3);
+    return {
+      ticks: t.ticks.filter((v) => v > 0).map(Math.log10),
+      label: (tick) => (10 ** tick).toFixed(t.decimals),
+    };
+  }
+  return { ticks, label: (p) => (p >= 0 && p <= 4 ? String(10 ** p) : `1e${p}`) };
+}
+
 /** Axis lines, ticks and names, in the theme's plot neutrals. */
-function Axes({
+export function Axes({
   f,
   xDomain,
   yDomain,
   xLabel,
   yLabel,
   height,
+  yLog,
+  xTicks,
 }: {
   f: Frame;
   xDomain: [number, number];
@@ -90,9 +130,13 @@ function Axes({
   xLabel: string;
   yLabel: string;
   height: number;
+  /** The y domain is log10 of the values. */
+  yLog?: boolean;
+  /** Ticks of their own on x (a ranked axis's names). */
+  xTicks?: Ticks;
 }) {
-  const xt = niceTicks(...xDomain);
-  const yt = niceTicks(...yDomain);
+  const xt = xTicks ?? linearTicks(xDomain);
+  const yt = yLog ? logTicks(yDomain) : linearTicks(yDomain);
   const bottom = f.pad.top + f.innerH;
   const midY = f.pad.top + f.innerH / 2;
   return (
@@ -123,12 +167,12 @@ function Axes({
       />
       {xt.ticks.map((tick) => (
         <text key={`x-${tick}`} x={f.x(tick)} y={bottom + 14} textAnchor="middle">
-          {tick.toFixed(xt.decimals)}
+          {xt.label(tick)}
         </text>
       ))}
       {yt.ticks.map((tick) => (
         <text key={`y-${tick}`} x={f.pad.left - 6} y={f.y(tick) + 3} textAnchor="end">
-          {tick.toFixed(yt.decimals)}
+          {yt.label(tick)}
         </text>
       ))}
       <text x={f.pad.left + f.innerW / 2} y={height - 6} textAnchor="middle" fontSize={11}>
@@ -141,7 +185,7 @@ function Axes({
   );
 }
 
-function Svg({
+export function Svg({
   width,
   height,
   label,
@@ -168,11 +212,11 @@ function Svg({
   );
 }
 
-const clipKey = (text: string) => text.replace(/[^A-Za-z0-9_-]/g, "_");
+export const clipKey = (text: string) => text.replace(/[^A-Za-z0-9_-]/g, "_");
 
 /** The y range of a spectrum: the step ages and the reference band, with
  * error bars allowed a quarter of that span beyond it (and clipped). */
-function ageDomain(
+export function ageDomain(
   ages: number[],
   sigmas: (number | null)[],
   band?: [number, number],
@@ -190,14 +234,14 @@ function ageDomain(
   return [lo - pad, hi + pad];
 }
 
-const stepLabel = (experiment: Experiment, i: number) => {
+export const stepLabel = (experiment: Experiment, i: number) => {
   const step = experiment.steps[i];
   const where =
     step.temperature != null ? ` at ${step.temperature} ${step.temp_unit ?? ""}`.trimEnd() : "";
   return `${step.measurement ?? `Step ${i + 1}`}${where}: ${ageText(step.age, step.age_sigma, experiment.age_unit)}, ${step.ar39_start.toFixed(1)}–${step.ar39_end.toFixed(1)}% ³⁹Ar`;
 };
 
-const ar39Label = (experiment: Experiment) =>
+export const ar39Label = (experiment: Experiment) =>
   experiment.ar39_source ? "Cumulative ³⁹Ar released (%)" : "Steps (equal widths)";
 
 /** An experiment's age spectrum, with its contributed plateau. */
