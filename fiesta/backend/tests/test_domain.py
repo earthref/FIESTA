@@ -1218,7 +1218,7 @@ def test_sc_summarize_positions_maps_by_seamount(sc_node):
 
 
 def test_contribution_filters_on_every_node():
-    """Every node filters by Contribution ID and Contributor (facets on the
+    """Every node filters by Contribution ID, Contribution DOI and Contributor (facets on the
     contribution block, not `_all`) and Contributed On (a date range whose
     bounds are whole epoch milliseconds); a facet never lists private keys."""
     import pytest
@@ -1229,11 +1229,11 @@ def test_contribution_filters_on_every_node():
 
     for node in load_deployment().nodes.values():
         filters = node.search.filters
-        assert {"id", "contributor"} <= set(node.search.facets), node.slug
+        assert {"id", "doi", "contributor"} <= set(node.search.facets), node.node.slug
         assert any(
             f.type == "range" and f.date and f.field == "summary.contribution.timestamp"
             for f in filters
-        ), node.slug
+        ), node.node.slug
     assert facet_path("id") == "summary.contribution.id"
     assert facet_path("contributor") == "summary.contribution._contributor.raw"
     assert facet_path("site") == "summary._all.site.raw"

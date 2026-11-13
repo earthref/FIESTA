@@ -36,8 +36,9 @@ search:
     - { type: facet, field: lithology }
     - { type: facet, field: material }
     - { type: facet, field: method_codes }
-    # Every node's contribution filters (the contribution block's id, contributor, timestamp).
+    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
+    - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
   # Samples on another planetary body, by their location_type: they and their

@@ -294,8 +294,16 @@ def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[s
             levels |= {lvl.name for lvl in plugin.search_levels(node)}
     except ValueError:
         pass  # unknown plugin names are reported by the plugin check
+    from fiesta.search.queries import CONTRIBUTION_FACETS
+
     for f in node.search.filters:
-        if f.type == "facet" and f.field not in columns and not f.field.startswith("_"):
+        # A contribution-block facet (id, doi, contributor) needs no column.
+        if (
+            f.type == "facet"
+            and f.field not in columns
+            and f.field not in CONTRIBUTION_FACETS
+            and not f.field.startswith("_")
+        ):
             errors.append(
                 f"facet {f.field!r} is not a column of data model {node.data_model.latest}"
             )
