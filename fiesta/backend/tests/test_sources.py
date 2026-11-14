@@ -1,6 +1,8 @@
 """Contribution modes and the data-source sync client (no infrastructure)."""
 
 import json
+import re
+from datetime import UTC, datetime
 
 import httpx
 import pytest
@@ -326,6 +328,303 @@ async def test_geomagia_sync_sends_only_changed_references(geomagia_source, tmp_
     assert sent == [265] and summary["applied"] == 1 and summary["unchanged"] == 1
     assert summary["errors"] == [] and summary["missing_from_source"] == []
     assert records[265].created_at.date().isoformat() == "2019-05-22"
+
+
+# ---- GEOMAGIA: the MySQL catalogue, through a fake DB-API connection ----------
+
+
+def _archeodij(**values):
+    """An ARCHEODIJ row as pymysql returns it (SET columns as "a,b" strings)."""
+    row = dict.fromkeys(
+        [
+            "NUM_14C_SAMPLES",
+            "C14_ID",
+            "CALIB_14C_AGE",
+            "CALIB_14C_AGE_SIGMA_MIN",
+            "CALIB_14C_AGE_SIGMA_MAX",
+            "NUM_14C_SIGMAS",
+            "CALC_CALIB_14C_AGE",
+            "CALC_CALIB_14C_AGE_SIGMA_MIN",
+            "CALC_CALIB_14C_AGE_SIGMA_MAX",
+            "DENDRO_ID",
+            "TOT_NUM_DENDRO",
+            "NUM_DENDRO_USED",
+            "CROSS_REF_ID",
+            "CROSS_UID",
+        ],
+        -1,
+    )
+    row |= {"SITE_NAME": None, "EDITOR": None, "EDIT_DATE": None, "COMP_REF": "", "K": -1.0}
+    row |= {"AN_USE_STATUS_ID": 0, "SUPERSEEDED": 0, "VADM": 1.0, "SIGMA_VADM": 1.0}
+    return row | values
+
+
+GEOMAGIA_DB_ROWS = [
+    # intensity only, two dating methods, in no compilation (the CSV test's UID 1915)
+    _archeodij(
+        UID=1915,
+        NUM_SAMPLES=1,
+        NUM_ACC_SPEC=3,
+        NUM_MEAS_SPEC=0,
+        BA=69.0,
+        SIGMA_BA=1.0,
+        AGE=1490.0,
+        AGE_MIN=-1.0,
+        AGE_MAX=-1.0,
+        NUM_SIGMAS=-1,
+        AGE_ERROR_TYPE_ID=1,
+        SITE_LAT=59.3,
+        SITE_LON=39.7,
+        SITE_ID=49,
+        PI_METHOD_ID="1",
+        AC_ID="-1",
+        MD_CK_ID="-1",
+        AN_CORR_SET_ID="-1",
+        CR_CORR_SET_ID="-1",
+        DM_METHOD_ID=0,
+        AF_STEP=0.0,
+        T_STEP=0,
+        DM_ANALYSIS_ID=0,
+        SPECIMEN_TYPE_ID="2",
+        MATERIAL_ID="1",
+        REFERENCE_ID=265,
+        DATING_METHOD_ID="101,102",
+        NUM_DIR_SAMPLES=-1,
+        NUM_DIR_SPECIMENS=-1,
+        NUM_DIR_SPEC_COLLECTED=0,
+        DECL=999.0,
+        INCL=999.0,
+        ALPHA_95=-1.0,
+        VDM=9.65,
+        SIGMA_VDM=0.14,
+        SAMPLE_ID="0",
+        SITE_HORIZON="0",
+        SITE_NAME="Vologda",
+        UPLOAD_YEAR=2009,
+        UPLOAD_MONTH=0,
+        UPLOADER="FD",
+    ),
+    # volcanic (lava), a -180..180 longitude, anisotropy assessed but not applied
+    _archeodij(
+        UID=4039,
+        NUM_SAMPLES=-1,
+        NUM_ACC_SPEC=-1,
+        NUM_MEAS_SPEC=-1,
+        BA=-1.0,
+        SIGMA_BA=-1.0,
+        AGE=1795.0,
+        AGE_MIN=20.0,
+        AGE_MAX=20.0,
+        NUM_SIGMAS=2,
+        AGE_ERROR_TYPE_ID=1,
+        SITE_LAT=55.46,
+        SITE_LON=-3.5,
+        SITE_ID=55,
+        PI_METHOD_ID="-1",
+        AC_ID="-1",
+        MD_CK_ID="-1",
+        AN_CORR_SET_ID="3",
+        AN_USE_STATUS_ID=2,
+        CR_CORR_SET_ID="-1",
+        DM_METHOD_ID=1,
+        AF_STEP=-1.0,
+        T_STEP=-1,
+        DM_ANALYSIS_ID=0,
+        SPECIMEN_TYPE_ID="0",
+        MATERIAL_ID="4",
+        REFERENCE_ID=206,
+        DATING_METHOD_ID="0",
+        NUM_DIR_SAMPLES=39,
+        NUM_DIR_SPECIMENS=-1,
+        NUM_DIR_SPEC_COLLECTED=-1,
+        DECL=331.0,
+        INCL=73.7,
+        ALPHA_95=2.0,
+        K=125.0,
+        COMP_REF="1004,1006",
+        SAMPLE_ID="-1",
+        SITE_HORIZON="Veldbaek",
+        UPLOAD_YEAR=2009,
+        UPLOAD_MONTH=3,
+        UPLOADER="FD",
+        EDITOR="MCB",
+        EDIT_DATE="7/24/2017",
+    ),
+]
+
+
+class FakeGeomagiaDB:
+    """A DB-API connection serving the GEOMAGIA tables the source reads; records every
+    statement. Table names come back as Django has them (ARCHEODIJ, REFS)."""
+
+    def __init__(self, lookups):
+        self.statements, self.rolled_back = [], False
+
+        def names(table, **override):
+            rows = lookups[table]["rows"] | override
+            return [
+                {"ID": int(i), "name": v[0] if isinstance(v, list) else v} for i, v in rows.items()
+            ]
+
+        self.tables = {
+            "error_type": names("AgeErrorID"),
+            "dating_methods": names("DatMethod", **{"102": "Calibrated <sup>14</sup>C Age"}),
+            "pi_methods": names("PIID"),
+            "alteration_monit_corr": names("PIAltID"),
+            "md_checks": names("PIMDID"),
+            "anisotropy_correction": names("PIANID"),
+            "measurement_use_status": [
+                {"ID": 0, "name": "Not specified"},
+                {"ID": 1, "name": "Correction applied"},
+                {"ID": 2, "name": "Assessment only"},
+            ],
+            "cooling_rate": names("PICRID"),
+            "dm_methods": names("DirMethID"),
+            "dm_analysis": names("DirID"),
+            "specimen_types": names("SpecID"),
+            "materials": names("MatID"),
+            "14c_calibration_software": names("C14Soft"),
+            "14c_calibration_dataset": names("C14DataSet"),
+            "aa_locations": [
+                {"ID": int(i), "NAME": v[0], "CONTINENT": v[1]}
+                for i, v in lookups["CRID"]["rows"].items()
+            ],
+            "comp_reference": [
+                {"ID": i, "AUTHORS": v[0], "TITLE": v[1], "YEAR": int(v[2])}
+                for i, v in lookups["CompID"]["rows"].items()
+            ],
+            # SHORT_NAME (an email address) exists but the source never selects it.
+            "uploader": [
+                {"ID": "FD", "NAME": "Fabio Donadini"},
+                {"ID": "MCB", "NAME": "Maxwell Brown"},
+            ],
+            "REFS": [
+                {
+                    "ID": 206,
+                    "AUTHORS": "Donadini F., Korhonen K., Riisager P., Pesonen L.J.",
+                    "TITLE": "Database for Holocene geomagnetic intensity information",
+                    "YEAR": 2006,
+                    "PUBLICATION_NAME": "Eos",
+                    "VOLUME": 87,
+                    "PAGES": "137",
+                    "DOI": None,
+                    "MAGIC_LINK": None,
+                },
+                {
+                    "ID": 265,
+                    "AUTHORS": "Kova&#269;eva M.",
+                    "TITLE": "Archaeomagnetic results",
+                    "YEAR": 2009,
+                    "PUBLICATION_NAME": "Phys. Earth Planet. Inter.",
+                    "VOLUME": 1,
+                    "PAGES": "1-9",
+                    "DOI": "10.1000/example",
+                    "MAGIC_LINK": "https://earthref.org/MagIC/1",
+                },
+            ],
+            "archeodij_edit_history": [{"UID": 1915, "edited": datetime(2020, 12, 1)}],
+            "ARCHEODIJ": GEOMAGIA_DB_ROWS,
+        }
+
+    def cursor(self):
+        db = self
+
+        class Cursor:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def execute(self, sql, args=()):
+                db.statements.append(sql)
+                if "information_schema" in sql:
+                    self.rows = [{"name": t} for t in db.tables]
+                elif match := re.search(r"FROM `([^`]+)`", sql):
+                    self.rows = db.tables[match.group(1)]
+                else:
+                    self.rows = []
+
+            def fetchall(self):
+                return self.rows
+
+        return Cursor()
+
+    def rollback(self):
+        self.rolled_back = True
+
+
+def test_geomagia_mysql_reads_the_catalogue_like_the_csv(geomagia_source):
+    from fiesta.domain.parse import parse_text
+    from fiesta.domain.validate import validate_contribution
+
+    db = FakeGeomagiaDB(geomagia_source.load_lookups())
+    generated, texts, meta, times = geomagia_source.build_mysql(db)
+    assert generated == "GEOMAGIA50 database" and sorted(texts) == [206, 265]
+    # Read-only: SELECTs inside a READ ONLY transaction, ended by a rollback.
+    assert db.statements[0] == "START TRANSACTION READ ONLY" and db.rolled_back
+    assert all(s.startswith("SELECT") for s in db.statements[1:])
+    assert not any("SHORT_NAME" in s for s in db.statements)
+    with pytest.raises(ValueError, match="only reads"):
+        geomagia_source.MySQLSource(db).query("UPDATE ARCHEODIJ SET BA = 0")
+
+    node = load_deployment(CONFIG_DIR / "fiesta.yaml").node_for("geomagia")
+    parsed = parse_text(texts[265])
+    head = parsed.tables["contribution"][0]
+    assert (head["citation"], head["authors"]) == ("Kovačeva (2009)", "Kovačeva M.")
+    assert head["reference"] == "10.1000/example" and head["geomagia_version"] == generated
+    (site,) = parsed.tables["sites"]
+    assert site["site"] == site["uid"] == "1915" and site["archeo_volcanic"] == "Archeo"
+    # The CSV path's rules: missing markers blank (-1, and 0 in counts; 999 for no
+    # direction), lookup sentinels kept, codes joined by ':'.
+    for blank in ("age_min", "decl", "incl", "num_meas_spec", "af_step", "t_step", "k"):
+        assert not site.get(blank), blank
+    assert not site.get("sample_id") and not site.get("site_horizon")
+    assert (site["ba"], site["num_acc_spec"], site["lat"], site["lon"]) == (
+        "69",
+        "3",
+        "59.3",
+        "39.7",
+    )
+    assert site["ac_id"] == "-1" and site["alteration_checks"] == "No measurement"
+    assert site["dating_method_id"] == "101:102"
+    assert site["dating_methods"] == "Archeological Age:Calibrated 14C Age"
+    assert not site.get("comp_ref") and site["uploader"] == "Fabio Donadini"
+    assert (site["region_country"], site["continent"]) == ("Russia", "Asia")
+    assert (site["vadm"], site["sigma_vadm"]) == ("9.95", "0.14")  # calculated, not stored
+    assert (site["an_use_status_id"], site["anisotropy_use_status"]) == ("0", "Not specified")
+    assert not validate_contribution(node, parsed, "1.0").errors
+
+    volcanic_parsed = parse_text(texts[206])
+    (volcanic,) = volcanic_parsed.tables["sites"]
+    assert volcanic["archeo_volcanic"] == "Volcanic" and volcanic["lon"] == "356.5"
+    assert (volcanic["an_use_status_id"], volcanic["anisotropy_use_status"]) == (
+        "2",
+        "Assessment only",
+    )
+    assert (volcanic["editor"], volcanic["edit_date"]) == ("Maxwell Brown", "24/07/2017")
+    assert volcanic["compilations"].startswith("Schnepp E., Lanos Ph. (2006):")
+    assert not validate_contribution(node, volcanic_parsed, "1.0").errors
+
+    # Records are dated by their uploads and edits, so an unchanged one keeps its fingerprint.
+    assert times[265] == (datetime(2009, 1, 1, tzinfo=UTC), datetime(2020, 12, 1, tzinfo=UTC))
+    assert times[206] == (datetime(2009, 3, 1, tzinfo=UTC), datetime(2017, 7, 24, tzinfo=UTC))
+    records = geomagia_source.source_records(texts, meta, generated, "s@example.test", times)
+    assert records[265].created_at.year == 2009
+    assert records[265].revisions[0].timestamp.year == 2020
+
+
+def test_geomagia_mysql_settings_come_from_the_environment(geomagia_source):
+    assert geomagia_source.mysql_settings({}) is None
+    settings = geomagia_source.mysql_settings(
+        {"GEOMAGIA_MYSQL_HOST": "db.example", "GEOMAGIA_MYSQL_USER": "reader"}
+    )
+    assert (settings["host"], settings["port"], settings["database"]) == (
+        "db.example",
+        3306,
+        "geomagia",
+    )
+    assert settings["user"] == "reader" and settings["charset"] == "utf8mb4"
 
 
 @pytest.fixture(scope="module")

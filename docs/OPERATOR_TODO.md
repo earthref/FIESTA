@@ -165,29 +165,42 @@ Last updated: 2026-11-11
 ## 2026-11-13 — GEOMAGIA node
 
 `configurations/geomagia.yaml` hosts GEOMAGIA50's archeomagnetic and volcanic
-records (one contribution per reference, its records as sites), mirrored from the
-public 2019 CSV export by `configurations/sources/geomagia.py` until there is
-access to the MySQL catalogue. `publish.web: false`: dev serves its API, and its
-SPA only to local stacks. See configurations/geomagia/README.md.
+records (one contribution per reference, its records as sites), mirrored by
+`configurations/sources/geomagia.py` from its MySQL catalogue, or from the public
+2019 CSV export until there is access to the catalogue. `publish.web: false`: dev
+serves its API, and its SPA only to local stacks. See configurations/geomagia/README.md.
 
-- [ ] **Ask Max for a full GEOMAGIA `mysqldump` with data.** At least the lookup
-      tables, `refs`, `aa_locations` and the current `archeodij`, plus DDL for
-      `measurement_use_status`, `journal_list`, `geomagnetic_models` and
-      `archeodij_edit_history` (the repo's `geomagia.sql` predates them). The public
-      CSV stops at v3.2 (May 2019) and misses the 2020/2021 v3.4 additions.
+- [x] **Ask Max for a full GEOMAGIA `mysqldump` with data.** Received 2026-11-13
+      (72 tables, 12,529 records in 858 references); the MySQL reader was built and
+      checked against it. It holds personal data (`uploader` emails, `access_log`):
+      it stays in `~/.cache/fiesta/sources/geomagia/` on the dev machine, never in git.
 - [ ] **A SELECT-only account on the GEOMAGIA MySQL catalogue** and a network path
-      from the ops host (`MARFIK3`), its credentials in `/etc/fiesta/source-geomagia.env`
-      (names only here). Unblocks the MySQL reader that replaces the CSV.
+      from the ops host (`MARFIK3`). It needs SELECT on `archeodij`, `refs`, `uploader`,
+      `aa_locations`, `comp_reference`, `archeodij_edit_history` and the lookup tables
+      (`error_type`, `dating_methods`, `pi_methods`, `alteration_monit_corr`,
+      `md_checks`, `anisotropy_correction`, `measurement_use_status`, `cooling_rate`,
+      `dm_methods`, `dm_analysis`, `specimen_types`, `materials`,
+      `14c_calibration_software`, `14c_calibration_dataset`), or on the whole schema.
+      Its settings go in `/etc/fiesta/source-geomagia.env` (root:fiesta, 0640) as
+      `GEOMAGIA_MYSQL_HOST`, `GEOMAGIA_MYSQL_PORT`, `GEOMAGIA_MYSQL_USER`,
+      `GEOMAGIA_MYSQL_PASSWORD`, `GEOMAGIA_MYSQL_DATABASE` (names only here); with
+      `GEOMAGIA_MYSQL_HOST` set, the scheduled run reads the database.
 - [ ] **Steward account**: Max's EarthRef account as the owner of every GEOMAGIA
       contribution (`/etc/fiesta/source-geomagia-owners.json`, `default_owner`) and as
       GEOMAGIA node admin.
-- [ ] **First sync on dev** from the CSV: put `geomagia.csv`
+- [ ] **First sync on dev**, preferably from the database (858 contributions) once the
+      account above exists: Run now on the admin page's Data source tab, then drain
+      dev's outbox. Without it, from the CSV: put `geomagia.csv`
       (`https://geomagia.gfz.de/docs/geomagia50_v3_24072017_download.csv`) and
       `studies.html` (a saved `studies.php`) in the ops state dir
-      `/var/lib/fiesta-ops/sources/geomagia/`, then Run now on the admin page's Data
-      source tab (667 contributions), and drain dev's outbox.
-- [ ] **Ask Max about codes missing from the ID glossary**: `DirMethID` 101 (15
-      records) and 103 (2), and `SpecTypeID` -1 (2). They show as validation errors.
+      `/var/lib/fiesta-ops/sources/geomagia/` (667 contributions). Once dev has synced
+      from the database, never run the CSV again: its 2019 records would replace newer
+      ones.
+- [ ] **Ask Max about codes with no lookup entry** in the database: `SPECIMEN_TYPE_ID`
+      -1 (311 records) and `MATERIAL_ID` -1 (249), all uploaded 2019–2020 (neither
+      table has a -1 row; is it "No measurement"?), and the one negative `K` (-47.4,
+      reference 774). They show as validation errors. The 2019 CSV's `DirMethID`
+      101/103 are fixed in the database.
 - [ ] **Decide when GEOMAGIA goes public** (`publish.web: true` in geomagia.yaml),
       with the GEOMAGIA team.
 

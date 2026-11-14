@@ -105,8 +105,8 @@ publish:
   api: true
   web: false
 
-# The data source, read only by configurations/sources/geomagia.py: the public
-# GEOMAGIA50 exports until there is read access to the MySQL catalogue.
+# The data source, read only by configurations/sources/geomagia.py: the GEOMAGIA50
+# MySQL catalogue (GEOMAGIA_MYSQL_* in the run's env file), else the public exports.
 legacy:
   kind: script
   source_id: geomagia50
