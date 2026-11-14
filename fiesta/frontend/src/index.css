@@ -240,10 +240,10 @@
     color-mix(in srgb, #4b5563 80%, white),
     color-mix(in srgb, #4b5563 70%, white)
   );
-  --node-ink: light-dark(#4b5563, color-mix(in srgb, #4b5563 55%, white));
+  --node-ink: light-dark(#4b5563, color-mix(in srgb, #4b5563 35%, white));
   --node-ink-strong: light-dark(
     color-mix(in srgb, #4b5563 85%, black),
-    color-mix(in srgb, #4b5563 40%, white)
+    color-mix(in srgb, #4b5563 15%, white)
   );
 }
 
@@ -312,16 +312,18 @@
   --er-ink-strong: rgba(255, 255, 255, 0.95);
   --er-ink-muted: rgba(255, 255, 255, 0.6);
   --er-ink-secondary: #b0b3b8;
-  --er-ink-faint: #7a7e85;
+  /* >= 4.6:1 on every surface and panel below (2026-11-13; #7a7e85 was 4.27:1). */
+  --er-ink-faint: #9a9fa7;
   --er-ink-heading: #f2f2f2;
-  --er-line: rgba(255, 255, 255, 0.15);
-  --er-edge: #3a3d44;
-  --er-panel: #262930;
-  --er-panel-strong: #2d3038;
-  --er-panel-soft: #22252b;
+  --er-line: rgba(255, 255, 255, 0.2);
+  --er-edge: #444852;
+  /* Panels step further from the surface so bars, cards and rows separate. */
+  --er-panel: #2a2d35;
+  --er-panel-strong: #31353e;
+  --er-panel-soft: #24272e;
   --er-bar: #1f2126;
   --er-content-heading: #eceef1;
-  --er-content-rule: #30333b;
+  --er-content-rule: #3a3e47;
   --er-content-code: #1e2026;
   --er-panel-hover: #2a2d33;
   --er-shade: #fff;
@@ -344,8 +346,8 @@
   --er-plot-strong: #d4d7dc;
   --er-plot-muted: #6e727a;
   --er-plot-faded: #3a3d44;
-  --er-plot-tooltip: #262930;
-  --er-plot-tooltip-line: #3a3d44;
+  --er-plot-tooltip: #2a2d35;
+  --er-plot-tooltip-line: #444852;
   --er-plot-tooltip-ink: rgba(255, 255, 255, 0.87);
 
   --color-gray-50: #1e2026;
@@ -353,7 +355,8 @@
   --color-gray-200: #30333b;
   --color-gray-300: #40444d;
   --color-gray-400: #5f646e;
-  --color-gray-500: #868b94;
+  /* >= 4.5:1 on surface, panel-soft and panel (13px muted text; #868b94 was 4.0:1 on panel). */
+  --color-gray-500: #959aa3;
   --color-gray-600: #a4a9b1;
   --color-gray-700: #c4c8ce;
   --color-gray-800: #dcdfe3;

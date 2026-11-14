@@ -34,9 +34,11 @@ export function nodeColorVars(color: string): Record<string, string> {
 }
 
 /** A brand color used as text or an outline: itself in light mode, lightened
- * in dark mode so it stays legible on the dark surface. */
+ * in dark mode so it stays legible on the dark surface. 35% keeps every node's
+ * ink >= 8:1 on --er-surface and >= 5.9:1 on --er-panel-strong (2026-11-13);
+ * 55% left MagIC at 4.4:1 on panels. */
 export function inkColor(color: string): string {
-  return `light-dark(${color}, color-mix(in srgb, ${color} 55%, white))`;
+  return `light-dark(${color}, color-mix(in srgb, ${color} 35%, white))`;
 }
 
 function nodeColorBase(color: string): Record<string, string> {
@@ -47,7 +49,8 @@ function nodeColorBase(color: string): Record<string, string> {
     "--node-color-soft": `light-dark(${mix(8, "white")}, ${mix(22, "#181a1f")})`,
     "--node-color-dark": mix(85, "black"),
     "--node-color-light": `light-dark(${mix(80, "white")}, ${mix(70, "white")})`,
-    "--node-ink-strong": `light-dark(${mix(85, "black")}, ${mix(40, "white")})`,
+    // Hover ink: darker in light mode, lighter than --node-ink in dark mode.
+    "--node-ink-strong": `light-dark(${mix(85, "black")}, ${mix(15, "white")})`,
   };
 }
 
