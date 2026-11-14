@@ -1406,8 +1406,10 @@ export function SearchPage() {
                 value={sort}
                 options={sortOptions}
                 onChange={(next) => setSearch({ sort: next })}
-                className="ml-auto self-center"
-                style={{ margin: "0 1em" }}
+                className="self-center"
+                // Inline, as an inline margin would beat an `ml-auto` class. Right edge
+                // under Download Results' (its 1em margin is at 1rem; this pill's em is smaller).
+                style={{ margin: "0 1rem 0 auto" }}
               />
             </div>
 
