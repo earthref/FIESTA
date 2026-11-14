@@ -24,6 +24,29 @@ interface Element {
   category: string;
 }
 
+// A periodic table's conventional category colors, as pastels (the classic
+// Wikipedia scheme): [legend label, color, the elements.ts categories].
+const CATEGORIES: [string, string, string[]][] = [
+  ["Alkali metal", "#ff9e9e", ["alkali metal"]],
+  ["Alkaline earth metal", "#ffdead", ["alkaline earth metal"]],
+  ["Transition metal", "#ffc8c8", ["transition metal"]],
+  ["Post-transition metal", "#d6d6d6", ["post-transition metal"]],
+  ["Metalloid", "#d6d6a3", ["metalloid"]],
+  ["Nonmetal", "#b4f5b4", ["diatomic nonmetal", "polyatomic nonmetal"]],
+  ["Noble gas", "#c4f4f8", ["noble gas"]],
+  ["Lanthanide", "#ffc6ff", ["lanthanide"]],
+  ["Actinide", "#ffadd6", ["actinide"]],
+  ["Unknown", "#ececec", []],
+];
+const UNKNOWN_COLOR = "#ececec";
+// Text on the pastels, light or dark theme alike.
+const CELL_INK = "#1f2937";
+
+/** An element's category color ("unknown, probably …" ones are Unknown). */
+function categoryColor(category: string): string {
+  return CATEGORIES.find(([, , names]) => names.includes(category))?.[1] ?? UNKNOWN_COLOR;
+}
+
 interface Options {
   column: string;
   levels: string[];
@@ -130,7 +153,13 @@ function PeriodicTableFilter({ ctx, options }: { ctx: PluginFilterContext; optio
 
   return (
     <>
-      <FilterEntry label={label} chips={chips} onOpen={() => setOpen(true)} />
+      <FilterEntry
+        label={label}
+        // A spinner only while the host counts it; none from a host that doesn't.
+        count={"filterCount" in ctx ? ctx.filterCount : null}
+        chips={chips}
+        onOpen={() => setOpen(true)}
+      />
       {open && (
         <PeriodicTableModal
           title={label}
@@ -263,17 +292,25 @@ function PeriodicTableModal({
                       selected
                         ? "cursor-pointer border-node bg-node text-white"
                         : disabled
-                          ? "cursor-default border-line bg-panel text-ink-faint opacity-50"
-                          : "cursor-pointer border-line bg-panel text-ink hover:border-node hover:text-node-ink",
+                          ? "cursor-default border-black/10 opacity-40"
+                          : "cursor-pointer border-black/15 hover:border-node",
                     )}
-                    // The legacy table's cell: lanthanides and actinides on rows 9-10.
-                    style={{ gridColumn: element.column, gridRow: element.row, height: "4.25rem" }}
+                    // The legacy table's cell: lanthanides and actinides on
+                    // rows 9-10, in its category's pastel (the node color when picked).
+                    style={{
+                      gridColumn: element.column,
+                      gridRow: element.row,
+                      height: "4.25rem",
+                      ...(selected
+                        ? {}
+                        : { background: categoryColor(element.category), color: CELL_INK }),
+                    }}
                   >
                     <span className="text-[15px] font-bold leading-none">{element.symbol}</span>
                     <span
                       className={cx(
                         "w-full border-t text-center text-[13px] leading-[1.6]",
-                        selected ? "border-white/40 bg-node-dark" : "border-line bg-surface",
+                        selected ? "border-white/40 bg-node-dark" : "border-black/10 bg-white/55",
                       )}
                     >
                       {abbreviateNumber(count)}
@@ -282,6 +319,18 @@ function PeriodicTableModal({
                 );
               })}
             </div>
+            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-muted">
+              {CATEGORIES.map(([label, color]) => (
+                <li key={label} className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-3 w-3 rounded-sm border border-black/15"
+                    style={{ background: color }}
+                  />
+                  {label}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

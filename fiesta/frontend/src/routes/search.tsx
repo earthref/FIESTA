@@ -687,6 +687,11 @@ export function SearchPage() {
         countOn(countKey(filter), levelTable, modalParams(q, ranges));
       }
     }
+    // A plugin filter (the KdD periodic table) counts its first field, a facet.
+    for (const filter of pluginFilters) {
+      if (filter.fields[0])
+        countOn(`facet:${filter.fields[0]}`, levelTable, modalParams(q, ranges));
+    }
   }
   const countRequests = [...countGroups.values()];
   const filterCountQueries = useQueries({
@@ -1348,6 +1353,9 @@ export function SearchPage() {
                         table: pluginTable ?? level.table,
                         paramsFor: (query) => modalParams(query, ranges),
                         count: bucketCount,
+                        filterCount: filter.fields[0]
+                          ? filterCount(`facet:${filter.fields[0]}`)
+                          : null,
                       })}
                     </Fragment>
                   ))}

@@ -85,6 +85,10 @@ export interface PluginFilterContext {
   /** A facet bucket's count on the open sub-tab (its rows, its mapped
    * records); undefined = its doc_count. */
   count?: (bucket: FacetBucket) => number | undefined;
+  /** How many of the matches have a value in its first field (the sidebar
+   * entry's count, as the node's own filters'): undefined while it loads,
+   * null when it could not be counted. */
+  filterCount?: number | null;
 }
 
 /** A filter a plugin adds to the search sidebar, after the node's own. */
