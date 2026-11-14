@@ -895,20 +895,29 @@ class NodeConfig(BaseModel):
         """The text columns (TEXT_TYPES, ids and download-only ones left out)
         of a hierarchy table whose values its docs' `summary._all` holds, in
         position order: the `text` filter's facets. The contribution's are
-        every level's, as its doc unions them."""
+        every level's, as its doc unions them; a record's add the geography
+        (`search.geography`) text columns of the levels above it, which its
+        `summary._all` inherits (a site's location_type)."""
         tables = self.load_data_model(self.data_model.latest)["tables"]
         levels = self.hierarchy[1:] if table == self.hierarchy[0] else [table]
         out: dict[str, None] = {}
+
+        def text(definition: dict) -> bool:
+            return definition.get("type") in TEXT_TYPES and "downloadOnly()" not in (
+                definition.get("validations") or []
+            )
+
         for level in levels:
             columns = tables.get(level, {}).get("columns", {})
             for column, definition in sorted(
                 columns.items(), key=lambda item: item[1].get("position", 0)
             ):
-                if (
-                    definition.get("type") in TEXT_TYPES
-                    and column not in NUMBER_ID_COLUMNS
-                    and "downloadOnly()" not in (definition.get("validations") or [])
-                ):
+                if text(definition) and column not in NUMBER_ID_COLUMNS:
+                    out.setdefault(column)
+        if table in self.hierarchy[1:]:
+            above = self.hierarchy[1 : self.hierarchy.index(table)]
+            for column in self.search.geography.columns:
+                if any(text(tables.get(t, {}).get("columns", {}).get(column, {})) for t in above):
                     out.setdefault(column)
         return list(out)
 

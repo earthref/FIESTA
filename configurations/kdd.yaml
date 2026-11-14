@@ -72,7 +72,13 @@ search:
             - { column: kd_types, label: Types }
             - { column: kd_definition, label: Definition }
   extra_types: []
+  # A filter per column with data (`text`: each text column as a facet;
+  # `numeric`: each number column as a range; `exists`: With / Without Data),
+  # found with the sidebar's filter search (2026-11-13).
   filters:
+    - { type: text, label: Text }
+    - { type: numeric, label: Numeric }
+    - { type: exists, label: With / Without Data }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }

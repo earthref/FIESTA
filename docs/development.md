@@ -265,9 +265,15 @@ SPA route, and a relative `src="people/x.jpg"` is a file in
 plain classes `.er-content` defines in `fiesta/frontend/src/index.css` (`er-justify`,
 `er-people` portrait cards, `er-logos` tiles, `er-media` image-beside-text
 rows). The search filter sidebar
-is `search.filters` (facet / range / bbox / numeric / exists, each with the
-search `levels` and result `views` it applies to), edited in the Search
-Filters tab with a column picker from the data model; a range needs a field
+is `search.filters` (facet / range / bbox / numeric / text / exists, each
+with the search `levels` and result `views` it applies to), edited in the
+Search Filters tab with a column picker from the data model. Every node lists
+`text`, `numeric` and `exists`, which make every text and number column with
+data a filter of its own (found with the sidebar's "Find a filter" box), so
+configure a facet or range only for what no single column gives: a converted
+unit or time scale (MagIC's Age), a non-data field (Publication Year, the
+contribution filters) or a plugin view (Poles, Rock Magnetism), not one
+filter per column (2026-11-13). A range needs a field
 indexed as a number (row values are text): a data-model number column's
 `summary._num.<column>` or one a plugin indexes, e.g. `summary.poles.age`.
 `numeric` picks any other number column, `exists` columns with or without data
