@@ -1,0 +1,31 @@
+site	location	result_type	method_codes	citations	geologic_classes	geologic_types	lithologies	lat	lon	age	age_sigma	age_unit	dir_tilt_correction	dir_dec	dir_inc	dir_alpha95	dir_k	dir_n_specimens_lines	dir_polarity	dir_nrm_origin	vgp_lat	vgp_lon	vdm	vdm_n_samples	vadm	vadm_n_samples	int_abs	int_abs_sigma	description	software_packages
+01a	Hawaii			:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:																							
+01b	Hawaii			:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:																							
+01c	Hawaii			:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:																							
+2	Hawaii			:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:																							
+01c																														
+2	Hawaii	i	:DE-BFL:	:This study:				19.552	204.70	440	240	Years BP	100	7.60	36.6	1.1	1662	12	n	p	82.9	287.40	1.06E+23	4	1.07E+23	4	4.79E-05	6.00E-07	2	:PINT03:
+3	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.296	204.69	700	210	Years BP	100	2.80	41.4	1.2	905	18	n	p	84.8	234.30	9.42E+22	2	9.97E+22	2	4.45E-05	1.20E-06	3	:PINT03:
+4	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.494	204.66	760	210	Years BP	100	353.00	25.8	1.6	849	11	n	p	81.1	74.50	1.05E+23	2	9.86E+22	2	4.41E-05	8.00E-07	4	:PINT03:
+5	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.564	204.66	1320	150	Years BP	100	2.20	18.2	2.2	400	12	n	p	79.6	12.80	1.03E+23	4	9.27E+22	4	4.15E-05	3.60E-06	5	:PINT03:
+6	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.533	204.65	1690	210	Years BP	100	355.50	17.8	1.9	679	10	n	p	78.7	48.00	9.71E+22	4	8.71E+22	4	3.90E-05	3.10E-06	6	:PINT03:
+7	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.118	204.43	2180	180	Years BP	100	11.20	14.7	2.1	439	12	n	p	74.1	340.00	1.21E+23	4	1.08E+23	4	4.81E-05	1.23E-05	7	:PINT03:
+8	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.455	204.71	2190	210	Years BP	100	11.30	15.2	1.3	1095	12	n	p	74	340.00	1.21E+23	4	1.08E+23	4	4.81E-05	1.23E-05	8	:PINT03:
+9	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.538	204.66	2550	240	Years BP	100	1.20	21	1.5	987	12	n	p	81.3	16.90	1.07E+23	4	9.74E+22	4	4.36E-05	2.30E-06	9	:PINT03:
+10	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.64	204.96	2890	210	Years BP	100	357.70	25.7	2.3	370	11	n	p	83.5	44.90	1.24E+23	5	1.15E+23	5	5.17E-05	1.16E-05	10	:PINT03:
+11	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.302	204.69	3480	240	Years BP	100	3.70	36.4	1.4	1091	12	n	p	86.4	279.50	1.06E+23	2	1.07E+23	2	4.79E-05	1.03E-05	11	:PINT03:
+12	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.713	204.88	4050	150	Years BP	100	4.50	33.4	1.1	1467	11	n	p	85.5	313.10	1.15E+23	3	1.13E+23	3	5.06E-05	1.70E-06	12	:PINT03:
+13	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.161	204.46	5160	300	Years BP	100	4.70	27.6	2	493	12	n	p	83.6	339.20	8.54E+22	5	8.10E+22	5	3.61E-05	2.60E-06	13	:PINT03:
+14	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.543	204.88	5650	270	Years BP	100	5.40	33.7	1.4	958	12	n	p	84.8	305.80	7.67E+22	3	7.57E+22	3	3.39E-05	2.50E-06	14	:PINT03:
+15	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.086	204.41	6160	330	Years BP	100	357.80	54.9	1.7	819	12	n	p	73.5	198.10	6.41E+22	2	7.91E+22	2	3.52E-05	3.50E-06	15	:PINT03:
+16	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.072	204.44	7300	300	Years BP	100	2.30	25.4	1.4	914	10	n	p	83.9	3.00	6.47E+22	4	6.02E+22	4	2.70E-05	2.10E-06	16	:PINT03:
+17	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.145	204.48	7950	330	Years BP	100	359.50	33.4	1.5	917	12	n	p	89	53.10	6.97E+22	3	6.89E+22	3	3.07E-05	1.10E-06	17	:PINT03:
+18	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.42	204.66	8740	300	Years BP	100	357.30	36	2.3	413	11	n	p	87.4	127.20	9.91E+22	5	9.98E+22	5	4.46E-05	6.90E-06	18	:PINT03:
+19	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.418	204.66	9500	420	Years BP	100	3.00	33.7	2.3	351	11	n	p	87	313.60	9.30E+22	5	9.19E+22	5	4.11E-05	4.90E-06	19	:PINT03:
+20	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	19.101	204.44	10290	450	Years BP	100	3.60	31.9	1.8	570	12	n	p	86.1	322.00	8.26E+22	5	8.08E+22	5	3.60E-05	8.40E-06	20	:PINT03:
+21	Hawaii	i	:DE-BFL:	:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:	18.972	204.38	11780	300	Years BP	100	2.10	8.7	1.7	738	12	n	p	75.2	16.20	8.55E+22	3	7.51E+22	3	3.34E-05	5.00E-06	21	:PINT03:
+22	Hawaii			:This study:	:" Extrusive:Igneous ":	:Lava Flow:	:Not Specified:																							
+01a	Hawaii	i	:DE-BFL:	:This study:				19.545	204.91	260	210	Years BP	100	5.50	41.3	1.7	630	12	n	p	83.4	254.60	1.11E+23	4	1.17E+23	4	5.26E-05	5.30E-06	01a	:PINT03:
+01b	Hawaii	i	:DE-BFL:	:This study:				19.58	204.94	260	210	Years BP	100	3.20	44.2	1.4	906	12	n	p	83	229.20	1.11E+23	4	1.17E+23	4	5.26E-05	5.30E-06	01b	:PINT03:
+01c	Hawaii	i	:DE-BFL:	:This study:				19.572	204.94	260	210	Years BP	100	3.10	46	2.1	418	12	n	p	81.7	224.10	1.11E+23	4	1.17E+23	4	5.26E-05	5.30E-06	01c	:PINT03:
+22	Hawaii	i	:DE-BFL:	:This study:				19.072	204.44	13210	570	Years BP	100	357.50	54.6	1.4	916	11	n	p	73.8	197.20	6.93E+22	4	8.51E+22	4	3.79E-05	3.40E-06	22	:PINT03:

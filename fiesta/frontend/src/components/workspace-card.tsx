@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { isNodeAdmin } from "../lib/admin";
 import { api, download } from "../lib/api";
@@ -783,6 +784,11 @@ export function ContributionCard({
                 <Icon name="share" size="small" /> Share
               </Button>
               {downloadButton}
+              {/* Legacy "Add Data to This Contribution" (MagIC #327): the upload
+                  page with this contribution as its target. */}
+              <Link to="/upload" search={{ to: contribution.id }} className={linkButton}>
+                <Icon name="upload" size="small" /> Add Data
+              </Link>
               <Button
                 variant="secondary"
                 size="sm"

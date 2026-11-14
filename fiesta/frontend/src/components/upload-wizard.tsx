@@ -1,16 +1,57 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+/**
+ * The upload page (legacy MagIC upload_contribution.jsx): 1. Select files (or
+ * an example), 2. Import them sheet by sheet into the data model's tables,
+ * 3. Upload into a new private contribution or replace those tables in an
+ * existing one. The browser reads the files (SheetJS for spreadsheets); the
+ * API normalises the values, merges the tables into a new revision and keeps
+ * the original files as its attachments.
+ */
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { type ChangeEvent, type DragEvent, useEffect, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  type DragEvent,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ApiError, api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
-import type { ContributionOut, ValidationResult } from "../lib/types";
+import { dataModelQuery, unwrapModel } from "../lib/data-model";
+import {
+  computeSheet,
+  FORMATS,
+  formatLabel,
+  guessFormat,
+  initialState,
+  readBlocks,
+  readSheets,
+  type Sheet,
+  type SheetState,
+  sheetBlock,
+  singleSourceErrors,
+} from "../lib/importer";
+import type {
+  ContributionOut,
+  DataModel,
+  ImportFormat,
+  ImportSettings,
+  ImportTemplate,
+  UploadExample,
+  ValidationResult,
+} from "../lib/types";
 import { cx, formatBytes } from "../lib/utils";
+import { DataImporter, type TemplateActions } from "./data-importer";
 import { ErrorMessage } from "./error-message";
 import { useLoginModal } from "./login-modal";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Icon, type IconName } from "./ui/icon";
+import { Icon, type IconName, isIconName } from "./ui/icon";
+import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
 
 type Step = 1 | 2 | 3;
@@ -23,14 +64,37 @@ const stepDefs: { step: Step; icon: IconName; title: string; description: string
     step: 1,
     icon: "folder-open",
     title: "Select",
-    description: "Choose a file from your computer",
+    description: "Click and select or drag and drop files below.",
   },
-  { step: 2, icon: "file-text", title: "Review", description: "Check the file before uploading" },
-  { step: 3, icon: "upload", title: "Upload", description: "Add it to your private workspace" },
+  {
+    step: 2,
+    icon: "table",
+    title: "Import",
+    description: "Read the files and check the column headers.",
+  },
+  {
+    step: 3,
+    icon: "upload",
+    title: "Upload",
+    description: "Append to or create a new contribution.",
+  },
 ];
 
+/** A file being imported: its bytes (kept to upload as the original), how
+ * it is read, its sheets and each sheet's importer state. */
+interface ImportFile {
+  /** Stable across re-reads (the file-type override). */
+  id: string;
+  name: string;
+  bytes: ArrayBuffer;
+  format: ImportFormat;
+  sheets: Sheet[];
+  states: SheetState[];
+  error: string | null;
+}
+
 /** Legacy "ui top attached stackable three steps" bar (min-height 8em per step). */
-function StepsBar({ current }: { current: Step }) {
+function StepsBar({ current, onStep }: { current: Step; onStep: (step: Step) => void }) {
   return (
     <ol
       className="flex flex-col rounded-t-sm bg-surface sm:flex-row"
@@ -45,11 +109,28 @@ function StepsBar({ current }: { current: Step }) {
       {stepDefs.map((def, index) => {
         const active = def.step === current;
         const disabled = def.step > current;
+        // Earlier steps are links back (legacy "Step 1. Restart").
+        const back = def.step < current;
+        const body = (
+          <>
+            <span aria-hidden="true" className="leading-none text-ink-secondary">
+              <Icon name={def.icon} size="big" />
+            </span>
+            <span className="text-left">
+              <span className="block text-[1.1em] font-bold">
+                Step {def.step}. {back && def.step === 1 ? "Restart" : def.title}
+              </span>
+              <span className="block text-[13px]">
+                {back && def.step === 1 ? "Progress will be lost." : def.description}
+              </span>
+            </span>
+          </>
+        );
         return (
           <li
             key={def.step}
             aria-current={active ? "step" : undefined}
-            className="relative flex flex-1 items-center justify-center gap-3 px-4 py-3"
+            className="relative flex flex-1"
             style={{
               minHeight: "8em",
               borderLeft: index > 0 ? `1px solid ${SEGMENT_BORDER}` : "none",
@@ -57,15 +138,19 @@ function StepsBar({ current }: { current: Step }) {
               background: active ? "var(--er-surface)" : "transparent",
             }}
           >
-            <span aria-hidden="true" className="leading-none text-ink-secondary">
-              <Icon name={def.icon} size="big" />
-            </span>
-            <span className="text-left">
-              <span className="block text-[1.1em] font-bold">
-                Step {def.step}. {def.title}
+            {back ? (
+              <button
+                type="button"
+                onClick={() => onStep(def.step)}
+                className="flex flex-1 items-center justify-center gap-3 px-4 py-3 hover:bg-node-soft"
+              >
+                {body}
+              </button>
+            ) : (
+              <span className="flex flex-1 items-center justify-center gap-3 px-4 py-3">
+                {body}
               </span>
-              <span className="block text-[13px]">{def.description}</span>
-            </span>
+            )}
             {/* Active pointing-below arrow (site.overrides .ui.steps .active.step.pointing.below) */}
             {active && (
               <span
@@ -89,7 +174,125 @@ function StepsBar({ current }: { current: Step }) {
   );
 }
 
-export function UploadWizard() {
+function ExampleCard({
+  example,
+  action,
+  onClick,
+}: {
+  example: UploadExample;
+  action: "upload" | "download";
+  onClick: () => void;
+}) {
+  const [first, second] = example.title.split("\n");
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={
+        action === "upload"
+          ? "Click to import this example dataset. You can always delete it later."
+          : "Click to download this example dataset before uploading it."
+      }
+      className="flex flex-col items-center gap-1 rounded-md px-2 py-3 text-center hover:bg-node-soft focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+    >
+      <span className="relative text-ink-secondary">
+        <Icon name={isIconName(example.icon) ? example.icon : "file-text"} size="big" />
+        <span className="absolute -right-2 -bottom-1 rounded-full bg-surface text-node-ink">
+          <Icon name={action === "upload" ? "upload" : "download"} size="small" />
+        </span>
+      </span>
+      <span className="text-[13px] font-bold leading-tight text-gray-800">
+        {first}
+        {second !== undefined && (
+          <>
+            <br />
+            {second}
+          </>
+        )}
+      </span>
+      {example.subtitle && <span className="text-[12px] text-gray-500">{example.subtitle}</span>}
+    </button>
+  );
+}
+
+function useTemplateActions(enabled: boolean): TemplateActions {
+  const queryClient = useQueryClient();
+  const key = ["private", "import-templates"];
+  const { data } = useQuery({
+    queryKey: key,
+    queryFn: () => api<ImportTemplate[]>("/private/import-templates"),
+    enabled,
+  });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: key });
+  return {
+    templates: data,
+    create: async (name: string, settings: ImportSettings) => {
+      const made = await api<ImportTemplate>("/private/import-templates", {
+        method: "POST",
+        json: { name, settings },
+      });
+      await refresh();
+      return made;
+    },
+    save: async (id: number, settings: ImportSettings) => {
+      await api(`/private/import-templates/${id}`, { method: "PUT", json: { settings } });
+      await refresh();
+    },
+    rename: async (id: number, name: string) => {
+      await api(`/private/import-templates/${id}`, { method: "PUT", json: { name } });
+      await refresh();
+    },
+    remove: async (id: number) => {
+      await api(`/private/import-templates/${id}`, { method: "DELETE" });
+      await refresh();
+    },
+  };
+}
+
+async function readFile(
+  id: string,
+  name: string,
+  bytes: ArrayBuffer,
+  format: ImportFormat,
+  model: DataModel | null,
+  templates: Parameters<typeof readSheets>[2],
+): Promise<ImportFile> {
+  try {
+    const sheets = await readSheets(bytes, format, templates);
+    return {
+      id,
+      name,
+      bytes,
+      format,
+      sheets,
+      states: sheets.map((sheet) => initialState(sheet, model)),
+      error: sheets.length ? null : "The file has no tables to import.",
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      id,
+      name,
+      bytes,
+      format,
+      sheets: [],
+      states: [],
+      error: `Failed to read this file as a ${format === "excel" ? "spreadsheet" : "text file"}: ${message}`,
+    };
+  }
+}
+
+/** The tables a contribution's current text holds, with their row counts. */
+function tableCounts(text: string): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const sheet of readBlocks(text)) {
+    if (sheet.tableName)
+      counts[sheet.tableName] = (counts[sheet.tableName] ?? 0) + sheet.rows.length - 2;
+  }
+  return counts;
+}
+
+export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
   const { data: config } = useNodeConfig();
   const { user } = useAuth();
   const { openLogin } = useLoginModal();
@@ -97,11 +300,48 @@ export function UploadWizard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>(1);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<ImportFile[]>([]);
+  const [reading, setReading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<unknown>(null);
   const [contributionId, setContributionId] = useState<number | null>(null);
+  const [target, setTarget] = useState<number | null>(initialTarget ?? null);
+  const [name, setName] = useState("My Contribution");
+  const nameId = useId();
+
+  const upload = config?.upload;
+  const templates = upload?.excel_templates ?? [];
+  const { data: model = null } = useQuery({
+    ...dataModelQuery(config?.data_model_latest ?? ""),
+    enabled: !!config?.data_model_latest,
+    select: unwrapModel,
+  });
+  const templateActions = useTemplateActions(!!user);
+
+  // Contributions an upload can go into: the unpublished ones the user can open.
+  const privateQuery = useQuery({
+    queryKey: ["private", "contributions"],
+    queryFn: () => api<ContributionOut[]>("/private/contributions"),
+    enabled: !!user,
+  });
+  const targets = (privateQuery.data ?? []).filter((c) => !c.is_activated && !c.published_revision);
+  const existingQuery = useQuery({
+    queryKey: ["private", "content", target],
+    queryFn: async () => {
+      try {
+        return await api<{ revision_id: string | null; text: string }>(
+          `/private/contributions/${target}/content`,
+        );
+      } catch (err) {
+        // A contribution created but never uploaded into has no content yet.
+        if (err instanceof ApiError && err.status === 404) return { revision_id: null, text: "" };
+        throw err;
+      }
+    },
+    enabled: target !== null && step === 3,
+    staleTime: 0,
+  });
 
   const contributionQuery = useQuery({
     queryKey: ["private", "contribution", contributionId],
@@ -112,7 +352,6 @@ export function UploadWizard() {
       return status === "ready" || status === "failed" ? false : 2000;
     },
   });
-
   const status = contributionQuery.data?.status;
   useEffect(() => {
     if (phase === "processing" && (status === "ready" || status === "failed")) {
@@ -134,61 +373,180 @@ export function UploadWizard() {
     enabled: contributionId !== null && phase === "done",
   });
 
-  const pickFile = (picked: File | undefined | null) => {
-    if (!picked) return;
-    setFile(picked);
+  // Every sheet's import, and the blocks of the ready ones.
+  const imports = useMemo(
+    () =>
+      files.map((file) =>
+        file.sheets.map((sheet, j) => computeSheet(sheet.rows, file.states[j], model)),
+      ),
+    [files, model],
+  );
+  const blocks: { table: string; rows: number; text: string }[] = [];
+  let nImportErrors = 0;
+  files.forEach((file, i) => {
+    if (file.error) nImportErrors++;
+    file.sheets.forEach((sheet, j) => {
+      const result = imports[i]?.[j];
+      if (!result) return;
+      nImportErrors += result.nErrors > 0 ? 1 : 0;
+      const text = sheetBlock(sheet.rows, file.states[j], result);
+      if (text)
+        blocks.push({ table: file.states[j].settings.table_name.trim(), rows: result.nRows, text });
+    });
+  });
+  const sourceErrors = singleSourceErrors(
+    blocks.map((b) => b.table),
+    upload?.single_source_tables ?? [],
+  );
+  const importReady = blocks.length > 0 && nImportErrors === 0 && sourceErrors.length === 0;
+
+  const addFiles = async (
+    picked: { name: string; bytes: ArrayBuffer; format?: ImportFormat }[],
+  ) => {
+    if (picked.length === 0) return;
+    setReading(true);
     setStep(2);
+    const sorted = [...picked].sort((a, b) => a.name.localeCompare(b.name));
+    const read = await Promise.all(
+      sorted.map((f) =>
+        readFile(
+          crypto.randomUUID(),
+          f.name,
+          f.bytes,
+          f.format ?? guessFormat(f.name, f.bytes),
+          model,
+          templates,
+        ),
+      ),
+    );
+    setFiles(read);
+    setReading(false);
   };
+
+  const pickFiles = async (list: FileList | null | undefined) => {
+    const picked = Array.from(list ?? []);
+    await addFiles(
+      await Promise.all(picked.map(async (f) => ({ name: f.name, bytes: await f.arrayBuffer() }))),
+    );
+  };
+
+  const exampleBytes = async (example: UploadExample) => {
+    const response = await fetch(nodeUrl(`/config/assets/${example.file}`));
+    if (!response.ok) throw new Error(`could not fetch the example (${response.status})`);
+    return response.arrayBuffer();
+  };
+  const exampleName = (example: UploadExample) => example.file.split("/").pop() ?? example.file;
+
+  const importExample = async (example: UploadExample) => {
+    try {
+      await addFiles([
+        { name: exampleName(example), bytes: await exampleBytes(example), format: example.format },
+      ]);
+    } catch (err) {
+      setError(err);
+    }
+  };
+
+  const downloadExample = async (example: UploadExample) => {
+    try {
+      const blob = new Blob([await exampleBytes(example)]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = exampleName(example);
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err);
+    }
+  };
+
+  const setFormat = async (i: number, format: ImportFormat) => {
+    const file = files[i];
+    const read = await readFile(file.id, file.name, file.bytes, format, model, templates);
+    setFiles((current) => current.map((f, k) => (k === i ? read : f)));
+  };
+
+  const setSheetState = (i: number, j: number, state: SheetState) =>
+    setFiles((current) =>
+      current.map((f, k) =>
+        k === i ? { ...f, states: f.states.map((s, l) => (l === j ? state : s)) } : f,
+      ),
+    );
 
   const onDrop = (event: DragEvent) => {
     event.preventDefault();
     setDragging(false);
-    pickFile(event.dataTransfer.files?.[0]);
+    pickFiles(event.dataTransfer.files);
   };
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    pickFile(event.target.files?.[0]);
+    pickFiles(event.target.files);
     event.target.value = "";
   };
 
-  const startUpload = async () => {
-    if (!file) return;
-    setStep(3);
-    setError(null);
-    try {
-      setPhase("creating");
-      const contribution = await api<ContributionOut>("/private/contributions", {
-        method: "POST",
-      });
-      setContributionId(contribution.id);
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      setError(null);
+      let id = target;
+      let expected: string | null = null;
+      if (id === null) {
+        setPhase("creating");
+        const created = await api<ContributionOut>("/private/contributions", { method: "POST" });
+        id = created.id;
+        if (name.trim()) {
+          await api(`/private/contributions/${id}/name`, {
+            method: "PUT",
+            json: { name: name.trim() },
+          });
+        }
+      } else {
+        // The revision whose tables step 3 showed: the save is refused if
+        // the contribution changed since.
+        expected = existingQuery.data?.revision_id ?? null;
+      }
+      setContributionId(id);
       setPhase("uploading");
       const formData = new FormData();
-      formData.append("file", file);
-      await api<ContributionOut>(`/private/contributions/${contribution.id}/file`, {
-        method: "PUT",
+      formData.append(
+        "data",
+        new Blob([blocks.map((b) => b.text).join("\n>>>>>>>>>>\n")], { type: "text/plain" }),
+        "import.txt",
+      );
+      for (const file of files) formData.append("originals", new Blob([file.bytes]), file.name);
+      const headers: Record<string, string> = { "Idempotency-Key": crypto.randomUUID() };
+      if (expected) headers["If-Match"] = expected;
+      await api<ContributionOut>(`/private/contributions/${id}/import`, {
+        method: "POST",
         formData,
-        headers: { "Idempotency-Key": crypto.randomUUID() },
+        headers,
       });
       setPhase("processing");
-    } catch (err) {
+    },
+    onError: (err) => {
       setError(err);
       setPhase("error");
-    }
-  };
+    },
+  });
 
   const reset = () => {
     setStep(1);
-    setFile(null);
+    setFiles([]);
     setPhase("idle");
     setError(null);
     setContributionId(null);
+    setTarget(initialTarget ?? null);
   };
 
   const busy = phase === "creating" || phase === "uploading" || phase === "processing";
+  const existing = existingQuery.data ? tableCounts(existingQuery.data.text) : {};
+  const uploadedTables = new Map<string, number>();
+  for (const b of blocks) uploadedTables.set(b.table, (uploadedTables.get(b.table) ?? 0) + b.rows);
+  const key = config?.key ?? "";
 
   return (
     <div className="upload-contribution">
-      <StepsBar current={step} />
+      <StepsBar current={step} onStep={(s) => (s === 1 ? reset() : setStep(s))} />
       {/* ui attached message container (bg white) */}
       <div
         className="rounded-b-sm bg-surface"
@@ -204,7 +562,7 @@ export function UploadWizard() {
           <>
             <button
               type="button"
-              aria-label="Choose a file to upload"
+              aria-label="Choose files to upload"
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(event) => {
                 event.preventDefault();
@@ -248,61 +606,127 @@ export function UploadWizard() {
             </button>
             {config && (
               <p className="mt-2 text-center text-xs text-gray-400">
-                {config.key} text files, data model version {config.data_model_latest}
+                {key} text files, tab- or comma-delimited tables, or Excel workbooks (one table per
+                sheet); data model version {config.data_model_latest}
               </p>
             )}
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               className="sr-only"
               onChange={onFileChange}
               aria-hidden="true"
               tabIndex={-1}
             />
+            {error !== null && <ErrorMessage error={error} />}
+            {upload && upload.examples.length > 0 && (
+              <>
+                <hr className="my-4 border-gray-200" />
+                <h4 className="mb-2 text-[13px] font-bold text-gray-800">
+                  Or try importing one of these example files:
+                </h4>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {upload.examples.map((example) => (
+                    <ExampleCard
+                      key={example.file}
+                      example={example}
+                      action="upload"
+                      onClick={() => importExample(example)}
+                    />
+                  ))}
+                </div>
+                <hr className="my-4 border-gray-200" />
+                <h4 className="mb-2 text-[13px] font-bold text-gray-800">
+                  Or first download the file to preview the contents and make changes before
+                  uploading:
+                </h4>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {upload.examples.map((example) => (
+                    <ExampleCard
+                      key={example.file}
+                      example={example}
+                      action="download"
+                      onClick={() => downloadExample(example)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
 
-        {step === 2 && file && (
+        {step === 2 && (
           <div>
-            <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">File</dt>
-                <dd className="mt-0.5 break-all text-gray-900">{file.name}</dd>
+            <h3 className="mb-2 text-[1.1em] font-bold text-gray-800">
+              Reading and translating the {files.length === 1 ? "file" : "files"} for uploading:
+            </h3>
+            {reading && <Spinner className="h-5 w-5" label="Reading…" />}
+            {files.map((file, i) => (
+              <div key={file.id} className="border-t border-gray-200 py-3 first:border-t-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Icon
+                    name={file.format === "excel" ? "file-excel" : "file-text"}
+                    size="large"
+                    className="text-ink-secondary"
+                  />
+                  <span className="break-all font-bold text-gray-900">{file.name}</span>
+                  <Badge>{formatBytes(file.bytes.byteLength)}</Badge>
+                  {file.error && <Badge variant="danger">1 Read Error</Badge>}
+                  {(imports[i] ?? []).filter((r) => r.nErrors > 0).length > 0 && (
+                    <Badge variant="danger">
+                      {(imports[i] ?? []).filter((r) => r.nErrors > 0).length} Table(s) With Import
+                      Errors
+                    </Badge>
+                  )}
+                </div>
+                <label className="mt-2 flex items-center gap-2 text-[13px]">
+                  <span className="shrink-0 font-semibold text-gray-700">Import File Type</span>
+                  <select
+                    className="rounded-md border border-gray-300 bg-surface px-2 py-1.5 text-[13px]"
+                    value={file.format}
+                    onChange={(event) => setFormat(i, event.target.value as ImportFormat)}
+                  >
+                    {FORMATS.map((format) => (
+                      <option key={format} value={format}>
+                        {formatLabel(format, key)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {file.error ? (
+                  <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-[13px] text-red-800">
+                    {file.error}
+                  </p>
+                ) : (
+                  file.sheets.map((sheet, j) => (
+                    <DataImporter
+                      // biome-ignore lint/suspicious/noArrayIndexKey: a file's sheets are positional and re-read together
+                      key={`${file.id}-${file.format}-${j}`}
+                      sheet={sheet}
+                      state={file.states[j]}
+                      onChange={(state) => setSheetState(i, j, state)}
+                      model={model}
+                      templates={templateActions}
+                    />
+                  ))
+                )}
               </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Size</dt>
-                <dd className="mt-0.5 text-gray-900">{formatBytes(file.size)}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Type</dt>
-                <dd className="mt-0.5 text-gray-900">{file.type || "text/plain"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Data model
-                </dt>
-                <dd className="mt-0.5 text-gray-900">{config?.data_model_latest}</dd>
-              </div>
-            </dl>
-            <p className="mt-4 text-sm text-gray-600">
-              Uploading creates a new private contribution in your workspace. The file is parsed and
-              validated automatically; nothing is published until you activate it.
-            </p>
-            {!user && (
-              <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                You need to{" "}
-                <button type="button" onClick={openLogin} className="font-medium underline">
-                  log in
-                </button>{" "}
-                before uploading.
+            ))}
+            {sourceErrors.map((message) => (
+              <p
+                key={message}
+                className="mt-2 rounded-md bg-red-50 px-3 py-2 text-[13px] text-red-800"
+              >
+                {message}
               </p>
-            )}
-            <div className="mt-5 flex gap-2">
+            ))}
+            <div className="mt-4 flex gap-2">
               <Button variant="secondary" onClick={reset}>
-                Back
+                Start over
               </Button>
-              <Button onClick={startUpload} disabled={!user}>
-                Upload
+              <Button onClick={() => setStep(3)} disabled={!importReady || reading}>
+                Continue
               </Button>
             </div>
           </div>
@@ -310,6 +734,111 @@ export function UploadWizard() {
 
         {step === 3 && (
           <div>
+            {phase === "idle" && (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="flex items-center gap-2 text-[13px]">
+                    <span className="shrink-0 font-semibold text-gray-700">Upload To</span>
+                    <select
+                      className="min-w-0 flex-1 rounded-md border border-gray-300 bg-surface px-2 py-2 text-[13px]"
+                      value={target ?? ""}
+                      onChange={(event) =>
+                        setTarget(event.target.value === "" ? null : Number(event.target.value))
+                      }
+                    >
+                      <option value="">A New Private Contribution</option>
+                      {targets.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name || `Contribution ${c.id}`} ({c.id})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {target === null && (
+                    <div className="flex items-center gap-2 text-[13px]">
+                      <label htmlFor={nameId} className="shrink-0 font-semibold text-gray-700">
+                        Name
+                      </label>
+                      <Input
+                        id={nameId}
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+                <table className="mt-4 text-[13px]">
+                  <thead>
+                    <tr className="text-left text-gray-500">
+                      <th className="pr-6 font-medium">Table</th>
+                      <th className="pr-6 font-medium">Uploading</th>
+                      {target !== null && <th className="font-medium">In the contribution now</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...uploadedTables].map(([table, rows]) => (
+                      <tr key={table}>
+                        <td className="pr-6 font-semibold">{table}</td>
+                        <td className="pr-6">{rows.toLocaleString()} rows</td>
+                        {target !== null && (
+                          <td>
+                            {existing[table] !== undefined
+                              ? `${existing[table].toLocaleString()} rows, replaced`
+                              : "—"}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                    {target !== null &&
+                      Object.entries(existing)
+                        .filter(([table]) => !uploadedTables.has(table))
+                        .map(([table, rows]) => (
+                          <tr key={table} className="text-gray-500">
+                            <td className="pr-6">{table}</td>
+                            <td className="pr-6">—</td>
+                            <td>{rows.toLocaleString()} rows, kept</td>
+                          </tr>
+                        ))}
+                  </tbody>
+                </table>
+                {target !== null && existingQuery.isLoading && (
+                  <Spinner className="mt-2 h-4 w-4" label="Reading the contribution…" />
+                )}
+                {existingQuery.error && <ErrorMessage error={existingQuery.error} />}
+                <p className="mt-4 text-sm text-gray-600">
+                  {target === null
+                    ? "Uploading creates a new private contribution in your workspace."
+                    : "Uploading replaces the tables listed above in the selected contribution and keeps its other tables; its earlier revision stays in its history."}{" "}
+                  The data are validated automatically and the original files are kept with the
+                  contribution; nothing is published until you activate it.
+                </p>
+                {!user && (
+                  <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    You need to{" "}
+                    <button type="button" onClick={openLogin} className="font-medium underline">
+                      log in
+                    </button>{" "}
+                    before uploading.
+                  </p>
+                )}
+                <div className="mt-5 flex gap-2">
+                  <Button variant="secondary" onClick={() => setStep(2)}>
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => uploadMutation.mutate()}
+                    disabled={
+                      !user ||
+                      !importReady ||
+                      (target !== null && (existingQuery.isLoading || !!existingQuery.error))
+                    }
+                  >
+                    Upload
+                  </Button>
+                </div>
+              </>
+            )}
+
             {busy && (
               <div className="flex flex-col items-center gap-3 py-6">
                 <Spinner
@@ -318,13 +847,13 @@ export function UploadWizard() {
                     phase === "creating"
                       ? "Creating private contribution…"
                       : phase === "uploading"
-                        ? "Uploading file…"
+                        ? "Uploading…"
                         : `Processing (${status ?? "queued"})…`
                   }
                 />
                 {phase === "processing" && (
                   <p className="text-xs text-gray-500">
-                    Your file is being parsed, validated, and summarized. This can take a moment.
+                    Your data are being parsed, validated, and summarized. This can take a moment.
                   </p>
                 )}
               </div>
@@ -334,10 +863,12 @@ export function UploadWizard() {
               <div>
                 <ErrorMessage error={error} />
                 <div className="mt-4 flex gap-2">
+                  <Button variant="secondary" onClick={() => setPhase("idle")}>
+                    Back
+                  </Button>
                   <Button variant="secondary" onClick={reset}>
                     Start over
                   </Button>
-                  {file && <Button onClick={startUpload}>Retry</Button>}
                 </div>
               </div>
             )}
@@ -369,7 +900,7 @@ export function UploadWizard() {
                     <Button>Open private workspace</Button>
                   </Link>
                   <Button variant="secondary" onClick={reset}>
-                    Upload another file
+                    Upload more files
                   </Button>
                 </div>
               </div>

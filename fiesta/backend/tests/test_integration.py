@@ -846,6 +846,110 @@ async def test_contribution_versions_and_row_stats():
 
 
 @pytest.mark.asyncio
+async def test_upload_import_into_existing_contribution_and_templates():
+    """The upload page's import: a first upload creates the tables, a second
+    replaces only the tables it brings (keeping the rest and the workspace
+    fields), against the revision it was prepared on; originals are kept as
+    attachments. Import templates are per user and node."""
+    from fiesta.apps.api import create_app
+    from fiesta.db.session import get_engine, get_sessionmaker
+    from fiesta.domain.parse import parse_text
+    from fiesta.search.client import get_opensearch
+    from fiesta.services.seed import require_local
+
+    require_local()
+    get_opensearch.cache_clear()
+    get_engine.cache_clear()
+    get_sessionmaker.cache_clear()
+    app = create_app()
+
+    def blocks(*tables):
+        return "\n>>>>>>>>>>\n".join(f"tab delimited\t{t}\n{body}" for t, body in tables)
+
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://local"
+        ) as client,
+    ):
+        login = await client.post(
+            "/v2/auth/login",
+            data={"username": "developer@example.test", "password": "local-fiesta-only"},
+        )
+        client.headers["Authorization"] = "Bearer " + login.json()["access_token"]
+        root = "/v2/magic/private/contributions"
+        c = (await client.post(root)).json()
+        path = f"{root}/{c['id']}"
+        first_body = blocks(
+            ("contribution", "lab_names\tdescription\nLab A\tfirst"),
+            ("sites", "site\tdir_n_samples\ns1\t4.0"),
+            ("samples", "sample\tsite\nx1\ts1"),
+        )
+        first = await client.post(
+            path + "/import",
+            files=[
+                ("data", ("import.txt", first_body.encode())),
+                ("originals", ("sites.xlsx", b"PK-original")),
+            ],
+            headers={"Idempotency-Key": str(uuid.uuid4())},
+        )
+        assert first.status_code == 200, first.text
+        head = first.json()["head_revision"]
+        names = [a["name"] for a in (await client.get(path + "/attachments")).json()]
+        assert names == ["sites.xlsx"]
+        text = (await client.get(path + "/content")).json()["text"]
+        assert parse_text(text).tables["sites"][0]["dir_n_samples"] == "4"
+
+        second_body = blocks(("contribution", "description\nsecond"), ("sites", "site\ns2"))
+        stale = await client.post(
+            path + "/import",
+            files=[("data", ("import.txt", second_body.encode()))],
+            headers={"Idempotency-Key": str(uuid.uuid4())},
+        )
+        assert stale.status_code == 409, "an upload into it must name the revision it read"
+        second = await client.post(
+            path + "/import",
+            files=[("data", ("import.txt", second_body.encode()))],
+            headers={"If-Match": head, "Idempotency-Key": str(uuid.uuid4())},
+        )
+        assert second.status_code == 200, second.text
+        parsed = parse_text((await client.get(path + "/content")).json()["text"])
+        assert [r["site"] for r in parsed.tables["sites"]] == ["s2"]
+        assert [r["sample"] for r in parsed.tables["samples"]] == ["x1"]
+        assert parsed.tables["contribution"][0]["lab_names"] == "Lab A"
+        assert parsed.tables["contribution"][0]["description"] == "second"
+
+        two = blocks(("measurements", "measurement\nm1"), ("measurements", "measurement\nm2"))
+        refused = await client.post(
+            path + "/import",
+            files=[("data", ("import.txt", two.encode()))],
+            headers={
+                "If-Match": second.json()["head_revision"],
+                "Idempotency-Key": str(uuid.uuid4()),
+            },
+        )
+        assert refused.status_code == 422 and "combine" in refused.text
+
+        templates = "/v2/magic/private/import-templates"
+        settings = {"table_name": "sites", "n_header_rows": "1", "column_map": {"Site": "site"}}
+        made = await client.post(templates, json={"name": "Lab sheet", "settings": settings})
+        assert made.status_code == 201, made.text
+        tid = made.json()["id"]
+        dup = await client.post(templates, json={"name": "Lab sheet", "settings": settings})
+        assert dup.status_code == 409
+        renamed = await client.put(f"{templates}/{tid}", json={"name": "Lab sheet v2"})
+        assert renamed.json()["name"] == "Lab sheet v2"
+        assert renamed.json()["settings"]["column_map"] == {"Site": "site"}
+        assert [t["name"] for t in (await client.get(templates)).json()] == ["Lab sheet v2"]
+        assert (await client.get("/v2/cdr/private/import-templates")).json() == []
+        assert (await client.delete(f"{templates}/{tid}")).status_code == 204
+        assert (await client.get(templates)).json() == []
+
+    await get_opensearch().close()
+    await get_engine().dispose()
+
+
+@pytest.mark.asyncio
 async def test_v1_legacy_contract_roundtrip():
     """The frozen api.earthref.org contract on FIESTA's Postgres, revisions
     and search projection: create → upload → validate → data → search →

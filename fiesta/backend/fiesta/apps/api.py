@@ -20,6 +20,7 @@ from fiesta.apps.routers import (
     auth,
     basemap,
     config,
+    imports,
     portal,
     private,
     search,
@@ -123,7 +124,14 @@ def create_app() -> FastAPI:
     app.include_router(admin.router, prefix="/v2/admin")
     # Likewise "portal": the cross-node Users and References grids.
     app.include_router(portal.router, prefix="/v2")
-    for router in (config.router, search.router, private.router, workspaces.router, source.router):
+    for router in (
+        config.router,
+        search.router,
+        private.router,
+        imports.router,
+        workspaces.router,
+        source.router,
+    ):
         app.include_router(router, prefix="/v2/{repository}")
 
     # Plugin routes: every known plugin is mounted once, guarded per request

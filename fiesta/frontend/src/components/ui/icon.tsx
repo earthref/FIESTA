@@ -21,6 +21,8 @@ const PATHS = {
     "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Zm-.06 2.8a3.55 3.55 0 0 0-3.56 3.27l1.99.3c.09-.87.73-1.57 1.57-1.57.86 0 1.56.62 1.56 1.4 0 .67-.4 1.02-1.28 1.66-.9.65-1.42 1.26-1.42 2.44v.5h2v-.34c0-.66.31-.98 1.26-1.67.92-.66 1.5-1.4 1.5-2.59a3.42 3.42 0 0 0-3.62-3.4ZM11 16.5h2v2h-2v-2Z",
   "file-text":
     "M6 2h8l6 6v14H6V2Zm2 2v16h10V9h-5V4H8Zm7 .41V7h2.59L15 4.41ZM9 12h8v1.5H9V12Zm0 3.5h8V17H9v-1.5Z",
+  "file-excel":
+    "M6 2h8l6 6v14H6V2Zm2 2v16h10V9h-5V4H8Zm7 .41V7h2.59L15 4.41ZM9.2 11h1.9l1.4 2.2 1.4-2.2h1.9l-2.35 3.5L15.8 18h-1.9l-1.4-2.2-1.4 2.2H9.2l2.35-3.5L9.2 11Z",
   "file-plus":
     "M6 2h8l6 6v14H6V2Zm2 2v16h10V9h-5V4H8Zm7 .41V7h2.59L15 4.41ZM11 11h2v2.5h2.5v2H13V18h-2v-2.5H8.5v-2H11V11Z",
   table:
@@ -59,6 +61,13 @@ const PATHS = {
 } as const;
 
 export type IconName = keyof typeof PATHS;
+
+const ICON_NAMES: ReadonlySet<string> = new Set(Object.keys(PATHS));
+
+/** Whether a name from configuration (a node YAML's icon) is one of these glyphs. */
+export function isIconName(name: string): name is IconName {
+  return ICON_NAMES.has(name);
+}
 
 /** Glyphs whose cut-outs are same-direction sub-paths (need even-odd filling). */
 const EVENODD: ReadonlySet<IconName> = new Set<IconName>(["search", "remove-circle"]);

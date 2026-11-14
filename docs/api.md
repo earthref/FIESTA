@@ -472,6 +472,7 @@ When omitted the API sorts by relevance if the query has free text and by
 | POST | `` | | `ContributionOut` (201; allocates `id` + `private_key`) |
 | GET | `/{id}` | | `ContributionOut` |
 | PUT | `/{id}/file` | multipart `file`; headers `Idempotency-Key` (required), `If-Match` (revision; omit only for the first upload) | `ContributionOut` (stores file, enqueues processing) |
+| POST | `/{id}/import` | multipart `data` (contribution text, one block per imported sheet, as the upload page converts it) + `originals` (0..n files as uploaded); headers `Idempotency-Key` (required), `If-Match` (the revision the upload was prepared against; omit only for the first upload) | `ContributionOut`. The upload page's save: values are normalised against the latest data model (Integer `3.0` → `3`; controlled-vocabulary terms re-cased, a one-letter typo corrected when unambiguous, `t`/`1`/`yes` → `True` in a True/False vocabulary), each table it brings **replaces** that table of the contribution and the others are kept (in `workspace.table`, the contribution's workspace fields and `reference` survive where the upload leaves them blank), and the originals become attachments of the new revision (`original-<name>` when one is named like the canonical file). 422 when the text does not parse, has no rows, or brings a `upload.single_source_tables` table from two sheets; 409 when `If-Match` is not the head |
 | POST | `/{id}/validate` | | `{job_id}` (async validation; a Postgres outbox event id) |
 | GET | `/{id}/validation` | | `ValidationResult` (404 if never validated) |
 | PUT | `/{id}/reference` | `{doi, expected_revision, request_key}` | `ContributionOut` (a DOI the registries did not know is asked for again) |
@@ -532,6 +533,20 @@ Supplied values are overwritten, so a re-uploaded download is renumbered. A
 file that does not parse is stored as sent. Both columns stay out of
 `summary._all`. Files saved earlier are backfilled by `fiesta stamp-ids`
 ([storage-and-migration.md](storage-and-migration.md#existing-fiesta-data-and-legacy-migration)).
+
+### Import templates (`/v2/{repository}/private/import-templates`, Bearer or Basic)
+
+The upload page's saved import settings, per user and node (shared schema,
+`import_templates`). `settings` is `{table_name, n_header_rows ("" for no header
+row), column_map: {input header: data-model column | null}, exclude_column_names,
+exclude_table}`.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `` | | the caller's templates on this node, by name: `[{id, name, settings, created_at, updated_at}]` |
+| POST | `` | `{name, settings}` | the template (201); 409 when the caller already has one of that name |
+| PUT | `/{template_id}` | `{name?, settings?}` | the template (rename, save new settings, or both); 404 for another user's |
+| DELETE | `/{template_id}` | | 204 |
 
 ### Workspaces (`/v2/{repository}/workspaces`, Bearer or Basic)
 
@@ -649,7 +664,7 @@ only through `fiesta rebuild`.
 
 All content mutations go through the revision service with optimistic
 concurrency and an idempotency key. File uploads (`PUT .../file`,
-`PUT .../attachments/{name}`) require `Idempotency-Key` and the current
+`POST .../import`, `PUT .../attachments/{name}`) require `Idempotency-Key` and the current
 `If-Match` revision (omit `If-Match` only for the first upload). JSON
 edits/references/restores/removals use `request_key` and `expected_revision`
 (null for the first save). A stale save or a reused key with a different payload

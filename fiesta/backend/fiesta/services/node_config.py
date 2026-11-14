@@ -616,6 +616,8 @@ def template_files(
     raw["doi"] = {}
     raw.setdefault("features", {})["home"] = {}
     raw["pages"] = []  # page HTML lives under <slug>/pages/, which is not copied
+    if raw.get("upload"):
+        raw["upload"].pop("examples", None)  # example files are assets, not copied
     raw.pop("legacy", None)
     raw.pop("development", None)
     header = f"# FIESTA deployment configuration — {key} node (created in the admin UI)\n\n"

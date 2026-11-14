@@ -1,0 +1,225 @@
+tab delimited	contribution
+id	version	timestamp	contributor	data_model_version	reference	lab_names	description
+19679	10	2023-02-24T05:45:17.575Z	@polarwander	3.0	10.1029/93JB00024	Paleomagnetic Laboratory (USGS Menlo Park, USA)	adding location geologic_classes and lithologies for validation
+>>>>>>>>>>
+tab delimited	locations
+location	location_type	location_alternatives	result_name	result_type	citations	geologic_classes	lithologies	lat_s	lat_n	lon_w	lon_e	age_low	age_high	age_unit	dir_tilt_correction	dir_dec	dir_inc	dir_alpha95	dir_k	dir_n_samples	pole_lat	pole_lon	pole_dp	pole_dm	description
+Hawaii	Outcrop	Hawaiian Holocene Lavas	Hawaiian Holocene Lavas	a	This study	Extrusive	Basalt	19.072	19.58	204.44	204.92	260	13210	Years BP	100	2.4	31.6	4.7	40.7	284	86.8	339.5	3	5.3	from DRAGON DATABASE 10-07-07.
+>>>>>>>>>>
+tab delimited	sites
+site	location	result_type	method_codes	citations	geologic_classes	geologic_types	lithologies	lat	lon	age	age_sigma	age_unit	dir_tilt_correction	dir_dec	dir_inc	dir_alpha95	dir_k	dir_n_specimens_lines	dir_polarity	dir_nrm_origin	vgp_lat	vgp_lon	vdm	vdm_n_samples	vadm	vadm_n_samples	int_abs	int_abs_sigma
+01a	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.545	204.91	260	210	Years BP	100	5.5	41.3	1.7	630	12	n	p	83.4	254.6	1.11E+23	4	1.17E+23	4	5.26E-05	5.30E-06
+01b	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.58	204.94	260	210	Years BP	100	3.2	44.2	1.4	906	12	n	p	83	229.2	1.11E+23	4	1.17E+23	4	5.26E-05	5.30E-06
+01c	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.572	204.94	260	210	Years BP	100	3.1	46	2.1	418	12	n	p	81.7	224.1	1.11E+23	4	1.17E+23	4	5.26E-05	5.30E-06
+2	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.552	204.7	440	240	Years BP	100	7.6	36.6	1.1	1662	12	n	p	82.9	287.4	1.06E+23	4	1.07E+23	4	4.79E-05	6.00E-07
+3	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.296	204.69	700	210	Years BP	100	2.8	41.4	1.2	905	18	n	p	84.8	234.3	9.42E+22	2	9.97E+22	2	4.45E-05	1.20E-06
+4	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.494	204.66	760	210	Years BP	100	353	25.8	1.6	849	11	n	p	81.1	74.5	1.05E+23	2	9.86E+22	2	4.41E-05	8.00E-07
+5	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.564	204.66	1320	150	Years BP	100	2.2	18.2	2.2	400	12	n	p	79.6	12.8	1.03E+23	4	9.27E+22	4	4.15E-05	3.60E-06
+6	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.533	204.65	1690	210	Years BP	100	355.5	17.8	1.9	679	10	n	p	78.7	48	9.71E+22	4	8.71E+22	4	3.90E-05	3.10E-06
+7	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.118	204.43	2180	180	Years BP	100	11.2	14.7	2.1	439	12	n	p	74.1	340	1.21E+23	4	1.08E+23	4	4.81E-05	1.23E-05
+8	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.455	204.71	2190	210	Years BP	100	11.3	15.2	1.3	1095	12	n	p	74	340	1.21E+23	4	1.08E+23	4	4.81E-05	1.23E-05
+9	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.538	204.66	2550	240	Years BP	100	1.2	21	1.5	987	12	n	p	81.3	16.9	1.07E+23	4	9.74E+22	4	4.36E-05	2.30E-06
+10	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.64	204.96	2890	210	Years BP	100	357.7	25.7	2.3	370	11	n	p	83.5	44.9	1.24E+23	5	1.15E+23	5	5.17E-05	1.16E-05
+11	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.302	204.69	3480	240	Years BP	100	3.7	36.4	1.4	1091	12	n	p	86.4	279.5	1.06E+23	2	1.07E+23	2	4.79E-05	1.03E-05
+12	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.713	204.88	4050	150	Years BP	100	4.5	33.4	1.1	1467	11	n	p	85.5	313.1	1.15E+23	3	1.13E+23	3	5.06E-05	1.70E-06
+13	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.161	204.46	5160	300	Years BP	100	4.7	27.6	2	493	12	n	p	83.6	339.2	8.54E+22	5	8.10E+22	5	3.61E-05	2.60E-06
+14	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.543	204.88	5650	270	Years BP	100	5.4	33.7	1.4	958	12	n	p	84.8	305.8	7.67E+22	3	7.57E+22	3	3.39E-05	2.50E-06
+15	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.086	204.41	6160	330	Years BP	100	357.8	54.9	1.7	819	12	n	p	73.5	198.1	6.41E+22	2	7.91E+22	2	3.52E-05	3.50E-06
+16	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44	7300	300	Years BP	100	2.3	25.4	1.4	914	10	n	p	83.9	3	6.47E+22	4	6.02E+22	4	2.70E-05	2.10E-06
+17	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.145	204.48	7950	330	Years BP	100	359.5	33.4	1.5	917	12	n	p	89	53.1	6.97E+22	3	6.89E+22	3	3.07E-05	1.10E-06
+18	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.42	204.66	8740	300	Years BP	100	357.3	36	2.3	413	11	n	p	87.4	127.2	9.91E+22	5	9.98E+22	5	4.46E-05	6.90E-06
+19	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.418	204.66	9500	420	Years BP	100	3	33.7	2.3	351	11	n	p	87	313.6	9.30E+22	5	9.19E+22	5	4.11E-05	4.90E-06
+20	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.101	204.44	10290	450	Years BP	100	3.6	31.9	1.8	570	12	n	p	86.1	322	8.26E+22	5	8.08E+22	5	3.60E-05	8.40E-06
+21	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	18.972	204.38	11780	300	Years BP	100	2.1	8.7	1.7	738	12	n	p	75.2	16.2	8.55E+22	3	7.51E+22	3	3.34E-05	5.00E-06
+22	Hawaii	i	DE-BFL:GM-C14	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44	13210	570	Years BP	100	357.5	54.6	1.4	916	11	n	p	73.8	197.2	6.93E+22	4	8.51E+22	4	3.79E-05	3.40E-06
+>>>>>>>>>>
+tab delimited	samples
+sample	site	method_codes	citations	geologic_classes	geologic_types	lithologies	lat	lon
+1B475-2	3	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.296	204.69
+1B487-3	3	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.296	204.69
+1B704-1	9	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.538	204.66
+1B708-3	9	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.538	204.66
+1B710-1	9	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.538	204.66
+1B714-3	9	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.538	204.66
+1B730-1	6	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.533	204.65
+1B732-2	6	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.533	204.65
+1B733-1	6	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.533	204.65
+1B734-2	6	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.533	204.65
+1B755-1	4	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.494	204.66
+1B757-3	4	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.494	204.66
+8B416-4	11	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.302	204.69
+8B417-1	11	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.302	204.69
+8B437-5	12	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.713	204.88
+8B439-2	12	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.713	204.88
+8B440-2	12	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.713	204.88
+8B625-1	8	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.455	204.71
+8B631-1	8	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.455	204.71
+8B794-2	01a	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.545	204.91
+8B829-2	2	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.552	204.7
+8B833-4	2	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.552	204.7
+8B835-2	2	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.552	204.7
+8B836-3	2	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.552	204.7
+8B889-4	7	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.118	204.43
+8B891-4	7	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.118	204.43
+8B896-2	7	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.118	204.43
+8B897-4	7	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.118	204.43
+8B906-1	14	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.543	204.88
+8B907-2	14	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.543	204.88
+8B910-3	14	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.543	204.88
+9B039-2	10	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.64	204.96
+9B040-1	10	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.64	204.96
+9B041-3	10	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.64	204.96
+9B042-3	10	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.64	204.96
+9B046-3	10	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.64	204.96
+9B109-2	5	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.564	204.66
+9B110-4	5	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.564	204.66
+9B113-4	5	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.564	204.66
+9B117-2	5	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.564	204.66
+9B131-5	01b	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.58	204.94
+9B433-5	01c	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.572	204.94
+9B437-5	01c	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.572	204.94
+9B445-3	13	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.161	204.46
+9B448-4	13	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.161	204.46
+9B449-2	13	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.161	204.46
+9B451-2	13	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.161	204.46
+9B454-4	13	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.161	204.46
+9B483-2	20	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.101	204.44
+9B486-4	20	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.101	204.44
+9B489-2	20	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.101	204.44
+9B490-3	20	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.101	204.44
+9B492-4	20	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.101	204.44
+9B659-2	15	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.086	204.41
+9B660-4	15	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.086	204.41
+9B666-3	17	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.145	204.48
+9B669-2	17	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.145	204.48
+9B670-2	17	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.145	204.48
+9B902-3	21	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	18.972	204.38
+9B904-2	21	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	18.972	204.38
+9B905-2	21	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	18.972	204.38
+9B937-2	18	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.42	204.66
+9B944-1	18	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.42	204.66
+9B945-3	18	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.42	204.66
+9B947-2	18	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.42	204.66
+9B948-1	18	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.42	204.66
+9B949-2	19	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.418	204.66
+9B950-3	19	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.418	204.66
+9B953-3	19	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.418	204.66
+9B955-2	19	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.418	204.66
+9B959-3	19	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.418	204.66
+9B961-2	16	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44
+9B962-3	16	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44
+9B964-1	16	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44
+9B965-2	16	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44
+9B975-2	22	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44
+9B976-1	22	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44
+9B977-1	22	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44
+9B984-2	22	FS-FD	This study	Extrusive:Igneous	Lava Flow	Basalt	19.072	204.44
+>>>>>>>>>>
+tab delimited	specimens
+specimen	sample	result_quality	method_codes	citations	geologic_classes	geologic_types	lithologies	magn_volume	int_corr	int_treat_dc_field
+1B475-2	1B475-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	5.39	u	3.50E-05
+1B487-3	1B487-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.67	u	3.50E-05
+1B704-1	1B704-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	16.4	u	3.50E-05
+1B708-3	1B708-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.04	u	3.50E-05
+1B710-1	1B710-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	11.3	u	3.50E-05
+1B714-3	1B714-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	23.5	u	3.50E-05
+1B730-1	1B730-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	16.2	u	3.50E-05
+1B732-2	1B732-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	27.2	u	3.50E-05
+1B733-1	1B733-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	17.9	u	3.50E-05
+1B734-2	1B734-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	18.1	u	3.50E-05
+1B755-1	1B755-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	14.3	u	3.50E-05
+1B757-3	1B757-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	21.1	u	3.50E-05
+8B416-4	8B416-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.01	u	3.50E-05
+8B417-1	8B417-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	12.3	u	3.50E-05
+8B437-5	8B437-5	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	11.4	u	3.50E-05
+8B439-2	8B439-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	11.7	u	3.50E-05
+8B440-2	8B440-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	20	u	3.50E-05
+8B625-1	8B625-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	7.41	u	3.50E-05
+8B631-1	8B631-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	4.43	u	3.50E-05
+8B794-2	8B794-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	10.5	u	3.50E-05
+8B829-2	8B829-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	17.8	u	3.50E-05
+8B833-4	8B833-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	22.9	u	3.50E-05
+8B835-2	8B835-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	26	u	3.50E-05
+8B836-3	8B836-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	20.6	u	3.50E-05
+8B889-4	8B889-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	10	u	3.50E-05
+8B891-4	8B891-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	12.7	u	3.50E-05
+8B896-2	8B896-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	8.95	u	3.50E-05
+8B897-4	8B897-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	23.3	u	3.50E-05
+8B906-1	8B906-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	4.25	u	3.50E-05
+8B907-2	8B907-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	5.89	u	3.50E-05
+8B910-3	8B910-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	5.57	u	3.50E-05
+9B039-2	9B039-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.42	u	3.50E-05
+9B040-1	9B040-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.92	u	3.50E-05
+9B041-3	9B041-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.76	u	3.50E-05
+9B042-3	9B042-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	5.96	u	3.50E-05
+9B046-3	9B046-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	16.5	u	3.50E-05
+9B109-2	9B109-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	12.6	u	3.50E-05
+9B110-4	9B110-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	14.9	u	3.50E-05
+9B113-4	9B113-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	7.02	u	3.50E-05
+9B117-2	9B117-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	23.5	u	3.50E-05
+9B131-5	9B131-5	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	5.94	u	3.50E-05
+9B433-5	9B433-5	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	3.9	u	3.50E-05
+9B437-5	9B437-5	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	3.34	u	3.50E-05
+9B445-3	9B445-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	9.8	u	3.50E-05
+9B448-4	9B448-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	18.1	u	3.50E-05
+9B449-2	9B449-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	12.7	u	3.50E-05
+9B451-2	9B451-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	14.7	u	3.50E-05
+9B454-4	9B454-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	14.2	u	3.50E-05
+9B483-2	9B483-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	9.39	u	3.50E-05
+9B486-4	9B486-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	7.75	u	3.50E-05
+9B489-2	9B489-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	9.26	u	3.50E-05
+9B490-3	9B490-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	8.58	u	3.50E-05
+9B492-4	9B492-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.22	u	3.50E-05
+9B659-2	9B659-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.39	u	3.50E-05
+9B660-4	9B660-4	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	11.5	u	3.50E-05
+9B666-3	9B666-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	5.14	u	3.50E-05
+9B669-2	9B669-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	10.1	u	3.50E-05
+9B670-2	9B670-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	5.8	u	3.50E-05
+9B902-3	9B902-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	7.68	u	3.50E-05
+9B904-2	9B904-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	4.12	u	3.50E-05
+9B905-2	9B905-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	8.64	u	3.50E-05
+9B937-2	9B937-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	1.5	u	3.50E-05
+9B944-1	9B944-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	16.2	u	3.50E-05
+9B945-3	9B945-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	9.32	u	3.50E-05
+9B947-2	9B947-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.12	u	3.50E-05
+9B948-1	9B948-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	14.6	u	3.50E-05
+9B949-2	9B949-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	9.27	u	3.50E-05
+9B950-3	9B950-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	16.3	u	3.50E-05
+9B953-3	9B953-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	9.29	u	3.50E-05
+9B955-2	9B955-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	10.1	u	3.50E-05
+9B959-3	9B959-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	18.5	u	3.50E-05
+9B961-2	9B961-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	9.58	u	3.50E-05
+9B962-3	9B962-3	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	7.23	u	3.50E-05
+9B964-1	9B964-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	9.84	u	3.50E-05
+9B965-2	9B965-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	3.39	u	3.50E-05
+9B975-2	9B975-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	10.8	u	3.50E-05
+9B976-1	9B976-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	6.83	u	3.50E-05
+9B977-1	9B977-1	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	4.04	u	3.50E-05
+9B984-2	9B984-2	g	LP-PI-ALT-PTRM:LP-PI-TRM	This study	Extrusive:Igneous	Lava Flow	Basalt	13.6	u	3.50E-05
+>>>>>>>>>>
+tab delimited	ages
+location	site	age	age_sigma	age_unit	method_codes	citations
+Hawaii	01a	260	210	Years BP	GM-C14	This study
+Hawaii	01b	260	210	Years BP	GM-C14	This study
+Hawaii	01c	260	210	Years BP	GM-C14	This study
+Hawaii	2	440	240	Years BP	GM-C14	This study
+Hawaii	3	700	210	Years BP	GM-C14	This study
+Hawaii	4	760	210	Years BP	GM-C14	This study
+Hawaii	5	1320	150	Years BP	GM-C14	This study
+Hawaii	6	1690	210	Years BP	GM-C14	This study
+Hawaii	7	2180	180	Years BP	GM-C14	This study
+Hawaii	8	2190	210	Years BP	GM-C14	This study
+Hawaii	9	2550	240	Years BP	GM-C14	This study
+Hawaii	10	2890	210	Years BP	GM-C14	This study
+Hawaii	11	3480	240	Years BP	GM-C14	This study
+Hawaii	12	4050	150	Years BP	GM-C14	This study
+Hawaii	13	5160	300	Years BP	GM-C14	This study
+Hawaii	14	5650	270	Years BP	GM-C14	This study
+Hawaii	15	6160	330	Years BP	GM-C14	This study
+Hawaii	16	7300	300	Years BP	GM-C14	This study
+Hawaii	17	7950	330	Years BP	GM-C14	This study
+Hawaii	18	8740	300	Years BP	GM-C14	This study
+Hawaii	19	9500	420	Years BP	GM-C14	This study
+Hawaii	20	10290	450	Years BP	GM-C14	This study
+Hawaii	21	11780	300	Years BP	GM-C14	This study
+Hawaii	22	13210	570	Years BP	GM-C14	This study

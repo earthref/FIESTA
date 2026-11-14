@@ -1,8 +1,9 @@
 """Private workspace: the contribution workflow (Bearer auth)."""
 
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Header, HTTPException, Response, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -125,6 +126,45 @@ async def upload_file(
         files={svc.default_filename(node, contribution.id): data},
         canonical=svc.default_filename(node, contribution.id),
         operation="upload",
+    )
+    await session.commit()
+    return _out(contribution, user)
+
+
+@router.post("/{contribution_id}/import", response_model=ContributionOut)
+async def import_tables(
+    session: SessionDep,
+    node: NodeDep,
+    user: CurrentUser,
+    contribution_id: int,
+    data: UploadFile,
+    originals: Annotated[list[UploadFile] | None, File()] = None,
+    expected_revision: str | None = Header(None, alias="If-Match"),
+    request_key: str = Header(..., alias="Idempotency-Key"),
+) -> ContributionOut:
+    """The upload page's import step: `data` is the contribution text the
+    browser converted the files to (one block per imported sheet), `originals`
+    the files as uploaded. Each table it brings replaces the contribution's
+    table of that name in a new revision (from `If-Match`); the originals are
+    kept as attachments."""
+    from fiesta.services.imports import save_import
+
+    contribution = await _own_contribution(
+        session, node, user, contribution_id, allow_activated=False
+    )
+    try:
+        text = (await data.read()).decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(422, "the imported tables must be UTF-8 text") from None
+    await save_import(
+        session,
+        node,
+        contribution,
+        user.id,
+        text=text,
+        originals={f.filename or "upload": await f.read() for f in originals or []},
+        expected_revision=expected_revision,
+        request_key=request_key,
     )
     await session.commit()
     return _out(contribution, user)

@@ -186,6 +186,55 @@ export interface NodeConfig {
   contributions_mode?: "public" | "source";
   /** The private workspace's per-node options (node YAML `workspace`). */
   workspace?: WorkspaceConfig;
+  /** The upload page's per-node options (node YAML `upload`). */
+  upload?: UploadConfig;
+}
+
+/** An example file the upload page offers (under configurations/<slug>/assets/). */
+export interface UploadExample {
+  title: string;
+  subtitle: string;
+  file: string;
+  format: ImportFormat;
+  icon: string;
+}
+
+/** A spreadsheet layout the import step recognises by its marker cells. */
+export interface ExcelTemplate {
+  markers: Record<string, string>;
+  skip_rows: number;
+  skip_columns: number;
+}
+
+export interface UploadConfig {
+  examples: UploadExample[];
+  excel_templates: ExcelTemplate[];
+  /** Tables one upload may bring from a single sheet only. */
+  single_source_tables: string[];
+}
+
+/** How the import step reads a file: the node's multi-table text, a
+ * single-table tab- or comma-delimited file, or a spreadsheet. */
+export type ImportFormat = "fiesta" | "tsv" | "csv" | "excel";
+
+/** One sheet's import settings (also what an import template stores). */
+export interface ImportSettings {
+  table_name: string;
+  /** "" for a sheet without a header row. */
+  n_header_rows: string;
+  /** Input column header -> data-model column (null: not mapped). */
+  column_map: Record<string, string | null>;
+  exclude_column_names: string[];
+  exclude_table: boolean;
+}
+
+/** GET /private/import-templates. */
+export interface ImportTemplate {
+  id: number;
+  name: string;
+  settings: ImportSettings;
+  created_at: string;
+  updated_at: string;
 }
 
 /** A contribution-table column the private workspace's cards edit; `kind`
