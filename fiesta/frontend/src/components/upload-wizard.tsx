@@ -282,6 +282,8 @@ async function readFile(
   }
 }
 
+const rowCount = (n: number) => `${n.toLocaleString()} ${n === 1 ? "row" : "rows"}`;
+
 /** The tables a contribution's current text holds, with their row counts. */
 function tableCounts(text: string): Record<string, number> {
   const counts: Record<string, number> = {};
@@ -779,11 +781,11 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                     {[...uploadedTables].map(([table, rows]) => (
                       <tr key={table}>
                         <td className="pr-6 font-semibold">{table}</td>
-                        <td className="pr-6">{rows.toLocaleString()} rows</td>
+                        <td className="pr-6">{rowCount(rows)}</td>
                         {target !== null && (
                           <td>
                             {existing[table] !== undefined
-                              ? `${existing[table].toLocaleString()} rows, replaced`
+                              ? `${rowCount(existing[table])}, replaced`
                               : "—"}
                           </td>
                         )}
@@ -796,7 +798,7 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                           <tr key={table} className="text-gray-500">
                             <td className="pr-6">{table}</td>
                             <td className="pr-6">—</td>
-                            <td>{rows.toLocaleString()} rows, kept</td>
+                            <td>{rowCount(rows)}, kept</td>
                           </tr>
                         ))}
                   </tbody>
