@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ErrorMessage } from "../components/error-message";
@@ -28,6 +28,16 @@ export function PrivateWorkspacePage() {
   const [scrollTo, setScrollTo] = useState<number | null>(null);
 
   const sourceMode = isSourceMode(config);
+  const queryClient = useQueryClient();
+  // An empty private contribution, to fill in under Edit · History · Files.
+  const create = useMutation({
+    mutationFn: () => api<ContributionOut>("/private/contributions", { method: "POST" }),
+    onSuccess: async (created) => {
+      await queryClient.invalidateQueries({ queryKey: ["private", "contributions"] });
+      setShowing("preparation");
+      setScrollTo(created.id);
+    },
+  });
 
   const list = useQuery({
     queryKey: ["private", "contributions"],
@@ -109,6 +119,15 @@ export function PrivateWorkspacePage() {
         <Link to="/upload" className={uploadClass} style={{ margin: "0 0 0.5em" }}>
           <Icon name="plus" size="small" /> Upload Data Into Your Private Workspace
         </Link>
+        <Button
+          variant="secondary"
+          onClick={() => create.mutate()}
+          disabled={create.isPending}
+          style={{ margin: "0 0 0.5em" }}
+        >
+          <Icon name="file-plus" size="small" />
+          {create.isPending ? "Creating…" : "New Contribution"}
+        </Button>
         <button
           type="button"
           onClick={() => setShowing("preparation")}
@@ -135,6 +154,7 @@ export function PrivateWorkspacePage() {
 
       {list.isPending && <PageSpinner label="Loading your contributions…" />}
       {list.error && <ErrorMessage error={list.error} />}
+      {create.error && <ErrorMessage error={create.error} />}
 
       {!list.isPending && !list.error && visible.length === 0 && (
         <div className="rounded-md border border-gray-200 bg-surface px-4 py-10 text-center">

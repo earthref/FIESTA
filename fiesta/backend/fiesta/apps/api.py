@@ -75,6 +75,8 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        # The SPA names an authenticated download (fetched, not linked) by it.
+        expose_headers=["Content-Disposition"],
     )
     # Compress responses for clients that accept gzip (search results, plot
     # data and downloads are JSON or text and shrink 3-5x). Level 6: nearly

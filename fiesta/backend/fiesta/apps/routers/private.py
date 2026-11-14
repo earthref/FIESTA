@@ -361,6 +361,58 @@ async def delete(
     await svc.delete_contribution(session, node, contribution, actor_id=user.id)
 
 
+@router.get("/{contribution_id}/download")
+async def download(
+    session: SessionDep,
+    node: NodeDep,
+    user: CurrentUser,
+    contribution_id: int,
+    revision_id: str | None = None,
+) -> Response:
+    """The contribution's current file (or a revision's), for whoever may open
+    it in the workspace: its contributor, a shared workspace's member, a node admin."""
+    c = await _own_contribution(session, node, user, contribution_id, write=False)
+    if not c.head_revision:
+        raise HTTPException(404, "this contribution has no file")
+    rev = await session.get(Revision, revision_id or c.head_revision)
+    if rev is None or rev.contribution_id != c.id:
+        raise HTTPException(404, "revision not found")
+    name = rev.snapshot["canonical"]
+    return Response(
+        await revision_file(session, node, c, name, rev.id),
+        media_type="text/plain",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )
+
+
+class ReassignIn(BaseModel):
+    # The new contributor's email address or handle.
+    user: str
+
+
+@router.put("/{contribution_id}/contributor", response_model=ContributionOut)
+async def reassign(
+    session: SessionDep, node: NodeDep, user: CurrentUser, contribution_id: int, payload: ReassignIn
+) -> ContributionOut:
+    contribution = await _own_contribution(session, node, user, contribution_id)
+    # A shared workspace's editors may change the data, not who owns it.
+    if contribution.contributor_id != user.id and not user.is_node_admin(node.node.slug):
+        raise HTTPException(403, "only the contributor or a node admin can reassign it")
+    if contribution.is_activated:
+        raise HTTPException(409, "only a private contribution can be reassigned")
+    target = await svc.find_account(session, payload.user)
+    if target is None:
+        raise HTTPException(404, "no account has that email address or handle")
+    if target.id == contribution.contributor_id:
+        raise HTTPException(409, f"{target.name} is already the contributor")
+    await svc.reassign(session, node, contribution, target, actor_id=user.id)
+    return ContributionOut.from_db(
+        contribution,
+        include_private_key=target.id == user.id or user.is_node_admin(node.node.slug),
+        contributor_name=target.name,
+    )
+
+
 class EditIn(BaseModel):
     expected_revision: str | None
     request_key: str

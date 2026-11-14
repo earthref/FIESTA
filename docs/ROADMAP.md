@@ -246,7 +246,7 @@ the latter become G5 work after cutover.*
       - [ ] Grid editor: tables as tabs, cell editing with edited cells marked, add
             and delete rows, undo and redo, vocabulary pulldowns, show/hide empty
             columns, paging, and validation errors on the cells (M3, MagIC #547).
-      - [ ] Workspace card: a New Contribution button, a download button, and
+      - [x] Workspace card: a New Contribution button, a download button, and
             reassigning a private contribution to another user (G5).
 - [ ] **C8 Finish the validator.** `domain/validate.py` accepts but does not enforce
       `requiredIf`/`requiredUnless` variants, `in`, `matrix` and `type`. Enforce
