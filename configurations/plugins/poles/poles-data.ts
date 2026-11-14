@@ -50,7 +50,7 @@ export function formatLon(lon: number): string {
 }
 
 /** An age in years BP as every age is shown (lib/age.ts): Ga / Ma / ka by
- * magnitude, calendar years AD / BC below 1 ka. */
+ * magnitude, years BP below 1 ka. */
 export function formatAge(age: number): string {
   return formatYbp(age);
 }

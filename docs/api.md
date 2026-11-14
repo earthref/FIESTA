@@ -664,8 +664,8 @@ tried external (J and decay constants), internal, analytical.
 matches a doc any of whose intervals overlaps 5–20 Ma (OpenSearch's default
 `intersects` relation; the legacy `_age_range_ybp` behaved the same on one
 envelope per record); its histogram is over `values`. The UI shows these with
-`fiesta/frontend/src/lib/age.ts` (Ga / Ma / ka by magnitude, calendar years AD /
-BC below 1 ka, one row in full as "500 ± 10 ka", several as their span).
+`fiesta/frontend/src/lib/age.ts` (Ga / Ma / ka by magnitude, "yr BP" below 1 ka
+with present = 1950 CE, one row in full as "500 ± 10 ka", several as their span).
 `ensure_index` adds the template to an existing index; its docs gain the block
 only through `fiesta rebuild`.
 

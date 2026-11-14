@@ -2,7 +2,10 @@
 // every age in years BP (node YAML `search.unit_conversions`, see
 // fiesta.domain.summarize): a doc's `summary._interval.<name>` block holds its
 // rows' intervals; this shows them scaled as the legacy result card did, to
-// Ga / Ma / ka by magnitude, and below 1 ka as calendar years AD / BC.
+// Ga / Ma / ka by magnitude, and below 1 ka in years BP (present = 1950 CE, the
+// Quaternary / radiocarbon convention; 2026-11-14, user decision: not legacy's
+// calendar AD / BC, so one axis runs from Ga to the present; a year after 1950
+// is negative). The contributed unit stays in the tooltip.
 
 import type { SearchResult } from "@/lib/types";
 import { getPath } from "@/lib/utils";
@@ -10,6 +13,7 @@ import { getPath } from "@/lib/utils";
 /** A doc's `summary._interval.<name>` (years BP). */
 export interface AgeInterval {
   range?: { gte?: number; lte?: number }[];
+  /** The span shown: best estimates and stated bounds (no sigma windows). */
   min: number;
   max: number;
   /** The median best estimate: what the grid sorts and the map colors by. */
@@ -46,10 +50,11 @@ const SCALES: Scale[] = [
   { divisor: 1e6, unit: "Ma" },
   { divisor: 1e3, unit: "ka" },
 ];
+const YEARS: Scale = { divisor: 1, unit: "yr BP" };
 
-/** The unit for ages up to `largest` years BP: undefined = calendar years. */
-function scaleFor(largest: number): Scale | undefined {
-  return SCALES.find((scale) => Math.abs(largest) >= scale.divisor);
+/** The unit for ages up to `largest` years BP. */
+function scaleFor(largest: number): Scale {
+  return SCALES.find((scale) => Math.abs(largest) >= scale.divisor) ?? YEARS;
 }
 
 /** numeral "0[.]0[00]": up to three decimals, no trailing zeros (as legacy). */
@@ -58,49 +63,18 @@ function trim(value: number): string {
   return String(rounded === 0 ? 0 : rounded);
 }
 
-/** Years BP as a calendar year: 450 -> "1500 AD", 2449 -> "500 BC". */
-function calendar(ybp: number): { year: string; era: "AD" | "BC" } {
-  return ybp >= 1949.5
-    ? { year: trim(ybp - 1949), era: "BC" }
-    : { year: trim(1950 - ybp), era: "AD" };
-}
-
-function calendarRange(older: number, younger: number): string {
-  const from = calendar(older);
-  const to = calendar(younger);
-  if (from.year === to.year && from.era === to.era) return `${from.year} ${from.era}`;
-  return from.era === to.era
-    ? `${from.year} – ${to.year} ${to.era}`
-    : `${from.year} ${from.era} – ${to.year} ${to.era}`;
-}
-
-/** One age in years BP: "12.3 Ma", "1500 AD". */
+/** One age in years BP: "12.3 Ma", "450 yr BP". */
 export function formatYbp(ybp: number): string {
   const scale = scaleFor(ybp);
-  if (!scale) {
-    const { year, era } = calendar(ybp);
-    return `${year} ${era}`;
-  }
   return `${trim(ybp / scale.divisor)} ${scale.unit}`;
 }
 
-/** A range in years BP (young..old): "10 – 15 Ma", "1450 – 1620 AD". */
+/** A range in years BP (young..old): "10 – 15 Ma", "330 – 500 yr BP". */
 export function formatYbpRange(young: number, old: number): string {
   const scale = scaleFor(Math.max(Math.abs(young), Math.abs(old)));
-  if (!scale) return calendarRange(old, young);
   const a = trim(young / scale.divisor);
   const b = trim(old / scale.divisor);
   return a === b ? `${a} ${scale.unit}` : `${a} – ${b} ${scale.unit}`;
-}
-
-/** Older than `ybp`: "> 10 Ma", "before 1500 AD". */
-function olderThan(ybp: number): string {
-  return scaleFor(ybp) ? `> ${formatYbp(ybp)}` : `before ${formatYbp(ybp)}`;
-}
-
-/** Younger than `ybp`: "< 15 Ma", "after 1500 AD". */
-function youngerThan(ybp: number): string {
-  return scaleFor(ybp) ? `< ${formatYbp(ybp)}` : `after ${formatYbp(ybp)}`;
 }
 
 /** One row's age, whatever of value / sigma / low / high it has:
@@ -111,22 +85,15 @@ function formatDetail(detail: NonNullable<AgeInterval["detail"]>): string | unde
     low !== undefined && high !== undefined
       ? formatYbpRange(low, high)
       : low !== undefined
-        ? olderThan(low)
+        ? `> ${formatYbp(low)}`
         : high !== undefined
-          ? youngerThan(high)
+          ? `< ${formatYbp(high)}`
           : undefined;
   if (value === undefined) return bounds;
-  let main: string;
+  let main = formatYbp(value);
   if (sigma !== undefined) {
     const scale = scaleFor(Math.abs(value) + sigma);
-    main = scale
-      ? `${trim(value / scale.divisor)} ± ${trim(sigma / scale.divisor)} ${scale.unit}`
-      : (() => {
-          const { year, era } = calendar(value);
-          return `${year} ± ${trim(sigma)} ${era}`;
-        })();
-  } else {
-    main = formatYbp(value);
+    main = `${trim(value / scale.divisor)} ± ${trim(sigma / scale.divisor)} ${scale.unit}`;
   }
   return bounds ? `${main} (${bounds})` : main;
 }
@@ -140,8 +107,8 @@ export function formatAgeInterval(interval: AgeInterval): string {
   }
   const { min, max } = interval;
   if (min === max) {
-    if (interval.open_high && !interval.open_low) return olderThan(min);
-    if (interval.open_low && !interval.open_high) return youngerThan(max);
+    if (interval.open_high && !interval.open_low) return `> ${formatYbp(min)}`;
+    if (interval.open_low && !interval.open_high) return `< ${formatYbp(max)}`;
     return formatYbp(min);
   }
   return formatYbpRange(min, max);
