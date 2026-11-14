@@ -716,14 +716,21 @@ function BuiltinCell({
           <a
             href={nodeApiUrl(`/contributions/${id}/download${keyParam}`)}
             download
-            className="inline-block w-full bg-panel-soft text-center font-bold text-node-ink hover:bg-panel"
+            // Dark mode quiets the tile (secondary ink, neutral edge) so it does
+            // not outweigh the row's title; the node ink returns on hover/focus,
+            // with an inset focus ring the cell cannot clip.
+            className={cx(
+              "inline-block w-full bg-panel-soft text-center font-bold text-node-ink hover:bg-panel",
+              "shadow-[inset_0_0_0_1px_var(--node-color)] dark:shadow-[inset_0_0_0_1px_var(--er-edge)]",
+              "dark:text-ink-secondary dark:hover:text-node-ink dark:focus-visible:text-node-ink",
+              "dark:focus-visible:-outline-offset-2 dark:focus-visible:outline-2 dark:focus-visible:outline-node-ink",
+            )}
             style={{
               padding: "20px 0",
               height: 100,
               fontSize: 14,
               lineHeight: "18px",
               borderRadius: "0.28571429rem",
-              boxShadow: "0 0 0 1px var(--node-color) inset",
             }}
           >
             <span aria-hidden="true" className="block" style={{ lineHeight: "42px" }}>
