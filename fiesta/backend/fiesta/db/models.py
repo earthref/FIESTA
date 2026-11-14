@@ -317,3 +317,25 @@ class DoiReference(Base):
     error: Mapped[str | None] = mapped_column(Text)
     fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class ImportTemplate(Base):
+    """A user's saved import settings for one sheet (legacy MagIC
+    data_importer.jsx "Import Settings Template"): the table name, header-row
+    count, column map and excluded columns, reused on the next upload. Shared
+    schema, beside the accounts; `node` keeps each node's templates apart, as
+    they name its data model's tables and columns."""
+
+    __tablename__ = "import_templates"
+    __table_args__ = (UniqueConstraint("user_id", "node", "name"), {"schema": SHARED_SCHEMA})
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{SHARED_SCHEMA}.users.id", ondelete="CASCADE"), index=True
+    )
+    node: Mapped[str] = mapped_column(String(32))
+    name: Mapped[str] = mapped_column(String(255))
+    settings: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )

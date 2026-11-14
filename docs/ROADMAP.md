@@ -232,16 +232,16 @@ the latter become G5 work after cutover.*
       errors and warnings per table, publish gated on zero errors and a DOI. FIESTA
       adds revisions with restore, attachments, new versions of published
       contributions and per-revision validation. Missing:
-      - [ ] Intake: several files at once; `.xlsx`/`.xls` (one table per sheet, the
+      - [x] Intake: several files at once; `.xlsx`/`.xls` (one table per sheet, the
             MagIC Excel template's 3 header rows and group column skipped); single-table
             tab- and comma-delimited files; a file-type override; example files (C5).
-      - [ ] Import step: table name per sheet, a column suggester (model name or
+      - [x] Import step: table name per sheet, a column suggester (model name or
             label, case-insensitive), a column picker that flags unknown and duplicate
             targets, header-row count, excluding columns, rows and tables, value
             normalisation (Integer `.0`, booleans, controlled-vocabulary case and
             one-letter typos), and refusing two measurements tables (C5).
-      - [ ] Import templates: save, load, rename and delete per user (C5).
-      - [ ] Upload into an existing private contribution, replacing the tables the
+      - [x] Import templates: save, load, rename and delete per user (C5).
+      - [x] Upload into an existing private contribution, replacing the tables the
             new file contains ("Add Data to This Contribution", MagIC #327).
       - [x] Grid editor: tables as tabs, cell editing with edited cells marked, add
             and delete rows, undo and redo, vocabulary pulldowns, show/hide empty

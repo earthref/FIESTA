@@ -1,3 +1,4 @@
+import { useSearch } from "@tanstack/react-router";
 import { useLoginModal } from "../components/login-modal";
 import { isSourceMode, SourceModeNotice } from "../components/source-mode-notice";
 import { UploadWizard } from "../components/upload-wizard";
@@ -8,6 +9,7 @@ export function UploadPage() {
   const { data: config } = useNodeConfig();
   const { user } = useAuth();
   const { openLogin } = useLoginModal();
+  const { to } = useSearch({ from: "/upload" }) as { to?: number };
 
   if (isSourceMode(config)) {
     return (
@@ -22,8 +24,9 @@ export function UploadPage() {
     <div>
       <h1 className="mb-1 text-xl font-semibold text-gray-900">Upload a contribution</h1>
       <p className="mb-5 text-sm text-gray-600">
-        Upload a {config?.key} text file to your private workspace. It will be parsed, validated,
-        and summarized before you publish it.
+        Upload {config?.key} text files, delimited tables or Excel workbooks to your private
+        workspace, as a new contribution or into one you are preparing. They will be parsed,
+        validated, and summarized before you publish them.
         {!user && (
           <>
             {" "}
@@ -35,7 +38,7 @@ export function UploadPage() {
           </>
         )}
       </p>
-      <UploadWizard />
+      <UploadWizard initialTarget={to} />
     </div>
   );
 }

@@ -103,6 +103,20 @@ def parse_text(text: str) -> ParsedContribution:
     return parsed
 
 
+def block_tables(text: str) -> list[str]:
+    """The table name of every block in the text, in file order (a table
+    split over several blocks is listed once per block). Call it only on text
+    that `parse_text` accepts."""
+    names, expect_header = [], True
+    for line in text.lstrip("﻿").replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        if line.startswith(">>>"):
+            expect_header = True
+        elif line.strip() and expect_header:
+            names.append(line.split("\t")[1].strip())
+            expect_header = False
+    return names
+
+
 def stamp_ids(text: str, contribution_id: int, model: dict) -> str:
     """Write the download-only identifiers into a contribution's text: the
     `contribution` table's `id`, and in every other table `contribution_id`

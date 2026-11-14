@@ -285,6 +285,20 @@ workspace:
     - { column: description, label: Description, placeholder: "Describe the changes being made in this version" }
   require_reference: true
 
+# The upload page: example files (under magic/assets/), the MagIC Excel
+# template's layout (Group:/Name:/Type:/Column: rows over a label column), and
+# tables an upload may bring from one sheet only.
+upload:
+  examples:
+    - { title: "Example\nMagIC Text", subtitle: Data Model v. 3.0, file: examples/magic-text-3.0.txt, format: fiesta, icon: file-text }
+    - { title: "Example\nTab Delimited", subtitle: Sites Data, file: examples/sites.txt, format: tsv, icon: table }
+    - { title: "Example\nComma Delimited", subtitle: Specimens Data, file: examples/specimens.csv, format: csv, icon: table }
+    - { title: "Example\nMagIC Excel File", subtitle: Data Model v. 3.0, file: examples/magic-excel-3.0.xlsx, format: excel, icon: file-excel }
+    - { title: "Example\nExcel File", subtitle: Sites Data, file: examples/sites.xlsx, format: excel, icon: file-excel }
+  excel_templates:
+    - { markers: { A1: "Group:", A4: "Column:" }, skip_rows: 3, skip_columns: 1 }
+  single_source_tables: [measurements]
+
 # Content pages, in menu order: /<slug> renders magic/pages/<slug>.html (edited
 # in the admin UI's Pages tab). `menu` is left, right (with an icon) or hidden.
 pages:

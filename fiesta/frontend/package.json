@@ -25,7 +25,8 @@
     "echarts": "^6.1.0",
     "maplibre-gl": "^6.16.0",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.2",

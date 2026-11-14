@@ -124,6 +124,12 @@ class Validator:
         self._cv_items_cache[name] = items
         return items
 
+    def vocabulary_terms(self, name: str) -> set[str] | None:
+        """A controlled vocabulary's terms as spelled, or None for one whose
+        values are compared case-insensitively (or that does not exist)."""
+        items = self._cv_items(name)
+        return None if name in self._upper else items
+
     def validate(self, parsed: ParsedContribution) -> ValidationReport:
         report = ValidationReport()
         model_tables = self.model["tables"]

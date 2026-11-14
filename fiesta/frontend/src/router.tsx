@@ -148,6 +148,11 @@ const contributionRoute = createRoute({
 const uploadRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/upload",
+  // ?to=<id>: upload into that private contribution (its Add Data link).
+  validateSearch: (search: Record<string, unknown>): { to?: number } => {
+    const to = Number(search.to);
+    return Number.isInteger(to) && to > 0 ? { to } : {};
+  },
   component: UploadPage,
 });
 

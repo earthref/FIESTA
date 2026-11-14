@@ -564,6 +564,53 @@ class WorkspaceConfig(BaseModel):
     require_reference: bool = False
 
 
+class UploadExample(BaseModel):
+    """An example file the upload page offers to import or download (legacy
+    MagIC upload_contribution.jsx "Example" cards). `file` is relative to
+    configurations/<slug>/assets/."""
+
+    title: str  # "\n" breaks the title onto two lines
+    subtitle: str = ""
+    file: str
+    format: Literal["fiesta", "tsv", "csv", "excel"]
+    icon: str = "file-text"
+
+
+class ExcelTemplate(BaseModel):
+    """A spreadsheet layout the import step recognises: a sheet whose cells
+    match every `markers` regex (cell address -> pattern, e.g. MagIC's
+    {A1: "Group:", A4: "Column:"}) has its first `skip_rows` rows and
+    `skip_columns` columns dropped before the column header row."""
+
+    markers: dict[str, str]
+    skip_rows: int = Field(0, ge=0)
+    skip_columns: int = Field(0, ge=0)
+
+    @field_validator("markers")
+    @classmethod
+    def _cells(cls, value: dict[str, str]) -> dict[str, str]:
+        if not value:
+            raise ValueError("an Excel template needs at least one marker cell")
+        for cell, pattern in value.items():
+            if not re.fullmatch(r"[A-Z]{1,3}[1-9][0-9]*", cell):
+                raise ValueError(f"marker cell {cell!r} is not an A1-style address")
+            try:
+                re.compile(pattern)
+            except re.error as exc:
+                raise ValueError(f"marker {cell} pattern {pattern!r}: {exc}") from None
+        return value
+
+
+class UploadConfig(BaseModel):
+    """The upload page's per-node options (legacy MagIC upload_contribution.jsx)."""
+
+    examples: list[UploadExample] = []
+    excel_templates: list[ExcelTemplate] = []
+    # Tables one upload may bring from a single sheet only (MagIC refuses two
+    # measurements tables: "Please combine them before uploading").
+    single_source_tables: list[str] = []
+
+
 class HomeCardConfig(BaseModel):
     """A resource card on the home page (legacy `ui nine cards` IconButton)."""
 
@@ -727,6 +774,7 @@ class NodeConfig(BaseModel):
     features: FeaturesConfig = FeaturesConfig()
     publish: PublishConfig = PublishConfig()
     workspace: WorkspaceConfig = WorkspaceConfig()
+    upload: UploadConfig = UploadConfig()
     # Per-plugin options, keyed by plugin name, validated against each
     # plugin's Options model by fiesta.plugins.active_plugins.
     plugins: dict[str, dict[str, Any]] = {}
@@ -769,6 +817,10 @@ class NodeConfig(BaseModel):
                     f"workspace.fields name columns {missing} "
                     f"the {self.workspace.table} table does not have"
                 )
+        if missing := [t for t in self.upload.single_source_tables if t not in tables]:
+            raise ValueError(f"upload.single_source_tables {missing} are not in the data model")
+        if missing := [e.file for e in self.upload.examples if self.asset_path(e.file) is None]:
+            raise ValueError(f"upload.examples files {missing} are not in {self.node.slug}/assets/")
         slugs = [p.slug for p in self.pages]
         if len(set(slugs)) != len(slugs):
             raise ValueError(
@@ -1095,6 +1147,7 @@ class NodeConfig(BaseModel):
                 "fields": self.workspace_fields(),
                 "require_reference": self.workspace.require_reference,
             },
+            "upload": self.upload.model_dump(),
         }
 
     def workspace_fields(self) -> list[dict]:
