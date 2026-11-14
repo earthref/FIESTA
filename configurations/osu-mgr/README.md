@@ -86,9 +86,10 @@ Tabs: **Contributions, Cruises, Cores, Sections, Dives, Rocks, Files**.
 searchable via `/v2/{node}/search/{table}` without a tab, matching the repository's
 own search, which exposes cores, cruises, dives and rocks as types.
 
-Facets: `file_type`, `method`, `material`, `texture`, `rv_name`,
-`pi_institution`, `collection` — the repository search's filter groups (file
-types, collection methods, materials, RV names, institutions).
+Filters: a filter per column with data (`text`, `numeric`, `exists`), which
+covers the repository search's filter groups (file types, collection methods,
+materials, RV names, institutions, collection) by the columns' data-model
+labels.
 
 Each level's Summaries grid is its `columns` in osu-mgr.yaml (a title column,
 the record's data columns, citation and contribution date; editable in the

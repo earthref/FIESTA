@@ -169,36 +169,18 @@ search:
   # on every level's Summaries, Rows and Map views; the poles range/bbox filters
   # show on the Locations level's Poles view (the `poles` plugin indexes
   # summary.poles.age in years, hence the Ma scale).
-  # Ranges on summary._num.<column> filter a level's records by a data-model
-  # number column (stored in its data-model unit, SI; ages in years BP by
-  # unit_conversions below): `scale` turns the typed value into it. The
-  # `numeric` entry adds every other number column of the level as a range
-  # filter of its own, and `text` every other text column as a facet.
-  # The `exists` entry is two, With Data and Without Data, each picking
-  # columns per table: a tab per table the level's records cover (theirs and
-  # the levels below; on Contributions every table), on summary._has.<table>.
+  # The Summaries / Rows / Map views list a filter per column with data:
+  # `numeric` adds every number column of the level as a range filter of its
+  # own (summary._num, in its data-model unit), `text` every text column (and
+  # a record's inherited geography) as a facet, and `exists` With Data and
+  # Without Data, each picking columns per table (summary._has.<table>). Only
+  # filters no single column gives are configured for them (2026-11-13; the
+  # legacy per-column facets and ranges were dropped): Publication Year, and
+  # Age, ages in years BP by unit_conversions below whatever their age_unit,
+  # typed in Ma with the time scale. Plugin views keep their own filters.
   filters:
     - { type: range, label: Publication Year, field: summary.contribution._reference.year, views: [Summaries, Rows, Map] }
     - { type: range, label: Age, field: summary._num.age, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Locations, Sites], views: [Summaries, Rows, Map] }
-    - { type: range, label: Paleointensity, field: summary._num.int_abs, unit: μT, scale: 1.0e-6, levels: [Contributions, Locations, Sites, Samples, Specimens], views: [Summaries, Rows, Map] }
-    - { type: range, label: VADM, field: summary._num.vadm, unit: ZAm², scale: 1.0e21, levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
-    - { type: range, label: Declination, field: summary._num.dir_dec, unit: "°", levels: [Locations, Sites, Samples, Specimens, Measurements], views: [Summaries, Rows, Map] }
-    - { type: range, label: Inclination, field: summary._num.dir_inc, unit: "°", levels: [Locations, Sites, Samples, Specimens, Measurements], views: [Summaries, Rows, Map] }
-    - { type: range, label: Direction α95, field: summary._num.dir_alpha95, unit: "°", levels: [Locations, Sites, Samples, Specimens], views: [Summaries, Rows, Map] }
-    - { type: range, label: Pole Latitude, field: summary._num.pole_lat, unit: "°", levels: [Locations], views: [Summaries, Rows, Map] }
-    - { type: range, label: VGP Latitude, field: summary._num.vgp_lat, unit: "°", levels: [Sites], views: [Summaries, Rows, Map] }
-    - { type: range, label: Elevation, field: summary._num.elevation, unit: m, levels: [Sites], views: [Summaries, Rows, Map] }
-    - { type: range, label: Magnetic Moment, field: summary._num.magn_moment, unit: Am², levels: [Specimens, Measurements], views: [Summaries, Rows, Map] }
-    - { type: range, label: Mass Susceptibility, field: summary._num.susc_chi_mass, unit: m³/kg, levels: [Specimens, Measurements], views: [Summaries, Rows, Map] }
-    - { type: range, label: Treatment Temperature, field: summary._num.treat_temp, unit: K, levels: [Measurements], views: [Summaries, Rows, Map] }
-    - { type: range, label: Treatment AC Field, field: summary._num.treat_ac_field, unit: mT, scale: 1.0e-3, levels: [Measurements], views: [Summaries, Rows, Map] }
-    - { type: facet, field: method_codes, views: [Summaries, Rows, Map, Rock Magnetism] }
-    - { type: facet, field: geologic_classes, views: [Summaries, Rows, Map, Rock Magnetism] }
-    - { type: facet, field: geologic_types, views: [Summaries, Rows, Map, Rock Magnetism] }
-    - { type: facet, field: lithologies, views: [Summaries, Rows, Map, Rock Magnetism] }
-    - { type: facet, field: location_type, views: [Summaries, Rows, Map, Rock Magnetism] }
-    - { type: facet, field: plate_blocks, views: [Summaries, Rows, Map, Rock Magnetism] }
-    - { type: facet, field: tectonic_settings, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: numeric, label: Numeric, views: [Summaries, Rows, Map] }
     - { type: text, label: Text, views: [Summaries, Rows, Map] }
     - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map] }
@@ -215,6 +197,14 @@ search:
     - { type: range, label: "Anisotropy P′", field: summary.rock_mag.pj, levels: [Specimens], views: [Rock Magnetism] }
     - { type: range, label: Anisotropy Shape T, field: summary.rock_mag.t, levels: [Specimens], views: [Rock Magnetism] }
     - { type: bbox, label: Geospatial, levels: [Specimens], views: [Rock Magnetism] }
+    # The view has no text filter: its sample facets stay.
+    - { type: facet, field: method_codes, views: [Rock Magnetism] }
+    - { type: facet, field: geologic_classes, views: [Rock Magnetism] }
+    - { type: facet, field: geologic_types, views: [Rock Magnetism] }
+    - { type: facet, field: lithologies, views: [Rock Magnetism] }
+    - { type: facet, field: location_type, views: [Rock Magnetism] }
+    - { type: facet, field: plate_blocks, views: [Rock Magnetism] }
+    - { type: facet, field: tectonic_settings, views: [Rock Magnetism] }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID, views: [Summaries, Rows, Map] }
     - { type: facet, field: doi, label: Contribution DOI, views: [Summaries, Rows, Map] }

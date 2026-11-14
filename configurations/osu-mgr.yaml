@@ -147,16 +147,15 @@ search:
   # Searchable without a tab of their own — the leaf levels the repository's own
   # search does not surface as a type but which /api/search/{table} can target.
   extra_types: [section_halves, core_samples, dive_subsamples]
-  # The repository search's filter groups: file types, collection methods,
-  # materials, research vessels, institutions, plus the collection itself.
+  # A filter per column with data (`text`: each text column as a facet;
+  # `numeric`: each number column as a range; `exists`: With / Without Data),
+  # found with the sidebar's filter search; they replaced the repository
+  # search's per-column groups (file types, collection methods, materials,
+  # vessels, institutions, collection) on 2026-11-13.
   filters:
-    - { type: facet, field: file_type }
-    - { type: facet, field: method }
-    - { type: facet, field: material }
-    - { type: facet, field: texture }
-    - { type: facet, field: rv_name }
-    - { type: facet, field: pi_institution }
-    - { type: facet, field: collection }
+    - { type: text, label: Text }
+    - { type: numeric, label: Numeric }
+    - { type: exists, label: With / Without Data }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }

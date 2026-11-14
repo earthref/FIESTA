@@ -71,18 +71,15 @@ search:
         - { cell: citation }
         - { cell: contributed }
   extra_types: []
-  # Aggregated on summary._all.<field>.raw — the legacy Advanced Search
-  # dropdowns (data type, expert level, project) plus the geographic and
-  # timescale terms its term_type selector scoped queries to.
+  # A filter per column with data (`text`: each text column as a facet;
+  # `numeric`: each number column as a range; `exists`: With / Without Data),
+  # found with the sidebar's filter search; they replaced the facets of the
+  # legacy Advanced Search dropdowns (data type, expert level, project,
+  # geographic and timescale terms) on 2026-11-13.
   filters:
-    - { type: facet, field: data_types }
-    - { type: facet, field: expert_level }
-    - { type: facet, field: education_topics }
-    - { type: facet, field: project }
-    - { type: facet, field: project_group }
-    - { type: facet, field: continents_oceans }
-    - { type: facet, field: countries }
-    - { type: facet, field: timescale_period }
+    - { type: text, label: Text }
+    - { type: numeric, label: Numeric }
+    - { type: exists, label: With / Without Data }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }

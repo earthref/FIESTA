@@ -18,8 +18,8 @@ Version 1.0 in `data_models/`.
 
 ## Search
 
-Levels: Contributions, Samples, Specimens, Experiments, Measurements, with facet
-filters on the sidebar. Lunar samples (`location_type: Lunar`) map onto the
+Levels: Contributions, Samples, Specimens, Experiments, Measurements; the
+sidebar has a filter per column with data (`text`, `numeric`, `exists`). Lunar samples (`location_type: Lunar`) map onto the
 Moon basemap (`search.bodies`).
 
 ## Plugins

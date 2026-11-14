@@ -92,17 +92,14 @@ search:
         - { cell: contributed }
   # Searchable without a tab of their own.
   extra_types: [contours, files]
+  # A filter per column with data (`text`: each text column, and a record's
+  # inherited region, as a facet; `numeric`: each number column as a range;
+  # `exists`: With / Without Data), found with the sidebar's filter search;
+  # they replaced the per-column facets on 2026-11-13.
   filters:
-    - { type: facet, field: seamount_type }
-    - { type: facet, field: size_class }
-    - { type: facet, field: region }
-    - { type: facet, field: plate }
-    - { type: facet, field: tectonic_setting }
-    - { type: facet, field: oceanic_province }
-    - { type: facet, field: volcanic_activity }
-    - { type: facet, field: data_type }
-    - { type: facet, field: scale }
-    - { type: facet, field: products }
+    - { type: text, label: Text }
+    - { type: numeric, label: Numeric }
+    - { type: exists, label: With / Without Data }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }
