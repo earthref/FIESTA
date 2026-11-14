@@ -22,10 +22,14 @@ class PluginVocabulary:
     """A controlled vocabulary a plugin supplies for the validator's
     `cv("<name>")` checks, when the node's controlled vocabularies have no
     list of that name. `case_insensitive` compares values and items
-    upper-cased."""
+    upper-cased. `labels` (item -> definition) is what the grid editor's
+    vocabulary panel shows beside an item; GET /config/vocabularies/plugins
+    serves both."""
 
     items: frozenset[str]
     case_insensitive: bool = False
+    label: str = ""
+    labels: dict[str, str] = field(default_factory=dict, hash=False, compare=False)
 
 
 @dataclass(frozen=True)

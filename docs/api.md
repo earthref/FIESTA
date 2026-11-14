@@ -145,6 +145,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
 | GET | `/v2/{repository}/config/data-models/{version}` | Full data model JSON for a version (404 if unknown) |
 | GET | `/v2/{repository}/config/vocabularies/controlled` | `{<name>: {label, database_column, items: [{item, label?}]}}` |
 | GET | `/v2/{repository}/config/vocabularies/suggested` | same shape |
+| GET | `/v2/{repository}/config/vocabularies/plugins` | the `cv()` lists active plugins supply (method codes): `{<name>: {label, case_insensitive, items: [{item, label}]}}`, `label` = the item's definition or null; the grid editor's pulldowns |
 
 `GET /v2/{repository}/config` response:
 
