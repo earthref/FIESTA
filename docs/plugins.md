@@ -124,7 +124,10 @@ sidebar). Each `PluginFilter` names the query-token `fields` it sets, so the
 sidebar's Clear removes them, and renders from a `PluginFilterContext`: the
 search's `q` and `setQuery`, the `table` its counts are on, `paramsFor(q)`
 (the request params a core facet modal counts with: ranges, bbox, grid
-filters, scope) and the open sub-tab's bucket `count`. A pick is a
+filters, scope), the open sub-tab's bucket `count`, and `filterCount`, how
+many matches have a value in its first field (the host counts it as a
+`facet:<field>` with the sidebar's other counts; pass it to `FilterEntry`:
+undefined is its spinner, so an entry without a count passes null). A pick is a
 `<field>:"<value>"` token, OR'd within the field like a facet's values; the
 plugin counts the field with `facet: [field]`, which the search API accepts
 once the backend half lists it in `search_facets`. The periodic table is the

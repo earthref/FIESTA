@@ -1,6 +1,7 @@
 // The geologic time scale for an age filter's shortcuts (a range filter with
 // `timescale: true`): the ICS International Chronostratigraphic Chart
-// v2023/09 (stratigraphy.org), its boundaries in Ma and its CGMW colors.
+// v2023/09 (stratigraphy.org), its boundaries in Ma and its CGMW colors
+// (drawn as pastels of them).
 // Ranks are eon, era, period and epoch; the Carboniferous's row-4 units are
 // its subperiods and the Precambrian has no epochs.
 
@@ -15,7 +16,10 @@ export interface TimescaleUnit {
   minSigma?: number;
   max: number;
   maxSigma?: number;
+  /** The color it draws in: a pastel of its CGMW color. */
   color: string;
+  /** Its CGMW (ICS chart) color. */
+  cgmw: string;
 }
 
 // [name, younger, older, color, younger σ, older σ]
@@ -101,13 +105,27 @@ const rows: Record<TimescaleRank, Row[]> = {
   ],
 };
 
+/** A color blended toward white: a pastel of the same hue ("#F73563" -> "#FBA4B9"
+ * at 0.55), so a unit keeps its CGMW color, softened. */
+export function pastel(hex: string, amount = 0.55): string {
+  const channel = (i: number) => {
+    const c = Number.parseInt(hex.slice(i, i + 2), 16);
+    return Math.round(c + (255 - c) * amount)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${channel(1)}${channel(3)}${channel(5)}`.toUpperCase();
+}
+
+// Units draw in pastels of their CGMW colors (`cgmw` keeps the chart's own).
 export const TIMESCALE: TimescaleUnit[] = TIMESCALE_RANKS.flatMap((rank) =>
   rows[rank].map(([name, min, max, color, minSigma, maxSigma]) => ({
     name,
     rank,
     min,
     max,
-    color,
+    color: pastel(color),
+    cgmw: color,
     minSigma,
     maxSigma,
   })),
