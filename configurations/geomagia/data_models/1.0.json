@@ -152,7 +152,7 @@
      "previous_columns": [
       {
        "table": "REFS",
-       "column": "JOURNAL"
+       "column": "PUBLICATION_NAME"
       }
      ]
     },
@@ -770,11 +770,35 @@
       "cv(\"anisotropy_corrections\")"
      ]
     },
+    "an_use_status_id": {
+     "label": "Anisotropy Use Status ID",
+     "group": "Paleointensity",
+     "type": "Integer",
+     "position": 41,
+     "description": "GEOMAGIA anisotropy use status code: whether the anisotropy measurement corrected the intensity",
+     "notes": "0 is 'Not specified'. Only the GEOMAGIA database has it; the 2019 CSV export predates it.",
+     "previous_columns": [
+      {
+       "table": "ARCHEODIJ",
+       "column": "AN_USE_STATUS_ID"
+      }
+     ]
+    },
+    "anisotropy_use_status": {
+     "label": "Anisotropy Use Status",
+     "group": "Paleointensity",
+     "type": "String",
+     "position": 42,
+     "description": "Whether the anisotropy measurement corrected the intensity or was an assessment only",
+     "validations": [
+      "cv(\"anisotropy_use_status\")"
+     ]
+    },
     "cr_corr_set_id": {
      "label": "Cooling Rate Correction IDs",
      "group": "Paleointensity",
      "type": "List",
-     "position": 41,
+     "position": 43,
      "description": "GEOMAGIA cooling rate correction codes",
      "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
      "previous_columns": [
@@ -788,7 +812,7 @@
      "label": "Cooling Rate Corrections",
      "group": "Paleointensity",
      "type": "List",
-     "position": 42,
+     "position": 44,
      "description": "Paleointensity cooling rate corrections",
      "validations": [
       "cv(\"cooling_rate_corrections\")"
@@ -798,7 +822,7 @@
      "label": "Directional Samples",
      "group": "Direction",
      "type": "Integer",
-     "position": 43,
+     "position": 45,
      "description": "Number of samples in the directional mean",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -812,7 +836,7 @@
      "label": "Directional Specimens Measured",
      "group": "Direction",
      "type": "Integer",
-     "position": 44,
+     "position": 46,
      "description": "Number of directional specimens measured",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -826,7 +850,7 @@
      "label": "Directional Specimens Accepted",
      "group": "Direction",
      "type": "Integer",
-     "position": 45,
+     "position": 47,
      "description": "Number of specimens in the directional mean",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -840,7 +864,7 @@
      "label": "Declination",
      "group": "Direction",
      "type": "Number",
-     "position": 46,
+     "position": 48,
      "unit": "Degrees",
      "description": "Mean declination",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
@@ -859,7 +883,7 @@
      "label": "Inclination",
      "group": "Direction",
      "type": "Number",
-     "position": 47,
+     "position": 49,
      "unit": "Degrees",
      "description": "Mean inclination",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
@@ -878,7 +902,7 @@
      "label": "Alpha 95",
      "group": "Direction",
      "type": "Number",
-     "position": 48,
+     "position": 50,
      "unit": "Degrees",
      "description": "Fisher 95% confidence cone of the mean direction",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
@@ -897,7 +921,7 @@
      "label": "Precision Parameter k",
      "group": "Direction",
      "type": "Number",
-     "position": 49,
+     "position": 51,
      "description": "Fisher precision parameter",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "validations": [
@@ -914,7 +938,7 @@
      "label": "Demagnetization Method ID",
      "group": "Direction",
      "type": "Integer",
-     "position": 50,
+     "position": 52,
      "description": "GEOMAGIA directional (demagnetization) method code",
      "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
      "previous_columns": [
@@ -928,7 +952,7 @@
      "label": "Demagnetization Method",
      "group": "Direction",
      "type": "String",
-     "position": 51,
+     "position": 53,
      "description": "Demagnetization method",
      "validations": [
       "cv(\"demag_methods\")"
@@ -938,7 +962,7 @@
      "label": "Maximum AF Step",
      "group": "Direction",
      "type": "Number",
-     "position": 52,
+     "position": 54,
      "unit": "mT",
      "description": "Highest alternating-field demagnetization step",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
@@ -953,7 +977,7 @@
      "label": "Maximum Thermal Step",
      "group": "Direction",
      "type": "Number",
-     "position": 53,
+     "position": 55,
      "unit": "°C",
      "description": "Highest thermal demagnetization step",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
@@ -968,7 +992,7 @@
      "label": "Directional Analysis ID",
      "group": "Direction",
      "type": "Integer",
-     "position": 54,
+     "position": 56,
      "description": "GEOMAGIA directional analysis code",
      "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
      "previous_columns": [
@@ -982,7 +1006,7 @@
      "label": "Directional Analysis",
      "group": "Direction",
      "type": "String",
-     "position": 55,
+     "position": 57,
      "description": "How the mean direction was calculated",
      "validations": [
       "cv(\"dir_analyses\")"
@@ -992,7 +1016,7 @@
      "label": "Radiocarbon Samples",
      "group": "Radiocarbon",
      "type": "Integer",
-     "position": 56,
+     "position": 58,
      "description": "Number of radiocarbon samples",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1006,7 +1030,7 @@
      "label": "Radiocarbon Sample ID",
      "group": "Radiocarbon",
      "type": "Integer",
-     "position": 57,
+     "position": 59,
      "description": "GEOMAGIA radiocarbon (aa_14c_dates) record",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1020,7 +1044,7 @@
      "label": "Calibrated Radiocarbon Age",
      "group": "Radiocarbon",
      "type": "Number",
-     "position": 58,
+     "position": 60,
      "description": "Calibrated radiocarbon age as published",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1034,7 +1058,7 @@
      "label": "Calibrated Radiocarbon Negative Error",
      "group": "Radiocarbon",
      "type": "Number",
-     "position": 59,
+     "position": 61,
      "description": "Negative error of the published calibrated age",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1048,7 +1072,7 @@
      "label": "Calibrated Radiocarbon Positive Error",
      "group": "Radiocarbon",
      "type": "Number",
-     "position": 60,
+     "position": 62,
      "description": "Positive error of the published calibrated age",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1062,7 +1086,7 @@
      "label": "Radiocarbon Number of Sigmas",
      "group": "Radiocarbon",
      "type": "Integer",
-     "position": 61,
+     "position": 63,
      "description": "Confidence level of the calibrated radiocarbon age",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1076,7 +1100,7 @@
      "label": "Radiocarbon Calibration Software ID",
      "group": "Radiocarbon",
      "type": "Integer",
-     "position": 62,
+     "position": 64,
      "description": "GEOMAGIA calibration software code",
      "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
      "previous_columns": [
@@ -1090,7 +1114,7 @@
      "label": "Radiocarbon Calibration Software",
      "group": "Radiocarbon",
      "type": "String",
-     "position": 63,
+     "position": 65,
      "description": "Calibration software of the published age",
      "validations": [
       "cv(\"c14_calib_software\")"
@@ -1100,7 +1124,7 @@
      "label": "Radiocarbon Calibration Dataset ID",
      "group": "Radiocarbon",
      "type": "Integer",
-     "position": 64,
+     "position": 66,
      "description": "GEOMAGIA calibration dataset code",
      "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
      "previous_columns": [
@@ -1114,7 +1138,7 @@
      "label": "Radiocarbon Calibration Dataset",
      "group": "Radiocarbon",
      "type": "String",
-     "position": 65,
+     "position": 67,
      "description": "Calibration curve of the published age",
      "validations": [
       "cv(\"c14_calib_datasets\")"
@@ -1124,7 +1148,7 @@
      "label": "Recalculated Radiocarbon Age",
      "group": "Radiocarbon",
      "type": "Number",
-     "position": 66,
+     "position": 68,
      "description": "Calibrated radiocarbon age recalculated by GEOMAGIA",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1138,7 +1162,7 @@
      "label": "Recalculated Radiocarbon Negative Error",
      "group": "Radiocarbon",
      "type": "Number",
-     "position": 67,
+     "position": 69,
      "description": "Negative error of the recalculated age",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1152,7 +1176,7 @@
      "label": "Recalculated Radiocarbon Positive Error",
      "group": "Radiocarbon",
      "type": "Number",
-     "position": 68,
+     "position": 70,
      "description": "Positive error of the recalculated age",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1166,7 +1190,7 @@
      "label": "Recalculation Software ID",
      "group": "Radiocarbon",
      "type": "Integer",
-     "position": 69,
+     "position": 71,
      "description": "GEOMAGIA code of the software used to recalculate",
      "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
      "previous_columns": [
@@ -1180,7 +1204,7 @@
      "label": "Recalculation Software",
      "group": "Radiocarbon",
      "type": "String",
-     "position": 70,
+     "position": 72,
      "description": "Software used to recalculate the age",
      "validations": [
       "cv(\"c14_calib_software\")"
@@ -1190,7 +1214,7 @@
      "label": "Recalculation Dataset ID",
      "group": "Radiocarbon",
      "type": "Integer",
-     "position": 71,
+     "position": 73,
      "description": "GEOMAGIA code of the curve used to recalculate",
      "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
      "previous_columns": [
@@ -1204,7 +1228,7 @@
      "label": "Recalculation Dataset",
      "group": "Radiocarbon",
      "type": "String",
-     "position": 72,
+     "position": 74,
      "description": "Calibration curve used to recalculate the age",
      "validations": [
       "cv(\"c14_calib_datasets\")"
@@ -1214,7 +1238,7 @@
      "label": "Dendrochronology ID",
      "group": "Dendrochronology",
      "type": "Integer",
-     "position": 73,
+     "position": 75,
      "description": "GEOMAGIA dendrochronology record",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1228,7 +1252,7 @@
      "label": "Dendrochronology Samples",
      "group": "Dendrochronology",
      "type": "Integer",
-     "position": 74,
+     "position": 76,
      "description": "Total dendrochronological samples",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1242,7 +1266,7 @@
      "label": "Dendrochronology Samples Used",
      "group": "Dendrochronology",
      "type": "Integer",
-     "position": 75,
+     "position": 77,
      "description": "Dendrochronological samples used",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1256,7 +1280,7 @@
      "label": "Compilation IDs",
      "group": "Curation",
      "type": "List",
-     "position": 76,
+     "position": 78,
      "description": "GEOMAGIA codes of compilations that include this record",
      "notes": "GEOMAGIA lookup sentinels are kept: -1 is 'No measurement' and 0 'Not specified'.",
      "previous_columns": [
@@ -1270,7 +1294,7 @@
      "label": "Compilations",
      "group": "Curation",
      "type": "List",
-     "position": 77,
+     "position": 79,
      "description": "Compilations that include this record",
      "validations": [
       "cv(\"compilations\")"
@@ -1280,7 +1304,7 @@
      "label": "Superseded",
      "group": "Curation",
      "type": "Integer",
-     "position": 78,
+     "position": 80,
      "description": "Set when a later record supersedes this one",
      "previous_columns": [
       {
@@ -1293,7 +1317,7 @@
      "label": "See Also Reference IDs",
      "group": "Curation",
      "type": "List",
-     "position": 79,
+     "position": 81,
      "description": "GEOMAGIA reference IDs of related publications",
      "previous_columns": [
       {
@@ -1306,7 +1330,7 @@
      "label": "Companion Entries",
      "group": "Curation",
      "type": "List",
-     "position": 80,
+     "position": 82,
      "description": "UIDs of companion GEOMAGIA records",
      "previous_columns": [
       {
@@ -1319,7 +1343,7 @@
      "label": "Upload Year",
      "group": "Curation",
      "type": "Integer",
-     "position": 81,
+     "position": 83,
      "description": "Year the record was added to GEOMAGIA",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1333,7 +1357,7 @@
      "label": "Upload Month",
      "group": "Curation",
      "type": "Integer",
-     "position": 82,
+     "position": 84,
      "description": "Month the record was added to GEOMAGIA",
      "notes": "GEOMAGIA's missing-value markers (-1, -999, -9999) are left blank.",
      "previous_columns": [
@@ -1347,7 +1371,7 @@
      "label": "Uploader",
      "group": "Curation",
      "type": "String",
-     "position": 83,
+     "position": 85,
      "description": "Who added the record to GEOMAGIA",
      "previous_columns": [
       {
@@ -1360,7 +1384,7 @@
      "label": "Editor",
      "group": "Curation",
      "type": "String",
-     "position": 84,
+     "position": 86,
      "description": "Who last edited the record",
      "previous_columns": [
       {
@@ -1373,7 +1397,7 @@
      "label": "Last Edited",
      "group": "Curation",
      "type": "String",
-     "position": 85,
+     "position": 87,
      "description": "Date of the last edit",
      "previous_columns": [
       {

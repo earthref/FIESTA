@@ -134,6 +134,30 @@
    },
    {
     "item": "226 Radium"
+   },
+   {
+    "item": "Calibrated 14C Age"
+   },
+   {
+    "item": "Uncalibrated 14C Age"
+   },
+   {
+    "item": "14C Accelerator Mass Spectrometer (AMS)"
+   },
+   {
+    "item": "3He surface exposure age"
+   },
+   {
+    "item": "137Cs Age"
+   },
+   {
+    "item": "210Pb Age"
+   },
+   {
+    "item": "14C Classical Age"
+   },
+   {
+    "item": "Tuning of alkenone SST record to AAIC (2012) d18O record"
    }
   ]
  },
@@ -230,6 +254,9 @@
    },
    {
     "item": "Van Zijl (1962)"
+   },
+   {
+    "item": "Coe-Thellier (1967)"
    }
   ]
  },
@@ -323,6 +350,18 @@
    },
    {
     "item": "TRM tensor calculated, but not applied"
+   },
+   {
+    "item": "AMS"
+   },
+   {
+    "item": "AARM"
+   },
+   {
+    "item": "ATRM"
+   },
+   {
+    "item": "AIRM"
    }
   ]
  },
@@ -434,6 +473,9 @@
    },
    {
     "item": "Large Sample Method (cubes)"
+   },
+   {
+    "item": "Mini-core or mini-cube or chip"
    }
   ]
  },
@@ -620,6 +662,12 @@
    },
    {
     "item": "Hangi Stone"
+   },
+   {
+    "item": "Drying Pit"
+   },
+   {
+    "item": "Bell Mould"
    }
   ]
  },
@@ -980,6 +1028,630 @@
    },
    {
     "item": "Ivory Coast"
+   },
+   {
+    "item": "Afghanistan"
+   },
+   {
+    "item": "Albania"
+   },
+   {
+    "item": "Algeria"
+   },
+   {
+    "item": "American Samoa"
+   },
+   {
+    "item": "Andorra"
+   },
+   {
+    "item": "Angola"
+   },
+   {
+    "item": "Anguilla"
+   },
+   {
+    "item": "Antarctica"
+   },
+   {
+    "item": "Antigua and Barbuda"
+   },
+   {
+    "item": "Armenia"
+   },
+   {
+    "item": "Aruba"
+   },
+   {
+    "item": "Bahamas"
+   },
+   {
+    "item": "Bahrain"
+   },
+   {
+    "item": "Bangladesh"
+   },
+   {
+    "item": "Barbados"
+   },
+   {
+    "item": "Belarus"
+   },
+   {
+    "item": "Belize"
+   },
+   {
+    "item": "Benin"
+   },
+   {
+    "item": "Bermuda"
+   },
+   {
+    "item": "Bhutan"
+   },
+   {
+    "item": "Bonaire, Sint Eustatius and Saba"
+   },
+   {
+    "item": "Bosnia and Herzegovina"
+   },
+   {
+    "item": "Bouvet Island"
+   },
+   {
+    "item": "British Indian Ocean Territory"
+   },
+   {
+    "item": "British Virgin Islands"
+   },
+   {
+    "item": "Brunei"
+   },
+   {
+    "item": "Burundi"
+   },
+   {
+    "item": "Cabo Verde"
+   },
+   {
+    "item": "Cambodia"
+   },
+   {
+    "item": "Cayman Islands"
+   },
+   {
+    "item": "Central African Republic"
+   },
+   {
+    "item": "Chad"
+   },
+   {
+    "item": "Christmas Island"
+   },
+   {
+    "item": "Cocos (Keeling) Islands"
+   },
+   {
+    "item": "Comoros"
+   },
+   {
+    "item": "Cook Islands"
+   },
+   {
+    "item": "Costa Rica"
+   },
+   {
+    "item": "Croatia"
+   },
+   {
+    "item": "Cuba"
+   },
+   {
+    "item": "Curaçao"
+   },
+   {
+    "item": "Democratic Republic of the Congo"
+   },
+   {
+    "item": "Djibouti"
+   },
+   {
+    "item": "Dominica"
+   },
+   {
+    "item": "Dominican Republic"
+   },
+   {
+    "item": "Equatorial Guinea"
+   },
+   {
+    "item": "Eritrea"
+   },
+   {
+    "item": "Eswatini"
+   },
+   {
+    "item": "Falkland Islands (Malvinas)"
+   },
+   {
+    "item": "Faroe Islands"
+   },
+   {
+    "item": "French Guiana"
+   },
+   {
+    "item": "French Polynesia"
+   },
+   {
+    "item": "French Southern Territories"
+   },
+   {
+    "item": "Gabon"
+   },
+   {
+    "item": "Gambia"
+   },
+   {
+    "item": "Ghana"
+   },
+   {
+    "item": "Gibraltar"
+   },
+   {
+    "item": "Greenland"
+   },
+   {
+    "item": "Grenada"
+   },
+   {
+    "item": "Guam"
+   },
+   {
+    "item": "Guernsey"
+   },
+   {
+    "item": "Guinea"
+   },
+   {
+    "item": "Guinea-Bissau"
+   },
+   {
+    "item": "Guyana"
+   },
+   {
+    "item": "Haiti"
+   },
+   {
+    "item": "Heard Island and McDonald Islands"
+   },
+   {
+    "item": "Hong Kong"
+   },
+   {
+    "item": "Jamaica"
+   },
+   {
+    "item": "Jersey"
+   },
+   {
+    "item": "Kiribati"
+   },
+   {
+    "item": "Kuwait"
+   },
+   {
+    "item": "Laos"
+   },
+   {
+    "item": "Lebanon"
+   },
+   {
+    "item": "Lesotho"
+   },
+   {
+    "item": "Liberia"
+   },
+   {
+    "item": "Libya"
+   },
+   {
+    "item": "Liechtenstein"
+   },
+   {
+    "item": "Luxembourg"
+   },
+   {
+    "item": "Macao"
+   },
+   {
+    "item": "Madagascar"
+   },
+   {
+    "item": "Malawi"
+   },
+   {
+    "item": "Malaysia"
+   },
+   {
+    "item": "Maldives"
+   },
+   {
+    "item": "Malta"
+   },
+   {
+    "item": "Marshall Islands"
+   },
+   {
+    "item": "Mauritania"
+   },
+   {
+    "item": "Mauritius"
+   },
+   {
+    "item": "Mayotte"
+   },
+   {
+    "item": "Micronesia"
+   },
+   {
+    "item": "Monaco"
+   },
+   {
+    "item": "Montenegro"
+   },
+   {
+    "item": "Montserrat"
+   },
+   {
+    "item": "Mozambique"
+   },
+   {
+    "item": "Myanmar"
+   },
+   {
+    "item": "Namibia"
+   },
+   {
+    "item": "Nauru"
+   },
+   {
+    "item": "Nepal"
+   },
+   {
+    "item": "New Caledonia"
+   },
+   {
+    "item": "Nicaragua"
+   },
+   {
+    "item": "Niger"
+   },
+   {
+    "item": "Nigeria"
+   },
+   {
+    "item": "Niue"
+   },
+   {
+    "item": "Norfolk Island"
+   },
+   {
+    "item": "North Korea"
+   },
+   {
+    "item": "North Macedonia"
+   },
+   {
+    "item": "Northern Mariana Islands"
+   },
+   {
+    "item": "Oman"
+   },
+   {
+    "item": "Pakistan"
+   },
+   {
+    "item": "Palau"
+   },
+   {
+    "item": "Palestine"
+   },
+   {
+    "item": "Panama"
+   },
+   {
+    "item": "Paraguay"
+   },
+   {
+    "item": "Philippines"
+   },
+   {
+    "item": "Pitcairn"
+   },
+   {
+    "item": "Puerto Rico"
+   },
+   {
+    "item": "Qatar"
+   },
+   {
+    "item": "Republic of the Congo"
+   },
+   {
+    "item": "Rwanda"
+   },
+   {
+    "item": "Saint Barthélemy"
+   },
+   {
+    "item": "Saint Helena, Ascension and Tristan da Cunha"
+   },
+   {
+    "item": "Saint Kitts and Nevis"
+   },
+   {
+    "item": "Saint Lucia"
+   },
+   {
+    "item": "Saint Martin (French part)"
+   },
+   {
+    "item": "Saint Pierre and Miquelon"
+   },
+   {
+    "item": "Saint Vincent and the Grenadines"
+   },
+   {
+    "item": "Samoa"
+   },
+   {
+    "item": "San Marino"
+   },
+   {
+    "item": "Sao Tome and Principe"
+   },
+   {
+    "item": "Saudi Arabia"
+   },
+   {
+    "item": "Seychelles"
+   },
+   {
+    "item": "Sierra Leone"
+   },
+   {
+    "item": "Singapore"
+   },
+   {
+    "item": "Sint Maarten (Dutch part)"
+   },
+   {
+    "item": "Slovenia"
+   },
+   {
+    "item": "Solomon Islands"
+   },
+   {
+    "item": "Somalia"
+   },
+   {
+    "item": "South Georgia and the South Sandwich Islands"
+   },
+   {
+    "item": "South Sudan"
+   },
+   {
+    "item": "Sri Lanka"
+   },
+   {
+    "item": "Sudan"
+   },
+   {
+    "item": "Suriname"
+   },
+   {
+    "item": "Svalbard and Jan Mayen"
+   },
+   {
+    "item": "Taiwan"
+   },
+   {
+    "item": "Tajikistan"
+   },
+   {
+    "item": "Tanzania"
+   },
+   {
+    "item": "Timor-Leste"
+   },
+   {
+    "item": "Togo"
+   },
+   {
+    "item": "Tokelau"
+   },
+   {
+    "item": "Tonga"
+   },
+   {
+    "item": "Trinidad and Tobago"
+   },
+   {
+    "item": "Turks and Caicos Islands"
+   },
+   {
+    "item": "Tuvalu"
+   },
+   {
+    "item": "U.S. Virgin Islands"
+   },
+   {
+    "item": "Uganda"
+   },
+   {
+    "item": "United Arab Emirates"
+   },
+   {
+    "item": "United Kingdom"
+   },
+   {
+    "item": "United States Minor Outlying Islands"
+   },
+   {
+    "item": "Vatican City"
+   },
+   {
+    "item": "Vietnam"
+   },
+   {
+    "item": "Wallis and Futuna"
+   },
+   {
+    "item": "Western Sahara"
+   },
+   {
+    "item": "Yemen"
+   },
+   {
+    "item": "Zambia"
+   },
+   {
+    "item": "Åland Islands"
+   },
+   {
+    "item": "Alberta"
+   },
+   {
+    "item": "Manitoba"
+   },
+   {
+    "item": "New Brunswick"
+   },
+   {
+    "item": "Newfoundland and Labrador"
+   },
+   {
+    "item": "Northwest Territories"
+   },
+   {
+    "item": "Nova Scotia"
+   },
+   {
+    "item": "Nunavut"
+   },
+   {
+    "item": "Prince Edward Island"
+   },
+   {
+    "item": "Saskatchewan"
+   },
+   {
+    "item": "Yukon"
+   },
+   {
+    "item": "Alabama"
+   },
+   {
+    "item": "Connecticut"
+   },
+   {
+    "item": "Delaware"
+   },
+   {
+    "item": "District of Columbia"
+   },
+   {
+    "item": "Florida"
+   },
+   {
+    "item": "Indiana"
+   },
+   {
+    "item": "Iowa"
+   },
+   {
+    "item": "Kansas"
+   },
+   {
+    "item": "Kentucky"
+   },
+   {
+    "item": "Louisiana"
+   },
+   {
+    "item": "Maine"
+   },
+   {
+    "item": "Maryland"
+   },
+   {
+    "item": "Massachusetts"
+   },
+   {
+    "item": "Michigan"
+   },
+   {
+    "item": "Minnesota"
+   },
+   {
+    "item": "Mississippi"
+   },
+   {
+    "item": "Missouri"
+   },
+   {
+    "item": "Montana"
+   },
+   {
+    "item": "Nevada"
+   },
+   {
+    "item": "New Hampshire"
+   },
+   {
+    "item": "New Jersey"
+   },
+   {
+    "item": "New York"
+   },
+   {
+    "item": "North Carolina"
+   },
+   {
+    "item": "North Dakota"
+   },
+   {
+    "item": "Ohio"
+   },
+   {
+    "item": "Oklahoma"
+   },
+   {
+    "item": "Pennsylvania"
+   },
+   {
+    "item": "Rhode Island"
+   },
+   {
+    "item": "South Carolina"
+   },
+   {
+    "item": "South Dakota"
+   },
+   {
+    "item": "Texas"
+   },
+   {
+    "item": "Vermont"
+   },
+   {
+    "item": "West Virginia"
+   },
+   {
+    "item": "Wisconsin"
+   },
+   {
+    "item": "Wyoming"
    }
   ]
  },
@@ -1154,6 +1826,9 @@
    },
    {
     "item": "South America"
+   },
+   {
+    "item": "Antarctica"
    }
   ]
  },
@@ -1166,6 +1841,21 @@
    },
    {
     "item": "Volcanic"
+   }
+  ]
+ },
+ "anisotropy_use_status": {
+  "label": "Anisotropy Use Statuses",
+  "database_column": "anisotropy_use_status",
+  "items": [
+   {
+    "item": "Not specified"
+   },
+   {
+    "item": "Correction applied"
+   },
+   {
+    "item": "Assessment only"
    }
   ]
  }

@@ -10,20 +10,34 @@ fiesta/backend/:
         --csv geomagia50_v3_24072017_download.csv --studies studies.html \\
         --owner-email <steward> --owner-name "<Steward Name>" [--dry-run]
 
-Until there is read access to the GEOMAGIA MySQL catalogue it reads the public
-exports: `--csv`, the archeo/volcanic CSV the GEOMAGIA logs page publishes
-(https://geomagia.gfz.de/docs/geomagia50_v3_24072017_download.csv), and
-`--studies`, the HTML of https://geomagia.gfz.de/studies.php (or a saved copy)
-for the references. A scheduled run (ops worker) passes `--state-dir`, where it
-reads `geomagia.csv` and `studies.html`, and `--owner-map` for the owner. Lookup
-codes resolve through configurations/geomagia/lookups.json (the GEOMAGIA ID glossary).
-`--out DIR` writes the contribution files instead of syncing (how
-configurations/geomagia/seeds/ were made).
+It reads one of two sources (`--source`, default `auto`):
 
-GEOMAGIA's missing-value markers in measured numbers (-1, -999, -9999) are left
-blank, as the GEOMAGIA site's own downloads do; lookup codes keep -1 ("No
-measurement") and 0 ("Not specified"). VADM is calculated from the intensity and
-site latitude, as the GEOMAGIA site does.
+- `mysql`: the GEOMAGIA MySQL catalogue (`ARCHEODIJ`, `REFS` and the lookup
+  tables), SELECT statements only, inside a READ ONLY transaction. The connection
+  comes from the environment (a scheduled run's /etc/fiesta/source-geomagia.env):
+  GEOMAGIA_MYSQL_HOST, GEOMAGIA_MYSQL_PORT (3306), GEOMAGIA_MYSQL_USER,
+  GEOMAGIA_MYSQL_PASSWORD, GEOMAGIA_MYSQL_DATABASE (geomagia). Lookup codes
+  resolve through the database's own lookup tables.
+- `csv`: the public exports, `--csv`, the archeo/volcanic CSV the GEOMAGIA logs
+  page publishes (https://geomagia.gfz.de/docs/geomagia50_v3_24072017_download.csv),
+  and `--studies`, the HTML of https://geomagia.gfz.de/studies.php (or a saved
+  copy) for the references. Lookup codes resolve through
+  configurations/geomagia/lookups.json (the GEOMAGIA ID glossary).
+
+`auto` reads MySQL when GEOMAGIA_MYSQL_HOST is set and `--csv` is not given, else
+the CSV. A database that cannot be read fails the run; it never falls back to the
+2019 CSV, which would send older records over newer ones. A scheduled run (ops
+worker) passes `--state-dir`, where the CSV path reads `geomagia.csv` and
+`studies.html`, and `--owner-map` for the owner. `--out DIR` writes the
+contribution files instead of syncing (how configurations/geomagia/seeds/ were
+made, from the CSV).
+
+GEOMAGIA's missing-value markers in measured numbers are left blank, as the
+GEOMAGIA site's own downloads do: -999/-9999 (the CSV), -1, and 0 in counts,
+intensities and statistics, 999 in declination/inclination, 9999 in radiocarbon
+ages, -50000 in ages. Lookup codes keep -1 ("No measurement") and 0 ("Not
+specified"). VADM is calculated from the intensity and site latitude, as the
+GEOMAGIA site does.
 """
 
 import argparse
@@ -38,6 +52,7 @@ import os
 import re
 import sys
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 
 SLUG = "geomagia"
@@ -45,6 +60,14 @@ CONFIG = Path(__file__).resolve().parents[1] / SLUG
 DATA_MODEL_VERSION = "1.0"
 REVISION_KEY = "geomagia"
 VADM_EARTH_RADIUS_M = 6_371_200.0
+# What the database path calls its release (geomagia_version); kept constant so an
+# unchanged record keeps its fingerprint from run to run.
+DATABASE_RELEASE = "GEOMAGIA50 database"
+# The date of the last public export, for a record with no upload or edit date.
+DEFAULT_TIME = datetime(2019, 5, 22, tzinfo=UTC)
+# MATERIAL_ID codes that make a record volcanic (the GEOMAGIA site's search/views.py);
+# the CSV's ArcheoVolcanic flag follows the same rule for all 9,434 of its records.
+VOLCANIC_MATERIALS = {"4", "25", "41", "47", "51", "52"}
 
 # CSV heading -> data model column (the ARCHEODIJ column, lower case).
 CSV_COLUMNS = {
@@ -104,6 +127,8 @@ CODES = {
     "ac_id": ("alteration_checks", "PIAltID"),
     "md_ck_id": ("md_checks", "PIMDID"),
     "an_corr_set_id": ("anisotropy_corrections", "PIANID"),
+    # measurement_use_status; the glossary predates it, so only the database has it.
+    "an_use_status_id": ("anisotropy_use_status", "AnUseStatus"),
     "cr_corr_set_id": ("cooling_rate_corrections", "PICRID"),
     "dm_method_id": ("demag_method", "DirMethID"),
     "dm_analysis_id": ("dir_analysis", "DirID"),
@@ -116,19 +141,53 @@ CODES = {
     "calc_14c_calib_dataset_id": ("calc_c14_calib_dataset", "C14DataSet"),
 }
 MISSING = {"", "-999", "-999.0", "-999.00", "-9999", "-9999.0"}
+C14_AGES = {
+    "calib_14c_age",
+    "calib_14c_age_sigma_min",
+    "calib_14c_age_sigma_max",
+    "calc_calib_14c_age",
+    "calc_calib_14c_age_sigma_min",
+    "calc_calib_14c_age_sigma_max",
+}
+# Columns whose 0 means "not given": the 2019 CSV export wrote these as -999.
+MISSING_ZERO = {
+    "num_samples",
+    "num_meas_spec",
+    "num_acc_spec",
+    "num_dir_samples",
+    "num_dir_spec_collected",
+    "num_dir_specimens",
+    "ba",
+    "sigma_ba",
+    "alpha_95",
+    "k",
+    "af_step",
+    "t_step",
+    "sample_id",
+    "site_horizon",
+    "upload_month",
+    "superseeded",
+}
 # Measured numbers whose -1 also means "not given" (the GEOMAGIA site's downloads).
-MISSING_MINUS_ONE = {
+MISSING_MINUS_ONE = MISSING_ZERO - {"upload_month"} | {
     "age_min",
     "age_max",
     "num_sigmas",
-    "num_acc_spec",
-    "num_dir_specimens",
-    "num_dir_samples",
-    "k",
+    "vdm",
+    "sigma_vdm",
     "c14_id",
-    "sample_id",
-    "site_horizon",
+    "num_14c_samples",
+    "num_14c_sigmas",
+    "dendro_id",
+    "tot_num_dendro",
+    "num_dendro_used",
+    "cross_ref_id",
+    "cross_uid",
+    *C14_AGES,
 }
+# Other markers, by column: the database keeps 999 for no direction, 9999 for no
+# radiocarbon age and -50000 for an unknown age.
+MISSING_VALUE = {"decl": 999.0, "incl": 999.0, "age": -50000.0} | dict.fromkeys(C14_AGES, 9999.0)
 TEXT = {
     "site_name",
     "site_horizon",
@@ -181,9 +240,26 @@ def vadm(intensity: str, error: str, latitude: str) -> tuple[str, str]:
     return f"{ba * factor:.2f}", f"{sigma * factor:.2f}" if sigma is not None and sigma >= 0 else ""
 
 
+def is_missing(column: str, value: str) -> bool:
+    """Whether VALUE is one of GEOMAGIA's missing-value markers in COLUMN."""
+    if value in MISSING:
+        return True
+    n = number(value)
+    return n is not None and (
+        (n == -1 and column in MISSING_MINUS_ONE)
+        or (n == 0 and column in MISSING_ZERO)
+        or n == MISSING_VALUE.get(column)
+    )
+
+
 def site_row(record: dict, lookups: dict) -> dict:
-    """One CSV record as a `sites` row."""
+    """One record (CSV or database, as text keyed by data model column) as a `sites` row."""
     row = {}
+    if "archeo_volcanic" not in record:  # the database has no flag; the CSV's follows MATERIAL_ID
+        materials = set(codes(record.get("material_id", "")))
+        record = record | {
+            "archeo_volcanic": "Volcanic" if materials & VOLCANIC_MATERIALS else "Archeo"
+        }
     for column, raw in record.items():
         value = raw.strip()
         if column in CODES:
@@ -193,13 +269,16 @@ def site_row(record: dict, lookups: dict) -> dict:
             name_column, table = CODES[column]
             row[column] = ":".join(ids)
             row[name_column] = ":".join(dict.fromkeys(code_name(lookups, table, i) for i in ids))
-        elif value in MISSING or (value == "-1" and column in MISSING_MINUS_ONE):
+        elif is_missing(column, value):
             row[column] = ""
         elif column in TEXT:
             row[column] = re.sub(r"\s+", " ", value)
         else:
             row[column] = value
     row["site"] = row["uid"]
+    lon = number(row.get("lon", ""))
+    if lon is not None and -180 <= lon < 0:  # newer uploads are -180–180; the model is 0–360
+        row["lon"] = format((Decimal(row["lon"]) + 360).normalize(), "f")
     region = lookups["CRID"]["rows"].get(row.get("site_id", ""))
     if region:
         row["region_country"], row["continent"] = region[0], region[1]
@@ -305,10 +384,225 @@ def table_text(table: str, columns: dict, rows: list[dict]) -> str:
 
 
 def build(csv_path: Path, studies_path: Path | None) -> tuple[str, dict[int, str], dict[int, dict]]:
-    """(release, {reference ID: contribution text}, {reference ID: contribution row})."""
-    lookups, model = load_lookups(), load_model()
+    """From the public CSV export: (release, {reference ID: contribution text},
+    {reference ID: contribution row})."""
     generated, records = read_csv(csv_path)
     studies = read_studies(studies_path) if studies_path else {}
+    return generated, *contributions(records, studies, load_lookups(), generated)
+
+
+# ---- the GEOMAGIA MySQL catalogue ---------------------------------------------
+
+# Glossary table (lookups.json) -> (database table, its name column).
+DB_LOOKUPS = {
+    "AgeErrorID": ("error_type", "NAME"),
+    "DatMethod": ("dating_methods", "NAME"),
+    "PIID": ("pi_methods", "NAME"),
+    "PIAltID": ("alteration_monit_corr", "NAME"),
+    "PIMDID": ("md_checks", "NAME"),
+    "PIANID": ("anisotropy_correction", "NAME"),
+    "AnUseStatus": ("measurement_use_status", "NAME"),
+    "PICRID": ("cooling_rate", "NAME"),
+    "DirMethID": ("dm_methods", "NAME"),
+    "DirID": ("dm_analysis", "NAME"),
+    "SpecID": ("specimen_types", "NAME"),
+    "MatID": ("materials", "NAME"),
+    "C14Soft": ("14c_calibration_software", "NAME"),
+    "C14DataSet": ("14c_calibration_dataset", "NAME"),
+}
+# ARCHEODIJ columns the data model names differently, or that the sync derives.
+DB_RENAMED = {"site_lat": "lat", "site_lon": "lon"}
+DB_SKIPPED = {"vadm", "sigma_vadm"}  # calculated from the intensity, as the site does
+
+
+def mysql_settings(env=os.environ) -> dict | None:
+    """pymysql connection arguments from GEOMAGIA_MYSQL_*; None when no host is set."""
+    if not env.get("GEOMAGIA_MYSQL_HOST"):
+        return None
+    return {
+        "host": env["GEOMAGIA_MYSQL_HOST"],
+        "port": int(env.get("GEOMAGIA_MYSQL_PORT") or 3306),
+        "user": env.get("GEOMAGIA_MYSQL_USER", ""),
+        "password": env.get("GEOMAGIA_MYSQL_PASSWORD", ""),
+        "database": env.get("GEOMAGIA_MYSQL_DATABASE") or "geomagia",
+        "charset": "utf8mb4",  # the server converts the latin1 tables
+        "connect_timeout": 30,
+        "read_timeout": 600,
+    }
+
+
+def connect_mysql(settings: dict):
+    import pymysql
+
+    return pymysql.connect(**settings, autocommit=False, cursorclass=pymysql.cursors.DictCursor)
+
+
+def db_text(value) -> str:
+    """A database value as the text the CSV path works with: numbers as the GEOMAGIA
+    site prints them (no trailing zeros), SET members joined by ','."""
+    if value is None:
+        return ""
+    if isinstance(value, set | frozenset):
+        return ",".join(sorted(value, key=lambda v: int(v) if re.fullmatch(r"-?\d+", v) else 0))
+    if isinstance(value, float | Decimal):
+        d = Decimal(str(value))
+        return format(d.normalize(), "f") if d.is_finite() else ""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, bytes):
+        return value.decode("latin-1")
+    return str(value)
+
+
+def plain(value) -> str:
+    """Lookup and reference text without its HTML (entities, <sup>)."""
+    text = re.sub(r"<[^>]+>", "", html.unescape(db_text(value)))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def edit_time(value: str) -> datetime | None:
+    """ARCHEODIJ.EDIT_DATE, free text the database keeps as M/D/YYYY ("7/24/2017")."""
+    for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(value.strip(), fmt).replace(tzinfo=UTC)
+        except ValueError:
+            continue
+    return None
+
+
+def upload_time(year: str, month: str) -> datetime | None:
+    y, m = number(year), number(month)
+    if y is None or not 1 <= y <= 9999:
+        return None
+    return datetime(int(y), int(m) if m is not None and 1 <= m <= 12 else 1, 1, tzinfo=UTC)
+
+
+class MySQLSource:
+    """Read-only access to the GEOMAGIA catalogue: SELECT statements in a READ ONLY
+    transaction (the server refuses a write even if the account could make one).
+    Table names resolve case-insensitively (Django's `ARCHEODIJ`, the dump's
+    `archeodij`), since the server's lower_case_table_names decides which works."""
+
+    def __init__(self, connection):
+        self.connection = connection
+        self.tables: dict[str, str] = {}
+
+    def query(self, sql: str, args=()) -> list[dict]:
+        if not sql.lstrip().upper().startswith(("SELECT", "START TRANSACTION READ ONLY")):
+            raise ValueError("the GEOMAGIA source only reads")
+        with self.connection.cursor() as cursor:
+            cursor.execute(sql, args)
+            return list(cursor.fetchall())
+
+    def table(self, name: str) -> str:
+        if name.lower() not in self.tables:
+            raise ValueError(f"GEOMAGIA database has no table {name}")
+        return f"`{self.tables[name.lower()]}`"
+
+    def read(
+        self,
+    ) -> tuple[list[dict], dict[int, dict], dict, dict[int, tuple[datetime, datetime]]]:
+        """(records, studies, lookups, {reference ID: (created, updated)})."""
+        self.query("START TRANSACTION READ ONLY")
+        try:
+            rows = self.query(
+                "SELECT TABLE_NAME AS name FROM information_schema.TABLES"
+                " WHERE TABLE_SCHEMA = DATABASE()"
+            )
+            self.tables = {r["name"].lower(): r["name"] for r in rows}
+            lookups = self.lookups()
+            uploaders = {
+                db_text(r["ID"]): plain(r["NAME"])
+                for r in self.query(f"SELECT ID, NAME FROM {self.table('uploader')}")
+            }
+            studies = {
+                int(r["ID"]): {
+                    "authors": plain(r["AUTHORS"]),
+                    "title": plain(r["TITLE"]),
+                    "year": db_text(r["YEAR"]),
+                    "journal": plain(r["PUBLICATION_NAME"]),
+                    "volume": db_text(r["VOLUME"]),
+                    "pages": plain(r["PAGES"]),
+                    "reference": plain(r["DOI"]),
+                    "magic_link": plain(r["MAGIC_LINK"]),
+                }
+                for r in self.query(
+                    "SELECT ID, AUTHORS, TITLE, YEAR, PUBLICATION_NAME, VOLUME, PAGES, DOI,"
+                    f" MAGIC_LINK FROM {self.table('refs')}"
+                )
+            }
+            edited = {}
+            if "archeodij_edit_history" in self.tables:
+                edited = {
+                    int(r["UID"]): r["edited"]
+                    for r in self.query(
+                        "SELECT UID, MAX(EDIT_DATE) AS edited"
+                        f" FROM {self.table('archeodij_edit_history')} GROUP BY UID"
+                    )
+                }
+            archeodij = self.query(f"SELECT * FROM {self.table('archeodij')} ORDER BY UID")
+        finally:
+            self.connection.rollback()
+        records = []
+        uploads: dict[int, list[datetime]] = {}  # per reference
+        changes: dict[int, list[datetime]] = {}
+        for raw in archeodij:
+            record = {}
+            for column, value in raw.items():
+                key = column.lower()
+                if key not in DB_SKIPPED:
+                    record[DB_RENAMED.get(key, key)] = db_text(value)
+            for person in ("uploader", "editor"):  # codes -> names, as the CSV had them
+                code = record.get(person, "")
+                record[person] = uploaders.get(code) or code
+            edit = edit_time(record.get("edit_date", ""))
+            if edit:  # stored M/D/YYYY; written DD/MM/YYYY, as the CSV export had it
+                record["edit_date"] = edit.strftime("%d/%m/%Y")
+            ref = int(record["reference_id"])
+            uploaded = upload_time(record.get("upload_year", ""), record.get("upload_month", ""))
+            history = edited.get(int(record["uid"]))
+            if history and not history.tzinfo:
+                history = history.replace(tzinfo=UTC)
+            uploads.setdefault(ref, []).extend([uploaded] if uploaded else [])
+            changes.setdefault(ref, []).extend(t for t in (uploaded, edit, history) if t)
+            records.append(record)
+        times = {}
+        for ref, changed in changes.items():
+            created = min(uploads[ref] or changed or [DEFAULT_TIME])
+            times[ref] = (created, max([created, *changed]))
+        return records, studies, lookups, times
+
+    def lookups(self) -> dict:
+        """The lookup tables, shaped like lookups.json (glossary table names)."""
+        out = {}
+        for glossary, (table, name) in DB_LOOKUPS.items():
+            rows = self.query(f"SELECT ID, {name} AS name FROM {self.table(table)}")
+            out[glossary] = {"rows": {db_text(r["ID"]): plain(r["name"]) for r in rows}}
+        regions = self.query(f"SELECT ID, NAME, CONTINENT FROM {self.table('aa_locations')}")
+        out["CRID"] = {
+            "rows": {db_text(r["ID"]): [plain(r["NAME"]), plain(r["CONTINENT"])] for r in regions}
+        }
+        compilations = self.query(
+            f"SELECT ID, AUTHORS, TITLE, YEAR FROM {self.table('comp_reference')}"
+        )
+        out["CompID"] = {
+            "rows": {
+                db_text(r["ID"]): [plain(r["AUTHORS"]), plain(r["TITLE"]), db_text(r["YEAR"])]
+                for r in compilations
+            }
+        }
+        return out
+
+
+def build_mysql(connection) -> tuple[str, dict[int, str], dict[int, dict], dict]:
+    """From the MySQL catalogue: (release, texts, rows, {reference ID: (created, updated)})."""
+    records, studies, lookups, times = MySQLSource(connection).read()
+    return DATABASE_RELEASE, *contributions(records, studies, lookups, DATABASE_RELEASE), times
+
+
+def contributions(records, studies, lookups, generated) -> tuple[dict[int, str], dict[int, dict]]:
+    """Records grouped by reference: ({reference ID: contribution text}, {ID: row})."""
+    model = load_model()
     by_ref: dict[int, list[dict]] = {}
     for record in records:
         ref = int(record.pop("reference_id"))
@@ -327,14 +621,14 @@ def build(csv_path: Path, studies_path: Path | None) -> tuple[str, dict[int, str
             + "\n"
         )
         meta[ref] = head
-    return generated, texts, meta
+    return texts, meta
 
 
 def release_time(generated: str) -> datetime:
     """When the export was made ("Generated using GEOMAGIA50.v3.2 on May/22/2019")."""
     match = re.search(r"on (\w+)/(\d+)/(\d{4})", generated)
     if not match:
-        return datetime(2019, 5, 22, tzinfo=UTC)
+        return DEFAULT_TIME
     return datetime.strptime(" ".join(match.groups()), "%b %d %Y").replace(tzinfo=UTC)
 
 
@@ -342,20 +636,25 @@ def canonical(ref: int) -> str:
     return f"{SLUG}_contribution_{ref}.txt"
 
 
-def source_records(texts: dict[int, str], meta: dict[int, dict], generated: str, owner_email: str):
+def source_records(
+    texts: dict[int, str], meta: dict[int, dict], generated: str, owner_email: str, times=None
+):
+    """TIMES ({reference ID: (created, updated)}, the database path) dates each record;
+    the CSV path dates every record by its export."""
     from fiesta.services.legacy import SourceFile, SourceRecord, SourceRevision
 
-    when = release_time(generated)
+    release = release_time(generated)
     records = {}
     for ref, text in texts.items():
         body = text.encode()
         doi = meta[ref].get("reference") or None
+        created, when = (times or {}).get(ref, (release, release))
         records[ref] = SourceRecord(
             id=ref,
             owner_email=owner_email,
             published=True,
-            created_at=when,
-            activated_at=when,
+            created_at=created,
+            activated_at=created,
             data_model_version=DATA_MODEL_VERSION,
             revisions=[
                 SourceRevision(
@@ -374,7 +673,9 @@ def source_records(texts: dict[int, str], meta: dict[int, dict], generated: str,
     return records
 
 
-async def sync(api, texts, meta, generated, owner: dict, *, dry_run=False, ids=None) -> dict:
+async def sync(
+    api, texts, meta, generated, owner: dict, *, dry_run=False, ids=None, times=None
+) -> dict:
     from fiesta.services.legacy import record_fingerprint
     from fiesta.sources.client import SourceAPIError
 
@@ -388,7 +689,7 @@ async def sync(api, texts, meta, generated, owner: dict, *, dry_run=False, ids=N
     if state["mode"] != "source":
         return summary | {"skipped": "node is in public mode"}
     checkpoints = state["checkpoints"]
-    records = source_records(texts, meta, generated, owner["email"])
+    records = source_records(texts, meta, generated, owner["email"], times)
     summary |= {
         "source_records": len(records),
         "unchanged": 0,
@@ -434,6 +735,13 @@ def main() -> None:
         help="where the scheduled run finds geomagia.csv and studies.html",
     )
     parser.add_argument(
+        "--source",
+        choices=("auto", "mysql", "csv"),
+        default="auto",
+        help="mysql (GEOMAGIA_MYSQL_*), csv, or auto: mysql when GEOMAGIA_MYSQL_HOST is set"
+        " and --csv is not given",
+    )
+    parser.add_argument(
         "--csv", type=Path, help="GEOMAGIA archeo/volcanic CSV export [STATE_DIR/geomagia.csv]"
     )
     parser.add_argument(
@@ -462,11 +770,25 @@ def main() -> None:
     parser.add_argument("--ids", type=int, nargs="*", help="only these reference IDs")
     args = parser.parse_args()
 
-    csv_path = args.csv or args.state_dir / "geomagia.csv"
-    studies = args.studies or args.state_dir / "studies.html"
-    if not csv_path.is_file():
-        parser.error(f"no GEOMAGIA CSV at {csv_path}")
-    generated, texts, meta = build(csv_path, studies if studies.is_file() else None)
+    settings = mysql_settings()
+    source = args.source
+    if source == "auto":
+        source = "mysql" if settings and not args.csv else "csv"
+    times = None
+    if source == "mysql":
+        if not settings:
+            parser.error("--source mysql needs GEOMAGIA_MYSQL_HOST (and _USER, _PASSWORD)")
+        connection = connect_mysql(settings)
+        try:
+            generated, texts, meta, times = build_mysql(connection)
+        finally:
+            connection.close()
+    else:
+        csv_path = args.csv or args.state_dir / "geomagia.csv"
+        studies = args.studies or args.state_dir / "studies.html"
+        if not csv_path.is_file():
+            parser.error(f"no GEOMAGIA CSV at {csv_path}")
+        generated, texts, meta = build(csv_path, studies if studies.is_file() else None)
     if args.out:
         args.out.mkdir(parents=True, exist_ok=True)
         for ref, text in texts.items():
@@ -498,7 +820,14 @@ def main() -> None:
             await api.login(email, password)
             try:
                 summary = await sync(
-                    api, texts, meta, generated, owner, dry_run=args.dry_run, ids=args.ids
+                    api,
+                    texts,
+                    meta,
+                    generated,
+                    owner,
+                    dry_run=args.dry_run,
+                    ids=args.ids,
+                    times=times,
                 )
             except Exception as exc:  # reported, then re-raised
                 summary["failed"] = f"{type(exc).__name__}: {exc}"
