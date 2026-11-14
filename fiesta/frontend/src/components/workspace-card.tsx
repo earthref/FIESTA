@@ -127,6 +127,15 @@ function Checklist({ steps }: { steps: Step[] }) {
 const linkButton =
   "inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-surface px-3.5 py-2 text-[13px] font-medium text-gray-800 transition-colors hover:bg-gray-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-2";
 
+/** An in-preparation card's left edge by readiness: errors red, warnings or
+ * steps still to do amber, ready green. */
+const readinessEdge = {
+  checking: "border-l-node",
+  danger: "border-l-danger",
+  warning: "border-l-amber-400",
+  success: "border-l-success",
+} as const;
+
 const fieldLabel = (warn: boolean) =>
   cx(
     "flex shrink-0 items-center whitespace-nowrap rounded-l-sm px-[0.8em] text-[12px] font-bold",
@@ -663,6 +672,17 @@ export function ContributionCard({
 
   // --- Header -------------------------------------------------------------------
   const superseded = published && successor?.is_activated;
+  // In preparation, how close to Publish (the card edge and badge share it):
+  // errors (a blocked step) red, warnings or steps still to do amber, ready green.
+  const hasWarnings = validationStep?.state === "done" && !!validation.data?.warnings.length;
+  const readiness: "checking" | "danger" | "warning" | "success" =
+    processing || validating
+      ? "checking"
+      : remaining.some((step) => step.state === "blocked")
+        ? "danger"
+        : remaining.length > 0 || hasWarnings
+          ? "warning"
+          : "success";
   const status: ReactNode = published ? (
     superseded ? (
       <Badge variant="muted">Superseded by version {successor?.version}</Badge>
@@ -671,14 +691,14 @@ export function ContributionCard({
         <Icon name="check" size="small" /> Published
       </Badge>
     )
-  ) : processing || validating ? (
+  ) : readiness === "checking" ? (
     <Badge>
       <Spinner size="xs" /> Checking
     </Badge>
   ) : remaining.length === 0 ? (
-    <Badge variant="node">Ready to publish</Badge>
+    <Badge variant={readiness}>Ready to publish</Badge>
   ) : (
-    <Badge variant={remaining.some((step) => step.state === "blocked") ? "danger" : "warning"}>
+    <Badge variant={readiness}>
       {remaining.length} step{remaining.length === 1 ? "" : "s"} before publishing
     </Badge>
   );
@@ -726,185 +746,219 @@ export function ContributionCard({
   const doiDirty = doi.trim() !== (contribution.reference_doi ?? "");
   const doiRecheck = requireReference && !!reference.data && reference.data.status !== "ok";
 
+  // Title, meta line, status.
+  const identity = (
+    <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <NameTitle contribution={contribution} disabled={busy} status={status} />
+      </div>
+      <p className="mt-0.5 text-[12px] text-gray-500">
+        {meta.join(" · ")}
+        {contribution.previous_id && (
+          <>
+            {" · New version of "}
+            <button
+              type="button"
+              onClick={() => onJump(contribution.previous_id as number)}
+              className="text-node-ink underline hover:opacity-80"
+            >
+              contribution {contribution.previous_id}
+            </button>
+          </>
+        )}
+      </p>
+    </div>
+  );
+  // Everyday actions.
+  const actions = (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {published ? (
+        <>
+          <a href={pagePath} className={linkButton}>
+            <Icon name="external" size="small" /> View
+          </a>
+          <Button variant="secondary" onClick={() => copy("public")}>
+            <Icon name="share" size="small" /> {copied === "public" ? "Copied!" : "Copy link"}
+          </Button>
+          {downloadButton}
+          <Button variant="secondary" onClick={() => setEditorOpen(true)}>
+            <Icon name="folder-open" size="small" /> History · Files
+          </Button>
+        </>
+      ) : (
+        <>
+          <a href={privateUrl} className={linkButton}>
+            <Icon name="external" size="small" /> Preview
+          </a>
+          <Button
+            variant="secondary"
+            onClick={() => setModal("share")}
+            disabled={busy || !contribution.private_key}
+          >
+            <Icon name="share" size="small" /> Share
+          </Button>
+          {downloadButton}
+          {/* Legacy "Add Data to This Contribution" (MagIC #327): the upload
+              page with this contribution as its target. */}
+          <Link to="/upload" search={{ to: contribution.id }} className={linkButton}>
+            <Icon name="upload" size="small" /> Add Data
+          </Link>
+          <Button variant="secondary" onClick={() => setEditorOpen(true)} disabled={busy}>
+            <Icon name="edit" size="small" /> Edit · History · Files
+          </Button>
+          {canReassign && (
+            <Button variant="secondary" onClick={() => setModal("reassign")} disabled={busy}>
+              <Icon name="user" size="small" /> Reassign
+            </Button>
+          )}
+          <Button variant="danger" onClick={() => setModal("delete")} disabled={busy}>
+            <Icon name="trash" size="small" /> Delete
+          </Button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <article
       id={`contribution-${contribution.id}`}
       className={cx(
         "mb-5 scroll-mt-14 rounded-md border border-l-4 border-gray-200 bg-surface shadow-xs",
-        published ? (superseded ? "border-l-gray-300" : "border-l-success") : "border-l-node",
+        published
+          ? superseded
+            ? "border-l-gray-300"
+            : "border-l-success"
+          : readinessEdge[readiness],
       )}
     >
-      {/* Header: identity, status, everyday actions */}
-      <header className="flex flex-wrap items-start gap-x-4 gap-y-2 border-b border-gray-100 px-4 py-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <NameTitle contribution={contribution} disabled={busy} status={status} />
-          </div>
-          <p className="mt-0.5 text-[12px] text-gray-500">
-            {meta.join(" · ")}
-            {contribution.previous_id && (
-              <>
-                {" · New version of "}
-                <button
-                  type="button"
-                  onClick={() => onJump(contribution.previous_id as number)}
-                  className="text-node-ink underline hover:opacity-80"
+      {published ? (
+        <>
+          {/* Header: identity, status, everyday actions */}
+          <header className="flex flex-wrap items-start gap-x-4 gap-y-2 border-b border-gray-100 px-4 py-3">
+            {identity}
+            {actions}
+          </header>
+          {/* Published: what can still be done with it */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
+            <div className="min-w-0 flex-1 text-[13px] text-gray-700" style={{ flexBasis: "20em" }}>
+              {superseded ? (
+                <p>
+                  Version {successor?.version} (contribution {successor?.id}) replaced this one in
+                  search. This version stays available at its link.
+                </p>
+              ) : (
+                <p>
+                  Public in search. Published data can't change: to correct or extend it, create a
+                  new version, which stays private until you publish it.
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {successor ? (
+                <Button
+                  variant={superseded ? "secondary" : "primary"}
+                  onClick={() => onJump(successor)}
                 >
-                  contribution {contribution.previous_id}
-                </button>
-              </>
-            )}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {published ? (
-            <>
-              <a href={pagePath} className={linkButton}>
-                <Icon name="external" size="small" /> View
-              </a>
-              <Button variant="secondary" onClick={() => copy("public")}>
-                <Icon name="share" size="small" /> {copied === "public" ? "Copied!" : "Copy link"}
-              </Button>
-              {downloadButton}
-              <Button variant="secondary" onClick={() => setEditorOpen(true)}>
-                <Icon name="folder-open" size="small" /> History · Files
-              </Button>
-            </>
-          ) : (
-            <>
-              <a href={privateUrl} className={linkButton}>
-                <Icon name="external" size="small" /> Preview
-              </a>
-              <Button
-                variant="secondary"
-                onClick={() => setModal("share")}
-                disabled={busy || !contribution.private_key}
-              >
-                <Icon name="share" size="small" /> Share
-              </Button>
-              {downloadButton}
-              {/* Legacy "Add Data to This Contribution" (MagIC #327): the upload
-                  page with this contribution as its target. */}
-              <Link to="/upload" search={{ to: contribution.id }} className={linkButton}>
-                <Icon name="upload" size="small" /> Add Data
-              </Link>
-              <Button variant="secondary" onClick={() => setEditorOpen(true)} disabled={busy}>
-                <Icon name="edit" size="small" /> Edit · History · Files
-              </Button>
-              {canReassign && (
-                <Button variant="secondary" onClick={() => setModal("reassign")} disabled={busy}>
-                  <Icon name="user" size="small" /> Reassign
+                  {superseded
+                    ? `Go to version ${successor.version}`
+                    : `Continue version ${successor.version} (in preparation)`}
+                  <Icon name="chevron-right" size="small" />
+                </Button>
+              ) : (
+                <Button onClick={() => versionMutation.mutate()} disabled={busy}>
+                  <Icon name="plus" size="small" />
+                  {versionMutation.isPending ? "Creating…" : "Create new version"}
                 </Button>
               )}
-              <Button variant="danger" onClick={() => setModal("delete")} disabled={busy}>
-                <Icon name="trash" size="small" /> Delete
-              </Button>
-            </>
+            </div>
+          </div>
+          {actionError !== null && (
+            <div className="px-4 pb-3">
+              <ErrorMessage error={actionError} />
+            </div>
           )}
-        </div>
-      </header>
-
-      {published ? (
-        /* Published: what can still be done with it */
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
-          <div className="min-w-0 flex-1 text-[13px] text-gray-700" style={{ flexBasis: "20em" }}>
-            {superseded ? (
-              <p>
-                Version {successor?.version} (contribution {successor?.id}) replaced this one in
-                search. This version stays available at its link.
-              </p>
-            ) : (
-              <p>
-                Public in search. Published data can't change: to correct or extend it, create a new
-                version, which stays private until you publish it.
-              </p>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {successor ? (
-              <Button
-                variant={superseded ? "secondary" : "primary"}
-                onClick={() => onJump(successor)}
-              >
-                {superseded
-                  ? `Go to version ${successor.version}`
-                  : `Continue version ${successor.version} (in preparation)`}
-                <Icon name="chevron-right" size="small" />
-              </Button>
-            ) : (
-              <Button onClick={() => versionMutation.mutate()} disabled={busy}>
-                <Icon name="plus" size="small" />
-                {versionMutation.isPending ? "Creating…" : "Create new version"}
-              </Button>
-            )}
-          </div>
-        </div>
+        </>
       ) : (
-        /* In preparation: details beside what publishing needs */
-        <div className="grid gap-4 px-4 py-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <section aria-labelledby={`details-${contribution.id}`} className="min-w-0">
-            <h3
-              id={`details-${contribution.id}`}
-              className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500"
-            >
-              Details
-            </h3>
-            {workspaceFields.length > 0 && (
-              <WorkspaceFields
+        /* In preparation: the header, actions and details on the left; what
+           publishing needs down the card's full right side. */
+        <div className="lg:flex">
+          <div className="min-w-0 flex-1">
+            <header className="border-b border-gray-100 px-4 py-3">
+              {identity}
+              <div className="mt-2.5">{actions}</div>
+            </header>
+            <section aria-labelledby={`details-${contribution.id}`} className="min-w-0 px-4 py-3">
+              <h3
+                id={`details-${contribution.id}`}
+                className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500"
+              >
+                Details
+              </h3>
+              {workspaceFields.length > 0 && (
+                <WorkspaceFields
+                  contribution={contribution}
+                  fields={workspaceFields}
+                  disabled={busy}
+                />
+              )}
+              <form
+                className="flex min-w-0"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!doiMutation.isPending) doiMutation.mutate();
+                }}
+              >
+                <label
+                  htmlFor={`doi-${contribution.id}`}
+                  className={fieldLabel(requireReference && !doi.trim())}
+                >
+                  DOI
+                </label>
+                <Input
+                  id={`doi-${contribution.id}`}
+                  value={doi}
+                  onChange={(event) => setDoi(event.target.value)}
+                  placeholder={requireReference ? "The study's DOI (required)" : "10.1029/…"}
+                  title="After your paper is published, its DOI can take up to a day to register (usually an hour or two). Save the DOI again to check once more."
+                  className={cx(
+                    "flex-1 rounded-none py-1 text-[13px]",
+                    requireReference && !doi.trim() && "border-danger",
+                  )}
+                />
+                <button
+                  type="submit"
+                  disabled={busy || (!doiDirty && !doiRecheck)}
+                  className={cx(
+                    "shrink-0 rounded-r-sm px-3 py-1 text-[13px] font-medium whitespace-nowrap disabled:cursor-not-allowed",
+                    doiDirty
+                      ? "bg-danger text-white hover:bg-danger-dark disabled:opacity-60"
+                      : "border border-l-0 border-gray-300 bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50",
+                  )}
+                >
+                  {doiMutation.isPending ? "Saving…" : doiRecheck && !doiDirty ? "Recheck" : "Save"}
+                </button>
+              </form>
+              {reference.data?.status === "ok" && reference.data.title && (
+                <p className="mt-1.5 text-[12px] text-gray-600" title={reference.data.title}>
+                  <Icon name="check" size="small" /> {reference.data.citation ?? "DOI found"} —{" "}
+                  {reference.data.title}
+                </p>
+              )}
+              <Contents
                 contribution={contribution}
-                fields={workspaceFields}
-                disabled={busy}
+                doc={doc}
+                processing={processing || validating}
               />
+            </section>
+            {actionError !== null && (
+              <div className="px-4 pb-3">
+                <ErrorMessage error={actionError} />
+              </div>
             )}
-            <form
-              className="flex min-w-0"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!doiMutation.isPending) doiMutation.mutate();
-              }}
-            >
-              <label
-                htmlFor={`doi-${contribution.id}`}
-                className={fieldLabel(requireReference && !doi.trim())}
-              >
-                DOI
-              </label>
-              <Input
-                id={`doi-${contribution.id}`}
-                value={doi}
-                onChange={(event) => setDoi(event.target.value)}
-                placeholder={requireReference ? "The study's DOI (required)" : "10.1029/…"}
-                title="After your paper is published, its DOI can take up to a day to register (usually an hour or two). Save the DOI again to check once more."
-                className={cx(
-                  "flex-1 rounded-none py-1 text-[13px]",
-                  requireReference && !doi.trim() && "border-danger",
-                )}
-              />
-              <button
-                type="submit"
-                disabled={busy || (!doiDirty && !doiRecheck)}
-                className={cx(
-                  "shrink-0 rounded-r-sm px-3 py-1 text-[13px] font-medium whitespace-nowrap disabled:cursor-not-allowed",
-                  doiDirty
-                    ? "bg-danger text-white hover:bg-danger-dark disabled:opacity-60"
-                    : "border border-l-0 border-gray-300 bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50",
-                )}
-              >
-                {doiMutation.isPending ? "Saving…" : doiRecheck && !doiDirty ? "Recheck" : "Save"}
-              </button>
-            </form>
-            {reference.data?.status === "ok" && reference.data.title && (
-              <p className="mt-1.5 text-[12px] text-gray-600" title={reference.data.title}>
-                <Icon name="check" size="small" /> {reference.data.citation ?? "DOI found"} —{" "}
-                {reference.data.title}
-              </p>
-            )}
-            <Contents contribution={contribution} doc={doc} processing={processing || validating} />
-          </section>
-
+          </div>
           <section
             aria-labelledby={`publish-${contribution.id}`}
-            className="self-start rounded-md border border-gray-200 bg-panel-hover p-3"
+            className="shrink-0 rounded-b-md border-t border-gray-200 bg-panel-hover px-4 py-3 lg:w-80 lg:rounded-r-md lg:rounded-bl-none lg:border-t-0 lg:border-l"
           >
             <h3
               id={`publish-${contribution.id}`}
@@ -935,12 +989,6 @@ export function ContributionCard({
               </Button>
             </div>
           </section>
-        </div>
-      )}
-
-      {actionError !== null && (
-        <div className="px-4 pb-3">
-          <ErrorMessage error={actionError} />
         </div>
       )}
 
