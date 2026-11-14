@@ -123,16 +123,14 @@ search:
             - { column: k, label: K }
             - { column: sr, label: Sr }
   extra_types: []
-  # The legacy CDR sidebar's bucket filters (search.jsx), on CDR columns.
+  # A filter per column with data (`text`: each text column as a facet;
+  # `numeric`: each number column as a range; `exists`: With / Without Data),
+  # found with the sidebar's filter search; they replaced the legacy CDR
+  # sidebar's per-column bucket filters (search.jsx) on 2026-11-13.
   filters:
-    - { type: facet, field: cruise, label: Cruise/Expedition }
-    - { type: facet, field: method, label: Coring Method }
-    - { type: facet, field: material, label: Core Material }
-    - { type: facet, field: research_vessel, label: Research Vessel }
-    - { type: facet, field: pis, label: Principal Investigator }
-    - { type: facet, field: lab_names, label: Lab }
-    - { type: facet, field: method_codes, label: Method Codes }
-    - { type: facet, field: instrument_codes, label: Instrument Codes }
+    - { type: text, label: Text }
+    - { type: numeric, label: Numeric }
+    - { type: exists, label: With / Without Data }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }

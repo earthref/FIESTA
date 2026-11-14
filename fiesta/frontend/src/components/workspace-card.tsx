@@ -96,7 +96,7 @@ function StepIcon({ state }: { state: StepState }) {
 
 function Checklist({ steps }: { steps: Step[] }) {
   return (
-    <ol className="space-y-2.5">
+    <ol className="space-y-2">
       {steps.map((step) => (
         <li key={step.key} className="flex gap-2.5">
           <StepIcon state={step.state} />
@@ -125,7 +125,7 @@ function Checklist({ steps }: { steps: Step[] }) {
 
 /** A small secondary button that is a link (Preview, View). */
 const linkButton =
-  "inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-surface px-2.5 py-1 text-xs font-medium text-gray-800 transition-colors hover:bg-gray-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-2";
+  "inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-surface px-3.5 py-2 text-[13px] font-medium text-gray-800 transition-colors hover:bg-gray-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-2";
 
 const fieldLabel = (warn: boolean) =>
   cx(
@@ -291,7 +291,7 @@ function Contents({
         typeof item.count === "number" && item.count > 0,
     );
   return (
-    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-b-md border-t border-gray-100 px-4 py-2 text-[13px]">
+    <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[13px]">
       <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
         Contents
       </span>
@@ -507,7 +507,6 @@ export function ContributionCard({
   const downloadButton = contribution.head_revision ? (
     <Button
       variant="secondary"
-      size="sm"
       onClick={() => {
         setActionError(null);
         downloadMutation.mutate();
@@ -524,7 +523,8 @@ export function ContributionCard({
   if (!published) {
     steps.push(
       contribution.filename
-        ? { key: "file", state: "done", label: "Data file uploaded", detail: contribution.filename }
+        ? // The file name is already in the header.
+          { key: "file", state: "done", label: "Data file uploaded" }
         : {
             key: "file",
             state: "blocked",
@@ -762,11 +762,11 @@ export function ContributionCard({
               <a href={pagePath} className={linkButton}>
                 <Icon name="external" size="small" /> View
               </a>
-              <Button variant="secondary" size="sm" onClick={() => copy("public")}>
+              <Button variant="secondary" onClick={() => copy("public")}>
                 <Icon name="share" size="small" /> {copied === "public" ? "Copied!" : "Copy link"}
               </Button>
               {downloadButton}
-              <Button variant="secondary" size="sm" onClick={() => setEditorOpen(true)}>
+              <Button variant="secondary" onClick={() => setEditorOpen(true)}>
                 <Icon name="folder-open" size="small" /> History · Files
               </Button>
             </>
@@ -777,7 +777,6 @@ export function ContributionCard({
               </a>
               <Button
                 variant="secondary"
-                size="sm"
                 onClick={() => setModal("share")}
                 disabled={busy || !contribution.private_key}
               >
@@ -789,25 +788,15 @@ export function ContributionCard({
               <Link to="/upload" search={{ to: contribution.id }} className={linkButton}>
                 <Icon name="upload" size="small" /> Add Data
               </Link>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setEditorOpen(true)}
-                disabled={busy}
-              >
+              <Button variant="secondary" onClick={() => setEditorOpen(true)} disabled={busy}>
                 <Icon name="edit" size="small" /> Edit · History · Files
               </Button>
               {canReassign && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setModal("reassign")}
-                  disabled={busy}
-                >
+                <Button variant="secondary" onClick={() => setModal("reassign")} disabled={busy}>
                   <Icon name="user" size="small" /> Reassign
                 </Button>
               )}
-              <Button variant="danger" size="sm" onClick={() => setModal("delete")} disabled={busy}>
+              <Button variant="danger" onClick={() => setModal("delete")} disabled={busy}>
                 <Icon name="trash" size="small" /> Delete
               </Button>
             </>
@@ -895,7 +884,7 @@ export function ContributionCard({
                 type="submit"
                 disabled={busy || (!doiDirty && !doiRecheck)}
                 className={cx(
-                  "shrink-0 rounded-r-sm px-2.5 py-1 text-[12px] font-medium whitespace-nowrap disabled:cursor-not-allowed",
+                  "shrink-0 rounded-r-sm px-3 py-1 text-[13px] font-medium whitespace-nowrap disabled:cursor-not-allowed",
                   doiDirty
                     ? "bg-danger text-white hover:bg-danger-dark disabled:opacity-60"
                     : "border border-l-0 border-gray-300 bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50",
@@ -910,22 +899,22 @@ export function ContributionCard({
                 {reference.data.title}
               </p>
             )}
+            <Contents contribution={contribution} doc={doc} processing={processing || validating} />
           </section>
 
           <section
             aria-labelledby={`publish-${contribution.id}`}
-            className="rounded-md border border-gray-200 bg-panel-hover p-3"
+            className="self-start rounded-md border border-gray-200 bg-panel-hover p-3"
           >
             <h3
               id={`publish-${contribution.id}`}
-              className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500"
+              className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500"
             >
               Publishing
             </h3>
             <Checklist steps={steps} />
             <div className="mt-3 flex flex-wrap gap-2 border-t border-gray-200 pt-3">
               <Button
-                size="sm"
                 variant={validateFirst && canValidate ? "primary" : "secondary"}
                 onClick={validate}
                 disabled={!canValidate}
@@ -933,26 +922,18 @@ export function ContributionCard({
                 {validating ? "Validating…" : validation.data ? "Validate again" : "Validate"}
               </Button>
               <Button
-                size="sm"
                 variant={canPublish ? "primary" : "secondary"}
                 onClick={() => setModal("publish")}
                 disabled={!canPublish}
                 title={
                   remaining.length
-                    ? `Still needed: ${remaining.map((step) => step.label).join("; ")}`
-                    : undefined
+                    ? `Publish unlocks once these are done: ${remaining.map((step) => step.label).join("; ")}`
+                    : "Publishing makes the data public and fixes this version; later changes need a new version."
                 }
               >
                 <Icon name="globe" size="small" /> Publish
               </Button>
             </div>
-            <p className="mt-2 text-[12px] text-gray-600" aria-live="polite">
-              {remaining.length === 0
-                ? "Ready. Publishing makes the data public and fixes this version; later changes need a new version."
-                : `Publish unlocks once ${
-                    remaining.length === 1 ? "the step" : `the ${remaining.length} steps`
-                  } above ${remaining.length === 1 ? "is" : "are"} done. Saving any change re-runs validation.`}
-            </p>
           </section>
         </div>
       )}
@@ -963,7 +944,7 @@ export function ContributionCard({
         </div>
       )}
 
-      {published ? (
+      {published && (
         /* A published contribution's summary row, as search shows it */
         <div className="overflow-x-auto rounded-b-md border-t border-gray-100 px-4 pt-px">
           <SummaryGrid
@@ -972,9 +953,6 @@ export function ContributionCard({
             privateKey={contribution.private_key}
           />
         </div>
-      ) : (
-        /* In preparation, only what it holds */
-        <Contents contribution={contribution} doc={doc} processing={processing || validating} />
       )}
 
       {editorOpen && (

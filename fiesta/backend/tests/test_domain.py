@@ -628,6 +628,12 @@ def test_search_filter_counts(magic_node, monkeypatch):
     text = magic_node.text_columns("sites")
     assert "site" in text and "method_codes" in text and "lat" not in text
     assert "contribution_id" not in text
+    # A record's `_all` inherits the geography of the levels above it (a
+    # site's location's), so those text columns are its facets too, after
+    # its own.
+    assert {"location_type", "plate_blocks", "tectonic_settings"} <= set(text)
+    measurements = magic_node.text_columns("measurements")
+    assert measurements[0] != "location_type" and "location_type" in measurements
     out = run(["text:*", "numeric:*"])
     # Positions are the Geospatial filter's, not number filters of their own.
     assert set(out.counts) == {f"facet:{c}" for c in text} | {

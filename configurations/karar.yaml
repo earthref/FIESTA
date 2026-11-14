@@ -122,13 +122,14 @@ search:
             - { column: intercept_36ar, label: ³⁶Ar }
         - { cell: geo }
   extra_types: []
-  # (The MagIC-style geologic_classes/geologic_types/lithologies facets the
-  # legacy app listed are not KArAr columns and never had buckets.)
+  # A filter per column with data (`text`: each text column, and a record's
+  # inherited geography, as a facet; `numeric`: each number column as a
+  # range; `exists`: With / Without Data), found with the sidebar's filter
+  # search; they replaced the per-column facets on 2026-11-13.
   filters:
-    - { type: facet, field: location_type }
-    - { type: facet, field: lithology }
-    - { type: facet, field: material }
-    - { type: facet, field: method_codes }
+    - { type: text, label: Text }
+    - { type: numeric, label: Numeric }
+    - { type: exists, label: With / Without Data }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }

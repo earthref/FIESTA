@@ -21,8 +21,8 @@ contributions in the older `cdr`/`cdr-2` alias are left behind (decided
 
 ## Search
 
-Levels: Contributions, Cores, Sections, Measurements, with facet filters on the
-sidebar.
+Levels: Contributions, Cores, Sections, Measurements; the sidebar has a filter
+per column with data (`text`, `numeric`, `exists`).
 
 ## Plugins
 
