@@ -185,12 +185,24 @@ serves its API, and its SPA only to local stacks. See configurations/geomagia/RE
       `GEOMAGIA_MYSQL_HOST`, `GEOMAGIA_MYSQL_PORT`, `GEOMAGIA_MYSQL_USER`,
       `GEOMAGIA_MYSQL_PASSWORD`, `GEOMAGIA_MYSQL_DATABASE` (names only here); with
       `GEOMAGIA_MYSQL_HOST` set, the scheduled run reads the database.
+- [ ] **Serve GEOMAGIA on dev.** `https://dev.earthref.org/v2/geomagia/...` answers
+      404 "unknown repository 'geomagia'" although main's `configurations/fiesta.yaml`
+      lists it and deploys succeed: dev's API serves only magic, karar, kdd and cdr
+      (osu-mgr, sc and erda are 404 too), so `FIESTA_NODE` on fiesta-ct narrows it. Add
+      `geomagia` there (and run `fiesta init` for it if the deploy script only inits
+      the listed nodes), restart the API, and check
+      `https://dev.earthref.org/v2/geomagia/search/contribution` answers 200.
 - [ ] **Steward account**: Max's EarthRef account as the owner of every GEOMAGIA
       contribution (`/etc/fiesta/source-geomagia-owners.json`, `default_owner`) and as
-      GEOMAGIA node admin.
-- [ ] **First sync on dev**, preferably from the database (858 contributions) once the
-      account above exists: Run now on the admin page's Data source tab, then drain
-      dev's outbox. Without it, from the CSV: put `geomagia.csv`
+      GEOMAGIA node admin. Until it exists, the first dev sync uses
+      `source-sync@earthref.org` as the owner (decided 2026-11-13); a later sync with
+      Max's `default_owner` moves them.
+- [ ] **First sync on dev**, from the database (858 contributions) once dev serves the
+      node: Run now on the admin page's Data source tab once the SELECT-only account
+      exists, or, before that, Claude can run it from the laptop against Max's dump
+      (rehearsed on a local stack 2026-11-13: 858 applied, 0 errors, 8.5 min; a second
+      run found all 858 unchanged). Then check dev indexed them. Without the
+      database, from the CSV: put `geomagia.csv`
       (`https://geomagia.gfz.de/docs/geomagia50_v3_24072017_download.csv`) and
       `studies.html` (a saved `studies.php`) in the ops state dir
       `/var/lib/fiesta-ops/sources/geomagia/` (667 contributions). Once dev has synced
