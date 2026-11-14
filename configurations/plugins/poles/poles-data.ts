@@ -1,3 +1,4 @@
+import { formatYbp } from "@/lib/age";
 import type { SearchResult } from "@/lib/types";
 import { getPath } from "@/lib/utils";
 
@@ -48,13 +49,10 @@ export function formatLon(lon: number): string {
   return `${Math.abs(normalized).toFixed(1)}°${normalized >= 0 ? "E" : "W"}`;
 }
 
-/** Age label formatting (spec): ≥1e9 Ga, ≥1e6 Ma, ≥1e3 Ka, else years. */
+/** An age in years BP as every age is shown (lib/age.ts): Ga / Ma / ka by
+ * magnitude, calendar years AD / BC below 1 ka. */
 export function formatAge(age: number): string {
-  const abs = Math.abs(age);
-  if (abs >= 1e9) return `${(age / 1e9).toFixed(2)} Ga`;
-  if (abs >= 1e6) return `${(age / 1e6).toFixed(1)} Ma`;
-  if (abs >= 1e3) return `${(age / 1e3).toFixed(0)} Ka`;
-  return `${age} yr`;
+  return formatYbp(age);
 }
 
 /** The pole summary block: summary.poles (new backend) or summary.locations (legacy). */

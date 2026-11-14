@@ -629,6 +629,46 @@ Range filters (`range=summary._num.age:0:5e6`) and histograms use these:
 A new or changed `_num` (or its `double` template) reaches an existing index
 only through `fiesta rebuild`.
 
+A unit conversion with an `interval` (MagIC, KArAr, ERDA, SC: `age`) also
+gives every doc `summary._interval.<name>` (2026-11-13): each row's ages as
+ONE interval in the base unit, whatever of value, sigma and bounds it has —
+`age_low`..`age_high`; a missing end `age` ∓ `sigma_multiple` × `age_sigma`
+(2, about 95%), else the age itself; a side with neither open (only an
+`age_high`: younger than it). A record's are its own rows' plus those of rows
+outside the hierarchy that name it as their most specific record (an `ages`
+row naming a sample), else those of the records below it (a location without
+ages has its sites'); the contribution's are every row's.
+
+```json
+"_interval": {"age": {
+  "range": [{"gte": 480000.0, "lte": 520000.0}],   // double_range, merged, ≤ 100
+  "values": [480000.0, 500000.0, 520000.0],        // ends + best estimates (histogram)
+  "min": 500000.0, "max": 500000.0,                 // span shown: best estimates and
+                                                    // stated bounds, not sigma windows
+  "mid": 500000.0,                                  // median best estimate: sort, map color
+  "n": 1, "open_low": false, "open_high": false,
+  "detail": {"value": 500000.0, "sigma": 10000.0,  // one row only: its converted
+             "contributed": "500 ± 10 ka"}}}       // columns and its text as given
+```
+
+Sigmas are not combined across rows: a record's rows (a location's sites)
+are not replicate measurements of one age, so the roll-up is the union of
+their intervals for matching and the span of their stated values for display,
+never a weighted mean with a propagated σ (that is a science calculation, a
+plugin's job, as the poles plugin's Fisher means are). Within a row σ is
+converted by the unit's factor alone (no offset: 20 years AD is 20 years) and
+counts only on the sides without a stated bound; KArAr's three 1σ columns are
+tried external (J and decay constants), internal, analytical.
+
+`range` is mapped `double_range`, so `range=summary._interval.age.range:5e6:2e7`
+matches a doc any of whose intervals overlaps 5–20 Ma (OpenSearch's default
+`intersects` relation; the legacy `_age_range_ybp` behaved the same on one
+envelope per record); its histogram is over `values`. The UI shows these with
+`fiesta/frontend/src/lib/age.ts` (Ga / Ma / ka by magnitude, calendar years AD /
+BC below 1 ka, one row in full as "500 ± 10 ka", several as their span).
+`ensure_index` adds the template to an existing index; its docs gain the block
+only through `fiesta rebuild`.
+
 Every doc also carries `summary._has` (2026-11-10, the legacy "With … Data" /
 "Without … Data" filters): per table, the sorted names of its data-model
 columns with a value (not blank) in the doc's rows, mapped as `keyword` — the

@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-11-11
+Last updated: 2026-11-13
 
 ## A — Decisions
 
@@ -151,6 +151,17 @@ Last updated: 2026-11-11
       References grid sorted by MagIC, rows with a count above 1. Versions whose parent is
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
+
+## 2026-11-13 — Age intervals (`summary._interval.age`)
+
+- [ ] **Rebuild the MagIC, KArAr, ERDA and SC search indexes on dev** once the "age
+  intervals" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`,
+  then `karar`, `erda`, `sc`). Search docs now carry each row's age interval in years BP
+  (`summary._interval.age`); the Age filter, Age tile, age sort and MagIC's Age map color
+  read it. Until the rebuild, records indexed before the deploy show "No Age", sort
+  without an age, and the Age filters match nothing on them. The API adds the index
+  template on its own, so contributions indexed after the deploy are fine. Production
+  needs the same rebuild at cutover. Claude needs nothing after this.
 
 ## 2026-11-13 — dev host unresponsive
 

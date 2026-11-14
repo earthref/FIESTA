@@ -32,6 +32,13 @@ class SampleTilesOptions(PluginOptions):
         description="Age tile: the columns tried in order for the age range",
     )
     age_unit_column: str = Field(default="age_unit", description="Age tile: the unit's column")
+    age_interval: str = Field(
+        default="age",
+        description=(
+            "Age tile: the node's unit_conversions interval (summary._interval.<name>, in "
+            "years BP) it shows and sorts by; without one, the age columns as contributed"
+        ),
+    )
     intensity_columns: Columns = Field(
         default=["int_abs", "intensities"],
         description="Intensity tile: the columns tried in order, in Tesla",
@@ -74,6 +81,12 @@ class SampleTilesPlugin(FiestaPlugin):
                     filter_fields=_all(geology),
                     facets=geology,
                 )
+            case "age" if node.search.interval(options.age_interval):
+                # The records' median age in years BP, whatever their units.
+                return GridTileFields(
+                    sort_fields=[f"summary._interval.{options.age_interval}.mid"],
+                    sort_type="number",
+                )
             case "age":
                 return GridTileFields(
                     sort_fields=_all(options.age_columns, ".raw"),
@@ -92,4 +105,7 @@ class SampleTilesPlugin(FiestaPlugin):
                 )
 
     def frontend_config(self, node: NodeConfig) -> dict:
-        return self.options(node).model_dump()
+        options = self.options(node)
+        # Whether the Age tile has an interval to show (else the raw columns).
+        has_interval = node.search.interval(options.age_interval) is not None
+        return {**options.model_dump(), "age_has_interval": has_interval}

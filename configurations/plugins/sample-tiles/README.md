@@ -6,7 +6,7 @@ of core on 2026-11-11:
 | Tile (`cell`) | Shows | Sorts / filters on |
 |---|---|---|
 | `geology` | Class, Type and Lithology lines | the class columns; facets: all three lists |
-| `age` | the age range and its unit | the age columns, as numbers; text box |
+| `age` | the node's age interval (`summary._interval.<age_interval>`, years BP) as every age is shown (`lib/age.ts`: "12.3 ± 0.4 Ma", "10 – 15 Ma", a span for several; as contributed on hover); without one, the age columns' range and unit as contributed | the interval's median age; without one, the age columns as numbers, text box |
 | `intensity` | Int (or Min/Max Int) in nT/µT/mT/T from Tesla, and N | the intensity columns, as numbers |
 | `method_codes` | the record's method codes | the codes, facet |
 
@@ -19,7 +19,9 @@ it from `features.plugins`, or a level can list its own `columns`.
 They read `summary._all` values, so they need no derived documents and no
 reindex. Options (node YAML `plugins.sample-tiles`, defaults are MagIC's
 columns): `geologic_class_columns`, `geologic_type_columns`,
-`lithology_columns`, `age_columns` (tried in order), `age_unit_column`,
+`lithology_columns`, `age_interval` (the node YAML's `unit_conversions`
+interval, default `age`; the Age tile needs a reindex once a node adds one),
+`age_columns` (tried in order) and `age_unit_column` (without that interval),
 `intensity_columns` (tried in order), `method_code_columns`.
 
 | File | What |

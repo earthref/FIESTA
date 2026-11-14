@@ -75,8 +75,11 @@ search:
   # `numeric`: each number column as a range; `exists`: With / Without Data),
   # found with the sidebar's filter search; they replaced the facets of the
   # legacy Advanced Search dropdowns (data type, expert level, project,
-  # geographic and timescale terms) on 2026-11-13.
+  # geographic and timescale terms) on 2026-11-13. Age: each object's
+  # age_low..age_high in years BP (unit_conversions below), matching a record
+  # whose range overlaps the one typed in Ma.
   filters:
+    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Digital Objects] }
     - { type: text, label: Text }
     - { type: numeric, label: Numeric }
     - { type: exists, label: With / Without Data }
@@ -85,6 +88,20 @@ search:
     - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
+  # An object's ages are in its age_unit, Ma without one (the data model's
+  # "Ma or age_unit"): in years BP in summary._num, and as one interval in
+  # summary._interval.age (a side without a bound open).
+  unit_conversions:
+    - unit_column: age_unit
+      columns: [age_low, age_high]
+      bounds: [age_low, age_high]
+      unit: years BP
+      default_unit: Ma
+      factors:
+        { Ga: 1.0e9, Ma: 1.0e6, ka: 1.0e3, Ka: 1.0e3, Years BP: 1, Years Cal BP: 1,
+          "Years AD (+/-)": -1, "Years Cal AD (+/-)": -1 }
+      offsets: { "Years AD (+/-)": 1950, "Years Cal AD (+/-)": 1950 }
+      interval: { name: age }
 
 storage:
   bucket: erda

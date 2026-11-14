@@ -125,8 +125,11 @@ search:
   # A filter per column with data (`text`: each text column, and a record's
   # inherited geography, as a facet; `numeric`: each number column as a
   # range; `exists`: With / Without Data), found with the sidebar's filter
-  # search; they replaced the per-column facets on 2026-11-13.
+  # search; they replaced the per-column facets on 2026-11-13. Age: each
+  # row's age interval in years BP (unit_conversions below), matching a record
+  # any of whose intervals overlaps the range typed in Ma.
   filters:
+    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Samples, Specimens, Experiments] }
     - { type: text, label: Text }
     - { type: numeric, label: Numeric }
     - { type: exists, label: With / Without Data }
@@ -135,6 +138,26 @@ search:
     - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
+  # Ages in one unit (years BP) whatever their age_unit, as MagIC's: in
+  # summary._num, and each specimen's / experiment's as one interval in
+  # summary._interval.age (the Age filter, tile and sort): age_low..age_high,
+  # a missing end age -/+ 2 x its sigma (external, else internal, else
+  # analytical; all 1 sigma), a side with neither open.
+  unit_conversions:
+    - unit_column: age_unit
+      columns: [age, age_low, age_high]
+      scaled: [age_sigma_external, age_sigma_internal, age_sigma_analytical]
+      bounds: [age_low, age_high]
+      unit: years BP
+      factors:
+        { Ga: 1.0e9, Ma: 1.0e6, ka: 1.0e3, Ka: 1.0e3, Years BP: 1, Years Cal BP: 1,
+          "Years AD (+/-)": -1, "Years Cal AD (+/-)": -1 }
+      offsets: { "Years AD (+/-)": 1950, "Years Cal AD (+/-)": 1950 }
+      interval:
+        name: age
+        value: age
+        sigma: [age_sigma_external, age_sigma_internal, age_sigma_analytical]
+        sigma_multiple: 2
   # Samples on another planetary body, by their location_type: they and their
   # specimens, ... are mapped on that body's globe, not Earth's.
   # Martian is left out: those samples are meteorites, mapped where found.

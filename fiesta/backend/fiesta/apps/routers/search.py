@@ -924,6 +924,9 @@ async def search_histogram(
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
     path = _value_field(field)
+    if path.startswith("summary._interval.") and path.endswith(".range"):
+        # An interval's ranges have no stats: its ends' and best estimates' do.
+        path = path.removesuffix(".range") + ".values"
     body = build_search_body(
         table=table,
         query=query,
