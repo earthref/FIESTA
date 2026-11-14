@@ -61,3 +61,22 @@ async def get_controlled_vocabularies(node: NodeDep) -> dict:
 @router.get("/vocabularies/suggested")
 async def get_suggested_vocabularies(node: NodeDep) -> dict:
     return node.load_suggested_vocabularies()
+
+
+@router.get("/vocabularies/plugins")
+async def get_plugin_vocabularies(node: NodeDep) -> dict:
+    """The controlled vocabularies active plugins supply for `cv()` checks the
+    node's own lists lack (method codes), in the controlled list's shape plus
+    `case_insensitive`: the grid editor's pulldowns and client checks."""
+    return {
+        name: {
+            "label": vocabulary.label or name,
+            "case_insensitive": vocabulary.case_insensitive,
+            "items": [
+                {"item": item, "label": vocabulary.labels.get(item) or None}
+                for item in sorted(vocabulary.items)
+            ],
+        }
+        for plugin in active_plugins(node)
+        for name, vocabulary in plugin.vocabularies(node).items()
+    }

@@ -85,7 +85,17 @@ class MethodCodesPlugin(FiestaPlugin):
         codes = load_codes(node, options)
         if codes is None:
             return {}
-        return {options.vocabulary: PluginVocabulary(code_set(codes), case_insensitive=True)}
+        labels = {
+            str(entry["code"]): str(entry.get("definition") or "")
+            for group in codes.values()
+            for entry in group.get("codes", [])
+            if isinstance(entry, dict) and entry.get("code")
+        }
+        return {
+            options.vocabulary: PluginVocabulary(
+                code_set(codes), case_insensitive=True, label="Method Codes", labels=labels
+            )
+        }
 
     def build_router(self) -> APIRouter:
         router = APIRouter()

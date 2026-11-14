@@ -62,3 +62,15 @@ def test_cv_columns_take_the_codes_case_insensitively(magic_node):
     off = Validator(_with(magic_node, plugins=["poles"]))
     off.model = validator.model
     assert off.validate(parsed).is_valid
+
+
+def test_config_serves_the_codes_with_definitions(magic_node):
+    """GET /config/vocabularies/plugins: the grid editor's method-code pulldown."""
+    from fiesta.apps.routers.config import get_plugin_vocabularies
+
+    served = asyncio.run(get_plugin_vocabularies(magic_node))["method_codes"]
+    assert served["label"] == "Method Codes" and served["case_insensitive"] is True
+    items = {entry["item"]: entry["label"] for entry in served["items"]}
+    assert items["DE-BFL"] == "Best fit line"
+    assert [entry["item"] for entry in served["items"]] == sorted(items)
+    assert asyncio.run(get_plugin_vocabularies(_with(magic_node, plugins=["poles"]))) == {}

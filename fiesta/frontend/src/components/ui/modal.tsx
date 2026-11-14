@@ -10,6 +10,8 @@ interface ModalProps {
   wide?: boolean;
   /** Wider still, for a filter's list, histogram or map. */
   xl?: boolean;
+  /** Nearly the whole window (the contribution grid editor). */
+  full?: boolean;
   /** The title as large as the search's level tabs (the filter modals). */
   largeTitle?: boolean;
 }
@@ -22,19 +24,24 @@ export function Modal({
   footer,
   wide,
   xl,
+  full,
   largeTitle,
 }: ModalProps) {
   const panelRef = useRef<HTMLDialogElement>(null);
+  // Focus moves to the panel when it opens, not each time a parent passes a new onClose
+  // (that stole focus from the grid editor's cells on every edit).
+  const close = useRef(onClose);
+  close.current = onClose;
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") close.current();
     };
     document.addEventListener("keydown", onKeyDown);
     panelRef.current?.focus();
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -54,8 +61,9 @@ export function Modal({
         aria-label={title}
         tabIndex={-1}
         className={cx(
-          "relative m-0 flex max-h-[85vh] w-full flex-col rounded-lg border-0 bg-surface p-0 shadow-xl outline-hidden",
-          xl ? "max-w-5xl" : wide ? "max-w-3xl" : "max-w-lg",
+          "relative m-0 flex w-full flex-col rounded-lg border-0 bg-surface p-0 shadow-xl outline-hidden",
+          full ? "max-h-[96vh] max-w-[1800px]" : "max-h-[85vh]",
+          !full && (xl ? "max-w-5xl" : wide ? "max-w-3xl" : "max-w-lg"),
         )}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">

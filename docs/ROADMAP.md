@@ -243,9 +243,13 @@ the latter become G5 work after cutover.*
       - [ ] Import templates: save, load, rename and delete per user (C5).
       - [ ] Upload into an existing private contribution, replacing the tables the
             new file contains ("Add Data to This Contribution", MagIC #327).
-      - [ ] Grid editor: tables as tabs, cell editing with edited cells marked, add
+      - [x] Grid editor: tables as tabs, cell editing with edited cells marked, add
             and delete rows, undo and redo, vocabulary pulldowns, show/hide empty
             columns, paging, and validation errors on the cells (M3, MagIC #547).
+            Done 2026-11-13: `components/contribution-grid.tsx`, a lazy chunk on
+            `@tanstack/react-virtual`. It saves through the revision path and keeps
+            the text editor as a fallback mode. Deviations are listed in
+            legacy-ux-spec.md "Grid editor".
       - [x] Workspace card: a New Contribution button, a download button, and
             reassigning a private contribution to another user (G5).
 - [ ] **C8 Finish the validator.** `domain/validate.py` accepts but does not enforce
