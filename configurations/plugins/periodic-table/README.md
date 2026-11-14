@@ -22,7 +22,7 @@ Options (`plugins.periodic-table` in the node YAML):
 | `table` | `kds` | data model table that holds the element column (checked) |
 | `column` | `element` | the element column; counted as a facet and matched as `<column>:"<value>"` |
 | `levels` | `[]` | search levels that show the filter (empty = every level) |
-| `label` | `Periodic Table of Elements` | the filter's name in the sidebar and the modal title |
+| `label` | `Periodic Table` | the filter's name in the sidebar and the modal title |
 
 No routes: the backend's `search_facets` lets `GET /v2/{node}/search/{table}?facet=<column>`
 count the column, and the UI reuses the core facet counting and query tokens

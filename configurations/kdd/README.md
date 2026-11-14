@@ -19,14 +19,16 @@ partition coefficient). `kds.element` holds element symbols (`Sm`, `Ce`, …).
 ## Search
 
 Levels: Contributions and Partition Coefficients (`kds`, counted by
-`summary.kds._n_results`). No sidebar filters of its own; the periodic table
-is the element filter.
+`summary.kds._n_results`). Sidebar filters, as the legacy app's: Publication
+Year, Rock Type, Mineral, Kd Definition and Kd Type, plus every node's
+contribution filters; the periodic table is the element filter (the legacy
+"Element Name" list is left out).
 
 ## Plugins
 
 | Plugin | What it adds |
 |---|---|
-| [periodic-table](../plugins/periodic-table/README.md) | the Periodic Table of Elements filter, counting `kds.element` under the current search |
+| [periodic-table](../plugins/periodic-table/README.md) | the Periodic Table filter, counting `kds.element` under the current search |
 | [sample-tiles](../plugins/sample-tiles/README.md) | the Geology, Age, Intensity and Method Codes grid tiles (KdD has no data for them; they show "No … Data") |
 
 ## Data source

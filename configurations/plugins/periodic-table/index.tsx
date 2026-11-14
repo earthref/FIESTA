@@ -61,7 +61,7 @@ function optionsOf(config: NodeConfig): Options {
   return {
     column: typeof raw.column === "string" ? raw.column : "element",
     levels: Array.isArray(raw.levels) ? raw.levels.map(String) : [],
-    label: typeof raw.label === "string" ? raw.label : "Periodic Table of Elements",
+    label: typeof raw.label === "string" ? raw.label : "Periodic Table",
   };
 }
 

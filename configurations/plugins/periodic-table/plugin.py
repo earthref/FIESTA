@@ -26,7 +26,7 @@ class PeriodicTableOptions(PluginOptions):
         default=[], description="Search levels that show the filter (empty = every level)"
     )
     label: str = Field(
-        default="Periodic Table of Elements", description="The filter's name in the sidebar"
+        default="Periodic Table", description="The filter's name in the sidebar"
     )
 
 

@@ -199,6 +199,7 @@ search:
     - { type: facet, field: location_type, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: facet, field: plate_blocks, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: facet, field: tectonic_settings, views: [Summaries, Rows, Map, Rock Magnetism] }
+    - { type: facet, field: software_packages, label: Software Package, views: [Summaries, Rows, Map, Rock Magnetism] }
     - { type: numeric, label: Numeric, views: [Summaries, Rows, Map] }
     - { type: text, label: Text, views: [Summaries, Rows, Map] }
     - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map] }

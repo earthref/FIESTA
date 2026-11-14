@@ -20,7 +20,7 @@ def test_kdd_activates_the_periodic_table(kdd_node):
     assert options == PeriodicTableOptions(table="kds", column="element")
     config = plugin.frontend_config(kdd_node)
     assert config["column"] == "element" and config["levels"] == []
-    assert config["label"] == "Periodic Table of Elements"
+    assert config["label"] == "Periodic Table"
 
 
 def test_options_are_checked_against_the_node(kdd_node):

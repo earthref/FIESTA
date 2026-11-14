@@ -73,6 +73,13 @@ search:
             - { column: kd_definition, label: Definition }
   extra_types: []
   filters:
+    # The legacy KdD sidebar's filters (KDD client/modules/kdd/components/search.jsx),
+    # less "Element Name": the periodic-table plugin filters by element.
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year }
+    - { type: facet, field: rock_types, label: Rock Type }
+    - { type: facet, field: minerals, label: Mineral }
+    - { type: facet, field: kd_definition, label: Kd Definition }
+    - { type: facet, field: kd_types, label: Kd Type }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }

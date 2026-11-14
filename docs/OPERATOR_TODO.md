@@ -152,6 +152,15 @@ Last updated: 2026-11-11
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
 
+## 2026-11-13 — KArAr Age filter
+
+- [ ] **Rebuild KArAr's search index on dev** once the "legacy sidebar filters" PR has
+      deployed (`make fiesta ENV_FILE=.env.prod NODE=karar ARGS="rebuild --yes"`).
+      karar.yaml now converts ages to years BP by their `age_unit`, the way MagIC's
+      does. Until the rebuild, the new Age filter compares raw ages in mixed units
+      (Ma, ka, Ga, …). The other new filters (KdD, CDR, KArAr, MagIC) work without a
+      rebuild. Production needs the same rebuild at cutover.
+
 ## 2026-11-13 — dev host unresponsive
 
 - [ ] **Check fiesta-ct (dev.earthref.org).** From about 20:51 UTC every API request

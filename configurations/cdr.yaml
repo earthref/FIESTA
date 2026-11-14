@@ -125,6 +125,7 @@ search:
   extra_types: []
   # The legacy CDR sidebar's bucket filters (search.jsx), on CDR columns.
   filters:
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year }
     - { type: facet, field: cruise, label: Cruise/Expedition }
     - { type: facet, field: method, label: Coring Method }
     - { type: facet, field: material, label: Core Material }
@@ -133,6 +134,12 @@ search:
     - { type: facet, field: lab_names, label: Lab }
     - { type: facet, field: method_codes, label: Method Codes }
     - { type: facet, field: instrument_codes, label: Instrument Codes }
+    # The rest of the legacy CDR sidebar (CDR client/modules/cdr/components/search.jsx),
+    # less External Database (a Dictionary column, not a facet).
+    - { type: facet, field: scientists, label: Research Scientist }
+    - { type: facet, field: analysts, label: Analyst }
+    - { type: facet, field: software_packages, label: Software Package }
+    - { type: exists, label: With / Without Data }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }
