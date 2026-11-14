@@ -33,6 +33,19 @@ def test_poles_derive_docs(magic_node):
     assert "_geometry" not in doc["summary"]["poles"]
 
 
+def test_pole_ages_are_the_nodes_intervals(magic_node):
+    """A pole's age is the node's age interval in years BP (years AD too:
+    1950 - year), its best estimate in summary.poles.age."""
+    text = POLE_TEXT.replace(
+        "geologic_classes\n", "geologic_classes\tage\tage_sigma\tage_unit\n", 1
+    ).replace("\tIgneous\n", "\tIgneous\t1500\t20\tYears AD (+/-)\n")
+    doc = PolesPlugin().derive_docs(magic_node, parse_text(text), {"id": 99})[0]
+    assert doc["summary"]["poles"]["age"] == 450.0
+    age = doc["summary"]["_interval"]["age"]
+    assert age["range"] == [{"gte": 410.0, "lte": 490.0}]
+    assert age["detail"]["contributed"] == "1500 ± 20 Years AD (+/-)"
+
+
 def test_poles_is_searchable_table_not_top_level(magic_node):
     plugins = active_plugins(magic_node)
     assert [p.name for p in plugins][:3] == ["poles", "rock-mag", "pmag-plots"]

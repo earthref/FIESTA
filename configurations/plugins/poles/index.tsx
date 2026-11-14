@@ -14,6 +14,7 @@ import { MapThumbnail } from "@/components/map-thumbnail";
 import { Cell, contributionId, NoDataCell } from "@/components/result-item";
 import { SummaryGrid } from "@/components/summary-grid";
 import { PageSpinner } from "@/components/ui/spinner";
+import { ageIntervalOf, ageIntervalTitle, formatAgeInterval } from "@/lib/age";
 import { api } from "@/lib/api";
 import { useOpenContribution } from "@/lib/contribution-modal";
 import { usePagedItems } from "@/lib/paged";
@@ -76,6 +77,8 @@ interface PolesPluginConfig {
   has_plate_boundaries?: boolean;
   plate_boundary_color?: string;
   age_color?: Partial<AgeColors>;
+  /** The interval its Age tile shows (summary._interval.<name>). */
+  age_interval?: string;
   default_alpha95_max?: number | null;
   default_alpha95_above?: number;
 }
@@ -280,35 +283,17 @@ function PoleTile({ hit, width }: { hit: SearchResult; width: number }) {
   );
 }
 
-function AgeTile({ hit, width }: { hit: SearchResult; width: number }) {
-  const row = locationRowOf(hit);
-  const unit = textOf(row.age_unit);
-  const withUnit = (text: string) => (unit ? `${text} ${unit}` : text);
-  const age = firstNumber(row.age);
-  const sigma = firstNumber(row.age_sigma);
-  const low = firstNumber(row.age_low);
-  const high = firstNumber(row.age_high);
-  const hasRange = low !== undefined && high !== undefined;
-  if (age === undefined && !hasRange) return <NoDataCell label="Age" width={width} />;
+/** The pole's age as every age is shown (lib/age.ts), as contributed on hover. */
+function AgeTile({ hit, width, name }: { hit: SearchResult; width: number; name: string }) {
+  const interval = ageIntervalOf(hit, name);
+  if (!interval) return <NoDataCell label="Age" width={width} />;
   return (
     <Cell width={width} wrap>
-      {age !== undefined && (
-        <>
-          <b>Age:</b>
-          <br />
-          {withUnit(
-            sigma !== undefined ? `${rounded(age, 3)} ± ${rounded(sigma, 3)}` : rounded(age, 3),
-          )}
-          <br />
-        </>
-      )}
-      {hasRange && (
-        <>
-          <b>Age Range:</b>
-          <br />
-          {withUnit(`${rounded(low, 3)} to ${rounded(high, 3)}`)}
-        </>
-      )}
+      <span title={ageIntervalTitle(interval)}>
+        <b>Age:</b>
+        <br />
+        {formatAgeInterval(interval)}
+      </span>
     </Cell>
   );
 }
@@ -743,7 +728,7 @@ const polesPlugin: PluginModule = {
       case "pole":
         return <PoleTile hit={hit} width={width} />;
       case "pole_age":
-        return <AgeTile hit={hit} width={width} />;
+        return <AgeTile hit={hit} width={width} name={polesConfig(config).age_interval ?? "age"} />;
       default:
         return <DirectionTile hit={hit} width={width} />;
     }

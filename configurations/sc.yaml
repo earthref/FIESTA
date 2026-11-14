@@ -95,8 +95,10 @@ search:
   # A filter per column with data (`text`: each text column, and a record's
   # inherited region, as a facet; `numeric`: each number column as a range;
   # `exists`: With / Without Data), found with the sidebar's filter search;
-  # they replaced the per-column facets on 2026-11-13.
+  # they replaced the per-column facets on 2026-11-13. Age: a seamount's age
+  # (always Ma, unit_conversions below) in years BP, typed in Ma.
   filters:
+    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Seamounts] }
     - { type: text, label: Text }
     - { type: numeric, label: Numeric }
     - { type: exists, label: With / Without Data }
@@ -105,6 +107,16 @@ search:
     - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
+  # A seamount's age is in Ma (the table has no unit column): as one interval
+  # in summary._interval.age, in years BP as every node's ages, for the Age
+  # filter, tile and sort. (plate_age_min/max is the crust's age, not its.)
+  unit_conversions:
+    - unit_column: age_unit
+      columns: [age]
+      unit: years BP
+      default_unit: Ma
+      factors: { Ma: 1.0e6 }
+      interval: { name: age, value: age }
 
 storage:
   bucket: sc

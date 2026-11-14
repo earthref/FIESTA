@@ -333,6 +333,91 @@ def test_summarize_writes_number_columns(magic_node):
     assert by_name["A"]["summary"]["sites"]["age"] == "2"
 
 
+def test_summarize_writes_age_intervals(magic_node):
+    """summary._interval.age: each row's ages as one interval in years BP
+    whatever its unit (bounds, else age +/- 2 sigma, else the age; a side
+    without either open), a record without ages of its own taking those of
+    the records below it, an ages row its most specific record's, the
+    contribution every row's; one row's converted columns and contributed
+    text as `detail`."""
+    from fiesta.domain.parse import ParsedContribution
+
+    parsed = ParsedContribution(
+        tables={
+            "contribution": [{"id": "1"}],
+            "locations": [
+                {"location": "L1"},
+                {"location": "L2", "age_low": "1", "age_high": "3", "age_unit": "Ma"},
+            ],
+            "sites": [
+                {"site": "S1", "location": "L1", "age": "500", "age_sigma": "10", "age_unit": "ka"},
+                {"site": "S2", "location": "L1", "age": "1500", "age_unit": "Years AD (+/-)"},
+                {"site": "S3", "location": "L1", "age_high": "120", "age_unit": "Ma"},
+                {"site": "S4", "location": "L2", "age": "2", "age_unit": "Moons"},
+            ],
+            "samples": [{"sample": "A1", "site": "S1"}],
+            "ages": [{"sample": "A1", "age": "0.48", "age_sigma": "0.01", "age_unit": "Ma"}],
+        }
+    )
+    docs = summarize(magic_node, parsed, {"id": 1})
+    by_name = {
+        (d["type"], d["summary"][d["type"]].get(d["type"].removesuffix("s"))): d["summary"]
+        .get("_interval", {})
+        .get("age")
+        for d in docs[1:]
+    }
+    s1 = by_name[("sites", "S1")]
+    assert s1["range"] == [{"gte": 480000.0, "lte": 520000.0}] and s1["mid"] == 500000.0
+    assert s1["detail"] == {"value": 500000.0, "sigma": 10000.0, "contributed": "500 ± 10 ka"}
+    # The shown span leaves the sigma window out; the histogram's values keep it.
+    assert (s1["min"], s1["max"]) == (500000.0, 500000.0)
+    assert s1["values"] == [480000.0, 500000.0, 520000.0]
+    assert by_name[("sites", "S2")]["range"] == [{"gte": 450.0, "lte": 450.0}]
+    s3 = by_name[("sites", "S3")]
+    assert s3["range"] == [{"lte": 1.2e8}] and s3["open_low"] and not s3["open_high"]
+    assert s3["detail"]["contributed"] == "< 120 Ma"
+    assert by_name[("sites", "S4")] is None
+    # L1 has no ages: its sites' and their samples' (S3's open range takes in
+    # the others).
+    l1 = by_name[("locations", "L1")]
+    assert l1["n"] == 4 and l1["range"] == [{"lte": 1.2e8}] and "detail" not in l1
+    assert (l1["min"], l1["max"]) == (450.0, 1.2e8)
+    # L2 has its own; its site's unknown unit is left out.
+    assert by_name[("locations", "L2")]["range"] == [{"gte": 1e6, "lte": 3e6}]
+    assert by_name[("samples", "A1")]["range"] == [{"gte": 460000.0, "lte": 500000.0}]
+    contribution = docs[0]["summary"]["_interval"]["age"]
+    assert contribution["n"] == 5 and contribution["max"] == 1.2e8
+
+
+def test_age_intervals_merge_and_cap():
+    from fiesta.domain import summarize as module
+    from fiesta.nodeconfig import UnitConversion
+
+    assert module._merge_ranges([(5, 6), (1, 3), (2, 4)], 10) == [(1, 4), (5, 6)]
+    # Past the cap the closest are merged: the widest gaps stay.
+    assert module._merge_ranges([(0, 1), (2, 3), (10, 11), (100, 101)], 2) == [
+        (0, 11),
+        (100, 101),
+    ]
+    conversion = UnitConversion(
+        unit_column="u",
+        columns=["v", "lo", "hi"],
+        scaled=["s1", "s2"],
+        bounds=("lo", "hi"),
+        factors={"Ma": 1e6},
+        interval={"name": "age", "value": "v", "sigma": ["s1", "s2"]},
+    )
+    # The first sigma with a value; a missing end from the value.
+    got = conversion.interval_of({"u": "Ma", "v": "10", "s2": "1", "lo": "7"})
+    assert (got.low, got.high, got.best) == (7e6, 12e6, 10e6)
+    assert got.detail["contributed"] == "10 ± 1 Ma (> 7)"
+    assert conversion.interval_of({"u": "Ma"}) is None
+    with pytest.raises(ValueError, match="sigma"):
+        UnitConversion(
+            unit_column="u", columns=["v"], factors={}, interval={"name": "a", "sigma": "x"}
+        )
+
+
 def test_number_columns_cap_keeps_the_ends(magic_node):
     from fiesta.domain import summarize as module
 
@@ -360,10 +445,23 @@ def test_number_columns_are_mapped_as_doubles():
     assert first == {"path_match": "summary._num.*", "mapping": {"type": "double"}}
 
 
+def _age_color(node):
+    """A map color of the `age` column by its age_unit, on the node's unit
+    conversions (magic.yaml's Age colors by summary._interval.age.mid)."""
+    from fiesta.nodeconfig import SearchConfig
+
+    return SearchConfig(
+        index="x",
+        levels=[],
+        map_colors=[{"label": "Age", "field": "age", "unit_column": "age_unit"}],
+        unit_conversions=node.search.unit_conversions,
+    ).map_colors[0]
+
+
 def test_unit_conversions_are_node_configuration(magic_node):
     from fiesta.nodeconfig import UnitConversion
 
-    age = magic_node.map_color("sites", "age")
+    age = _age_color(magic_node)
     # The map color takes its factors from search.unit_conversions.
     assert age.unit_factors["Ga"] == 1e9 and age.unit_offsets["Years AD (+/-)"] == 1950
     assert magic_node.public_config()["number_units"]["age_low"] == "years BP"
@@ -1738,8 +1836,12 @@ def test_pages_and_filters_are_node_configuration(magic_node):
     public = magic_node.public_config()
     assert "pages" not in public["features"] and public["pages"][0]["slug"] == "about"
     assert public["facets"][0] == "method_codes"
-    age = next(f for f in magic_node.search.filters if f.field == "summary.poles.age")
-    assert (age.type, age.levels, age.views, age.scale) == ("range", ["Locations"], ["Poles"], 1e6)
+    age = next(
+        f
+        for f in magic_node.search.filters
+        if f.field == "summary._interval.age.range" and f.views == ["Poles"]
+    )
+    assert (age.type, age.levels, age.scale) == ("range", ["Locations"], 1e6)
 
     # The pre-2026-09 `facets:` list still loads, as facet filters.
     legacy = SearchConfig(index="x", levels=[], facets=["lithologies", "method_codes"])
@@ -1970,9 +2072,10 @@ def test_map_colors_are_node_configuration(magic_node):
     public = {c["field"]: c for c in magic_node.public_config()["map_colors"]}
     assert public["vadm"]["tables"] == ["sites"]
     assert "contribution" in public["summary.contribution._reference.year"]["tables"]
-    assert "unit_factors" not in public["age"]
-    assert magic_node.map_color("sites", "age") is not None
-    assert magic_node.map_color("samples", "age") is None
+    # Age: a record's median age in years BP, on every level.
+    assert "contribution" in public["summary._interval.age.mid"]["tables"]
+    assert magic_node.map_color("sites", "vadm") is not None
+    assert magic_node.map_color("samples", "vadm") is None
     with pytest.raises(ValueError, match="summary"):
         MapColor(label="x", field="sites.age")
     with pytest.raises(ValueError, match="column field"):
@@ -1992,7 +2095,7 @@ def test_map_colors_are_node_configuration(magic_node):
     with pytest.raises(svc.ConfigError, match="no_such_column"):
         svc.validate_files("magic", {**files, "magic.yaml": bad.encode()})
 
-    age = magic_node.map_color("sites", "age")
+    age = _age_color(magic_node)
 
     def site(value, unit):
         return {
@@ -2227,6 +2330,9 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     assert not out.log and out.bins[0].lo == -5.0 and out.bins[-1].hi == 1000.0
     # No `bins`: as many as the values call for (9 here, so the floor of 10).
     assert len(run(bins=None, log=False).bins) == 10
+    # An interval's ranges have no stats: the histogram reads its values.
+    run(field="summary._interval.age.range", bins=4, log=False)
+    assert bodies[-1]["aggs"]["bins"]["range"]["field"] == "summary._interval.age.values"
 
     # Only summary fields, never a private one.
     with pytest.raises(router.HTTPException):

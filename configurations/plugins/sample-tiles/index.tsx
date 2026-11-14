@@ -2,6 +2,7 @@
 // summary grid tiles (the legacy result card's cells), each over the
 // `summary._all` columns the plugin's options name (README.md).
 import { Cell, ClampedField, firstString, listOf, NoDataCell } from "@/components/result-item";
+import { ageIntervalOf, ageIntervalTitle, formatAgeInterval } from "@/lib/age";
 import type { NodeConfig, SearchResult } from "@/lib/types";
 import { getPath } from "@/lib/utils";
 import type { PluginModule } from "@/plugins";
@@ -13,6 +14,10 @@ interface SampleTilesConfig {
   lithology_columns: string[];
   age_columns: string[];
   age_unit_column: string;
+  /** The node's interval the tile shows (`summary._interval.<name>`), when
+   * `age_has_interval`; else the age columns as contributed. */
+  age_interval: string;
+  age_has_interval: boolean;
   intensity_columns: string[];
   method_code_columns: string[];
 }
@@ -101,6 +106,20 @@ const plugin: PluginModule = {
       }
 
       case "age": {
+        if (options.age_has_interval) {
+          // Every row's age in years BP, shown in one scale (lib/age.ts).
+          const interval = ageIntervalOf(doc, options.age_interval);
+          if (!interval) return <NoDataCell label="Age" width={width} />;
+          return (
+            <Cell width={width} wrap>
+              <span title={ageIntervalTitle(interval)}>
+                <b>Age:</b>
+                <br />
+                {formatAgeInterval(interval)}
+              </span>
+            </Cell>
+          );
+        }
         const age = rangeText(firstOf(doc, options.age_columns));
         if (!age) return <NoDataCell label="Age" width={width} />;
         const ageUnit = firstString(getPath(doc, `summary._all.${options.age_unit_column}`));

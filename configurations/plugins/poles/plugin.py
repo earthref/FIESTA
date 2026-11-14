@@ -41,23 +41,10 @@ from pydantic import BaseModel, Field
 
 from fiesta.apps.deps import NodeDep
 from fiesta.domain.parse import ParsedContribution
+from fiesta.domain.summarize import interval_blocks
 from fiesta.nodeconfig import NodeConfig
 from fiesta.plugins.base import FiestaPlugin, PluginOptions
 from fiesta.plugins.util import to_float
-
-# MagIC age_unit controlled vocabulary → years-before-present multiplier.
-AGE_UNIT_YEARS = {
-    "Ga": 1e9,
-    "Ma": 1e6,
-    "ka": 1e3,
-    "Ka": 1e3,
-    "Years": 1.0,
-    "Years BP": 1.0,
-    "Years Cal BP": 1.0,
-    "Years AD": 1.0,
-    "Years Cal AD": 1.0,
-}
-
 
 # Vertices per uncertainty ring (closed: the last repeats the first), a 3.6°
 # step; and the decimals kept (0.01° ≈ 1 km), to keep the docs small.
@@ -253,6 +240,13 @@ class PolesOptions(PluginOptions):
         default="Rows", description="Result sub-tab the Poles tab is placed after"
     )
     age_color: AgeColors = Field(default=AgeColors(), description="Pole colors by age")
+    age_interval: str = Field(
+        default="age",
+        description=(
+            "The node's unit_conversions interval a pole's age is read by (in years BP, "
+            "as summary._interval.<name> and its best estimate as summary.poles.age)"
+        ),
+    )
     plate_boundary_color: str = Field(
         default="#990000", description="Color of the plate boundary lines on the map"
     )
@@ -304,7 +298,8 @@ class PolesPlugin(FiestaPlugin):
         self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
     ) -> list[dict]:
         docs: list[dict] = []
-        facet_columns = self.options(node).facet_columns
+        options = self.options(node)
+        facet_columns = options.facet_columns
         sites = SiteIndex(parsed.tables.get("sites", []))
         for row in parsed.tables.get("locations", []):
             pole_lat = _finite(row.get("pole_lat"))
@@ -326,21 +321,17 @@ class PolesPlugin(FiestaPlugin):
                     "lon": ((pole_lon + 180) % 360) - 180,
                 }
             # Numeric copies (JSON numbers map to numeric OpenSearch fields)
-            # so age/alpha95 range filters work; string row values don't. Age
-            # is normalized to years-before-present via age_unit so the color
-            # gradient and legend are consistent across mixed-unit poles.
+            # so the alpha95 range filter works; string row values don't. The
+            # age is the node's interval (summary._interval.<name>, in years BP
+            # whatever the age_unit: the Age filter and tile), its best
+            # estimate in summary.poles.age for the color gradient and legend.
             numeric_block: dict[str, Any] = {"pole_lat": pole_lat, "pole_lon": pole_lon}
             alpha95 = _finite(row.get("pole_alpha95"))
             if alpha95 is not None:
                 numeric_block["pole_alpha95"] = alpha95
-            unit_factor = AGE_UNIT_YEARS.get((row.get("age_unit") or "Ma").strip(), 1e6)
-            age = _finite(row.get("age"))
-            if age is None:
-                low, high = _finite(row.get("age_low")), _finite(row.get("age_high"))
-                if low is not None and high is not None:
-                    age = (low + high) / 2
-            if age is not None:
-                numeric_block["age"] = age * unit_factor  # years before present
+            intervals = interval_blocks(node, [row], [options.age_interval])
+            if age := intervals.get("_interval", {}).get(options.age_interval):
+                numeric_block["age"] = age["mid"]
             # The outline the map draws (unindexed; see the module docstring).
             geometry = uncertainty_ring(row, pole_lat, pole_lon) or {}
             vgps = sites.vgps(row)
@@ -356,6 +347,7 @@ class PolesPlugin(FiestaPlugin):
                         "locations": dict(row),
                         "poles": numeric_block,
                         "_all": all_block,
+                        **intervals,
                     },
                     "rows": [row],
                 }

@@ -11,7 +11,7 @@ import json
 import math
 import re
 from pathlib import Path
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar, Literal, NamedTuple
 
 import yaml
 from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
@@ -339,6 +339,38 @@ def number(value: Any) -> float | None:
     return result if math.isfinite(result) else None
 
 
+class IntervalSpec(BaseModel):
+    """A unit conversion's columns read as one interval per row, indexed as
+    `summary._interval.<name>` (see `UnitConversion.interval_of`): `value` the
+    best estimate's column (`age`), `sigma` its standard deviation's
+    (`age_sigma`; a list is tried in order, the first with a value used),
+    widened to `sigma_multiple` of it either side (2: about a 95% window); the
+    conversion's `bounds` are the explicit low and high."""
+
+    name: str
+    value: str | None = None
+    sigma: list[str] = []
+    sigma_multiple: float = 2.0
+
+    @field_validator("sigma", mode="before")
+    @classmethod
+    def _sigma_list(cls, value: Any) -> Any:
+        return [value] if isinstance(value, str) else value or []
+
+
+class RowInterval(NamedTuple):
+    """One row's interval in a conversion's base unit: `low` / `high` None
+    when open on that side (only an age_high: younger than it), `best` the
+    value to sort and color by, `detail` the converted columns it came from
+    (value / sigma / low / high, those present) and `contributed`, the row's
+    values as contributed ("500 ± 10 ka")."""
+
+    low: float | None
+    high: float | None
+    best: float
+    detail: dict[str, float | str]
+
+
 class UnitConversion(BaseModel):
     """Number columns whose unit is another column of the row (`age` in its
     `age_unit`), put in one base unit (`unit`: years BP) in `summary._num` so
@@ -346,21 +378,98 @@ class UnitConversion(BaseModel):
     its unit's factor and its offset added (years AD -> BP: factor -1, offset
     1950); one in `scaled` (an uncertainty) only by the factor's size. A
     negative factor reverses order, so the `bounds` pair (low, high) swaps. A
-    unit without a factor leaves the row's values out."""
+    row without a unit has `default_unit` (a table whose ages are always Ma
+    and has no unit column); a unit without a factor leaves the row's values
+    out. With `interval` each row's values are also one interval
+    (`interval_of`)."""
 
     unit_column: str
     columns: list[str]
     scaled: list[str] = []
     bounds: tuple[str, str] | None = None
     unit: str | None = None
+    default_unit: str | None = None
     factors: dict[str, float]
     offsets: dict[str, float] = {}
+    interval: IntervalSpec | None = None
 
     @model_validator(mode="after")
     def _check_bounds(self) -> "UnitConversion":
         if self.bounds and not set(self.bounds) <= set(self.columns):
             raise ValueError(f"unit conversion bounds {list(self.bounds)} must be in its columns")
+        if spec := self.interval:
+            if spec.value and spec.value not in self.columns:
+                raise ValueError(f"interval value {spec.value!r} must be in its columns")
+            if bad := [s for s in spec.sigma if s not in self.scaled]:
+                raise ValueError(f"interval sigma {bad} must be in its scaled columns")
+            if not (spec.value or self.bounds):
+                raise ValueError(f"interval {spec.name!r} needs a value column or bounds")
         return self
+
+    def interval_of(self, row: dict) -> RowInterval | None:
+        """A row's interval in the base unit, whatever of value, sigma, low
+        and high it has: each end is the explicit bound, else value -/+
+        sigma_multiple x sigma, else the value; a side with none is open.
+        None without a known unit or any of them."""
+        spec = self.interval
+        if spec is None:
+            return None
+        values = self.convert(row)
+        low_column, high_column = self.bounds or (None, None)
+        value = values.get(spec.value) if spec.value else None
+        sigma = next((values[s] for s in spec.sigma if s in values), None)
+        low = values.get(low_column) if low_column else None
+        high = values.get(high_column) if high_column else None
+        spread = spec.sigma_multiple * sigma if value is not None and sigma is not None else 0.0
+        if low is None and value is not None:
+            low = value - spread
+        if high is None and value is not None:
+            high = value + spread
+        if low is None and high is None:
+            return None
+        if low is not None and high is not None and low > high:
+            low, high = high, low
+        if value is not None:
+            best = value
+        elif low is not None and high is not None:
+            best = (low + high) / 2
+        else:
+            best = low if low is not None else high
+        detail: dict[str, float | str] = {
+            key: v
+            for key, v in (
+                ("value", value),
+                ("sigma", sigma),
+                ("low", values.get(low_column) if low_column else None),
+                ("high", values.get(high_column) if high_column else None),
+            )
+            if v is not None
+        }
+        detail["contributed"] = self._contributed(row)
+        return RowInterval(low, high, best, detail)
+
+    def _contributed(self, row: dict) -> str:
+        """A row's interval as contributed: "500 ± 10 ka", "1 – 3 Ma",
+        "12.3 Ma (10 – 15)", "< 120 Ma"."""
+        spec = self.interval
+        assert spec is not None
+
+        def text(column: str | None) -> str:
+            return str(row.get(column) or "").strip() if column else ""
+
+        unit = text(self.unit_column) or self.default_unit or ""
+        value = text(spec.value)
+        sigma = next((s for c in spec.sigma if (s := text(c))), "")
+        low_column, high_column = self.bounds or (None, None)
+        low, high = text(low_column), text(high_column)
+        if low and high:
+            bounds = f"{low} – {high}"
+        else:
+            bounds = f"> {low}" if low else f"< {high}" if high else ""
+        main = f"{value} ± {sigma}" if value and sigma else value
+        if main:
+            return f"{main} {unit}".strip() + (f" ({bounds})" if bounds else "")
+        return f"{bounds} {unit}".strip()
 
     @property
     def all_columns(self) -> list[str]:
@@ -369,7 +478,7 @@ class UnitConversion(BaseModel):
     def convert(self, row: dict) -> dict[str, float]:
         """A row's values of these columns in the base unit (none without a
         known unit)."""
-        unit = str(row.get(self.unit_column) or "").strip()
+        unit = str(row.get(self.unit_column) or self.default_unit or "").strip()
         factor = self.factors.get(unit)
         if factor is None:
             return {}
@@ -466,6 +575,16 @@ class SearchConfig(BaseModel):
             ),
             None,
         )
+
+    def interval(self, name: str) -> UnitConversion | None:
+        """The unit conversion indexing `summary._interval.<name>`."""
+        return next(
+            (c for c in self.unit_conversions if c.interval and c.interval.name == name), None
+        )
+
+    @property
+    def intervals(self) -> list[UnitConversion]:
+        return [c for c in self.unit_conversions if c.interval]
 
     @model_validator(mode="before")
     @classmethod

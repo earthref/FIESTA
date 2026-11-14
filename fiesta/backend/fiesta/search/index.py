@@ -40,6 +40,31 @@ INDEX_BODY = {
                 }
             },
             {
+                # Each row's interval (summary._interval.<name>.range, see
+                # fiesta.domain.summarize): a range query matches a doc any of
+                # whose intervals overlaps it (relation intersects).
+                "interval_ranges": {
+                    "path_match": "summary._interval.*.range",
+                    "mapping": {"type": "double_range"},
+                }
+            },
+            {
+                # The rest of an interval block's numbers (values, min, max,
+                # mid, n, detail): double, as summary._num's.
+                "interval_numbers": {
+                    "path_match": "summary._interval.*",
+                    "match_mapping_type": "long",
+                    "mapping": {"type": "double"},
+                }
+            },
+            {
+                "interval_doubles": {
+                    "path_match": "summary._interval.*",
+                    "match_mapping_type": "double",
+                    "mapping": {"type": "double"},
+                }
+            },
+            {
                 # The columns with data per table (summary._has.<table>, see
                 # fiesta.domain.summarize): exact names, for the with/without
                 # data filter's terms clauses and per-column counts.
@@ -102,6 +127,10 @@ INDEX_BODY = {
 }
 
 
+# The indices this process has brought up to INDEX_BODY's dynamic templates.
+_templated: set[str] = set()
+
+
 async def ensure_index(client: AsyncOpenSearch, index: str) -> None:
     if not await client.indices.exists(index=index):
         try:
@@ -110,6 +139,16 @@ async def ensure_index(client: AsyncOpenSearch, index: str) -> None:
             # Concurrent service start-ups race to create the index.
             if exc.error != "resource_already_exists_exception":
                 raise
+        _templated.add(index)
+        return
+    if index in _templated:
+        return
+    # An existing index takes templates added since it was made (the
+    # summary._interval ranges), once per process, so fields new docs bring
+    # map as they should; the docs already in it need a `fiesta rebuild`.
+    templates = INDEX_BODY["mappings"]["dynamic_templates"]
+    await client.indices.put_mapping(index=index, body={"dynamic_templates": templates})
+    _templated.add(index)
 
 
 async def recreate_index(client: AsyncOpenSearch, index: str) -> None:

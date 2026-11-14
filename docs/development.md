@@ -275,7 +275,9 @@ unit or time scale (MagIC's Age), a non-data field (Publication Year, the
 contribution filters) or a plugin view (Poles, Rock Magnetism), not one
 filter per column (2026-11-13). A range needs a field
 indexed as a number (row values are text): a data-model number column's
-`summary._num.<column>` or one a plugin indexes, e.g. `summary.poles.age`.
+`summary._num.<column>`, an age interval `summary._interval.<name>.range`
+(a unit conversion's `interval`: matches on overlap, see api.md), or one a
+plugin indexes, e.g. `summary.poles.pole_alpha95`.
 `numeric` picks any other number column, `exists` columns with or without data
 per table (`summary._has.<table>`, see api.md). Each search level's
 Summaries grid is its `columns` (tiles such as `citation`, `counts`, `map`,

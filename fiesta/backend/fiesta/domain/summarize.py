@@ -29,6 +29,20 @@ and `_all` hold text). Columns a `search.unit_conversions` entry names are
 in its base unit (ages in years BP by their age_unit); values that are not
 numbers are left out.
 
+A node whose unit conversion has an `interval` (MagIC's ages) also gives
+every doc `summary._interval.<name>`: each row's interval in the base unit
+(age_low..age_high, else age +/- 2 sigma, else the age; a side without either
+open) as a `double_range` list, merged and capped at MAX_INTERVALS, so a range
+filter matches a doc when any row overlaps it; with `values` (every end and
+best estimate) for its histogram, `min`/`max` (the span of best estimates and
+stated bounds, without the sigma windows: what the tile shows; sigmas are
+never combined across rows, which are not replicates), `mid` (the median best
+estimate, to sort and color by), `n`, `open_low`/`open_high`, and with one
+row its converted columns as `detail`. A record's are its own rows' and the
+rows of tables outside the hierarchy that name it as their most specific
+record (an ages row), else those of the records below it (a location's
+sites'); the contribution's every row's.
+
 Every doc also has `summary._has`: per table, the sorted names of its
 data-model columns (those the with/without data filter lists, see
 `NodeConfig.exists_columns`) with a value in any of the doc's rows, as
@@ -48,6 +62,8 @@ ranges, poles, method-code inheritance across levels) can be layered on
 without changing the document contract.
 """
 
+import math
+import statistics
 from typing import Any
 
 from fiesta.domain.data_model import column_values
@@ -58,6 +74,7 @@ from fiesta.nodeconfig import (
     LAT_COLUMNS,
     LON_COLUMNS,
     NodeConfig,
+    RowInterval,
     number,
 )
 
@@ -187,6 +204,141 @@ class _Numbers:
             column: sorted(bucket | set(self.ends[column]))
             for column, bucket in self.values.items()
         }
+
+
+# Ranges kept per `summary._interval.<name>` (the nearest are merged past it).
+MAX_INTERVALS = 100
+
+
+def _merge_ranges(ranges: list[tuple[float, float]], cap: int) -> list[tuple[float, float]]:
+    """Overlapping ranges merged, then the closest merged until at most `cap`
+    remain (keeping the widest gaps between them)."""
+    merged: list[list[float]] = []
+    for low, high in sorted(ranges):
+        if merged and low <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], high)
+        else:
+            merged.append([low, high])
+    if len(merged) > cap:
+        gaps = sorted(range(1, len(merged)), key=lambda i: merged[i][0] - merged[i - 1][1])
+        splits = sorted(gaps[len(merged) - cap :])
+        starts, ends = [0, *splits], [*splits, len(merged)]
+        merged = [
+            [merged[a][0], max(r[1] for r in merged[a:b])]
+            for a, b in zip(starts, ends, strict=True)
+        ]
+    return [(low, high) for low, high in merged]
+
+
+class _Interval:
+    """A doc's rows' intervals of one `summary._interval.<name>`: their
+    ranges (open ends infinite), best estimates and how many rows."""
+
+    def __init__(self) -> None:
+        self.ranges: list[tuple[float, float]] = []
+        self.bests: list[float] = []
+        self.values = _Numbers()
+        # The span shown: best estimates and explicit bounds, not the sigma
+        # windows (two sites at 10 ± 1 and 12 ± 1 Ma span 10 – 12 Ma).
+        self.shown: list[float] = [math.inf, -math.inf]
+        self.n = 0
+        self.detail: dict[str, float | str] | None = None
+
+    def add(self, interval: RowInterval) -> None:
+        self.n += 1
+        self.detail = interval.detail if self.n == 1 else None
+        low = interval.low if interval.low is not None else -math.inf
+        high = interval.high if interval.high is not None else math.inf
+        self._extend([(low, high)], [interval.best])
+        for value in (interval.low, interval.high, interval.best):
+            if value is not None:
+                self.values.add("v", value)
+        stated = [
+            v for k in ("value", "low", "high") if isinstance(v := interval.detail.get(k), float)
+        ]
+        for value in stated or [interval.best]:
+            self.shown = [min(self.shown[0], value), max(self.shown[1], value)]
+
+    def update(self, other: "_Interval") -> None:
+        if not other.n:
+            return
+        self.detail = other.detail if not self.n else None
+        self.n += other.n
+        self._extend(other.ranges, other.bests)
+        self.values.update(other.values)
+        self.shown = [min(self.shown[0], other.shown[0]), max(self.shown[1], other.shown[1])]
+
+    def _extend(self, ranges: list[tuple[float, float]], bests: list[float]) -> None:
+        self.ranges.extend(ranges)
+        self.bests.extend(bests)
+        if len(self.ranges) > 4 * MAX_INTERVALS:
+            self.ranges = _merge_ranges(self.ranges, MAX_INTERVALS)
+
+    def finalize(self) -> dict:
+        ranges = _merge_ranges(self.ranges, MAX_INTERVALS)
+        values = self.values.finalize().get("v", [])
+        block: dict[str, Any] = {
+            # double_range: a range filter matches a doc any of whose rows'
+            # intervals overlaps it.
+            "range": [
+                {
+                    **({"gte": low} if low > -math.inf else {}),
+                    **({"lte": high} if high < math.inf else {}),
+                }
+                for low, high in ranges
+            ],
+            # Every end (sigma windows too) and best estimate, for the
+            # filter's histogram.
+            "values": values,
+            # The span the tile shows: best estimates and stated bounds.
+            "min": self.shown[0],
+            "max": self.shown[1],
+            # The median best estimate: what the grid sorts and the map colors by.
+            "mid": statistics.median(self.bests),
+            "n": self.n,
+            "open_low": ranges[0][0] == -math.inf,
+            "open_high": any(high == math.inf for _, high in ranges),
+        }
+        if self.detail is not None:
+            block["detail"] = self.detail
+        return block
+
+
+class _Intervals:
+    """A doc's `summary._interval` blocks, by the node's interval names."""
+
+    def __init__(self) -> None:
+        self.blocks: dict[str, _Interval] = {}
+
+    def add_rows(self, node: NodeConfig, rows: list[dict]) -> None:
+        for conversion in node.search.intervals:
+            assert conversion.interval is not None
+            for row in rows:
+                if (interval := conversion.interval_of(row)) is not None:
+                    self.blocks.setdefault(conversion.interval.name, _Interval()).add(interval)
+
+    def update(self, other: "_Intervals") -> None:
+        for name, block in other.blocks.items():
+            self.blocks.setdefault(name, _Interval()).update(block)
+
+    def __bool__(self) -> bool:
+        return any(block.n for block in self.blocks.values())
+
+    def finalize(self) -> dict:
+        """The doc's `summary._interval` entry, left out without any."""
+        blocks = {name: block.finalize() for name, block in self.blocks.items() if block.n}
+        return {"_interval": blocks} if blocks else {}
+
+
+def interval_blocks(node: NodeConfig, rows: list[dict], names: list[str] | None = None) -> dict:
+    """The `summary._interval` entry of these rows alone (of only the
+    intervals `names`, when given), for a plugin's derived doc; {} without
+    any."""
+    intervals = _Intervals()
+    intervals.add_rows(node, rows)
+    if names is not None:
+        intervals.blocks = {n: b for n, b in intervals.blocks.items() if n in names}
+    return intervals.finalize()
 
 
 def _num_block(numbers: _Numbers) -> dict:
@@ -354,6 +506,10 @@ def summarize(
     docs: list[dict] = []
     all_values: dict[str, set] = {}
     all_numbers = _Numbers()
+    # The contribution's intervals: every table's rows' (the ages table's too).
+    all_intervals = _Intervals()
+    for table_rows in parsed.tables.values():
+        all_intervals.add_rows(node, table_rows)
     level_counts: dict[str, dict] = {}
     # Every level's positions by row name ({"samples": {"S1-a": point}}), for
     # the rows below it that have none of their own.
@@ -462,18 +618,50 @@ def summarize(
                 None,
             )
             placement = {"doc": doc, "body": body, "points": points, "own": own, "geo": geo}
+            own_intervals = _Intervals()
+            own_intervals.add_rows(node, group)
             placements.append(
-                {**placement, "parent": parent, "below": dict(points), "has": {level: own_has}}
+                {
+                    **placement,
+                    "parent": parent,
+                    "below": dict(points),
+                    "has": {level: own_has},
+                    "intervals": own_intervals,
+                    "intervals_below": _Intervals(),
+                }
             )
             placements[-1]["area"] = level in areas
             if name not in (None, ""):
                 named.setdefault((level, str(name)), placements[-1])
 
+    # A row of a table outside the hierarchy (an ages row) is one of the
+    # intervals of the most specific record it names (its specimen, else its
+    # sample, ...).
+    if node.search.intervals:
+        keys = [(level, level.removesuffix("s")) for level in reversed(levels)]
+        for table, table_rows in parsed.tables.items():
+            if table in hierarchy:
+                continue
+            for row in table_rows:
+                target = next(
+                    (
+                        named[key]
+                        for level, column in keys
+                        if (key := (level, str(row.get(column) or ""))) in named
+                    ),
+                    None,
+                )
+                if target is not None:
+                    target["intervals"].add_rows(node, [row])
+
     # The deepest records first, so each passes its descendants' points on too
     # (a sample's through its site to its location).
-    # Their columns with data too (a measurement's through its specimen, ...).
+    # Their columns with data too (a measurement's through its specimen, ...),
+    # and their intervals (a location without an age of its own has its sites').
     for placement in reversed(placements):
         if (above := placement["parent"]) is not None:
+            above["intervals_below"].update(placement["intervals"])
+            above["intervals_below"].update(placement["intervals_below"])
             for table, columns in placement["has"].items():
                 above["has"].setdefault(table, set()).update(columns)
             for key, point in placement["below"].items():
@@ -486,6 +674,8 @@ def summarize(
         mapped = placement["below" if placement["area"] else "points"]
         body, geo, own = (placement[k] for k in ("body", "geo", "own"))
         placement["doc"]["summary"].update(_has_block(placement["has"]))
+        intervals = placement["intervals"] or placement["intervals_below"]
+        placement["doc"]["summary"].update(intervals.finalize())
         all_block = placement["doc"]["summary"]["_all"]
         all_block.update(_placements(mapped) if mapped else placed(geo, body) if geo else {})
         for key, point in (mapped or ({_point_key(own, body): own} if own else {})).items():
@@ -502,6 +692,7 @@ def summarize(
                 [{**p, "body": body} for (body, *_), p in points.items() if body is not None],
             ),
             **_num_block(all_numbers),
+            **all_intervals.finalize(),
             **_has_block(contribution_has),
             **level_counts,
         },

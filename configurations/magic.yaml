@@ -176,15 +176,16 @@ search:
   # Without Data, each picking columns per table (summary._has.<table>). Only
   # filters no single column gives are configured for them (2026-11-13; the
   # legacy per-column facets and ranges were dropped): Publication Year, and
-  # Age, ages in years BP by unit_conversions below whatever their age_unit,
+  # Age: each row's age interval in years BP (unit_conversions below, whatever
+  # its age_unit), matching a record any of whose intervals overlaps the range
   # typed in Ma with the time scale. Plugin views keep their own filters.
   filters:
     - { type: range, label: Publication Year, field: summary.contribution._reference.year, views: [Summaries, Rows, Map] }
-    - { type: range, label: Age, field: summary._num.age, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Locations, Sites], views: [Summaries, Rows, Map] }
+    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Locations, Sites, Samples, Specimens], views: [Summaries, Rows, Map] }
     - { type: numeric, label: Numeric, views: [Summaries, Rows, Map] }
     - { type: text, label: Text, views: [Summaries, Rows, Map] }
     - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map] }
-    - { type: range, label: Age, field: summary.poles.age, unit: Ma, scale: 1.0e6, timescale: true, levels: [Locations], views: [Poles] }
+    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Locations], views: [Poles] }
     - { type: range, label: Pole A95, field: summary.poles.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
     - { type: bbox, label: Geospatial, levels: [Locations], views: [Poles] }
     # The `rock-mag` plugin's parameters (summary.rock_mag.<field>: fields in mT,
@@ -212,11 +213,11 @@ search:
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true, views: [Summaries, Rows, Map] }
   # The Map view's "Color by" menu: a column (offered on the levels whose table
   # has it) or a summary.* path, parsed as a number; `scale` as a range
-  # filter's. Ages are put in years BP by their age_unit (unit_conversions
-  # below), and a unit not listed leaves the record uncolored.
+  # filter's. Age is a record's median age in years BP (summary._interval
+  # below), whatever its rows' age_unit; one without a known unit is uncolored.
   map_colors:
     - { label: Publication Year, field: summary.contribution._reference.year }
-    - { label: Age, field: age, unit: Ma, scale: 1.0e6, log: true, unit_column: age_unit }
+    - { label: Age, field: summary._interval.age.mid, unit: Ma, scale: 1.0e6, log: true }
     - { label: Paleointensity, field: int_abs, unit: μT, scale: 1.0e-6 }
     - { label: VADM, field: vadm, unit: ZAm², scale: 1.0e21 }
     - { label: Inclination, field: dir_inc }
@@ -224,16 +225,20 @@ search:
     - { label: Magnetic Moment, field: magn_moment, unit: Am², log: true }
     - { label: Mass Susceptibility, field: susc_chi_mass, unit: m³/kg, log: true }
   # Number columns whose unit is another column of the row, put in one base
-  # unit in summary._num (and the map's Age colors): an age times its
-  # age_unit's factor plus its offset is years BP (years AD: 1950 - year, so
-  # age_low and age_high swap); age_sigma only scaled. A unit not listed
-  # leaves that row's ages out.
+  # unit in summary._num: an age times its age_unit's factor plus its offset
+  # is years BP (years AD: 1950 - year, so age_low and age_high swap);
+  # age_sigma only scaled. A unit not listed leaves that row's ages out.
+  # `interval` also reads each row's ages as one interval in
+  # summary._interval.age (the Age filter, tile, sort and map color):
+  # age_low..age_high, a missing end age -/+ 2 x age_sigma (or the age alone),
+  # a side with neither open (only an age_high: younger than it).
   unit_conversions:
     - unit_column: age_unit
       columns: [age, age_low, age_high]
       scaled: [age_sigma]
       bounds: [age_low, age_high]
       unit: years BP
+      interval: { name: age, value: age, sigma: age_sigma, sigma_multiple: 2 }
       factors:
         { Ga: 1.0e9, Ma: 1.0e6, ka: 1.0e3, Ka: 1.0e3, Years BP: 1, Years Cal BP: 1,
           "Years AD (+/-)": -1, "Years Cal AD (+/-)": -1 }
