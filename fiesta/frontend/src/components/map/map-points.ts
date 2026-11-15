@@ -148,6 +148,15 @@ export const colocatedIndex = (points: MapPoint[]) => {
   return index;
 };
 
+/** A spot's label: its record's name, or its records' number ("12
+ * specimens"; "12 records" when they are of several levels). */
+export const spotName = (members: MapPoint[]) => {
+  if (members.length === 1) return members[0].name;
+  const total = members.reduce((sum, p) => sum + recordsOf(p), 0);
+  const label = members.every((p) => p.label === members[0].label) ? members[0].label : "record";
+  return `${total.toLocaleString()} ${label}s`;
+};
+
 const MAX_TOOLTIP_IDS = 12;
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);

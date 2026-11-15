@@ -478,7 +478,7 @@ export function SearchPage() {
     if (!config || !level) return [];
     const tabs: SubTab[] = [{ name: "Summaries" }];
     if (level.table !== "contribution") tabs.push({ name: "Rows" });
-    if (level.geo) tabs.push({ name: "Map" });
+    if (level.geo && level.map !== false) tabs.push({ name: "Map" });
     return [...tabs, ...pluginSubTabs(config, level)];
   }, [config, level]);
   const activeTab = subTabs.find((tab) => tab.name === view) ?? subTabs[0];
