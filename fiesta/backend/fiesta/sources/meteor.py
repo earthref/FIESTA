@@ -1,8 +1,12 @@
-"""Sync a node from its legacy Meteor app (OpenSearch index + S3 archive bucket).
+"""Sync a node from its legacy app: Meteor (OpenSearch index + S3 archive bucket)
+or an EarthRef.org Perl CGI archive (its public record pages).
 
 Each run snapshots the source with the same reader as `fiesta legacy-inventory`
-(`fiesta.services.legacy_inventory.build_inventory`) into a state directory
-(its hash cache means an unchanged S3 object is never downloaded twice), asks
+(`fiesta.services.legacy_inventory.build_inventory` for Meteor, whose hash cache
+means an unchanged S3 object is never downloaded twice;
+`fiesta.services.legacy_cgi.build_inventory` for a CGI archive, whose page and
+file caches mean a known page or file is not fetched again) into a state
+directory, asks
 the FIESTA API for the fingerprint of each record it last applied, and sends
 only the records whose fingerprint differs, oldest version first.
 
@@ -36,6 +40,15 @@ QUARANTINE_PREFIX = "no account for contributor"
 # (node, inventory, OpenSearch client of the source or None) -> (the records to
 # send, a JSON summary of what it changed for the run's report).
 Fixup = Callable[[Any, Inventory, Any], Awaitable[tuple[Inventory, dict]]]
+# (node, state directory, OpenSearch client or None) -> the snapshot's report,
+# having written inventory.json and owners.json into the state directory.
+Snapshot = Callable[[Any, Path, Any], Awaitable[dict]]
+
+
+async def snapshot_meteor(node, state_dir: Path, client) -> dict:
+    from fiesta.services.legacy_inventory import build_inventory
+
+    return await build_inventory(node, state_dir, client=client)
 
 
 async def _files(record: SourceRecord, state_dir: Path) -> dict[str, bytes]:
@@ -59,25 +72,25 @@ async def sync_meteor(
     ids=None,
     client=None,
     fixup: Fixup | None = None,
+    snapshot: Snapshot = snapshot_meteor,
 ) -> dict:
-    """Mirror NODE's Meteor source through API. IDS limits the run to those
+    """Mirror NODE's legacy source through API. IDS limits the run to those
     contribution IDs (the snapshot still covers the whole source); FIXUP is
-    the node's fix-up of the snapshot's records (see the module docstring)."""
-    from fiesta.services.legacy_inventory import build_inventory
-
+    the node's fix-up of the snapshot's records (see the module docstring);
+    SNAPSHOT reads the source (Meteor unless the node's script says otherwise)."""
     state = await api.state()
     summary = {"node": node.node.slug, "mode": state["mode"], "source_id": state["source_id"]}
     if state["mode"] != "source":
         return summary | {"skipped": "node is in public mode"}
     checkpoints = state["checkpoints"]
 
-    report = await build_inventory(node, state_dir, client=client)
+    report = await snapshot(node, state_dir, client)
     inventory = load_inventory(state_dir / "inventory.json")
     owners = {o["email"]: o for o in json.loads((state_dir / "owners.json").read_text())}
     quarantined = [e for e in report["errors"] if e["error"].startswith(QUARANTINE_PREFIX)]
     errors = [e for e in report["errors"] if not e["error"].startswith(QUARANTINE_PREFIX)]
     summary |= {
-        "source_records": report["contributions"],
+        "source_records": report.get("contributions", report.get("inventory_records")),
         "quarantined": len(quarantined),
         "unresolved_handles": report.get("unresolved_handles", []),
         "unchanged": 0,
@@ -148,9 +161,19 @@ async def _report_run(api: SourceAPI, started: datetime, summary: dict) -> None:
         print(f"could not report the run: {exc}", file=sys.stderr, flush=True)
 
 
-def main(slug: str, description: str | None = None, fixup: Fixup | None = None) -> None:
-    """Command line of a Meteor node's `configurations/sources/<slug>.py` (FIXUP: its
-    fix-up of the records, see the module docstring)."""
+def main(
+    slug: str,
+    description: str | None = None,
+    fixup: Fixup | None = None,
+    *,
+    kind: str = "meteor",
+    add_arguments: Callable[[argparse.ArgumentParser], None] | None = None,
+    snapshot: Callable[[argparse.Namespace], Snapshot] | None = None,
+) -> None:
+    """Command line of a node's `configurations/sources/<slug>.py` whose YAML
+    `legacy.kind` is KIND (FIXUP: its fix-up of the records, see the module
+    docstring). A non-Meteor source passes ADD_ARGUMENTS (its own options) and
+    SNAPSHOT, which makes the source reader from the parsed arguments."""
     parser = argparse.ArgumentParser(description=description or f"Sync {slug} from Meteor.")
     parser.add_argument(
         "--api",
@@ -173,6 +196,8 @@ def main(slug: str, description: str | None = None, fixup: Fixup | None = None) 
     )
     parser.add_argument("--dry-run", action="store_true", help="report what would be sent")
     parser.add_argument("--ids", type=int, nargs="*", help="only these contribution IDs")
+    if add_arguments is not None:
+        add_arguments(parser)
     args = parser.parse_args()
 
     email = os.environ.get("FIESTA_SOURCE_EMAIL")
@@ -184,8 +209,8 @@ def main(slug: str, description: str | None = None, fixup: Fixup | None = None) 
     from fiesta.search.client import get_opensearch
 
     node = get_deployment().node_for(slug)
-    if node.legacy is None or node.legacy.kind != "meteor":
-        parser.error(f"{slug} has no `legacy: {{kind: meteor}}` block")
+    if node.legacy is None or node.legacy.kind != kind:
+        parser.error(f"{slug} has no `legacy: {{kind: {kind}}}` block")
     if args.owner_map:
         legacy = node.legacy.with_owner_map(json.loads(args.owner_map.read_text()))
         node = node.model_copy(update={"legacy": legacy})
@@ -205,6 +230,7 @@ def main(slug: str, description: str | None = None, fixup: Fixup | None = None) 
                     dry_run=args.dry_run,
                     ids=args.ids,
                     fixup=fixup,
+                    snapshot=snapshot(args) if snapshot else snapshot_meteor,
                 )
             except Exception as exc:  # reported, then re-raised
                 summary["failed"] = f"{type(exc).__name__}: {exc}"

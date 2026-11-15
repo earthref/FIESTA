@@ -151,6 +151,11 @@ legacy:
   # a higher --max-file-mb attaches the deferred files. 2741 is a test record.
   incomplete_records: metadata
   exclude_ids: [2741]
+  # configurations/sources/erda.py on the ops worker (README "Ongoing sync"): new
+  # records arrive every week or two, so daily is plenty. Off until dev serves erda.
+  sync:
+    enabled: false
+    cron: "50 9 * * *"
 
 # Local fixtures only; never read during normal application startup.
 development:

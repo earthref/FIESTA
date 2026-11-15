@@ -187,3 +187,25 @@ from the gitignored owner map, never from the YAML), which must itself be an
 not, the run reports an error and those records get no owner. The steward is
 written to `owners.json` like any matched owner, so `ensure-owners` creates it
 where missing.
+
+## Ongoing sync (data-source mode)
+
+`configurations/sources/erda.py` keeps FIESTA ERDA in step with the legacy
+archive after the bulk import, through `/v2/erda/source` as a node admin
+(docs/data-sources.md), with the same crawler, owner map and checkpoints
+(`legacy-erda`). Seed its `--state-dir` with the bulk import's snapshot
+(`pages/`, `files/`, the page index keeping each record's first-seen time):
+the run then re-reads only the home page, which lists the ten newest records,
+those ten pages, and every id up to the newest that was not live, so an
+unchanged record keeps the fingerprint its checkpoint holds and is skipped.
+`--refresh-all` re-reads all ~4,900 ids, for edits to or withdrawals of older
+records (a withdrawn record is reported as `missing_from_source`, never
+deleted).
+
+Read-only check of 2026-11-15 from the September snapshot: six new records,
+2784–2789 (five MagNetZ seminar videos of 107–523 MiB, deferred and so
+metadata only, and an archaeointensity data set from Thailand with its file),
+one edited record (2783: its video row added), and 64 records (2783 among
+them, all one contributor's) whose owner's er_users email changed since the
+import, which a run moves to the account with the new email. The other 2,504
+are unchanged.
