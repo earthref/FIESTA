@@ -1,6 +1,8 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { lazy, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { isNodeAdmin } from "../lib/admin";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { IS_LOCAL_HOST, nodeUrl, siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { type RowMatch, useOpenContribution } from "../lib/contribution-modal";
@@ -43,7 +45,7 @@ type Flag = { key: string; text: string; title: string; className: string };
 type Tab = {
   key: string;
   label: string;
-  group: "levels" | "assets";
+  group: "levels" | "assets" | "admin";
   count?: number;
   isLoading?: boolean;
   flags?: Flag[];
@@ -316,6 +318,7 @@ function ModalBody({
   onPlot: (plot: string | undefined) => void;
   onClose: () => void;
 }) {
+  const { user } = useAuth();
   const levels = config.search_levels.filter((level) => level.table !== "contribution");
   const plugins = pluginContributionTabs(config);
   // Validation errors and warnings are for the contributor: a deployment
@@ -464,6 +467,15 @@ function ModalBody({
       render: () => plugin.render(ctx),
     });
   }
+  // Admin tools: for the node's admins, and on a local stack.
+  if (IS_LOCAL_HOST || isNodeAdmin(user, config.slug)) {
+    tabs.push({
+      key: "jsonld",
+      label: "JSON-LD",
+      group: "admin",
+      render: () => <JsonLdPanel id={id} privateKey={privateKey} />,
+    });
+  }
   const current = tabs.find((entry) => entry.key === tab) ?? tabs[0];
 
   return (
@@ -516,6 +528,7 @@ function TabList({
   const groups: [Tab["group"], string][] = [
     ["levels", "Records"],
     ["assets", "Assets"],
+    ["admin", "Admin"],
   ];
   // While counts load, one "Loading…" row stands in for the tabs they decide
   // (each would otherwise show a spinner, then vanish at zero): a group's
@@ -596,6 +609,67 @@ function TabList({
         </select>
       </div>
     </>
+  );
+}
+
+// --- Admin tab: the contribution's schema.org JSON-LD ---------------------------------
+
+/** The schema.org Dataset (JSON-LD, after Science-on-Schema.org) the API builds
+ * for this contribution's landing page: what search engines, language models
+ * and dataset harvesters are to read (fiesta.domain.jsonld). */
+function JsonLdPanel({ id, privateKey }: { id: string; privateKey?: string }) {
+  const [copied, setCopied] = useState(false);
+  const query = useQuery({
+    queryKey: ["contribution-jsonld", id, privateKey],
+    queryFn: () =>
+      api<Record<string, unknown>>(`/contributions/${id}/jsonld`, {
+        params: { private_key: privateKey || undefined },
+      }),
+  });
+  const text = query.data ? JSON.stringify(query.data, null, 2) : "";
+  const keyQuery = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
+  const copy = () => {
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    });
+  };
+  const button =
+    "inline-flex items-center gap-1.5 rounded-sm border border-gray-300 px-2.5 py-1 text-[13px] font-bold text-gray-700 hover:bg-gray-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node";
+  return (
+    <div className="p-4 sm:p-6">
+      <p className="m-0 mb-3 text-[13px] text-gray-600">
+        The schema.org <code>Dataset</code> describing this contribution, after{" "}
+        <ExternalLink href="https://science-on-schema.org/">Science-on-Schema.org</ExternalLink>.
+        Check it with the{" "}
+        <ExternalLink href="https://validator.schema.org/">Schema Markup Validator</ExternalLink>.
+        Shown to node admins, and on a local stack.
+      </p>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <button type="button" onClick={copy} disabled={!text} className={button}>
+          <Icon name={copied ? "check" : "check-clipboard"} className="h-3.5 w-3.5" />
+          {copied ? "Copied" : "Copy JSON-LD"}
+        </button>
+        <a
+          href={nodeUrl(`/contributions/${id}/jsonld${keyQuery}`)}
+          target="_blank"
+          rel="noreferrer"
+          className={button}
+        >
+          <Icon name="external" className="h-3.5 w-3.5" />
+          Open Raw
+        </a>
+      </div>
+      {query.error ? (
+        <ErrorMessage error={query.error} />
+      ) : query.data ? (
+        <pre className="m-0 overflow-x-auto rounded-sm border border-gray-200 bg-gray-50 p-3 text-xs leading-5 text-gray-800">
+          {text}
+        </pre>
+      ) : (
+        <PageSpinner label="Building JSON-LD…" />
+      )}
+    </div>
   );
 }
 

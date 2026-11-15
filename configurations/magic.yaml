@@ -280,6 +280,12 @@ hierarchy:
 doi:
   prefix: 10.7288/V4/MAGIC
 
+# The schema.org Dataset each contribution page publishes (JSON-LD): its
+# license, and the repository's re3data.org identifier.
+jsonld:
+  license: https://creativecommons.org/licenses/by/4.0/
+  re3data: r3d100011910
+
 # Private workspace cards (legacy private_contributions.jsx): contribution-table
 # columns each in-preparation card edits, in order (a List column is a
 # multi-select over its cv() vocabulary, a Dictionary column title + URL rows),

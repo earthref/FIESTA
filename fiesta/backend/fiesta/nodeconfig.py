@@ -655,6 +655,15 @@ class DoiConfig(BaseModel):
     prefix: str | None = None
 
 
+class JsonLdConfig(BaseModel):
+    """The schema.org Dataset each contribution page publishes as JSON-LD
+    (fiesta.domain.jsonld): its license, and the node's re3data.org
+    repository identifier (`r3d100011910`) naming the provider."""
+
+    license: str = "https://creativecommons.org/licenses/by/4.0/"
+    re3data: str | None = None
+
+
 class PublishConfig(BaseModel):
     """Whether production serves the node. `api`: its /v2/{node}/... routes;
     `web`: its SPA at /<Key>/ and its entry in the portal bar. A local stack
@@ -898,6 +907,7 @@ class NodeConfig(BaseModel):
     vocabularies: VocabulariesConfig
     hierarchy: list[str]
     doi: DoiConfig = DoiConfig()
+    jsonld: JsonLdConfig = JsonLdConfig()
     pages: list[PageConfig] = []
     features: FeaturesConfig = FeaturesConfig()
     publish: PublishConfig = PublishConfig()
@@ -1338,6 +1348,9 @@ class Deployment(BaseModel):
     nodes: dict[str, NodeConfig]
     # `api.contributions_mode` (FIESTA_CONTRIBUTIONS_MODE overrides it).
     contributions_mode: str = "public"
+    # `api.site_url`: where the web app is public, a node's at <site_url>/<Key>/
+    # (contribution landing pages in JSON-LD and, later, sitemaps).
+    site_url: str = "https://earthref.org"
 
     def node_for(self, repository: str) -> NodeConfig:
         """Resolve the `{repository}` path segment: node key or slug, any case."""
@@ -1391,6 +1404,7 @@ def load_deployment(path: Path | None = None, only: list[str] | None = None) -> 
     return Deployment(
         title=api.get("title", "EarthRef FIESTA API"),
         contributions_mode=api.get("contributions_mode") or "public",
+        site_url=(api.get("site_url") or "https://earthref.org").rstrip("/"),
         nodes=nodes,
     )
 
