@@ -96,7 +96,14 @@ workspace and the private fixtures (a draft with revision history and an invalid
 draft) from the manifest the node's YAML selects under `development.seed_manifest`
 (`configurations/<node>/seeds/`). It also copies the node's 50 most recent public
 contributions from `dev.earthref.org` that the stack does not have yet; they keep
-their public IDs, versions and DOIs and are owned by Local Developer. A node
+their public IDs, versions and DOIs, and each is owned by a local copy of its
+dev.earthref.org contributor: name, handle, ORCID and (when not already taken
+locally) user ID, read from the public `GET /v2/portal/users`. These accounts
+have an address `user-<id>@dev.earthref.org.invalid` and no password, so they
+cannot sign in; a contributor whose ORCID or handle an account here already has
+reuses that account. Contributions an earlier seed gave to Local Developer are
+reassigned the next time the seed runs (re-downloaded once). Local Developer
+keeps the fixtures, uploads and private workspaces. A node
 dev.earthref.org has no public data for (today every node but MagIC and KArAr)
 gets no public contributions. `FIESTA_SEED_PUBLIC=10` in `.env` changes the
 default count (`make seed FIESTA_SEED_PUBLIC=10` for one run; `0` skips the

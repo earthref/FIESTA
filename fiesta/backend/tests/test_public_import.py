@@ -3,7 +3,12 @@
 import httpx
 
 from fiesta.services.legacy import load_inventory
-from fiesta.services.public_import import build_inventory, recent_public_ids, source_id
+from fiesta.services.public_import import (
+    build_inventory,
+    contributor_email,
+    recent_public_ids,
+    source_id,
+)
 from fiesta.services.revisions import digest
 
 SOURCE = "https://fiesta.example.test"
@@ -88,6 +93,38 @@ async def test_skip_local_leaves_local_ids_alone(tmp_path):
         tmp_path, [20818, 18742], local_ids={18742, 20818}, imported_ids={20818}, skip_local=True
     )
     assert inventory.records == [] and report["errors"] == [] and report["skipped"] == 2
+
+
+async def test_records_are_owned_by_their_contributors(tmp_path):
+    async def owner_for(summary):
+        return f"user-{summary['version']}@fiesta.example.test.invalid"
+
+    _, inventory = await _build(tmp_path, [20818], versions=True, owner_for=owner_for)
+    assert [r.owner_email for r in inventory.records] == [
+        f"user-{v}@fiesta.example.test.invalid" for v in (6, 7, 8)
+    ]
+
+
+async def test_skip_local_refetches_an_import_whose_owner_changed(tmp_path):
+    async def owner_for(summary):
+        return "contributor@ex.test"
+
+    report, inventory = await _build(
+        tmp_path,
+        [20818, 18742, 15860],
+        local_ids={15860, 18742, 20818},
+        imported_ids={18742, 20818},
+        local_owners={18742: "dev@ex.test", 20818: "contributor@ex.test"},
+        skip_local=True,
+        owner_for=owner_for,
+    )
+    # 15860 is a local fixture and 20818 already has its owner; 18742 is reassigned.
+    assert report["skipped"] == 2 and report["reassigned"] == 1
+    assert [(r.id, r.owner_email) for r in inventory.records] == [(18742, "contributor@ex.test")]
+
+
+async def test_contributor_email_names_the_source():
+    assert contributor_email(SOURCE + "/", 217) == "user-217@fiesta.example.test.invalid"
 
 
 async def test_recent_public_ids():
