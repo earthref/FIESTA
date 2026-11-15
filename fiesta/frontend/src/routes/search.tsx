@@ -1106,7 +1106,7 @@ export function SearchPage() {
           <div className="ml-auto flex items-center self-center" style={{ paddingRight: 0 }}>
             <Link
               to="/private"
-              className="mr-1 inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
+              className="inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
               style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
             >
               Private Workspace
@@ -1411,8 +1411,11 @@ export function SearchPage() {
                 value={sort}
                 options={sortOptions}
                 onChange={(next) => setSearch({ sort: next })}
-                className="ml-auto self-center"
-                style={{ margin: "0 1em" }}
+                className="self-center"
+                // Auto left margin pushes it right; 1rem right margin matches the
+                // Download Results button's, so their right edges line up. (An
+                // inline `margin` shorthand would override an `ml-auto` class.)
+                style={{ margin: "0 1rem 0 auto" }}
               />
             </div>
 
