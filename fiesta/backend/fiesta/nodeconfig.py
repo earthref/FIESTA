@@ -662,6 +662,8 @@ class JsonLdConfig(BaseModel):
 
     license: str = "https://creativecommons.org/licenses/by/4.0/"
     re3data: str | None = None
+    # A contribution-table Dictionary column of `Title[url]` grants (`funding`).
+    funding_column: str | None = None
 
 
 class PublishConfig(BaseModel):

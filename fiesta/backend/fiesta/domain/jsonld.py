@@ -355,10 +355,100 @@ def contribution_jsonld(
     if variables := _variables(node, summary, columns):
         data["variableMeasured"] = variables
 
+    if node.jsonld.funding_column and (
+        grants := _funding(contribution.get(node.jsonld.funding_column))
+    ):
+        data["funding"] = grants
+
     if download_url:
         data["distribution"] = {
             "@type": "DataDownload",
             "contentUrl": download_url,
             "encodingFormat": ["text/tab-separated-values", "text/plain"],
         }
+
+    # Node science from its plugins (method-codes: measurementTechnique).
+    from fiesta.plugins import active_plugins
+
+    for plugin in active_plugins(node):
+        for key, value in plugin.jsonld(node, doc, catalog_url).items():
+            if isinstance(value, list) and isinstance(data.get(key), list):
+                data[key] = data[key] + [v for v in value if v not in data[key]]
+            else:
+                data.setdefault(key, value)
+    return data
+
+
+def _split_entries(value: str) -> list[str]:
+    """A Dictionary cell's entries: split on colons outside [...] and quotes
+    (`Title[url]:"A: B"[url]`)."""
+    entries, current, depth, quoted = [], [], 0, False
+    for char in value:
+        if char == '"':
+            quoted = not quoted
+        elif char == "[" and not quoted:
+            depth += 1
+        elif char == "]" and not quoted:
+            depth = max(0, depth - 1)
+        elif char == ":" and not quoted and depth == 0:
+            entries.append("".join(current))
+            current = []
+            continue
+        current.append(char)
+    entries.append("".join(current))
+    return [e.strip() for e in entries if e.strip()]
+
+
+def _funding(value: Any) -> list[dict]:
+    """Grants from a `Title[url]:Title[url]` Dictionary cell (the legacy
+    MagIC funding column) as schema.org MonetaryGrants."""
+    if not value:
+        return []
+    grants = []
+    for entry in _split_entries(str(value)):
+        match = re.fullmatch(r'"?(.*?)"?\s*(?:\[(.*)\])?', entry, re.S)
+        name, url = (
+            (match.group(1).strip(), (match.group(2) or "").strip()) if match else (entry, "")
+        )
+        if not name and not url:
+            continue
+        grant: dict[str, Any] = {"@type": "MonetaryGrant", "name": name or url}
+        if url.startswith(("http://", "https://")):
+            grant["@id"] = grant["url"] = url
+        grants.append(grant)
+    return grants
+
+
+def catalog_jsonld(node: NodeConfig, *, catalog_url: str, contributions: int | None = None) -> dict:
+    """The node as a schema.org DataCatalog (its home page), with a
+    SearchAction on its search page."""
+    identity = node.node
+    data: dict[str, Any] = {
+        "@context": {"@vocab": "https://schema.org/"},
+        "@type": "DataCatalog",
+        "@id": f"{catalog_url}#catalog",
+        "url": catalog_url,
+        "name": identity.title,
+        "alternateName": identity.key,
+        "description": _text(identity.subtitle) or identity.title,
+        "license": node.jsonld.license,
+        "isAccessibleForFree": True,
+        "provider": {
+            "@id": catalog_url,
+            "@type": "Organization",
+            "name": identity.key,
+            "legalName": identity.title,
+            "url": catalog_url,
+        },
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": f"{catalog_url}/search?q={{search_term_string}}",
+            "query-input": "required name=search_term_string",
+        },
+    }
+    if node.jsonld.re3data:
+        re3data = f"https://www.re3data.org/repository/{node.jsonld.re3data}"
+        data["identifier"] = data["provider"]["identifier"] = re3data
+    if contributions is not None:
+        data["description"] += f" {contributions:,} public contributions."
     return data

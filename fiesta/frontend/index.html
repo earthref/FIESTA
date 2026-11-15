@@ -3,7 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FIESTA</title>
+    <!-- What crawlers read without running the app (title, description, canonical
+         link, JSON-LD) is spliced in by the web server's SSI from the API's
+         /v2/seo/head (nginx.conf.template, docs/deployment.md); served without
+         SSI (Vite), the default title below stays. -->
+    <!--# block name="fiesta_head" --><title>FIESTA</title><!--# endblock -->
+    <!--# include virtual="%BASE_URL%v2/seo/head$request_uri" stub="fiesta_head" -->
+    <style>
+      .fiesta-prerender {
+        max-width: 60rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        font-family: "Open Sans", sans-serif;
+        line-height: 1.5;
+      }
+    </style>
     <!-- Color scheme before first paint: the saved choice (src/lib/theme.ts), else the OS. -->
     <script>
       (() => {
@@ -24,7 +38,9 @@
     />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- The page as plain HTML for crawlers (API /v2/seo/body); React replaces it on start. -->
+    <!--# block name="fiesta_body" --><!--# endblock -->
+    <div id="root"><!--# include virtual="%BASE_URL%v2/seo/body$request_uri" stub="fiesta_body" --></div>
     <!-- Runtime settings (node, API origin); see src/lib/base.ts. -->
     <script src="%BASE_URL%fiesta-env.js"></script>
     <script type="module" src="/src/main.tsx"></script>

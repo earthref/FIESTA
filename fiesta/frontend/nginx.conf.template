@@ -46,8 +46,49 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # The SPA's base path: the API names its own public URLs under it
+        # (downloads in JSON-LD, llms.txt; fiesta.apps.public_urls).
+        proxy_set_header X-Forwarded-Prefix ${BASE_PATH};
         client_max_body_size 512m;
         proxy_read_timeout 300s;
+    }
+
+    # The page head and body the shell's SSI includes ask for (index.html,
+    # fiesta.apps.routers.seo): short timeouts, so a slow or stopped API
+    # costs the page its crawler text (the include's stub), never its load.
+    location ${BASE_PATH}v2/seo/ {
+        proxy_pass http://${BACKEND_HOST}:8000/v2/seo/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Prefix ${BASE_PATH};
+        # Plain text only: SSI splices the bytes as they come, and the API
+        # gzips for a client (the browser's Accept-Encoding) that accepts it.
+        proxy_set_header Accept-Encoding "";
+        proxy_connect_timeout 1s;
+        proxy_read_timeout 5s;
+    }
+
+    # What crawlers fetch by name: /robots.txt and /llms.txt for the host,
+    # /<Key>/sitemap.xml and /<Key>/llms.txt per node, all from the API.
+    location = /robots.txt {
+        proxy_pass http://${BACKEND_HOST}:8000/v2/robots.txt;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Prefix ${BASE_PATH};
+    }
+    location = /llms.txt {
+        proxy_pass http://${BACKEND_HOST}:8000/v2/llms.txt;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Prefix ${BASE_PATH};
+    }
+    location ~ ^/([^/]+)/(sitemap\.xml|llms\.txt)$ {
+        rewrite ^/([^/]+)/(.+)$ /v2/$1/$2 break;
+        proxy_pass http://${BACKEND_HOST}:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Prefix ${BASE_PATH};
     }
 
     # Hashed build assets are safe to cache forever.
@@ -61,8 +102,11 @@ server {
     # The shell names the current hashed chunks, so browsers must revalidate it
     # (no heuristic caching from Last-Modified) or a stale copy points at chunks
     # a deploy removed.
+    # `ssi on`: the shell includes the page's head and body for crawlers from
+    # the API (index.html; the includes' stubs stand in when it fails).
     location ${BASE_PATH} {
         add_header Cache-Control "no-cache";
+        ssi on;
         try_files $uri $uri/ ${BASE_PATH}index.html;
     }
 }

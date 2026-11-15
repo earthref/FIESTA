@@ -142,6 +142,53 @@ node's SPA with `VITE_NODE=<slug>` (or serve `fiesta-env.js` per node) so the
 frontend resolves its node and API origin. This is tracked in
 [OPERATOR_TODO](OPERATOR_TODO.md).
 
+## Crawlers: page heads, robots.txt, sitemaps, llms.txt
+
+The SPA renders in the browser, so a crawler that runs no JavaScript (most AI
+crawlers) sees only the shell. The shell's `index.html` therefore includes,
+by server-side include (SSI), an API-rendered `<head>` (title, description,
+canonical link, JSON-LD) and a plain-HTML body for the requested path
+(`fiesta.apps.routers.seo`, docs/api.md "Node-less routes"). The frontend
+image's `nginx.conf.template` does all of this. **Whatever serves the static
+bundles in production must do the same**, or the includes stay inert comments
+and the default `<title>` shows:
+
+```nginx
+# The SPA location (per node: location /MagIC/ { ... }): process the shell's includes.
+ssi on;
+
+# The fragments the includes ask for (<base>v2/seo/...): fail fast, plain text.
+location /MagIC/v2/seo/ {
+    proxy_pass http://127.0.0.1:8000/v2/seo/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /MagIC/;
+    proxy_set_header Accept-Encoding "";   # SSI splices bytes as-is; never gzip
+    proxy_connect_timeout 1s;
+    proxy_read_timeout 5s;
+}
+
+# Every <base>v2/ proxy also sends the base path, for the API's public URLs.
+proxy_set_header X-Forwarded-Prefix /MagIC/;
+
+# Files crawlers fetch by name.
+location = /robots.txt { proxy_pass http://127.0.0.1:8000/v2/robots.txt; proxy_set_header Host $host; }
+location = /llms.txt   { proxy_pass http://127.0.0.1:8000/v2/llms.txt;   proxy_set_header Host $host; }
+location ~ ^/([^/]+)/(sitemap\.xml|llms\.txt)$ {
+    rewrite ^/([^/]+)/(.+)$ /v2/$1/$2 break;
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Prefix /MagIC/;
+}
+```
+
+The `Host` header decides indexing: only requests for the host of `api.site_url`
+(`configurations/fiesta.yaml`, `https://earthref.org`) are indexable. Any other
+host (dev.earthref.org, localhost) gets `noindex` on every page and a
+`Disallow: /` robots.txt, while canonical links, sitemaps and JSON-LD always
+name `https://earthref.org/<Key>/...`. If the API is down, pages still load
+(the includes' stubs) after at most the 1 s connect timeout.
+
 ## Production notes
 
 - Put the frontend's nginx (or any reverse proxy) in front of the API and

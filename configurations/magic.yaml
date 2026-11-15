@@ -285,6 +285,7 @@ doi:
 jsonld:
   license: https://creativecommons.org/licenses/by/4.0/
   re3data: r3d100011910
+  funding_column: funding
 
 # Private workspace cards (legacy private_contributions.jsx): contribution-table
 # columns each in-preparation card edits, in order (a List column is a
