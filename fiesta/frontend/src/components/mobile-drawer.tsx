@@ -1,8 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { PORTAL } from "../lib/base";
 import { inkColor, useNodeConfig } from "../lib/config";
-import { isActivePortal, PORTALS, portalUrl } from "../lib/portals";
+import { isActivePortal, PORTALS, portalUrl, usePortalIdentity } from "../lib/portals";
 import { type NodeMenuItem, nodeMenuItems } from "./node-menu";
 import { Icon } from "./ui/icon";
 
@@ -18,8 +17,10 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
   const { data: nodeConfig } = useNodeConfig();
   const panelRef = useRef<HTMLDivElement>(null);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  // The portal home has no node menu and highlights EarthRef.org.
-  const config = PORTAL ? undefined : nodeConfig;
+  // The portal's pages (its home, References, Users) have no node menu and
+  // highlight EarthRef.org or the page.
+  const portal = usePortalIdentity();
+  const config = portal ? undefined : nodeConfig;
   // Nodes whose web app production does not serve are left out (node YAML `publish.web`).
   const portals = PORTALS.filter((portal) => !nodeConfig?.hidden_nodes?.includes(portal.label));
   const { left, right } = config ? nodeMenuItems(config) : { left: [], right: [] };

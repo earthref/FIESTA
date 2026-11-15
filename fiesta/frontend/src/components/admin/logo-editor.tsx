@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type DragEvent, useRef, useState } from "react";
 import { type AdminNode, adminKeys, readFile } from "../../lib/admin";
 import { inkColor } from "../../lib/config";
-import { contrastOnWhite, parseLogo, tileInk } from "../../lib/node-logo";
+import { contrastOnWhite, parseLogo, tileInk, tileSvg } from "../../lib/node-logo";
 import type { LogoStyle } from "../../lib/types";
 import { cx } from "../../lib/utils";
 import { NodeMark } from "../node-mark";
@@ -83,9 +83,26 @@ export function LogoFieldset({
     void choose(event.dataTransfer.files[0]);
   }
 
-  const mark = (size: number) => (
-    <NodeMark size={size} color={color} label={label} svg={svg} style={form.logo_style} />
+  const mark = (size: number, named = true) => (
+    <NodeMark
+      size={size}
+      color={color}
+      label={label}
+      named={named}
+      svg={svg}
+      style={form.logo_style}
+    />
   );
+  // The favicon: the unnamed tile on its white badge in either color scheme.
+  const favicon = `data:image/svg+xml,${encodeURIComponent(
+    tileSvg({
+      key: node.key,
+      color,
+      logo_svg: svg,
+      logo_style: form.logo_style,
+      logo_label: label,
+    }),
+  )}`;
 
   return (
     <fieldset className="rounded-md border border-gray-200 p-3">
@@ -189,8 +206,10 @@ export function LogoFieldset({
           <span className="block text-xs font-semibold text-gray-700">Preview</span>
           <div className="flex items-end gap-3">
             {mark(128)}
-            {mark(58)}
+            {/* The page header's tile: unnamed, the title beside it names the node. */}
+            {mark(58, false)}
             {mark(24)}
+            <img src={favicon} alt="Favicon" title="Favicon" width={32} height={32} />
           </div>
           {/* The portal home's node card (components/icon-button.tsx, card variant). */}
           <div

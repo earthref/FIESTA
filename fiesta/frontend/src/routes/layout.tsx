@@ -10,15 +10,18 @@ import { PortalBar } from "../components/portal-bar";
 import { PageSpinner } from "../components/ui/spinner";
 import { BUILD_BASE, isPortalPath, NODE, nodeSiteUrl, PORTAL } from "../lib/base";
 import { applyNodeTheme, useNodeConfig } from "../lib/config";
-import { FIESTA_PORTAL } from "../lib/portals";
+import { FIESTA_PORTAL, usePortalIdentity } from "../lib/portals";
 
 export function RootLayout() {
   const { data: config, isLoading, error } = useNodeConfig();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  // The portal home, and References and Users wherever they are served, wear
+  // FIESTA's identity; moving back into the node's pages restores the node's.
+  const portal = usePortalIdentity();
 
   useEffect(() => {
-    if (config) applyNodeTheme(PORTAL ? FIESTA_PORTAL : config);
-  }, [config]);
+    if (config) applyNodeTheme(portal ? FIESTA_PORTAL : config);
+  }, [config, portal]);
 
   // The portal home, References and Users are the only pages outside a node:
   // any other route they link to (Admin, the user's workspace) loads under
@@ -79,7 +82,7 @@ export function RootLayout() {
         <div className="pt-[4em] sm:pb-[calc(var(--footer-h,3.5em)_+_0.5em)]">
           {/* Every page uses the legacy `.full-width` layout variant (padding 0 2em). */}
           <NodeHeader />
-          {!PORTAL && <NodeMenu />}
+          {!portal && <NodeMenu />}
           <main className="clear-both w-full px-[2em] pt-[1.25em] lg:pt-0">
             <Outlet />
           </main>

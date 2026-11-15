@@ -5,12 +5,16 @@
 //
 // Tile spec (approved 2026-11-14):
 // - frame: s x s, 1px --er-line border, 1px inset ring in the node color,
-//   radius max(3, round(0.06 s)); the light background stays in dark mode
-//   (it is a badge, like the logo files themselves).
+//   radius max(3, round(0.06 s)); white in light mode. In dark mode (2026-11-15)
+//   the page tile has no background (the surface shows through) and draws in
+//   the dark-mode node ink (lib/config.ts darkInk); the favicon stays white.
 // - ink: the node color darkened (RGB x 0.94 per step) to 4.5:1 on white; the
 //   ring keeps the node color.
 // - named (s >= 44 and a label): drawing area 0.62 s from 0.065 s down, the
-//   label 800-weight under it, 0.065 s from the bottom; unnamed: 0.72 s, centered.
+//   label 800-weight under it, 0.065 s from the bottom; unnamed: 0.72 s, centered
+//   (the node header is unnamed at 58 px: its title names the node).
+// - a drawing may be strokes, fills or both; an even-odd fill's holes are
+//   transparent, so they show the tile's ground (white, or the dark surface).
 // - the drawing keeps its viewBox aspect, centered in the inner (s - 2) box;
 //   stroke-width scales so strokes read alike at every size.
 import type { LogoStyle } from "./types";

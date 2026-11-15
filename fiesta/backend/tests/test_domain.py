@@ -1836,11 +1836,17 @@ def test_logo_svg_sanitizer_keeps_shapes_only():
     assert root.find(f"{ns}g").attrib == {"transform": "rotate(10)"}
 
     # The approved node logos pass through with their drawing intact.
-    for slug in ("magic", "cdr", "geomagia", "sc", "rd"):
+    for slug in ("magic", "cdr", "geomagia", "sc", "rd", "karar"):
         source = (CONFIG_DIR / slug / "assets" / "logo.svg").read_bytes()
         clean = ET.fromstring(sanitize_svg(source))
         assert clean.get("viewBox") == ET.fromstring(source).get("viewBox")
         assert len(clean.findall(f"{ns}path")) == len(ET.fromstring(source).findall(f"{ns}path"))
+
+    # KArAr's sample holder is one filled path whose wells are even-odd holes.
+    holder = ET.fromstring(sanitize_svg((CONFIG_DIR / "karar/assets/logo.svg").read_bytes()))
+    (wells,) = holder.findall(f"{ns}path")
+    assert wells.get("fill-rule") == "evenodd"
+    assert (wells.get("fill"), wells.get("stroke")) == ("currentColor", "none")
 
     # width/height stand in for a missing viewBox, then go.
     sized = ET.fromstring(sanitize_svg(b'<svg width="32px" height="16"><rect/></svg>'))
