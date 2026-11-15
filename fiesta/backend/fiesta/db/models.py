@@ -214,6 +214,32 @@ class AuditEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class AssistanceRequest(Base):
+    """A user's request to the node's admins for help with one of their
+    contributions (approve a new version, reassign it, trouble validating,
+    other). Opening one shares nothing new: node admins can already open every
+    contribution of their node (`can_access`); the request puts it on their
+    Requests tab. One open request per contribution at a time."""
+
+    __tablename__ = "assistance_requests"
+    __table_args__ = {"schema": NODE_SCHEMA}
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    contribution_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{NODE_SCHEMA}.contributions.id"), index=True
+    )
+    requester_id: Mapped[int] = mapped_column(ForeignKey(f"{SHARED_SCHEMA}.users.id"), index=True)
+    # approve | reassign | validation | other
+    reason: Mapped[str] = mapped_column(String(16))
+    message: Mapped[str] = mapped_column(Text, default="")
+    # open | withdrawn | resolved
+    state: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_by: Mapped[int | None] = mapped_column(ForeignKey(f"{SHARED_SCHEMA}.users.id"))
+    # The admin's note when resolving it.
+    note: Mapped[str | None] = mapped_column(Text)
+
+
 class LegacyImport(Base):
     __tablename__ = "legacy_imports"
     __table_args__ = {"schema": NODE_SCHEMA}

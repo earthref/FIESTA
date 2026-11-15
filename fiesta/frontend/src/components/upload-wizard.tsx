@@ -302,12 +302,16 @@ async function readFile(
         upgrade = result.upgraded ? result : null;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        // Upgrading is a contributor action on the server: it needs a login.
+        const signedOut = error instanceof ApiError && error.status === 401;
         return {
           ...base,
           sheets: [],
           states: [],
           upgrade: null,
-          error: `Failed to upgrade this file to data model ${upgradeSettings.latest}: ${message}`,
+          error: signedOut
+            ? `This file is written in an older data model: log in to upgrade it to ${upgradeSettings.latest}.`
+            : `Failed to upgrade this file to data model ${upgradeSettings.latest}: ${message}`,
         };
       }
     }

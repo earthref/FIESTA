@@ -164,7 +164,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
 | GET | `/v2/{repository}/config/vocabularies/controlled` | `{<name>: {label, database_column, items: [{item, label?}]}}` |
 | GET | `/v2/{repository}/config/vocabularies/suggested` | same shape |
 | GET | `/v2/{repository}/config/vocabularies/plugins` | the `cv()` lists active plugins supply (method codes): `{<name>: {label, case_insensitive, items: [{item, label}]}}`, `label` = the item's definition or null; the grid editor's pulldowns |
-| POST | `/v2/{repository}/upgrade` | JSON `{text, unknown_columns?: keep\|drop, renames?: {"table.column": name}, defaults?: {key: bool}}` → `{upgraded, from_version, to_version, guessed, text, report, report_text}`: contribution text in an older data-model version upgraded to the latest (`fiesta.domain.upgrade` + the active plugins' `upgrade_steps`), or `upgraded: false` (text and report null) when it is already in the latest version or in none the node knows. The version is the contribution table's `data_model_version`/`magic_version`, else guessed from the tables and columns. `report`: `{steps, notes: [{level, kind, message, step, table, column, to, count}], defaults: [{key, label, on, count, step}], rows_in, rows_out}` — kinds `renamed`, `merged`, `dropped_column`, `dropped_value`, `dropped_row`, `dropped_table`, `unknown_column`, `unknown_table`, `converted`, `conversion`, `merged_rows`, `collision`, `version`. Columns and tables the old model does not define are kept under their own names unless `unknown_columns` is `drop`; `renames` apply before upgrading (`""` drops a column); `defaults` switches the old model's blank defaults. Public and stateless (nothing is stored); 422 when the text does not parse |
+| POST | `/v2/{repository}/upgrade` | JSON `{text, unknown_columns?: keep\|drop, renames?: {"table.column": name}, defaults?: {key: bool}}` → `{upgraded, from_version, to_version, guessed, text, report, report_text}`: contribution text in an older data-model version upgraded to the latest (`fiesta.domain.upgrade` + the active plugins' `upgrade_steps`), or `upgraded: false` (text and report null) when it is already in the latest version or in none the node knows. The version is the contribution table's `data_model_version`/`magic_version`, else guessed from the tables and columns. `report`: `{steps, notes: [{level, kind, message, step, table, column, to, count}], defaults: [{key, label, on, count, step}], rows_in, rows_out}` — kinds `renamed`, `merged`, `dropped_column`, `dropped_value`, `dropped_row`, `dropped_table`, `unknown_column`, `unknown_table`, `converted`, `conversion`, `merged_rows`, `collision`, `version`. Columns and tables the old model does not define are kept under their own names unless `unknown_columns` is `drop`; `renames` apply before upgrading (`""` drops a column); `defaults` switches the old model's blank defaults. Stateless (nothing is stored) but a contributor action: Bearer or Basic auth (401 without), the body capped at the upload limit (`FIESTA_MAX_UPLOAD_BYTES`, 512 MiB like the SPA's nginx; 413 over it, by `Content-Length` before reading or while a chunked body streams), and the conversion runs in a worker thread; 422 when the text does not parse |
 
 `GET /v2/{repository}/config` response:
 
@@ -520,7 +520,7 @@ When omitted the API sorts by relevance if the query has free text and by
 | GET | `/{id}/reference` | | `{doi, status: none\|ok\|not_found\|error, citation, title}`: whether the DOI resolves at Crossref/DataCite, asked now when the cache does not know |
 | GET | `/{id}/fields` | | `{column: cell}` for the node's `workspace.fields`, from the canonical file's `workspace.table` (`""` when empty) |
 | PUT | `/{id}/fields` | `{values: {column: cell}, expected_revision, request_key}` | `ContributionOut` (sets those columns in the canonical file as a new revision; 422 for a column not in `workspace.fields`; unpublished only) |
-| POST | `/{id}/activate` | | `ContributionOut` (publishes; requires `status=ready`, passing validation and, with `workspace.require_reference`, a DOI that resolves) |
+| POST | `/{id}/activate` | | `ContributionOut` (publishes; requires `status=ready`, passing validation and, with `workspace.require_reference`, a DOI that resolves). Who may: see [Publishing a new version](#publishing-a-new-version); 403 for anyone else ("an admin has to approve this version"); 409 when another version of the same predecessor was published first. Publishing someone else's draft keeps them its contributor and emails them |
 | POST | `/{id}/deactivate` | | `ContributionOut` (unpublishes; node admins only, 403 otherwise: contributors correct published data with a new version) |
 | PUT | `/{id}/name` | `{name}` | `ContributionOut` (the contributor's label, legacy `_name`; any version, published too; saves no revision; empty clears it) |
 | DELETE | `/{id}` | | 204 (private, unactivated only) |
@@ -535,7 +535,7 @@ When omitted the API sorts by relevance if the query has free text and by
 | GET | `/{id}/attachments/{name}` | `revision_id?` | file bytes (`application/octet-stream`) |
 | PUT | `/{id}/attachments/{name}` | multipart `file`; `Idempotency-Key` + `If-Match` headers | `ContributionOut` |
 | DELETE | `/{id}/attachments/{name}` | `{expected_revision, request_key}` | `ContributionOut` |
-| POST | `/{id}/versions` | | `ContributionOut` (201; successor draft of a published contribution) |
+| POST | `/{id}/versions` | | `ContributionOut` (201; the caller's private draft of the next version). Anyone signed in, from the latest version of a published contribution; those who may save the original also from a withdrawn one, and their draft joins its shared workspace and keeps its name. 409 when a later version exists, 404 for a private contribution the caller cannot save |
 
 ```json
 ContributionOut = {
@@ -543,8 +543,10 @@ ContributionOut = {
   "version": 1,
   "previous_id": null,
   "contributor_id": 1,
-  "contributor_name": "...",
+  "contributor_name": "...",       // the owner, on every workspace card
+  "contributor_handle": "..." | null,
   "private_key": "uuid",            // only present for the owner or an admin
+  "can_publish": true,              // private workspace: whether the caller may publish it once it validates
   "is_activated": false,
   "is_latest": true,
   "data_model_version": "3.0",
@@ -564,6 +566,55 @@ ValidationResult = {
 
 See [Revision management](#revision-management) below for the
 concurrency and idempotency semantics of the mutating routes.
+
+#### Publishing a new version
+
+Anyone signed in may prepare the next version of a published contribution
+(`POST /{id}/versions`); the draft is theirs. It is published
+(`POST /{id}/activate`, once it validates) by:
+
+| Caller | First version (no `previous_id`) | Later version |
+|---|---|---|
+| Its contributor | yes | only if they contributed an earlier version of the chain |
+| A shared workspace's editor | yes | only if they contributed an earlier version |
+| A contributor of any earlier version (the chain linked by `previous_id`) | — | yes, if they can open the draft (theirs, or shared with them) |
+| A node admin of the node (`is_node_admin`), or a super admin | yes | yes: it stays the drafter's, who joins the chain |
+| Anyone else | 404 | 404 (a private draft they cannot open) |
+
+`ContributionOut.can_publish` says which applies to the caller; a drafter outside
+the chain sees "An admin has to approve this version" and asks for it with an
+assistance request (reason `approve`).
+
+### Assistance requests (`/v2/{repository}/private/...`, Bearer or Basic)
+
+A user asks the node's admins for help with one of their contributions. Node
+admins can already open every contribution of their node (`can_access`); an open
+request puts it on their Requests tab and grants nobody else anything. Postgres
+table `assistance_requests` (node schema); `request-open`, `request-withdraw`
+and `request-resolve` audit events; emails through the `send_email` queue to the
+node's admins (super admins when the node has none) on open and to the requester
+on resolve. Writes are refused in data-source mode, like the rest of the workspace.
+
+| Method | Path | Body / params | Returns |
+|---|---|---|---|
+| GET | `/private/requests` | `scope=mine` (default) \| `node`, `state=all` (default) \| `open` | `RequestOut[]`, newest first. `mine`: requests the caller made or on their contributions. `node`: every request on the node's contributions, each with `contribution` (`ContributionOut` as the caller sees it) and `validation` (`{is_valid, errors, warnings, validated_at}`, counts); node admins only, 403 otherwise |
+| GET | `/private/contributions/{id}/requests` | | the contribution's `RequestOut[]`, for whoever may open it (404 otherwise) |
+| POST | `/private/contributions/{id}/requests` | `{reason: approve\|reassign\|validation\|other, message}` | `RequestOut` (201); whoever may save the contribution; 409 when it already has an open request; emails the node's admins |
+| POST | `/private/requests/{request_id}/withdraw` | | `RequestOut` (`state: withdrawn`); the requester or the contribution's contributor (403 for an admin, 404 for anyone who cannot see it); 409 unless open |
+| POST | `/private/requests/{request_id}/resolve` | `{note}` | `RequestOut` (`state: resolved`, the note); node admins only (403); 409 unless open; emails the requester |
+
+```json
+RequestOut = {
+  "id": 1, "contribution_id": 20001,
+  "requester_id": 7, "requester_name": "...", "requester_handle": "..." | null,
+  "reason": "approve|reassign|validation|other", "message": "...",
+  "state": "open|withdrawn|resolved",
+  "created_at": "...", "closed_at": null, "closed_by": null, "closed_by_name": null,
+  "note": null,
+  "contribution": ContributionOut | null,   // scope=node only
+  "validation": {...} | null                // scope=node only
+}
+```
 
 Every save of the canonical file (upload, `PUT /content`, a new version, the
 `/v1` private append/replace, legacy import) writes its download-only

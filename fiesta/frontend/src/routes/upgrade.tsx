@@ -7,9 +7,11 @@
 import { Link } from "@tanstack/react-router";
 import { type ChangeEvent, useState } from "react";
 import { ErrorMessage } from "../components/error-message";
+import { useLoginModal } from "../components/login-modal";
 import { Button } from "../components/ui/button";
 import { Spinner } from "../components/ui/spinner";
 import { UpgradeReportPanel } from "../components/upgrade-report";
+import { useAuth } from "../lib/auth";
 import { useNodeConfig } from "../lib/config";
 import { decodeText } from "../lib/importer";
 import { type UpgradeOptions, type UpgradeResult, upgradeText } from "../lib/upgrade";
@@ -25,6 +27,8 @@ function download(text: string, name: string) {
 
 export function UpgradePage() {
   const { data: config } = useNodeConfig();
+  const { user, isLoading: authLoading } = useAuth();
+  const { openLogin } = useLoginModal();
   const [file, setFile] = useState<{ name: string; text: string } | null>(null);
   const [options, setOptions] = useState<UpgradeOptions>({ unknown_columns: "keep", defaults: {} });
   const [result, setResult] = useState<UpgradeResult | null>(null);
@@ -77,27 +81,36 @@ export function UpgradePage() {
         </Link>
         , which upgrades it the same way.
       </p>
-      <div className="flex flex-wrap items-center gap-3 text-[13px]">
-        <label className="cursor-pointer rounded-md border border-gray-300 bg-surface px-3 py-2 font-semibold hover:bg-gray-50">
-          Select a file…
-          <input type="file" className="sr-only" accept=".txt,.tsv,text/plain" onChange={pick} />
-        </label>
-        {file && <span className="break-all font-bold text-gray-900">{file.name}</span>}
-        <label className="flex items-center gap-2">
-          <span className="font-semibold text-gray-700">Undefined columns</span>
-          <select
-            className="rounded-md border border-gray-300 bg-surface px-2 py-1.5"
-            value={options.unknown_columns}
-            onChange={(event) =>
-              change({ ...options, unknown_columns: event.target.value as "keep" | "drop" })
-            }
-          >
-            <option value="keep">Keep under their own names</option>
-            <option value="drop">Drop</option>
-          </select>
-        </label>
-        {busy && <Spinner className="h-5 w-5" label="Upgrading…" />}
-      </div>
+      {/* Upgrading runs on the server for contributors: it needs a login. */}
+      {!user && !authLoading && (
+        <div className="rounded-md border border-gray-200 bg-surface px-4 py-6 text-center">
+          <p className="mb-3 text-sm text-gray-700">Log in to upgrade a contribution file.</p>
+          <Button onClick={openLogin}>Log In / Register</Button>
+        </div>
+      )}
+      {user && (
+        <div className="flex flex-wrap items-center gap-3 text-[13px]">
+          <label className="cursor-pointer rounded-md border border-gray-300 bg-surface px-3 py-2 font-semibold hover:bg-gray-50">
+            Select a file…
+            <input type="file" className="sr-only" accept=".txt,.tsv,text/plain" onChange={pick} />
+          </label>
+          {file && <span className="break-all font-bold text-gray-900">{file.name}</span>}
+          <label className="flex items-center gap-2">
+            <span className="font-semibold text-gray-700">Undefined columns</span>
+            <select
+              className="rounded-md border border-gray-300 bg-surface px-2 py-1.5"
+              value={options.unknown_columns}
+              onChange={(event) =>
+                change({ ...options, unknown_columns: event.target.value as "keep" | "drop" })
+              }
+            >
+              <option value="keep">Keep under their own names</option>
+              <option value="drop">Drop</option>
+            </select>
+          </label>
+          {busy && <Spinner className="h-5 w-5" label="Upgrading…" />}
+        </div>
+      )}
       {error !== null && <ErrorMessage error={error} />}
       {result && !result.upgraded && (
         <p className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-[13px] text-gray-700">

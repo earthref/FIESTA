@@ -9,7 +9,9 @@ import { CountLabel } from "../components/ui/count-label";
 import { Icon } from "../components/ui/icon";
 import { PageSpinner } from "../components/ui/spinner";
 import { ContributionCard, isProcessing } from "../components/workspace-card";
+import { isNodeAdmin } from "../lib/admin";
 import { api } from "../lib/api";
+import { latestByContribution, useMyRequests, useNodeRequests } from "../lib/assistance";
 import { useAuth } from "../lib/auth";
 import { useNodeConfig } from "../lib/config";
 import type { ContributionOut } from "../lib/types";
@@ -22,8 +24,9 @@ export function PrivateWorkspacePage() {
   const { user, isLoading: authLoading } = useAuth();
   const { openLogin } = useLoginModal();
   const { data: config } = useNodeConfig();
-  // One list at a time: in preparation (the default) or published.
-  const [showing, setShowing] = useState<"preparation" | "published">("preparation");
+  // One list at a time: in preparation (the default), published, or (node
+  // admins) other users' contributions with an open assistance request.
+  const [showing, setShowing] = useState<"preparation" | "published" | "requests">("preparation");
   // A card to scroll to once its list renders (Create new version, a version link).
   const [scrollTo, setScrollTo] = useState<number | null>(null);
 
@@ -47,6 +50,9 @@ export function PrivateWorkspacePage() {
     refetchInterval: (query) => (query.state.data?.some(isProcessing) ? 3000 : false),
   });
   const contributions = list.data ?? [];
+  const nodeAdmin = isNodeAdmin(user, config?.slug);
+  const myRequests = useMyRequests(!!user && !!config && !sourceMode);
+  const nodeRequests = useNodeRequests(nodeAdmin && !!config && !sourceMode);
 
   useEffect(() => {
     if (scrollTo === null) return;
@@ -81,6 +87,16 @@ export function PrivateWorkspacePage() {
     );
   }
 
+  // Each card's latest request: an open one on the node's queue, else the caller's own.
+  const requestOf = latestByContribution([
+    ...(nodeRequests.data ?? []),
+    ...(myRequests.data ?? []),
+  ]);
+  // Other users' contributions with an open request, oldest first.
+  const queue = (nodeRequests.data ?? [])
+    .filter((entry) => entry.contribution && entry.contribution.contributor_id !== user.id)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const showRequests = nodeAdmin && showing === "requests";
   const preparationCount = contributions.filter((entry) => !entry.is_activated).length;
   const publishedCount = contributions.filter((entry) => entry.is_activated).length;
   const showPublished = showing === "published";
@@ -88,7 +104,7 @@ export function PrivateWorkspacePage() {
   // published before it was recorded). In preparation: most recently changed.
   const publishedAt = (entry: ContributionOut) => entry.activated_at ?? entry.updated_at;
   const visible = contributions
-    .filter((entry) => entry.is_activated === showPublished)
+    .filter((entry) => !showRequests && entry.is_activated === showPublished)
     .sort((a, b) =>
       showPublished
         ? publishedAt(b).localeCompare(publishedAt(a))
@@ -104,6 +120,7 @@ export function PrivateWorkspacePage() {
     setShowing(entry.is_activated ? "published" : "preparation");
     setScrollTo(entry.id);
   };
+  const tab = (name: typeof showing) => showing === name && (name !== "requests" || nodeAdmin);
 
   const toggleClass = (active: boolean) =>
     cx(
@@ -131,8 +148,8 @@ export function PrivateWorkspacePage() {
         <button
           type="button"
           onClick={() => setShowing("preparation")}
-          aria-pressed={!showPublished}
-          className={toggleClass(!showPublished)}
+          aria-pressed={tab("preparation")}
+          className={toggleClass(tab("preparation"))}
           style={{ margin: "0 1em 0.5em 0", padding: "0.6em 1.2em" }}
         >
           <Icon name="edit" size="small" />
@@ -142,21 +159,62 @@ export function PrivateWorkspacePage() {
         <button
           type="button"
           onClick={() => setShowing("published")}
-          aria-pressed={showPublished}
-          className={toggleClass(showPublished)}
+          aria-pressed={tab("published")}
+          className={toggleClass(tab("published"))}
           style={{ margin: "0 1em 0.5em 0", padding: "0.6em 1.2em" }}
         >
           <Icon name="check" size="small" />
           &nbsp;Published
           <CountLabel>{publishedCount}</CountLabel>
         </button>
+        {nodeAdmin && (
+          <button
+            type="button"
+            onClick={() => setShowing("requests")}
+            aria-pressed={showRequests}
+            className={toggleClass(showRequests)}
+            style={{ margin: "0 1em 0.5em 0", padding: "0.6em 1.2em" }}
+            title="Other users' contributions whose owners asked the node's admins for help"
+          >
+            <Icon name="question-circle" size="small" />
+            &nbsp;Requests
+            <CountLabel>{queue.length}</CountLabel>
+          </button>
+        )}
       </div>
 
       {list.isPending && <PageSpinner label="Loading your contributions…" />}
       {list.error && <ErrorMessage error={list.error} />}
       {create.error && <ErrorMessage error={create.error} />}
 
-      {!list.isPending && !list.error && visible.length === 0 && (
+      {showRequests && (
+        <>
+          {nodeRequests.isPending && <PageSpinner label="Loading the requests…" />}
+          {nodeRequests.error && <ErrorMessage error={nodeRequests.error} />}
+          {!nodeRequests.isPending && !nodeRequests.error && queue.length === 0 && (
+            <div className="rounded-md border border-gray-200 bg-surface px-4 py-10 text-center">
+              <p className="text-lg font-medium text-gray-800">No open requests</p>
+              <p className="mx-auto mt-1 max-w-md text-sm text-gray-600">
+                When a user asks the {config?.key} admins for help with a contribution, it appears
+                here for you to open, edit, validate, publish or reassign, and to resolve with a
+                note.
+              </p>
+            </div>
+          )}
+          {queue.map((entry) =>
+            entry.contribution ? (
+              <ContributionCard
+                key={entry.id}
+                contribution={entry.contribution}
+                request={entry}
+                onJump={jump}
+              />
+            ) : null,
+          )}
+        </>
+      )}
+
+      {!showRequests && !list.isPending && !list.error && visible.length === 0 && (
         <div className="rounded-md border border-gray-200 bg-surface px-4 py-10 text-center">
           <p className="text-lg font-medium text-gray-800">
             {showPublished ? "Nothing published yet" : "Nothing in preparation"}
@@ -181,6 +239,7 @@ export function PrivateWorkspacePage() {
             contribution={contribution}
             successor={successorOf(contribution)}
             onJump={jump}
+            request={requestOf.get(contribution.id)}
           />
         ))}
       </div>

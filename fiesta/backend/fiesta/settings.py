@@ -137,6 +137,11 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    # The largest request body a contribution route takes: an upload, and the
+    # text POST /upgrade converts. The SPA's nginx (client_max_body_size) and
+    # the deploy proxy stop larger uploads first; keep the three in step.
+    max_upload_bytes: int = 512 * 1024**2
+
     # Path prefix the API is published under when a reverse proxy strips one
     # before the request reaches uvicorn (routes stay at /v2); this only tells
     # FastAPI where to advertise /v2/docs and openapi.json. "" or "/" means the

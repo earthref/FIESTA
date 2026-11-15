@@ -17,6 +17,7 @@ from sqlalchemy import text
 from fiesta.apps.deps import NodeDep, SessionDep
 from fiesta.apps.routers import (
     admin,
+    assistance,
     auth,
     basemap,
     config,
@@ -129,6 +130,7 @@ def create_app() -> FastAPI:
         config.router,
         search.router,
         private.router,
+        assistance.router,
         imports.router,
         upgrade.router,
         workspaces.router,

@@ -1,5 +1,6 @@
 """Private workspace routes that need no infrastructure: who may reassign a
-contribution and download its file, with a fake session holding the rows."""
+contribution, download its file, prepare and publish a new version, and see
+or act on an assistance request, with a fake session holding the rows."""
 
 import uuid
 from datetime import UTC, datetime
@@ -8,8 +9,10 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
-from fiesta.apps.routers import private
+from fiesta.apps.deps import require_public_contributions
+from fiesta.apps.routers import assistance, private
 from fiesta.db.models import (
+    AssistanceRequest,
     AuditEvent,
     Contribution,
     ContributionStatus,
@@ -20,7 +23,9 @@ from fiesta.db.models import (
     Workspace,
     WorkspaceMember,
 )
+from fiesta.jobs import tasks
 from fiesta.services import contributions as svc
+from fiesta.services.access import chain_contributors
 
 ADA, BOB, CAROL, ADMIN, OTHER_ADMIN, SUPER = 1, 2, 3, 4, 5, 6
 
@@ -56,10 +61,18 @@ class FakeResult:
     def scalar_one(self):
         return self.row
 
+    def scalars(self):
+        return iter(self.row)
+
 
 class FakeSession:
-    def __init__(self, contribution, revision=None):
+    """`contribution` is the one a test acts on; `others` are more rows (the
+    earlier versions of a chain)."""
+
+    def __init__(self, contribution, revision=None, others=()):
         self.contribution = contribution
+        self.contributions = {c.id: c for c in (contribution, *others)}
+        self.requests: dict[int, AssistanceRequest] = {}
         self.revision = revision
         self.users = _users()
         self.workspace = Workspace(id=9, owner_id=ADA, name="Ada's lab")
@@ -69,7 +82,9 @@ class FakeSession:
 
     async def get(self, model, pk):
         if model is Contribution:
-            return self.contribution if pk == self.contribution.id else None
+            return self.contributions.get(pk)
+        if model is AssistanceRequest:
+            return self.requests.get(pk)
         if model is User:
             return self.users.get(pk)
         if model is Revision:
@@ -80,11 +95,36 @@ class FakeSession:
             return self.member if pk == (self.member.workspace_id, self.member.user_id) else None
         return None
 
-    async def execute(self, stmt):  # revisions.locked()
-        return FakeResult(self.contribution)
+    async def execute(self, stmt):
+        entity = stmt.column_descriptions[0]["entity"]
+        if entity is AssistanceRequest:  # the routes re-check what they asked for
+            return FakeResult(list(self.requests.values()))
+        (pk,) = stmt.compile().params.values()  # revisions.locked()
+        return FakeResult(self.contributions[pk])
 
     def add(self, row):
         self.added.append(row)
+
+    async def flush(self):
+        for row in self.added:
+            if isinstance(row, AssistanceRequest) and row.id is None:
+                row.id = len(self.requests) + 1
+                self.requests[row.id] = row
+            if isinstance(row, Contribution) and row.id is None:
+                row.id = max(self.contributions) + 1
+                # The column defaults Postgres would apply.
+                defaults = _contribution(id=row.id, workspace_id=None, head_revision=None)
+                for column in (
+                    "status",
+                    "is_activated",
+                    "is_latest",
+                    "private_key",
+                    "created_at",
+                    "updated_at",
+                    "indexing_status",
+                ):
+                    setattr(row, column, getattr(defaults, column))
+                self.contributions[row.id] = row
 
     async def commit(self):
         self.commits += 1
@@ -124,7 +164,12 @@ def accounts(monkeypatch):
 
 
 def _node(slug="magic"):
-    return SimpleNamespace(node=SimpleNamespace(slug=slug))
+    return SimpleNamespace(
+        node=SimpleNamespace(
+            slug=slug, key="MagIC", links=SimpleNamespace(website="https://earthref.test/MagIC")
+        ),
+        workspace=SimpleNamespace(require_reference=False),
+    )
 
 
 async def _reassign(session, actor, to="bob@example.test"):
@@ -218,3 +263,285 @@ async def test_download_is_for_those_who_may_open_it(monkeypatch, actor, allowed
     assert response.headers["content-disposition"] == (
         'attachment; filename="magic_contribution_42.txt"'
     )
+
+
+# -- new versions: anyone signed in prepares one; its chain or an admin publishes --
+
+V1, V2, DRAFT = 40, 41, 42
+
+
+def _chain(drafter, **draft_fields):
+    """Ada published version 1, Carol version 2 (the latest); DRAFTER has
+    prepared version 3, privately, outside any shared workspace."""
+    published = {"is_activated": True, "workspace_id": None, "published_revision": "rev-p"}
+    v1 = _contribution(id=V1, contributor_id=ADA, version=1, is_latest=False, **published)
+    v2 = _contribution(id=V2, contributor_id=CAROL, version=2, previous_id=V1, **published)
+    fields = {"workspace_id": None, **draft_fields}
+    draft = _contribution(id=DRAFT, contributor_id=drafter, version=3, previous_id=V2, **fields)
+    return FakeSession(draft, others=(v1, v2))
+
+
+@pytest.fixture
+def outbox(monkeypatch):
+    """The emails the routes queue, and a passing validation for every
+    contribution."""
+    sent = []
+
+    async def defer_async(**email):
+        sent.append(email)
+
+    async def latest_validation(session, contribution_id):
+        return SimpleNamespace(
+            is_valid=True, errors=[], warnings=[{"message": "w"}], validated_at=datetime.now(UTC)
+        )
+
+    monkeypatch.setattr(tasks.send_email, "defer_async", defer_async)
+    monkeypatch.setattr(svc, "latest_validation", latest_validation)
+    return sent
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("drafter", "actor", "outcome"),
+    [
+        (ADA, ADA, 200),  # contributor of an earlier version (not only the last one)
+        (CAROL, CAROL, 200),  # contributor of the version it follows
+        (BOB, BOB, 403),  # anyone else: an admin has to approve it
+        (BOB, ADMIN, 200),  # a node admin approves it ...
+        (BOB, SUPER, 200),  # ... as does a super admin without a node role
+        (BOB, OTHER_ADMIN, 404),  # another node's admin cannot even open it
+        (BOB, ADA, 404),  # a chain contributor cannot open someone's private draft
+    ],
+)
+async def test_publish_permission_matrix(outbox, drafter, actor, outcome):
+    session = _chain(drafter)
+    call = private.activate(session, _node(), session.users[actor], DRAFT)
+    if outcome != 200:
+        with pytest.raises(HTTPException) as err:
+            await call
+        assert err.value.status_code == outcome
+        assert not session.contribution.is_activated and not outbox
+        if outcome == 403:
+            assert "an admin has to approve" in err.value.detail
+        return
+    out = await call
+    draft = session.contribution
+    assert draft.is_activated and out.is_activated
+    # Approving publishes it for the drafter: it stays theirs, and joins the
+    # chain whose contributors may publish its successors.
+    assert draft.contributor_id == drafter
+    assert (out.contributor_id, out.contributor_name) == (drafter, session.users[drafter].name)
+    assert drafter in await chain_contributors(session, _contribution(id=99, previous_id=DRAFT))
+    assert session.contributions[V2].is_latest is False
+    publish = [r for r in session.added if isinstance(r, AuditEvent)]
+    assert [(a.operation, a.actor_id) for a in publish] == [("publish", actor)]
+    assert [m["to"] for m in outbox] == [session.users[drafter].email]
+    assert ("approved by" in outbox[0]["body"]) == (actor != drafter)
+
+
+@pytest.mark.asyncio
+async def test_first_versions_publish_as_before(outbox):
+    # No chain: whoever may save it publishes it (a shared workspace's editor too).
+    session = FakeSession(_contribution())
+    out = await private.activate(session, _node(), session.users[CAROL], 42)
+    assert out.is_activated and out.contributor_id == ADA
+
+
+@pytest.mark.asyncio
+async def test_publish_refused_once_another_version_superseded_it(outbox):
+    session = _chain(ADA)
+    session.contributions[V2].is_latest = False
+    with pytest.raises(HTTPException) as err:
+        await private.activate(session, _node(), session.users[ADA], DRAFT)
+    assert err.value.status_code == 409
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("actor", "can_publish"), [(BOB, False), (ADMIN, True), (SUPER, True)])
+async def test_workspace_card_says_who_may_publish(actor, can_publish):
+    session = _chain(BOB)
+    out = await private.get_contribution(session, _node(), session.users[actor], DRAFT)
+    assert out.can_publish is can_publish
+    # Every card names its owner, whoever is looking.
+    assert (out.contributor_name, out.contributor_handle) == ("Bob", "bob")
+
+
+@pytest.fixture
+def copies(monkeypatch):
+    """new_version's revision plumbing, recorded instead of stored."""
+    saved = []
+
+    async def snapshot_for(session, contribution):
+        return {"files": {"f.txt": {}}, "canonical": "f.txt", "reference_doi": None}
+
+    async def revision_file(session, node, contribution, name=None, revision_id=None):
+        return b"tab\tcontribution\n"
+
+    async def save_revision(session, node, contribution, actor_id, **kwargs):
+        saved.append((contribution.id, actor_id, kwargs["operation"]))
+
+    monkeypatch.setattr(private, "snapshot_for", snapshot_for)
+    monkeypatch.setattr(private, "revision_file", revision_file)
+    monkeypatch.setattr(private, "save_revision", save_revision)
+    return saved
+
+
+@pytest.mark.asyncio
+async def test_anyone_signed_in_prepares_a_new_version_of_a_published_one(copies):
+    session = _chain(ADA)
+    out = await private.new_version(session, _node(), session.users[BOB], V2)
+    assert (out.contributor_id, out.version, out.previous_id) == (BOB, 3, V2)
+    assert out.can_publish is False  # Bob is not in the chain: an admin approves it
+    created = session.contributions[out.id]
+    assert created.workspace_id is None  # a stranger's draft joins no shared workspace
+    assert copies == [(out.id, BOB, "new-version")]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("target", "status"),
+    [
+        (V1, 409),  # not the latest version
+        (DRAFT, 404),  # someone else's private draft
+    ],
+)
+async def test_new_versions_start_from_the_latest_published_one(copies, target, status):
+    session = _chain(ADA)
+    with pytest.raises(HTTPException) as err:
+        await private.new_version(session, _node(), session.users[BOB], target)
+    assert err.value.status_code == status
+    assert not copies
+
+
+# -- assistance requests ----------------------------------------------------------
+
+
+@pytest.fixture
+def admins(monkeypatch):
+    async def node_admin_emails(session, slug):
+        return ["admin@example.test"]
+
+    monkeypatch.setattr(assistance, "node_admin_emails", node_admin_emails)
+
+
+async def _ask(session, actor=BOB, reason="approve"):
+    return await assistance.open_request(
+        session,
+        _node(),
+        session.users[actor],
+        DRAFT,
+        assistance.RequestIn(reason=reason, message="  Please approve my corrections. "),
+    )
+
+
+def test_request_writes_are_refused_in_data_source_mode():
+    assert any(d.dependency is require_public_contributions for d in assistance.router.dependencies)
+
+
+@pytest.mark.asyncio
+async def test_opening_a_request_emails_the_node_admins(outbox, admins):
+    session = _chain(BOB)
+    request = await _ask(session)
+    assert (request.state, request.reason, request.message) == (
+        "open",
+        "approve",
+        "Please approve my corrections.",
+    )
+    assert (request.requester_name, request.requester_handle) == ("Bob", "bob")
+    audit = [(a.operation, a.actor_id) for a in session.added if isinstance(a, AuditEvent)]
+    assert audit == [("request-open", BOB)]
+    assert [m["to"] for m in outbox] == ["admin@example.test"]
+    assert "approve a new version" in outbox[0]["subject"]
+    # One open request per contribution.
+    with pytest.raises(HTTPException) as err:
+        await _ask(session, reason="other")
+    assert err.value.status_code == 409
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("actor", [CAROL, ADA, OTHER_ADMIN])
+async def test_only_who_may_save_it_asks_for_help(outbox, admins, actor):
+    session = _chain(BOB)
+    with pytest.raises(HTTPException) as err:
+        await _ask(session, actor=actor)
+    assert err.value.status_code == 404 and not session.requests
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("actor", "mine", "node", "history"),
+    [
+        (BOB, 1, 403, 1),  # the requester sees his own, not the node's queue
+        (ADMIN, 0, 1, 1),  # the node's admins see every open request
+        (SUPER, 0, 1, 1),
+        (CAROL, 0, 403, 404),  # nobody else sees it ...
+        (ADA, 0, 403, 404),
+        (OTHER_ADMIN, 0, 403, 404),  # ... including another node's admin
+    ],
+)
+async def test_request_visibility(outbox, admins, actor, mine, node, history):
+    session = _chain(BOB)
+    await _ask(session)
+    user, n = session.users[actor], _node()
+    listed = await assistance.list_requests(session, n, user, scope="mine", state="all")
+    assert len(listed) == mine
+    if node == 403:
+        with pytest.raises(HTTPException) as err:
+            await assistance.list_requests(session, n, user, scope="node", state="open")
+        assert err.value.status_code == 403
+    else:
+        (queued,) = await assistance.list_requests(session, n, user, scope="node", state="open")
+        # The Requests tab: owner, reason, message, age and validation state.
+        assert queued.contribution.id == DRAFT and queued.contribution.contributor_name == "Bob"
+        assert queued.contribution.can_publish is True
+        assert (queued.validation.is_valid, queued.validation.warnings) == (True, 1)
+    if history == 404:
+        with pytest.raises(HTTPException) as err:
+            await assistance.contribution_requests(session, n, user, DRAFT)
+        assert err.value.status_code == 404
+    else:
+        assert len(await assistance.contribution_requests(session, n, user, DRAFT)) == 1
+
+
+@pytest.mark.asyncio
+async def test_withdraw_and_resolve(outbox, admins):
+    session = _chain(BOB)
+    first = await _ask(session)
+    n = _node()
+    for actor, status in ((CAROL, 404), (OTHER_ADMIN, 404), (ADMIN, 403)):
+        with pytest.raises(HTTPException) as err:
+            await assistance.withdraw_request(session, n, session.users[actor], first.id)
+        assert err.value.status_code == status
+    withdrawn = await assistance.withdraw_request(session, n, session.users[BOB], first.id)
+    assert withdrawn.state == "withdrawn"
+    # Closed requests leave the admins' queue.
+    admin = session.users[ADMIN]
+    assert await assistance.list_requests(session, n, admin, scope="node", state="open") == []
+
+    second = await _ask(session, reason="validation")
+    note = assistance.ResolveIn(note=" Fixed the lab names; validates now. ")
+    with pytest.raises(HTTPException) as err:
+        await assistance.resolve_request(session, n, session.users[BOB], second.id, note)
+    assert err.value.status_code == 403
+    outbox.clear()
+    resolved = await assistance.resolve_request(session, n, admin, second.id, note)
+    assert (resolved.state, resolved.note, resolved.closed_by_name) == (
+        "resolved",
+        "Fixed the lab names; validates now.",
+        "Admin",
+    )
+    assert [m["to"] for m in outbox] == ["bob@example.test"]
+    assert "Fixed the lab names" in outbox[0]["body"]
+    with pytest.raises(HTTPException) as err:
+        await assistance.resolve_request(session, n, admin, second.id, note)
+    assert err.value.status_code == 409
+    # The requester sees how it ended, newest first.
+    mine = await assistance.list_requests(session, n, session.users[BOB], scope="mine", state="all")
+    assert sorted(r.state for r in mine) == ["resolved", "withdrawn"]
+    audit = [(a.operation, a.actor_id) for a in session.added if isinstance(a, AuditEvent)]
+    assert audit == [
+        ("request-open", BOB),
+        ("request-withdraw", BOB),
+        ("request-open", BOB),
+        ("request-resolve", ADMIN),
+    ]

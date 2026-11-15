@@ -7,6 +7,11 @@ from fiesta.db.models import Contribution, Workspace, WorkspaceMember
 
 
 async def can_access(session, contribution, user, write=False):
+    """Whether USER may open (or, `write`, save) CONTRIBUTION in the private
+    workspace: its contributor, a shared workspace's owner or member, or an
+    admin of its node. This is also what an open assistance request relies on:
+    it puts the contribution in front of the node's admins, who may already
+    open it, and grants nobody else anything."""
     if user.is_node_admin(contribution.node) or contribution.contributor_id == user.id:
         return True
     if not contribution.workspace_id:
@@ -16,6 +21,36 @@ async def can_access(session, contribution, user, write=False):
         return True
     member = await session.get(WorkspaceMember, (workspace.id, user.id))
     return member is not None and (not write or member.role == "editor")
+
+
+async def chain_contributors(session, contribution) -> set[int]:
+    """The contributors of every earlier version of CONTRIBUTION (the chain
+    linked by `previous_id`), not counting its own."""
+    seen, ids = set(), set()
+    previous_id = contribution.previous_id
+    while previous_id is not None and previous_id not in seen:
+        seen.add(previous_id)
+        previous = await session.get(Contribution, previous_id)
+        if previous is None:
+            break
+        ids.add(previous.contributor_id)
+        previous_id = previous.previous_id
+    return ids
+
+
+async def may_publish(session, contribution, user) -> bool:
+    """Whether USER may publish CONTRIBUTION once it validates.
+
+    A node admin may publish any (approving a version someone else prepared;
+    it stays theirs). A first version is published by whoever may save it. A
+    later version, which anyone signed in may prepare, is published by a
+    contributor of an earlier version in its chain; anyone else asks an admin
+    to approve it."""
+    if user.is_node_admin(contribution.node):
+        return True
+    if contribution.previous_id is None:
+        return await can_access(session, contribution, user, write=True)
+    return user.id in await chain_contributors(session, contribution)
 
 
 async def visible_ids(session, node, user=None, private_keys=(), latest_only=True):
