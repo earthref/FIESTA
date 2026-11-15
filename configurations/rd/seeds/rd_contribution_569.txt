@@ -1,0 +1,7 @@
+tab delimited	contribution
+data_model_version	germrd_reservoir_id	reservoir	citations
+1.0	569	21°N EPR	Shanks III et al. 1995
+>>>>>>>>>>
+tab delimited	values
+reservoir	element	quantity	value	sd	n	computation	citation	err_reference_id	source_table	inserted
+21°N EPR	d18O	Isotope	-0.09	0.04	3	Measurement	Shanks III et al. 1995	834	aabp0000834tab03	2000-03-16

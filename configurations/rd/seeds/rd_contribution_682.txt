@@ -1,0 +1,9 @@
+tab delimited	contribution
+data_model_version	germrd_reservoir_id	reservoir	citations
+1.0	682	Atlantic Seawater	Anbar et al. 1992:Chen et al. 1986
+>>>>>>>>>>
+tab delimited	values
+reservoir	element	z	quantity	value	sd	low	high	unit	computation	notes	citation	reference	err_reference_id	source_table	sources	inserted
+Atlantic Seawater	Re	75	Element	6.9	1.05			ng/kg	Average	Average values of rhenium in Atlantic seawater as given by Matthews and Riley 1972. No data was collected shallower than 200m. No uncertainties were reported, therefore by analogy to other reports, uncertainties were calculated to 2s.	Anbar et al. 1992	10.1016/0016-7037(92)90021-A	33	aaab0000033tab02	Matthews & Riley 1970	2000-03-29
+Atlantic Seawater	Re	75	Element	4	1.05			ng/kg	Average	Average values of rhenium in Atlantic seawater as given by Olafsson and Riley 1972. Samples that yield values given are from more than one location. No uncertainties were reported, therefore by analogy to other reports, uncertainties were calculated to 2s.	Anbar et al. 1992	10.1016/0016-7037(92)90021-A	33	aaab0000033tab02	Olafsson & Riley 1972	2000-03-29
+Atlantic Seawater	Th	90	Element			0.092	0.145		Average	Thorium abundances in Atlantic seawater calculated according to mass spectrometric techniques following a 'double spike' approach first implimented by Dietz et al. 1962. All derived data concludes that Thorium content in open ocean waters is roughly equivalent to 0.1 pg/g, which coincidentally is what was discovered by various other references given in this study.	Chen et al. 1986		47	aaac0000047tab06		2000-03-31

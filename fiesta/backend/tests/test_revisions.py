@@ -43,6 +43,18 @@ def test_seed_fixtures(node):
         assert populated == set(definition["columns"]), f"missing populated fields in {table}"
 
 
+@pytest.mark.parametrize("node", ["geomagia", "rd"])
+def test_source_record_seeds_are_valid(node):
+    """Data-source nodes seed real records their source script wrote (`--out`)."""
+    node = load_deployment(CONFIG_DIR / f"{node}.yaml").node_list[0]
+    root, manifest = load_seed(node)
+    assert manifest["contributions"]
+    for item in manifest["contributions"]:
+        for rev in item["revisions"]:
+            raw = local_file(root, rev["files"][rev["canonical"]]).read_text()
+            assert validate_contribution(node, parse_text(raw)).is_valid, item["key"]
+
+
 def test_magic_seed_poles(magic_node):
     from fiesta.plugins.poles import PolesPlugin
 

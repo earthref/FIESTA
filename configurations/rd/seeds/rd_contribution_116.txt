@@ -1,0 +1,68 @@
+tab delimited	contribution
+data_model_version	germrd_reservoir_id	reservoir	citations	reference
+1.0	116	Amphibolites	Gao et al. 1998	10.1016/S0016-7037(98)00121-5
+>>>>>>>>>>
+tab delimited	values
+reservoir	element	z	quantity	value	n	unit	computation	notes	citation	reference	err_reference_id	source_table	inserted
+Amphibolites	Al	13	Element	13.77	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Sb	51	Element	0.09	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	As	33	Element	1.27	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Ba	56	Element	213	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Be	4	Element	0.3	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Bi	83	Element	0.18	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	B	5	Element	9.2	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Cd	48	Element	114	189	ppb	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Ca	20	Element	9.07	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	C	6	Element	0.46	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Ce	58	Element	23.7	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Cs	55	Element	0.94	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Cr	24	Element	217	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Cl	17	Element	296	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Co	27	Element	57	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Cu	29	Element	92	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Eu	63	Element	1.28	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	F	9	Element	659	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Ga	31	Element	18	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Ge	32	Element	1.28	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Au	79	Element	8.21	189	ppb	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Hf	72	Element	2.6	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	H	1	Element	2.67	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Fe	26	Element	11.883	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites. Fe2O3 = 3.46 and FeO = 8.77 are recalculated as FeO(t).	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	La	57	Element	14	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Pb	82	Element	12.7	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Li	3	Element	9.5	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Lu	71	Element	0.55	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Mg	12	Element	6.68	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Mn	25	Element	0.37	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Hg	80	Element	4.9	189	ppb	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Mo	42	Element	0.29	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Nd	60	Element	13.5	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Ni	28	Element	103	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Nb	41	Element	8.7	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Pd	46	Element	5.78	189	ppb	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	P	15	Element	0.16	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Pt	78	Element	6.95	189	ppb	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	K	19	Element	0.89	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Rb	37	Element	46	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Sm	62	Element	4.37	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Sc	21	Element	43.2	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Se	34	Element	235	189	ppb	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Si	14	Element	49.85	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Ag	47	Element	48	189	ppb	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Na	11	Element	2.46	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Sr	38	Element	258	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Ta	73	Element	0.41	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Tb	65	Element	0.92	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Tl	81	Element	0.21	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Th	90	Element	1	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Sn	50	Element	1.13	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Ti	22	Element	1.2	189	wt%ox	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	W	74	Element	0.53	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	U	92	Element	0.36	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	V	23	Element	255	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Yb	70	Element	2.46	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Y	39	Element	15.6	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Zn	30	Element	125	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Zr	40	Element	108	189	ppm	Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	Eu/Eu*		Ratio	0.82	189		Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07
+Amphibolites	La[n]/Yb[n]		Ratio	3.85	189		Composite Average	Average of 165 subsamples and 24 composites.	Gao et al. 1998	10.1016/S0016-7037(98)00121-5	57	aaac0000057app01	1999-04-07

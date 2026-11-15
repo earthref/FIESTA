@@ -1,0 +1,433 @@
+{
+ "data_model_version": "1.0",
+ "updated_day": "2026:11:15",
+ "published_day": "2026:11:15",
+ "tables": {
+  "contribution": {
+   "label": "Contribution",
+   "position": 1,
+   "description": "One GERM reservoir",
+   "notes": "Each legacy GERM Reservoir Database reservoir is one contribution, keeping its ID; its values are the rows below. Written by the RD data source sync.",
+   "columns": {
+    "id": {
+     "label": "Contribution ID",
+     "group": "Contribution",
+     "type": "Integer",
+     "position": 1,
+     "description": "Unique FIESTA contribution ID; the GERMRD reservoir ID",
+     "validations": [
+      "downloadOnly()"
+     ]
+    },
+    "version": {
+     "label": "Version",
+     "group": "Contribution",
+     "type": "Integer",
+     "position": 2,
+     "description": "Contribution version number",
+     "validations": [
+      "downloadOnly()"
+     ]
+    },
+    "timestamp": {
+     "label": "Activation Timestamp",
+     "group": "Contribution",
+     "type": "Timestamp",
+     "position": 3,
+     "description": "Date and time of contribution activation",
+     "validations": [
+      "downloadOnly()"
+     ]
+    },
+    "contributor": {
+     "label": "Contributor",
+     "group": "Contribution",
+     "type": "String",
+     "position": 4,
+     "description": "Contributor's EarthRef handle",
+     "validations": [
+      "downloadOnly()"
+     ]
+    },
+    "data_model_version": {
+     "label": "Data Model Version",
+     "group": "Contribution",
+     "type": "String",
+     "position": 5,
+     "description": "FIESTA RD data model version",
+     "examples": [
+      "1.0"
+     ],
+     "validations": [
+      "required()"
+     ]
+    },
+    "germrd_reservoir_id": {
+     "label": "GERMRD Reservoir ID",
+     "group": "Reservoir",
+     "type": "Integer",
+     "description": "The reservoir's ID in the legacy GERM Reservoir Database (earthref.org/GERMRD/<id>/)",
+     "examples": [
+      "847"
+     ],
+     "validations": [
+      "required()"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "er_reservoir_id"
+      }
+     ],
+     "position": 6
+    },
+    "reservoir": {
+     "label": "Reservoir",
+     "group": "Reservoir",
+     "type": "String",
+     "description": "Reservoir name",
+     "notes": "Names repeat across reservoirs compiled from different publications (Andesites, Basalts).",
+     "examples": [
+      "Seawater",
+      "Silicate Earth",
+      "Extreme Depleted D-MORB basalts"
+     ],
+     "validations": [
+      "required()"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "name_long"
+      }
+     ],
+     "position": 7
+    },
+    "citations": {
+     "label": "Citations",
+     "group": "Reference",
+     "type": "List",
+     "description": "Colon-delimited short citations of the publications the reservoir's values come from",
+     "examples": [
+      "Salters & Stracke 2004",
+      "McDonough & Sun 1995:McDonough 1998"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "er_citation_label"
+      }
+     ],
+     "position": 8
+    },
+    "reference": {
+     "label": "Reference DOI",
+     "group": "Reference",
+     "type": "String",
+     "description": "DOI of the publication, when every value comes from one publication that has one",
+     "examples": [
+      "10.1029/2003GC000597"
+     ],
+     "position": 9
+    }
+   }
+  },
+  "values": {
+   "label": "Values",
+   "position": 2,
+   "description": "The reservoir's element, isotope and ratio values",
+   "notes": "One row per legacy GERMRD value, each with its own reference: a reservoir such as Seawater compiles many publications.",
+   "columns": {
+    "reservoir": {
+     "label": "Reservoir",
+     "group": "Reservoir",
+     "type": "String",
+     "description": "Reservoir name, the contribution's",
+     "examples": [
+      "Seawater"
+     ],
+     "validations": [
+      "required()"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "name_long"
+      }
+     ],
+     "position": 1
+    },
+    "element": {
+     "label": "Element",
+     "group": "Element",
+     "type": "String",
+     "description": "Element, isotope or ratio the value is for",
+     "notes": "Element symbols, isotopes (mass number first; d for delta, e- for epsilon notation) and element ratios ([n]: chondrite-normalized; *: interpolated). 14 legacy values have none.",
+     "examples": [
+      "La",
+      "143Nd/144Nd",
+      "La[n]/Yb[n]",
+      "d18O"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "element"
+      }
+     ],
+     "position": 2
+    },
+    "z": {
+     "label": "Z",
+     "group": "Element",
+     "type": "Integer",
+     "description": "Atomic number of the element",
+     "examples": [
+      "57"
+     ],
+     "validations": [
+      "min(1)",
+      "max(103)"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "er_element_id"
+      }
+     ],
+     "position": 3
+    },
+    "quantity": {
+     "label": "Quantity",
+     "group": "Element",
+     "type": "String",
+     "description": "What the value is: an element, isotope or ratio",
+     "notes": "Derived by the RD data source: Isotope by notation, Element by symbol or atomic number, otherwise Ratio.",
+     "examples": [
+      "Element",
+      "Isotope",
+      "Ratio"
+     ],
+     "validations": [
+      "cv(\"quantities\")"
+     ],
+     "position": 4
+    },
+    "value": {
+     "label": "Value",
+     "group": "Value",
+     "type": "Number",
+     "description": "The reservoir's value (as computed, see Computation)",
+     "examples": [
+      "0.5134",
+      "742"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "value"
+      }
+     ],
+     "position": 5
+    },
+    "median": {
+     "label": "Median",
+     "group": "Value",
+     "type": "Number",
+     "description": "Median",
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "median"
+      }
+     ],
+     "position": 6
+    },
+    "sd": {
+     "label": "SD",
+     "group": "Value",
+     "type": "Number",
+     "description": "Standard deviation",
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "sd"
+      }
+     ],
+     "position": 7
+    },
+    "low": {
+     "label": "Low",
+     "group": "Value",
+     "type": "Number",
+     "description": "Lowest value of the range",
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "low"
+      }
+     ],
+     "position": 8
+    },
+    "high": {
+     "label": "High",
+     "group": "Value",
+     "type": "Number",
+     "description": "Highest value of the range",
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "high"
+      }
+     ],
+     "position": 9
+    },
+    "n": {
+     "label": "N",
+     "group": "Value",
+     "type": "Integer",
+     "description": "Number of analyses or samples",
+     "validations": [
+      "min(0)"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "n"
+      }
+     ],
+     "position": 10
+    },
+    "unit": {
+     "label": "Unit",
+     "group": "Value",
+     "type": "String",
+     "description": "Unit of the value; blank for ratios and isotope compositions",
+     "examples": [
+      "ppm",
+      "wt%ox",
+      "ng/g"
+     ],
+     "validations": [
+      "cv(\"units\")"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "er_unit_id"
+      }
+     ],
+     "position": 11
+    },
+    "computation": {
+     "label": "Computation",
+     "group": "Value",
+     "type": "String",
+     "description": "How the value was derived",
+     "examples": [
+      "Average",
+      "Model",
+      "Measurement",
+      "Estimate"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "computation"
+      }
+     ],
+     "position": 12
+    },
+    "notes": {
+     "label": "Notes",
+     "group": "Value",
+     "type": "Text",
+     "description": "Notes on the value and how it was compiled",
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "notes"
+      }
+     ],
+     "position": 13
+    },
+    "citation": {
+     "label": "Citation",
+     "group": "Reference",
+     "type": "String",
+     "description": "Short citation of the publication the value comes from",
+     "examples": [
+      "Salters & Stracke 2004"
+     ],
+     "validations": [
+      "required()"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "er_citation_label"
+      }
+     ],
+     "position": 14
+    },
+    "reference": {
+     "label": "Reference DOI",
+     "group": "Reference",
+     "type": "String",
+     "description": "DOI of the publication the value comes from",
+     "examples": [
+      "10.1029/2003GC000597"
+     ],
+     "position": 15
+    },
+    "err_reference_id": {
+     "label": "ERR Reference ID",
+     "group": "Reference",
+     "type": "Integer",
+     "description": "The publication's ID in the EarthRef Reference Database (earthref.org/ERR/<id>/)",
+     "examples": [
+      "33230"
+     ],
+     "position": 16
+    },
+    "source_table": {
+     "label": "Source Table",
+     "group": "Reference",
+     "type": "String",
+     "description": "ID of the publication's table the value was taken from",
+     "notes": "The legacy site linked each to a scan at erda.sdsc.edu/bgfiles, which no longer resolves.",
+     "examples": [
+      "aclx0033230tab01"
+     ],
+     "position": 17
+    },
+    "sources": {
+     "label": "Sources",
+     "group": "Reference",
+     "type": "List",
+     "description": "Colon-delimited short citations of the original publications a compiled value cites",
+     "examples": [
+      "Yanai & Kojima 1991:Zipfel et al. 1995"
+     ],
+     "position": 18
+    },
+    "inserted": {
+     "label": "Inserted",
+     "group": "Reference",
+     "type": "Date",
+     "description": "When the value was entered in the legacy GERM Reservoir Database",
+     "examples": [
+      "2004-11-30"
+     ],
+     "previous_columns": [
+      {
+       "table": "germrd",
+       "column": "inserted"
+      }
+     ],
+     "position": 19
+    }
+   }
+  }
+ }
+}
