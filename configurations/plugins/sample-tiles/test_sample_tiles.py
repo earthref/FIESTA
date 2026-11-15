@@ -1,5 +1,6 @@
 """The sample-tiles plugin: its summary grid tiles' defaults."""
 
+from fiesta.plugins import all_plugins
 from fiesta.search.grid import level_columns, sort_clauses
 
 
@@ -42,3 +43,12 @@ def test_tiles_follow_the_options_and_activation(magic_node):
     off = magic_node.model_copy(update={"features": features, "search": search})
     keys = [c.key for c in level_columns(off, levels[2])]
     assert keys == ["record", "counts", "map", "plot", "geo", "citations"]
+
+
+def test_age_type_column_by_level(magic_node, karar_node):
+    # KArAr's specimen Age tile names its preferred age's calculation method.
+    plugin = all_plugins()["sample-tiles"]
+    config = plugin.frontend_config(karar_node)
+    assert config["age_type_columns"] == {"specimens": "age_calculation_method"}
+    assert config["age_has_interval"]
+    assert plugin.frontend_config(magic_node)["age_type_columns"] == {}

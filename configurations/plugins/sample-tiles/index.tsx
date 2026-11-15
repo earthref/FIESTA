@@ -18,6 +18,8 @@ interface SampleTilesConfig {
    * `age_has_interval`; else the age columns as contributed. */
   age_interval: string;
   age_has_interval: boolean;
+  /** By level table, the column naming a record's age type. */
+  age_type_columns: Record<string, string>;
   intensity_columns: string[];
   method_code_columns: string[];
 }
@@ -106,6 +108,11 @@ const plugin: PluginModule = {
       }
 
       case "age": {
+        // The age's type (Plateau Age, ...), when the level names its column
+        // and the record has one.
+        const typeColumn = options.age_type_columns?.[String(doc.type)];
+        const types = typeColumn ? listOf(getPath(doc, `summary._all.${typeColumn}`)) : [];
+        const ageType = types.length === 1 ? types[0] : undefined;
         if (options.age_has_interval) {
           // Every row's age in years BP, shown in one scale (lib/age.ts).
           const interval = ageIntervalOf(doc, options.age_interval);
@@ -117,6 +124,12 @@ const plugin: PluginModule = {
                 <br />
                 {formatAgeInterval(interval)}
               </span>
+              {ageType && interval.n === 1 && (
+                <>
+                  <br />
+                  {ageType}
+                </>
+              )}
             </Cell>
           );
         }
@@ -129,6 +142,12 @@ const plugin: PluginModule = {
             <br />
             {age}
             {ageUnit ? ` ${ageUnit}` : ""}
+            {ageType && (
+              <>
+                <br />
+                {ageType}
+              </>
+            )}
           </Cell>
         );
       }
