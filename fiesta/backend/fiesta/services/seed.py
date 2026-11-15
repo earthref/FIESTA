@@ -52,13 +52,25 @@ def load_seed(node):
 
 
 async def settle_seed_events(node, keys):
-    """Wait for seed events even when a running worker has claimed their rows."""
+    """Wait for seed events even when a running worker has claimed their rows. Only
+    the fixtures' own events are processed here: another backlog on the node (a
+    source sync's) is the worker's, and would not fit in the timeout."""
     from fiesta.services.outbox import drain
 
     completed = failed = 0
+    if not keys:
+        return {"completed": completed, "failed": failed}
+    async with get_sessionmaker(node.node.slug)() as session:
+        ids = list(
+            (
+                await session.execute(
+                    select(Contribution.id).where(Contribution.seed_key.in_(keys))
+                )
+            ).scalars()
+        )
     async with asyncio.timeout(60):
         while True:
-            result = await drain(node, limit=10000)
+            result = await drain(node, limit=10000, contribution_ids=ids)
             completed += result["completed"]
             failed += result["failed"]
             async with get_sessionmaker(node.node.slug)() as session:

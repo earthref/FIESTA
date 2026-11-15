@@ -19,15 +19,19 @@ from fiesta.services.revisions import locked, revision_file
 logger = logging.getLogger(__name__)
 
 
-async def drain(node, limit=100):
+async def drain(node, limit=100, contribution_ids=None):
+    """Process up to LIMIT pending events, oldest first; with CONTRIBUTION_IDS, only
+    those contributions' events (a caller waiting on its own work leaves an
+    unrelated backlog to the worker)."""
     completed = failed = 0
     seen = []
+    scope = [] if contribution_ids is None else [Outbox.contribution_id.in_(contribution_ids)]
     for _ in range(limit):
         async with get_sessionmaker(node.node.slug)() as session:
             event = (
                 await session.execute(
                     select(Outbox)
-                    .where(Outbox.completed_at.is_(None), Outbox.id.not_in(seen))
+                    .where(Outbox.completed_at.is_(None), Outbox.id.not_in(seen), *scope)
                     .order_by(Outbox.id)
                     .with_for_update(skip_locked=True)
                     .limit(1)
