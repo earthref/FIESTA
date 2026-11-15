@@ -226,6 +226,14 @@ serves its API, and its SPA only to local stacks. See configurations/geomagia/RE
       101/103 are fixed in the database.
 - [ ] **Decide when GEOMAGIA goes public** (`publish.web: true` in geomagia.yaml),
       with the GEOMAGIA team.
+- [ ] **Rebuild GEOMAGIA's search index once the `geomag-series` plugin is on dev**
+      (2026-11-14): its derived refinements (Data Type, Paleointensity Method Family,
+      Multi-Domain Checks, Cooling Rate Correction, Age Error, Directional Specimens or
+      Samples) are indexed with each site, so until `fiesta rebuild --yes` runs for
+      `geomagia` on dev (and on any stack serving it) those sidebar filters show no
+      values; the Plots tab, site-name and radius searches work without it. Done when
+      `https://dev.earthref.org/v2/geomagia/search/sites?size=1&facet=data_type` lists
+      Intensity and Direction.
 
 ## 2026-11-13 — OpenAlex reference metadata
 

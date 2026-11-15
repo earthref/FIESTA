@@ -472,6 +472,7 @@ export function SearchPage() {
     name: string;
     render?: (ctx: PluginSubTabContext) => ReactNode;
     countTable?: string;
+    records?: boolean;
   };
   const subTabs = useMemo<SubTab[]>(() => {
     if (!config || !level) return [];
@@ -543,11 +544,14 @@ export function SearchPage() {
   const clearedFacets = [...facetFields, ...columnFacetFields];
   const hasFacetFilters =
     parseQueryTokens(q).tokens.filter(([field]) => clearedFacets.includes(field)).length > 0;
-  // A plugin view renders from its own fetch; keep its ranges out of the level query.
-  const queryRanges = activeTab?.render ? undefined : activeRanges;
-  const queryBbox = activeTab?.render ? undefined : (areaBbox(level) ?? activeBbox);
+  // A plugin view of its own docs renders from its own fetch; keep its ranges
+  // out of the level query. One of the level's records (`records`) is searched
+  // as Summaries is.
+  const ownDocsView = !!activeTab?.render && !activeTab.records;
+  const queryRanges = ownDocsView ? undefined : activeRanges;
+  const queryBbox = ownDocsView ? undefined : (areaBbox(level) ?? activeBbox);
   const activeHas = hasAt(level, activeTab?.name);
-  const queryHas = activeTab?.render ? undefined : activeHas;
+  const queryHas = ownDocsView ? undefined : activeHas;
   const dataModel = useLatestDataModel();
   // A picked number column as a range filter (its label and unit).
   const numberFilter = useNumberFilter(level?.table ?? "");
@@ -615,6 +619,7 @@ export function SearchPage() {
     if (tab.name === "Summaries") return first?.total;
     if (tab.name === "Rows") return first && (first.rows_total ?? first.total);
     if (tab.name === "Map") return first && (first.mapped_total ?? null);
+    if (tab.records) return first?.total;
     const index = countedTabs.indexOf(tab);
     return index < 0 ? null : pluginCounts[index]?.data?.total;
   };
@@ -635,11 +640,11 @@ export function SearchPage() {
       1,
       0,
       false,
-      activeTab?.render ? undefined : rangesFor(rangeList, filters),
+      ownDocsView ? undefined : rangesFor(rangeList, filters),
       queryBbox,
       undefined,
       gridFilterList,
-      activeTab?.render ? undefined : hasList,
+      ownDocsView ? undefined : hasList,
     ),
     ...scope,
   });
@@ -1509,6 +1514,23 @@ export function SearchPage() {
                           bbox,
                           scope,
                           setRanges: (next) => setSearch({ ranges: next, replace: true }),
+                          searchParams: activeTab.records
+                            ? {
+                                ...searchRequestParams(
+                                  q,
+                                  1,
+                                  0,
+                                  false,
+                                  queryRanges,
+                                  queryBbox,
+                                  undefined,
+                                  gridFilterList,
+                                  queryHas,
+                                ),
+                                size: undefined,
+                                ...scope,
+                              }
+                            : undefined,
                         })}
                       </div>
                     )}

@@ -115,7 +115,7 @@ async def derive_artifacts(session, node, contribution):
     import uuid
 
     from fiesta.db.models import Revision
-    from fiesta.plugins import active_plugins
+    from fiesta.plugins import active_plugins, add_derived_values
     from fiesta.services.revisions import fingerprint, revision_file
 
     revision = await session.get(Revision, contribution.head_revision)
@@ -155,6 +155,7 @@ async def derive_artifacts(session, node, contribution):
         warnings = [w.as_dict() for w in report.warnings]
         contributor = await session.get(User, contribution.contributor_id)
         docs = summarize(node, parsed, contribution_meta(contribution, contributor))
+        add_derived_values(node, docs)
         for plugin in active_plugins(node):
             docs.extend(
                 plugin.derive_docs(node, parsed, contribution_meta(contribution, contributor))
@@ -204,10 +205,11 @@ async def process_contribution(session: AsyncSession, node: NodeConfig, contribu
 async def index_parsed(node, contribution, contributor, parsed, reference=None, prune=True):
     """Index a contribution's docs; `prune=False` for an index being rebuilt
     (it has no older docs to delete)."""
-    from fiesta.plugins import active_plugins
+    from fiesta.plugins import active_plugins, add_derived_values
 
     meta = contribution_meta(contribution, contributor, reference)
     docs = summarize(node, parsed, meta)
+    add_derived_values(node, docs)
     for plugin in active_plugins(node):
         docs.extend(plugin.derive_docs(node, parsed, meta))
     await ensure_index(get_opensearch(), node.search_index)

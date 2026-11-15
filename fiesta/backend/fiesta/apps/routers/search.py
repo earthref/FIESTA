@@ -840,11 +840,14 @@ async def search_values(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
     contribution: int | None = None,
     private_key: str | None = None,
 ) -> SearchValues:
     """Some summary fields of every doc matching a search, as rows of values
-    (one per doc, in `field` order), for plots of many docs."""
+    (one per doc, in `field` order), for plots of many docs; `filter` and
+    `has` as the search's, so a view of a level's records plots its matches."""
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
     fields = [_value_field(f) for f in field]
@@ -854,6 +857,8 @@ async def search_values(
         size=MAP_PAGE_SIZE,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        column_filters=_grid_filters(node, table, filter_),
+        has=_parse_has(node, table, has),
     )
     await _constrain(session, node, body, query, contribution, private_key, scope)
     body["_source"] = fields

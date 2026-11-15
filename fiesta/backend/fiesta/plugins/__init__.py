@@ -98,6 +98,48 @@ def all_plugins() -> dict[str, FiestaPlugin]:
     return _PLUGINS
 
 
+def derived_columns(node) -> dict[str, str]:
+    """The active plugins' derived columns ({name: "text" | "number"})."""
+    columns: dict[str, str] = {}
+    for plugin in active_plugins(node):
+        columns.update(plugin.derived_columns(node))
+    return columns
+
+
+def add_derived_values(node, docs: list[dict]) -> None:
+    """Merge the active plugins' derived values (`derive_values`) into the
+    docs `summarize` built: each hierarchy record doc's `summary._all.<name>`
+    (text) or `summary._num.<name>` (numbers), and the contribution doc's,
+    the union of its records' (capped as summarize caps a column, keeping
+    a number column's greatest)."""
+    from fiesta.domain.summarize import MAX_ALL_VALUES
+
+    levels = set(node.hierarchy[1:])
+    contribution = next((d for d in docs if d.get("type") == node.hierarchy[0]), None)
+    for plugin in active_plugins(node):
+        kinds = plugin.derived_columns(node)
+        if not kinds:
+            continue
+        for doc in docs:
+            if doc.get("type") not in levels:
+                continue
+            derived = plugin.derive_values(node, doc["type"], doc.get("rows") or [])
+            for name, values in derived.items():
+                kind = kinds.get(name)
+                if kind is None or not values:
+                    continue
+                block = "_num" if kind == "number" else "_all"
+                cast = float if kind == "number" else str
+                for target in (doc, contribution):
+                    if target is None:
+                        continue
+                    column = target["summary"].setdefault(block, {}).setdefault(name, [])
+                    merged = sorted({*column, *(cast(v) for v in values)})
+                    if len(merged) > MAX_ALL_VALUES:
+                        merged = [*merged[: MAX_ALL_VALUES - 1], merged[-1]]
+                    column[:] = merged
+
+
 def active_plugins(node) -> list[FiestaPlugin]:
     """The plugins a node's YAML activates, in YAML order, with their options
     validated. Unknown names (in `features.plugins` or `plugins`) and options
