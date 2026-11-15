@@ -195,9 +195,19 @@ the latter become G5 work after cutover.*
       DOI is required.
 - [ ] **C2 ORCID OAuth login** (the `users.orcid` column exists; no flow). Client
       registration — **BLOCKED (operator)**.
-- [ ] **C3 Contribution upgrade** 2.x → 3.0 (MagIC) — port the upgrade maps from the
-      legacy data-model JSON. Let the contributor ignore or rename unknown columns
-      (MagIC #308) and accept or convert the old model's blank values (#521).
+- [x] **C3 Contribution upgrade** (2026-11-14) 2.x → 3.0 (MagIC) — a core engine
+      (`fiesta.domain.upgrade`) walks any node's data-model chain from the models'
+      `previous_columns` (renames, splits, merges, row merging, a report of every
+      change and drop); the 2.5 → 3.0 restructuring is the `magic-3-upgrade` plugin's
+      `UpgradeStep` (new `FiestaPlugin.upgrade_steps` hook). Uploads and imports in an
+      older version are upgraded before validation (`PUT .../file`, `POST .../import`,
+      the upload page's import step) with the original and the report kept as
+      attachments; `POST /upgrade` and an Upgrade page (`/upgrade`) convert without
+      storing; the 2.5 example upload is back. Undefined columns are kept for the
+      importer to map or skip (MagIC #308); the 2.5 blank defaults are choices,
+      polarity and NRM origin off (#521, #295, #296, #374); measurements get
+      `sequence` (#374); values a level cannot hold are reported (#342). The legacy
+      mocha suite is ported (`legacy_cases.json`, changed expectations noted).
 - [ ] **C4 Derived experiment docs** — MagIC's `experiments` search level is derived
       from measurements, not a table; port `summarize_contribution.js`'s experiment
       grouping as a plugin `derive_docs` hook or core summarizer step.

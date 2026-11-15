@@ -1,0 +1,1278 @@
+[
+  {
+    "name": "when upgrading invalid JSON / should report one error if two different relative intensity normalizations are used",
+    "kind": "n_errors",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "site_1" }],
+      "pmag_results": [
+        {
+          "er_site_names": "site_1",
+          "average_int_rel": "1",
+          "average_int_rel_sigma": "2",
+          "magic_method_codes": "IE-IRM:IE-ARM"
+        }
+      ]
+    },
+    "n": 1
+  },
+  {
+    "name": "when upgrading invalid JSON / should report one error if two different relative intensity normalizations are used (2)",
+    "kind": "error",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "site_1" }],
+      "pmag_results": [
+        {
+          "er_site_names": "site_1",
+          "average_int_rel": "1",
+          "average_int_rel_sigma": "2",
+          "magic_method_codes": "IE-IRM:IE-ARM"
+        }
+      ]
+    },
+    "pattern": "include more than one type of relative intensity normalization",
+    "changed": "Reworded: one error per table, naming the first row."
+  },
+  {
+    "name": "when upgrading invalid JSON / should report one error if several different relative intensity normalizations are used",
+    "kind": "n_errors",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "site_1" }],
+      "pmag_results": [
+        {
+          "er_site_names": "site_1",
+          "average_int_rel": "1",
+          "average_int_rel_sigma": "2",
+          "magic_method_codes": "IE-IRM:IE-ARM:IE-CHI"
+        }
+      ]
+    },
+    "n": 1
+  },
+  {
+    "name": "when upgrading invalid JSON / should report one error if several different relative intensity normalizations are used (2)",
+    "kind": "error",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "site_1" }],
+      "pmag_results": [
+        {
+          "er_site_names": "site_1",
+          "average_int_rel": "1",
+          "average_int_rel_sigma": "2",
+          "magic_method_codes": "IE-IRM:IE-ARM:IE-CHI"
+        }
+      ]
+    },
+    "pattern": "include more than one type of relative intensity normalization",
+    "changed": "Reworded: one error per table, naming the first row."
+  },
+  {
+    "name": "when upgrading valid JSON / should keep numbers as strings",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5", "id": "66" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0", "id": "66" }]
+    }
+  },
+  {
+    "name": "when upgrading valid JSON / should update table and column names",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_specimens": [{ "er_specimen_name": "1" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [{ "specimen": "1" }]
+    }
+  },
+  {
+    "name": "when upgrading valid JSON / should update table and column names (2)",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "rmag_susceptibility": [{ "susceptibility_loss_tangent": "1", "susceptibility_flag": "g" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [{ "susc_loss_tangent": "1", "result_quality": "g" }]
+    }
+  },
+  {
+    "name": "when upgrading valid JSON / should warn about deleted columns",
+    "kind": "warning",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "site_definition": "1" }]
+    },
+    "pattern": "column .* in table .* is unnecessary in magic data model"
+  },
+  {
+    "name": "when upgrading valid JSON / should sort numeric merge keys",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [{ "er_sample_name": "9" }, { "er_sample_name": "10" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [{ "sample": "9" }, { "sample": "10" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when generating warnings and errors / should warn about deleted results",
+    "kind": "warning",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_results": [{ "average_int": "1" }]
+    },
+    "pattern": "were deleted in magic data model version 3.0 since they are contribution-level results",
+    "changed": "Reworded: one warning per table, naming the first row."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when generating warnings and errors / should warn about deleted results (2)",
+    "kind": "warning",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "rmag_results": [{ "critical_temp": "1" }]
+    },
+    "pattern": "were deleted in magic data model version 3.0 since they are contribution-level results",
+    "changed": "Reworded: one warning per table, naming the first row."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should assign the same column into different tables based on the level",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [{ "er_sample_name": "1" }],
+      "er_specimens": [{ "er_sample_name": "1", "er_specimen_name": "3" }],
+      "pmag_results": [
+        {
+          "er_sample_names": "1",
+          "er_specimen_names": ":3:1:",
+          "data_type": "i",
+          "magic_method_codes": "LP-DIR"
+        },
+        {
+          "er_sample_names": "1",
+          "er_specimen_names": "3",
+          "data_type": "i",
+          "magic_method_codes": "LT-AF-Z"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [
+        { "sample": "1", "specimens": "1:3", "result_type": "i", "method_codes": "LP-DIR" }
+      ],
+      "specimens": [{ "sample": "1", "specimen": "3", "method_codes": "LT-AF-Z" }]
+    },
+    "changed": "The current 3.0 model has no specimens.result_type (the legacy test predates its removal); the dropped value is reported (MagIC #342)."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should merge orthogonal data from different tables",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_specimens": [{ "er_specimen_name": "specimen_A", "specimen_texture": "Metamorphic" }],
+      "pmag_results": [{ "er_specimen_names": "specimen_A", "data_type": "a" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [{ "specimen": "specimen_A", "texture": "Metamorphic" }]
+    },
+    "changed": "The current 3.0 model has no specimens.result_type (the legacy test predates its removal); the dropped value is reported (MagIC #342)."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should merge the same column value from different tables",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "site_A", "site_lat": "1.1" }],
+      "pmag_results": [{ "er_site_names": "site_A", "data_type": "i", "average_lat": "1.1" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [{ "site": "site_A", "result_type": "i", "lat": "1.1" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should split rows to avoid a collision",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_locations": [
+        { "er_location_name": "loc_A", "location_begin_lat": "5", "location_end_lat": "6" }
+      ],
+      "pmag_results": [
+        {
+          "er_location_names": "loc_A",
+          "data_type": "i",
+          "normal_inc": "1.2",
+          "reversed_inc": "1.3",
+          "result_description": "A"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "locations": [
+        {
+          "location": "loc_A",
+          "lat_s": "5",
+          "lat_n": "6",
+          "result_type": "i",
+          "dir_inc": "1.2",
+          "dir_polarity": "n",
+          "description": "A"
+        },
+        {
+          "location": "loc_A",
+          "lat_s": "5",
+          "lat_n": "6",
+          "result_type": "i",
+          "dir_inc": "1.3",
+          "dir_polarity": "r",
+          "description": "A"
+        }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should share some metadata between results",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_locations": [
+        {
+          "er_location_name": "Hyblean Plateau",
+          "er_location_alternatives": " Hyblean Plateau Cretaceous Volcanics, Comb. : Hyblean Plateau Miocene Volcanics : Hyblean Plateau Pliocene Volcanics:Hyblean Plateau Cretaceous Volcanics ",
+          "location_type": "Outcrop",
+          "location_begin_lat": "36.8",
+          "location_begin_lon": "14.7",
+          "location_end_lat": "37.2",
+          "location_end_lon": "14.9",
+          "continent_ocean": "Europe",
+          "country": "Italy",
+          "region": "Sicily",
+          "terrane": "Sicily",
+          "geological_province_section": "Hyblean Plateau Volcanics",
+          "location_class": "Extrusive : Intrusive",
+          "location_lithology": "Intrusives : Extrusives",
+          "location_description": "Underlies Maastrichtian limestones. Superseded study.",
+          "er_citation_names": "This study"
+        }
+      ],
+      "pmag_results": [
+        {
+          "pmag_result_name": "Hyblean Plateau Cretaceous Volcanics :1463",
+          "er_location_names": "Hyblean Plateau",
+          "data_type": "a",
+          "fold_test": "ND",
+          "conglomerate_test": "ND",
+          "contact_test": "ND",
+          "reversal_test": "ND",
+          "rock_magnetic_test": "ND",
+          "average_lat": "36.8",
+          "average_lon": "14.7",
+          "average_age_low": "71",
+          "average_age_high": "84",
+          "average_age_unit": "Ma",
+          "average_inc": "-31.2",
+          "average_dec": "173.6",
+          "average_alpha95": "7.4",
+          "average_n": "12",
+          "average_nn": "74",
+          "average_k": "36",
+          "vgp_lat": "69.3",
+          "vgp_lon": "212.3",
+          "vgp_dp": "4.6",
+          "vgp_dm": "8.3",
+          "tilt_correction": "0",
+          "percent_reversed": "100",
+          "result_description": "AF 22. 5-30mT, thermal 300-400C. Data included in RESULTNO 1464. Superseded study.",
+          "external_database_names": "GPMDB",
+          "external_database_ids": "1463",
+          "magic_method_codes": " DE-DI : LT-AF-Z : LT-T-Z:LP-DC3 ",
+          "er_citation_names": "This study"
+        },
+        {
+          "pmag_result_name": "Hyblean Plateau Cretaceous Volcanics, Comb. :1464",
+          "er_location_names": "Hyblean Plateau",
+          "data_type": "a",
+          "fold_test": "ND",
+          "conglomerate_test": "ND",
+          "contact_test": "ND",
+          "reversal_test": "ND",
+          "rock_magnetic_test": "ND",
+          "average_lat": "36.8",
+          "average_lon": "14.7",
+          "average_age_low": "71",
+          "average_age_high": "84",
+          "average_age_unit": "Ma",
+          "average_inc": "-27.6",
+          "average_dec": "167.3",
+          "average_alpha95": "4.3",
+          "average_n": "52",
+          "average_nn": "203",
+          "average_k": "22",
+          "vgp_lat": "65.2",
+          "vgp_lon": "225.1",
+          "vgp_dp": "2.6",
+          "vgp_dm": "4.7",
+          "tilt_correction": "0",
+          "percent_reversed": "100",
+          "result_description": "Combined Result. AF and thermal cleaning. Combined RESULTNO 1463, 2367, 2674, 2698. .",
+          "external_database_names": "GPMDB",
+          "external_database_ids": "1464",
+          "magic_method_codes": " DE-DI : LT-AF-Z : LT-T-Z:LP-DC3 ",
+          "er_citation_names": "This study"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "locations": [
+        {
+          "age_high": "84",
+          "age_low": "71",
+          "age_unit": "Ma",
+          "citations": "This study",
+          "conglomerate_test": "ND",
+          "contact_test": "ND",
+          "continent_ocean": "Europe",
+          "country": "Italy",
+          "description": "Underlies Maastrichtian limestones. Superseded study. AF 22. 5-30mT, thermal 300-400C. Data included in RESULTNO 1464. Superseded study.",
+          "dir_alpha95": "7.4",
+          "dir_dec": "173.6",
+          "dir_inc": "-31.2",
+          "dir_k": "36",
+          "dir_n_samples": "74",
+          "dir_n_sites": "12",
+          "dir_tilt_correction": "0",
+          "external_database_ids": "GPMDB[1463]",
+          "fold_test": "ND",
+          "geologic_classes": "Extrusive:Intrusive",
+          "geological_province_sections": "Hyblean Plateau Volcanics",
+          "lat_n": "37.2",
+          "lat_s": "36.8",
+          "lithologies": "Extrusives:Intrusives",
+          "location": "Hyblean Plateau",
+          "location_alternatives": "Hyblean Plateau Cretaceous Volcanics:Hyblean Plateau Cretaceous Volcanics, Comb.:Hyblean Plateau Miocene Volcanics:Hyblean Plateau Pliocene Volcanics",
+          "location_type": "Outcrop",
+          "lon_e": "14.9",
+          "lon_w": "14.7",
+          "method_codes": "DE-DI:LP-DC3:LT-AF-Z:LT-T-Z",
+          "pole_dm": "8.3",
+          "pole_dp": "4.6",
+          "pole_lat": "69.3",
+          "pole_lon": "212.3",
+          "pole_reversed_perc": "100",
+          "region": "Sicily",
+          "result_name": "Hyblean Plateau Cretaceous Volcanics :1463",
+          "result_type": "a",
+          "reversal_test": "ND",
+          "rock_magnetic_test": "ND",
+          "terranes": "Sicily"
+        },
+        {
+          "age_high": "84",
+          "age_low": "71",
+          "age_unit": "Ma",
+          "citations": "This study",
+          "conglomerate_test": "ND",
+          "contact_test": "ND",
+          "continent_ocean": "Europe",
+          "country": "Italy",
+          "description": "Underlies Maastrichtian limestones. Superseded study. Combined Result. AF and thermal cleaning. Combined RESULTNO 1463, 2367, 2674, 2698. .",
+          "dir_alpha95": "4.3",
+          "dir_dec": "167.3",
+          "dir_inc": "-27.6",
+          "dir_k": "22",
+          "dir_n_samples": "203",
+          "dir_n_sites": "52",
+          "dir_tilt_correction": "0",
+          "external_database_ids": "GPMDB[1464]",
+          "fold_test": "ND",
+          "geologic_classes": "Extrusive:Intrusive",
+          "geological_province_sections": "Hyblean Plateau Volcanics",
+          "lat_n": "37.2",
+          "lat_s": "36.8",
+          "lithologies": "Extrusives:Intrusives",
+          "location": "Hyblean Plateau",
+          "location_alternatives": "Hyblean Plateau Cretaceous Volcanics:Hyblean Plateau Cretaceous Volcanics, Comb.:Hyblean Plateau Miocene Volcanics:Hyblean Plateau Pliocene Volcanics",
+          "location_type": "Outcrop",
+          "lon_e": "14.9",
+          "lon_w": "14.7",
+          "method_codes": "DE-DI:LP-DC3:LT-AF-Z:LT-T-Z",
+          "pole_dm": "4.7",
+          "pole_dp": "2.6",
+          "pole_lat": "65.2",
+          "pole_lon": "225.1",
+          "pole_reversed_perc": "100",
+          "region": "Sicily",
+          "result_name": "Hyblean Plateau Cretaceous Volcanics, Comb. :1464",
+          "result_type": "a",
+          "reversal_test": "ND",
+          "rock_magnetic_test": "ND",
+          "terranes": "Sicily"
+        }
+      ]
+    },
+    "changed": "List terms are trimmed as well as sorted (the legacy upgrade kept the spaces around ':')."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should keep different column values separate from different tables",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [
+        {
+          "er_site_name": "site_A",
+          "site_class": "Submarine:Sedimentary",
+          "magic_method_codes": "LP-DIR"
+        }
+      ],
+      "rmag_results": [
+        {
+          "er_site_names": "site_A",
+          "anisotropy_type": "A",
+          "anisotropy_p": "0.0123",
+          "magic_method_codes": "LP-PI"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [
+        { "site": "site_A", "geologic_classes": "Sedimentary:Submarine", "method_codes": "LP-DIR" },
+        { "site": "site_A", "aniso_type": "A", "aniso_p": "0.0123", "method_codes": "LP-PI" }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should keep different column values separate from different tables (2)",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [{ "er_sample_name": "sample_A", "er_citation_names": "This Study" }],
+      "pmag_results": [
+        {
+          "er_sample_names": "sample_A",
+          "average_int": "0.0123",
+          "data_type": "i",
+          "er_citation_names": "10.1029/92JB01202"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [
+        { "sample": "sample_A", "citations": "This Study" },
+        {
+          "sample": "sample_A",
+          "int_abs": "0.0123",
+          "result_type": "i",
+          "citations": "10.1029/92JB01202"
+        }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should keep different column values separate from different tables (3)",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "site_A", "site_lat": "1.1" }],
+      "pmag_results": [{ "er_site_names": "site_A", "data_type": "i", "average_lat": "1.2" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [
+        { "site": "site_A", "lat": "1.1" },
+        { "site": "site_A", "result_type": "i", "lat": "1.2" }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should merge rows even if lists are in a different order",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [
+        {
+          "er_sample_name": "sample_A",
+          "sample_class": "Submarine:Sedimentary",
+          "magic_method_codes": "LP-DIR:LP-PI"
+        }
+      ],
+      "pmag_results": [
+        {
+          "er_sample_names": "sample_A",
+          "average_int": "0.0123",
+          "data_type": "i",
+          "magic_method_codes": "LP-PI:LP-DIR"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [
+        {
+          "sample": "sample_A",
+          "geologic_classes": "Sedimentary:Submarine",
+          "int_abs": "0.0123",
+          "result_type": "i",
+          "method_codes": "LP-DIR:LP-PI"
+        }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should merge rows when changing tables",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "Site 1" }],
+      "er_samples": [
+        { "er_site_name": "Site 1", "er_sample_name": "Sample 2", "sample_core_depth": "1" },
+        { "er_site_name": "Site 1", "er_sample_name": "Sample 2" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [{ "site": "Site 1", "core_depth": "1" }],
+      "samples": [{ "site": "Site 1", "sample": "Sample 2" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should merge rows when changing tables (2)",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "Site 1", "site_core_depth": "1" }],
+      "er_samples": [
+        { "er_site_name": "Site 1", "er_sample_name": "Sample 2", "sample_core_depth": "2" },
+        { "er_site_name": "Site 1", "er_sample_name": "Sample 2" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [{ "site": "Site 1", "core_depth": "2" }, { "site": "Site 1", "core_depth": "1" }],
+      "samples": [{ "site": "Site 1", "sample": "Sample 2" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should merge expeditions with locations",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_locations": [{ "er_location_name": "loc_1" }],
+      "er_expeditions": [
+        { "er_expedition_name": "exp_A", "expedition_ship": "ship1", "expedition_mb_sonar": "123" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "locations": [{ "location": "loc_1", "expedition_name": "exp_A", "expedition_ship": "ship1" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when merging rows / should merge expeditions with locations (2)",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_locations": [
+        { "er_location_name": "loc_1" },
+        { "er_location_name": "loc_2" },
+        { "er_location_name": "loc_3" }
+      ],
+      "er_expeditions": [
+        {
+          "er_expedition_name": "exp_A",
+          "expedition_ship": "ship1",
+          "expedition_mb_sonar": "123",
+          "expedition_location": "loc_1:loc_2"
+        },
+        { "er_expedition_name": "exp_B", "expedition_location": "loc_3" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "locations": [
+        { "location": "loc_1", "expedition_name": "exp_A", "expedition_ship": "ship1" },
+        { "location": "loc_2", "expedition_name": "exp_A", "expedition_ship": "ship1" },
+        { "location": "loc_3", "expedition_name": "exp_B" }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when adding defaults / should assign a tilt correction for tilt corrected/uncorrected directions",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [{ "er_sample_name": "sample_A" }],
+      "pmag_results": [
+        { "er_sample_names": "sample_A", "average_dec": "1", "magic_method_codes": "DE-BFL" },
+        { "er_sample_names": "sample_A", "tilt_dec_corr": "2", "magic_method_codes": "DE-BFL" },
+        { "er_sample_names": "sample_A", "tilt_dec_uncorr": "3", "magic_method_codes": "DE-BFL" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [
+        {
+          "sample": "sample_A",
+          "dir_dec": "1",
+          "dir_tilt_correction": "100",
+          "result_type": "i",
+          "method_codes": "DE-BFL"
+        },
+        { "sample": "sample_A", "dir_dec": "2", "result_type": "i", "method_codes": "DE-BFL" },
+        {
+          "sample": "sample_A",
+          "dir_dec": "3",
+          "dir_tilt_correction": "0",
+          "result_type": "i",
+          "method_codes": "DE-BFL"
+        }
+      ]
+    },
+    "changed": "Blank 2.5 polarities and NRM origins stay blank instead of the 2.5 defaults n/p (MagIC #295, #296, #374); they are opt-in blank defaults now. A tilt-corrected direction's blank tilt correction stays blank instead of -3 (MagIC #521)."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when adding defaults / should insert the default sample orientation quality of \"g\" only if there is an orientation",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [
+        { "sample_azimuth": "1", "sample_lat": "1" },
+        { "sample_dip": "1", "sample_lat": "2" },
+        { "sample_bed_dip": "1", "sample_lat": "3" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [
+        { "orientation_quality": "g", "azimuth": "1", "lat": "1" },
+        { "orientation_quality": "g", "dip": "1", "lat": "2" },
+        { "orientation_quality": "g", "bed_dip": "1", "lat": "3" }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when adding defaults / should preserve sample orientation quality regardless of whether there were orientation data",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [{ "sample_orientation_flag": "b" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [{ "orientation_quality": "b" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when adding defaults / should not insert a default orientation flag without orientation data",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [{ "sample_cooling_rate": "1" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [{ "cooling_rate": "1" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when adding defaults / should insert a default result quality",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_sites": [{ "er_site_name": "A" }],
+      "rmag_remanence": [{ "er_specimen_name": "B" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [{ "site": "A", "result_quality": "g" }],
+      "specimens": [{ "specimen": "B", "result_quality": "g" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when adding defaults / should insert a default result type",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_results": [{ "er_sample_names": "A" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [{ "sample": "A", "result_type": "i" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when adding defaults / should insert specimen direction default values",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_specimens": [
+        { "specimen_inc": "1", "specimen_flag": "g" },
+        { "specimen_inc": "2", "specimen_flag": "g", "magic_method_codes": "LP-DIR" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [
+        { "dir_inc": "1", "result_quality": "g", "method_codes": "DE-BFL" },
+        { "dir_inc": "2", "result_quality": "g", "method_codes": "DE-BFL:LP-DIR" }
+      ]
+    },
+    "changed": "Blank 2.5 polarities and NRM origins stay blank instead of the 2.5 defaults n/p (MagIC #295, #296, #374); they are opt-in blank defaults now."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when adding defaults / should insert specimen intensity default values",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_specimens": [{ "specimen_int": "1", "specimen_b": "2", "specimen_flag": "g" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [
+        { "int_abs": "1", "int_corr": "u", "int_b": "2", "int_scat": "t", "result_quality": "g" }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should separate results with mixtures of tilt corrected/uncorrected directions",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [{ "er_sample_name": "sample_A", "sample_class": "Submarine:Sedimentary" }],
+      "pmag_results": [
+        {
+          "er_sample_names": "sample_A",
+          "average_inc": "1",
+          "tilt_dec_corr": "2",
+          "tilt_correction": "50",
+          "tilt_inc_uncorr": "3",
+          "magic_method_codes": "DE-BFL:LP-PI:LP-DIR"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [
+        {
+          "sample": "sample_A",
+          "geologic_classes": "Sedimentary:Submarine",
+          "dir_inc": "1",
+          "dir_tilt_correction": "100",
+          "result_type": "i",
+          "method_codes": "DE-BFL:LP-DIR:LP-PI"
+        },
+        {
+          "sample": "sample_A",
+          "geologic_classes": "Sedimentary:Submarine",
+          "dir_dec": "2",
+          "dir_tilt_correction": "50",
+          "result_type": "i",
+          "method_codes": "DE-BFL:LP-DIR:LP-PI"
+        },
+        {
+          "sample": "sample_A",
+          "geologic_classes": "Sedimentary:Submarine",
+          "dir_inc": "3",
+          "dir_tilt_correction": "0",
+          "result_type": "i",
+          "method_codes": "DE-BFL:LP-DIR:LP-PI"
+        }
+      ]
+    },
+    "changed": "Blank 2.5 polarities and NRM origins stay blank instead of the 2.5 defaults n/p (MagIC #295, #296, #374); they are opt-in blank defaults now."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should convert a wide pmag_criteria table into a tall criteria table",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_criteria": [
+        {
+          "pmag_criteria_code": "DE-SITE",
+          "site_k": "180",
+          "site_alpha95": "50",
+          "criteria_definition": "Criteria for selection of site direction"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "criteria": [
+        {
+          "description": "Criteria for selection of site direction",
+          "criterion": "DE-SITE",
+          "table_column": "sites.dir_alpha95",
+          "criterion_operation": "<=",
+          "criterion_value": "50"
+        },
+        {
+          "description": "Criteria for selection of site direction",
+          "criterion": "DE-SITE",
+          "table_column": "sites.dir_k",
+          "criterion_operation": ">=",
+          "criterion_value": "180"
+        }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should convert a good/bad intensity scatter into a true/false",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_specimens": [
+        { "specimen_scat": "g", "specimen_flag": "g" },
+        { "specimen_scat": "b", "specimen_flag": "b" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [
+        { "int_scat": "t", "result_quality": "g" },
+        { "int_scat": "f", "result_quality": "b" }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should convert the specimen direction type into a method code",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_specimens": [
+        {
+          "specimen_inc": "1",
+          "specimen_direction_type": "l",
+          "magic_method_codes": "DE-SITE",
+          "specimen_flag": "g"
+        },
+        {
+          "specimen_inc": "2",
+          "specimen_direction_type": "p",
+          "magic_method_codes": "DE-SITE",
+          "specimen_flag": "g"
+        },
+        {
+          "specimen_inc": "3",
+          "specimen_direction_type": "p",
+          "magic_method_codes": "DE-BFP",
+          "specimen_flag": "g"
+        },
+        { "magic_method_codes": "LP-DIR", "specimen_flag": "g" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [
+        { "dir_inc": "1", "result_quality": "g", "method_codes": "DE-BFL:DE-SITE" },
+        { "dir_inc": "2", "result_quality": "g", "method_codes": "DE-BFP:DE-SITE" },
+        { "dir_inc": "3", "result_quality": "g", "method_codes": "DE-BFP" },
+        { "result_quality": "g", "method_codes": "LP-DIR" }
+      ]
+    },
+    "changed": "Blank 2.5 polarities and NRM origins stay blank instead of the 2.5 defaults n/p (MagIC #295, #296, #374); they are opt-in blank defaults now."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should assign the minimum location lat and lon to the correct columns",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_locations": [
+        {
+          "location_begin_lat": "10",
+          "location_end_lat": "-10",
+          "location_begin_lon": "10",
+          "location_end_lon": "5"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "locations": [{ "lat_s": "-10", "lat_n": "10", "lon_w": "5", "lon_e": "10" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should prefer measurement specimen names over synthetic names",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "magic_measurements": [
+        { "er_specimen_name": "a", "er_synthetic_name": "b" },
+        { "er_synthetic_name": "b" },
+        { "er_specimen_name": "a" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [{ "specimen": "a" }, { "specimen": "b" }],
+      "measurements": [
+        { "specimen": "a", "sequence": "1", "quality": "g" },
+        { "specimen": "b", "sequence": "2", "quality": "g" },
+        { "specimen": "a", "sequence": "3", "quality": "g" }
+      ]
+    },
+    "changed": "Upgraded measurements get a sequence in file order (MagIC #374) and the 2.5 default quality g that 3.0 requires (MagIC #521)."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should map measurement synthetic names into specimen names",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "magic_measurements": [{ "er_synthetic_name": "a" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [{ "specimen": "a" }],
+      "measurements": [{ "specimen": "a", "sequence": "1", "quality": "g" }]
+    },
+    "changed": "Upgraded measurements get a sequence in file order (MagIC #374) and the 2.5 default quality g that 3.0 requires (MagIC #521)."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should create measurement parent tables to avoid losing hierarchy information",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "magic_measurements": [
+        {
+          "er_location_name": "location name",
+          "er_site_name": "site name",
+          "er_sample_name": "sample name",
+          "er_specimen_name": "specimen name"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "locations": [{ "location": "location name" }],
+      "sites": [{ "site": "site name", "location": "location name" }],
+      "samples": [{ "sample": "sample name", "site": "site name" }],
+      "specimens": [{ "specimen": "specimen name", "sample": "sample name" }],
+      "measurements": [{ "specimen": "specimen name", "sequence": "1", "quality": "g" }]
+    },
+    "changed": "Upgraded measurements get a sequence in file order (MagIC #374) and the 2.5 default quality g that 3.0 requires (MagIC #521)."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should handle measurements as an array",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "magic_measurements": [
+        { "measurement_date": "2008:07:01:08:46:00.00", "measurement_time_zone": "SAN" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "measurements": [{ "timestamp": "2008-07-01T15:46:00Z", "sequence": "1", "quality": "g" }]
+    },
+    "changed": "Upgraded measurements get a sequence in file order (MagIC #374) and the 2.5 default quality g that 3.0 requires (MagIC #521)."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should combine external_database_names/ids into a dictionary",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_sites": [
+        {
+          "er_site_name": "A",
+          "site_flag": "g",
+          "external_database_names": ":GEOMAGIA50:CALS7K.2:ARCHEO00:",
+          "external_database_ids": "1435::2329"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [
+        {
+          "site": "A",
+          "result_quality": "g",
+          "external_database_ids": "ARCHEO00[2329]:CALS7K.2[]:GEOMAGIA50[1435]"
+        }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should use method codes to map normalized relative intensities",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_results": [
+        {
+          "er_site_names": "site_1",
+          "average_int_rel": "1",
+          "average_int_rel_sigma": "2",
+          "data_type": "i",
+          "magic_method_codes": "something else:ie-ARM"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [
+        {
+          "site": "site_1",
+          "int_rel_ARM": "1",
+          "int_rel_ARM_sigma": "2",
+          "result_type": "i",
+          "method_codes": "SOMETHING ELSE"
+        }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should add a geoid method code",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "site_1", "site_location_geoid": "WGS84" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [{ "site": "site_1", "method_codes": "GE-WGS84" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should rename method codes",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [
+        {
+          "er_site_name": "site_1",
+          "magic_method_codes": "ST-BC:ST-BC-Q1:ST-CT:ST-IC:ST-IFC:ST-VV-Q1"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [{ "site": "site_1", "method_codes": "ST-BCQ-1:ST-C:ST-C-I:ST-G:ST-G-IF:ST-VVQ-1" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should favor synthetic name over specimen name",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [{ "er_sample_name": "sample1" }],
+      "er_specimens": [{ "er_specimen_name": "specimen1" }, { "er_specimen_name": "specimen2" }],
+      "pmag_results": [
+        {
+          "er_sample_names": "sample1",
+          "er_specimen_names": "specimen1:specimen2",
+          "average_int": "1"
+        }
+      ],
+      "er_synthetics": [{ "er_synthetic_name": "synthetic1", "er_specimen_name": "specimen1" }]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [
+        {
+          "sample": "sample1",
+          "specimens": "specimen2:synthetic1",
+          "int_abs": "1",
+          "result_type": "i"
+        }
+      ],
+      "specimens": [
+        { "specimen": "specimen2" },
+        { "specimen": "synthetic1", "specimen_alternatives": "specimen1" }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should combine pole confidence ellipse parameters",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_results": [
+        {
+          "er_location_names": "location1",
+          "eta_dec": "1",
+          "eta_inc": "2",
+          "eta_semi_angle": "3",
+          "zeta_dec": "4",
+          "zeta_inc": "5",
+          "zeta_semi_angle": "6"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "locations": [{ "location": "location1", "pole_conf": "1:2:3:4:5:6", "result_type": "i" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should combine the anisotropy tensor elements",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "rmag_anisotropy": [
+        {
+          "er_specimen_name": "specimen1",
+          "anisotropy_s1": "1",
+          "anisotropy_s2": "2",
+          "anisotropy_s3": "3",
+          "anisotropy_s4": "4",
+          "anisotropy_s5": "5",
+          "anisotropy_s6": "6"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [{ "specimen": "specimen1", "aniso_s": "1:2:3:4:5:6", "result_quality": "g" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should combine the anisotropy eigenparameters",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "rmag_results": [
+        {
+          "er_specimen_names": "specimen1",
+          "anisotropy_t1": "1",
+          "anisotropy_v1_dec": "2",
+          "anisotropy_v1_inc": "3",
+          "anisotropy_v1_eta_dec": "4",
+          "anisotropy_v1_eta_inc": "5",
+          "anisotropy_v1_eta_semi_angle": "6",
+          "anisotropy_v1_zeta_dec": "7",
+          "anisotropy_v1_zeta_inc": "8",
+          "anisotropy_v1_zeta_semi_angle": "9"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [{ "specimen": "specimen1", "aniso_v1": "1:2:3:eta/zeta:4:5:6:7:8:9" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should combine the anisotropy eigenparameters (2)",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "rmag_results": [
+        {
+          "er_specimen_names": "specimen1",
+          "anisotropy_t2": "1",
+          "anisotropy_v2_dec": "2",
+          "anisotropy_v2_inc": "3"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [{ "specimen": "specimen1", "aniso_v2": "1:2:3" }]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should adopt inferred ages up to the sites table",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_sites": [{ "er_site_name": "site1" }],
+      "er_samples": [{ "er_site_name": "site1", "er_sample_name": "sample1" }],
+      "er_specimens": [
+        { "er_site_name": "site1", "er_sample_name": "sample1", "er_specimen_name": "specimen1" }
+      ],
+      "pmag_results": [
+        {
+          "er_site_names": "site1",
+          "er_sample_names": "sample1",
+          "er_specimen_names": "specimen1",
+          "average_age": "1",
+          "average_age_low": "0",
+          "average_age_high": "2"
+        }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [{ "site": "site1", "age": "1", "age_low": "0", "age_high": "2" }],
+      "samples": [{ "site": "site1", "sample": "sample1" }],
+      "specimens": [{ "sample": "sample1", "specimen": "specimen1" }]
+    },
+    "changed": "The current 3.0 model has no specimens.result_type (the legacy test predates its removal); the dropped value is reported (MagIC #342)."
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should repeat metadata",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_specimens": [{ "er_specimen_name": "specimen1", "specimen_lithology": "Basalt" }],
+      "pmag_specimens": [
+        { "er_specimen_name": "specimen1", "specimen_mad": "1" },
+        { "er_specimen_name": "specimen1", "specimen_mad": "2" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "specimens": [
+        {
+          "specimen": "specimen1",
+          "lithologies": "Basalt",
+          "result_quality": "g",
+          "dir_mad_free": "1"
+        },
+        {
+          "specimen": "specimen1",
+          "lithologies": "Basalt",
+          "result_quality": "g",
+          "dir_mad_free": "2"
+        }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should combine descriptions without repetition",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "pmag_results": [
+        { "er_site_names": "site1", "pmag_result_name": "name", "result_description": "a name" },
+        { "er_site_names": "site2", "pmag_result_name": "name1", "result_description": "a name" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "sites": [
+        { "site": "site1", "description": "a name", "result_type": "i" },
+        { "site": "site2", "description": "name1, a name", "result_type": "i" }
+      ]
+    }
+  },
+  {
+    "name": "when upgrading 2.5 to 3.0 / when reorganizing data / should convert dates into ISO 8601 timestamps",
+    "kind": "json",
+    "old": {
+      "contribution": [{ "magic_version": "2.5" }],
+      "er_samples": [
+        { "sample_date": "2008:07:01:08:46:00.00", "sample_time_zone": "SAN" },
+        { "sample_date": "2008:07:01:08:46:00.00" },
+        { "sample_time_zone": "SAN" }
+      ]
+    },
+    "expected": {
+      "contribution": [{ "data_model_version": "3.0" }],
+      "samples": [{ "timestamp": "2008-07-01T15:46:00Z" }, { "timestamp": "2008-07-01T08:46:00Z" }]
+    }
+  }
+]

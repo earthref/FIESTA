@@ -296,6 +296,7 @@ workspace:
 upload:
   examples:
     - { title: "Example\nMagIC Text", subtitle: Data Model v. 3.0, file: examples/magic-text-3.0.txt, format: fiesta, icon: file-text }
+    - { title: "Example\nMagIC Text", subtitle: Data Model v. 2.5, file: examples/magic-text-2.5.txt, format: fiesta, icon: file-text }
     - { title: "Example\nTab Delimited", subtitle: Sites Data, file: examples/sites.txt, format: tsv, icon: table }
     - { title: "Example\nComma Delimited", subtitle: Specimens Data, file: examples/specimens.csv, format: csv, icon: table }
     - { title: "Example\nMagIC Excel File", subtitle: Data Model v. 3.0, file: examples/magic-excel-3.0.xlsx, format: excel, icon: file-excel }
@@ -341,7 +342,7 @@ plugins:
     file: method_codes.json # in magic/: {group: {label, codes: [{code, definition}]}}
 
 features:
-  plugins: [poles, rock-mag, pmag-plots, method-codes, sample-tiles]
+  plugins: [poles, rock-mag, pmag-plots, method-codes, sample-tiles, magic-3-upgrade]
   # Home page content (legacy client/modules/magic/components/home.jsx + home_news.jsx).
   home:
     # `ui nine cards` resource row: Semantic icon names; `to` = SPA route, `href` = external.

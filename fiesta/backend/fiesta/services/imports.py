@@ -17,6 +17,7 @@ from fiesta.domain.validate import Validator
 from fiesta.nodeconfig import NodeConfig
 from fiesta.services.contributions import default_filename
 from fiesta.services.revisions import revision_file, safe_name, save_revision
+from fiesta.services.upgrades import REPORT_NAME, upgrade_parsed, upgraded_text
 
 
 async def _current_tables(session, node, contribution, expected_revision) -> ParsedContribution:
@@ -46,6 +47,25 @@ def original_names(originals: dict[str, bytes], canonical: str) -> dict[str, byt
     return kept
 
 
+def upload_files(node: NodeConfig, data: bytes, filename: str, canonical: str) -> dict[str, bytes]:
+    """The files a whole-contribution upload (PUT .../file) saves: the text
+    as uploaded, or — written against an older data model — the upgraded text
+    with the original and the upgrade report kept as attachments. Text that
+    does not parse is saved as it is, for validation to report."""
+    try:
+        parsed = parse_text(data.decode("utf-8"))
+    except (ParseError, UnicodeDecodeError):
+        return {canonical: data}
+    upgraded = upgrade_parsed(node, parsed)
+    if upgraded is None:
+        return {canonical: data}
+    return {
+        **original_names({filename or "upload.txt": data}, canonical),
+        REPORT_NAME: upgraded.report.as_text().encode(),
+        canonical: upgraded_text(node, upgraded).encode(),
+    }
+
+
 async def save_import(
     session,
     node: NodeConfig,
@@ -65,6 +85,13 @@ async def save_import(
         raise HTTPException(422, "there are no rows to import")
     if errors := single_source_errors(block_tables(text), node.upload.single_source_tables):
         raise HTTPException(422, " ".join(errors))
+    # Tables written against an older data model are upgraded first; the
+    # report is kept beside the originals (the upload page upgrades in the
+    # browser's import step, so its text arrives in the latest version).
+    reports = {}
+    if upgraded := upgrade_parsed(node, imported):
+        imported = upgraded.parsed
+        reports[REPORT_NAME] = upgraded.report.as_text().encode()
     version = node.data_model.latest
     model = node.load_data_model(version)
     imported = normalise(imported, model, Validator(node, version).vocabulary_terms)
@@ -75,7 +102,11 @@ async def save_import(
         keep.append("reference")
     merged = merge(current, imported, keep_table=node.workspace.table, keep_columns=keep)
     canonical = contribution.filename or default_filename(node, contribution.id)
-    files = {**original_names(originals, canonical), canonical: export_text(merged, model).encode()}
+    files = {
+        **original_names(originals, canonical),
+        **reports,
+        canonical: export_text(merged, model).encode(),
+    }
     return await save_revision(
         session,
         node,

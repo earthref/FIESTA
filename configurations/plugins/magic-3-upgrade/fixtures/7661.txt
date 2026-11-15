@@ -1,0 +1,95 @@
+tab	contribution
+magic_contribution_id	er_citation_name	version	date_time	magic_version	contributor	author
+7661	10.1016/S0031-9201(02)00092-4	1	2007:11:18:06:33:14.00	2.3	@magic	
+>>>>>>>>>>
+tab delimited	er_locations
+er_location_name	location_type	location_begin_lat	location_begin_lon	location_end_lat	location_end_lon	er_citation_names
+Hawaii	Outcrop	21.421	202.196	21.317	202.342	This study : Johnson et al. 2007
+>>>>>>>>>>
+tab delimited	er_sites
+er_site_name	er_location_name	site_definition	site_class	site_lithology	site_type	site_lat	site_lon	er_citation_names
+KU	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.421	202.196	This study : Johnson et al. 2007
+EH	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.4	202.196	This study : Johnson et al. 2007
+PL	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.304	202.204	This study : Johnson et al. 2007
+ST	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.358	202.133	This study : Johnson et al. 2007
+PU	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.312	202.15	This study : Johnson et al. 2007
+BL+BP	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.262	202.2	This study : Johnson et al. 2007
+CH+CT	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.4	202.233	This study : Johnson et al. 2007
+MA	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.283	202.217	This study : Johnson et al. 2007
+NS	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.35	202.162	This study : Johnson et al. 2007
+ND	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.329	202.142	This study : Johnson et al. 2007
+KM	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.32	202.226	This study : Johnson et al. 2007
+FS	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.29	202.204	This study : Johnson et al. 2007
+RH	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.3	202.163	This study : Johnson et al. 2007
+QA	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.292	202.167	This study : Johnson et al. 2007
+HB	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.275	202.308	This study : Johnson et al. 2007
+KL	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.288	202.367	This study : Johnson et al. 2007
+MP	Hawaii	s	Igneous : Extrusive	unknown	Lava Flow	21.317	202.342	This study : Johnson et al. 2007
+>>>>>>>>>>
+tab delimited	er_ages
+er_location_name	er_site_name	age	age_unit	magic_method_codes	er_citation_names
+Hawaii	KU	700	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	EH	700	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	PL	677	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	ST	580	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	PU	530	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	BL+BP	480	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	CH+CT	470	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	MA	430	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	NS	416	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	ND	416	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	KM	289	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	FS	289	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	RH	68	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	QA	68	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	HB	43.4	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	KL	36.1	Ka	GM-NO	This study : Johnson et al. 2007
+Hawaii	MP	32	Ka	GM-NO	This study : Johnson et al. 2007
+>>>>>>>>>>
+tab delimited	er_citations	MAGIC00414373
+er_citation_name	long_authors	year	title	citation_type	journal	volume	pages
+This study	Herrero-Bervera, E. and Valet, J.-P.	2002	Paleomagnetic secular variation of the Honolulu Volcanic Series (33-700 ka), O'hau (Hawaii)	Journal	Physics of the Earth and Planetary Interiors	133	83-97
+Johnson et al. 2007	Johnson, C.L., Constable, C.G., Tauxe, L., Barendregt, R.W., Brown, L.L., Coe, R.S., Layer, P., Mejia, V., Opdyke, N.D., Singer, B.S., Staudigel, H. and Stone, D.	2007	Recent Investigations of the 0-5 Ma geomagnetic field recorded in lava flows	Journal	Geochemistry, Geophysics, Geosystems	in press	
+>>>>>>>>>>
+tab delimited	pmag_results
+pmag_result_name	er_location_names	er_site_names	data_type	average_lat	average_lon	average_age	average_age_unit	average_inc	average_dec	average_alpha95	average_nn	average_k	model_lat	model_lon	vgp_lat	vgp_lon	tilt_correction	result_description	compilation_names	magic_method_codes	er_citation_names
+TAFI-PMCORR: KU	Hawaii	KU	i	21.421	202.196	700	ka	38.7	1.1	6.6	17	31			88.9	270.2	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: KU	Hawaii	KU	i	21.421	202.196	700	ka	38.7	1.1	6.6	17	31	21.2179	202.538	88.8	261.5	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: EH	Hawaii	EH	i	21.4	202.196	700	ka	21.5	4.4	6.3	13	44			78.9	359.2	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: EH	Hawaii	EH	i	21.4	202.196	700	ka	21.5	4.4	6.3	13	44	21.1969	202.538	79.1	359.1	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: PL	Hawaii	PL	i	21.304	202.204	677	ka	30.6	355.5	3.5	17	108			83.6	64.3	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: PL	Hawaii	PL	i	21.304	202.204	677	ka	30.6	355.5	3.5	17	108	21.1075	202.535	83.7	65.9	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: ST	Hawaii	ST	i	21.358	202.133	580	ka	14.9	2.2	4.4	15	77			76.1	13	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: ST	Hawaii	ST	i	21.358	202.133	580	ka	14.9	2.2	4.4	15	77	21.1897	202.417	76.2	13.2	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: PU	Hawaii	PU	i	21.312	202.15	530	ka	31.8	350.9	2.6	17	207			80.5	88.3	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: PU	Hawaii	PU	i	21.312	202.15	530	ka	31.8	350.9	2.6	17	207	21.1582	202.409	80.6	89.4	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: BL+BP	Hawaii	BL+BP	i	21.262	202.2	480	ka	41.3	352.3	4.3	22	53			82.5	132.7	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: BL+BP	Hawaii	BL+BP	i	21.262	202.2	480	ka	41.3	352.3	4.3	22	53	21.1227	202.435	82.4	133.9	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: CH+CT	Hawaii	CH+CT	i	21.4	202.233	470	ka	27	352.4	3.9	29	48			79.9	69	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: CH+CT	Hawaii	CH+CT	i	21.4	202.233	470	ka	27	352.4	3.9	29	48	21.2637	202.463	80	69.8	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: MA	Hawaii	MA	i	21.283	202.217	430	ka	41.3	350.6	4	11	140			81	129.6	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: MA	Hawaii	MA	i	21.283	202.217	430	ka	41.3	350.6	4	11	140	21.1582	202.427	80.9	130.6	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: NS	Hawaii	NS	i	21.35	202.162	416	ka	30.9	356.2	4.5	17	63			84.1	60.3	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: NS	Hawaii	NS	i	21.35	202.162	416	ka	30.9	356.2	4.5	17	63	21.2293	202.365	84.2	61.2	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: ND	Hawaii	ND	i	21.329	202.142	416	ka	15.1	353.3	4.7	16	85			74.9	48.5	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: ND	Hawaii	ND	i	21.329	202.142	416	ka	15.1	353.3	4.7	16	85	21.2083	202.345	75	48.9	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: KM	Hawaii	KM	i	21.32	202.226	289	ka	61.4	338.5	5	15	50			62.2	166.8	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: KM	Hawaii	KM	i	21.32	202.226	289	ka	61.4	338.5	5	15	50	21.2361	202.367	62.1	167.1	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: FS	Hawaii	FS	i	21.29	202.204	289	ka	42.4	356	5.5	13	59			85.1	154.4	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: FS	Hawaii	FS	i	21.29	202.204	289	ka	42.4	356	5.5	13	59	21.2061	202.345	85	155.2	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: RH	Hawaii	RH	i	21.3	202.163	68	ka	38.6	352.7	5.5	9	88			83.2	117.4	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: RH	Hawaii	RH	i	21.3	202.163	68	ka	38.6	352.7	5.5	9	88	21.2803	202.196	83.2	117.6	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: QA	Hawaii	QA	i	21.292	202.167	68	ka	35.8	13.4	1.8	17	293			77.4	296.4	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: QA	Hawaii	QA	i	21.292	202.167	68	ka	35.8	13.4	1.8	17	293	21.2723	202.2	77.4	296.4	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: HB	Hawaii	HB	i	21.275	202.308	43.4	ka	36.5	11.5	2.1	17	280			79.2	295.4	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: HB	Hawaii	HB	i	21.275	202.308	43.4	ka	36.5	11.5	2.1	17	280	21.2624	202.329	79.2	295.4	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: KL	Hawaii	KL	i	21.288	202.367	36.1	ka	34.8	5.4	4.4	14	81			84.5	314.2	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: KL	Hawaii	KL	i	21.288	202.367	36.1	ka	34.8	5.4	4.4	14	81	21.2775	202.385	84.5	314.1	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+TAFI-PMCORR: MP	Hawaii	MP	i	21.317	202.342	32	ka	38.9	10.8	2.7	17	174			79.9	286.6	0	VGP calculated using present lat/lon.	TAFI : 20D	LP-DIR	This study : Johnson et al. 2007
+TAFI: MP	Hawaii	MP	i	21.317	202.342	32	ka	38.9	10.8	2.7	17	174	21.3077	202.358	79.9	286.6	0	VGP calculated using plate motion corrected lat/lon using Nuvel-1A.	TAFI : 20D	LP-DIR : IE-MLAT-PR	This study : Johnson et al. 2007
+>>>>>>>>>>
+tab delimited	magic_methods
+magic_method_code	method_type	method_definition
+GM-NO	Geochronology Method	Unknown geochronology method
+IE-MLAT-PR	Intensity Estimation	Paleo-latitude derived from site age and plate reconstruction model
+LP-DIR	Lab Protocol	Directional data

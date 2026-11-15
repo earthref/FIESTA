@@ -25,6 +25,7 @@ from fiesta.apps.routers import (
     private,
     search,
     source,
+    upgrade,
     v1,
     workspaces,
 )
@@ -129,6 +130,7 @@ def create_app() -> FastAPI:
         search.router,
         private.router,
         imports.router,
+        upgrade.router,
         workspaces.router,
         source.router,
     ):

@@ -16,6 +16,7 @@ def test_registry_names():
         "periodic-table",
         "method-codes",
         "sample-tiles",
+        "magic-3-upgrade",
     }
     for plugin in all_plugins().values():
         assert plugin.description

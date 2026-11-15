@@ -1,0 +1,40 @@
+tab	contribution
+magic_contribution_id	er_citation_name	version	date_time	magic_version	contributor	author
+8055	10.1016/S0012-821X(01)00259-X	2	2009:02:13:04:10:35.00	2.4	@magic	
+>>>>>>>>>>
+tab delimited	er_locations
+er_location_name	location_type	location_begin_lat	location_begin_lon	location_end_lat	location_end_lon	continent_ocean	location_description	er_citation_names
+Ontario	Region	43	280.17	43	280.17	North America	Grand Banks / Ontario.	This study
+>>>>>>>>>>
+tab delimited	er_sites
+er_site_name	er_location_name	site_definition	site_class	site_lithology	site_type	site_lat	site_lon	magic_method_codes	er_citation_names
+120	Ontario	s	Archeologic	Not Specified	Pottery	43	280.17	LP-PI	This study
+>>>>>>>>>>
+tab delimited	er_ages
+er_location_name	er_site_name	age	age_sigma	age_unit	magic_method_codes	er_citation_names
+Ontario	120	1030	30	Years AD (+/-)	GM-C14-CAL	This study
+>>>>>>>>>>
+tab delimited	er_citations	MAGIC00432166
+er_citation_name	long_authors	year	doi	title	citation_type	journal	volume	pages
+This study	Carvallo, C. and Dunlop, D.J.	2001		Archeomagnetism of potsherds from Gran Banks, Ontario: a test of low paleointensities in Ontario around A.D. 1000	Journal	Earth and Planetary Science Letters	186	437-450
+Donadini et al. 2006	Donadini, F., Korhonen, K., Riisager, P. and Pesonen, L.J.	2006		Database for Holocene geomagnetic intensity information	Journal	EOS, Transactions of the American Geophysical Union	87	137
+Genevey et al. 2008	Genevey, A., Gallet, Y., Constable, C., Korte, M. and Hulot, G.	2008	10.1029/2007GC001881	ArcheoInt: an upgraded compilation of geomagnetic field intensity data for the past ten millenia	Electronic Journal	Geochemistry, Geophysics, Geosystems	9	
+Korte et al. 2005	Korte, M., Genevey, A., Constable, C.G., Frank, U. and Schnepp, E.	2005	10.1029/2004GC000800	Continuous geomagnetic field models for the past 7 millenia: 1. A new global data compilation	Electronic Journal	Geochemistry, Geophysics, Geosystems	6	
+Thellier & Thellier 1959	Thellier, E. and Thellier, O.	1959		Sur l'intensite du champ magnetique terrestre dans le passe historique et geologique	Journal	Annales de Geophysique	15	285-378
+Thellier 1938	Thellier, E.	1938		Sur l'aimantationdes terres cuites et ses applications geophysique	Journal	Annales Institut Physique du Globe de Paris	16	157-302
+>>>>>>>>>>
+tab delimited	pmag_sites
+er_location_name	er_site_name	site_inferred_age	site_inferred_age_sigma	site_inferred_age_unit	site_int	site_int_sigma	site_int_sigma_perc	site_int_n	site_description	external_database_names	external_database_ids	magic_method_codes	er_citation_names
+Ontario	120	1030	30	Years AD (+/-)	0.000042	0.0000074	17.6	63	geomagia50 record.	CALS7K.2 : ARCHEOINTB : GEOMAGIA50	none : ArcheoIntNB1084 : 120	LP-PI-TRM : LP-PI-ALT-PTRM : DA-NO	This study
+>>>>>>>>>>
+tab delimited	pmag_results
+pmag_result_name	er_location_names	er_site_names	data_type	average_lat	average_lon	average_age	average_age_sigma	average_age_unit	average_int	average_int_sigma	average_int_sigma_perc	average_int_nn	vdm_n	vadm	vadm_sigma	result_description	external_database_names	external_database_ids	magic_method_codes	er_citation_names
+GEOMAGIA50:120	Ontario	120	i	43	280.17	1030	30	Years AD (+/-)	0.000042	0.0000074	17.6	63	63	7.02E+22	1.24E+22	geomagia50 v 2. 0 record.	CALS7K.2 : ARCHEOINTB : GEOMAGIA50	none : ArcheoIntNB1084 : 120	LP-PI-TRM : LP-PI-ALT-PTRM : DA-NO	This study
+>>>>>>>>>>
+tab delimited	magic_methods
+magic_method_code	method_type	method_definition	method_description	er_citation_names
+DA-NO	Data Adjustment	Unknown correction		
+GM-C14-CAL	Geochronology Method	Radiocarbon age determination: Calibrated		
+LP-PI	Lab Protocol	Paleointensity experiment	Minimal paleointensity method code, further information, about the basic method, alteration checks, and reciprocity checks can be specified using additional LP-PI codes described below.	
+LP-PI-ALT-PTRM	Lab Protocol	Paleointensity experiment: Alteration check using a pTRM check	This is a check for reproducibility of pTRM acquisition at a specific temperature. During a Thellier-type paleointensity experiment, the specimen is reheated to a lower temperature and cooled in the laboratory field, thus reapplying a pTRM.	Thellier & Thellier 1959
+LP-PI-TRM	Lab Protocol	Paleointensity experiment: Using a laboratory TRM	Any paleointensity experiment that uses a TRM produced in a lab controlled field. Includes all variants of the Thellier method, including the Shaw method. More details on alteration and reciprocity checks can be added using the special LP-PI-ALT and LP-PI-BT method codes.	Thellier 1938

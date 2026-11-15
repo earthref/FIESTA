@@ -1,0 +1,93 @@
+tab	contribution
+id	doi	version	timestamp	magic_version	contributor	author
+10507	10.1111/j.1365-246X.1997.tb04082.x	3	2015-02-20T01:21:14.000Z	2.5	@ltauxe	
+>>>>>>>>>>
+tab 	er_locations
+plate_block	location_type	er_citation_names	continent_ocean	location_end_lat	location_begin_lon	er_location_name	location_begin_lat	location_end_lon
+African Plate	Drill Site	This study	Atlantic Ocean	-27	355	DSDP Site 522	-27	355
+>>>>>>>>>>
+tab 	er_samples
+er_citation_names	er_site_name	er_sample_name	sample_core_depth	er_location_name	magic_method_codes
+This study	15-1-013	15-1-013	55.23	DSDP Site 522	FS-C-DRILL-IODP:SP-SS-C:SO-V
+This study	15-1-022	15-1-022	55.31	DSDP Site 522	FS-C-DRILL-IODP:SP-SS-C:SO-V
+This study	15-1-024	15-1-024	55.34	DSDP Site 522	FS-C-DRILL-IODP:SP-SS-C:SO-V
+This study	15-1-028	15-1-028	55.38	DSDP Site 522	FS-C-DRILL-IODP:SP-SS-C:SO-V
+>>>>>>>>>>
+tab 	er_specimens
+specimen_weight	er_citation_names	er_specimen_alternatives	er_location_name	er_site_name	er_sample_name	specimen_class	specimen_core_depth	specimen_volume	er_specimen_name	specimen_lithology	specimen_type	magic_method_codes	er_scientist_mail_names
+1.048e-03	This study	3109	DSDP Site 522	15-1-013	15-1-013	sedimentary	55.23	1e-6	15-1-013	nannofossil ooze	sedimentary layer	FS-C-PISTON-H:FS-C-DRILL-DSDP	Paul Hartl:Lisa Tauxe
+1.092e-03	This study	3112	DSDP Site 522	15-1-022	15-1-022	sedimentary	55.31	1e-6	15-1-022	nannofossil ooze	sedimentary layer	FS-C-PISTON-H:FS-C-DRILL-DSDP	Paul Hartl:Lisa Tauxe
+1.084e-03	This study	3113	DSDP Site 522	15-1-024	15-1-024	sedimentary	55.34	1e-6	15-1-024	nannofossil ooze	sedimentary layer	FS-C-PISTON-H:FS-C-DRILL-DSDP	Paul Hartl:Lisa Tauxe
+1.176e-03	This study	3114	DSDP Site 522	15-1-028	15-1-028	sedimentary	55.38	1e-6	15-1-028	nannofossil ooze	sedimentary layer	FS-C-PISTON-H:FS-C-DRILL-DSDP	Paul Hartl:Lisa Tauxe
+>>>>>>>>>>
+tab 	er_sites
+er_citation_names	site_type	site_class	site_definition	er_site_name	er_location_name	site_lithology
+This study	sedimentary layer	sedimentary	s	15-1-013	DSDP Site 522	nannofossil ooze
+This study	sedimentary layer	sedimentary	s	15-1-022	DSDP Site 522	nannofossil ooze
+This study	sedimentary layer	sedimentary	s	15-1-024	DSDP Site 522	nannofossil ooze
+This study	sedimentary layer	sedimentary	s	15-1-028	DSDP Site 522	nannofossil ooze
+>>>>>>>>>>
+tab 	er_ages
+er_citation_names	er_site_name	magic_method_codes	age_description	age_unit	er_location_name	age
+This study	15-1-013	GM-PMAG-POL:GM-INT-L		Ma	DSDP Site 522	22.75
+This study	15-1-022	GM-PMAG-POL:GM-INT-L		Ma	DSDP Site 522	22.7786
+This study	15-1-024	GM-PMAG-POL:GM-INT-L		Ma	DSDP Site 522	22.7893
+This study	15-1-028	GM-PMAG-POL:GM-INT-L		Ma	DSDP Site 522	22.8036
+>>>>>>>>>>
+tab 	er_citations
+publisher	book_title	long_authors	title	journal	citation_type	pages	volume	year	er_citation_name	city
+		Tauxe, L. and Hartl, P.	11 million years of Oligocene geomagnetic field behaviour	Geophys. Jour. Int.	Journal	217-229	128	1997	This study	
+		As, J.A. and Zijderveld, J.D.A.	Magnetic cleaning of rocks in paleomagnetic research	Geophysical Journal International	Journal	308-319	1	1958	As & Zijderveld 1958	
+		Cande, S.C. and Kent, D.V.	Revised calibration of the geomagnetic polarity timescale for the late Cretaceous and Cenozoic	Journal of Geophysical Research - Solid Earth	Journal	6,093-6,095	100	1995	Cande & Kent 1995	
+Chapman and Hall	Methods in rock magnetism and Paleomagnetism: Techniques and instrumentation	Collinson, D.W.			Book	503		1983	Collinson 1983	London
+		Levi, L. and Banerjee, S.K.	On the possibility of obtaining relative paleointensities from lake sediments	Earth and Planetary Science Letters	Journal	219-226	29	1976	Levi & Banerjee 1976	
+	Treatise in Geophysics	Tauxe, L. and Yamazaki, T.	Paleointensity		Edited Book	In press	5	2007	Tauxe & Yamazaki 2007	
+>>>>>>>>>>
+tab 	magic_measurements
+treatment_ac_field	measurement_chi_mass	er_citation_names	measurement_number	measurement_standard	measurement_temp	er_sample_name	treatment_temp	measurement_inc	er_location_name	measurement_dec	measurement_flag	magic_experiment_name	er_site_name	er_specimen_name	treatment_dc_field	measurement_magn_mass	magic_method_codes
+15e-3		This study	1	u	300	15-1-013	300	-41.2	DSDP Site 522	268.5	g	15-1-013:LP-AF-DIR	15-1-013	15-1-013	0	2.910e-06	LT-AF-Z
+80e-3		This study	2	u	300	15-1-013	300		DSDP Site 522		g	15-1-013:LP-ARM	15-1-013	15-1-013	50e-6	1.794e-04	LT-AF-I
+0		This study	3	u	300	15-1-013	300		DSDP Site 522		g	15-1-013:LP-IRM	15-1-013	15-1-013	1.0	3.597e-03	LT-IRM
+10e-3	2.376e-07	This study	4		300	15-1-013	300		DSDP Site 522			15-1-013:LP-X	15-1-013	15-1-013	0		LP-X
+15e-3		This study	5	u	300	15-1-022	300	68.6	DSDP Site 522	181.0	g	15-1-022:LP-AF-DIR	15-1-022	15-1-022	0	1.117e-05	LT-AF-Z
+80e-3		This study	6	u	300	15-1-022	300		DSDP Site 522		g	15-1-022:LP-ARM	15-1-022	15-1-022	50e-6	3.004e-04	LT-AF-I
+0		This study	7	u	300	15-1-022	300		DSDP Site 522		g	15-1-022:LP-IRM	15-1-022	15-1-022	1.0	6.190e-03	LT-IRM
+10e-3	4.103e-07	This study	8		300	15-1-022	300		DSDP Site 522			15-1-022:LP-X	15-1-022	15-1-022	0		LP-X
+15e-3		This study	9	u	300	15-1-024	300	63.7	DSDP Site 522	124.5	g	15-1-024:LP-AF-DIR	15-1-024	15-1-024	0	5.387e-06	LT-AF-Z
+80e-3		This study	10	u	300	15-1-024	300		DSDP Site 522		g	15-1-024:LP-ARM	15-1-024	15-1-024	50e-6	3.293e-04	LT-AF-I
+0		This study	11	u	300	15-1-024	300		DSDP Site 522		g	15-1-024:LP-IRM	15-1-024	15-1-024	1.0	6.808e-03	LT-IRM
+10e-3	4.640e-07	This study	12		300	15-1-024	300		DSDP Site 522			15-1-024:LP-X	15-1-024	15-1-024	0		LP-X
+15e-3		This study	13	u	300	15-1-028	300	59.9	DSDP Site 522	123.2	g	15-1-028:LP-AF-DIR	15-1-028	15-1-028	0	2.687e-06	LT-AF-Z
+80e-3		This study	14	u	300	15-1-028	300		DSDP Site 522		g	15-1-028:LP-ARM	15-1-028	15-1-028	50e-6	1.794e-04	LT-AF-I
+0		This study	15	u	300	15-1-028	300		DSDP Site 522		g	15-1-028:LP-IRM	15-1-028	15-1-028	1.0	3.393e-03	LT-IRM
+10e-3	2.279e-07	This study	16		300	15-1-028	300		DSDP Site 522			15-1-028:LP-X	15-1-028	15-1-028	0		LP-X
+>>>>>>>>>>
+tab 	pmag_specimens
+specimen_description	er_citation_names	er_site_name	er_sample_name	specimen_inc	specimen_inferred_age_unit	er_location_name	specimen_inferred_age	specimen_dec	er_specimen_name	magic_method_codes	specimen_int_rel
+Declination rotated section mean=0/180;rel int is NRM/IRM	This study	15-1-013	15-1-013	-41.2	Ma	DSDP Site 522	22.75	268.5	15-1-013	LP-PI-IRM:LP-PI-REL:LT-AF-Z	8.090e-04
+Declination rotated section mean=0/180;rel int is NRM/IRM	This study	15-1-022	15-1-022	68.6	Ma	DSDP Site 522	22.7786	181.0	15-1-022	LP-PI-IRM:LP-PI-REL:LT-AF-Z	1.805e-03
+Declination rotated section mean=0/180;rel int is NRM/IRM	This study	15-1-024	15-1-024	63.7	Ma	DSDP Site 522	22.7893	124.5	15-1-024	LP-PI-IRM:LP-PI-REL:LT-AF-Z	7.913e-04
+Declination rotated section mean=0/180;rel int is NRM/IRM	This study	15-1-028	15-1-028	59.9	Ma	DSDP Site 522	22.8036	123.2	15-1-028	LP-PI-IRM:LP-PI-REL:LT-AF-Z	7.920e-04
+>>>>>>>>>>
+tab 	pmag_results
+er_location_names	er_citation_names	data_type	average_lon	magic_method_codes	average_dec	average_int_rel	vgp_lat	average_inc	er_sample_names	er_site_names	average_age	pmag_result_name	average_lat	vgp_lon	er_analyst_mail_names	er_specimen_names	average_age_unit	average_height
+DSDP Site 522	This study:Tauxe & Yamazaki 2007	i	355.0	LP-PI-IRM:LP-PI-REL:LT-AF-Z	268.5	1.346e-04	9.2	-41.2	15-1-013	15-1-013	22.75	15-1-013	-27.0	243.1	Lisa Tauxe:Paul Hartl	15-1-013	Ma	-55.23
+DSDP Site 522	This study:Tauxe & Yamazaki 2007	i	355.0	LP-PI-IRM:LP-PI-REL:LT-AF-Z	181.0	3.003e-04	-65.1	68.6	15-1-022	15-1-022	22.7786	15-1-022	-27.0	353.5	Lisa Tauxe:Paul Hartl	15-1-022	Ma	-55.31
+DSDP Site 522	This study:Tauxe & Yamazaki 2007	i	355.0	LP-PI-IRM:LP-PI-REL:LT-AF-Z	124.5	1.316e-04	-42.7	63.7	15-1-024	15-1-024	22.7893	15-1-024	-27.0	47.0	Lisa Tauxe:Paul Hartl	15-1-024	Ma	-55.34
+DSDP Site 522	This study:Tauxe & Yamazaki 2007	i	355.0	LP-PI-IRM:LP-PI-REL:LT-AF-Z	123.2	1.318e-04	-41.8	59.9	15-1-028	15-1-028	22.8036	15-1-028	-27.0	53.1	Lisa Tauxe:Paul Hartl	15-1-028	Ma	-55.38
+>>>>>>>>>>
+tab 	magic_methods
+magic_method_code
+FS-C-DRILL-IODP
+SP-SS-C
+SO-V
+FS-C-PISTON-H
+FS-C-DRILL-DSDP
+GM-PMAG-POL
+GM-INT-L
+LT-AF-Z
+LT-AF-I
+LT-IRM
+LP-X
+LP-PI-IRM
+LP-PI-REL
