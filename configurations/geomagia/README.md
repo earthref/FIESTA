@@ -21,9 +21,10 @@ keeps it off production's SPA and portal until the GEOMAGIA team signs off.
 
 The version is FIESTA's own numbering of this model, not GEOMAGIA50's release
 number (v3.2 for the public CSV, v3.4 for the catalogue): a release adds records,
-and the model only changes when its columns do. (`an_use_status_id` and
-`anisotropy_use_status` were added to 1.0 on 2026-11-13, before any GEOMAGIA data was
-imported.)
+and the model only changes when its columns do. 1.0 was edited in place twice before
+any GEOMAGIA data was imported beyond a local stack: on 2026-11-13 (`anisotropy_use_status`
+added) and on 2026-11-14, when its GEOMAGIA lookup codes and relational keys were
+replaced by names (below).
 
 Converted from the GEOMAGIA MySQL schema (`geomagia.sql`, `ARCHEODIJ` and `REFS`,
 in the GEOMAGIA Django repository) rather than a legacy Meteor model. GEOMAGIA has
@@ -34,32 +35,52 @@ none. Column names are the `ARCHEODIJ` columns in lower case (each column's
   0–360: records uploaded since 2019 store -180–180 in the database, and the sync adds
   360 to a negative one.
 - `site`, the record's name, is the UID.
-- Every code column (`material_id`, `pi_method_id`, `ac_id`, …) has a named column
-  beside it (`materials`, `pi_methods`, `alteration_checks`, …). The named columns
-  resolve the codes through the source's lookups: the database's lookup tables, or the
-  GEOMAGIA ID glossary for the CSV. They are what the facets show and are validated
-  against `controlled_vocabularies.json`, which lists both sets of names where they
-  differ (the database renamed a few, e.g. "TRM tensor" is now "ATRM").
+- **Names, not keys.** The model carries no GEOMAGIA relational key but the record's
+  `uid` (and the contribution's `geomagia_reference_id`, which is its contribution ID).
+  Each lookup code column is replaced by a named column: `MATERIAL_ID` → `materials`,
+  `SPECIMEN_TYPE_ID` → `specimen_types`, `AGE_ERROR_TYPE_ID` → `age_error_type`,
+  `DATING_METHOD_ID` → `dating_methods`, `PI_METHOD_ID` → `pi_methods`, `AC_ID` →
+  `alteration_checks`, `MD_CK_ID` → `md_checks`, `AN_CORR_SET_ID` →
+  `anisotropy_corrections`, `AN_USE_STATUS_ID` → `anisotropy_use_status`,
+  `CR_CORR_SET_ID` → `cooling_rate_corrections`, `DM_METHOD_ID` → `demag_method`,
+  `DM_ANALYSIS_ID` → `dir_analysis`, the four radiocarbon calibration software / dataset
+  codes → `c14_calib_software`, `c14_calib_dataset`, `calc_c14_calib_software`,
+  `calc_c14_calib_dataset`, and `COMP_REF` → `compilations`. The sync resolves codes
+  through the source's lookups (the database's lookup tables, or the GEOMAGIA ID
+  glossary for the CSV). Every named column has a `cv("…")` validation against
+  `controlled_vocabularies.json`, which lists both sets of names where they differ (the
+  database renamed a few, e.g. "TRM tensor" is now "ATRM"). A FIESTA upload, were the
+  node ever in public mode, writes these names, never codes.
 - `region_country` and `continent` come from `SITE_ID` (the database's `aa_locations`,
   as the GEOMAGIA site reads it, or the glossary's 118 regions for the CSV).
+- `see_also` / `see_also_doi` come from `CROSS_REF_ID` (the "see also" references,
+  `:`-separated `REFS` IDs): the cited references' short citations, and the DOIs of
+  those that have one (a `:` inside a DOI is written `%3A`, as in a DOI URL, since `:`
+  separates list items). `superseded_by` / `superseded_by_doi` come from `SUPERSEEDED`,
+  the `REFS` ID of the publication whose data supersede the record (0 and -1: none; in
+  the dump, the 27 records of reference 116 are superseded by 537). `cross_uid`
+  (companion records) stays as UIDs. `C14_ID` and `DENDRO_ID`, keys into
+  `aa_14c_dates` and the dendrochronology table, which the sync does not read, are left
+  out. The CSV has no cross references, so those columns stay blank from it.
 - `archeo_volcanic` is "Volcanic" when `MATERIAL_ID` includes lava, volcanic ash,
   other volcanic, obsidian, granite or volcanic glass (codes 4, 25, 41, 47, 51, 52), as
   the GEOMAGIA site classifies records; the CSV's own flag follows the same rule.
-- `an_use_status_id` / `anisotropy_use_status` (`AN_USE_STATUS_ID`, the
-  `measurement_use_status` table: 0 not specified, 1 correction applied, 2 assessment
-  only) come only from the database; the 2019 CSV predates them.
+- `anisotropy_use_status` (`AN_USE_STATUS_ID`, the `measurement_use_status` table: not
+  specified, correction applied, assessment only) comes only from the database; the
+  2019 CSV predates it.
 
 Units are GEOMAGIA's: ages in years CE, intensities in μT, dipole moments in 10²² Am².
 
 **Missing values.** Measured numbers drop GEOMAGIA's missing-value markers, as the
 GEOMAGIA site's own downloads do: -999/-9999 (the CSV); -1; 0 in counts, intensities,
 alpha95, k and the AF/thermal steps; 999 in declination and inclination; 9999 in
-radiocarbon ages; -50000 (unknown) in ages; "0" in sample and site names. Code columns
-keep -1 ("No measurement") and 0 ("Not specified"), which have scientific meaning. A
-code with no lookup entry is written as `Unknown (ID n)` and fails validation, so it
-stays visible: in the database these are `SPECIMEN_TYPE_ID` -1 (311 records) and
-`MATERIAL_ID` -1 (249), all uploaded in 2019–2020. (The 2019 CSV's `DirMethID`
-101/103 have since been corrected to 1 and 3.)
+radiocarbon ages; -50000 (unknown) in ages; "0" in sample and site names. Lookup codes
+-1 and 0 have scientific meaning and are written as their names, "No measurement" and
+"Not specified". A code with no lookup entry is written `Unknown` and fails
+validation, so it stays visible: in the database these are 311 records whose
+`specimen_types` and 249 whose `materials` are `Unknown` (code -1), all uploaded in
+2019–2020. (The 2019 CSV's 17 `Unknown` `demag_method`s, codes 101/103, have since been
+corrected to 1 and 3.)
 
 **VADM** is calculated from the intensity and site latitude, as the GEOMAGIA site
 does, rather than taken from the stored column.
@@ -95,7 +116,9 @@ Max Brown's full dump (MySQL 8.4, 72 tables, 12,529 records in 858 references):
 - The tables are latin1 (the four newer ones utf8mb4). The reader connects as utf8mb4
   so the server converts; `REFS`, `uploader` and some lookup names hold HTML entities
   and `<sup>` tags, which it strips.
-- Code columns are `SET`s, read as `"101,102"` and written `101:102`.
+- Code columns are `SET`s, read as `"101,102"` and written as their names, `:` separated.
+- Some SICI DOIs in `REFS` hold `<…>` ("…97<829:DRHLFU>2.0.CO;2"); only real tags are
+  stripped, so they survive.
 - `uploader.SHORT_NAME` holds email addresses; the reader selects only `ID` and `NAME`.
 
 **The public CSV**, the fallback when there is no database access:

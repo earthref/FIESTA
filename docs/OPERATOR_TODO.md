@@ -219,11 +219,12 @@ serves its API, and its SPA only to local stacks. See configurations/geomagia/RE
       `/var/lib/fiesta-ops/sources/geomagia/` (667 contributions). Once dev has synced
       from the database, never run the CSV again: its 2019 records would replace newer
       ones.
-- [ ] **Ask Max about codes with no lookup entry** in the database: `SPECIMEN_TYPE_ID`
-      -1 (311 records) and `MATERIAL_ID` -1 (249), all uploaded 2019–2020 (neither
-      table has a -1 row; is it "No measurement"?), and the one negative `K` (-47.4,
-      reference 774). They show as validation errors. The 2019 CSV's `DirMethID`
-      101/103 are fixed in the database.
+- [ ] **Ask Max about codes with no lookup entry** in the database: 311 records whose
+      `specimen_types` and 249 whose `materials` show as `Unknown` (GEOMAGIA code -1 in
+      `SPECIMEN_TYPE_ID` / `MATERIAL_ID`), all uploaded 2019–2020 (neither lookup table
+      has a -1 row; is it "No measurement"?), and the one negative `k` (-47.4,
+      reference 774). They show as validation errors. The 2019 CSV's `Unknown`
+      `demag_method`s (codes 101/103) are fixed in the database.
 - [ ] **Decide when GEOMAGIA goes public** (`publish.web: true` in geomagia.yaml),
       with the GEOMAGIA team.
 - [ ] **Rebuild GEOMAGIA's search index once the `geomag-series` plugin is on dev**

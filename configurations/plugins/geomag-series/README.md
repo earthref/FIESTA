@@ -24,9 +24,12 @@ and its count is the level's. Rows come from
   counted), and so are records with none of the three.
 - VADM = B·10·R³/10²²/√(1+3 sin²φ), R = 6 371 200 m, at the record's own
   latitude (no relocation), computed in the browser unless `vadm` names a column.
-- Colour by `color_id` with the site's region formula, hsl(id·137.508 mod 360,
-  65 %, 38 + (id mod 3)·6 %), grey `#718096` for none; the legend lists
-  `color_label`. Without `color_id` every point is the node colour.
+- Colour by the values of `color_by` (GEOMAGIA: the region/country name) with the
+  site's region formula, hsl(id·137.508 mod 360, 65 %, 38 + (id mod 3)·6 %), where id
+  is the value's 32-bit FNV-1a hash (the site uses the region's database id, which the
+  node no longer carries), so a value keeps its colour across searches; grey `#718096`
+  for none. The legend lists the values. Without `color_by` every point is the node
+  colour.
 - Hover: age, value (and its error), α95 for directions, region, age error,
   age error type with its sigmas, then the `hover` columns (GEOMAGIA: site,
   locality, citation, UID). Click a point to open its contribution.
@@ -54,10 +57,10 @@ and its count is the level's. Rows come from
 | Site name (contains, any case) | sidebar Site Name | this plugin's filter; the core `<column>:"*text*"` wildcard token; suggests up to 30 names in the search |
 | Radius (centre + km, default 500, ≤ π·6371) | sidebar Radius Search | this plugin's filter; the core `radius:"<lat>,<lon>,<km>"` token (great-circle, OpenSearch arc distance) |
 | Materials, dating methods | facets | node YAML |
-| PI method families ("All X methods") | facet `pi_family` | derived from `pi_methods` codes by `pi_families` (GEOMAGIA's codes in its YAML; code 27 is in Microwave and Walton, as the site lists it) |
+| PI method families ("All X methods") | facet `pi_family` | derived from the `pi_methods` names by `pi_families` (GEOMAGIA's families by method name in its YAML; Microwave Walton is in Microwave and Walton, as the site lists it) |
 | PI methods (each) | facet `pi_methods` | node YAML |
 | Alteration monitoring | facet `alteration_checks` | node YAML |
-| MD checks yes / no | facet `md_check` | derived (`checks`): Yes = a code ≥ 1, No = every code −1 or 0, blank = neither |
+| MD checks yes / no | facet `md_check` | derived (`checks`, from `md_checks`): No = every value one of `check_none` (GEOMAGIA: "No measurement", "Not specified"), Yes = any other value, blank = neither |
 | Cooling rate yes / no | facet `cooling_rate_check` | derived, as MD checks |
 | Anisotropy (use status) | facet `anisotropy_use_status` | node YAML |
 | Minimum PI specimens | range `summary._num.num_acc_spec` (minimum) | node YAML |
@@ -77,13 +80,16 @@ after activating the plugin or changing these options.
 `base_level` (the level the Plots tab is on; unset: none); `age`, `age_minus`,
 `age_plus`, `age_error_type`, `age_sigmas`, `age_label`, `age_unit`;
 `intensity`, `intensity_error`, `intensity_unit`; `vadm`, `vadm_error` (unset:
-computed); `declination`, `inclination`, `alpha95`, `latitude`; `color_id`,
-`color_label`; `hover` (columns or `summary.<block>.<name>` paths);
-`export_name`; `name_search` (+ `name_search_label`); `radius_search`;
-`pi_methods` + `pi_families` (`{name, codes}`); `checks` (`{derived name: code
-column}`); `direction_counts`. `check()` refuses a base level that is not a
-search level, a plotted column that is not a number column of its table, other
-columns not in it, and derived names that are data-model columns.
+computed); `declination`, `inclination`, `alpha95`, `latitude`; `color_by`;
+`hover` (columns or `summary.<block>.<name>` paths); `export_name`;
+`name_search` (+ `name_search_label`); `radius_search`; `pi_methods` +
+`pi_families` (`{name, methods}`, method names); `checks` (`{derived name:
+column of names}`) + `check_none` (the names that mean nothing was done);
+`direction_counts`. Options name values, never codes. `check()` refuses a base
+level that is not a search level, a plotted column that is not a number column
+of its table, other columns not in it, family methods or `check_none` names
+outside their column's `cv()` vocabulary, and derived names that are
+data-model columns.
 
 ## Decisions (left out on purpose)
 
