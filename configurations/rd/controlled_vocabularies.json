@@ -1,0 +1,29 @@
+{
+ "quantities": {
+  "label": "Quantities",
+  "database_column": "values.quantity",
+  "items": [
+   {"item": "Element", "label": "Element concentration"},
+   {"item": "Isotope", "label": "Isotope abundance or composition"},
+   {"item": "Ratio", "label": "Element ratio or index"}
+  ]
+ },
+ "units": {
+  "label": "Units",
+  "database_column": "values.unit",
+  "items": [
+   {"item": "wt%", "label": "Weight percent"},
+   {"item": "wt%ox", "label": "Weight percent oxide"},
+   {"item": "g/kg", "label": "Grams per kilogram"},
+   {"item": "mg/kg", "label": "Milligrams per kilogram"},
+   {"item": "ppm", "label": "Parts per million"},
+   {"item": "µg/g", "label": "Micrograms per gram"},
+   {"item": "µg/kg", "label": "Micrograms per kilogram"},
+   {"item": "ppb", "label": "Parts per billion"},
+   {"item": "ng/g", "label": "Nanograms per gram"},
+   {"item": "ng/kg", "label": "Nanograms per kilogram"},
+   {"item": "ppt", "label": "Parts per trillion"},
+   {"item": "pg/kg", "label": "Picograms per kilogram"}
+  ]
+ }
+}

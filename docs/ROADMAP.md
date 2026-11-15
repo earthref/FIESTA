@@ -508,6 +508,15 @@ the same API authorization checks.
       sediment database. GEOMAGIA's field-model engine stays in its Django service.
       Interop with MagIC (MagIC #628): links both ways between matching records,
       and GEOMAGIA datasets missing from MagIC queued for import.
+- [ ] **M9 RD, the GERM Reservoir Database (new node, 2026-11-15).** The legacy
+      earthref.org/GERMRD CGI database is hosted as `rd`: one contribution per
+      reservoir (legacy ID kept), its element / isotope / ratio values as rows, each
+      with its reference's DOI from the ERR pages; mirrored by
+      `configurations/sources/rd.py` from the legacy pages (`legacy.kind: script`);
+      periodic-table plugin; `publish.web: false`. Next: redirect
+      `earthref.org/GERMRD/<id>/` to the contribution once it is public, name the
+      `¿` Pb isotope parameters (configurations/rd/README.md), a reservoir
+      comparison (spider) plot plugin, and links to the KdD partition coefficients.
 
 Acceptance: a fresh checkout starts and seeds selected nodes in Docker without
 MARFIK/AWS access, supports local login/edit/upload/undo/search, and repeats seed

@@ -152,6 +152,31 @@ Last updated: 2026-11-13
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
 
+## 2026-11-15 — RD node (GERM Reservoir Database)
+
+`configurations/rd.yaml` hosts the legacy GERM Reservoir Database
+(earthref.org/GERMRD): one contribution per reservoir, keeping the legacy reservoir
+ID, mirrored by `configurations/sources/rd.py` from the legacy pages.
+`publish.web: false`: dev serves its API, and its SPA only to local stacks. See
+configurations/rd/README.md.
+
+- [ ] **Serve RD on dev.** Add `rd` to `FIESTA_NODE` on fiesta-ct (it narrows dev's
+      API, as for GEOMAGIA above), run `fiesta init` for it, restart the API, and
+      check `https://dev.earthref.org/v2/rd/search/contribution` answers 200.
+- [ ] **Steward account**: whose EarthRef account owns the RD contributions
+      (`/etc/fiesta/source-rd-owners.json`, `default_owner`) and is RD node admin.
+      Until decided, the first sync uses `source-sync@earthref.org`, as GEOMAGIA's did.
+- [ ] **First sync on dev** once dev serves the node: Run now on the admin page's
+      Data source tab (the first run fetches about 1,500 legacy pages into
+      `/var/lib/fiesta-ops/sources/rd`, ~15 min), or Claude runs it from the laptop.
+      The legacy database is frozen, so `legacy.sync` can stay off afterwards.
+- [ ] **Decide when RD goes public** (`publish.web: true` in `configurations/rd.yaml`)
+      and whether `earthref.org/GERMRD/<id>/` then redirects to the FIESTA
+      contribution with the same ID.
+- [ ] **Name the `¿` values.** The legacy database lost two isotope names to `¿`
+      (`¿` and `¿-Pb`, Pb isotope parameters such as µ or κ); someone who knows the
+      source tables says which, and the sync maps them (configurations/rd/README.md).
+
 ## 2026-11-13 — Age intervals (`summary._interval.age`)
 
 - [ ] **Rebuild the MagIC, KArAr, ERDA and SC search indexes on dev** once the "age

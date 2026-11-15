@@ -780,3 +780,168 @@ async def test_magic_heals_broken_version_chains(magic_source, magic_node):
         record_fingerprint(r) for r in healed.records
     ]
     assert notes["stale_latest_cleared"] == 0 and notes["chains_linked"] == 0
+
+
+# ---- RD: the legacy GERM Reservoir Database pages -----------------------------
+
+RD_HOME = (
+    "<form name=reservoir method=get action=germrd-s1-advanced.cgi>"
+    "<select name='er_reservoir_id'><option value='Any Reservoir'>Any Reservoir</option>"
+    "<option value='847'>Extreme Depleted D-MORB basalts</option>"
+    "<option value='569'>21\xbfN EPR</option><option value='6'>Seawater</option>"
+    "<option value='7'>Empty</option></select></form>"
+)
+RD_HEADER = (
+    "Reservoir\tZ\tElement\tValue\tMedian\tSD\tLow\tHigh\tN\tUnit\tReference\t"
+    "Computation\tNotes\tInserted\r\n"
+)
+
+
+def rd_download(rows: list[str]) -> bytes:
+    body = "".join(r + "\r\n" for r in rows)
+    text = (
+        f"EarthRef.org -- GERM Reservoir Database\r\n\r\nDATA:\r\n{RD_HEADER}{body}\r\nLINKS:\r\n"
+    )
+    return text.encode("utf-8")
+
+
+def rd_page(rows: list[tuple[str, str, str, str]]) -> bytes:
+    """(element, ERR id, source table, sources HTML) per row, as the legacy page lays them out."""
+    cells = []
+    for element, ref, table, sources in rows:
+        tds = ["Res", "&nbsp;", element] + ["&nbsp;"] * 7 + ["<img onmouseover=\"showpop('x')\">"]
+        tds.append(f'<a href="http://earthref.org/ERR/n:{ref},b:{table}/">Ref {ref}</a>')
+        tds.append(sources)
+        cells.append(
+            "<tr valign=top>" + "".join(f"<td class=padding>{t}</td>" for t in tds) + "</tr>"
+        )
+    return ("<table>" + "".join(cells) + "</table>").encode("cp1252")
+
+
+@pytest.fixture(scope="module")
+def rd_source():
+    import importlib.util
+
+    path = CONFIG_DIR / "sources" / "rd.py"
+    if not path.is_file():
+        pytest.skip("no configurations/sources/ in this checkout")
+    spec = importlib.util.spec_from_file_location("rd_source", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture
+def rd_state(tmp_path):
+    (tmp_path / "reservoirs").mkdir()
+    (tmp_path / "references").mkdir()
+    (tmp_path / "home.html").write_bytes(RD_HOME.encode("cp1252"))
+    files = {
+        847: (
+            ["Extreme Depleted D-MORB basalts\t\t143Nd/144Nd\t.5134\t\t\t\t\t\t\t"
+             "Salters & Stracke 2004\tAverage\tIsotopic compositions of the DM.\t30-NOV-2004"],
+            [("143Nd/144Nd", "33230", "aclx0033230tab01", "")],
+        ),
+        569: (
+            ["21\xbfN EPR\t57\tLa\t5.2\t\t0.3\t\t\t12\tppm\tVon Damm 1985\tAverage\t\t01-JAN-2005"],
+            [("La", "2794", "aaaa0002794tab01", "")],
+        ),
+        6: (
+            [
+                "Seawater\t13\tAl\t.00002\t\t\t\t\t\tµg/kg\tLi 1982\tMeasurement\t\t02-DEC-2004",
+                "Seawater\t\tLa[n]/Yb[n]\t3.85\t\t\t\t\t189\t\tVon Damm 1985\tAverage\t\t"
+                "03-DEC-2004",
+            ],
+            [
+                ("Al", "894", "aabs0000894tab01", '<a href="/ERR/1862/">Hydes 1979</a><br>'),
+                ("La[n]/Yb[n]", "2794", "aaaa0002794tab01", ""),
+            ],
+        ),
+        7: ([], []),
+    }  # fmt: skip
+    for rid, (download, page) in files.items():
+        (tmp_path / "reservoirs" / f"{rid}.txt").write_bytes(rd_download(download))
+        (tmp_path / "reservoirs" / f"{rid}.html").write_bytes(rd_page(page))
+    (tmp_path / "references" / "33230.html").write_bytes(
+        b"<!-- 33230, <b>Salters, V.J.M. and Stracke, A. (2004).</b> Composition of the "
+        b"depleted mantle.<i> Geochemistry Geophysics Geosystems 5: doi: 10.1029/2003GC000597."
+        b" issn: 1525-2027.</i><u></u> //-->"
+    )
+    (tmp_path / "references" / "894.html").write_bytes(b"<!-- 894, <b>Li (1982).</b> //-->")
+    return tmp_path
+
+
+def test_rd_reservoirs_become_contributions(rd_source, rd_state):
+    from fiesta.domain.parse import parse_text
+    from fiesta.domain.validate import validate_contribution
+
+    texts, _meta, times = rd_source.build(rd_state)
+    # A reservoir with no values is left out; the legacy ID is the contribution ID.
+    assert sorted(texts) == [6, 569, 847]
+    node = load_deployment(CONFIG_DIR / "fiesta.yaml").node_for("rd")
+    for text in texts.values():
+        assert not validate_contribution(node, parse_text(text), "1.0").errors
+
+    parsed = parse_text(texts[847])
+    head = parsed.tables["contribution"][0]
+    assert head["germrd_reservoir_id"] == "847"
+    assert head["reservoir"] == "Extreme Depleted D-MORB basalts"
+    assert head["reference"] == "10.1029/2003GC000597"  # one publication: its DOI
+    (value,) = parsed.tables["values"]
+    assert (value["value"], value["quantity"]) == ("0.5134", "Isotope")
+    assert (value["err_reference_id"], value["source_table"]) == ("33230", "aclx0033230tab01")
+    assert value["inserted"] == "2004-11-30" and times[847][0].date().isoformat() == "2004-11-30"
+
+    # The degree sign the legacy lost comes back.
+    assert parse_text(texts[569]).tables["contribution"][0]["reservoir"] == "21°N EPR"
+
+    seawater = parse_text(texts[6])
+    assert seawater.tables["contribution"][0]["citations"] == "Ref 894:Ref 2794"
+    assert not seawater.tables["contribution"][0].get("reference")  # two publications
+    al, ratio = seawater.tables["values"]
+    assert (al["value"], al["unit"], al["quantity"], al["z"]) == (
+        "0.00002",
+        "µg/kg",
+        "Element",
+        "13",
+    )
+    assert al["sources"] == "Hydes 1979" and not al.get("reference")
+    assert (ratio["quantity"], ratio["n"]) == ("Ratio", "189")
+
+
+def test_rd_quantity_and_mismatched_pages(rd_source, rd_state):
+    quantity = rd_source.quantity
+    cases = [
+        ("K", ""), ("d11B", "5"), ("87Sr/86Sr", "38"), ("e182W", ""),
+        ("3He/4He", ""), ("Mg#", ""), ("\xbf-Pb", ""), ("", ""),
+    ]  # fmt: skip
+    assert [quantity(e, z) for e, z in cases] == [
+        "Element", "Isotope", "Isotope", "Isotope", "Isotope", "Ratio", "Isotope", "",
+    ]  # fmt: skip
+    # A page whose rows do not line up with the download fails the run.
+    (rd_state / "reservoirs" / "847.html").write_bytes(rd_page([("176Hf/177Hf", "1", "t", "")]))
+    with pytest.raises(ValueError, match="reservoir 847 row 1"):
+        rd_source.build(rd_state)
+
+
+@pytest.mark.asyncio
+async def test_rd_sync_sends_only_changed_reservoirs(rd_source, rd_state):
+    texts, meta, times = rd_source.build(rd_state)
+    records = rd_source.source_records(texts, meta, "steward@example.test", times)
+    assert records[847].revisions[0].reference_doi == "10.1029/2003GC000597"
+    unchanged = {str(r): record_fingerprint(records[r]) for r in (6, 569)}
+    sent = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            state = {"mode": "source", "source_id": "germrd", "checkpoints": unchanged}
+            return httpx.Response(200, json=state)
+        assert request.url.path == "/v2/rd/source/records/847"
+        assert b'name="germrd/rd_contribution_847.txt"' in request.read()
+        sent.append(847)
+        return httpx.Response(200, json={"status": "applied", "bytes": len(texts[847])})
+
+    api = SourceAPI("http://fiesta.test", "rd", transport=httpx.MockTransport(handler))
+    summary = await rd_source.sync(api, texts, meta, times, {"email": "steward@example.test"})
+    assert sent == [847] and summary["applied"] == 1 and summary["unchanged"] == 2
+    assert summary["errors"] == [] and summary["missing_from_source"] == []

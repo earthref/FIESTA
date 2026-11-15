@@ -1,0 +1,40 @@
+tab delimited	contribution
+data_model_version	germrd_reservoir_id	reservoir	citations
+1.0	597	Acapulcoite Primitive Achondrites	Mittlefehldt 2004
+>>>>>>>>>>
+tab delimited	values
+reservoir	element	z	quantity	value	low	high	unit	computation	notes	citation	err_reference_id	source_table	sources	inserted
+Acapulcoite Primitive Achondrites	Al	13	Element	11.2				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Sb	51	Element	61			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	As	33	Element	1.57			µg/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Ca	20	Element	9.8				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Cr	24	Element	6.995				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Co	27	Element	640			µg/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Eu	63	Element	100			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Ga	31	Element	7.78			µg/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Au	79	Element	149			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Hf	72	Element	120			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Fe	26	Element	204.5				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Ir	77	Element	536			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	La	57	Element	742			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Lu	71	Element	40			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Mg	12	Element	153.8				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Mn	25	Element	3.26				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Ni	28	Element	13.3				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Os	76	Element	670			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	P	15	Element	1.6				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	K	19	Element	530			µg/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Re	75	Element	60			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Sm	62	Element	250			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Sc	21	Element	8.5			µg/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Se	34	Element	10.8			µg/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Si	14	Element	176.5				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Na	11	Element	6.42				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	S	16	Element	21.1				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Tb	65	Element	62			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Ti	22	Element	0.7				Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	U	92	Element	70			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	V	23	Element	92			µg/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Yb	70	Element	300			ng/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	Zn	30	Element	250			µg/g	Average	Trace element compositional data on Acapulcoites.	Mittlefehldt 2004	2733	aafg0002733tab02	Yanai & Kojima 1991:Zipfel et al. 1995	2006-05-24
+Acapulcoite Primitive Achondrites	?17O		Ratio		-1.49	-0.85		Measurement	Ultramafic chondritic Acapulcoite-Lodranite clan measurement range of ?17O. These primitive achondrites have a metamorphic equigranular texture and have their origins from metamorphism and partial melting.	Mittlefehldt 2004	2733	aafg0002733tab01		2006-05-24

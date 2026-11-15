@@ -26,3 +26,4 @@ api:
     - osu-mgr.yaml
     - sc.yaml
     - geomagia.yaml
+    - rd.yaml

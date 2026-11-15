@@ -1,0 +1,75 @@
+# Local RD fixtures: seven real reservoirs from the legacy GERM Reservoir Database
+# (earthref.org/GERMRD), written by configurations/sources/rd.py --out.
+# 1 Atmosphere (many references, noble gas isotopes) · 116 Amphibolites (ratios,
+# one DOI) · 569 21°N EPR (the legacy's lost degree sign) · 597 Acapulcoite
+# (meteorite, Sources) · 682 Atlantic Seawater (two references) · 847 Extreme
+# Depleted D-MORB basalts (isotope ratios, one DOI) · 992 Venus Atmosphere.
+version: 1
+accounts:
+- key: owner
+  email: developer@example.test
+  name: Local Developer
+  admin: true
+  password: local-fiesta-only
+  settings:
+    theme: system
+- key: viewer
+  email: viewer@example.test
+  name: Local Viewer
+  password: local-fiesta-only
+workspace:
+  name: Local demo workspace
+  owner: owner
+  members:
+  - user: viewer
+    role: viewer
+contributions:
+- key: reservoir-1
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: rd_contribution_1.txt
+- key: reservoir-116
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: rd_contribution_116.txt
+- key: reservoir-569
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: rd_contribution_569.txt
+- key: reservoir-597
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: rd_contribution_597.txt
+- key: reservoir-682
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: rd_contribution_682.txt
+- key: reservoir-847
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: rd_contribution_847.txt
+- key: reservoir-992
+  owner: owner
+  published: true
+  revisions:
+  - canonical: contribution.txt
+    files:
+      contribution.txt: rd_contribution_992.txt

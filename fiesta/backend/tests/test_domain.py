@@ -1717,6 +1717,7 @@ def test_deployment_lists_every_node_and_resolves_key_or_slug():
         "osu-mgr",
         "sc",
         "geomagia",
+        "rd",
     ]
     assert deployment.node_for("MagIC") is deployment.node_for("magic")
     assert deployment.node_for("OSU-MGR").node.slug == "osu-mgr"
@@ -1728,7 +1729,7 @@ def test_deployment_narrowed_by_fiesta_node():
     narrowed = load_deployment(CONFIG_DIR / "fiesta.yaml", only=["magic", " KArAr", ""])
     assert sorted(narrowed.nodes) == ["karar", "magic"]
     everything = load_deployment(CONFIG_DIR / "fiesta.yaml", only=[""])
-    assert len(everything.nodes) == 8
+    assert len(everything.nodes) == 9
     with pytest.raises(ValueError, match="nope"):
         load_deployment(CONFIG_DIR / "fiesta.yaml", only=["nope"])
 
@@ -1835,7 +1836,7 @@ def test_logo_svg_sanitizer_keeps_shapes_only():
     assert root.find(f"{ns}g").attrib == {"transform": "rotate(10)"}
 
     # The approved node logos pass through with their drawing intact.
-    for slug in ("magic", "cdr", "geomagia", "sc"):
+    for slug in ("magic", "cdr", "geomagia", "sc", "rd"):
         source = (CONFIG_DIR / slug / "assets" / "logo.svg").read_bytes()
         clean = ET.fromstring(sanitize_svg(source))
         assert clean.get("viewBox") == ET.fromstring(source).get("viewBox")
@@ -2046,7 +2047,7 @@ def test_published_tree_is_written_back_to_config(tmp_path, monkeypatch):
     deployment_yaml = (CONFIG_DIR / "fiesta.yaml").read_text()
     assert add_to_deployment_yaml(deployment_yaml, "magic.yaml") is None
     added = add_to_deployment_yaml(deployment_yaml, "paleo.yaml")
-    assert "    - geomagia.yaml\n    - paleo.yaml" in added and added.startswith("# FIESTA")
+    assert "    - rd.yaml\n    - paleo.yaml" in added and added.startswith("# FIESTA")
     assert blob_sha(b"hello\n") == "ce013625030ba8dba906f756967f9e9ca394464a"
 
     shutil.copy(CONFIG_DIR / "fiesta.yaml", tmp_path / "fiesta.yaml")

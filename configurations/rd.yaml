@@ -1,0 +1,125 @@
+# FIESTA deployment configuration — RD node
+# (GERM Reservoir Database: the geochemistry of the Earth's reservoirs, from
+# the legacy earthref.org/GERMRD site. Data model converted from its search
+# results and tab-delimited downloads, 2026-11-15; see configurations/rd/README.md.)
+
+fiesta: 1
+deployment: node
+
+node:
+  key: RD
+  slug: rd
+  title: GERM Reservoir Database (RD)
+  subtitle: >-
+    Geochemical Earth Reference Model (GERM) summary data on the element and
+    isotope composition of all reservoirs in the Earth, from the peer-reviewed literature.
+  color: "#bb4b1c" # the legacy GERMRD results header (and GERM's orange, as KdD)
+  logo: logo.svg # configurations/rd/assets/: the node tile (header, portal home, favicon)
+  logo_style: tile # tile: framed, drawn in the node color, named; full: the SVG as drawn
+  links:
+    website: https://earthref.org/GERMRD/
+
+search:
+  index: rd
+  placeholder: 'e.g. Seawater "143Nd/144Nd" "Rudnick & Gao 2003"'
+  # A contribution is a reservoir; its rows are the reservoir's values, each
+  # citing its own publication.
+  levels:
+    - name: Contributions
+      table: contribution
+      columns:
+        - { cell: title, column: reservoir, subtitle_column: citations }
+        - { cell: download }
+        - { cell: links }
+        - { cell: counts }
+        - { cell: field, column: element, label: Elements, show: values, width: 200 }
+        - { cell: field, column: unit, label: Units, show: values, width: 110 }
+        - { cell: field, column: computation, label: Computation, show: values, width: 140 }
+        - { cell: citations }
+    - name: Values
+      table: values
+      count_field: summary.values._n_results
+      columns:
+        - { cell: title, column: element, subtitle_column: reservoir }
+        - { column: quantity, label: Quantity, width: 90 }
+        - cell: fields
+          label: Value
+          width: 160
+          columns:
+            - { column: value, label: Value }
+            - { column: unit, label: Unit }
+            - { column: sd, label: SD }
+            - { column: n, label: "N" }
+        - cell: fields
+          label: Range
+          width: 140
+          columns:
+            - { column: median, label: Median }
+            - { column: low, label: Low }
+            - { column: high, label: High }
+        - { column: computation, label: Computation, width: 130 }
+        - { column: citation, label: Reference, width: 180 }
+        - { column: sources, label: Sources, width: 180 }
+  extra_types: []
+  filters:
+    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
+    - { type: facet, field: id, label: Contribution ID }
+    - { type: facet, field: doi, label: Contribution DOI }
+    - { type: facet, field: contributor, label: Contributor }
+    - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
+    # The legacy GERMRD search form: reservoir, element / isotope, reference.
+    - { type: facet, field: reservoir, label: Reservoir }
+    - { type: facet, field: quantity, label: Quantity }
+    - { type: facet, field: element, label: Element / Isotope / Ratio }
+    - { type: facet, field: unit, label: Unit }
+    - { type: facet, field: computation, label: Computation }
+    - { type: facet, field: citation, label: Reference }
+    - { type: facet, field: sources, label: Sources }
+    - { type: text, label: Text }
+    - { type: numeric, label: Numeric }
+    - { type: exists, label: With / Without Data }
+
+storage:
+  bucket: rd
+
+data_model:
+  versions: ["1.0"]
+  latest: "1.0"
+  dir: rd/data_models
+
+vocabularies:
+  controlled: rd/controlled_vocabularies.json
+
+hierarchy:
+  - contribution
+  - values
+
+# Content pages (/<slug>, HTML in <node>/pages/<slug>.html); none yet.
+pages: []
+
+features:
+  plugins: [periodic-table]
+
+plugins:
+  # The legacy GERMRD home page's periodic-table browse; isotopes and ratios
+  # in the element column are not elements and are not counted.
+  periodic-table:
+    table: values
+    column: element
+
+# The API serves it (so its data source can sync it); production's SPA and
+# portal bar do not list it until it is signed off. Local stacks serve it
+# either way.
+publish:
+  api: true
+  web: false
+
+# The data source, read only by configurations/sources/rd.py: the legacy
+# earthref.org/GERMRD pages and downloads, cached by its --fetch.
+legacy:
+  kind: script
+  source_id: germrd
+
+# Local fixtures only; never read during normal application startup.
+development:
+  seed_manifest: rd/seeds/manifest.yaml
