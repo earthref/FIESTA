@@ -20,6 +20,7 @@ import {
   markerTooltip,
   pointKey,
   sphericalCentroid,
+  spotName,
 } from "./map-points";
 import { isOccluded, mapSize } from "./map-view";
 import { createPolarCapsLayer } from "./polar-caps";
@@ -516,6 +517,16 @@ const pointFeature = (p: MapPoint): Feature => ({
   properties: { key: pointKey(p), color: p.color, name: p.name },
   geometry: { type: "Point", coordinates: [p.lon, p.lat] },
 });
+// The records at one spot as one feature: the last one's color (drawn on top
+// when each had its own), named by their number when there are several.
+const spotFeature = (members: MapPoint[]): Feature => ({
+  ...pointFeature(members[members.length - 1]),
+  properties: {
+    key: pointKey(members[0]),
+    color: members[members.length - 1].color,
+    name: spotName(members),
+  },
+});
 
 /**
  * Esri Ocean map of records' positions, on a globe, a Mercator map or a globe
@@ -940,10 +951,12 @@ const MapLibreMap: FC<{
     let overMarker = false;
 
     const setPoints = () => {
-      const { points, index } = pointsRef.current;
-      const plotted = globe ? points.filter((p) => !isPolar(p)) : points;
+      const { index } = pointsRef.current;
+      // One feature (and label) per spot, not per record: a contribution's
+      // tens of thousands of specimens sit at a few hundred spots.
+      const spots = [...index.values()].filter((members) => !(globe && isPolar(members[0])));
       (map.getSource("points") as maplibregl.GeoJSONSource).setData(
-        collection(plotted.map(pointFeature)),
+        collection(spots.map(spotFeature)),
       );
       for (const marker of markers) marker.remove();
       markers = [];

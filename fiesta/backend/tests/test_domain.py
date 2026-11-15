@@ -2029,6 +2029,16 @@ def test_geo_tables_follow_the_data_model(magic_node, osu_mgr_node, karar_node):
     assert levels["sites"] and levels["specimens"]
 
 
+def test_a_level_can_have_positions_but_no_map(magic_node):
+    # Measurements only repeat their specimens' positions: still geo (the
+    # area filter narrows them), but no Map tab and no map colors.
+    levels = {lvl["table"]: lvl for lvl in magic_node.public_config()["search_levels"]}
+    assert levels["measurements"]["geo"] and levels["measurements"]["map"] is False
+    assert levels["specimens"]["map"] is True
+    for color in magic_node.search.map_colors:
+        assert "measurements" not in magic_node.map_color_tables(color)
+
+
 def test_rows_without_coordinates_take_their_ancestors_position(magic_node):
     from fiesta.domain.parse import ParsedContribution
 

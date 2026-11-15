@@ -212,6 +212,10 @@ class SearchLevel(BaseModel):
     name: str
     table: str
     count_field: str | None = None
+    # False: no Map sub-tab, and not on a contribution's Map tab, though its
+    # rows have positions (MagIC's measurements only repeat their specimens');
+    # the area filter still narrows it.
+    map: bool = True
     # The Summaries grid's columns, in order; None = the default tiles.
     columns: list[GridColumn] | None = None
 
@@ -1151,14 +1155,16 @@ class NodeConfig(BaseModel):
 
     def map_color_tables(self, color: MapColor) -> list[str]:
         """The search levels' tables whose map `color` can color: levels with
-        positions, those it names, and for a column those whose table has it."""
+        positions on a map, those it names, and for a column those whose table
+        has it."""
         geo, tables = self.geo_tables, None
         if "." not in color.field:
             tables = self.load_data_model(self.data_model.latest)["tables"]
         return [
             level.table
             for level in self.search.levels
-            if level.table in geo
+            if level.map
+            and level.table in geo
             and (not color.levels or level.name in color.levels)
             and (tables is None or color.field in tables.get(level.table, {}).get("columns", {}))
         ]

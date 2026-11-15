@@ -102,6 +102,7 @@ search:
     - name: Measurements
       table: measurements
       count_field: summary.measurements._n_results
+      map: false
       columns:
         - { cell: record }
         - { cell: map }
