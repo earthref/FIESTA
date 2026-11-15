@@ -22,7 +22,7 @@ from sqlalchemy import or_, select, text
 
 from fiesta.db.models import Contribution, LegacyImport, User
 from fiesta.db.session import get_sessionmaker
-from fiesta.services.legacy import sync_inventory
+from fiesta.services.legacy import load_inventory, sync_inventory
 from fiesta.services.seed import ensure_accounts, load_seed, require_local
 from fiesta.settings import get_settings
 
@@ -352,10 +352,17 @@ async def import_public(
             # An earlier import since withdrawn from SOURCE keeps its owner quietly.
             gone = set(extra) - set(ids)
             report["errors"] = [e for e in report["errors"] if e.get("id") not in gone]
+            imported = []
             if report["records"]:
+                imported = [r.id for r in load_inventory(f"{tmp}/inventory.json").records]
                 synced = await sync_inventory(node, f"{tmp}/inventory.json", apply=True)
                 report["applied"], report["unchanged"] = synced["applied"], synced["unchanged"]
                 report["errors"] += synced["errors"]
-    # A running worker may claim some of these events first; it finishes those itself.
-    report["processed"] = await drain(node, limit=1000)
+    # Only these imports' events: another backlog on the node is the worker's. A
+    # running worker may claim some of them first; it finishes those itself.
+    report["processed"] = (
+        await drain(node, limit=1000, contribution_ids=imported)
+        if imported
+        else {"completed": 0, "failed": 0}
+    )
     return report
