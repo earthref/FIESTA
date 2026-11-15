@@ -3,13 +3,17 @@
 Supports the legacy search-box grammar: free text plus field-scoped tokens
 like `id:"12345"`, `doi:"10.1029/..."`, `private_key:"<uuid>"`, and
 `<field>:"<value>"` (matched against summary._all.<field>.raw). Multi-values
-split on `||`.
+split on `||`. A value with a `*` is a wildcard, matched ignoring case
+(`site_name:"*kenya*"`: a name containing "kenya"), and `radius:"<lat>,<lon>,<km>"`
+matches docs with a position within that great-circle distance of the
+centre (`summary._all._geo_point`).
 
 Every query is filtered to `_is_latest`; `_is_activated` is required unless a
 private_key token is present (which unlocks exactly that private
 contribution).
 """
 
+import math
 import re
 from typing import Any
 
@@ -101,6 +105,52 @@ def parse_query(query: str | None) -> tuple[str, dict[str, list[str]]]:
 
 HAS_FIELD = "summary._has"
 
+# The `radius:"<lat>,<lon>,<km>"` token: positions within that great-circle
+# distance (OpenSearch's arc distance) of the centre; at most half way round.
+RADIUS_TOKEN = "radius"
+EARTH_RADIUS_KM = 6371.0
+MAX_RADIUS_KM = math.pi * EARTH_RADIUS_KM
+
+
+def radius_clause(value: str) -> dict:
+    """A `radius` token value as a geo_distance clause; a malformed one (or a
+    centre off the globe) matches nothing rather than everything."""
+    try:
+        lat, lon, km = (float(part) for part in value.split(","))
+    except ValueError:
+        return {"match_none": {}}
+    if not (-90 <= lat <= 90 and -360 <= lon <= 360 and km >= 0):
+        return {"match_none": {}}
+    lon = (lon + 180) % 360 - 180
+    return {
+        "geo_distance": {
+            "distance": f"{min(km, MAX_RADIUS_KM)}km",
+            "summary._all._geo_point": {"lat": lat, "lon": lon},
+        }
+    }
+
+
+def token_clause(field: str, values: list[str]) -> dict:
+    """A field token's values, OR'd: exact terms, `*` wildcards ignoring case
+    (a column's keyword field; never a contribution-block term, so never a
+    private key), and for `radius` circles around a centre."""
+    if field == RADIUS_TOKEN:
+        clauses = [radius_clause(value) for value in values]
+    elif field in CONTRIBUTION_TERMS:
+        clauses = [{"terms": {CONTRIBUTION_TERMS[field]: values}}]
+    else:
+        path = f"summary._all.{field}.raw"
+        exact = [value for value in values if "*" not in value]
+        clauses = [{"terms": {path: exact}}] if exact else []
+        clauses += [
+            {"wildcard": {path: {"value": value, "case_insensitive": True}}}
+            for value in values
+            if "*" in value
+        ]
+    if len(clauses) == 1:
+        return clauses[0]
+    return {"bool": {"should": clauses, "minimum_should_match": 1}}
+
 
 def has_clauses(has: list[dict] | None) -> list[dict]:
     """The with/without data filter's clauses (`summary._has.<table>`, see
@@ -164,10 +214,7 @@ def build_search_body(
         filters.append({"term": {"summary.contribution._is_activated": True}})
 
     for field, values in tokens.items():
-        path = CONTRIBUTION_TERMS.get(field)
-        if path is None:
-            path = f"summary._all.{field}.raw"
-        filters.append({"terms": {path: values}})
+        filters.append(token_clause(field, values))
 
     for range_filter in ranges or []:
         field = range_filter.get("field", "")

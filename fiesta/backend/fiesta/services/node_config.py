@@ -275,9 +275,10 @@ def data_model_columns(node: NodeConfig) -> dict[str, set[str]]:
 
 def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[str]:
     """Every page has its HTML file; every facet and map color column is a
-    data-model column, every summary._num range a number column and every unit
-    conversion's columns data-model columns; every filter's and map color's
-    levels name search levels."""
+    data-model column (a facet: or a text column an active plugin derives),
+    every summary._num range a number column (or a derived number column) and
+    every unit conversion's columns data-model columns; every filter's and map
+    color's levels name search levels."""
     errors = []
     for page in node.pages:
         if node.page_path(page.slug) not in files:
@@ -289,19 +290,25 @@ def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[s
     from fiesta.plugins import active_plugins
 
     levels = {lvl.name for lvl in node.search.levels}
+    # Columns an active plugin derives on the record docs (derive_values).
+    derived: dict[str, str] = {}
     try:
         for plugin in active_plugins(node):
             levels |= {lvl.name for lvl in plugin.search_levels(node)}
+            derived.update(plugin.derived_columns(node))
     except ValueError:
         pass  # unknown plugin names are reported by the plugin check
     from fiesta.search.queries import CONTRIBUTION_FACETS
 
+    if clash := sorted(set(derived) & columns):
+        errors.append(f"plugin-derived columns {clash} are data model columns")
     for f in node.search.filters:
         # A contribution-block facet (id, doi, contributor) needs no column.
         if (
             f.type == "facet"
             and f.field not in columns
             and f.field not in CONTRIBUTION_FACETS
+            and derived.get(f.field) != "text"
             and not f.field.startswith("_")
         ):
             errors.append(
@@ -309,7 +316,9 @@ def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[s
             )
         if f.type == "range" and f.field.startswith("summary._num."):
             column = f.field.removeprefix("summary._num.")
-            if column not in node.number_columns(node.hierarchy[0]):
+            if column not in node.number_columns(node.hierarchy[0]) and (
+                derived.get(column) != "number"
+            ):
                 errors.append(
                     f"range {f.field!r}: {column!r} is not a number column of data model "
                     f"{node.data_model.latest}"

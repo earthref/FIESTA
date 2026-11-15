@@ -56,21 +56,35 @@ search:
     - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
-    - { type: range, label: Age, field: summary._num.age, unit: yr CE, levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
-    - { type: range, label: Paleointensity, field: summary._num.ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
-    - { type: range, label: VADM, field: summary._num.vadm, unit: 10²² Am², levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
-    - { type: range, label: Declination, field: summary._num.decl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
-    - { type: range, label: Inclination, field: summary._num.incl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
-    - { type: range, label: Direction α95, field: summary._num.alpha_95, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map] }
-    - { type: facet, field: archeo_volcanic, views: [Summaries, Rows, Map] }
-    - { type: facet, field: materials, views: [Summaries, Rows, Map] }
-    - { type: facet, field: dating_methods, views: [Summaries, Rows, Map] }
-    - { type: facet, field: pi_methods, views: [Summaries, Rows, Map] }
-    - { type: facet, field: region_country, views: [Summaries, Rows, Map] }
-    - { type: facet, field: continent, views: [Summaries, Rows, Map] }
-    - { type: numeric, label: Numeric, views: [Summaries, Rows, Map] }
-    - { type: text, label: Text, views: [Summaries, Rows, Map] }
-    - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map] }
+    # The GEOMAGIA site's query form and refinements (search/forms.py,
+    # refinements.py). data_type, pi_family, md_check, cooling_rate_check,
+    # age_error and direction_n are derived by the geomag-series plugin (its
+    # README); its site-name and radius searches follow these filters.
+    - { type: facet, field: data_type, label: Data Type, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: archeo_volcanic, views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: Age, field: summary._num.age, unit: yr CE, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: Paleointensity, field: summary._num.ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: VADM, field: summary._num.vadm, unit: 10²² Am², levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: Declination, field: summary._num.decl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: Inclination, field: summary._num.incl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: region_country, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: continent, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: materials, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: dating_methods, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: pi_family, label: Paleointensity Method Family, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: pi_methods, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: alteration_checks, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: md_check, label: Multi-Domain Checks, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: cooling_rate_check, label: Cooling Rate Correction, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: anisotropy_use_status, views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: Paleointensity Specimens Accepted, field: summary._num.num_acc_spec, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: Paleointensity Error σBa, field: summary._num.sigma_ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: Directional Specimens or Samples, field: summary._num.direction_n, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: Direction α95, field: summary._num.alpha_95, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: range, label: Age Error, field: summary._num.age_error, unit: yr, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
+    - { type: numeric, label: Numeric, views: [Summaries, Rows, Map, Plots] }
+    - { type: text, label: Text, views: [Summaries, Rows, Map, Plots] }
+    - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map, Plots] }
   map_colors:
     - { label: Age, field: age, unit: yr CE }
     - { label: Paleointensity, field: ba, unit: μT }
@@ -96,7 +110,45 @@ hierarchy:
 pages: []
 
 features:
-  plugins: []
+  plugins: [geomag-series]
+
+plugins:
+  # The Sites level's Plots sub-tab (the GEOMAGIA site's search plots) and its
+  # query refinements. The method families and codes are GEOMAGIA's
+  # (search/refinements.py PI_FAMILIES; 27 is in two).
+  geomag-series:
+    base_level: Sites
+    age: age
+    age_minus: age_min
+    age_plus: age_max
+    age_error_type: age_error_type
+    age_sigmas: num_sigmas
+    intensity: ba
+    intensity_error: sigma_ba
+    declination: decl
+    inclination: incl
+    alpha95: alpha_95
+    latitude: lat
+    color_id: site_id
+    color_label: region_country
+    hover: [site_horizon, site_name, summary.contribution.citation, uid]
+    export_name: geomagia
+    name_search: site_name
+    radius_search: true
+    pi_methods: pi_method_id
+    pi_families:
+      - { name: Thellier Family, codes: ["1", "2", "3", "4", "5", "11", "12", "25"] }
+      - { name: Shaw Family, codes: ["6", "20", "21", "22", "23", "24", "29"] }
+      - { name: Microwave, codes: ["7", "8", "15", "16", "17", "19", "27"] }
+      - { name: Triaxe, codes: ["9"] }
+      - { name: Dekkers and Bohnel Family, codes: ["10", "13"] }
+      - { name: Walton, codes: ["26", "27"] }
+      - { name: Wilson, codes: ["28"] }
+      - { name: Pseudo-Thellier, codes: ["14"] }
+    checks:
+      md_check: md_ck_id
+      cooling_rate_check: cr_corr_set_id
+    direction_counts: [num_dir_specimens, num_dir_samples]
 
 # The API serves it (so its data source can sync it); production's SPA and
 # portal bar do not list it until the GEOMAGIA team signs off. Local stacks

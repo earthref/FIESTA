@@ -113,6 +113,21 @@ class FiestaPlugin:
         `fiesta rebuild`, so derived data is always reproducible."""
         return []
 
+    def derived_columns(self, node: NodeConfig) -> dict[str, Literal["text", "number"]]:
+        """Columns it derives on the hierarchy's record docs (`derive_values`),
+        by name: a "text" one is a `summary._all.<name>` keyword (a YAML facet
+        filter, `<name>:"<value>"` tokens), a "number" one `summary._num.<name>`
+        (a YAML range filter, its histogram). The node loader accepts YAML
+        filters on them as on data-model columns; a name must not be one."""
+        return {}
+
+    def derive_values(self, node: NodeConfig, table: str, rows: list[dict]) -> dict[str, list]:
+        """Values of its `derived_columns` for one record doc of a hierarchy
+        level (`table`, the doc's rows), `{name: [values]}`: text for a "text"
+        column, numbers for a "number" one. Runs whenever the contribution is
+        (re)indexed; the contribution doc gets every record's values too."""
+        return {}
+
     def search_levels(self, node: NodeConfig) -> list[SearchLevel]:
         """Extra top-level search tabs. Appended after the node's configured
         levels; the level's `table` should match the `type` of the docs this

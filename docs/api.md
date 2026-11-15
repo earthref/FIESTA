@@ -227,7 +227,7 @@ needs `publish.api`.
 |---|---|---|---|
 | GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet, a text column of the level (the `text` filter's), or a facet of the level's grid columns, else 422; `id` and `contributor` aggregate the contribution block's `summary.contribution.id` / `_contributor.raw`, keys always strings), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below), `source` (repeatable `summary.<block>.<name>`, 1–50: each result holds only those fields, for a view paging through thousands of matches) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
-| GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `contribution`, `private_key?` | `SearchValues` |
+| GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (1–200; default from how many values there are, 2·n^⅓ between 10 and 100), `log` (bool), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `SearchHistogram` |
 | GET | `/v2/{repository}/search/{table}/numbers` | `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, columns: {<column>: n}}` — the level's number columns (`summary._num.<column>`, data-model order) and how many matches have a value of each, zeros included (the `numeric` filter's column picker) |
 | GET | `/v2/{repository}/search/{table}/filters` | `count` (repeated: `geo`, `bbox`, `numeric`, `exists`, `facet:<column>`, `range:<path>`, or `text:*` / `numeric:*` for a `facet:<column>` / `range:summary._num.<column>` key per text / number column of the level; else 422), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, counts: {<key>: n}}` — of the matches, how many have a value for each sidebar filter (a position, any number column, any recorded table, the facet's column, the range's field), zeros included: the count beside each filter in the search sidebar, which hides a filter at zero (and lists the `text` / `numeric` filters' columns by the keys `text:*` / `numeric:*` return) |
@@ -257,6 +257,17 @@ counts. Otherwise both are null. Each facet bucket likewise carries
 `mapped_count`, so the sidebar's facet counts follow the active sub-tab; a
 plugin view's sub-tab takes its facets from a `facets=true` search of its own
 table.
+
+`query` tokens (every search endpoint): `<column>:"<value>"` matches
+`summary._all.<column>.raw` exactly, `||` OR-ing values within a token and
+tokens AND-ed; a value with a `*` is a wildcard matched ignoring case
+(`site_name:"*kenya*"`, a name containing "kenya"; not on the contribution-block
+terms `id`, `doi`, `contributor`, `orcid`, `private_key`).
+`radius:"<lat>,<lon>,<km>"` (2026-11-14) matches docs with a position
+(`summary._all._geo_point`) within that great-circle distance of the centre
+(OpenSearch arc distance, capped at π·6371 km; longitude −360..360, wrapped);
+a malformed one matches nothing. The GEOMAGIA site's radius search is the
+`geomag-series` plugin's sidebar control for it.
 
 ```json
 MapPoints = {

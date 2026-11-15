@@ -14,9 +14,11 @@ def test_registry_names():
         "plateau-calculations",
         "pmag-plots",
         "periodic-table",
+        "kd-plots",
         "method-codes",
         "sample-tiles",
         "magic-3-upgrade",
+        "geomag-series",
     }
     for plugin in all_plugins().values():
         assert plugin.description

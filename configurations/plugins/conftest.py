@@ -27,3 +27,8 @@ def magic_node():
 @pytest.fixture(scope="session")
 def kdd_node():
     return _node("kdd")
+
+
+@pytest.fixture(scope="session")
+def geomagia_node():
+    return _node("geomagia")
