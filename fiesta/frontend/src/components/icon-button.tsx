@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
 import { cx } from "../lib/utils";
-import { SemanticIcon } from "./ui/fa-icon";
+import { Icon, iconName } from "./ui/icon";
 
 /**
  * Legacy IconButton (icon_button.jsx/.less), measured on the MagIC home page:
@@ -17,8 +17,10 @@ import { SemanticIcon } from "./ui/fa-icon";
  *          1.0714em/700. 82px tall.
  * - wide   (`tiny card` / `small card`, full width): padding .786em, no icon,
  *          title on one or two header lines.
- * Hover bg #f0f0f0 on all of them. Icons are Semantic icon names (`i.icons`
- * stack: base glyph + `corner` glyph bottom-right, white-outlined).
+ * Hover bg #f0f0f0 on all of them. Icons are Semantic icon names, drawn as
+ * Lucide glyphs (ui/icon-map.ts); the corner glyph is a node-colored badge at
+ * the base glyph's bottom right (ui/icon.tsx `corner`), not legacy's
+ * white-outlined second glyph.
  */
 export interface IconButtonProps {
   icon?: string;
@@ -73,11 +75,8 @@ export function IconButton({
   const cardFont = fontSize ?? (small ? 10 : 14);
   const titleSize = titleEm ?? (small ? 1.07142857 : 1.28571429);
   // `i.large.icons` on the primary cards (1.5em), plain `i.icons` on the small
-  // ones; the base glyph is 3em of that and the corner glyph 1.5em (measured
-  // 63/31.5px and 30/15px).
-  const iconsPx = cardFont * (small ? 1 : 1.5);
-  const iconPx = iconsPx * 3;
-  const cornerPx = iconsPx * 1.5;
+  // ones; the base glyph is 3em of that (measured 63px and 30px).
+  const iconPx = cardFont * (small ? 1 : 1.5) * 3;
 
   const className = cx(
     "er-icon-button block text-center transition-colors",
@@ -86,8 +85,8 @@ export function IconButton({
     small
       ? "bg-transparent hover:bg-panel-soft active:bg-panel hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]"
       : "bg-panel-soft hover:bg-panel active:bg-transparent shadow-[inset_0_0_0_1px_var(--node-color)] hover:shadow-[inset_0_0_0_1px_var(--node-color-light)]",
-    // The corner glyph's outline is the legacy white in light mode; in dark
-    // mode it is the card's own background, so it separates the glyphs unseen.
+    // The corner badge's ring is the legacy white in light mode; in dark mode
+    // it is the card's own background, so it separates the glyphs unseen.
     small
       ? "dark:[--er-icon-outline:var(--er-surface)] dark:hover:[--er-icon-outline:var(--er-panel-soft)] dark:active:[--er-icon-outline:var(--er-panel)]"
       : "dark:[--er-icon-outline:var(--er-panel-soft)] dark:hover:[--er-icon-outline:var(--er-panel)] dark:active:[--er-icon-outline:var(--er-surface)]",
@@ -113,25 +112,13 @@ export function IconButton({
         />
       )}
       {!media && !image && icon && (
-        <span
-          className="relative inline-block text-ink-secondary"
-          style={{ fontSize: iconPx, lineHeight: 1, marginBottom: "0.5rem" }}
-        >
-          <SemanticIcon name={icon} style={{ display: "block", verticalAlign: "top" }} />
-          {cornerIcon && (
-            <span
-              aria-hidden="true"
-              className="absolute text-node-ink"
-              style={{ right: 0, bottom: 0, fontSize: cornerPx, lineHeight: 1 }}
-            >
-              <SemanticIcon
-                name={cornerIcon}
-                style={{ display: "block", verticalAlign: "top" }}
-                outline={(2 * 512) / cornerPx}
-              />
-            </span>
-          )}
-        </span>
+        <Icon
+          name={iconName(icon)}
+          corner={cornerIcon ? iconName(cornerIcon) : undefined}
+          size={iconPx}
+          className="text-ink-secondary"
+          style={{ display: "block", margin: "0 auto 0.5rem" }}
+        />
       )}
       <div
         className="font-bold text-node-ink"

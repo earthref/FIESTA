@@ -1,9 +1,8 @@
-import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons";
 import { useAutoReload } from "../lib/use-auto-reload";
 import { useMigrateOnNavigate } from "../lib/use-migrate-on-navigate";
 import { useUpdateAvailable } from "../lib/use-update-available";
 import { Button } from "./ui/button";
-import { FaIcon } from "./ui/fa-icon";
+import { Icon } from "./ui/icon";
 
 /**
  * Mount once: notices newly deployed builds and moves the tab onto them by the
@@ -32,7 +31,7 @@ export function AutoReload() {
       className="fixed right-4 bottom-4 z-50 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-line bg-surface shadow-lg sm:bottom-[calc(var(--footer-h,3.5em)_+_1em)]"
     >
       <div className="flex items-start gap-3 p-3">
-        <FaIcon icon={faArrowsRotate} className="mt-0.5 shrink-0 text-node-ink" />
+        <Icon name="refresh" className="mt-0.5 shrink-0 text-node-ink" />
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium text-ink-strong">A new version is available</div>
           <div className="mt-0.5 text-xs text-ink-muted" aria-live="off">

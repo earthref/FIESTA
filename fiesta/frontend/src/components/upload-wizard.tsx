@@ -53,7 +53,7 @@ import { ErrorMessage } from "./error-message";
 import { useLoginModal } from "./login-modal";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Icon, type IconName, isIconName } from "./ui/icon";
+import { Icon, type IconName, iconName } from "./ui/icon";
 import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
 import { UpgradeReportPanel } from "./upgrade-report";
@@ -68,7 +68,13 @@ const EXAMPLE_GRID =
   "grid grid-cols-2 gap-2 sm:[grid-template-columns:repeat(var(--examples),minmax(0,1fr))]";
 const exampleColumns = (n: number) => ({ "--examples": n }) as CSSProperties;
 
-const stepDefs: { step: Step; icon: IconName; title: string; description: string }[] = [
+const stepDefs: {
+  step: Step;
+  icon: IconName;
+  corner?: IconName;
+  title: string;
+  description: string;
+}[] = [
   {
     step: 1,
     icon: "folder-open",
@@ -77,13 +83,14 @@ const stepDefs: { step: Step; icon: IconName; title: string; description: string
   },
   {
     step: 2,
-    icon: "table",
+    icon: "file-search",
     title: "Import",
     description: "Read the files and check the column headers.",
   },
   {
     step: 3,
-    icon: "upload",
+    icon: "file-text",
+    corner: "plus",
     title: "Upload",
     description: "Append to or create a new contribution.",
   },
@@ -126,8 +133,11 @@ function StepsBar({ current, onStep }: { current: Step; onStep: (step: Step) => 
         const back = def.step < current;
         const body = (
           <>
-            <span aria-hidden="true" className="leading-none text-ink-secondary">
-              <Icon name={def.icon} size="big" />
+            <span
+              aria-hidden="true"
+              className={cx("leading-none", active ? "text-node-ink" : "text-ink-secondary")}
+            >
+              <Icon name={def.icon} corner={def.corner} size="big" />
             </span>
             <span className="text-left">
               <span className="block text-[1.1em] font-bold">
@@ -149,6 +159,8 @@ function StepsBar({ current, onStep }: { current: Step; onStep: (step: Step) => 
               borderLeft: index > 0 ? `1px solid ${SEGMENT_BORDER}` : "none",
               color: disabled ? "rgba(40,40,40,.3)" : "var(--er-ink)",
               background: active ? "var(--er-surface)" : "transparent",
+              // FIESTA: a 3px node-color bar marks the active step.
+              boxShadow: active ? "inset 0 -3px 0 var(--node-color)" : undefined,
             }}
           >
             {back ? (
@@ -164,18 +176,19 @@ function StepsBar({ current, onStep }: { current: Step; onStep: (step: Step) => 
                 {body}
               </span>
             )}
-            {/* Active pointing-below arrow (site.overrides .ui.steps .active.step.pointing.below) */}
+            {/* Active pointing-below arrow (site.overrides .ui.steps .active.step.pointing.below),
+                in the node color as the bar's notch: the lower half of a rotated square. */}
             {active && (
               <span
                 aria-hidden="true"
-                className="absolute left-1/2 hidden bg-surface sm:block"
+                className="absolute left-1/2 hidden sm:block"
                 style={{
-                  top: "calc(100% + 1px)",
-                  width: "1.14em",
-                  height: "1.14em",
+                  top: "100%",
+                  width: "1em",
+                  height: "1em",
                   transform: "translate(-50%, -50%) rotate(45deg)",
-                  borderRight: `1px solid ${SEGMENT_BORDER}`,
-                  borderBottom: `1px solid ${SEGMENT_BORDER}`,
+                  background: "var(--node-color)",
+                  clipPath: "polygon(100% 0, 100% 100%, 0 100%)",
                   zIndex: 2,
                 }}
               />
@@ -208,12 +221,12 @@ function ExampleCard({
       }
       className="flex flex-col items-center gap-1 rounded-md px-2 py-3 text-center hover:bg-node-soft focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
     >
-      <span className="relative text-ink-secondary">
-        <Icon name={isIconName(example.icon) ? example.icon : "file-text"} size="big" />
-        <span className="absolute -right-2 -bottom-1 rounded-full bg-surface text-node-ink">
-          <Icon name={action === "upload" ? "upload" : "download"} size="small" />
-        </span>
-      </span>
+      <Icon
+        name={iconName(example.icon, "file-text")}
+        corner={action === "upload" ? "arrow-up" : "arrow-down"}
+        size={36}
+        className="mb-1.5 text-ink-secondary"
+      />
       <span className="text-[13px] font-bold leading-tight text-gray-800">
         {first}
         {second !== undefined && (
@@ -628,9 +641,11 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
       >
         {step === 1 && (
           <>
+            {/* FIESTA: one drop target (legacy split it into "Click and select" OR
+                "Drag and drop"); the whole area opens the file picker. */}
             <button
               type="button"
-              aria-label="Choose files to upload"
+              aria-describedby="upload-dropzone-hint"
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(event) => {
                 event.preventDefault();
@@ -639,45 +654,31 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
               onDragLeave={() => setDragging(false)}
               onDrop={onDrop}
               className={cx(
-                "upload-dropzone grid w-full cursor-pointer items-center px-6 py-10 text-center",
+                "upload-dropzone flex w-full cursor-pointer flex-col items-center gap-3 rounded-[10px] border-2 border-dashed px-6 py-8 text-center transition-colors",
                 "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
-                dragging && "bg-node-soft",
+                dragging
+                  ? "border-node bg-[color-mix(in_srgb,var(--node-color)_12%,transparent)]"
+                  : "border-[color-mix(in_srgb,var(--node-color)_40%,transparent)] bg-[color-mix(in_srgb,var(--node-color)_4%,transparent)] hover:bg-[color-mix(in_srgb,var(--node-color)_8%,transparent)]",
               )}
-              style={{ gridTemplateColumns: "1fr auto 1fr" }}
             >
-              <span className="flex flex-col items-center gap-2">
-                <Icon name="folder-open" size="huge" className="text-node-ink" />
-                <span className="block text-[1.07rem] font-bold text-gray-800">
-                  Click and select
-                </span>
-                <span className="block text-[1.07rem] font-bold text-gray-800">
-                  files to upload.
-                </span>
-              </span>
               <span
                 aria-hidden="true"
-                className="mx-6 flex flex-col items-center gap-1 text-[12px] font-bold text-gray-400"
+                className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--node-color)_14%,transparent)] text-node-ink"
               >
-                <span className="h-10 w-px bg-gray-300" />
-                OR
-                <span className="h-10 w-px bg-gray-300" />
+                <Icon name="drop-files" size={34} />
               </span>
-              <span className="flex flex-col items-center gap-2">
-                <Icon name="external" size="huge" className="text-node-ink" />
-                <span className="block text-[1.07rem] font-bold text-gray-800">
-                  Drag and drop files
-                </span>
-                <span className="block text-[1.07rem] font-bold text-gray-800">
-                  here to upload.
-                </span>
+              <span className="block text-[1.07rem] font-bold text-gray-800">
+                Drop files here, or{" "}
+                <span className="text-node-ink underline underline-offset-2">browse</span>
               </span>
+              {config && (
+                <span id="upload-dropzone-hint" className="block text-xs text-gray-500">
+                  {key} text files, tab- or comma-delimited tables (.txt, .tsv, .csv) or Excel
+                  workbooks (.xlsx, one table per sheet); data model version{" "}
+                  {config.data_model_latest}
+                </span>
+              )}
             </button>
-            {config && (
-              <p className="mt-2 text-center text-xs text-gray-400">
-                {key} text files, tab- or comma-delimited tables, or Excel workbooks (one table per
-                sheet); data model version {config.data_model_latest}
-              </p>
-            )}
             <input
               ref={fileInputRef}
               type="file"

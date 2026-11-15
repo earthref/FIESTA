@@ -72,6 +72,11 @@ jobs:
         run: npm run build
         working-directory: fiesta/frontend
 
+      # node --test on src/**/*.test.ts (Node's own type stripping, no runner).
+      - name: Unit tests
+        run: npm test
+        working-directory: fiesta/frontend
+
   config:
     name: Node configs load
     runs-on: ubuntu-latest

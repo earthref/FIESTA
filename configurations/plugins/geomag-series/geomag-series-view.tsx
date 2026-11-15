@@ -1,4 +1,3 @@
-import { faCamera } from "@fortawesome/free-solid-svg-icons";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { LegendComponent, TitleComponent } from "echarts/components";
 import * as echarts from "echarts/core";
@@ -7,7 +6,7 @@ import { EChart, type EChartsOption } from "@/components/echart";
 import { ErrorMessage } from "@/components/error-message";
 import type { SearchParams } from "@/components/filter-modals";
 import { useColumnLabel } from "@/components/filter-modals";
-import { FaIcon } from "@/components/ui/fa-icon";
+import { Icon } from "@/components/ui/icon";
 import { PageSpinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
 import { useNodeConfig } from "@/lib/config";
@@ -277,7 +276,7 @@ export default function GeomagSeriesView({ options, searchParams, onOpen }: Geom
               aria-label={`Download the ${plot.label} plot as a PNG with the search parameters`}
               className="ml-auto flex h-6 w-6 items-center justify-center rounded-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40"
             >
-              <FaIcon icon={faCamera} />
+              <Icon name="camera" />
             </button>
           </header>
           <SeriesPlot
