@@ -1331,6 +1331,47 @@ def test_search_never_returns_private_keys():
         assert body["_source"] == {"excludes": ["summary.contribution._private_key"]}
 
 
+def test_search_tokens_wildcards_and_radius():
+    """A token value with `*` is a case-insensitive wildcard on the column's
+    keyword (never on a contribution-block term), OR'd with its exact values;
+    `radius:"lat,lon,km"` is a great-circle distance from a centre."""
+    from fiesta.search.queries import build_search_body
+
+    def clauses(query):
+        body = build_search_body(table="sites", query=query)
+        # Past the type / latest / activated terms every search has.
+        return [f for f in body["query"]["bool"]["filter"] if "term" not in f]
+
+    assert clauses('site_name:"Rome"') == [{"terms": {"summary._all.site_name.raw": ["Rome"]}}]
+    pattern = {"value": "*rom*", "case_insensitive": True}
+    wild = {"wildcard": {"summary._all.site_name.raw": pattern}}
+    assert clauses('site_name:"*rom*"') == [wild]
+    assert clauses('site_name:"Rome||*rom*"') == [
+        {
+            "bool": {
+                "should": [{"terms": {"summary._all.site_name.raw": ["Rome"]}}, wild],
+                "minimum_should_match": 1,
+            }
+        }
+    ]
+    # A private key is matched exactly, `*` or not.
+    key = clauses('private_key:"*"')
+    assert key == [{"terms": {"summary.contribution._private_key.raw": ["*"]}}]
+    near = {
+        "geo_distance": {
+            "distance": "500.0km",
+            "summary._all._geo_point": {"lat": 45.0, "lon": -10.0},
+        }
+    }
+    # Longitudes 0..360 wrap to -180..180.
+    assert clauses('radius:"45,350,500"') == [near]
+    assert clauses('radius:"45,-10,500"') == [near]
+    assert clauses('radius:"0,0,99999"')[0]["geo_distance"]["distance"].startswith("20015.08")
+    # A malformed circle matches nothing rather than everything.
+    for bad in ("45,10", "x,10,5", "95,10,5", "45,10,-1"):
+        assert clauses(f'radius:"{bad}"') == [{"match_none": {}}], bad
+
+
 def test_contribution_filters_on_every_node():
     """Every node filters by Contribution ID, Contribution DOI and Contributor (facets on the
     contribution block, not `_all`) and Contributed On (a date range whose

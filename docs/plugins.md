@@ -11,6 +11,7 @@ features:
   plugins: [depth-plot]     # cdr.yaml
   plugins: [plateau-calculations]  # karar.yaml
   plugins: [periodic-table]  # kdd.yaml
+  plugins: [geomag-series]  # geomagia.yaml
 ```
 
 Unknown names fail at startup, not at request time.
@@ -82,6 +83,7 @@ tests import it as `fiesta.plugins.<name>` with dashes as underscores
 |---|---|---|
 | `check(node, options)` | startup and every validation / publication | reject options that do not fit this node (tables, columns, levels) with a `ValueError` |
 | `derive_docs(node, parsed, meta)` | every (re)process and `fiesta rebuild` | extra search documents derived from contribution rows (e.g. one `poles` doc per location row with `pole_lat`/`pole_lon`) — always reproducible from the bucket |
+| `derived_columns(node)` + `derive_values(node, table, rows)` | every (re)process and `fiesta rebuild` | extra columns on the hierarchy's own record docs, from each record's rows (`fiesta.plugins.add_derived_values`): a "text" one is a `summary._all.<name>` keyword (a YAML `facet` filter, `<name>:"<value>"` tokens), a "number" one `summary._num.<name>` (a YAML `range` filter and its histogram); the contribution doc gets the union of its records'. The node checks accept YAML filters on them as on data-model columns (a name must not be one). E.g. `geomag-series`'s `data_type`, `pi_family`, `age_error` |
 | `search_levels(node)` | config load | extra search tabs; merged into `GET /v2/{node}/config` `search_levels` and the search API's allowed tables |
 | `search_facets(node)` | every search request with `facet=` | extra columns the search API counts as facet buckets for the plugin's own sidebar filter (the periodic table's `element`); a pick is the usual `<column>:"<value>"` query token |
 | `build_router()` | app startup | API routes mounted once at `/v2/{repository}/plugins/{name}` (e.g. plot-ready measurement series, age spectra); handlers read the node from `NodeDep`. The router is guarded so a node that does not activate the plugin gets a 404 |
@@ -117,6 +119,15 @@ custom result items and grid tiles, extra sub-tabs on a search level, filter
 overrides, home-page cards, and `contributionTabs` — asset tabs in the
 contribution modal, each counted by the matches of an optional `countTable`
 in that contribution and hidden when there are none.
+
+A level sub-tab (`levelSubTabs`) shows either its own docs (`countTable`,
+e.g. `rock_mag`: it fetches them with the context's `query`, `ranges` and
+`bbox`, and the sidebar counts them) or, with `records: true`, the level's own
+records drawn another way, as Map draws them (`geomag-series`'s Plots): the
+sidebar's filters, area, grid filters and with/without data apply as on
+Summaries, its count is the level's, and it fetches the matches with the
+context's `searchParams` (the level search's request params) from
+`GET /search/{table}/values`.
 
 `sidebarFilters(levelName, subTabName, config)` adds filters to the facet
 sidebar after the node's own (`filtersPanel` instead replaces the whole
@@ -170,6 +181,7 @@ net, surface for marker halos, the node color lightened in dark mode) inside
 | [`method-codes`](../configurations/plugins/method-codes/README.md) | MagIC | the method-code vocabulary: the Method Codes page and home card, code definitions beside facet values, case-insensitive `cv()` validation |
 | [`sample-tiles`](../configurations/plugins/sample-tiles/README.md) | every node | the Geology, Age, Intensity and Method Codes summary grid tiles (the legacy result card's sample columns), default tiles after Geography |
 | [`periodic-table`](../configurations/plugins/periodic-table/README.md) | KdD | a periodic-table element filter in the search sidebar, each element counted in the search |
+| [`geomag-series`](../configurations/plugins/geomag-series/README.md) | GEOMAGIA | the Sites level's Plots sub-tab (intensity or VADM, declination and inclination against age, linked zoom, PNG export), and the GEOMAGIA site's query refinements: derived facets and ranges, site-name and radius searches |
 
 Retired: **`record-cards`** (ERDA, OSU-MGR) was retired on 2026-09-30: its per-table
   card layout (title column, subtitle, cells) is now core configuration, each

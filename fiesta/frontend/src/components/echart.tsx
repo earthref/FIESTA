@@ -73,6 +73,10 @@ const WHEEL_STEP = 1.2;
  * survives rebuilds and resets when an axis's type, name or limits change.
  * `onXWindow` gets the x range shown after every build, zoom and pan (for
  * something drawn outside the chart that lines up with its x axis).
+ * `xView` / `onXView` link the x zoom of charts sharing an x axis: `onXView`
+ * gets the zoomed x window (undefined: the full range) after each zoom, pan or
+ * reset made in this chart, and a changed `xView` (null: the full range) sets
+ * this chart's, kept when a rebuild resets the rest of its view.
  */
 export function EChart({
   build,
@@ -82,6 +86,8 @@ export function EChart({
   onClick,
   zoom,
   onXWindow,
+  xView,
+  onXView,
   label,
 }: {
   build: (size: Size) => EChartsOption;
@@ -91,6 +97,8 @@ export function EChart({
   onClick?: (value: unknown) => void;
   zoom?: "xy" | "x" | "square";
   onXWindow?: (x: Range | undefined) => void;
+  xView?: Range | null;
+  onXView?: (x: Range | undefined) => void;
   label: string;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
@@ -102,8 +110,8 @@ export function EChart({
   const [zoomed, setZoomed] = useState(false);
   const zoomAxes: AxisKey[] = zoom === "x" ? ["x"] : zoom ? ["x", "y"] : [];
   // Read from the chart's event handlers, which are bound once.
-  const live = useRef({ onBrush, onClick, onXWindow, mode, zoom, zoomAxes });
-  live.current = { onBrush, onClick, onXWindow, mode, zoom, zoomAxes };
+  const live = useRef({ onBrush, onClick, onXWindow, onXView, xView, mode, zoom, zoomAxes });
+  live.current = { onBrush, onClick, onXWindow, onXView, xView, mode, zoom, zoomAxes };
   const base = useRef<{ x?: BaseAxis; y?: BaseAxis; key?: string }>({});
   const view = useRef<View>({});
 
@@ -134,7 +142,8 @@ export function EChart({
         };
   };
 
-  const setView = (next: View) => {
+  // `linked` false: set from `xView`, not by this chart's user.
+  const setView = (next: View, linked = true) => {
     view.current = next;
     setZoomed(Boolean(next.x || next.y));
     chartRef.current?.setOption(
@@ -142,7 +151,17 @@ export function EChart({
       { lazyUpdate: true },
     );
     live.current.onXWindow?.(windowOf("x"));
+    if (linked) live.current.onXView?.(next.x);
   };
+
+  // A linked chart's zoom: a changed `xView` becomes this chart's x window.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: setView reads refs
+  useEffect(() => {
+    if (xView === undefined || !chartRef.current) return;
+    const [now, next] = [view.current.x, xView ?? undefined];
+    if (now === next || (now && next && now[0] === next[0] && now[1] === next[1])) return;
+    setView({ ...view.current, x: next }, false);
+  }, [xView]);
 
   // Scale every zoomed axis's window by `factor` about a point (in data coordinates).
   const scaleAbout = (point: number[], factor: number) => {
@@ -269,7 +288,11 @@ export function EChart({
         a?.max,
       ]),
     );
-    if (key !== base.current.key || !zoom) view.current = {};
+    if (key !== base.current.key || !zoom) {
+      // A linked x window outlives a rebuild (a new search, another y axis).
+      const linked = zoom && live.current.xView;
+      view.current = linked ? { x: linked } : {};
+    }
     base.current = { x: option.xAxis, y: option.yAxis, key };
     setZoomed(Boolean(view.current.x || view.current.y));
     const brushType = mode === "zoom" ? (zoom === "x" ? "lineX" : "rect") : brush;

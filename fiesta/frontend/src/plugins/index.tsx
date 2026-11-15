@@ -42,6 +42,10 @@ export interface PluginSubTabContext {
   /** Replace the search's range filters (the sidebar shows them); absent
    * where the view is not on the search page (a contribution's modal). */
   setRanges?: (ranges: string[]) => void;
+  /** A `records` tab's search as the level's request params (query, the
+   * sidebar's ranges and area, grid filters, with/without data, scope), for
+   * its own fetch of the level's matches (`/search/{table}/values`). */
+  searchParams?: SearchParams;
 }
 
 export interface PluginSubTab {
@@ -50,6 +54,10 @@ export interface PluginSubTab {
   /** A search table whose matches (with the ranges on its summary block and
    * the bbox) are the tab's count. */
   countTable?: string;
+  /** The tab draws the level's own records, as Map does: the sidebar's
+   * filters apply as on Summaries (and count its records), its count is the
+   * level's matches, and it fetches them with `searchParams`. */
+  records?: boolean;
 }
 
 export interface PluginFiltersProps {
