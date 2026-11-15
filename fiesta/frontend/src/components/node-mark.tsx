@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { darkInk } from "../lib/config";
 import { logoMarkup, parseLogo, TILE_FONT, tileInk, tileLayout } from "../lib/node-logo";
 import type { LogoStyle } from "../lib/types";
 
@@ -7,8 +8,11 @@ export interface NodeMarkProps {
   size: number;
   /** The node color: the ring, and (darkened for contrast) the ink. */
   color: string;
-  /** The name on the tile; empty hides it. */
+  /** The node's name: the tile's accessible name and the label on it. */
   label: string;
+  /** false: the drawing alone, centered, at any size (the node header, whose
+   * title already names the node). A tile without a drawing keeps its name. */
+  named?: boolean;
   /** The logo SVG's text (sanitized again here before it is inlined). */
   svg?: string | null;
   style?: LogoStyle | null;
@@ -20,8 +24,22 @@ export interface NodeMarkProps {
  * admin lists; lib/node-logo.ts draws the same tile as the favicon). `tile`
  * frames the one-color drawing in the legacy letter logo's square and writes
  * the name under it; `full` draws the SVG as drawn, unframed.
+ *
+ * It follows the color scheme: white with the darkened tile ink in light
+ * mode; in dark mode no background of its own (the page, header or card
+ * shows through, and through a drawing's even-odd holes) and the lighter
+ * dark-mode node ink of --node-ink (lib/config.ts inkColor). The node-colored
+ * ring stays in both. The favicon (tileSvg) keeps the white badge.
  */
-export function NodeMark({ size, color, label, svg, style, className }: NodeMarkProps) {
+export function NodeMark({
+  size,
+  color,
+  label,
+  named = true,
+  svg,
+  style,
+  className,
+}: NodeMarkProps) {
   const logo = parseLogo(svg);
   const box: CSSProperties = {
     position: "relative",
@@ -31,7 +49,7 @@ export function NodeMark({ size, color, label, svg, style, className }: NodeMark
     height: size,
     boxSizing: "border-box",
   };
-  const ink = tileInk(color);
+  const ink = `light-dark(${tileInk(color)}, ${darkInk(color)})`;
   if (logo && style === "full") {
     return (
       <span
@@ -47,7 +65,7 @@ export function NodeMark({ size, color, label, svg, style, className }: NodeMark
       />
     );
   }
-  const layout = tileLayout(size, label, logo);
+  const layout = tileLayout(size, logo && !named ? "" : label, logo);
   const drawing = layout.drawing;
   return (
     <span
@@ -57,8 +75,8 @@ export function NodeMark({ size, color, label, svg, style, className }: NodeMark
       style={{
         ...box,
         overflow: "hidden",
-        // A badge: light in both color schemes, like the legacy letter logo.
-        background: "#fff",
+        // White in light mode, like the legacy letter logo; the surface beneath in dark.
+        background: "light-dark(#fff, transparent)",
         border: "1px solid var(--er-line)",
         boxShadow: `inset 0 0 0 1px ${color}`,
         borderRadius: layout.radius,

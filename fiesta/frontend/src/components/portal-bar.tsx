@@ -3,7 +3,14 @@ import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useAuth } from "../lib/auth";
 import { PORTAL } from "../lib/base";
 import { inkColor, useNodeConfig } from "../lib/config";
-import { FIESTA_PORTAL, isActivePortal, PORTALS, portalUrl } from "../lib/portals";
+import {
+  EARTHREF,
+  FIESTA_PORTAL,
+  isActivePortal,
+  PORTALS,
+  portalUrl,
+  usePortalIdentity,
+} from "../lib/portals";
 import { useTheme } from "../lib/theme";
 import { useLoginModal } from "./login-modal";
 import { MobileDrawer } from "./mobile-drawer";
@@ -33,8 +40,10 @@ const itemStyle: CSSProperties = {
 /** Fixed thin EarthRef portal bar across the very top of every page. */
 export function PortalBar() {
   const { data: nodeConfig } = useNodeConfig();
-  // The portal home is no node's page: the bar highlights EarthRef.org instead.
-  const config = PORTAL ? undefined : nodeConfig;
+  // The portal's pages (its home, References, Users) are no node's: the bar
+  // names FIESTA and highlights EarthRef.org or the page instead.
+  const portal = usePortalIdentity();
+  const config = portal ? undefined : nodeConfig;
   // Nodes whose web app production does not serve are left out (node YAML `publish.web`).
   const portals = PORTALS.filter((portal) => !nodeConfig?.hidden_nodes?.includes(portal.label));
   const { user } = useAuth();
@@ -70,13 +79,24 @@ export function PortalBar() {
           <Icon name="sidebar" style={{ width: "1.18em", height: "1em", marginRight: 5 }} />
         </button>
         {/* Narrow (<1024px): active portal label next to the sidebar button */}
-        <Link
-          to="/"
-          className={`${itemClass} font-bold lg:hidden`}
-          style={{ ...itemStyle, color: inkColor((config ?? FIESTA_PORTAL).color) }}
-        >
-          {(config ?? FIESTA_PORTAL).key}
-        </Link>
+        {portal && !PORTAL ? (
+          // References or Users under a node: FIESTA's home is the EarthRef entry.
+          <a
+            href={portalUrl(EARTHREF, nodeConfig?.deployment_nodes)}
+            className={`${itemClass} font-bold lg:hidden`}
+            style={{ ...itemStyle, color: inkColor(FIESTA_PORTAL.color) }}
+          >
+            {FIESTA_PORTAL.key}
+          </a>
+        ) : (
+          <Link
+            to="/"
+            className={`${itemClass} font-bold lg:hidden`}
+            style={{ ...itemStyle, color: inkColor((config ?? FIESTA_PORTAL).color) }}
+          >
+            {(config ?? FIESTA_PORTAL).key}
+          </Link>
+        )}
 
         {/* Wide (≥1024px): full portal bar */}
         <nav aria-label="EarthRef portals" className="hidden items-stretch lg:flex">
@@ -107,7 +127,12 @@ export function PortalBar() {
         <div className="ml-auto flex shrink-0 items-stretch">
           {user ? (
             // Workspace, account, admin, light/dark and log out live in its menu.
-            <UserMenu user={user} config={config} className={itemClass} style={itemStyle} />
+            <UserMenu
+              user={user}
+              config={PORTAL ? undefined : nodeConfig}
+              className={itemClass}
+              style={itemStyle}
+            />
           ) : (
             <>
               <button

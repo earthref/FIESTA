@@ -38,7 +38,12 @@ export function nodeColorVars(color: string): Record<string, string> {
  * ink >= 8:1 on --er-surface and >= 5.9:1 on --er-panel-strong (2026-11-13);
  * 55% left MagIC at 4.4:1 on panels. */
 export function inkColor(color: string): string {
-  return `light-dark(${color}, color-mix(in srgb, ${color} 35%, white))`;
+  return `light-dark(${color}, ${darkInk(color)})`;
+}
+
+/** inkColor's dark-mode half: the node color lightened for the dark surface. */
+export function darkInk(color: string): string {
+  return `color-mix(in srgb, ${color} 35%, white)`;
 }
 
 function nodeColorBase(color: string): Record<string, string> {

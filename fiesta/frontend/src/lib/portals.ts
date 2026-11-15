@@ -1,4 +1,6 @@
+import { useRouterState } from "@tanstack/react-router";
 import { BASE_PATH, BUILD_BASE, NODES, PORTAL, siteUrl } from "./base";
+import { showsPortalIdentity } from "./portal-paths";
 
 /** EarthRef portal registry rendered in the fixed top portal bar. */
 export interface Portal {
@@ -37,6 +39,19 @@ export const FIESTA_PORTAL = {
   subtitle: "Framework for Integrated Earth Science and Technology Applications",
   color: EARTHREF.color,
 };
+
+/**
+ * The current page shows the FIESTA identity (FIESTA_PORTAL: header, theme
+ * color, favicon; no node menu): the portal home, and References and Users
+ * wherever they are served. Follows the route, not the load-time PORTAL: in a
+ * per-node build (dev.earthref.org/MagIC/references) those pages live under
+ * the node's base path, where PORTAL is false, and the router can move between
+ * them and the node's pages without a reload (portal-paths.ts).
+ */
+export function usePortalIdentity(): boolean {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  return showsPortalIdentity(PORTAL, pathname);
+}
 
 // Hosts the production URLs above live on: a page served from one of them
 // links every portal to production.

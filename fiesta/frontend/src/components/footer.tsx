@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { assetUrl, PORTAL } from "../lib/base";
+import { assetUrl } from "../lib/base";
 import { inkColor, useNodeConfig } from "../lib/config";
-import { PORTALS } from "../lib/portals";
+import { PORTALS, usePortalIdentity } from "../lib/portals";
 import { Icon } from "./ui/icon";
 
 /** `ui header <color>` at 1rem: bold, node-colored inline link. */
@@ -31,6 +31,7 @@ const earthrefColor = inkColor(PORTALS[0]?.color ?? "#006600");
  */
 export function Footer() {
   const { data: config } = useNodeConfig();
+  const portal = usePortalIdentity();
 
   // The fixed footer wraps to more lines as the viewport narrows; publish its
   // height as --footer-h so the page padding and the search page's scroll
@@ -103,7 +104,7 @@ export function Footer() {
         </div>
         <div className="flex min-w-0 shrink flex-col items-center sm:min-w-fit sm:shrink-0 xl:flex-row">
           <a
-            href={`mailto:webmaster@earthref.org?subject=[${(!PORTAL && config?.key) || "FIESTA"} Help]`}
+            href={`mailto:webmaster@earthref.org?subject=[${(!portal && config?.key) || "FIESTA"} Help]`}
             className="inline-block self-center bg-panel-soft text-center hover:bg-panel sm:whitespace-nowrap"
             style={basicButtonStyle("var(--node-ink)")}
           >

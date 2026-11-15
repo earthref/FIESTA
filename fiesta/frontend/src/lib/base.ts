@@ -25,6 +25,10 @@
 // from the same variables, and `vite build` emits one with the build-time
 // values so a static deployment works without nginx.
 
+import { isPortalPath } from "./portal-paths";
+
+export { isPortalPage, isPortalPath, PORTAL_PAGES } from "./portal-paths";
+
 declare global {
   interface Window {
     __FIESTA__?: { node?: string; apiUrl?: string; nodes?: string };
@@ -56,16 +60,6 @@ export const NODE: string = inNodePrefix ? segment.toLowerCase() : defaultNode;
 
 /** Path the SPA's routes live under (router basepath); ends with "/". */
 export const BASE_PATH: string = inNodePrefix ? `${BUILD_BASE}${segment}/` : BUILD_BASE;
-
-/** The pages the FIESTA portal serves besides its home, each over every node
- * (routes/portal-pages.tsx). A per-node build serves them under the node. */
-export const PORTAL_PAGES: string[] = ["/references", "/users"];
-
-/** A router path ("/", "/users") the portal serves. */
-export function isPortalPath(path: string): boolean {
-  const trimmed = path.length > 1 ? path.replace(/\/+$/, "") : path;
-  return trimmed === "/" || PORTAL_PAGES.includes(trimmed);
-}
 
 /** Multi-node layout, the build base itself (http://localhost:8080/) or one of
  * PORTAL_PAGES under it: the FIESTA portal, which aggregates every node in
