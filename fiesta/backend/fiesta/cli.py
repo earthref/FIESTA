@@ -325,7 +325,8 @@ def import_public_command(
     versions: bool = typer.Option(False, help="also import each ID's earlier published versions"),
 ):
     """Copy public contributions (IDs, versions, DOIs) from SOURCE into local
-    development as the seed workspace owner; refuses remote infrastructure.
+    development, each owned by a local copy of its contributor (name, handle,
+    ORCID; no password); refuses remote infrastructure.
     IDS are space- or comma-separated."""
     from fiesta.nodeconfig import get_deployment
     from fiesta.services.public_import import import_public
