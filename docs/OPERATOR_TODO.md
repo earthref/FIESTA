@@ -235,6 +235,21 @@ serves its API, and its SPA only to local stacks. See configurations/geomagia/RE
       values; the Plots tab, site-name and radius searches work without it. Done when
       `https://dev.earthref.org/v2/geomagia/search/sites?size=1&facet=data_type` lists
       Intensity and Direction.
+- [ ] **Put the field models in dev's storage** for the Sites level's Field Models tab
+      (2026-11-14, `field-models` plugin; until then the tab says no models are
+      installed). On fiesta-ct, once dev serves GEOMAGIA: `sudo apt install
+      libarchive-tools` (bsdtar, for the two RAR archives), then with the API's
+      environment (its S3 settings) loaded:
+      `cd /srv/fiesta/current/fiesta/backend && FIESTA_CONFIG_FILE=../../configurations/fiesta.yaml uv run python ../../configurations/plugins/field-models/fetch_models.py --node geomagia --upload --cache /var/tmp/field-models-cache`.
+      It downloads ~310 MB from GFZ, EarthRef ERDA and the Potsdam Kalmag service (one
+      request per model and statistic), checks every pinned sha256, and writes ~360 MB
+      under `geomagia/field-models/` (22 models, `catalog.json` last); exit status 0
+      and "wrote ... catalog.json (22 models)". Done when
+      `https://dev.earthref.org/v2/geomagia/plugins/field-models/catalog` lists 22
+      models. Production later: the same command with production's settings. Five
+      catalogue models have no public source (ARCH-UK.1, ARCH3K.1e, SED3K.1e,
+      CALS3K.3e, BIGMUDI4k.1); ask the GEOMAGIA team whether their authors would
+      publish them (configurations/plugins/field-models/README.md).
 
 ## 2026-11-13 — OpenAlex reference metadata
 

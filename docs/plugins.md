@@ -11,7 +11,7 @@ features:
   plugins: [depth-plot]     # cdr.yaml
   plugins: [plateau-calculations]  # karar.yaml
   plugins: [periodic-table]  # kdd.yaml
-  plugins: [geomag-series]  # geomagia.yaml
+  plugins: [geomag-series, field-models]  # geomagia.yaml
 ```
 
 Unknown names fail at startup, not at request time.
@@ -184,6 +184,7 @@ net, surface for marker halos, the node color lightened in dark mode) inside
 | [`periodic-table`](../configurations/plugins/periodic-table/README.md) | KdD | a periodic-table element filter in the search sidebar, each element counted in the search |
 | [`magic-3-upgrade`](../configurations/plugins/magic-3-upgrade/README.md) | MagIC | the 2.5 → 3.0 upgrade step: results split by level and direction, the wide criteria table, method codes, dates, measurement parents and sequence, the 2.5 blank defaults |
 | [`geomag-series`](../configurations/plugins/geomag-series/README.md) | GEOMAGIA | the Sites level's Plots sub-tab (intensity or VADM, declination and inclination against age, linked zoom, PNG export), and the GEOMAGIA site's query refinements: derived facets and ranges, site-name and radius searches |
+| [`field-models`](../configurations/plugins/field-models/README.md) | GEOMAGIA | the Sites level's Field Models sub-tab: published geomagnetic field models (SHMODEL in numpy) as intensity/VADM, declination and inclination/ΔI curves at chosen or searched site locations with uncertainty bands, ensembles and the search's data, global Mollweide maps with a year movie, GEOMAGIA's exports; models fetched from their public sources into storage by its `fetch_models.py` |
 | [`kd-plots`](../configurations/plugins/kd-plots/README.md) | KdD | spider diagrams, Onuma (Kd against ionic radius) diagrams and Kd by element, for a search or a contribution |
 
 Retired: **`record-cards`** (ERDA, OSU-MGR) was retired on 2026-09-30: its per-table

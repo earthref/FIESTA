@@ -1,0 +1,423 @@
+# Field-model catalogue: where each model GEOMAGIA's field-model pages offer
+# (its field_models/catalog.py) is published openly, and how fetch_models.py
+# turns it into the B-spline layout the plugin synthesises.
+#
+# Nothing here is a coefficient: the script downloads every file from its
+# original public source, checks it against the sha256 below, converts it and
+# writes the result to the node's storage (<prefix>field-models/). No model
+# file is committed to this repository or taken from GEOMAGIA's own copies.
+#
+# archives: downloads shared by several models.
+#   url      the public source, pinned to a commit/version where it has one
+#   sha256   of the download; null where the host generates the archive per
+#            request (its member hashes below are what is checked then)
+#   format   zip | rar (needs bsdtar, libarchive) | file
+# models: GEOMAGIA's catalogue order.
+#   group    GEOMAGIA's dataset group (catalog.py DATASET_GROUPS)
+#   author, year   the label "<name> — <author> et al. (<year>)"
+#   legacy   listed under "Legacy models" (catalog.py LEGACY_MODELS)
+#   source   {archive, member, sha256 of the member}; or {kalmag: ...} for
+#            the University of Potsdam Kalmag service (one POST per model and
+#            statistic when the script runs; its output is deterministic, so
+#            the extracted file's sha256 is pinned too)
+#   format   spline (as published) | ka-bp-spline (GGFSS70: 1950 - 1000 ka)
+#            | epoch-matrix (Kalmag, pfm9k.2) | sha-dif | shawq-xlsx
+#            -- every epoch format becomes a natural cubic interpolant
+#   ensemble {source, format, kind}: members for the uncertainty bands
+#   terms    the licence or terms as stated at the source ("none stated")
+#   citation shown with the model in the UI and in every export
+
+archives:
+  pymagglobal:
+    # GFZ's pymagglobal data files (each with a .license sidecar: CC0-1.0),
+    # pinned to the main-branch commit of 2026-06-30.
+    url: https://git.gfz-potsdam.de/sec23/korte/pymagglobal/-/raw/e9b87bb3bf62e688579cd3c6b1663c50f179e12d/pymagglobal/dat/
+    format: directory
+  gfz-cals10k2:
+    url: https://www.gfz.de/fileadmin/gfz/sec23/data/Models/CALSxK/CALS10k2.zip
+    sha256: 7621ab617a5efaf4c7aba5ec2a9541915d5a7aed09c3d6a662f0f6fcd56acb68
+    format: zip
+  gfz-nextcloud:
+    # "Additional models" linked from pymagglobal's dat/README; the share
+    # zips its folder on every download, so only the members are pinned.
+    url: https://nextcloud.gfz-potsdam.de/s/GRfTWKPWB6ks3yz/download
+    sha256: null
+    format: zip
+  erda-1897:
+    url: https://earthref.org/ERDA/download:1897/
+    sha256: 0b7fa293b342e74720e4a80e751241e9eedc09b538d021f1032404009418a713
+    format: rar
+  erda-1951:
+    url: https://earthref.org/ERDA/download:1951/
+    sha256: 37458cd3464e95a7a0db85995a202d67c4518c461333e47f309d95e57fcf4c6f
+    format: zip
+  erda-2453:
+    url: https://earthref.org/ERDA/download:2453/
+    sha256: f4f8fbdd3052b531cb8c2ab1d3822f1498026faf112f0d91a54bb806056bce8d
+    format: rar
+  erda-2472:
+    url: https://earthref.org/ERDA/download:2472/
+    sha256: 4144b09263c63d7211b5c1b120dc67d6a84f34c5b9137d86d6dffd279430c12c
+    format: zip
+  erda-2522:
+    url: https://earthref.org/ERDA/download:2522/
+    sha256: 1a1e8131ffd80cc1bb051a23563d723355cbef5ca3e156fc704ce32c7a5db6d1
+    format: zip
+
+kalmag:
+  # University of Potsdam Kalmag service (Django forms; no terms stated).
+  # ArchKalmag/HistKalmag pages: https://ionocovar.agnld.uni-potsdam.de/Kalmag/
+  radius: 6371.2
+  members: 256
+
+models:
+  - name: ArchKalmag8k
+    group: archaeo
+    author: Schanner
+    year: 2026
+    citation: >-
+      Schanner, M., Panovska, S. and Korte, M. (2026): A fully Bayesian model
+      for the global Holocene geomagnetic field. Journal of Geophysical
+      Research: Solid Earth (citation as given by the Kalmag service).
+    source:
+      kalmag: https://ionocovar.agnld.uni-potsdam.de/Kalmag/Archeo/Archeo8k/Model/
+      modelc: ARCHEO8K_CORE
+      statistics: MEAN
+      degree: 5
+      start: -6000
+      end: 2000
+      step: 50
+      sha256: 9a9c27b4e24a11d3f3a8097cd4f86a8fa0e41f4b616989e8a085b5feaee05a39
+    format: epoch-matrix
+    ensemble:
+      source:
+        kalmag: https://ionocovar.agnld.uni-potsdam.de/Kalmag/Archeo/Archeo8k/Model/
+        modelc: ARCHEO8K_CORE
+        statistics: ENS
+        degree: 5
+        start: -6000
+        end: 2000
+        step: 50
+        sha256: e57a7d12c1daaaef3ccc1e351ae792bd8d009c679d9654c6c4326386352312ac
+      format: kalmag-ens
+      kind: posterior
+    terms: none stated
+  - name: ArchKalmag14k
+    group: archaeo
+    author: Schanner
+    year: 2022
+    citation: >-
+      Schanner, M., Korte, M. and Holschneider, M. (2022): ArchKalmag14k: A
+      Kalman-filter based global geomagnetic model for the Holocene. Journal of
+      Geophysical Research: Solid Earth, 127, e2021JB023166.
+    doi: 10.1029/2021JB023166
+    source:
+      kalmag: https://ionocovar.agnld.uni-potsdam.de/Kalmag/Archeo/Archeo14k/Model/
+      modelc: ARCHEO_CORE
+      statistics: MEAN
+      degree: 20
+      start: -12000
+      end: 1950
+      step: 50
+      sha256: 18804bf1d294d5ff9da94ebbe9a649c1e4de029c16dd52b443b589b5ba20c29d
+    format: epoch-matrix
+    ensemble:
+      source:
+        kalmag: https://ionocovar.agnld.uni-potsdam.de/Kalmag/Archeo/Archeo14k/Model/
+        modelc: ARCHEO_CORE
+        statistics: ENS
+        degree: 20
+        start: -12000
+        end: 1950
+        step: 50
+        sha256: 012578c6e5d8a7d45b9f5ad271bacde1dc104c50962352507922d06d5aec033b
+      format: kalmag-ens
+      kind: posterior
+    terms: none stated
+  - name: SHA.DIF.14k
+    group: archaeo
+    author: Pavón-Carrasco
+    year: 2014
+    citation: >-
+      Pavón-Carrasco, F. J., Osete, M. L., Torta, J. M. and De Santis, A.
+      (2014): A geomagnetic field model for the Holocene based on
+      archaeomagnetic and lava flow data. Earth and Planetary Science Letters,
+      388, 98-109.
+    doi: 10.1016/j.epsl.2013.11.046
+    source: { archive: erda-1897, member: coeff_SHA.DIF.14k.dat, sha256: 7f52e37015b2144f56cc56762f8f8c03642adb269a0286dcc70852c7c2bf5e9c }
+    format: sha-dif
+    terms: none stated
+  - name: SHAWQ2k
+    group: archaeo
+    author: Campuzano
+    year: 2019
+    citation: >-
+      Campuzano, S. A., Gómez-Paccard, M., Pavón-Carrasco, F. J. and Osete,
+      M. L. (2019): Emergence and evolution of the South Atlantic Anomaly
+      revealed by the new paleomagnetic reconstruction SHAWQ2k. Earth and
+      Planetary Science Letters, 512, 17-26.
+    doi: 10.1016/j.epsl.2019.01.050
+    source: { archive: erda-2453, member: coefs_SHAWQ2k.xlsx, sha256: 1033c4f4aadea05f096fe689cdf36f9331668c215e0cb712a62e8d408e25ea55 }
+    format: shawq-xlsx
+    terms: none stated
+  - name: SHAWQ-Iron Age
+    group: archaeo
+    author: Osete
+    year: 2020
+    citation: >-
+      Osete, M. L., Molina-Cardín, A., Campuzano, S. A., Aguilella-Arzo, G.,
+      Barrachina-Ibáñez, A., Falomir-Granell, F., Oliver Foix, A.,
+      Gómez-Paccard, M., Martín-Hernández, F., Palencia-Ortas, A.,
+      Pavón-Carrasco, F. J., Rivero-Montero, M., Ruiz-Martínez, V. C. and
+      Chauvin, A. (2020): Two archaeomagnetic intensity maxima and rapid
+      directional variation rates during the Early Iron Age observed at
+      Iberian coordinates. Earth and Planetary Science Letters, 533, 116047.
+    doi: 10.1016/j.epsl.2019.116047
+    source: { archive: erda-2453, member: coefs_SHAWQIronAge.xlsx, sha256: d0e4232f5fddb450ab2ebfeeaeb6c0a09ab0c98442f3a4cf1e25a65d6dd22e91 }
+    format: shawq-xlsx
+    terms: none stated
+  - name: HistKalmag
+    group: historical_archaeo
+    author: Schanner
+    year: 2023
+    citation: >-
+      Schanner, M., Bohsung, L., Fischer, C., Korte, M. and Holschneider, M.
+      (2023): The global geomagnetic field over the historical era: what can we
+      learn from ship-log declinations? Earth, Planets and Space (citation as
+      given by the Kalmag service).
+    source:
+      kalmag: https://ionocovar.agnld.uni-potsdam.de/Kalmag/Histo/Model/
+      modelc: HISTO_CORE
+      statistics: MEAN
+      degree: 20
+      start: 1000
+      end: 1950
+      step: 10
+      sha256: a8b9f67cb1d64d1cb9f0fc71fbe55d1c51b058ffb1523bdefc8fb93abcf8db0e
+    format: epoch-matrix
+    ensemble:
+      source:
+        kalmag: https://ionocovar.agnld.uni-potsdam.de/Kalmag/Histo/Model/
+        modelc: HISTO_CORE
+        statistics: ENS
+        degree: 20
+        start: 1000
+        end: 1950
+        step: 10
+        sha256: d4304dc0fa9b46f6f5549263cc4007987d674db27ac6be7ccb7068fd97121dc1
+      format: kalmag-ens
+      kind: posterior
+    terms: none stated
+  - name: LSMOD.2
+    group: volcanic_sediment
+    author: Korte
+    year: 2019
+    citation: >-
+      Korte, M., Brown, M. C., Panovska, S. and Wardinski, I. (2019): Robust
+      characteristics of the Laschamp and Mono Lake geomagnetic excursions:
+      results from global field models. Frontiers in Earth Science, 7:86.
+    doi: 10.3389/feart.2019.00086
+    source: { archive: pymagglobal, member: LSMOD.2, sha256: eb3480895d6d764db8e38bf30c162fbecb412360f96949a8922710a0064ae93a }
+    format: spline
+    terms: CC0-1.0 (pymagglobal LSMOD.2.license)
+  - name: GGFSS70
+    group: sediment
+    author: Panovska
+    year: 2021
+    citation: >-
+      Panovska, S., Korte, M., Liu, J. and Nowaczyk, N. (2021): Global evolution
+      and dynamics of the geomagnetic field in the 15-70 kyr period based on
+      selected paleomagnetic sediment records. Journal of Geophysical Research:
+      Solid Earth, 126, e2021JB022681.
+    doi: 10.1029/2021JB022681
+    source: { archive: erda-2472, member: GGFSS70/GGFSS70, sha256: 2d4d53457de192d6e10c9a8238106957c3d537cba21cc8c4fd53badfc5323e16 }
+    format: ka-bp-spline
+    terms: none stated
+  - name: pfm9k.2
+    group: mixed
+    author: Nilsson
+    year: 2022
+    citation: >-
+      Nilsson, A., Suttie, N., Stoner, J. S. and Muscheler, R. (2022): Recurrent
+      ancient geomagnetic field anomalies shed light on future evolution of the
+      South Atlantic Anomaly. Proceedings of the National Academy of Sciences,
+      119, e2200749119.
+    doi: 10.1073/pnas.2200749119
+    source: { archive: erda-2522, member: pfm9k2/pfm9k2_coeffs/pfm9k2-mean.txt, sha256: 05ed4b868e2c7827f34e4adec2cea412734c16e42ebf49a07433c3d45ccd851f }
+    format: epoch-matrix
+    ensemble:
+      source: { archive: erda-2522, members: 'pfm9k2/pfm9k2_coeffs/pfm9k2_(\d{4})\.txt', sha256: e12ef69eaa6c47e5208887503b73d3c8f3b4ef42a3ea4060d67ef23a250e526b }
+      format: epoch-matrix-members
+      kind: posterior
+    terms: none stated
+  - name: CALS10k.2
+    group: mixed
+    author: Constable
+    year: 2016
+    citation: >-
+      Constable, C., Korte, M. and Panovska, S. (2016): Persistent high
+      paleosecular variation activity in southern hemisphere for at least
+      10 000 years. Earth and Planetary Science Letters, 453, 78-86.
+    doi: 10.1016/j.epsl.2016.08.015
+    source: { archive: gfz-cals10k2, member: CALS10k.2, sha256: 7d21a37d95b828517e099ecd6401e5cf6f4f7368a7c3fa3ffbc14fb15263c68b }
+    format: spline
+    terms: none stated
+  - name: CALS10K.1b
+    group: mixed
+    author: Korte
+    year: 2011
+    legacy: true
+    citation: >-
+      Korte, M., Constable, C., Donadini, F. and Holme, R. (2011):
+      Reconstructing the Holocene geomagnetic field. Earth and Planetary
+      Science Letters, 312, 497-505.
+    doi: 10.1016/j.epsl.2011.10.031
+    source: { archive: gfz-nextcloud, member: pymagglobal_models/CALS10k.1b, sha256: cbacd012bf2d794d93f630f8582a611946de600fff11dace515d3745fe8e8a33 }
+    format: spline
+    terms: none stated
+  - name: ARCH10k.1
+    group: archaeo
+    author: Constable
+    year: 2016
+    citation: >-
+      Constable, C., Korte, M. and Panovska, S. (2016): Persistent high
+      paleosecular variation activity in southern hemisphere for at least
+      10 000 years. Earth and Planetary Science Letters, 453, 78-86.
+    doi: 10.1016/j.epsl.2016.08.015
+    source: { archive: pymagglobal, member: ARCH10k.1, sha256: c4ad7ffae15fbea56eb532ac052b5f661824f480a1d6b85535ab1c03765aa6c3 }
+    format: spline
+    terms: CC0-1.0 (pymagglobal ARCH10k.1.license)
+  - name: HFM.OL1.A1
+    group: mixed
+    author: Constable
+    year: 2016
+    # Introduced with CALS10k.2 (GEOMAGIA's label); its method is Panovska et
+    # al. (2015), Geophys. J. Int., 202, 402-418.
+    citation: >-
+      Constable, C., Korte, M. and Panovska, S. (2016): Persistent high
+      paleosecular variation activity in southern hemisphere for at least
+      10 000 years. Earth and Planetary Science Letters, 453, 78-86.
+    doi: 10.1016/j.epsl.2016.08.015
+    source: { archive: pymagglobal, member: HFM.OL1.A1, sha256: 147735be4a96d995a00e83ace4f81ca7dc68edab72a6fbaebe7cbd6e8778aa7b }
+    format: spline
+    terms: CC0-1.0 (pymagglobal HFM.OL1.A1.license)
+  - name: pfm9k.1a
+    group: mixed
+    author: Nilsson
+    year: 2014
+    legacy: true
+    citation: >-
+      Nilsson, A., Holme, R., Korte, M., Suttie, N. and Hill, M. (2014):
+      Reconstructing Holocene geomagnetic field variation: new methods, models
+      and implications. Geophysical Journal International, 198, 229-248.
+    doi: 10.1093/gji/ggu120
+    source: { archive: erda-1951, member: pfm9k1/pfm9k.1a, sha256: 4c6747ee225cfe88c24641311479cb5529bbf46467ed2fde570e18de807ed69c }
+    format: spline
+    terms: none stated
+  - name: CALS7K.2
+    group: mixed
+    author: Korte
+    year: 2005
+    legacy: true
+    citation: >-
+      Korte, M. and Constable, C. (2005): The geomagnetic dipole moment over the
+      last 7000 years - new results from a global model. Earth and Planetary
+      Science Letters, 236, 348-358.
+    doi: 10.1016/j.epsl.2004.12.031
+    source: { archive: gfz-nextcloud, member: pymagglobal_models/CALS7K.2, sha256: 0c28f16396a14ddd04621abcf8bf2e38438d7a4020d96c6d468cca8dd0d79fe0 }
+    format: spline
+    terms: none stated
+  - name: CALS3K.4e
+    group: mixed
+    author: Korte
+    year: 2011
+    # GEOMAGIA's name for the bootstrap model with uncertainties: the GFZ file
+    # CALS3k.4b (Korte & Constable 2011's bootstrap average; the only CALS3k.4
+    # variant with an uncertainty array; degree 10, 402 splines, mean + error
+    # layout as catalog.py requires; 2,519,166 bytes vs GEOMAGIA's 2,519,156).
+    citation: >-
+      Korte, M. and Constable, C. (2011): Improving geomagnetic field
+      reconstructions for 0-3 ka. Physics of the Earth and Planetary Interiors,
+      188, 247-259.
+    doi: 10.1016/j.pepi.2011.06.017
+    source: { archive: gfz-nextcloud, member: pymagglobal_models/CALS3k.4b, sha256: 9b892bc05446530920fef2a8677dfe399043cbf4859abbb3e27c29984cdfc222 }
+    format: spline
+    terms: none stated
+  - name: CALS3K.3
+    group: mixed
+    author: Korte
+    year: 2009
+    legacy: true
+    citation: &korte2009 >-
+      Korte, M., Donadini, F. and Constable, C. G. (2009): Geomagnetic field for
+      0-3 ka: 2. A new series of time-varying global models. Geochemistry,
+      Geophysics, Geosystems, 10, Q06008.
+    doi: 10.1029/2008GC002297
+    source: { archive: gfz-nextcloud, member: pymagglobal_models/CALS3k.3, sha256: 555cce4cc7dc497baf9a0aa69e9e87f2a0dee038e37c9a8d7f3ce979db49c6cb }
+    format: spline
+    terms: none stated
+  - name: CALS3K_cst.1
+    group: mixed
+    author: Korte
+    year: 2009
+    legacy: true
+    citation: *korte2009
+    doi: 10.1029/2008GC002297
+    source: { archive: gfz-nextcloud, member: pymagglobal_models/CALS3k_cst.1, sha256: 690e08c0843bd850757a034da70ae95439e79c48c72c96b068c58faece8c6b12 }
+    format: spline
+    terms: none stated
+  - name: ARCH3K.1
+    group: archaeo
+    author: Korte
+    year: 2009
+    # The public file carries the mean only; GEOMAGIA's copy adds an
+    # uncertainty array no public source offers, so no uncertainty band here.
+    citation: *korte2009
+    doi: 10.1029/2008GC002297
+    source: { archive: gfz-nextcloud, member: pymagglobal_models/ARCH3k.1, sha256: f8e402f64299de8ad6d6933de5551be7a6220988443c7dbd5400d229489a3169 }
+    format: spline
+    terms: none stated
+  - name: ARCH3K_cst.1
+    group: archaeo
+    author: Korte
+    year: 2009
+    citation: *korte2009
+    doi: 10.1029/2008GC002297
+    source: { archive: gfz-nextcloud, member: pymagglobal_models/ARCH3k_cst.1, sha256: 100a29068b1f3ae0e0ab631fc13c79d1394775f7191d4922871c739adaaa3a11 }
+    format: spline
+    terms: none stated
+  - name: SED3K.1
+    group: sediment
+    author: Korte
+    year: 2009
+    citation: *korte2009
+    doi: 10.1029/2008GC002297
+    source: { archive: gfz-nextcloud, member: pymagglobal_models/SED3k.1, sha256: c88f7c6ead56d10b67d17f9ec358d38f5872ac0254044026e83254d689fe7a6d }
+    format: spline
+    terms: none stated
+  - name: GUFM.1
+    group: historical
+    author: Jackson
+    year: 2000
+    citation: >-
+      Jackson, A., Jonkers, A. R. T. and Walker, M. R. (2000): Four centuries of
+      geomagnetic secular variation from historical records. Philosophical
+      Transactions of the Royal Society of London A, 358, 957-990.
+    doi: 10.1098/rsta.2000.0569
+    source: { archive: pymagglobal, member: gufm1, sha256: 81b7d25a754011de1fe2453999ed20242fb88ac6c2f8c8750b63537df80ac9fe }
+    format: spline
+    terms: CC0-1.0 (pymagglobal gufm1.license)
+
+# In GEOMAGIA's catalogue but without a public source (2026-11-14); add them
+# here once one exists.
+unavailable:
+  ARCH-UK.1: no public source (Batt et al. 2017)
+  ARCH3K.1e: no public source (the error-array variant of ARCH3k.1)
+  SED3K.1e: no public source (the error-array variant of SED3k.1)
+  CALS3K.3e: >-
+    no public source: GEOMAGIA's file is CALS3k.3 plus an uncertainty array
+    (1,201,622 bytes); GFZ's CALS3k.3b is a different, bootstrap-average model
+    (2,519,157 bytes), so it is not substituted
+  BIGMUDI4k.1: >-
+    no reachable public source: its only host (cobs.zamg.ac.at, Arneitz et al.
+    2019; M0, Mbm and 500 bootstraps) refused connections on 2026-11-14

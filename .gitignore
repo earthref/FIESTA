@@ -20,3 +20,6 @@ __pycache__/
 dist/
 # legacy inventory snapshots (may contain private contributions)
 migration/
+
+# fetch_models.py downloads (configurations/plugins/field-models)
+field-models-cache/
