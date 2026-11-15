@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   type ChangeEvent,
+  type CSSProperties,
   type DragEvent,
   useEffect,
   useId,
@@ -24,6 +25,7 @@ import { useNodeConfig } from "../lib/config";
 import { dataModelQuery, unwrapModel } from "../lib/data-model";
 import {
   computeSheet,
+  decodeText,
   FORMATS,
   formatLabel,
   guessFormat,
@@ -44,6 +46,7 @@ import type {
   UploadExample,
   ValidationResult,
 } from "../lib/types";
+import { mayNeedUpgrade, type UpgradeResult, upgradeText } from "../lib/upgrade";
 import { cx, formatBytes } from "../lib/utils";
 import { DataImporter, type TemplateActions } from "./data-importer";
 import { ErrorMessage } from "./error-message";
@@ -53,11 +56,17 @@ import { Button } from "./ui/button";
 import { Icon, type IconName, isIconName } from "./ui/icon";
 import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
+import { UpgradeReportPanel } from "./upgrade-report";
 
 type Step = 1 | 2 | 3;
 type Phase = "idle" | "creating" | "uploading" | "processing" | "done" | "error";
 
 const SEGMENT_BORDER = "var(--er-line)";
+
+// Example cards: two per row on phones, all in one row from sm up.
+const EXAMPLE_GRID =
+  "grid grid-cols-2 gap-2 sm:[grid-template-columns:repeat(var(--examples),minmax(0,1fr))]";
+const exampleColumns = (n: number) => ({ "--examples": n }) as CSSProperties;
 
 const stepDefs: { step: Step; icon: IconName; title: string; description: string }[] = [
   {
@@ -90,6 +99,10 @@ interface ImportFile {
   format: ImportFormat;
   sheets: Sheet[];
   states: SheetState[];
+  /** The upgrade of a file written in an older data model (its sheets are
+   * the upgraded text's), with the blank defaults it was run with. */
+  upgrade: UpgradeResult | null;
+  defaults: Record<string, boolean>;
   error: string | null;
 }
 
@@ -249,6 +262,14 @@ function useTemplateActions(enabled: boolean): TemplateActions {
   };
 }
 
+/** How a file of the node's text format in an older data model is upgraded
+ * before its sheets are read: the model's latest version and the blank
+ * defaults the contributor switched. */
+interface UpgradeSettings {
+  latest: string;
+  defaults: Record<string, boolean>;
+}
+
 async function readFile(
   id: string,
   name: string,
@@ -256,31 +277,53 @@ async function readFile(
   format: ImportFormat,
   model: DataModel | null,
   templates: Parameters<typeof readSheets>[2],
+  upgradeSettings: UpgradeSettings,
 ): Promise<ImportFile> {
+  const base = { id, name, bytes, format, defaults: upgradeSettings.defaults };
+  let upgrade: UpgradeResult | null = null;
+  if (format === "fiesta" && upgradeSettings.latest) {
+    const text = decodeText(bytes);
+    if (mayNeedUpgrade(text, model, upgradeSettings.latest)) {
+      try {
+        const result = await upgradeText(text, { defaults: upgradeSettings.defaults });
+        upgrade = result.upgraded ? result : null;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          ...base,
+          sheets: [],
+          states: [],
+          upgrade: null,
+          error: `Failed to upgrade this file to data model ${upgradeSettings.latest}: ${message}`,
+        };
+      }
+    }
+  }
   try {
-    const sheets = await readSheets(bytes, format, templates);
+    const sheets = upgrade?.text
+      ? readBlocks(upgrade.text)
+      : await readSheets(bytes, format, templates);
     return {
-      id,
-      name,
-      bytes,
-      format,
+      ...base,
       sheets,
       states: sheets.map((sheet) => initialState(sheet, model)),
+      upgrade,
       error: sheets.length ? null : "The file has no tables to import.",
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
-      id,
-      name,
-      bytes,
-      format,
+      ...base,
       sheets: [],
       states: [],
+      upgrade: null,
       error: `Failed to read this file as a ${format === "excel" ? "spreadsheet" : "text file"}: ${message}`,
     };
   }
 }
+
+/** The name of an upgraded file's report, kept beside it as an attachment. */
+const reportName = (name: string) => `${name.replace(/\.[^.]*$/, "")}-upgrade-report.txt`;
 
 const rowCount = (n: number) => `${n.toLocaleString()} ${n === 1 ? "row" : "rows"}`;
 
@@ -314,6 +357,9 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
 
   const upload = config?.upload;
   const templates = upload?.excel_templates ?? [];
+  // Files in an older data model are upgraded to this version as they are read.
+  const latest = config?.data_model_latest ?? "";
+  const upgradable = (config?.data_model_versions.length ?? 0) > 1;
   const { data: model = null } = useQuery({
     ...dataModelQuery(config?.data_model_latest ?? ""),
     enabled: !!config?.data_model_latest,
@@ -418,6 +464,7 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
           f.format ?? guessFormat(f.name, f.bytes),
           model,
           templates,
+          { latest, defaults: {} },
         ),
       ),
     );
@@ -465,8 +512,23 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
 
   const setFormat = async (i: number, format: ImportFormat) => {
     const file = files[i];
-    const read = await readFile(file.id, file.name, file.bytes, format, model, templates);
+    const read = await readFile(file.id, file.name, file.bytes, format, model, templates, {
+      latest,
+      defaults: file.defaults,
+    });
     setFiles((current) => current.map((f, k) => (k === i ? read : f)));
+  };
+
+  // A blank default switched in an upgraded file's report: upgrade it again.
+  const setDefault = async (i: number, key: string, on: boolean) => {
+    const file = files[i];
+    setReading(true);
+    const read = await readFile(file.id, file.name, file.bytes, file.format, model, templates, {
+      latest,
+      defaults: { ...file.defaults, [key]: on },
+    });
+    setFiles((current) => current.map((f, k) => (k === i ? read : f)));
+    setReading(false);
   };
 
   const setSheetState = (i: number, j: number, state: SheetState) =>
@@ -515,7 +577,11 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
         new Blob([blocks.map((b) => b.text).join("\n>>>>>>>>>>\n")], { type: "text/plain" }),
         "import.txt",
       );
-      for (const file of files) formData.append("originals", new Blob([file.bytes]), file.name);
+      for (const file of files) {
+        formData.append("originals", new Blob([file.bytes]), file.name);
+        if (file.upgrade?.report_text)
+          formData.append("originals", new Blob([file.upgrade.report_text]), reportName(file.name));
+      }
       const headers: Record<string, string> = { "Idempotency-Key": crypto.randomUUID() };
       if (expected) headers["If-Match"] = expected;
       await api<ContributionOut>(`/private/contributions/${id}/import`, {
@@ -628,7 +694,7 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                 <h4 className="mb-2 text-[13px] font-bold text-gray-800">
                   Or try importing one of these example files:
                 </h4>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                <div className={EXAMPLE_GRID} style={exampleColumns(upload.examples.length)}>
                   {upload.examples.map((example) => (
                     <ExampleCard
                       key={example.file}
@@ -643,7 +709,7 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                   Or first download the file to preview the contents and make changes before
                   uploading:
                 </h4>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                <div className={EXAMPLE_GRID} style={exampleColumns(upload.examples.length)}>
                   {upload.examples.map((example) => (
                     <ExampleCard
                       key={example.file}
@@ -654,6 +720,17 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                   ))}
                 </div>
               </>
+            )}
+            {upgradable && (
+              <p className="mt-3 text-[13px] text-gray-600">
+                Files in an older {key} data model version are upgraded to version {latest} as they
+                are read, and the import step shows what changed. To upgrade a file without
+                uploading it, use the{" "}
+                <Link to="/upgrade" className="text-node-ink underline">
+                  Upgrade page
+                </Link>
+                .
+              </p>
             )}
           </>
         )}
@@ -696,6 +773,14 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                     ))}
                   </select>
                 </label>
+                {file.upgrade && (
+                  <UpgradeReportPanel
+                    result={file.upgrade}
+                    modelName={`${key} Data Model`}
+                    onDefault={(name, on) => setDefault(i, name, on)}
+                    busy={reading}
+                  />
+                )}
                 {file.error ? (
                   <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-[13px] text-red-800">
                     {file.error}

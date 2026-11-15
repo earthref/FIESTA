@@ -15,7 +15,7 @@ from fiesta.domain.importer import (
 from fiesta.domain.parse import ParsedContribution, block_tables, export_text, parse_text
 from fiesta.domain.validate import Validator, validate_contribution
 from fiesta.nodeconfig import ExcelTemplate
-from fiesta.services.imports import original_names
+from fiesta.services.imports import original_names, upload_files
 
 CLASSES = ["Extrusive", "Igneous", "Not Specified", "Sedimentary"]
 
@@ -176,6 +176,26 @@ def test_magic_upload_options(magic_node):
 def test_excel_template_markers_are_checked(markers):
     with pytest.raises(ValidationError):
         ExcelTemplate(markers=markers)
+
+
+def test_older_uploads_are_upgraded(magic_node):
+    """A whole-contribution upload in an older data model is saved upgraded,
+    with the original and the upgrade report as attachments (C3); the 2.5
+    example the upload page offers is one."""
+    canonical = "magic_contribution_1.txt"
+    example = next(e for e in magic_node.upload.examples if e.file.endswith("2.5.txt"))
+    raw = magic_node.asset_path(example.file).read_bytes()
+    files = upload_files(magic_node, raw, "magic-text-2.5.txt", canonical)
+    assert set(files) == {canonical, "magic-text-2.5.txt", "upgrade-report.txt"}
+    assert files["magic-text-2.5.txt"] == raw
+    upgraded = parse_text(files[canonical].decode())
+    assert upgraded.tables["contribution"][0]["data_model_version"] == "3.0"
+    assert "er_sites" not in upgraded.tables and len(upgraded.tables["sites"]) == 24
+    assert files["upgrade-report.txt"].startswith(b"Upgraded from data model version 2.5 to 3.0")
+    # Latest-version text, and text that does not parse, are saved as they are.
+    current = magic_node.asset_path("examples/magic-text-3.0.txt").read_bytes()
+    assert upload_files(magic_node, current, "x.txt", canonical) == {canonical: current}
+    assert upload_files(magic_node, b"nonsense", "x.txt", canonical) == {canonical: b"nonsense"}
 
 
 def test_original_names():

@@ -1,0 +1,348 @@
+tab	contribution
+id	reference	version	timestamp	data_model_version	contributor	author	description
+10747	10.1029/93JB00024	6	2015-07-09T02:20:01.000Z	2.5	@magic		
+>>>>>>>>>>
+tab 	er_locations
+location_type	er_citation_names	location_end_lat	location_begin_lon	er_location_name	er_location_alternatives	location_begin_lat	location_end_lon
+Outcrop	This study	19.58	204.44	Hawaii	Hawaiian Holocene Lavas	19.072	204.92
+>>>>>>>>>>
+tab 	er_samples
+er_citation_names	sample_lithology	er_site_name	er_sample_name	sample_lat	er_location_name	sample_type	sample_lon	sample_class
+This study	Not Specified	01a	8B794-2	19.545	Hawaii	Lava Flow	204.91	Igneous : Extrusive
+This study	Not Specified	01b	9B131-5	19.58	Hawaii	Lava Flow	204.94	Igneous : Extrusive
+This study	Not Specified	01c	9B433-5	19.572	Hawaii	Lava Flow	204.94	Igneous : Extrusive
+This study	Not Specified	01c	9B437-5	19.572	Hawaii	Lava Flow	204.94	Igneous : Extrusive
+This study	Not Specified	2	8B829-2	19.552	Hawaii	Lava Flow	204.70	Igneous : Extrusive
+This study	Not Specified	2	8B833-4	19.552	Hawaii	Lava Flow	204.70	Igneous : Extrusive
+This study	Not Specified	2	8B835-2	19.552	Hawaii	Lava Flow	204.70	Igneous : Extrusive
+This study	Not Specified	2	8B836-3	19.552	Hawaii	Lava Flow	204.70	Igneous : Extrusive
+This study	Not Specified	3	1B475-2	19.296	Hawaii	Lava Flow	204.69	Igneous : Extrusive
+This study	Not Specified	3	1B487-3	19.296	Hawaii	Lava Flow	204.69	Igneous : Extrusive
+This study	Not Specified	4	1B755-1	19.494	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	4	1B757-3	19.494	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	5	9B109-2	19.564	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	5	9B110-4	19.564	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	5	9B113-4	19.564	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	5	9B117-2	19.564	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	6	1B730-1	19.533	Hawaii	Lava Flow	204.65	Igneous : Extrusive
+This study	Not Specified	6	1B732-2	19.533	Hawaii	Lava Flow	204.65	Igneous : Extrusive
+This study	Not Specified	6	1B733-1	19.533	Hawaii	Lava Flow	204.65	Igneous : Extrusive
+This study	Not Specified	6	1B734-2	19.533	Hawaii	Lava Flow	204.65	Igneous : Extrusive
+This study	Not Specified	7	8B889-4	19.118	Hawaii	Lava Flow	204.43	Igneous : Extrusive
+This study	Not Specified	7	8B891-4	19.118	Hawaii	Lava Flow	204.43	Igneous : Extrusive
+This study	Not Specified	7	8B896-2	19.118	Hawaii	Lava Flow	204.43	Igneous : Extrusive
+This study	Not Specified	7	8B897-4	19.118	Hawaii	Lava Flow	204.43	Igneous : Extrusive
+This study	Not Specified	8	8B625-1	19.455	Hawaii	Lava Flow	204.71	Igneous : Extrusive
+This study	Not Specified	8	8B631-1	19.455	Hawaii	Lava Flow	204.71	Igneous : Extrusive
+This study	Not Specified	9	1B704-1	19.538	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	9	1B708-3	19.538	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	9	1B710-1	19.538	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	9	1B714-3	19.538	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	10	9B039-2	19.64	Hawaii	Lava Flow	204.96	Igneous : Extrusive
+This study	Not Specified	10	9B040-1	19.64	Hawaii	Lava Flow	204.96	Igneous : Extrusive
+This study	Not Specified	10	9B041-3	19.64	Hawaii	Lava Flow	204.96	Igneous : Extrusive
+This study	Not Specified	10	9B042-3	19.64	Hawaii	Lava Flow	204.96	Igneous : Extrusive
+This study	Not Specified	10	9B046-3	19.64	Hawaii	Lava Flow	204.96	Igneous : Extrusive
+This study	Not Specified	11	8B416-4	19.302	Hawaii	Lava Flow	204.69	Igneous : Extrusive
+This study	Not Specified	11	8B417-1	19.302	Hawaii	Lava Flow	204.69	Igneous : Extrusive
+This study	Not Specified	12	8B437-5	19.713	Hawaii	Lava Flow	204.88	Igneous : Extrusive
+This study	Not Specified	12	8B439-2	19.713	Hawaii	Lava Flow	204.88	Igneous : Extrusive
+This study	Not Specified	12	8B440-2	19.713	Hawaii	Lava Flow	204.88	Igneous : Extrusive
+This study	Not Specified	13	9B445-3	19.161	Hawaii	Lava Flow	204.46	Igneous : Extrusive
+This study	Not Specified	13	9B448-4	19.161	Hawaii	Lava Flow	204.46	Igneous : Extrusive
+This study	Not Specified	13	9B449-2	19.161	Hawaii	Lava Flow	204.46	Igneous : Extrusive
+This study	Not Specified	13	9B451-2	19.161	Hawaii	Lava Flow	204.46	Igneous : Extrusive
+This study	Not Specified	13	9B454-4	19.161	Hawaii	Lava Flow	204.46	Igneous : Extrusive
+This study	Not Specified	14	8B906-1	19.543	Hawaii	Lava Flow	204.88	Igneous : Extrusive
+This study	Not Specified	14	8B907-2	19.543	Hawaii	Lava Flow	204.88	Igneous : Extrusive
+This study	Not Specified	14	8B910-3	19.543	Hawaii	Lava Flow	204.88	Igneous : Extrusive
+This study	Not Specified	15	9B659-2	19.086	Hawaii	Lava Flow	204.41	Igneous : Extrusive
+This study	Not Specified	15	9B660-4	19.086	Hawaii	Lava Flow	204.41	Igneous : Extrusive
+This study	Not Specified	16	9B961-2	19.072	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	16	9B962-3	19.072	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	16	9B964-1	19.072	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	16	9B965-2	19.072	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	17	9B666-3	19.145	Hawaii	Lava Flow	204.48	Igneous : Extrusive
+This study	Not Specified	17	9B669-2	19.145	Hawaii	Lava Flow	204.48	Igneous : Extrusive
+This study	Not Specified	17	9B670-2	19.145	Hawaii	Lava Flow	204.48	Igneous : Extrusive
+This study	Not Specified	18	9B937-2	19.42	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	18	9B944-1	19.42	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	18	9B945-3	19.42	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	18	9B947-2	19.42	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	18	9B948-1	19.42	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	19	9B949-2	19.418	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	19	9B950-3	19.418	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	19	9B953-3	19.418	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	19	9B955-2	19.418	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	19	9B959-3	19.418	Hawaii	Lava Flow	204.66	Igneous : Extrusive
+This study	Not Specified	20	9B483-2	19.101	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	20	9B486-4	19.101	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	20	9B489-2	19.101	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	20	9B490-3	19.101	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	20	9B492-4	19.101	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	21	9B902-3	18.972	Hawaii	Lava Flow	204.38	Igneous : Extrusive
+This study	Not Specified	21	9B904-2	18.972	Hawaii	Lava Flow	204.38	Igneous : Extrusive
+This study	Not Specified	21	9B905-2	18.972	Hawaii	Lava Flow	204.38	Igneous : Extrusive
+This study	Not Specified	22	9B975-2	19.072	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	22	9B976-1	19.072	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	22	9B977-1	19.072	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+This study	Not Specified	22	9B984-2	19.072	Hawaii	Lava Flow	204.44	Igneous : Extrusive
+>>>>>>>>>>
+tab 	er_specimens
+er_citation_names	specimen_class	er_site_name	er_sample_name	er_location_name	er_specimen_name	specimen_lithology	specimen_type
+This study	Igneous : Extrusive	01a	8B794-2	Hawaii	8B794-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	01b	9B131-5	Hawaii	9B131-5	Not Specified	Lava Flow
+This study	Igneous : Extrusive	01c	9B433-5	Hawaii	9B433-5	Not Specified	Lava Flow
+This study	Igneous : Extrusive	01c	9B437-5	Hawaii	9B437-5	Not Specified	Lava Flow
+This study	Igneous : Extrusive	2	8B829-2	Hawaii	8B829-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	2	8B833-4	Hawaii	8B833-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	2	8B835-2	Hawaii	8B835-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	2	8B836-3	Hawaii	8B836-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	3	1B475-2	Hawaii	1B475-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	3	1B487-3	Hawaii	1B487-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	4	1B755-1	Hawaii	1B755-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	4	1B757-3	Hawaii	1B757-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	5	9B109-2	Hawaii	9B109-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	5	9B110-4	Hawaii	9B110-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	5	9B113-4	Hawaii	9B113-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	5	9B117-2	Hawaii	9B117-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	6	1B730-1	Hawaii	1B730-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	6	1B732-2	Hawaii	1B732-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	6	1B733-1	Hawaii	1B733-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	6	1B734-2	Hawaii	1B734-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	7	8B889-4	Hawaii	8B889-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	7	8B891-4	Hawaii	8B891-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	7	8B896-2	Hawaii	8B896-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	7	8B897-4	Hawaii	8B897-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	8	8B625-1	Hawaii	8B625-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	8	8B631-1	Hawaii	8B631-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	9	1B704-1	Hawaii	1B704-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	9	1B708-3	Hawaii	1B708-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	9	1B710-1	Hawaii	1B710-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	9	1B714-3	Hawaii	1B714-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	10	9B039-2	Hawaii	9B039-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	10	9B040-1	Hawaii	9B040-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	10	9B041-3	Hawaii	9B041-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	10	9B042-3	Hawaii	9B042-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	10	9B046-3	Hawaii	9B046-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	11	8B416-4	Hawaii	8B416-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	11	8B417-1	Hawaii	8B417-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	12	8B437-5	Hawaii	8B437-5	Not Specified	Lava Flow
+This study	Igneous : Extrusive	12	8B439-2	Hawaii	8B439-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	12	8B440-2	Hawaii	8B440-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	13	9B445-3	Hawaii	9B445-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	13	9B448-4	Hawaii	9B448-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	13	9B449-2	Hawaii	9B449-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	13	9B451-2	Hawaii	9B451-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	13	9B454-4	Hawaii	9B454-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	14	8B906-1	Hawaii	8B906-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	14	8B907-2	Hawaii	8B907-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	14	8B910-3	Hawaii	8B910-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	15	9B659-2	Hawaii	9B659-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	15	9B660-4	Hawaii	9B660-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	16	9B961-2	Hawaii	9B961-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	16	9B962-3	Hawaii	9B962-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	16	9B964-1	Hawaii	9B964-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	16	9B965-2	Hawaii	9B965-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	17	9B666-3	Hawaii	9B666-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	17	9B669-2	Hawaii	9B669-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	17	9B670-2	Hawaii	9B670-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	18	9B937-2	Hawaii	9B937-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	18	9B944-1	Hawaii	9B944-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	18	9B945-3	Hawaii	9B945-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	18	9B947-2	Hawaii	9B947-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	18	9B948-1	Hawaii	9B948-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	19	9B949-2	Hawaii	9B949-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	19	9B950-3	Hawaii	9B950-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	19	9B953-3	Hawaii	9B953-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	19	9B955-2	Hawaii	9B955-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	19	9B959-3	Hawaii	9B959-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	20	9B483-2	Hawaii	9B483-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	20	9B486-4	Hawaii	9B486-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	20	9B489-2	Hawaii	9B489-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	20	9B490-3	Hawaii	9B490-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	20	9B492-4	Hawaii	9B492-4	Not Specified	Lava Flow
+This study	Igneous : Extrusive	21	9B902-3	Hawaii	9B902-3	Not Specified	Lava Flow
+This study	Igneous : Extrusive	21	9B904-2	Hawaii	9B904-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	21	9B905-2	Hawaii	9B905-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	22	9B975-2	Hawaii	9B975-2	Not Specified	Lava Flow
+This study	Igneous : Extrusive	22	9B976-1	Hawaii	9B976-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	22	9B977-1	Hawaii	9B977-1	Not Specified	Lava Flow
+This study	Igneous : Extrusive	22	9B984-2	Hawaii	9B984-2	Not Specified	Lava Flow
+>>>>>>>>>>
+tab 	er_sites
+er_citation_names	site_lithology	site_class	site_definition	er_site_name	er_location_name	site_type
+This study	Not Specified	Igneous : Extrusive	s	01a	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	01b	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	01c	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	2	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	3	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	4	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	5	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	6	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	7	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	8	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	9	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	10	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	11	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	12	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	13	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	14	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	15	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	16	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	17	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	18	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	19	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	20	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	21	Hawaii	Lava Flow
+This study	Not Specified	Igneous : Extrusive	s	22	Hawaii	Lava Flow
+>>>>>>>>>>
+tab 	er_ages
+er_citation_names	er_site_name	age	age_unit	er_location_name	age_sigma	magic_method_codes
+This study	01a	260	Years BP	Hawaii	210	GM-C14
+This study	01b	260	Years BP	Hawaii	210	GM-C14
+This study	01c	260	Years BP	Hawaii	210	GM-C14
+This study	2	440	Years BP	Hawaii	240	GM-C14
+This study	3	700	Years BP	Hawaii	210	GM-C14
+This study	4	760	Years BP	Hawaii	210	GM-C14
+This study	5	1320	Years BP	Hawaii	150	GM-C14
+This study	6	1690	Years BP	Hawaii	210	GM-C14
+This study	7	2180	Years BP	Hawaii	180	GM-C14
+This study	8	2190	Years BP	Hawaii	210	GM-C14
+This study	9	2550	Years BP	Hawaii	240	GM-C14
+This study	10	2890	Years BP	Hawaii	210	GM-C14
+This study	11	3480	Years BP	Hawaii	240	GM-C14
+This study	12	4050	Years BP	Hawaii	150	GM-C14
+This study	13	5160	Years BP	Hawaii	300	GM-C14
+This study	14	5650	Years BP	Hawaii	270	GM-C14
+This study	15	6160	Years BP	Hawaii	330	GM-C14
+This study	16	7300	Years BP	Hawaii	300	GM-C14
+This study	17	7950	Years BP	Hawaii	330	GM-C14
+This study	18	8740	Years BP	Hawaii	300	GM-C14
+This study	19	9500	Years BP	Hawaii	420	GM-C14
+This study	20	10290	Years BP	Hawaii	450	GM-C14
+This study	21	11780	Years BP	Hawaii	300	GM-C14
+This study	22	13210	Years BP	Hawaii	570	GM-C14
+>>>>>>>>>>
+tab 	er_citations
+long_authors	title	journal	citation_type	volume	doi	year	er_citation_name	pages
+"Mankinen, E.A. and Champion, D.E."	Broad trends in geomagnetic paleointensity on Hawaii during Holocene time	Journal of Geophysical Research	Journal	98	10.1029/93JB00024	1993	This study	"7,959-7,976"
+"Cox, A. and Doell, R.R."	Review of paleomagnetism	"Geological Society of America, Bulletin"	Journal	71		1960	Cox & Doell 1960	645
+"Thellier, E. and Thellier, O."	Sur l'intensite du champ magnetique terrestre dans le passe historique et geologique	Annales de Geophysique	Journal	15		1959	Thellier & Thellier 1959	285-378
+"Thellier, E."	Sur l'aimantationdes terres cuites et ses applications geophysique	Annales Institut Physique du Globe de Paris	Journal	16		1938	Thellier 1938	157-302
+>>>>>>>>>>
+tab 	pmag_specimens
+specimen_correction	er_citation_names	specimen_magn_volume	er_site_name	er_sample_name	er_location_name	er_specimen_name	specimen_lab_field_dc	magic_method_codes
+u	This study	10.5	01a	8B794-2	Hawaii	8B794-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	5.94	01b	9B131-5	Hawaii	9B131-5	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	3.9	01c	9B433-5	Hawaii	9B433-5	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	3.34	01c	9B437-5	Hawaii	9B437-5	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	17.8	2	8B829-2	Hawaii	8B829-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	22.9	2	8B833-4	Hawaii	8B833-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	26	2	8B835-2	Hawaii	8B835-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	20.6	2	8B836-3	Hawaii	8B836-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	5.39	3	1B475-2	Hawaii	1B475-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.67	3	1B487-3	Hawaii	1B487-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	14.3	4	1B755-1	Hawaii	1B755-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	21.1	4	1B757-3	Hawaii	1B757-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	12.6	5	9B109-2	Hawaii	9B109-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	14.9	5	9B110-4	Hawaii	9B110-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	7.02	5	9B113-4	Hawaii	9B113-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	23.5	5	9B117-2	Hawaii	9B117-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	16.2	6	1B730-1	Hawaii	1B730-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	27.2	6	1B732-2	Hawaii	1B732-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	17.9	6	1B733-1	Hawaii	1B733-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	18.1	6	1B734-2	Hawaii	1B734-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	10	7	8B889-4	Hawaii	8B889-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	12.7	7	8B891-4	Hawaii	8B891-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	8.95	7	8B896-2	Hawaii	8B896-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	23.3	7	8B897-4	Hawaii	8B897-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	7.41	8	8B625-1	Hawaii	8B625-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	4.43	8	8B631-1	Hawaii	8B631-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	16.4	9	1B704-1	Hawaii	1B704-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.04	9	1B708-3	Hawaii	1B708-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	11.3	9	1B710-1	Hawaii	1B710-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	23.5	9	1B714-3	Hawaii	1B714-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.42	10	9B039-2	Hawaii	9B039-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.92	10	9B040-1	Hawaii	9B040-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.76	10	9B041-3	Hawaii	9B041-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	5.96	10	9B042-3	Hawaii	9B042-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	16.5	10	9B046-3	Hawaii	9B046-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.01	11	8B416-4	Hawaii	8B416-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	12.3	11	8B417-1	Hawaii	8B417-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	11.4	12	8B437-5	Hawaii	8B437-5	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	11.7	12	8B439-2	Hawaii	8B439-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	20	12	8B440-2	Hawaii	8B440-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	9.8	13	9B445-3	Hawaii	9B445-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	18.1	13	9B448-4	Hawaii	9B448-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	12.7	13	9B449-2	Hawaii	9B449-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	14.7	13	9B451-2	Hawaii	9B451-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	14.2	13	9B454-4	Hawaii	9B454-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	4.25	14	8B906-1	Hawaii	8B906-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	5.89	14	8B907-2	Hawaii	8B907-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	5.57	14	8B910-3	Hawaii	8B910-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.39	15	9B659-2	Hawaii	9B659-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	11.5	15	9B660-4	Hawaii	9B660-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	9.58	16	9B961-2	Hawaii	9B961-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	7.23	16	9B962-3	Hawaii	9B962-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	9.84	16	9B964-1	Hawaii	9B964-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	3.39	16	9B965-2	Hawaii	9B965-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	5.14	17	9B666-3	Hawaii	9B666-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	10.1	17	9B669-2	Hawaii	9B669-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	5.8	17	9B670-2	Hawaii	9B670-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	1.5	18	9B937-2	Hawaii	9B937-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	16.2	18	9B944-1	Hawaii	9B944-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	9.32	18	9B945-3	Hawaii	9B945-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.12	18	9B947-2	Hawaii	9B947-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	14.6	18	9B948-1	Hawaii	9B948-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	9.27	19	9B949-2	Hawaii	9B949-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	16.3	19	9B950-3	Hawaii	9B950-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	9.29	19	9B953-3	Hawaii	9B953-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	10.1	19	9B955-2	Hawaii	9B955-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	18.5	19	9B959-3	Hawaii	9B959-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	9.39	20	9B483-2	Hawaii	9B483-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	7.75	20	9B486-4	Hawaii	9B486-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	9.26	20	9B489-2	Hawaii	9B489-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	8.58	20	9B490-3	Hawaii	9B490-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.22	20	9B492-4	Hawaii	9B492-4	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	7.68	21	9B902-3	Hawaii	9B902-3	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	4.12	21	9B904-2	Hawaii	9B904-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	8.64	21	9B905-2	Hawaii	9B905-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	10.8	22	9B975-2	Hawaii	9B975-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	6.83	22	9B976-1	Hawaii	9B976-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	4.04	22	9B977-1	Hawaii	9B977-1	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+u	This study	13.6	22	9B984-2	Hawaii	9B984-2	3.5e-05	LP-PI-ALT-PTRM:LP-PI-TRM
+>>>>>>>>>>
+tab 	pmag_results
+er_citation_names	average_inc	er_site_names	vdm	average_int	average_age_low	average_alpha95	magic_software_packages	vadm	average_age	result_description	er_location_names	average_int_sigma	vadm_n	data_type	average_dec	vdm_n	vgp_lat	average_nn	average_lat	average_age_unit	average_k	average_lon	vgp_dm	vgp_dp	pmag_result_name	average_age_high	vgp_lon	average_age_sigma
+This study	41.3	01a	1.11E+23	5.26E-05		1.7	PINT03	1.17E+23	260		Hawaii	5.30E-06	4	i	5.50	4	83.4	12	19.545	Years BP	630	204.91			01a		254.60	210
+This study	44.2	01b	1.11E+23	5.26E-05		1.4	PINT03	1.17E+23	260		Hawaii	5.30E-06	4	i	3.20	4	83	12	19.58	Years BP	906	204.94			01b		229.20	210
+This study	46	01c	1.11E+23	5.26E-05		2.1	PINT03	1.17E+23	260		Hawaii	5.30E-06	4	i	3.10	4	81.7	12	19.572	Years BP	418	204.94			01c		224.10	210
+This study	36.6	2	1.06E+23	4.79E-05		1.1	PINT03	1.07E+23	440		Hawaii	6.00E-07	4	i	7.60	4	82.9	12	19.552	Years BP	1662	204.70			2		287.40	240
+This study	41.4	3	9.42E+22	4.45E-05		1.2	PINT03	9.97E+22	700		Hawaii	1.20E-06	2	i	2.80	2	84.8	18	19.296	Years BP	905	204.69			3		234.30	210
+This study	25.8	4	1.05E+23	4.41E-05		1.6	PINT03	9.86E+22	760		Hawaii	8.00E-07	2	i	353.00	2	81.1	11	19.494	Years BP	849	204.66			4		74.50	210
+This study	18.2	5	1.03E+23	4.15E-05		2.2	PINT03	9.27E+22	1320		Hawaii	3.60E-06	4	i	2.20	4	79.6	12	19.564	Years BP	400	204.66			5		12.80	150
+This study	17.8	6	9.71E+22	3.90E-05		1.9	PINT03	8.71E+22	1690		Hawaii	3.10E-06	4	i	355.50	4	78.7	10	19.533	Years BP	679	204.65			6		48.00	210
+This study	14.7	7	1.21E+23	4.81E-05		2.1	PINT03	1.08E+23	2180		Hawaii	1.23E-05	4	i	11.20	4	74.1	12	19.118	Years BP	439	204.43			7		340.00	180
+This study	15.2	8	1.21E+23	4.81E-05		1.3	PINT03	1.08E+23	2190		Hawaii	1.23E-05	4	i	11.30	4	74	12	19.455	Years BP	1095	204.71			8		340.00	210
+This study	21	9	1.07E+23	4.36E-05		1.5	PINT03	9.74E+22	2550		Hawaii	2.30E-06	4	i	1.20	4	81.3	12	19.538	Years BP	987	204.66			9		16.90	240
+This study	25.7	10	1.24E+23	5.17E-05		2.3	PINT03	1.15E+23	2890		Hawaii	1.16E-05	5	i	357.70	5	83.5	11	19.64	Years BP	370	204.96			10		44.90	210
+This study	36.4	11	1.06E+23	4.79E-05		1.4	PINT03	1.07E+23	3480		Hawaii	1.03E-05	2	i	3.70	2	86.4	12	19.302	Years BP	1091	204.69			11		279.50	240
+This study	33.4	12	1.15E+23	5.06E-05		1.1	PINT03	1.13E+23	4050		Hawaii	1.70E-06	3	i	4.50	3	85.5	11	19.713	Years BP	1467	204.88			12		313.10	150
+This study	27.6	13	8.54E+22	3.61E-05		2	PINT03	8.10E+22	5160		Hawaii	2.60E-06	5	i	4.70	5	83.6	12	19.161	Years BP	493	204.46			13		339.20	300
+This study	33.7	14	7.67E+22	3.39E-05		1.4	PINT03	7.57E+22	5650		Hawaii	2.50E-06	3	i	5.40	3	84.8	12	19.543	Years BP	958	204.88			14		305.80	270
+This study	54.9	15	6.41E+22	3.52E-05		1.7	PINT03	7.91E+22	6160		Hawaii	3.50E-06	2	i	357.80	2	73.5	12	19.086	Years BP	819	204.41			15		198.10	330
+This study	25.4	16	6.47E+22	2.70E-05		1.4	PINT03	6.02E+22	7300		Hawaii	2.10E-06	4	i	2.30	4	83.9	10	19.072	Years BP	914	204.44			16		3.00	300
+This study	33.4	17	6.97E+22	3.07E-05		1.5	PINT03	6.89E+22	7950		Hawaii	1.10E-06	3	i	359.50	3	89	12	19.145	Years BP	917	204.48			17		53.10	330
+This study	36	18	9.91E+22	4.46E-05		2.3	PINT03	9.98E+22	8740		Hawaii	6.90E-06	5	i	357.30	5	87.4	11	19.42	Years BP	413	204.66			18		127.20	300
+This study	33.7	19	9.30E+22	4.11E-05		2.3	PINT03	9.19E+22	9500		Hawaii	4.90E-06	5	i	3.00	5	87	11	19.418	Years BP	351	204.66			19		313.60	420
+This study	31.9	20	8.26E+22	3.60E-05		1.8	PINT03	8.08E+22	10290		Hawaii	8.40E-06	5	i	3.60	5	86.1	12	19.101	Years BP	570	204.44			20		322.00	450
+This study	8.7	21	8.55E+22	3.34E-05		1.7	PINT03	7.51E+22	11780		Hawaii	5.00E-06	3	i	2.10	3	75.2	12	18.972	Years BP	738	204.38			21		16.20	300
+This study	54.6	22	6.93E+22	3.79E-05		1.4	PINT03	8.51E+22	13210		Hawaii	3.40E-06	4	i	357.50	4	73.8	11	19.072	Years BP	916	204.44			22		197.20	570
+This study	31.6				0	4.7	GPMDB		0.5	from DRAGON DATABASE 10-07-07.	Hawaii			a	2.40		86.8	284	19.4	Years BP	40.7	244.60	5.3	3	Hawaiian Holocene Lavas	1	339.50	0.5
+>>>>>>>>>>
+tab 	magic_methods
+magic_method_code
+GM-C14
+LP-PI-ALT-PTRM
+LP-PI-TRM

@@ -17,6 +17,7 @@ import { PortalHomePage } from "./routes/portal-home";
 import { ReferencesPage, UsersPage } from "./routes/portal-pages";
 import { PrivateWorkspacePage } from "./routes/private";
 import { SearchPage } from "./routes/search";
+import { UpgradePage } from "./routes/upgrade";
 import { UploadPage } from "./routes/upload";
 import { ValidatePage } from "./routes/validate";
 import { VocabulariesPage } from "./routes/vocabularies";
@@ -174,6 +175,12 @@ const validateRoute = createRoute({
   component: ValidatePage,
 });
 
+const upgradeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/upgrade",
+  component: UpgradePage,
+});
+
 const dataModelsIndexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/data-models",
@@ -289,6 +296,7 @@ const routeTree = rootRoute.addChildren([
   privateRoute,
   accountRoute,
   validateRoute,
+  upgradeRoute,
   dataModelsIndexRoute,
   dataModelRoute,
   vocabulariesRoute,

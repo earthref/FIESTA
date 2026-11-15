@@ -14,6 +14,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, ValidationError
 
 from fiesta.domain.parse import ParsedContribution
+from fiesta.domain.upgrade import UpgradeStep
 from fiesta.nodeconfig import NodeConfig, SearchLevel
 
 
@@ -155,6 +156,13 @@ class FiestaPlugin:
         """Controlled vocabularies by name for `cv("<name>")` validations,
         consulted when the node's own controlled vocabularies lack the name."""
         return {}
+
+    def upgrade_steps(self, node: NodeConfig) -> list[UpgradeStep]:
+        """Hooks for data-model version steps whose restructuring the
+        models' `previous_columns` cannot express (fiesta.domain.upgrade):
+        each UpgradeStep names its from_version and to_version. At most one
+        active plugin may supply a given step."""
+        return []
 
     def build_router(self) -> APIRouter | None:
         """Extra API routes, mounted at /v2/{repository}/plugins/{plugin.name} and

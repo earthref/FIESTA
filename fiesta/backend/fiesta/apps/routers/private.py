@@ -113,9 +113,15 @@ async def upload_file(
     contribution = await _own_contribution(
         session, node, user, contribution_id, allow_activated=False
     )
+    from fiesta.services.imports import upload_files
+
     data = await file.read()
     if not data:
         raise HTTPException(422, "uploaded file is empty")
+    canonical = svc.default_filename(node, contribution.id)
+    # A file written against an older data model is upgraded before it is
+    # validated; the original and the upgrade report become attachments.
+    files = upload_files(node, data, file.filename or "", canonical)
     await save_revision(
         session,
         node,
@@ -123,8 +129,8 @@ async def upload_file(
         user.id,
         expected_revision=expected_revision,
         request_key=request_key,
-        files={svc.default_filename(node, contribution.id): data},
-        canonical=svc.default_filename(node, contribution.id),
+        files=files,
+        canonical=canonical,
         operation="upload",
     )
     await session.commit()

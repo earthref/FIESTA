@@ -17,6 +17,7 @@ def test_registry_names():
         "kd-plots",
         "method-codes",
         "sample-tiles",
+        "magic-3-upgrade",
         "geomag-series",
     }
     for plugin in all_plugins().values():

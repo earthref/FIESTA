@@ -49,6 +49,7 @@ RESERVED_PAGE_SLUGS = {
     "upload",
     "private",
     "validate",
+    "upgrade",
     "data-models",
     "vocabularies",
     "login",
