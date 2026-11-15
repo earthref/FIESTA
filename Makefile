@@ -148,8 +148,8 @@ test-backend: ## Backend unit tests (pytest)
 	cd fiesta/backend && uv run pytest
 
 .PHONY: test-frontend
-test-frontend: ## Frontend type-check + production build
-	cd fiesta/frontend && npm run build
+test-frontend: ## Frontend type-check + production build + node --test unit tests
+	cd fiesta/frontend && npm run build && npm test
 
 .PHONY: e2e
 e2e: ## End-to-end workflow test against a running `make up FIESTA_NODE=magic` stack

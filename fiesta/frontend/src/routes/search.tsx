@@ -52,7 +52,7 @@ import {
   SummaryGrid,
 } from "../components/summary-grid";
 import { CountLabel } from "../components/ui/count-label";
-import { buttonIconStyle, SemanticIcon } from "../components/ui/fa-icon";
+import { buttonIconStyle, Icon } from "../components/ui/icon";
 import { SortSelect } from "../components/ui/sort-select";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
@@ -1139,7 +1139,7 @@ export function SearchPage() {
               className="flex items-center whitespace-nowrap rounded-l-sm bg-node font-bold text-white"
               style={{ fontSize: "1rem", padding: "0.78571429em 0.833em", lineHeight: "1em" }}
             >
-              <SemanticIcon name="search" style={{ marginRight: "0.75em" }} />
+              <Icon name="search" style={{ marginRight: "0.75em" }} />
               Search {config.key}
             </label>
             <input
@@ -1171,7 +1171,7 @@ export function SearchPage() {
                 lineHeight: "1em",
               }}
             >
-              <SemanticIcon name="search" style={buttonIconStyle} />
+              <Icon name="search" style={buttonIconStyle} />
               Search
             </button>
             <button
@@ -1191,7 +1191,7 @@ export function SearchPage() {
                 marginLeft: -1,
               }}
             >
-              <SemanticIcon name="remove circle" style={buttonIconStyle} />
+              <Icon name="remove-circle" style={buttonIconStyle} />
               Clear
             </button>
           </form>
@@ -1210,7 +1210,7 @@ export function SearchPage() {
                   lineHeight: "1em",
                 }}
               >
-                <SemanticIcon name="download" style={buttonIconStyle} />
+                <Icon name="download" style={buttonIconStyle} />
                 Download Results
               </a>
             ) : (
@@ -1233,7 +1233,7 @@ export function SearchPage() {
                   lineHeight: "1em",
                 }}
               >
-                <SemanticIcon name="download" style={buttonIconStyle} />
+                <Icon name="download" style={buttonIconStyle} />
                 Download Results
               </button>
             ))}
@@ -1268,7 +1268,7 @@ export function SearchPage() {
                   className={compactButtonClass(clearActive)}
                   style={compactButtonStyle(clearActive)}
                 >
-                  <SemanticIcon name="remove circle" style={buttonIconStyle} />
+                  <Icon name="remove-circle" style={buttonIconStyle} />
                   Clear Filters
                 </button>
               </span>

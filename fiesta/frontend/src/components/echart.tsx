@@ -1,10 +1,3 @@
-import {
-  faArrowPointer,
-  faMagnifyingGlassPlus,
-  faRotateLeft,
-  faUpDownLeftRight,
-  type IconDefinition,
-} from "@fortawesome/free-solid-svg-icons";
 import { CustomChart, LineChart, ScatterChart } from "echarts/charts";
 import {
   BrushComponent,
@@ -20,7 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { plotColors } from "../lib/plot-colors";
 import { useTheme } from "../lib/theme";
 import { cx } from "../lib/utils";
-import { FaIcon } from "./ui/fa-icon";
+import { Icon, type IconName } from "./ui/icon";
 
 echarts.use([
   CustomChart,
@@ -338,10 +331,10 @@ export function EChart({
     live.current.onXWindow?.(windowOf("x"));
   }, [build, size, brush, zoom, mode, theme]);
 
-  const tools: [Mode, IconDefinition, string][] = [
-    ["select", faArrowPointer, "Select: drag to choose points"],
-    ["zoom", faMagnifyingGlassPlus, "Box zoom: drag a box to zoom in, wheel to zoom"],
-    ["pan", faUpDownLeftRight, "Pan: drag to move, wheel to zoom"],
+  const tools: [Mode, IconName, string][] = [
+    ["select", "mouse-pointer", "Select: drag to choose points"],
+    ["zoom", "zoom-in", "Box zoom: drag a box to zoom in, wheel to zoom"],
+    ["pan", "move", "Pan: drag to move, wheel to zoom"],
   ];
   const shown = brush ? tools : tools.filter(([m]) => m !== "select");
 
@@ -383,7 +376,7 @@ export function EChart({
                 mode === m && "bg-gray-200 text-gray-900 hover:bg-gray-200",
               )}
             >
-              <FaIcon icon={icon} />
+              <Icon name={icon} />
             </button>
           ))}
           <button
@@ -394,7 +387,7 @@ export function EChart({
             onClick={() => setView({})}
             className="flex h-6 w-6 items-center justify-center rounded-sm hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent"
           >
-            <FaIcon icon={faRotateLeft} />
+            <Icon name="rotate-left" />
           </button>
         </div>
       )}
