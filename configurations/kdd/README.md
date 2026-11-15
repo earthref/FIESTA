@@ -27,6 +27,7 @@ is the element filter.
 | Plugin | What it adds |
 |---|---|
 | [periodic-table](../plugins/periodic-table/README.md) | the Periodic Table of Elements filter, counting `kds.element` under the current search |
+| [kd-plots](../plugins/kd-plots/README.md) | the Kd Plots sub-tab (Partition Coefficients) and contribution tab: spider diagrams, Onuma diagrams and Kd by element |
 | [sample-tiles](../plugins/sample-tiles/README.md) | the Geology, Age, Intensity and Method Codes grid tiles (KdD has no data for them; they show "No … Data") |
 
 ## Data source

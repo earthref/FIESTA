@@ -107,13 +107,16 @@ doi:
 pages: []
 
 features:
-  plugins: [sample-tiles, periodic-table]
+  plugins: [sample-tiles, periodic-table, kd-plots]
 
 # Plugin options (docs/plugins.md); the element column the periodic table counts.
 plugins:
   periodic-table:
     table: kds
     column: element
+  # Spider, Onuma and Kd-by-element plots (configurations/plugins/kd-plots); the defaults fit kds.
+  kd-plots:
+    levels: [Partition Coefficients]
 
 # Legacy Meteor sources, read only by `fiesta legacy-inventory` (Phase M5/M6).
 # Only the append-only archive bucket exists for KdD; private contributions are
