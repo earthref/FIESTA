@@ -104,6 +104,12 @@ class FiestaPlugin:
         """Validate options against the node (its data model, levels, ...);
         raise ValueError. Runs at startup and before every publication."""
 
+    def jsonld(self, node: NodeConfig, doc: dict, catalog_url: str) -> dict[str, Any]:
+        """schema.org properties this plugin adds to a contribution's Dataset
+        (fiesta.domain.jsonld; `doc` is its search document): a list extends the
+        core's, anything else is set where the core left it unset."""
+        return {}
+
     def derive_docs(
         self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
     ) -> list[dict]:

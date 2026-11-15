@@ -74,3 +74,14 @@ def test_config_serves_the_codes_with_definitions(magic_node):
     assert items["DE-BFL"] == "Best fit line"
     assert [entry["item"] for entry in served["items"]] == sorted(items)
     assert asyncio.run(get_plugin_vocabularies(_with(magic_node, plugins=["poles"]))) == {}
+
+
+def test_jsonld_lists_the_contributions_codes_as_techniques(magic_node):
+    plugin = all_plugins()["method-codes"]
+    doc = {"summary": {"_all": {"method_codes": ["lp-dir-af", "NOT-A-CODE"]}}}
+    extra = plugin.jsonld(magic_node, doc, "https://earthref.org/MagIC")
+    terms = extra["measurementTechnique"]
+    assert [t["termCode"] for t in terms] == ["LP-DIR-AF"]
+    assert terms[0]["name"]
+    assert terms[0]["inDefinedTermSet"]["url"] == "https://earthref.org/MagIC/method-codes"
+    assert plugin.jsonld(magic_node, {"summary": {}}, "x") == {}

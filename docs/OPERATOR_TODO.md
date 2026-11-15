@@ -152,6 +152,29 @@ Last updated: 2026-11-13
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
 
+## 2026-11-15 — Crawlers: page heads, sitemaps, robots.txt, llms.txt
+
+Contribution pages now carry their title, description, canonical link and schema.org
+JSON-LD in server-rendered HTML (nginx SSI from `/v2/seo/head` and `/body`), and the API
+serves robots.txt, per-node sitemaps and llms.txt. The frontend image's nginx does all
+of it; the static server on fiesta-ct is configured by `deploy-fiesta.sh`, outside this
+repo. See docs/deployment.md, "Crawlers".
+
+- [ ] **fiesta-ct static server**: add `ssi on` to each node's SPA location, the
+      `<base>v2/seo/` location (with `Accept-Encoding ""` and the short timeouts), the
+      `X-Forwarded-Prefix` header on the `<base>v2/` proxies, and the `/robots.txt`,
+      `/llms.txt`, `/<Key>/sitemap.xml|llms.txt` locations, as in the deployment.md
+      snippet. Check: `curl -s https://dev.earthref.org/MagIC/<id> | grep ld+json`
+      prints the script tag (dev pages also say `noindex`, as they should).
+- [ ] **At the earthref.org cutover**: route `earthref.org/robots.txt` and
+      `/llms.txt` to the API (or merge the legacy robots.txt into it), then submit
+      `https://earthref.org/<Key>/sitemap.xml` for each node in Google Search Console
+      and Bing Webmaster Tools, and check one contribution page in Google's Rich
+      Results Test (Dataset). Until then production runs Meteor and none of this is live.
+- [ ] **Decide on AI crawlers**: robots.txt welcomes every crawler (GPTBot, ClaudeBot,
+      PerplexityBot, Google-Extended, CCBot …). Say if any should be refused; it is
+      one line per agent in `fiesta.apps.routers.seo.robots`.
+
 ## 2026-11-15 — RD node (GERM Reservoir Database)
 
 `configurations/rd.yaml` hosts the legacy GERM Reservoir Database

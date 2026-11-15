@@ -97,6 +97,49 @@ class MethodCodesPlugin(FiestaPlugin):
             )
         }
 
+    def jsonld(self, node: NodeConfig, doc: dict, catalog_url: str) -> dict[str, Any]:
+        """The contribution's method codes as its `measurementTechnique`:
+        defined terms of the node's Method Codes set."""
+        options = self._options(node)
+        vocabulary = self.vocabularies(node).get(options.vocabulary)
+        if vocabulary is None:
+            return {}
+        model = node.load_data_model(node.data_model.latest)
+        marker = f'("{options.vocabulary}")'
+        coded = {
+            name
+            for table in model.get("tables", {}).values()
+            for name, column in table.get("columns", {}).items()
+            if any(marker in v for v in column.get("validations") or [])
+        }
+        summary_all = (doc.get("summary") or {}).get("_all") or {}
+        found: dict[str, None] = {}
+        for name in sorted(coded):
+            values = summary_all.get(name) or []
+            for value in values if isinstance(values, list) else [values]:
+                found[str(value)] = None
+        labels = {code.upper(): (code, label) for code, label in vocabulary.labels.items()}
+        term_set = {
+            "@type": "DefinedTermSet",
+            "@id": f"{catalog_url}/method-codes",
+            "name": f"{node.node.key} Method Codes",
+            "url": f"{catalog_url}/method-codes",
+        }
+        terms = []
+        for value in found:
+            code, label = labels.get(value.upper(), (None, None))
+            if code is None:
+                continue
+            terms.append(
+                {
+                    "@type": "DefinedTerm",
+                    "termCode": code,
+                    "name": label or code,
+                    "inDefinedTermSet": term_set,
+                }
+            )
+        return {"measurementTechnique": terms} if terms else {}
+
     def build_router(self) -> APIRouter:
         router = APIRouter()
 

@@ -25,6 +25,7 @@ from fiesta.apps.routers import (
     portal,
     private,
     search,
+    seo,
     source,
     upgrade,
     v1,
@@ -126,6 +127,8 @@ def create_app() -> FastAPI:
     app.include_router(admin.router, prefix="/v2/admin")
     # Likewise "portal": the cross-node Users and References grids.
     app.include_router(portal.router, prefix="/v2")
+    # Likewise "seo", "robots.txt", "llms.txt": what crawlers read.
+    app.include_router(seo.router, prefix="/v2")
     for router in (
         config.router,
         search.router,
@@ -135,6 +138,7 @@ def create_app() -> FastAPI:
         upgrade.router,
         workspaces.router,
         source.router,
+        seo.node_router,
     ):
         app.include_router(router, prefix="/v2/{repository}")
 

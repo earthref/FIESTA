@@ -19,6 +19,7 @@ from fiesta.apps.deps import (
     get_optional_user,
     oauth2_scheme,
 )
+from fiesta.apps.public_urls import api_base, catalog_url
 from fiesta.apps.schemas import (
     FilterCounts,
     HasColumns,
@@ -31,7 +32,7 @@ from fiesta.apps.schemas import (
 )
 from fiesta.db.models import Contribution, User
 from fiesta.domain.jsonld import contribution_jsonld
-from fiesta.nodeconfig import ANY_TABLE, POSITION_COLUMNS, MapColor, get_deployment
+from fiesta.nodeconfig import ANY_TABLE, POSITION_COLUMNS, MapColor
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import (
     ROW_SORT_PREFIX,
@@ -1264,24 +1265,25 @@ async def get_contribution_jsonld(
     as its landing page publishes it (fiesta.domain.jsonld)."""
     contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
     doc = await _contribution_doc(node, contribution)
-    catalog = f"{get_deployment().site_url}/{node.node.key}"
+    return JSONResponse(
+        contribution_dataset(request, node, contribution, doc), media_type="application/ld+json"
+    )
+
+
+def contribution_dataset(request: Request, node, contribution: Contribution, doc: dict) -> dict:
+    """The contribution's schema.org Dataset with its public URLs: the
+    landing page on the canonical site, the download on the public API."""
+    catalog = catalog_url(node)
     download = None
     if contribution.filename and contribution.is_activated:
-        download = str(
-            request.url_for(
-                "download_contribution",
-                repository=node.node.slug,
-                contribution_id=str(contribution.id),
-            )
-        )
-    data = contribution_jsonld(
+        download = f"{api_base(request)}/{node.node.slug}/contributions/{contribution.id}/download"
+    return contribution_jsonld(
         node,
         doc,
         landing_url=f"{catalog}/{contribution.id}",
         catalog_url=catalog,
         download_url=download,
     )
-    return JSONResponse(data, media_type="application/ld+json")
 
 
 async def _contribution_doc(node, contribution: Contribution) -> dict:

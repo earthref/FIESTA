@@ -196,6 +196,27 @@ def test_contribution_jsonld(magic_node):
     )
 
 
+def test_jsonld_funding_grants():
+    from fiesta.domain.jsonld import _funding
+
+    cell = 'NSF EAR-1[https://nsf.gov/a?b=1]:"Plan: B"[https://x.org/2]:Unlinked grant'
+    assert _funding(cell) == [
+        {
+            "@type": "MonetaryGrant",
+            "name": "NSF EAR-1",
+            "@id": "https://nsf.gov/a?b=1",
+            "url": "https://nsf.gov/a?b=1",
+        },
+        {
+            "@type": "MonetaryGrant",
+            "name": "Plan: B",
+            "@id": "https://x.org/2",
+            "url": "https://x.org/2",
+        },
+        {"@type": "MonetaryGrant", "name": "Unlinked grant"},
+    ]
+
+
 def test_summarize_places_other_bodies(magic_node):
     # A lunar location's sites (and a sample below one, by its site) are on
     # the Moon: _body_point, never _geo_point, so Earth's filters skip them.
