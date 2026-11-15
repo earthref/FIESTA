@@ -14,6 +14,7 @@ def test_registry_names():
         "plateau-calculations",
         "pmag-plots",
         "periodic-table",
+        "kd-plots",
         "method-codes",
         "sample-tiles",
         "geomag-series",

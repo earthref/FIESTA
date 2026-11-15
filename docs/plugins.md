@@ -182,6 +182,7 @@ net, surface for marker halos, the node color lightened in dark mode) inside
 | [`sample-tiles`](../configurations/plugins/sample-tiles/README.md) | every node | the Geology, Age, Intensity and Method Codes summary grid tiles (the legacy result card's sample columns), default tiles after Geography |
 | [`periodic-table`](../configurations/plugins/periodic-table/README.md) | KdD | a periodic-table element filter in the search sidebar, each element counted in the search |
 | [`geomag-series`](../configurations/plugins/geomag-series/README.md) | GEOMAGIA | the Sites level's Plots sub-tab (intensity or VADM, declination and inclination against age, linked zoom, PNG export), and the GEOMAGIA site's query refinements: derived facets and ranges, site-name and radius searches |
+| [`kd-plots`](../configurations/plugins/kd-plots/README.md) | KdD | spider diagrams, Onuma (Kd against ionic radius) diagrams and Kd by element, for a search or a contribution |
 
 Retired: **`record-cards`** (ERDA, OSU-MGR) was retired on 2026-09-30: its per-table
   card layout (title column, subtitle, cells) is now core configuration, each
