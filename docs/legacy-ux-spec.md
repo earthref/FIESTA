@@ -138,6 +138,13 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
   h1 28px/36px, h4 15px **bold**/19.29px. The node menu is a flex BFC placed
   after the subtitle (top = subtitle bottom + .25em = 114.5px), *not* cleared
   below the floated logo; `main` clears.
+  **FIESTA deviation (2026-11-14, user request): node tile.** The square keeps
+  its size, border and inset node-colored ring, but holds the node's logo
+  drawing (`node.logo`, one color, drawn in the node color darkened to 4.5:1
+  on white) with the node's name under it instead of the serif first letter
+  (`components/node-mark.tsx`). The same tile is the portal home's node card
+  image (88px), the admin node list's mark (28px, unnamed) and the favicon;
+  the FIESTA portal keeps its own mark.
 - **Node menu**: `ui secondary small pointing menu` — 13px, min-height 2.857em,
   margin `.25em 0 1.25em`, items padding `.5em 1em`, line-height 1em, 28px tall,
   aligned to the bottom edge (`margin-bottom:-2px` over the 2px border); icons

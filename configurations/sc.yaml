@@ -18,6 +18,8 @@ node:
     A digital archive of seamount morphology, bathymetric maps and grids, and
     the literature on each seamount, from the Seamount Biogeosciences Network.
   color: "#005b87" # SBN blue (fiesta/frontend/src/lib/portals.ts)
+  logo: logo.svg # configurations/sc/assets/: the node tile (header, portal home, favicon)
+  logo_style: tile # tile: framed, drawn in the node color, named; full: the SVG as drawn
   links:
     website: https://earthref.org/SC/
 

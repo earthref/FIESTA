@@ -55,12 +55,16 @@ function nodeColorBase(color: string): Record<string, string> {
 }
 
 /** Apply runtime branding: CSS custom properties, document title, and the
- * node's letter logo as the favicon. */
-export function applyNodeTheme(config: Pick<NodeConfig, "key" | "color" | "title">): void {
+ * node tile as the favicon (the FIESTA portal, which has no logo fields, keeps
+ * its letter mark). */
+export function applyNodeTheme(
+  config: Pick<NodeConfig, "key" | "color" | "title"> &
+    Partial<Pick<NodeConfig, "logo_svg" | "logo_style" | "logo_label">>,
+): void {
   const root = document.documentElement;
   for (const [name, value] of Object.entries(nodeColorVars(config.color))) {
     root.style.setProperty(name, value);
   }
   document.title = config.title;
-  setNodeFavicon(config.key, config.color);
+  setNodeFavicon(config);
 }

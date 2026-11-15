@@ -7,6 +7,7 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { AdminGate, Field, NodeChip, RepoStatus, Tabs } from "../components/admin/admin-ui";
 import { ErrorMessage } from "../components/error-message";
+import { NodeMark } from "../components/node-mark";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -23,7 +24,6 @@ import {
 } from "../lib/admin";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { nodeLogoUrl } from "../lib/node-logo";
 import type { AdminParams } from "../router";
 
 // --- Nodes ----------------------------------------------------------------------
@@ -60,13 +60,13 @@ function NodesPanel({ superAdmin }: { superAdmin: boolean }) {
             <Tr key={node.slug}>
               <Td>
                 <div className="flex items-center gap-2">
-                  {/* The node header's letter logo, also its favicon */}
-                  <img
-                    src={nodeLogoUrl(node.key, node.color ?? "#666666")}
-                    alt=""
-                    width={28}
-                    height={28}
-                    className="shrink-0"
+                  {/* The node tile, unnamed at this size, as in the favicon */}
+                  <NodeMark
+                    size={28}
+                    color={node.color ?? "#666666"}
+                    label={node.key}
+                    svg={node.logo_svg}
+                    style={node.logo_style}
                   />
                   <div>
                     <Link

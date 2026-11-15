@@ -260,6 +260,20 @@ publications go live there, and are not written to git from your stack.
 Grant yourself admin rights locally with `fiesta create-user EMAIL NAME --admin`
 (super admin); super admins grant node admins in the UI.
 
+A node's logo is `node.logo` (an SVG in `configurations/<slug>/assets/`, by
+convention `logo.svg`), `node.logo_style` (`tile`, the default, or `full`) and
+`node.logo_label` (the name on the tile, at most 12 characters; the key when
+unset). The SPA draws it as the node tile (`components/node-mark.tsx`) in the
+header, on the portal home's node cards, in the admin node list and as the
+favicon; the FIESTA portal keeps its own mark. A `tile` logo is a one-color
+drawing in `currentColor` with no per-shape stroke-width, its viewBox cropped
+to the drawing: the tile frames it, colors it with the node color (darkened
+until it reads at 4.5:1 on white) and scales the stroke width with the size.
+The Logo fieldset on the admin Settings tab uploads one (sanitized into
+`assets/logo.svg`, so publication writes it to git with the YAML) and previews
+the tile at 128, 58 and 24 px and on a portal home card; [api.md](api.md)
+"Node logo" lists what the sanitizer keeps.
+
 Content pages are YAML plus HTML: the top-level `pages` list (`slug`, `title`,
 `menu`: left / right / hidden, optional `icon`), in menu order, and each page's
 HTML in `configurations/<slug>/pages/<page>.html`, served at `/<page>` by one SPA route

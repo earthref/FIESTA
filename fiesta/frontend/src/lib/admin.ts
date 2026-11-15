@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import { useAuth } from "./auth";
-import type { GridCellKind, GridShow, UserOut } from "./types";
+import type { GridCellKind, GridShow, LogoStyle, UserOut } from "./types";
 
 export function isAnyAdmin(user: UserOut | null): boolean {
   return !!user && (user.is_admin || user.admin_nodes.length > 0);
@@ -60,6 +60,9 @@ export interface AdminNode {
   key: string;
   title: string | null;
   color: string | null;
+  /** The served node tile's drawing (sanitized SVG) and style. */
+  logo_svg?: string | null;
+  logo_style?: LogoStyle | null;
   served: boolean;
   published: NodeRevision | null;
   draft: NodeRevision | null;
@@ -147,6 +150,9 @@ export interface NodeSettings {
     title: string;
     subtitle?: string;
     color?: string;
+    logo?: string | null;
+    logo_style?: LogoStyle;
+    logo_label?: string | null;
     links?: { website?: string | null; github_issues?: string | null };
   };
   search: {
@@ -295,6 +301,14 @@ export function putFile(
   return api<DraftRef>(`/v2/admin/nodes/${slug}/draft/file`, {
     method: "PUT",
     json: { path, content, encoding, lock_version: lockVersion },
+  });
+}
+
+/** Upload the node logo: sanitized into <slug>/assets/logo.svg, node.logo pointed at it. */
+export function putLogo(slug: string, content: string, lockVersion: number | null) {
+  return api<DraftRef>(`/v2/admin/nodes/${slug}/draft/logo`, {
+    method: "PUT",
+    json: { content, lock_version: lockVersion },
   });
 }
 

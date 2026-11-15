@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0.55 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="SC">
+  <!-- FIESTA node logo (logo_style: tile): a seamount under the waves, with depth contours. One color; the tile draws it in the node ink, adds the frame and the name, and scales stroke-width by size. -->
+  <path d="M2 3.5q2 -0.8 4 0t4 0t4 0t4 0t4 0M2 6.5q2 -0.8 4 0t4 0t4 0t4 0t4 0M3 20L10.5 9L11.5 10L12.5 10L13.5 9L21 20M1.5 20L22.5 20M8.45 12L15.55 12M6.41 15L17.59 15M4.36 18L19.64 18M2 22q1.67 -0.4 3.33 0t3.33 0t3.33 0t3.33 0t3.33 0t3.33 0"/>
+  <path d="M11.15 7.4a0.45 0.45 0 1 0 0.9 0a0.45 0.45 0 1 0 -0.9 0zM12.2 6.2a0.4 0.4 0 1 0 0.8 0a0.4 0.4 0 1 0 -0.8 0z" fill="currentColor" stroke="none"/>
+</svg>

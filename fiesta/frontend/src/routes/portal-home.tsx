@@ -2,6 +2,7 @@ import { useQueries } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton } from "../components/icon-button";
+import { NodeMark } from "../components/node-mark";
 import { contributionId, ResultDivider } from "../components/result-item";
 import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
@@ -121,8 +122,14 @@ export function PortalHomePage() {
                   href={nodeSiteUrl(config.key)}
                   sameTab
                   icon="database"
-                  image={
-                    config.logo ? apiUrl(`/${config.slug}/config/assets/${config.logo}`) : undefined
+                  media={
+                    <NodeMark
+                      size={88}
+                      color={config.color}
+                      label={config.logo_label || config.key}
+                      svg={config.logo_svg}
+                      style={config.logo_style}
+                    />
                   }
                   title={config.key}
                   subtitle={

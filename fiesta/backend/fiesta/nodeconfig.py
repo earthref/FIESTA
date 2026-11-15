@@ -71,9 +71,13 @@ class NodeIdentity(BaseModel):
     title: str
     subtitle: str = ""
     color: str = "#666666"
-    logo: str | None = (
-        None  # path under configurations/<slug>/assets/ (the portal home's node cards)
-    )
+    # An SVG under configurations/<slug>/assets/, drawn as the node tile (the
+    # header, the portal home's node cards, the favicon); sanitized when served.
+    logo: str | None = None
+    # tile: framed, drawn in the node color (darkened for contrast), with
+    # logo_label (default: key) under it; full: the SVG as drawn, no frame.
+    logo_style: Literal["tile", "full"] = "tile"
+    logo_label: str | None = Field(default=None, max_length=12)
     links: NodeLinks = NodeLinks()
 
     @field_validator("slug")
@@ -1008,6 +1012,20 @@ class NodeConfig(BaseModel):
             return None
         return candidate
 
+    def logo_svg(self) -> str | None:
+        """The node logo (`node.logo`) as sanitized SVG markup for the SPA to
+        inline; None without one, or when it is not an acceptable SVG."""
+        from fiesta.svg import SvgError, sanitize_svg
+
+        key = f"logo:{self.node.logo}"
+        if key not in self._asset_cache:
+            file = self.asset_path(self.node.logo) if self.node.logo else None
+            try:
+                self._asset_cache[key] = sanitize_svg(file.read_bytes()).decode() if file else None
+            except SvgError:
+                self._asset_cache[key] = None
+        return self._asset_cache[key]
+
     def load_data_model(self, version: str) -> dict:
         if version not in self.data_model.versions:
             raise KeyError(f"unknown data model version {version!r}")
@@ -1221,6 +1239,11 @@ class NodeConfig(BaseModel):
             "subtitle": self.node.subtitle,
             "color": self.node.color,
             "logo": self.node.logo,
+            # The logo itself, sanitized (fiesta.svg), so the tile and the
+            # favicon draw without another request.
+            "logo_svg": self.logo_svg(),
+            "logo_style": self.node.logo_style,
+            "logo_label": self.node.logo_label,
             "links": self.node.links.model_dump(),
             "data_model_versions": self.data_model.versions,
             "data_model_latest": self.data_model.latest,

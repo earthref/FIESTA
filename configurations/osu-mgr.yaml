@@ -20,7 +20,8 @@ node:
     Curating marine and terrestrial sediment cores, dredged and ROV-collected
     rocks, and the data collected from them at Oregon State University.
   color: "#D73F09" # OSU Beaver Orange (osu-mgr.org tailwind.config.js)
-  logo: logo.svg # configurations/osu-mgr/assets/, on the FIESTA portal home
+  logo: logo.svg # configurations/osu-mgr/assets/: the node tile (header, portal home, favicon)
+  logo_style: tile # tile: framed, drawn in the node color, named; full: the SVG as drawn
   links:
     website: https://osu-mgr.org
     github_issues: https://github.com/earthref/OSU-MGR/issues
