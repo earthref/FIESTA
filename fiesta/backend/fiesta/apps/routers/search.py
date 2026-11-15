@@ -7,7 +7,8 @@ import uuid as uuid_mod
 from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBasicCredentials
 from opensearchpy.exceptions import NotFoundError, TransportError
 
@@ -29,7 +30,8 @@ from fiesta.apps.schemas import (
     SearchValues,
 )
 from fiesta.db.models import Contribution, User
-from fiesta.nodeconfig import ANY_TABLE, POSITION_COLUMNS, MapColor
+from fiesta.domain.jsonld import contribution_jsonld
+from fiesta.nodeconfig import ANY_TABLE, POSITION_COLUMNS, MapColor, get_deployment
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import (
     ROW_SORT_PREFIX,
@@ -1247,6 +1249,43 @@ async def get_contribution(
     session: SessionDep, node: NodeDep, contribution_id: int, private_key: str | None = None
 ) -> dict:
     contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    return await _contribution_doc(node, contribution)
+
+
+@router.get("/contributions/{contribution_id}/jsonld")
+async def get_contribution_jsonld(
+    request: Request,
+    session: SessionDep,
+    node: NodeDep,
+    contribution_id: int,
+    private_key: str | None = None,
+) -> JSONResponse:
+    """The contribution as a schema.org Dataset (JSON-LD, Science-on-Schema.org),
+    as its landing page publishes it (fiesta.domain.jsonld)."""
+    contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    doc = await _contribution_doc(node, contribution)
+    catalog = f"{get_deployment().site_url}/{node.node.key}"
+    download = None
+    if contribution.filename and contribution.is_activated:
+        download = str(
+            request.url_for(
+                "download_contribution",
+                repository=node.node.slug,
+                contribution_id=str(contribution.id),
+            )
+        )
+    data = contribution_jsonld(
+        node,
+        doc,
+        landing_url=f"{catalog}/{contribution.id}",
+        catalog_url=catalog,
+        download_url=download,
+    )
+    return JSONResponse(data, media_type="application/ld+json")
+
+
+async def _contribution_doc(node, contribution: Contribution) -> dict:
+    """The contribution's search document (its visibility already checked)."""
     body = build_search_body(table="contribution", query=f'id:"{contribution.id}"', size=1)
     # Bypass the activation filter — visibility was already checked above.
     _drop_workflow_filters(body)
@@ -1257,7 +1296,7 @@ async def get_contribution(
         hits = []
     if hits:
         return hits[0]["_source"]
-    raise HTTPException(404, f"contribution {contribution_id} is not indexed yet")
+    raise HTTPException(404, f"contribution {contribution.id} is not indexed yet")
 
 
 @router.get("/contributions/{contribution_id}/versions")

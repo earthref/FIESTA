@@ -149,6 +149,53 @@ def test_summarize_docs(magic_node):
     assert site_doc["summary"]["_all"]["_geo_point"] == {"lat": 19.5, "lon": -155.5}
 
 
+def test_contribution_jsonld(magic_node):
+    from fiesta.domain.jsonld import contribution_jsonld
+
+    meta = {
+        "id": 12345,
+        "version": 2,
+        "timestamp": "2026-01-02T03:04:05+00:00",
+        "_contributor": "Test User",
+        "_private_key": "secret-key",
+        "_is_activated": True,
+        "_is_latest": True,
+        "_reference": {
+            "title": "Paleomagnetism of <i>Hawaiian</i> lavas",
+            "doi": "10.1029/93JB00024",
+            "year": 1993,
+            "authors": [{"given": "Ann", "family": "Smith", "_orcid": "0000-0002-1825-0097"}],
+        },
+    }
+    docs = summarize(magic_node, parse_text(MAGIC_TEXT), meta)
+    doc = next(d for d in docs if d["type"] == "contribution")
+    data = contribution_jsonld(
+        magic_node,
+        doc,
+        landing_url="https://earthref.org/MagIC/12345",
+        catalog_url="https://earthref.org/MagIC",
+        download_url="https://api.example/v2/magic/contributions/12345/download",
+    )
+    assert data["@type"] == "Dataset"
+    assert data["@id"] == data["url"] == "https://earthref.org/MagIC/12345"
+    assert data["identifier"]["value"] == "doi:10.7288/V4/MAGIC/12345"
+    assert data["name"] == "Paleomagnetism of Hawaiian lavas (MagIC contribution 12345)"
+    assert data["provider"]["identifier"].endswith("r3d100011910")
+    assert data["creator"][0]["@id"] == "https://orcid.org/0000-0002-1825-0097"
+    assert data["citation"]["@id"] == "https://doi.org/10.1029/93JB00024"
+    assert "1 location and 2 sites" in data["description"]
+    assert {"Basalt", "Lava Flow"} <= set(data["keywords"])
+    assert "Ma" not in data["keywords"]  # a unit column's value
+    assert data["spatialCoverage"]["geo"][0]["@type"] == "GeoShape"
+    # Workflow fields never leak, and a private contribution gets no DOI.
+    assert "secret-key" not in str(data)
+    private = {**doc, "summary": {**doc["summary"]}}
+    private["summary"]["contribution"] = {**meta, "_is_activated": False}
+    assert "identifier" not in contribution_jsonld(
+        magic_node, private, landing_url="x", catalog_url="y"
+    )
+
+
 def test_summarize_places_other_bodies(magic_node):
     # A lunar location's sites (and a sample below one, by its site) are on
     # the Moon: _body_point, never _geo_point, so Earth's filters skip them.

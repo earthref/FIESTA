@@ -14,6 +14,9 @@ api:
   # and takes no uploads; `source,karar=public` once KArAr cuts over.
   # FIESTA_CONTRIBUTIONS_MODE overrides it: local stacks and tests run `public`.
   contributions_mode: source
+  # Where the web app is public: a node's pages at <site_url>/<Key>/ (the
+  # contribution landing pages named in JSON-LD).
+  site_url: https://earthref.org
   nodes:
     - magic.yaml
     - kdd.yaml
