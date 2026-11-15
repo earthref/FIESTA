@@ -258,7 +258,29 @@ def geomagia_source():
     return module
 
 
-def test_geomagia_rows_keep_codes_and_drop_missing_markers(geomagia_source, tmp_path):
+GEOMAGIA_CODE_COLUMNS = {
+    "site_id",
+    "material_id",
+    "specimen_type_id",
+    "age_error_type_id",
+    "dating_method_id",
+    "pi_method_id",
+    "ac_id",
+    "md_ck_id",
+    "an_corr_set_id",
+    "an_use_status_id",
+    "cr_corr_set_id",
+    "dm_method_id",
+    "dm_analysis_id",
+    "comp_ref",
+    "c14_id",
+    "dendro_id",
+    "superseeded",
+    "cross_ref_id",
+}
+
+
+def test_geomagia_rows_carry_names_and_drop_missing_markers(geomagia_source, tmp_path):
     from fiesta.domain.parse import parse_text
     from fiesta.domain.validate import validate_contribution
 
@@ -272,12 +294,13 @@ def test_geomagia_rows_keep_codes_and_drop_missing_markers(geomagia_source, tmp_
     assert parsed.tables["contribution"][0]["geomagia_reference_id"] == "265"
     (site,) = parsed.tables["sites"]
     assert site["site"] == site["uid"] == "1915"
-    # Missing markers are blank; lookup sentinels (-1, 0) keep their IDs and names.
+    # Missing markers are blank; lookup codes are names, sentinels (-1, 0) included,
+    # and no GEOMAGIA key but the UID is written.
     assert not site.get("age_min") and not site.get("decl")
-    assert site["ac_id"] == "-1" and site["alteration_checks"] == "No measurement"
-    assert site["dating_method_id"] == "101:102"
+    assert not GEOMAGIA_CODE_COLUMNS & set(parsed.tables["sites"][0])
+    assert site["alteration_checks"] == "No measurement"
     assert site["dating_methods"] == "Archeological Age:Calibrated 14 C Age"
-    assert not site.get("comp_ref")  # -1: in no compilation
+    assert not site.get("compilations")  # -1: in no compilation
     assert (site["region_country"], site["continent"]) == ("Russia", "Asia")
     # VADM from the intensity and site latitude, as the GEOMAGIA site calculates it.
     assert (site["vadm"], site["sigma_vadm"]) == ("9.95", "0.14")
@@ -289,9 +312,14 @@ def test_geomagia_rows_keep_codes_and_drop_missing_markers(geomagia_source, tmp_
         "Schnepp E., Lanos Ph. (2006):Donadini F., Korhonen K., Riisager P., Pesonen L.J. (2006)"
     )
     # A code missing from the glossary stays visible and fails validation.
-    assert direction["demag_method"] == "Unknown (ID 101)"
+    assert direction["demag_method"] == "Unknown"
     errors = validate_contribution(node, direction_parsed, "1.0").errors
     assert [e.as_dict()["column"] for e in errors] == ["demag_method"]
+    # So does a region code with no lookup entry.
+    row = geomagia_source.site_row(
+        {"uid": "1", "site_id": "9999", "material_id": "1"}, geomagia_source.load_lookups()
+    )
+    assert (row["region_country"], row["continent"], row["materials"]) == ("Unknown", "", "Brick")
 
 
 def test_geomagia_short_citation(geomagia_source):
@@ -299,6 +327,13 @@ def test_geomagia_short_citation(geomagia_source):
     assert cite("Shaw J.", "1974") == "Shaw (1974)"
     assert cite("Burlatskaya S.P., Chelidze Z.A.", "1990") == "Burlatskaya and Chelidze (1990)"
     assert cite("Aitken M.J., Pesonen L.J., Leino M.A.H.", "1991") == "Aitken et al. (1991)"
+    # Initials without a period, or apart from their name; an institution.
+    assert cite("Ivanova I, Petrov K., Sidorov T.", "2007") == "Ivanova et al. (2007)"
+    assert cite("Ivanova I.E., Petrov, K.S.", "2008") == "Ivanova and Petrov (2008)"
+    assert cite("Aitken M.J. , Hawley H.N.", "1966") == "Aitken and Hawley (1966)"
+    assert cite("Laboratory of Geology, Academy of Sciences", "1977") == (
+        "Laboratory of Geology, Academy of Sciences (1977)"
+    )
 
 
 @pytest.mark.asyncio
@@ -403,6 +438,11 @@ GEOMAGIA_DB_ROWS = [
         UPLOAD_YEAR=2009,
         UPLOAD_MONTH=0,
         UPLOADER="FD",
+        # varchar(100) cells, as stored: ':' separated, with a leading space
+        CROSS_REF_ID=" 302:206",
+        CROSS_UID=" 4039",
+        SUPERSEEDED=301,
+        C14_ID=258,
     ),
     # volcanic (lava), a -180..180 longitude, anisotropy assessed but not applied
     _archeodij(
@@ -521,6 +561,30 @@ class FakeGeomagiaDB:
                     "DOI": "10.1000/example",
                     "MAGIC_LINK": "https://earthref.org/MagIC/1",
                 },
+                # References with no records here: one supersedes 1915, one is its "see also".
+                {
+                    "ID": 301,
+                    "AUTHORS": "Ivanova I, Petrov K., Sidorov T.",
+                    "TITLE": "Newer results",
+                    "YEAR": 2007,
+                    "PUBLICATION_NAME": "Izv. Phys. Solid Earth",
+                    "VOLUME": 43,
+                    "PAGES": "1-9",
+                    "DOI": "10.1000/superseding",
+                    "MAGIC_LINK": None,
+                },
+                {
+                    "ID": 302,
+                    "AUTHORS": "Hill M.J.",
+                    "TITLE": "Related results",
+                    "YEAR": 1986,
+                    "PUBLICATION_NAME": "Geol. Soc. Am. Bull.",
+                    "VOLUME": 97,
+                    "PAGES": "829",
+                    # A SICI DOI: its <...> is not a tag, and its ':' is escaped in a list.
+                    "DOI": "10.1130/0016-7606(1986)97<829:DRHLFU>2.0.CO;2",
+                    "MAGIC_LINK": None,
+                },
             ],
             "archeodij_edit_history": [{"UID": 1915, "edited": datetime(2020, 12, 1)}],
             "ARCHEODIJ": GEOMAGIA_DB_ROWS,
@@ -576,9 +640,18 @@ def test_geomagia_mysql_reads_the_catalogue_like_the_csv(geomagia_source):
     (site,) = parsed.tables["sites"]
     assert site["site"] == site["uid"] == "1915" and site["archeo_volcanic"] == "Archeo"
     # The CSV path's rules: missing markers blank (-1, and 0 in counts; 999 for no
-    # direction), lookup sentinels kept, codes joined by ':'.
+    # direction), lookup codes as names (sentinels included) joined by ':'.
     for blank in ("age_min", "decl", "incl", "num_meas_spec", "af_step", "t_step", "k"):
         assert not site.get(blank), blank
+    assert not GEOMAGIA_CODE_COLUMNS & set(site)
+    # Cross references are citations and DOIs; companion records stay UIDs.
+    assert site["see_also"] == "Hill (1986):Donadini et al. (2006)"
+    assert site["see_also_doi"] == "10.1130/0016-7606(1986)97<829%3ADRHLFU>2.0.CO;2"
+    assert (site["superseded_by"], site["superseded_by_doi"]) == (
+        "Ivanova et al. (2007)",
+        "10.1000/superseding",
+    )
+    assert site["cross_uid"] == "4039"
     assert not site.get("sample_id") and not site.get("site_horizon")
     assert (site["ba"], site["num_acc_spec"], site["lat"], site["lon"]) == (
         "69",
@@ -586,22 +659,20 @@ def test_geomagia_mysql_reads_the_catalogue_like_the_csv(geomagia_source):
         "59.3",
         "39.7",
     )
-    assert site["ac_id"] == "-1" and site["alteration_checks"] == "No measurement"
-    assert site["dating_method_id"] == "101:102"
+    assert site["alteration_checks"] == "No measurement"
     assert site["dating_methods"] == "Archeological Age:Calibrated 14C Age"
-    assert not site.get("comp_ref") and site["uploader"] == "Fabio Donadini"
+    assert not site.get("compilations") and site["uploader"] == "Fabio Donadini"
     assert (site["region_country"], site["continent"]) == ("Russia", "Asia")
     assert (site["vadm"], site["sigma_vadm"]) == ("9.95", "0.14")  # calculated, not stored
-    assert (site["an_use_status_id"], site["anisotropy_use_status"]) == ("0", "Not specified")
+    assert site["anisotropy_use_status"] == "Not specified"
     assert not validate_contribution(node, parsed, "1.0").errors
 
     volcanic_parsed = parse_text(texts[206])
     (volcanic,) = volcanic_parsed.tables["sites"]
     assert volcanic["archeo_volcanic"] == "Volcanic" and volcanic["lon"] == "356.5"
-    assert (volcanic["an_use_status_id"], volcanic["anisotropy_use_status"]) == (
-        "2",
-        "Assessment only",
-    )
+    assert volcanic["anisotropy_use_status"] == "Assessment only"
+    # -1: no cross references, not superseded.
+    assert not any(volcanic.get(c) for c in ("see_also", "superseded_by", "cross_uid"))
     assert (volcanic["editor"], volcanic["edit_date"]) == ("Maxwell Brown", "24/07/2017")
     assert volcanic["compilations"].startswith("Schnepp E., Lanos Ph. (2006):")
     assert not validate_contribution(node, volcanic_parsed, "1.0").errors

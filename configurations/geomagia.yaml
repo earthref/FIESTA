@@ -114,8 +114,9 @@ features:
 
 plugins:
   # The Sites level's Plots sub-tab (the GEOMAGIA site's search plots) and its
-  # query refinements. The method families and codes are GEOMAGIA's
-  # (search/refinements.py PI_FAMILIES; 27 is in two).
+  # query refinements. The method families are GEOMAGIA's (search/refinements.py
+  # PI_FAMILIES, by code; Microwave Walton, code 27, is in two), by method name:
+  # the glossary's and, where the database renamed one, the database's (Coe).
   geomag-series:
     base_level: Sites
     age: age
@@ -129,25 +130,55 @@ plugins:
     inclination: incl
     alpha95: alpha_95
     latitude: lat
-    color_id: site_id
-    color_label: region_country
+    color_by: region_country
     hover: [site_horizon, site_name, summary.contribution.citation, uid]
     export_name: geomagia
     name_search: site_name
     radius_search: true
-    pi_methods: pi_method_id
+    pi_methods: pi_methods
     pi_families:
-      - { name: Thellier Family, codes: ["1", "2", "3", "4", "5", "11", "12", "25"] }
-      - { name: Shaw Family, codes: ["6", "20", "21", "22", "23", "24", "29"] }
-      - { name: Microwave, codes: ["7", "8", "15", "16", "17", "19", "27"] }
-      - { name: Triaxe, codes: ["9"] }
-      - { name: Dekkers and Bohnel Family, codes: ["10", "13"] }
-      - { name: Walton, codes: ["26", "27"] }
-      - { name: Wilson, codes: ["28"] }
-      - { name: Pseudo-Thellier, codes: ["14"] }
+      - name: Thellier Family
+        methods:
+          - Thellier and Thellier (1959)
+          - Coe (1967)
+          - Coe-Thellier (1967)
+          - Aitken et al. (1988)
+          - IZZI (Yu et al., 2004)
+          - Thellier two specimen method (Doumen, 1977)
+          - Thermal quasi perpendicular (Biggin et al., 2007)
+          - Other double heating
+          - Modified Thellier Method MT4 (Leonhardt et al., 2004)
+      - name: Shaw Family
+        methods:
+          - Shaw (1974)
+          - LTD-DHT Shaw method (Yamamoto et al., 2003)
+          - DHT Shaw method (Tsunakawa and Shaw 1994)
+          - Shaw method with ARM correction (Rolph and Shaw 1985)
+          - Shaw method with Shaw et al. (1995) modification
+          - Shaw method with ARM correction (Kono 1978)
+          - Van Zijl (1962)
+      - name: Microwave
+        methods:
+          - Microwave perpendicular method (see, Hill and Shaw, 2007)
+          - Microwave Coe method (see, Hill and Shaw, 1999)
+          - Microwave Thellier-Thellier protocol
+          - Microwave quasi-perpendicular protocol
+          - Microwave IZZI protocol
+          - Microwave Aitken protocol
+          - Microwave Walton (1977)
+      - { name: Triaxe, methods: ["Vibrating Triaxe (Le Goff and Gallet, 2004)"] }
+      - name: Dekkers and Bohnel Family
+        methods:
+          - Multispecimen parallel differential pTRM (Dekkers and Boehnel, 2006)
+          - Extended multispecimen parallel differential pTRM protocol (Fabian and Leonhardt, 2010)
+      - { name: Walton, methods: [Walton (1977), Microwave Walton (1977)] }
+      - { name: Wilson, methods: [Wilson (1961)] }
+      - { name: Pseudo-Thellier, methods: ["Calibrated Pseudo-Thellier (de Groot et al., 2013)"] }
+    # Yes / No refinements: No = only these names, Yes = any other.
     checks:
-      md_check: md_ck_id
-      cooling_rate_check: cr_corr_set_id
+      md_check: md_checks
+      cooling_rate_check: cooling_rate_corrections
+    check_none: [No measurement, Not specified]
     direction_counts: [num_dir_specimens, num_dir_samples]
 
 # The API serves it (so its data source can sync it); production's SPA and

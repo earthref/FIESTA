@@ -5,7 +5,7 @@ import type { NodeConfig } from "@/lib/types";
 
 export interface MethodFamily {
   name: string;
-  codes: string[];
+  methods: string[];
 }
 
 /** The backend plugin's options (frontend_config), with the level's table. */
@@ -28,8 +28,7 @@ export interface SeriesOptions {
   inclination: string | null;
   alpha95: string | null;
   latitude: string | null;
-  color_id: string | null;
-  color_label: string | null;
+  color_by: string | null;
   hover: string[];
   export_name: string;
   name_search: string | null;
@@ -96,12 +95,23 @@ export const UNKNOWN_COLOR = "#718096";
 /** Earth's reference radius for the VADM (m), as GEOMAGIA's. */
 const VADM_EARTH_RADIUS_M = 6_371_200;
 
-/** A colour id's hue (the golden angle apart, stable across searches) and one
- * of three lightnesses, as the GEOMAGIA site's region colours. */
-export function groupColor(id: number | null): string {
-  if (id === null || !Number.isFinite(id)) return UNKNOWN_COLOR;
-  const hue = (((id * 137.508) % 360) + 360) % 360;
-  const lightness = 38 + (((id % 3) + 3) % 3) * 6;
+/** A stable 32-bit number for a colour value (FNV-1a over its code points). */
+export function colorHash(value: string): number {
+  let hash = 0x811c9dc5;
+  for (const char of value) {
+    hash = Math.imul(hash ^ (char.codePointAt(0) ?? 0), 0x01000193) >>> 0;
+  }
+  return hash;
+}
+
+/** A colour value's hue (its hash the golden angle apart, stable across
+ * searches) and one of three lightnesses, as the GEOMAGIA site's region
+ * colours (which use the region's id where this uses its name's hash). */
+export function groupColor(value: string | null): string {
+  if (value === null || value === "") return UNKNOWN_COLOR;
+  const id = colorHash(value);
+  const hue = (id * 137.508) % 360;
+  const lightness = 38 + (id % 3) * 6;
   return `hsl(${hue.toFixed(2)}, 65%, ${lightness}%)`;
 }
 
@@ -160,8 +170,7 @@ export function valueFields(options: SeriesOptions): string[] {
     options.inclination,
     options.alpha95,
     options.latitude,
-    options.color_id,
-    options.color_label,
+    options.color_by,
     ...options.hover,
   ].filter((c): c is string => !!c);
   return [...new Set([CONTRIBUTION_FIELD, ...columns.map((c) => fieldPath(table, c))])];
@@ -191,8 +200,7 @@ export function seriesFrom(page: SearchValues, options: SeriesOptions): SeriesDa
     incl: reader(options.inclination),
     alpha95: reader(options.alpha95),
     lat: reader(options.latitude),
-    colorId: reader(options.color_id),
-    colorLabel: reader(options.color_label),
+    colorBy: reader(options.color_by),
   };
   const hover = options.hover.map((column) => reader(column));
   const records: SeriesRecord[] = [];
@@ -217,13 +225,13 @@ export function seriesFrom(page: SearchValues, options: SeriesOptions): SeriesDa
       : vadmOf(ba, sigmaBa, asNumber(read.lat(row), -90, 90));
     const ageMinus = asNumber(read.ageMinus(row), 0);
     const agePlus = asNumber(read.agePlus(row), 0);
-    const colorId = options.color_id ? asNumber(read.colorId(row)) : null;
-    const key = options.color_id ? (colorId === null ? "unknown" : String(colorId)) : "all";
+    const colorValue = options.color_by ? asText(read.colorBy(row)) : null;
+    const key = options.color_by ? (colorValue === null ? "unknown" : `=${colorValue}`) : "all";
     if (!groups.has(key)) {
       groups.set(key, {
         key,
-        name: asText(read.colorLabel(row)) ?? (options.color_id ? "Unspecified region" : "Records"),
-        color: options.color_id ? groupColor(colorId) : "",
+        name: colorValue ?? (options.color_by ? "Unspecified region" : "Records"),
+        color: options.color_by ? groupColor(colorValue) : "",
       });
     }
     const sigmas = asNumber(read.sigmas(row));

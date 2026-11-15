@@ -35,9 +35,16 @@ made, from the CSV).
 GEOMAGIA's missing-value markers in measured numbers are left blank, as the
 GEOMAGIA site's own downloads do: -999/-9999 (the CSV), -1, and 0 in counts,
 intensities and statistics, 999 in declination/inclination, 9999 in radiocarbon
-ages, -50000 in ages. Lookup codes keep -1 ("No measurement") and 0 ("Not
-specified"). VADM is calculated from the intensity and site latitude, as the
-GEOMAGIA site does.
+ages, -50000 in ages. VADM is calculated from the intensity and site latitude, as
+the GEOMAGIA site does.
+
+The contributions carry names, never GEOMAGIA's relational keys (the record's UID
+aside): lookup codes become their lookup names, -1 and 0 included ("No
+measurement", "Not specified"), and a code with no lookup entry becomes "Unknown",
+which fails validation; `SITE_ID` becomes the region/country and continent;
+`CROSS_REF_ID` ("see also" references) and `SUPERSEEDED` (the superseding
+reference) become those references' short citations and DOIs. `C14_ID` and
+`DENDRO_ID`, keys into tables the sync does not read, are dropped.
 """
 
 import argparse
@@ -69,7 +76,7 @@ DEFAULT_TIME = datetime(2019, 5, 22, tzinfo=UTC)
 # the CSV's ArcheoVolcanic flag follows the same rule for all 9,434 of its records.
 VOLCANIC_MATERIALS = {"4", "25", "41", "47", "51", "52"}
 
-# CSV heading -> data model column (the ARCHEODIJ column, lower case).
+# CSV heading -> source column (the ARCHEODIJ column, lower case; mostly the data model's).
 CSV_COLUMNS = {
     "Age[yr.AD]": "age",
     "Sigma-ve[yr.]": "age_min",
@@ -119,7 +126,8 @@ CSV_COLUMNS = {
     "UID": "uid",
 }
 
-# Code column -> (named column, glossary table in lookups.json).
+# Lookup code column (the source's) -> (named column, glossary table in lookups.json).
+# The contributions carry only the named column.
 CODES = {
     "age_error_type_id": ("age_error_type", "AgeErrorID"),
     "dating_method_id": ("dating_methods", "DatMethod"),
@@ -140,6 +148,10 @@ CODES = {
     "c14_calib_dataset_id": ("c14_calib_dataset", "C14DataSet"),
     "calc_14c_calib_dataset_id": ("calc_c14_calib_dataset", "C14DataSet"),
 }
+# Source columns the contributions leave out: keys into tables the sync does not read.
+DROPPED = {"c14_id", "dendro_id"}
+# The name of a code with no lookup entry: not in the vocabulary, so it fails validation.
+UNKNOWN = "Unknown"
 MISSING = {"", "-999", "-999.0", "-999.00", "-9999", "-9999.0"}
 C14_AGES = {
     "calib_14c_age",
@@ -166,7 +178,6 @@ MISSING_ZERO = {
     "sample_id",
     "site_horizon",
     "upload_month",
-    "superseeded",
 }
 # Measured numbers whose -1 also means "not given" (the GEOMAGIA site's downloads).
 MISSING_MINUS_ONE = MISSING_ZERO - {"upload_month"} | {
@@ -175,13 +186,10 @@ MISSING_MINUS_ONE = MISSING_ZERO - {"upload_month"} | {
     "num_sigmas",
     "vdm",
     "sigma_vdm",
-    "c14_id",
     "num_14c_samples",
     "num_14c_sigmas",
-    "dendro_id",
     "tot_num_dendro",
     "num_dendro_used",
-    "cross_ref_id",
     "cross_uid",
     *C14_AGES,
 }
@@ -215,7 +223,7 @@ def codes(value: str) -> list[str]:
 def code_name(lookups: dict, table: str, code: str) -> str:
     entry = lookups[table]["rows"].get(code)
     if entry is None:
-        return f"Unknown (ID {code})"
+        return UNKNOWN
     if table == "CompID":  # [authors, title, year, ...]
         return f"{entry[0].rstrip(', ')} ({entry[2]})"
     return entry[0] if isinstance(entry, list) else entry
@@ -252,8 +260,23 @@ def is_missing(column: str, value: str) -> bool:
     )
 
 
-def site_row(record: dict, lookups: dict) -> dict:
-    """One record (CSV or database, as text keyed by data model column) as a `sites` row."""
+def references(value: str) -> list[int]:
+    """The GEOMAGIA reference IDs in a cell (':' separated); -1 and 0 mean none."""
+    return [int(i) for i in codes(value) if int(i) > 0]
+
+
+def reference_dois(refs: list[int], studies: dict[int, dict]) -> str:
+    """The DOIs of the references that have one, as a list cell: a ':' inside a DOI is
+    written %3A, as in a DOI URL, since ':' separates the list's items."""
+    dois = (studies.get(ref, {}).get("reference", "") for ref in refs)
+    return ":".join(doi.replace(":", "%3A") for doi in dois if doi)
+
+
+def site_row(record: dict, lookups: dict, studies: dict[int, dict] | None = None) -> dict:
+    """One record (CSV or database, as text keyed by source column, lower case) as a
+    `sites` row: lookup codes resolved to names, cross references to citations
+    (STUDIES, {reference ID: study})."""
+    studies = studies or {}
     row = {}
     if "archeo_volcanic" not in record:  # the database has no flag; the CSV's follows MATERIAL_ID
         materials = set(codes(record.get("material_id", "")))
@@ -262,13 +285,28 @@ def site_row(record: dict, lookups: dict) -> dict:
         }
     for column, raw in record.items():
         value = raw.strip()
+        if column in DROPPED:
+            continue
         if column in CODES:
             ids = codes(value)
             if column == "comp_ref":  # -1: in no compilation
                 ids = [i for i in ids if i != "-1"]
             name_column, table = CODES[column]
-            row[column] = ":".join(ids)
             row[name_column] = ":".join(dict.fromkeys(code_name(lookups, table, i) for i in ids))
+        elif column == "site_id":
+            if is_missing(column, value):
+                continue
+            region = lookups["CRID"]["rows"].get(value)
+            row["region_country"], row["continent"] = region[:2] if region else (UNKNOWN, "")
+        elif column == "cross_ref_id":  # "see also" references
+            refs = references(value)
+            row["see_also"] = ":".join(reference_citation(r, studies.get(r)) for r in refs)
+            row["see_also_doi"] = reference_dois(refs, studies)
+        elif column == "superseeded":  # the reference whose data supersede this record
+            ref = next(iter(references(value)), None)
+            study = studies.get(ref, {}) if ref else {}
+            row["superseded_by"] = reference_citation(ref, study) if ref else ""
+            row["superseded_by_doi"] = study.get("reference", "")
         elif is_missing(column, value):
             row[column] = ""
         elif column in TEXT:
@@ -279,9 +317,6 @@ def site_row(record: dict, lookups: dict) -> dict:
     lon = number(row.get("lon", ""))
     if lon is not None and -180 <= lon < 0:  # newer uploads are -180–180; the model is 0–360
         row["lon"] = format((Decimal(row["lon"]) + 360).normalize(), "f")
-    region = lookups["CRID"]["rows"].get(row.get("site_id", ""))
-    if region:
-        row["region_country"], row["continent"] = region[0], region[1]
     row["vadm"], row["sigma_vadm"] = vadm(
         row.get("ba", ""), row.get("sigma_ba", ""), row.get("lat", "")
     )
@@ -289,7 +324,7 @@ def site_row(record: dict, lookups: dict) -> dict:
 
 
 def read_csv(path: Path) -> tuple[str, list[dict]]:
-    """The export's "Generated using ..." line and its records keyed by data model column.
+    """The export's "Generated using ..." line and its records keyed by source column.
     The export does not quote its cells (and none holds a comma)."""
     text = path.read_text(encoding="latin-1")
     generated, _, body = text.partition("\n")
@@ -337,11 +372,21 @@ def read_studies(path: Path) -> dict[int, dict]:
     return studies
 
 
+INITIALS = re.compile(r"(?:[A-Z][a-z]?\.\s*-?)+|[A-Z]")
+TRAILING_INITIALS = re.compile(r"\s+([A-Z][a-z]?\.?-?)+\.?$")
+
+
 def short_citation(authors: str, year: str) -> str:
     """A short citation from GEOMAGIA's author list ("Smith A., Jones B."):
-    "Smith (1990)", "Smith and Jones (1990)" or "Smith et al. (1990)"."""
-    names = [a.strip() for a in re.split(r"\.,\s*", authors) if a.strip()]
-    family = [re.sub(r"\s+([A-Z][a-z]?\.?-?)+\.?$", "", n).strip() for n in names]
+    "Smith (1990)", "Smith and Jones (1990)" or "Smith et al. (1990)". Names are ','
+    separated, a family name then initials; initials written apart belong to the name
+    before them ("Burakov, K.S."), and a list without initials is one author (an
+    institution)."""
+    tokens = [a.strip() for a in authors.split(",") if a.strip()]
+    names = [t for t in tokens if not INITIALS.fullmatch(t)]
+    if len(names) == len(tokens) > 1 and not any(TRAILING_INITIALS.search(n) for n in names):
+        names = [authors.strip()]
+    family = [TRAILING_INITIALS.sub("", n).strip() for n in names]
     if not family:
         return year
     lead = (
@@ -354,15 +399,21 @@ def short_citation(authors: str, year: str) -> str:
     return f"{lead} ({year})" if year else lead
 
 
+def reference_citation(ref_id: int, study: dict | None) -> str:
+    """A GEOMAGIA reference's short citation; one not in the studies by its ID (which
+    is also its contribution's)."""
+    if not study:
+        return f"GEOMAGIA reference {ref_id}"
+    return short_citation(study.get("authors", ""), study.get("year", ""))
+
+
 def contribution_row(ref_id: int, study: dict | None, generated: str) -> dict:
     study = study or {}
     row = {
         "data_model_version": DATA_MODEL_VERSION,
         "geomagia_reference_id": str(ref_id),
         "reference": study.get("reference", ""),
-        "citation": short_citation(study.get("authors", ""), study.get("year", ""))
-        if study
-        else f"GEOMAGIA reference {ref_id}",
+        "citation": reference_citation(ref_id, study),
         "authors": study.get("authors", ""),
         "title": study.get("title", ""),
         "year": study.get("year", ""),
@@ -455,8 +506,9 @@ def db_text(value) -> str:
 
 
 def plain(value) -> str:
-    """Lookup and reference text without its HTML (entities, <sup>)."""
-    text = re.sub(r"<[^>]+>", "", html.unescape(db_text(value)))
+    """Lookup and reference text without its HTML (entities, <sup>). Only tags are
+    removed, so a SICI DOI's "<829:DRHLFU>" stays."""
+    text = re.sub(r"</?[A-Za-z][^<>]*>", "", html.unescape(db_text(value)))
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -606,7 +658,7 @@ def contributions(records, studies, lookups, generated) -> tuple[dict[int, str],
     by_ref: dict[int, list[dict]] = {}
     for record in records:
         ref = int(record.pop("reference_id"))
-        by_ref.setdefault(ref, []).append(site_row(record, lookups))
+        by_ref.setdefault(ref, []).append(site_row(record, lookups, studies))
     texts, meta = {}, {}
     for ref, rows in sorted(by_ref.items()):
         rows.sort(key=lambda r: int(r["uid"]))

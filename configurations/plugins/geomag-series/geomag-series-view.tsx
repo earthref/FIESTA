@@ -291,7 +291,7 @@ export default function GeomagSeriesView({ options, searchParams, onOpen }: Geom
           />
         </section>
       ))}
-      {options.color_id && <Legend groups={data.groups} />}
+      {options.color_by && <Legend groups={data.groups} />}
     </div>
   );
 }
@@ -517,7 +517,7 @@ function seriesOption(
               plot.component === "decl" || plot.component === "incl"
                 ? `α95: ${r.alpha95 === null ? "not reported" : `${nf(r.alpha95)}°`}`
                 : "",
-              options.color_id && group ? `Region: ${escapeHtml(group.name)}` : "",
+              options.color_by && group ? `Region: ${escapeHtml(group.name)}` : "",
               `Age error: ${errors(r.ageMinus, r.agePlus)} ${escapeHtml(options.age_unit)}`,
               options.age_error_type
                 ? `Age error type: ${escapeHtml(r.ageErrorType ?? "Not specified")}${
@@ -567,7 +567,7 @@ function figurePng(
   const shown = data.groups.filter((g) =>
     data.records.some((r) => r.group === g.key && plot.value(r) !== null),
   );
-  const rows = options.color_id ? legendRows(shown) : 0;
+  const rows = options.color_by ? legendRows(shown) : 0;
   const bottom = 140 + rows * 30;
   const height = 80 + 520 + bottom;
   const div = document.createElement("div");
@@ -589,7 +589,7 @@ function figurePng(
         top: 18,
         textStyle: { fontSize: 24, color: "#171717", fontWeight: "normal" },
       },
-      ...(options.color_id && {
+      ...(options.color_by && {
         legend: {
           data: shown.map((g) => g.name),
           bottom: 16,

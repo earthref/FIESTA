@@ -9,16 +9,26 @@ from fiesta.plugins import active_plugins, add_derived_values
 from fiesta.plugins.geomag_series import GeomagSeriesPlugin
 from fiesta.services.node_config import check_pages_and_filters
 
-SITES_TEXT = """tab delimited\tcontribution
-id\tversion\tdata_model_version
-7\t1\t1.0
->>>>>>>>>>
-tab delimited\tsites
-site\tlat\tlon\tage\tage_min\tage_max\tba\tdecl\tincl\tpi_method_id\tmd_ck_id\tcr_corr_set_id\tnum_dir_specimens\tnum_dir_samples
-U1\t45\t10\t1550\t50\t100\t43.5\t\t\t1\t-1:4\t0\t12\t14
-U2\t46\t11\t-500\t-1\t20\t\t350\t60\t27\t0\t-1:0\t\t3
-U3\t47\t12\t\t10\t10\t0\t\t\t-1\t\t\t\t
-"""
+# The sites table, one row per tuple (cells tab-joined).
+SITES = [
+    (
+        "site\tlat\tlon\tage\tage_min\tage_max\tba\tdecl\tincl",
+        "pi_methods\tmd_checks\tcooling_rate_corrections\tnum_dir_specimens\tnum_dir_samples",
+    ),
+    (
+        "U1\t45\t10\t1550\t50\t100\t43.5\t\t\tThellier and Thellier (1959)",
+        "No measurement:Triaxe exeperimental mitigation\tNot specified\t12\t14",
+    ),
+    (
+        "U2\t46\t11\t-500\t-1\t20\t\t350\t60\tMicrowave Walton (1977)",
+        "Not specified\tNo measurement:Not specified\t\t3",
+    ),
+    ("U3\t47\t12\t\t10\t10\t0\t\t\tNo measurement", "\t\t\t"),
+]
+SITES_TEXT = (
+    "tab delimited\tcontribution\nid\tversion\tdata_model_version\n7\t1\t1.0\n"
+    ">>>>>>>>>>\ntab delimited\tsites\n" + "".join("\t".join(r) + "\n" for r in SITES)
+)
 
 
 def _plugin():
@@ -39,7 +49,7 @@ def test_geomagia_options_fit_its_node(geomagia_node):
         "direction_n": "number",
     }
     config = plugin.frontend_config(geomagia_node)
-    assert config["table"] == "sites" and config["color_id"] == "site_id"
+    assert config["table"] == "sites" and config["color_by"] == "region_country"
     # The YAML's filters on the derived columns pass the node checks.
     assert check_pages_and_filters(geomagia_node, {}) == []
 
@@ -54,21 +64,21 @@ def test_derived_refinements_per_record(geomagia_node):
     one = derive("U1")
     assert one["data_type"] == ["Intensity"]
     assert one["pi_family"] == ["Thellier Family"]
-    # A code of 1 or more is Yes, even beside a -1; only -1 and 0 are No.
+    # A check's name is Yes, even beside "No measurement"; only the check_none names are No.
     assert one["md_check"] == ["Yes"] and one["cooling_rate_check"] == ["No"]
     assert one["age_error"] == [100.0]
     assert one["direction_n"] == [14.0]
 
     two = derive("U2")
     assert two["data_type"] == ["Direction"]
-    # Code 27 is in two families, as GEOMAGIA lists it.
+    # Microwave Walton is in two families, as GEOMAGIA lists it.
     assert two["pi_family"] == ["Microwave", "Walton"]
     assert two["md_check"] == ["No"] and two["cooling_rate_check"] == ["No"]
     # A negative error is no error: no age_error.
     assert "age_error" not in two
     assert two["direction_n"] == [3.0]
 
-    # No age, a zero intensity, no codes: nothing but nothing.
+    # No age, a zero intensity, no method: nothing but nothing.
     assert derive("U3") == {}
     # Another table's docs are left alone.
     assert plugin.derive_values(geomagia_node, "contribution", [rows["U1"]]) == {}
@@ -94,11 +104,19 @@ def test_check_rejects_options_that_do_not_fit(geomagia_node):
         {"base_level": "Specimens"},
         {"base_level": "Sites", "intensity": "site_name"},
         {"base_level": "Sites", "hover": ["no_such_column"]},
-        {"base_level": "Sites", "pi_families": [{"name": "X", "codes": ["1"]}]},
+        {"base_level": "Sites", "pi_families": [{"name": "X", "methods": ["Shaw (1974)"]}]},
+        {"base_level": "Sites", "color_by": "no_such_column"},
+        # Names outside the column's vocabulary (a typo, or a code).
+        {
+            "base_level": "Sites",
+            "pi_methods": "pi_methods",
+            "pi_families": [{"name": "X", "methods": ["Shaw 1974"]}],
+        },
+        {"base_level": "Sites", "checks": {"md_check": "md_checks"}, "check_none": ["-1"]},
     ]
     for raw in bad:
         options = plugin.Options(**raw)
         with pytest.raises(ValueError, match="geomag-series"):
             plugin.check(geomagia_node, options)
     with pytest.raises(ValueError):
-        plugin.Options(base_level="Sites", pi_families=[{"name": "X", "codes": []}])
+        plugin.Options(base_level="Sites", pi_families=[{"name": "X", "methods": []}])
