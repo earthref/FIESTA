@@ -202,8 +202,8 @@ sources:
 
 def test_checked_in_source_scripts_are_scheduled(monkeypatch):
     """Every `configurations/sources/<slug>.py` is a served node with a `legacy:` block
-    (Meteor, or a script-only source such as GEOMAGIA's), so the ops worker gives it a
-    schedule; MagIC's is on, hourly."""
+    (Meteor, a CGI archive such as ERDA's, or a script-only source such as GEOMAGIA's),
+    so the ops worker gives it a schedule; MagIC's is on, hourly."""
     from fiesta.ops.config import parse_ops_config
 
     sources = CONFIG_DIR / "sources"
@@ -213,7 +213,8 @@ def test_checked_in_source_scripts_are_scheduled(monkeypatch):
     scripts = sorted(p.stem for p in sources.glob("*.py"))
     assert {"kdd", "magic"} <= set(scripts)
     nodes = [load_deployment(CONFIG_DIR / "fiesta.yaml").node_for(s) for s in scripts]
-    assert all(n.legacy is not None and n.legacy.kind in ("meteor", "script") for n in nodes)
+    kinds = ("meteor", "earthref-cgi", "script")
+    assert all(n.legacy is not None and n.legacy.kind in kinds for n in nodes)
     config = parse_ops_config("fiesta-ops: 1\n").with_sources(nodes)
     schedules = {s.name: s for s in config.schedules}
     assert set(schedules) == {f"{s}-source" for s in scripts}

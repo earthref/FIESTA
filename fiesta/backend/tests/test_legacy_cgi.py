@@ -10,11 +10,15 @@ from fiesta.domain.validate import validate_contribution
 from fiesta.nodeconfig import LegacySourceConfig
 from fiesta.services.legacy import load_inventory
 from fiesta.services.legacy_cgi import (
+    PageCache,
     Vocabularies,
     build_inventory,
     contribution_text,
+    fetch_pages,
     owner_mapping,
     parse_record,
+    recent_ids,
+    refresh_ids,
 )
 from fiesta.services.revisions import digest
 
@@ -233,3 +237,44 @@ async def test_inventory_metadata_only_exclusions_and_steward(erda_node, tmp_pat
     ]
     mapping = json.loads((tmp_path / "owner_mapping.json").read_text())
     assert mapping["matched"]["Team Account"]["via"] == "owner_names"
+
+
+class FakeSite:
+    """The legacy archive over HTTP: a home page linking RECENT, and record pages."""
+
+    def __init__(self, live: dict[int, str], recent: list[int]):
+        self.live, self.recent, self.requested = live, recent, []
+
+    async def get(self, url):
+        import httpx
+
+        tail = url.rstrip("/").rpartition("/")[2]
+        request = httpx.Request("GET", url)
+        if tail == "ERDA":
+            links = "".join(f'<a href="https://earthref.org/ERDA/{i}/">r</a>' for i in self.recent)
+            return httpx.Response(200, text=links, request=request)
+        cid = int(tail)
+        self.requested.append(cid)
+        text = _page(cid, {"Data Type": self.live[cid]}) if cid in self.live else "gone"
+        return httpx.Response(200, text=text, request=request)
+
+
+@pytest.mark.asyncio
+async def test_sync_refresh_probes_new_ids_and_keeps_first_seen(tmp_path):
+    """A data-source run re-reads the home page's newest records and probes every
+    id up to the newest of them not live above the highest live one; a page still
+    live keeps its first-seen time (its record's created_at, so its fingerprint)."""
+    base = "https://earthref.org/ERDA"
+    cache = PageCache(tmp_path / "pages")
+    old = "2026-09-28T00:00:00+00:00"
+    cache.entries = {str(i): {"live": i <= 3, "seen": old} for i in range(1, 9)}
+    site = FakeSite({1: "pdf", 2: "pdf", 3: "edited", 4: "pdf", 5: "pdf"}, recent=[2, 3, 5])
+    recent = await recent_ids(site, base)
+    assert recent == [2, 3, 5]
+    again = refresh_ids(cache, recent)
+    assert again == {2, 3, 4, 5}  # 4: a gap below the newest; 1 not recent; 6-8 past it
+    assert await fetch_pages(site, base, 8, cache, 2, again) == []
+    assert sorted(site.requested) == [2, 3, 4, 5]
+    assert cache.entries["3"]["seen"] == old and "edited" in cache.page(3)
+    assert cache.entries["4"]["live"] and cache.entries["4"]["seen"] != old
+    assert refresh_ids(cache, recent, everything=True, max_id=8) == set(range(1, 9))

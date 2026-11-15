@@ -66,8 +66,32 @@ class PageCache:
         return (self.root / f"{cid}.html").read_text(encoding="utf-8")
 
 
-async def fetch_pages(http, base_url: str, max_id: int, cache: PageCache, concurrency: int):
-    """Probe every id not yet in the cache; a transient failure is retried next run."""
+async def recent_ids(http, base_url: str) -> list[int]:
+    """The record ids the archive's home page links (ERDA lists its ten newest)."""
+    resp = await http.get(f"{base_url.rstrip('/')}/")
+    resp.raise_for_status()
+    name = re.escape(urlsplit(base_url).path.rstrip("/").rpartition("/")[2])
+    return sorted({int(n) for n in re.findall(rf"{name}/(\d+)/", resp.text)})
+
+
+def refresh_ids(cache: PageCache, recent: list[int], *, everything: bool = False, max_id=0):
+    """The cached ids a sync re-probes: every id when EVERYTHING (up to MAX_ID),
+    else the RECENT ids (the newest records, the likeliest to be edited) and every
+    id up to the newest of them not live when last probed above the highest live
+    one (records published since the last run)."""
+    if everything:
+        return set(range(1, max(max_id, *recent, 0) + 1))
+    live = [int(k) for k, e in cache.entries.items() if e["live"]]
+    newest = max(recent, default=0)
+    return set(recent) | set(range(max(live, default=0) + 1, newest + 1))
+
+
+async def fetch_pages(
+    http, base_url: str, max_id: int, cache: PageCache, concurrency: int, refresh=()
+):
+    """Probe every id not yet in the cache, and re-probe the REFRESH ids; a
+    transient failure is retried next run. A page still live keeps the time it
+    was first seen (its record's created_at)."""
     semaphore = asyncio.Semaphore(concurrency)
     failures: list[dict] = []
     done = 0
@@ -84,14 +108,17 @@ async def fetch_pages(http, base_url: str, max_id: int, cache: PageCache, concur
         live = _LIVE_MARKER in resp.text
         if live:
             (cache.root / f"{cid}.html").write_text(resp.text, encoding="utf-8")
-        cache.entries[str(cid)] = {"live": live, "seen": datetime.now(UTC).isoformat()}
+        prior = cache.entries.get(str(cid))
+        seen = prior["seen"] if live and prior and prior["live"] else datetime.now(UTC).isoformat()
+        cache.entries[str(cid)] = {"live": live, "seen": seen}
         done += 1
         if done % 200 == 0:
             cache.save()
             print(f"pages: {done} probed", file=sys.stderr, flush=True)
 
-    todo = [i for i in range(1, max_id + 1) if str(i) not in cache.entries]
-    await asyncio.gather(*(probe(i) for i in todo))
+    refresh = set(refresh)
+    todo = [i for i in range(1, max_id + 1) if str(i) not in cache.entries and i not in refresh]
+    await asyncio.gather(*(probe(i) for i in sorted(refresh) + todo))
     cache.save()
     return failures
 
@@ -610,8 +637,14 @@ async def build_inventory(
     download: bool = True,
     max_total_bytes: int = 20 * 1000**3,
     max_file_bytes: int | None = None,
+    refresh: str = "none",
 ) -> dict:
     """Crawl, map owners, download files and write the inventory.
+
+    `refresh` "none" (the bulk import) reads only ids the page cache has never
+    probed; "new" (a data-source sync) also re-reads the home page's newest
+    records and probes the ids up to them (`refresh_ids`); "all" re-reads every
+    page, for edits and withdrawals anywhere in the archive.
 
     Nothing is downloaded when `download` is off or the pending downloads are
     estimated (from the sizes the pages list) at over `max_total_bytes`; files
@@ -655,8 +688,17 @@ async def build_inventory(
     }
     try:
         pages = PageCache(out_dir / "pages")
+        again: set[int] = set()
+        if refresh != "none":
+            recent = await recent_ids(http, cfg.base_url)
+            again = refresh_ids(pages, recent, everything=refresh == "all", max_id=cfg.max_id)
+            report["recent_ids"] = recent
+            if max(recent, default=0) > cfg.max_id:
+                report["errors"].append(
+                    {"id": max(recent), "error": f"newer than legacy.max_id {cfg.max_id}"}
+                )
         report["errors"] += await fetch_pages(
-            http, cfg.base_url, cfg.max_id, pages, cfg.concurrency
+            http, cfg.base_url, cfg.max_id, pages, cfg.concurrency, again
         )
         report["probed"] = len(pages.entries)
         records = {}

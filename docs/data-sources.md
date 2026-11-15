@@ -66,6 +66,12 @@ bucket, read with the `fiesta legacy-inventory` reader into a state directory
 whose hash cache keeps unchanged S3 objects from being downloaded again, and
 contributions with no S3 object, exported from their indexed tables, from being
 fetched and exported again while their document's `_seq_no` is unchanged).
+The same driver syncs an EarthRef.org Perl CGI archive (`legacy.kind:
+earthref-cgi`): the script passes `main(..., kind="earthref-cgi",
+add_arguments=..., snapshot=...)`, whose snapshot is the
+`fiesta.services.legacy_cgi` crawler with `refresh="new"` (the home page's
+newest records re-read, the ids up to them probed; cached pages keep their
+first-seen time, so an unchanged record keeps its fingerprint).
 A node-specific fix-up of the source records belongs in the node's script: a
 Meteor script passes `main(slug, ..., fixup=...)` an async function that gets
 the snapshot's records (and the source's OpenSearch client) before they are
@@ -82,6 +88,7 @@ one chain, oldest first, the later versions numbered on from the earlier.
 | `configurations/sources/karar.py` | Meteor KArAr: index `karar`, buckets `karar-activated-contributions`, `karar-contributions` | schedule `karar-source`, off until `legacy.sync.enabled`; continues from the `legacy-karar` bulk import |
 | `configurations/sources/cdr.py` | Meteor CDR: index `cdr-3` (no archive bucket; every record exported from the index) | schedule `cdr-source`, off until `legacy.sync.enabled`; needs the owner map (`cdr` handle → steward); `legacy.exclude_ids` withholds #88 |
 | `configurations/sources/magic.py` | Meteor MagIC: index `magic`, buckets `magic-activated-contributions`, `magic-contributions`, `magic-private-contributions` | schedule `magic-source`, on, hourly at :40; continues from the `legacy-magic` bulk import |
+| `configurations/sources/erda.py` | Legacy ERDA (not Meteor; `legacy.kind: earthref-cgi`): the earthref.org/ERDA record pages and their `z-download.cgi` files, one contribution per record, keeping its ID | schedule `erda-source`, off until `legacy.sync.enabled`; continues from the `legacy-erda` bulk import when `--state-dir` is seeded with its snapshot; needs the owner map (steward); files over `--max-file-mb` (100) deferred, the record metadata only; `--refresh-all` re-reads every page (configurations/erda/README.md) |
 | `configurations/sources/geomagia.py` | GEOMAGIA50 (not Meteor; `legacy.kind: script`): its MySQL catalogue (SELECT statements in a READ ONLY transaction), or the public 2019 archeo/volcanic CSV export and studies page as the fallback; one contribution per reference | schedule `geomagia-source`, off; the database when the env file sets `GEOMAGIA_MYSQL_HOST` (and `_PORT`, `_USER`, `_PASSWORD`, `_DATABASE`), else `geomagia.csv` / `studies.html` from `--state-dir` (configurations/geomagia/README.md) |
 | `configurations/sources/rd.py` | GERM Reservoir Database (not Meteor; `legacy.kind: script`): the frozen earthref.org/GERMRD CGI pages, each reservoir's tab-delimited download and results page plus the ERR reference pages; one contribution per reservoir, keeping its ID | schedule `rd-source`, off; caches the pages it lacks in `--state-dir` first (about 1,500 requests the first time), `--refresh` re-reads them (configurations/rd/README.md) |
 

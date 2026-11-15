@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-11-13
+Last updated: 2026-11-15
 
 ## A — Decisions
 
@@ -83,7 +83,10 @@ Last updated: 2026-11-13
       `owner_overrides` / `owner_names` / `default_owner` in `configurations/magic.yaml`, or leave
       them out; a re-run of the sync picks them up incrementally. The list with ids is
       produced by `legacy-inventory` (report `errors`). Unblocks: nothing; parity only.
-- [ ] **ERDA legacy import: apply** (decisions made 2026-09-29: a steward account,
+- [x] **ERDA legacy import: apply.** Done 2026-09-29 (run by the user: 2,568
+      contributions, 0 errors; index repaired to 2,568/2,568 by `verify-index --fix`).
+      `configurations/sources/erda.py` continues from it (section 2026-11-15 below).
+      The original plan: (decisions made 2026-09-29: a steward account,
       kept with every owner email in the gitignored `migration/erda/owner_map.json`;
       deferred and lost-file records metadata only; test record 2741 excluded; details
       in `configurations/erda/README.md` "Legacy import"; output in the ERDA import worktree's
@@ -174,6 +177,33 @@ repo. See docs/deployment.md, "Crawlers".
 - [ ] **Decide on AI crawlers**: robots.txt welcomes every crawler (GPTBot, ClaudeBot,
       PerplexityBot, Google-Extended, CCBot …). Say if any should be refused; it is
       one line per agent in `fiesta.apps.routers.seo.robots`.
+
+## 2026-11-15 — ERDA source sync
+
+`configurations/sources/erda.py` mirrors the legacy ERDA archive (earthref.org/ERDA)
+into FIESTA ERDA, continuing from the September bulk import (configurations/erda/README.md
+"Ongoing sync"). Since that import the legacy site gained records 2784–2789 and an edit
+to 2783.
+
+- [ ] **Serve ERDA on dev.** `https://dev.earthref.org/v2/erda/...` answers "unknown
+      repository 'erda'": add `erda` to `FIESTA_NODE` on fiesta-ct (as for GEOMAGIA and
+      RD), restart the API, and check `https://dev.earthref.org/v2/erda/search/contribution`
+      answers 200. The schema, bucket prefix and index `fiesta-erda` already exist (2026-09-29);
+      a `fiesta rebuild` for `erda` is still owed by the age-interval item above.
+- [ ] **ERDA owner email moves.** 64 records (2518–2783, MagNetZ seminars) belong to a
+      contributor whose er_users email changed from an fsu.edu to a tufts.edu address
+      since the import; the first sync moves them to the account with the new email, as
+      MagIC's 30 moves were on 2026-11-09. Approve, or pin the old account with
+      `owner_names` in the owner map.
+- [ ] **ERDA sync on the ops worker.** `/etc/fiesta/source-erda.env` (FIESTA_SOURCE_API,
+      FIESTA_SOURCE_EMAIL/PASSWORD of `source-sync@earthref.org`, plus the
+      FIESTA_OPENSEARCH_* read credentials for `er_users`), `/etc/fiesta/source-erda-owners.json`
+      (the gitignored `migration/erda/owner_map.json`: steward `default_owner`), and the
+      state directory `/var/lib/fiesta-ops/sources/erda` seeded with the bulk import's
+      snapshot (`pages/`, `files/` and their `index.json`, 6.7 GB; without it the first
+      run re-crawls ~4,900 pages and re-downloads ~7 GB, and every record's `created_at`
+      becomes that day). Then enable `legacy.sync` (daily at 09:50 UTC) on the admin
+      page's Data source tab.
 
 ## 2026-11-15 — RD node (GERM Reservoir Database)
 
