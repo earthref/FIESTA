@@ -19,6 +19,7 @@ def test_registry_names():
         "sample-tiles",
         "magic-3-upgrade",
         "geomag-series",
+        "field-models",
     }
     for plugin in all_plugins().values():
         assert plugin.description

@@ -110,7 +110,7 @@ hierarchy:
 pages: []
 
 features:
-  plugins: [geomag-series]
+  plugins: [geomag-series, field-models]
 
 plugins:
   # The Sites level's Plots sub-tab (the GEOMAGIA site's search plots) and its
@@ -180,6 +180,31 @@ plugins:
       cooling_rate_check: cooling_rate_corrections
     check_none: [No measurement, Not specified]
     direction_counts: [num_dir_specimens, num_dir_samples]
+  # Field Models: a sub-tab of Sites with GEOMAGIA's field-model pages (model
+  # curves at chosen or searched locations, uncertainty bands, ensembles,
+  # global maps); the models are fetched into storage by
+  # configurations/plugins/field-models/fetch_models.py.
+  field-models:
+    base_level: Sites
+    table: sites
+    columns:
+      latitude: lat
+      longitude: lon
+      age: age
+      age_minus: age_min
+      age_plus: age_max
+      intensity: ba
+      intensity_error: sigma_ba
+      vadm: vadm
+      vadm_error: sigma_vadm
+      declination: decl
+      inclination: incl
+      region: region_country
+      locality: site_name
+      record: uid
+      age_error_type: age_error_type
+      sigmas: num_sigmas
+    default_models: [CALS10k.2]
 
 # The API serves it (so its data source can sync it); production's SPA and
 # portal bar do not list it until the GEOMAGIA team signs off. Local stacks
