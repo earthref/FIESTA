@@ -1,6 +1,7 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
 import { lazy, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { IS_LOCAL_HOST, nodeUrl, siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { type RowMatch, useOpenContribution } from "../lib/contribution-modal";
@@ -27,6 +28,7 @@ import {
 } from "./map/map-points";
 import { citationOf, DefinitionTable, firstString, formatDateLL, InlineHtml } from "./result-item";
 import { type GridRow, RowsGrid } from "./rows-table";
+import { isSourceMode } from "./source-mode-notice";
 import type { GridSort } from "./summary-grid";
 import { Icon } from "./ui/icon";
 import { PageSpinner, Spinner } from "./ui/spinner";
@@ -798,6 +800,9 @@ function ContributionPanel({
           isActivated={isActivated}
           privateKey={privateKey}
         />
+        {isActivated && summary._is_latest !== false && !isSourceMode(config) && (
+          <PrepareVersion id={id} nodeKey={config.key} />
+        )}
       </Section>
 
       {Object.keys(fields).length > 0 && (
@@ -841,6 +846,34 @@ function versionRows(
       .map((entry) => toRow(entry, currentId));
   }
   return [toRow(summary, currentId)];
+}
+
+/** Anyone signed in may prepare the next version of the latest published
+ * one, in their private workspace. Its earlier versions' contributors and the
+ * node's admins publish it; anyone else asks an admin to approve it. */
+function PrepareVersion({ id, nodeKey }: { id: string; nodeKey: string }) {
+  const { user } = useAuth();
+  const prepare = useMutation({
+    mutationFn: () =>
+      api<{ id: number }>(`/private/contributions/${id}/versions`, { method: "POST" }),
+    onSuccess: () => window.location.assign(siteUrl("/private")),
+  });
+  if (!user) return null;
+  return (
+    <div className="mt-2 text-[13px] text-gray-600">
+      <button
+        type="button"
+        onClick={() => prepare.mutate()}
+        disabled={prepare.isPending}
+        className="cursor-pointer text-node-ink hover:underline disabled:opacity-60"
+      >
+        {prepare.isPending ? "Preparing…" : "Prepare a new version"}
+      </button>{" "}
+      in your private workspace to correct or extend this contribution. Unless you contributed an
+      earlier version, a {nodeKey} admin approves it before it is published.
+      {prepare.error && <ErrorMessage error={prepare.error} />}
+    </div>
+  );
 }
 
 function VersionsTable({

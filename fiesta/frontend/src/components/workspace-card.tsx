@@ -3,6 +3,13 @@ import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { isNodeAdmin } from "../lib/admin";
 import { api, download } from "../lib/api";
+import {
+  type AssistanceRequest,
+  age,
+  REQUEST_REASONS,
+  type RequestReason,
+  requestsKey,
+} from "../lib/assistance";
 import { useAuth } from "../lib/auth";
 import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
@@ -336,16 +343,84 @@ function Contents({
 
 // --- The card ---------------------------------------------------------------------
 
+/** A contribution's assistance request across the top of its card: open
+ * (the requester may withdraw it, a node admin resolves it) or resolved,
+ * with the admin's note. */
+function RequestBanner({
+  request,
+  adminView,
+  canWithdraw,
+  busy,
+  onWithdraw,
+  onResolve,
+}: {
+  request: AssistanceRequest;
+  adminView: boolean;
+  canWithdraw: boolean;
+  busy: boolean;
+  onWithdraw: () => void;
+  onResolve: () => void;
+}) {
+  const reason = REQUEST_REASONS[request.reason] ?? request.reason;
+  const requester =
+    (request.requester_name ?? `user ${request.requester_id}`) +
+    (request.requester_handle ? ` (@${request.requester_handle})` : "");
+  if (request.state === "resolved") {
+    return (
+      <div className="flex gap-2 rounded-tr-md border-b border-green-200 bg-green-50 px-4 py-2 text-[13px] text-green-900">
+        <Icon name="check" size="small" />
+        <div className="min-w-0">
+          <span className="font-medium">
+            Request resolved by {request.closed_by_name ?? "an admin"}
+            {request.closed_at && ` ${age(request.closed_at)}`}
+          </span>{" "}
+          <span className="text-green-800">({reason})</span>
+          {request.note && <p className="mt-0.5 whitespace-pre-line">{request.note}</p>}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-start gap-x-3 gap-y-2 rounded-tr-md border-b border-amber-200 bg-amber-50 px-4 py-2 text-[13px] text-amber-900">
+      <Icon name="question-circle" size="small" />
+      <div className="min-w-0 flex-1">
+        <span className="font-medium">
+          {adminView ? `${requester} asks: ${reason}` : `You asked the admins: ${reason}`}
+        </span>{" "}
+        <span className="text-amber-800">· {age(request.created_at)}</span>
+        {request.message && (
+          <p className="mt-0.5 whitespace-pre-line text-amber-950">{request.message}</p>
+        )}
+      </div>
+      <div className="flex gap-1.5">
+        {adminView && (
+          <Button variant="secondary" onClick={onResolve} disabled={busy}>
+            <Icon name="check" size="small" /> Resolve…
+          </Button>
+        )}
+        {canWithdraw && (
+          <Button variant="secondary" onClick={onWithdraw} disabled={busy}>
+            Withdraw
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ContributionCard({
   contribution,
   successor,
   onJump,
+  request,
 }: {
   contribution: ContributionOut;
   /** The contribution's next version, when one has been started. */
   successor?: ContributionOut;
   /** Show another of the caller's contributions (switching list if needed). */
   onJump: (target: ContributionOut | number) => void;
+  /** Its latest assistance request, if it has one. */
+  request?: AssistanceRequest;
 }) {
   const { data: config } = useNodeConfig();
   const queryClient = useQueryClient();
@@ -353,19 +428,34 @@ export function ContributionCard({
   const [editorOpen, setEditorOpen] = useState(false);
   const [doi, setDoi] = useState(contribution.reference_doi ?? "");
   const [modal, setModal] = useState<
-    null | "share" | "delete" | "publish" | "results" | "reassign"
+    null | "share" | "delete" | "publish" | "results" | "reassign" | "ask" | "resolve"
   >(null);
   const [reassignTo, setReassignTo] = useState("");
   const { user } = useAuth();
+  const nodeAdmin = isNodeAdmin(user, config?.slug);
   // The contributor or a node admin may hand a private contribution to someone else.
-  const canReassign =
-    !published && (contribution.contributor_id === user?.id || isNodeAdmin(user, config?.slug));
+  const canReassign = !published && (contribution.contributor_id === user?.id || nodeAdmin);
+  // Someone else's contribution, opened by a node admin (the Requests tab).
+  const othersContribution = contribution.contributor_id !== user?.id;
+  const owner =
+    (contribution.contributor_name || `user ${contribution.contributor_id}`) +
+    (contribution.contributor_handle ? ` (@${contribution.contributor_handle})` : "");
+  const openRequest = request?.state === "open" ? request : undefined;
+  // A contributor asks the node's admins about their own contribution (the
+  // admins answer requests rather than make them).
+  const canAsk = !openRequest && !nodeAdmin && !othersContribution;
+  const [askReason, setAskReason] = useState<RequestReason>("other");
+  const [askMessage, setAskMessage] = useState("");
+  const [note, setNote] = useState("");
   const [validating, setValidating] = useState(false);
   const [copied, setCopied] = useState<null | "private" | "public">(null);
   const [actionError, setActionError] = useState<unknown>(null);
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["private", "contributions"] });
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["private", "contributions"] }),
+      queryClient.invalidateQueries({ queryKey: requestsKey }),
+    ]);
   const closeModal = () => setModal(null);
 
   const workspaceFields = config?.workspace?.fields ?? [];
@@ -445,6 +535,43 @@ export function ContributionCard({
       await invalidate();
     },
   });
+  // Assistance requests: errors stay in their modal, where they can be retried.
+  const askMutation = useMutation({
+    mutationFn: () =>
+      api<AssistanceRequest>(`/private/contributions/${contribution.id}/requests`, {
+        method: "POST",
+        json: { reason: askReason, message: askMessage.trim() },
+      }),
+    onSuccess: async () => {
+      closeModal();
+      setAskMessage("");
+      await invalidate();
+    },
+  });
+  const resolveMutation = useMutation({
+    mutationFn: () =>
+      api<AssistanceRequest>(`/private/requests/${openRequest?.id}/resolve`, {
+        method: "POST",
+        json: { note: note.trim() },
+      }),
+    onSuccess: async () => {
+      closeModal();
+      setNote("");
+      await invalidate();
+    },
+  });
+  const withdrawMutation = useMutation({
+    mutationFn: () =>
+      api<AssistanceRequest>(`/private/requests/${openRequest?.id}/withdraw`, { method: "POST" }),
+    onSuccess: invalidate,
+    onError: setActionError,
+  });
+  const ask = (reason: RequestReason) => {
+    setAskReason(reason);
+    askMutation.reset();
+    setModal("ask");
+  };
+
   const downloadMutation = useMutation({
     mutationFn: () =>
       download(
@@ -510,7 +637,8 @@ export function ContributionCard({
     activateMutation.isPending ||
     deleteMutation.isPending ||
     versionMutation.isPending ||
-    reassignMutation.isPending;
+    reassignMutation.isPending ||
+    withdrawMutation.isPending;
 
   // The current file, through the workspace's own access check.
   const downloadButton = contribution.head_revision ? (
@@ -662,6 +790,39 @@ export function ContributionCard({
       });
     }
   }
+  // A later version prepared by someone outside its chain: it validates as
+  // any other, but a node admin publishes it (and it stays the drafter's).
+  if (!published && contribution.previous_id && contribution.can_publish === false) {
+    const asked = openRequest?.reason === "approve";
+    steps.push({
+      key: "approval",
+      state: "todo",
+      label: asked ? "Waiting for an admin to approve" : "An admin has to approve this version",
+      detail: asked ? (
+        `The ${config?.key ?? ""} admins were asked ${age(openRequest.created_at)}.`
+      ) : (
+        <>
+          Only a contributor of an earlier version or a {config?.key} admin can publish it.{" "}
+          {othersContribution ? (
+            "Its contributor can ask an admin to approve it."
+          ) : openRequest ? (
+            "An admin publishes it for you once it validates; your request to the admins is still open."
+          ) : (
+            <>
+              An admin publishes it for you once it validates; it stays your contribution.{" "}
+              <button
+                type="button"
+                onClick={() => ask("approve")}
+                className="text-node-ink underline hover:opacity-80"
+              >
+                Ask an admin to approve
+              </button>
+            </>
+          )}
+        </>
+      ),
+    });
+  }
   const remaining = steps.filter(blocks);
   const canPublish = !published && remaining.length === 0 && !busy;
   const validationStep = steps.find((step) => step.key === "validation");
@@ -707,6 +868,7 @@ export function ContributionCard({
     contribution.name && contribution.filename,
     `Contribution ${contribution.id}`,
     `Version ${contribution.version}`,
+    `By ${owner}`,
     published && contribution.activated_at
       ? `Published ${formatDate(contribution.activated_at)}`
       : `Updated ${formatDate(contribution.updated_at)}`,
@@ -784,6 +946,11 @@ export function ContributionCard({
           <Button variant="secondary" onClick={() => setEditorOpen(true)}>
             <Icon name="folder-open" size="small" /> History · Files
           </Button>
+          {canAsk && (
+            <Button variant="secondary" onClick={() => ask("other")} disabled={busy}>
+              <Icon name="question-circle" size="small" /> Ask an admin
+            </Button>
+          )}
         </>
       ) : (
         <>
@@ -811,6 +978,15 @@ export function ContributionCard({
               <Icon name="user" size="small" /> Reassign
             </Button>
           )}
+          {canAsk && (
+            <Button
+              variant="secondary"
+              onClick={() => ask(contribution.can_publish === false ? "approve" : "validation")}
+              disabled={busy}
+            >
+              <Icon name="question-circle" size="small" /> Ask an admin
+            </Button>
+          )}
           <Button variant="danger" onClick={() => setModal("delete")} disabled={busy}>
             <Icon name="trash" size="small" /> Delete
           </Button>
@@ -831,6 +1007,24 @@ export function ContributionCard({
           : readinessEdge[readiness],
       )}
     >
+      {request && request.state !== "withdrawn" && (
+        <RequestBanner
+          request={request}
+          adminView={nodeAdmin && request.requester_id !== user?.id}
+          canWithdraw={
+            request.requester_id === user?.id || contribution.contributor_id === user?.id
+          }
+          busy={busy}
+          onWithdraw={() => {
+            setActionError(null);
+            withdrawMutation.mutate();
+          }}
+          onResolve={() => {
+            resolveMutation.reset();
+            setModal("resolve");
+          }}
+        />
+      )}
       {published ? (
         <>
           {/* Header: identity, status, everyday actions */}
@@ -1121,9 +1315,104 @@ export function ContributionCard({
           onConfirm={() => activateMutation.mutate()}
           onClose={closeModal}
         >
-          <p className="font-medium text-gray-800">Warning! Your data will be publicly visible.</p>
+          <p className="font-medium text-gray-800">
+            Warning! {othersContribution ? "These" : "Your"} data will be publicly visible.
+          </p>
           <p>Published data can't be changed. To correct it later, create a new version.</p>
+          {othersContribution && (
+            <p>
+              It is published as {owner}'s contribution
+              {openRequest ? "; resolve the request afterwards to let them know." : "."}
+            </p>
+          )}
         </ConfirmModal>
+      )}
+
+      {modal === "ask" && (
+        <Modal
+          open
+          onClose={closeModal}
+          title={`Ask the ${config?.key ?? ""} admins about contribution ${contribution.id}`}
+          footer={
+            <>
+              <Button variant="secondary" onClick={closeModal}>
+                Cancel
+              </Button>
+              <Button onClick={() => askMutation.mutate()} disabled={askMutation.isPending}>
+                {askMutation.isPending ? "Sending…" : "Send request"}
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-3 text-sm text-gray-700">
+            <p>
+              The node's admins can open this contribution to help: edit and validate it, publish it
+              for you or reassign it. They are emailed, and you can withdraw the request until they
+              resolve it.
+            </p>
+            <label className="block">
+              <span className="mb-1 block font-medium">Reason</span>
+              <select
+                value={askReason}
+                onChange={(event) => setAskReason(event.target.value as RequestReason)}
+                className="w-full rounded-md border border-gray-300 bg-surface px-2 py-1.5"
+              >
+                {Object.entries(REQUEST_REASONS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block font-medium">Message</span>
+              <textarea
+                value={askMessage}
+                onChange={(event) => setAskMessage(event.target.value)}
+                rows={4}
+                maxLength={5000}
+                placeholder="What do you need help with?"
+                className="w-full rounded-md border border-gray-300 bg-surface px-3 py-2"
+              />
+            </label>
+            {askMutation.error && <ErrorMessage error={askMutation.error} />}
+          </div>
+        </Modal>
+      )}
+
+      {modal === "resolve" && openRequest && (
+        <Modal
+          open
+          onClose={closeModal}
+          title={`Resolve the request on contribution ${contribution.id}`}
+          footer={
+            <>
+              <Button variant="secondary" onClick={closeModal}>
+                Cancel
+              </Button>
+              <Button onClick={() => resolveMutation.mutate()} disabled={resolveMutation.isPending}>
+                {resolveMutation.isPending ? "Resolving…" : "Resolve"}
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-3 text-sm text-gray-700">
+            <p>
+              {openRequest.requester_name ?? "The requester"} is emailed your note and sees it on
+              the card.
+            </p>
+            <textarea
+              aria-label="Note to the requester"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              rows={4}
+              maxLength={5000}
+              placeholder="What was done, or why not"
+              className="w-full rounded-md border border-gray-300 bg-surface px-3 py-2"
+            />
+            {resolveMutation.error && <ErrorMessage error={resolveMutation.error} />}
+          </div>
+        </Modal>
       )}
 
       {modal === "results" && <ValidationModal contribution={contribution} onClose={closeModal} />}

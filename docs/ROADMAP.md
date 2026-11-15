@@ -170,6 +170,22 @@ Order of work: A1 → A2 → A3 → A4 (backend, one PR or two) → A5 (frontend
       contributions (#374, #301, #331, #610); a report of duplicate contributions and
       DOIs with more than one contribution (#552, #527); users request new method
       codes and vocabulary entries for the node admins (#27).
+      - [x] **Who publishes a new version** (2026-11-15, user decision, replacing
+            "only the contributor or an admin creates a new version", #329): anyone
+            signed in prepares the next version of the latest published contribution
+            (the contribution modal's *Prepare a new version*); a node admin or a
+            contributor of any earlier version in its `previous_id` chain publishes
+            it (`fiesta.services.access.may_publish`, enforced in `/activate`, shown
+            as `can_publish` and a checklist step on the workspace card); an admin
+            approving it publishes it as the drafter's. Every workspace card names
+            its owner. Reassign stays on. Deviations recorded in legacy-ux-spec.md §3.
+      - [x] **Assistance requests** (2026-11-15): a user asks the node's admins for
+            help with a contribution (approve a new version, reassign, trouble
+            validating, other) and can withdraw it; node admins work through the open
+            ones on the workspace's Requests tab (open, edit, validate, publish for
+            the user, reassign, resolve with a note). `assistance_requests` (node
+            schema, migration 0009), audit events, emails on open and resolve;
+            `/v2/{node}/private/requests…` in docs/api.md.
 
 ## Phase C — Port the remaining legacy features
 
@@ -262,6 +278,10 @@ the latter become G5 work after cutover.*
             legacy-ux-spec.md "Grid editor".
       - [x] Workspace card: a New Contribution button, a download button, and
             reassigning a private contribution to another user (G5).
+      - [x] `POST /upgrade` is a contributor action (2026-11-15): it needs a login,
+            is capped at the upload limit (`FIESTA_MAX_UPLOAD_BYTES`) and converts in
+            a worker thread; the Upgrade page and the upload page's Step 2 ask a
+            signed-out user to log in.
 - [ ] **C8 Finish the validator.** `domain/validate.py` accepts but does not enforce
       `requiredIf`/`requiredUnless` variants, `in`, `matrix` and `type`. Enforce
       them, `requiredIfGroup` per row, not per table (MagIC #564, which is why the

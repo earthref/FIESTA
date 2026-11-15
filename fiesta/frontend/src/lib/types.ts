@@ -353,7 +353,12 @@ export interface ContributionOut {
   previous_id: number | null;
   contributor_id: number;
   contributor_name: string;
+  contributor_handle?: string | null;
   private_key?: string;
+  /** Whether the caller may publish it once it validates: a later version is
+   * published by a contributor of an earlier one or a node admin; anyone else
+   * asks an admin to approve it. */
+  can_publish?: boolean | null;
   is_activated: boolean;
   is_latest: boolean;
   data_model_version: string;

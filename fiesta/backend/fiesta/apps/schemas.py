@@ -68,7 +68,11 @@ class ContributionOut(BaseModel):
     previous_id: int | None
     contributor_id: int
     contributor_name: str | None = None
+    contributor_handle: str | None = None
     private_key: str | None = None
+    # Private workspace only: whether the caller may publish it once it
+    # validates (see fiesta.services.access.may_publish); None elsewhere.
+    can_publish: bool | None = None
     is_activated: bool
     is_latest: bool
     data_model_version: str
@@ -86,7 +90,13 @@ class ContributionOut(BaseModel):
 
     @classmethod
     def from_db(
-        cls, c: Contribution, *, include_private_key: bool, contributor_name: str | None = None
+        cls,
+        c: Contribution,
+        *,
+        include_private_key: bool,
+        contributor_name: str | None = None,
+        contributor_handle: str | None = None,
+        can_publish: bool | None = None,
     ) -> "ContributionOut":
         return cls(
             id=c.id,
@@ -94,6 +104,8 @@ class ContributionOut(BaseModel):
             previous_id=c.previous_id,
             contributor_id=c.contributor_id,
             contributor_name=contributor_name,
+            contributor_handle=contributor_handle,
+            can_publish=can_publish,
             private_key=str(c.private_key) if include_private_key else None,
             is_activated=c.is_activated,
             is_latest=c.is_latest,

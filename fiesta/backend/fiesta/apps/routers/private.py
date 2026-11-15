@@ -14,7 +14,7 @@ from fiesta.domain.parse import ParseError, parse_text, set_table_values
 from fiesta.jobs import tasks
 from fiesta.services import contributions as svc
 from fiesta.services import references
-from fiesta.services.access import can_access
+from fiesta.services.access import can_access, may_publish
 from fiesta.services.revisions import (
     enqueue,
     locked,
@@ -47,13 +47,23 @@ async def _own_contribution(
     return contribution
 
 
-def _out(contribution: Contribution, user) -> ContributionOut:
+async def workspace_out(session, contribution: Contribution, user) -> ContributionOut:
+    """CONTRIBUTION as USER sees it in the workspace: its owner's name and
+    handle on every card, the private key for the owner and node admins, and
+    whether USER may publish it."""
+    owner = (
+        user
+        if contribution.contributor_id == user.id
+        else await session.get(User, contribution.contributor_id)
+    )
     return ContributionOut.from_db(
         contribution,
         include_private_key=(
             contribution.contributor_id == user.id or user.is_node_admin(contribution.node)
         ),
-        contributor_name=user.name if contribution.contributor_id == user.id else None,
+        contributor_name=owner.name if owner else None,
+        contributor_handle=owner.handle if owner else None,
+        can_publish=await may_publish(session, contribution, user),
     )
 
 
@@ -69,14 +79,7 @@ async def list_contributions(
     output = []
     for c in result.scalars():
         if await can_access(session, c, user):
-            owner = await session.get(User, c.contributor_id)
-            output.append(
-                ContributionOut.from_db(
-                    c,
-                    include_private_key=(c.contributor_id == user.id or user.is_node_admin(c.node)),
-                    contributor_name=owner.name,
-                )
-            )
+            output.append(await workspace_out(session, c, user))
     return output
 
 
@@ -89,7 +92,7 @@ async def create_contribution(
     )
     session.add(contribution)
     await session.commit()
-    return _out(contribution, user)
+    return await workspace_out(session, contribution, user)
 
 
 @router.get("/{contribution_id}", response_model=ContributionOut)
@@ -97,7 +100,7 @@ async def get_contribution(
     session: SessionDep, node: NodeDep, user: CurrentUser, contribution_id: int
 ) -> ContributionOut:
     contribution = await _own_contribution(session, node, user, contribution_id, write=False)
-    return _out(contribution, user)
+    return await workspace_out(session, contribution, user)
 
 
 @router.put("/{contribution_id}/file", response_model=ContributionOut)
@@ -134,7 +137,7 @@ async def upload_file(
         operation="upload",
     )
     await session.commit()
-    return _out(contribution, user)
+    return await workspace_out(session, contribution, user)
 
 
 @router.post("/{contribution_id}/import", response_model=ContributionOut)
@@ -173,7 +176,7 @@ async def import_tables(
         request_key=request_key,
     )
     await session.commit()
-    return _out(contribution, user)
+    return await workspace_out(session, contribution, user)
 
 
 @router.post("/{contribution_id}/validate", response_model=JobOut)
@@ -231,7 +234,7 @@ async def set_reference(
     # Saving a DOI the registries did not know yet checks it once more.
     await references.retry(session, payload.doi)
     await session.commit()
-    return _out(contribution, user)
+    return await workspace_out(session, contribution, user)
 
 
 @router.put("/{contribution_id}/name", response_model=ContributionOut)
@@ -248,7 +251,7 @@ async def set_name(
     contribution = await _own_contribution(session, node, user, contribution_id)
     contribution.name = payload.name.strip() or None
     await session.commit()
-    return _out(contribution, user)
+    return await workspace_out(session, contribution, user)
 
 
 @router.get("/{contribution_id}/reference")
@@ -345,7 +348,7 @@ async def set_fields(
         operation="fields",
     )
     await session.commit()
-    return _out(contribution, user)
+    return await workspace_out(session, contribution, user)
 
 
 @router.post("/{contribution_id}/activate", response_model=ContributionOut)
@@ -355,6 +358,22 @@ async def activate(
     contribution = await _own_contribution(session, node, user, contribution_id)
     if contribution.is_activated:
         raise HTTPException(409, "contribution is already published")
+    # Anyone signed in may prepare a new version; its chain's contributors and
+    # the node's admins publish it. Everyone else asks an admin to approve it.
+    if not await may_publish(session, contribution, user):
+        raise HTTPException(
+            403,
+            "an admin has to approve this version: only a contributor of an earlier "
+            "version or a node admin can publish it; ask an admin to approve it",
+        )
+    if contribution.previous_id:
+        previous = await session.get(Contribution, contribution.previous_id)
+        if previous is not None and not previous.is_latest:
+            raise HTTPException(
+                409,
+                f"another version of contribution {previous.id} was published first; "
+                "start a new version from the latest one",
+            )
     if contribution.status != ContributionStatus.READY:
         raise HTTPException(
             409, f"contribution is not ready to publish (status: {contribution.status.value})"
@@ -371,15 +390,19 @@ async def activate(
                 "the reference DOI must resolve at Crossref or DataCite before publishing",
             )
     await svc.activate(session, node, contribution, actor_id=user.id)
+    # It stays the contributor's (an admin approving someone's version
+    # publishes it for them), so the news goes to the contributor.
+    owner = await session.get(User, contribution.contributor_id) or user
+    approved = f" (approved by {user.name})" if owner.id != user.id else ""
     await tasks.send_email.defer_async(
-        to=user.email,
+        to=owner.email,
         subject=f"[{node.node.key}] Contribution {contribution.id} published",
         body=(
-            f"Your contribution {contribution.id} is now published at "
+            f"Your contribution {contribution.id} is now published{approved} at "
             f"{node.node.links.website or ''}/contributions/{contribution.id}"
         ),
     )
-    return _out(contribution, user)
+    return await workspace_out(session, contribution, user)
 
 
 @router.post("/{contribution_id}/deactivate", response_model=ContributionOut)
@@ -394,7 +417,7 @@ async def deactivate(
     if not contribution.is_activated:
         raise HTTPException(409, "contribution is not published")
     await svc.deactivate(session, node, contribution, actor_id=user.id)
-    return _out(contribution, user)
+    return await workspace_out(session, contribution, user)
 
 
 @router.delete("/{contribution_id}", status_code=204)
@@ -452,11 +475,7 @@ async def reassign(
     if target.id == contribution.contributor_id:
         raise HTTPException(409, f"{target.name} is already the contributor")
     await svc.reassign(session, node, contribution, target, actor_id=user.id)
-    return ContributionOut.from_db(
-        contribution,
-        include_private_key=target.id == user.id or user.is_node_admin(node.node.slug),
-        contributor_name=target.name,
-    )
+    return await workspace_out(session, contribution, user)
 
 
 class EditIn(BaseModel):
@@ -524,7 +543,7 @@ async def edit(
         operation="edit",
     )
     await session.commit()
-    return _out(c, user)
+    return await workspace_out(session, c, user)
 
 
 @router.post("/{contribution_id}/revisions/{revision_id}/restore", response_model=ContributionOut)
@@ -548,7 +567,7 @@ async def restore(
         operation="restore",
     )
     await session.commit()
-    return _out(c, user)
+    return await workspace_out(session, c, user)
 
 
 @router.get("/{contribution_id}/attachments")
@@ -601,7 +620,7 @@ async def attachment_upload(
         operation="attachment",
     )
     await session.commit()
-    return _out(c, user)
+    return await workspace_out(session, c, user)
 
 
 @router.delete("/{contribution_id}/attachments/{name}", response_model=ContributionOut)
@@ -625,15 +644,26 @@ async def attachment_remove(
         operation="remove-attachment",
     )
     await session.commit()
-    return _out(c, user)
+    return await workspace_out(session, c, user)
 
 
 @router.post("/{contribution_id}/versions", response_model=ContributionOut, status_code=201)
 async def new_version(session: SessionDep, node: NodeDep, user: CurrentUser, contribution_id: int):
-    original = await _own_contribution(session, node, user, contribution_id)
+    """A private draft of the next version, owned by the caller. Anyone signed
+    in may prepare one of a published contribution; who may publish it is
+    `may_publish`'s rule. Those who may save the original may also start one
+    from a withdrawn version, and their draft joins its shared workspace."""
+    original = await session.get(Contribution, contribution_id)
+    if original is None or original.deleted_at is not None or original.node != node.node.slug:
+        raise HTTPException(404, f"contribution {contribution_id} not found")
+    collaborator = await can_access(session, original, user, write=True)
+    if not collaborator and not original.is_activated:
+        raise HTTPException(404, f"contribution {contribution_id} not found")
     original = await locked(session, original.id)
     if not original.published_revision:
         raise HTTPException(409, "only a published contribution starts a new version")
+    if not original.is_latest:
+        raise HTTPException(409, "a later version exists; start the new version from the latest")
     c = Contribution(
         node=node.node.slug,
         contributor_id=user.id,
@@ -641,8 +671,8 @@ async def new_version(session: SessionDep, node: NodeDep, user: CurrentUser, con
         previous_id=original.id,
         data_model_version=original.data_model_version,
         reference_doi=original.reference_doi,
-        workspace_id=original.workspace_id,
-        name=original.name,
+        workspace_id=original.workspace_id if collaborator else None,
+        name=original.name if collaborator else None,
     )
     session.add(c)
     await session.flush()
@@ -661,7 +691,7 @@ async def new_version(session: SessionDep, node: NodeDep, user: CurrentUser, con
         operation="new-version",
     )
     await session.commit()
-    return _out(c, user)
+    return await workspace_out(session, c, user)
 
 
 @router.get("/{contribution_id}/revisions/{revision_id}/validation")

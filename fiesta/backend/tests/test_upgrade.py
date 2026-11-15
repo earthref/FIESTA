@@ -507,15 +507,28 @@ OLD_TEXT = (
 )
 
 
-@pytest.fixture
-async def client(monkeypatch):
+async def _app(monkeypatch, *, signed_in=True, limit=None):
     monkeypatch.setenv("FIESTA_CONFIG_FILE", str(CONFIG_DIR / "fiesta.yaml"))
     monkeypatch.delenv("FIESTA_NODE", raising=False)
+    if limit is not None:
+        monkeypatch.setenv("FIESTA_MAX_UPLOAD_BYTES", str(limit))
     get_settings.cache_clear()
     get_deployment.cache_clear()
     from fiesta.apps.api import create_app
+    from fiesta.apps.deps import get_current_user
+    from fiesta.db.models import User
 
-    transport = httpx.ASGITransport(app=create_app())
+    app = create_app()
+    if signed_in:
+        app.dependency_overrides[get_current_user] = lambda: User(
+            id=1, email="ada@example.test", name="Ada", is_admin=False
+        )
+    return app
+
+
+@pytest.fixture
+async def client(monkeypatch):
+    transport = httpx.ASGITransport(app=await _app(monkeypatch))
     async with httpx.AsyncClient(transport=transport, base_url="http://api") as client:
         yield client
     get_settings.cache_clear()
@@ -546,3 +559,33 @@ async def test_upgrade_endpoint(client):
     assert latest.json()["upgraded"] is False and latest.json()["from_version"] == "3.0"
     bad = await client.post("/v2/magic/upgrade", json={"text": "nonsense"})
     assert bad.status_code == 422
+
+
+async def test_upgrade_needs_a_login_and_stays_under_the_upload_limit(monkeypatch):
+    # No session: refused before the body is read (the SPA asks to log in).
+    app = await _app(monkeypatch, signed_in=False)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://api"
+    ) as c:
+        assert (await c.post("/v2/magic/upgrade", json={"text": OLD_TEXT})).status_code == 401
+    app = await _app(monkeypatch, limit=len(OLD_TEXT) + 200)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://api"
+    ) as c:
+        assert (await c.post("/v2/magic/upgrade", json={"text": OLD_TEXT})).status_code == 200
+        big = await c.post("/v2/magic/upgrade", json={"text": OLD_TEXT * 3})
+        assert big.status_code == 413 and "upload limit" in big.json()["detail"]
+        # A chunked body (no Content-Length) is cut off as it streams in.
+        chunks = [b'{"text": "', OLD_TEXT.encode().replace(b"\n", b"\\n") * 3, b'"}']
+
+        async def stream():
+            for chunk in chunks:
+                yield chunk
+
+        streamed = await c.post(
+            "/v2/magic/upgrade", content=stream(), headers={"content-type": "application/json"}
+        )
+        assert streamed.status_code == 413
+        assert (await c.post("/v2/magic/upgrade", json={"nope": 1})).status_code == 422
+    get_settings.cache_clear()
+    get_deployment.cache_clear()
