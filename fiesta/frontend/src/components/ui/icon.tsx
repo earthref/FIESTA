@@ -109,8 +109,8 @@ export function Icon({
       <span
         style={{
           position: "absolute",
-          right: "-15%",
-          bottom: "-15%",
+          right: "-5%",
+          bottom: "-5%",
           width: "45%",
           height: "45%",
           display: "flex",
