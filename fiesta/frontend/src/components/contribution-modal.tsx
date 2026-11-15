@@ -361,8 +361,8 @@ function ModalBody({
     return { count: query?.data as number | undefined, isLoading: query?.isPending ?? false };
   };
 
-  // The Map tab plots the levels with positions that have rows here.
-  const geoLevels = levels.filter((level) => level.geo);
+  // The Map tab plots the levels with positions (and a map) that have rows here.
+  const geoLevels = levels.filter((level) => level.geo && level.map !== false);
   const pointQueries = useQueries({
     queries: geoLevels.map((level) => ({
       queryKey: ["contribution-points", id, level.table, privateKey],

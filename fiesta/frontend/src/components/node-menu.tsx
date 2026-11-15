@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { CSSProperties } from "react";
 import { useNodeConfig } from "../lib/config";
 import type { NodeConfig, NodePage } from "../lib/types";
-import { Icon, type IconName } from "./ui/icon";
+import { Icon, type IconName, iconName } from "./ui/icon";
 
 /**
  * Legacy `ui secondary small pointing <color> menu` (magic/components/menu/menu.jsx,
@@ -44,7 +44,7 @@ export function nodeMenuItems(config: NodeConfig | undefined): {
     key: page.slug,
     label: page.title,
     to: `/${page.slug}`,
-    icon: page.icon ? (page.icon as IconName) : undefined,
+    icon: page.icon ? iconName(page.icon) : undefined,
   });
   const left: NodeMenuItem[] = [
     { key: "home", label: "Home", to: "/", exact: true },

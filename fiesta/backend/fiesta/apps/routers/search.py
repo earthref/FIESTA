@@ -623,7 +623,7 @@ async def search_points(
 ) -> MapPoints:
     """Every positioned doc matching a search, for the search page's map; past
     MAP_DOCS_LIMIT matches at a level of single points (not the contribution
-    level, not areas, not one contribution's modal), their unique locations
+    level, not areas; one contribution's modal too), their unique locations
     with a `count` each instead. `color_by` (a node `map_colors` field) adds
     each point's `value`: the doc's number, or a location's records' mean."""
     if table not in node.geo_tables:
@@ -659,7 +659,7 @@ async def search_points(
         body["_source"].append(color.path(table))
         if color.unit_column:
             body["_source"].append(f"summary.{table}.{color.unit_column}")
-    if contribution is None and table != "contribution" and table not in node.area_tables:
+    if table != "contribution" and table not in node.area_tables:
         client = get_opensearch()
         try:
             count = await client.count(index=node.search_index, body={"query": body["query"]})

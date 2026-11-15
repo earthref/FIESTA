@@ -4,8 +4,10 @@ export interface SearchLevel {
   name: string;
   table: string;
   count_field: string | null;
-  /** Its rows can carry a position (lat/lon columns), so it has a Map tab. */
+  /** Its rows can carry a position (lat/lon columns): the area filter narrows it. */
   geo?: boolean;
+  /** False: no Map tab, though it is geo (node YAML `search.levels[].map`). */
+  map?: boolean;
   /** Its Summaries grid, in order (node YAML `search.levels[].columns`, or the default tiles). */
   columns?: GridColumn[];
 }

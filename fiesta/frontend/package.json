@@ -10,19 +10,19 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "node --test \"src/**/*.test.ts\"",
     "preview": "vite preview",
     "lint": "biome check .",
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@fortawesome/free-regular-svg-icons": "^7.3.1",
-    "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-router": "^1.170.17",
     "@tanstack/react-virtual": "^3.14.26",
     "d3-geo": "^3.1.1",
     "dompurify": "^3.4.17",
     "echarts": "^6.1.0",
+    "lucide-react": "1.65.0",
     "maplibre-gl": "^6.16.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

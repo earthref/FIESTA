@@ -184,7 +184,8 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "data_model_latest": "3.0",
   "search_levels": [
     {"name": "Contributions", "table": "contribution", "count_field": null, "geo": true},
-    {"name": "Locations", "table": "locations", "count_field": "summary.locations._n_results", "geo": true}
+    {"name": "Locations", "table": "locations", "count_field": "summary.locations._n_results", "map": true, "geo": true},
+    {"name": "Measurements", "table": "measurements", "count_field": "summary.measurements._n_results", "map": false, "geo": true}
   ],
   "facets": ["method_codes", "geologic_classes"],
   "filters": [
@@ -208,6 +209,11 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "hidden_nodes": ["OSU-MGR"]
 }
 ```
+
+`search_levels[].geo` is true for a level whose rows carry a position (the area
+filter narrows it); `map` is the node YAML's `search.levels[].map`, false for a
+geo level that gets no Map tab and no layer on a contribution's Map tab (MagIC's
+measurements, whose positions only repeat their specimens').
 
 `filters` are the node YAML's `search.filters`: the sidebar controls, each
 restricted to the search `levels` and result `views` (Summaries, Rows, a plugin
@@ -317,7 +323,7 @@ leaves out the points on other bodies). `{table}` must be a level whose
 `geo` is true, otherwise 404.
 
 Past 10,000 matches at a level of single points (not the contribution level,
-not an area level, not scoped to one `contribution`), `points` are the
+not an area level; scoped to one `contribution` too), `points` are the
 matches' unique locations instead: a composite aggregation of ~2.4 m geotiles
 (zoom 24) by contribution, each point at its records' centroid (to 5 decimals)
 with their `count` and no `name`; `total` is still the matching records and
