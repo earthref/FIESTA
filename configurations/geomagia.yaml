@@ -14,7 +14,8 @@ node:
     Archeomagnetic and volcanic paleomagnetic directions and intensities of
     the past 50,000 years, compiled from the published literature.
   color: "#00579b" # the GEOMAGIA50 site's blue
-  logo: logo.svg # configurations/geomagia/assets/, on the FIESTA portal home
+  logo: logo.svg # configurations/geomagia/assets/: the node tile (header, portal home, favicon)
+  logo_style: tile # tile: framed, drawn in the node color, named; full: the SVG as drawn
   links:
     website: https://geomagia.gfz.de
 

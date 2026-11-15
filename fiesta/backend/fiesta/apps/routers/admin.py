@@ -317,6 +317,9 @@ async def _node_out(session, record: NodeRecord, detail: bool = False) -> dict:
         "key": record.key,
         "title": node.node.title if node else None,
         "color": node.node.color if node else None,
+        # The node tile (the admin node list draws it).
+        "logo_svg": node.logo_svg() if node else None,
+        "logo_style": node.node.logo_style if node else None,
         "served": node is not None,
         "published": _revision_out(published, users),
         "draft": _revision_out(draft, users),
@@ -520,6 +523,25 @@ async def delete_file(
 ):
     try:
         draft = await svc.delete_file(session, record, user, path, lock_version)
+    except (svc.ConfigError, svc.Conflict, KeyError) as exc:
+        raise _errors(exc) from None
+    await session.commit()
+    return _draft_out(draft)
+
+
+class LogoIn(BaseModel):
+    content: str  # the SVG's text
+    lock_version: int | None = None
+
+
+@router.put("/nodes/{slug}/draft/logo")
+async def put_logo(record: AdminNode, payload: LogoIn, session: SessionDep, user: CurrentUser):
+    """Upload the node logo: sanitized (fiesta.svg) into <slug>/assets/logo.svg,
+    with node.logo pointed at it."""
+    try:
+        draft = await svc.put_logo(
+            session, record, user, payload.content.encode(), payload.lock_version
+        )
     except (svc.ConfigError, svc.Conflict, KeyError) as exc:
         raise _errors(exc) from None
     await session.commit()

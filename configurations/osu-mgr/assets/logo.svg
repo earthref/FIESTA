@@ -1,12 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="OSU-MGR">
-  <!-- FIESTA node logo: node-colored rounded square, white pictogram. OSU-MGR: a core taken through the ocean into the seafloor. -->
-  <clipPath id="badge"><rect width="64" height="64" rx="14"/></clipPath>
-  <rect width="64" height="64" rx="14" fill="#D73F09"/>
-  <path d="M10 15c3.7-4 7.3-4 11 0s7.3 4 11 0 7.3-4 11 0 7.3 4 11 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-  <path d="M10 22c3.7-4 7.3-4 11 0s7.3 4 11 0 7.3-4 11 0 7.3 4 11 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
-  <!-- sediment below the seafloor -->
-  <path d="M0 37c10-3 22-3 32 0s22 3 32 0V64H0z" fill="#fff" opacity="0.35" clip-path="url(#badge)"/>
-  <path d="M32 25v9" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-  <rect x="27.5" y="33" width="9" height="21" rx="2" fill="#fff"/>
-  <path d="M27.5 41h9M27.5 47.5h9" stroke="#D73F09" stroke-width="1.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="1.15 3.5 20 20" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="OSU-MGR">
+  <!-- FIESTA node logo (logo_style: tile): a research vessel lowering a corer from its A-frame. One color; the tile draws it in the node ink, adds the frame and the name, and scales stroke-width by size. -->
+  <path d="M1.5 13L19.5 13L17 17L4 17zM5.5 9h6v4h-6zM8.5 9L8.5 5M15 13L20 7M17.5 13L20 7M20 7L20 19M19.5 19h1a0.3 0.3 0 0 1 0.3 0.3v2.4a0.3 0.3 0 0 1 -0.3 0.3h-1a0.3 0.3 0 0 1 -0.3 -0.3v-2.4a0.3 0.3 0 0 1 0.3 -0.3zM1.5 19.5q2.13 -0.7 4.25 0t4.25 0t4.25 0t4.25 0M6.5 11L10.5 11"/>
+  <path d="M5.45 15a0.55 0.55 0 1 0 1.1 0a0.55 0.55 0 1 0 -1.1 0zM8.45 15a0.55 0.55 0 1 0 1.1 0a0.55 0.55 0 1 0 -1.1 0zM11.45 15a0.55 0.55 0 1 0 1.1 0a0.55 0.55 0 1 0 -1.1 0zM8.5 5L10.5 5.8L8.5 6.6z" fill="currentColor" stroke="none"/>
 </svg>

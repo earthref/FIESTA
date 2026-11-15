@@ -43,6 +43,7 @@ from fiesta.nodeconfig import (
     set_deployment,
 )
 from fiesta.settings import get_settings
+from fiesta.svg import SvgError, sanitize_svg
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +250,7 @@ def validate_files(slug: str, files: dict[str, bytes], key: str | None = None) -
         except (ValueError, KeyError, OSError) as exc:
             errors.append(str(exc))
         errors += check_pages_and_filters(node, files)
+        errors += check_logo(node)
     if node.node.slug != slug:
         errors.append(f"node.slug is {node.node.slug!r}; this node's slug is {slug!r}")
     if key is not None and node.node.key != key:
@@ -344,6 +346,20 @@ def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[s
             if level not in levels:
                 errors.append(f"map color {c.field!r}: no search level {level!r}")
     return errors
+
+
+def check_logo(node: NodeConfig) -> list[str]:
+    """`node.logo` names an SVG under assets/ that the sanitizer accepts."""
+    if not node.node.logo:
+        return []
+    file = node.asset_path(node.node.logo)
+    if file is None:
+        return [f"node.logo: {node.node.slug}/assets/{node.node.logo} is missing"]
+    try:
+        sanitize_svg(file.read_bytes())
+    except SvgError as exc:
+        return [f"node.logo: {exc}"]
+    return []
 
 
 def check_identity(slug: str, key: str) -> None:
@@ -555,6 +571,26 @@ async def patch_settings(session, record, user, ops: list[dict], lock_version: i
     current = await revision_for(session, record, "current")
     content = patch_yaml(await read_file(session, current, yaml_path), ops)
     return await put_file(session, record, user, yaml_path, content, lock_version)
+
+
+async def put_logo(session, record, user, content: bytes, lock_version: int | None):
+    """Sanitize an uploaded logo SVG into `<slug>/assets/logo.svg` and point
+    `node.logo` at it, in one draft edit."""
+    try:
+        clean = sanitize_svg(content)
+    except SvgError as exc:
+        raise ConfigError([str(exc)]) from None
+    draft = await put_file(
+        session, record, user, f"{record.slug}/assets/logo.svg", clean, lock_version
+    )
+    yaml_path = f"{record.slug}.yaml"
+    current = yaml.safe_load(await read_file(session, draft, yaml_path)) or {}
+    if (current.get("node") or {}).get("logo") != "logo.svg":
+        # The lock was checked by the file write above.
+        draft = await patch_settings(
+            session, record, user, [{"path": ["node", "logo"], "value": "logo.svg"}], None
+        )
+    return draft
 
 
 async def discard_draft(session, record: NodeRecord) -> None:

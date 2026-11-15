@@ -1,12 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="KArAr">
-  <!-- FIESTA node logo: node-colored rounded square, white pictogram. KArAr: an hourglass (radiometric ages). -->
-  <rect width="64" height="64" rx="14" fill="#3030bb"/>
-  <g fill="#fff">
-    <rect x="17" y="11" width="30" height="4.5" rx="1.5"/>
-    <rect x="17" y="48.5" width="30" height="4.5" rx="1.5"/>
-    <path d="M25.5 24h13c-1.5 3.5-4.5 5.5-6.5 7-2-1.5-5-3.5-6.5-7z"/>
-    <path d="M24.5 47c1.5-5 5-7.5 7.5-8.5 2.5 1 6 3.5 7.5 8.5z"/>
-  </g>
-  <path d="M22 15.5c0 10 7 13 7 16.5s-7 6.5-7 16.5M42 15.5c0 10-7 13-7 16.5s7 6.5 7 16.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-  <path d="M32 31v8" stroke="#fff" stroke-width="1.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.8 1.8 19.9 17.6" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="KArAr">
+  <!-- FIESTA node logo (logo_style: tile): a laser freeing argon from a grain, the gas bent by a magnet into three collectors. One color; the tile draws it in the node ink, adds the frame and the name, and scales stroke-width by size. -->
+  <path d="M2.5 4h3a0.5 0.5 0 0 1 0.5 0.5v2a0.5 0.5 0 0 1 -0.5 0.5h-3a0.5 0.5 0 0 1 -0.5 -0.5v-2a0.5 0.5 0 0 1 0.5 -0.5zM2.8 7L5.2 7L4.6 8.5L3.4 8.5zM3.4 8.5L3.85 15.8M4.6 8.5L4.15 15.8M1.8 15L2.6 15.6M6.2 15L5.4 15.6M1 16.7a3 1 0 1 0 6 0a3 1 0 1 0 -6 0zM1 16.7v1.2a3 1 0 0 0 6 0v-1.2M7 17.2L8.5 17.2M10.5 17.2L12.5 17.2M20.49 14.11A8.5 8.5 0 0 1 15.41 19.19L13.87 14.96A4 4 0 0 0 16.26 12.57zM12.5 17.2A5 5 0 0 0 17.5 12.2M17.5 12.2L17.5 4.5M12.5 17.2A6 6 0 0 0 18.5 11.2M18.5 11.2L18.5 4.5M12.5 17.2A7 7 0 0 0 19.5 10.2M19.5 10.2L19.5 4.5M17.3 2h2.4a0.4 0.4 0 0 1 0.4 0.4v1.7a0.4 0.4 0 0 1 -0.4 0.4h-2.4a0.4 0.4 0 0 1 -0.4 -0.4v-1.7a0.4 0.4 0 0 1 0.4 -0.4zM17.97 2L17.97 4.5M19.03 2L19.03 4.5"/>
+  <path d="M3.4 16.5a0.6 0.6 0 1 0 1.2 0a0.6 0.6 0 1 0 -1.2 0zM8.8 16h1.4a0.3 0.3 0 0 1 0.3 0.3v1.8a0.3 0.3 0 0 1 -0.3 0.3h-1.4a0.3 0.3 0 0 1 -0.3 -0.3v-1.8a0.3 0.3 0 0 1 0.3 -0.3z" fill="currentColor" stroke="none"/>
 </svg>

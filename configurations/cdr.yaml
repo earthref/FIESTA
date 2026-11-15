@@ -11,7 +11,8 @@ node:
     Archiving geological drilling samples multi-sensor track data for sediment
     and rock cores.
   color: "#e09f00" # Semantic UI "yellow" in the legacy app
-  logo: logo.svg # configurations/cdr/assets/, on the FIESTA portal home
+  logo: logo.svg # configurations/cdr/assets/: the node tile (header, portal home, favicon)
+  logo_style: tile # tile: framed, drawn in the node color, named; full: the SVG as drawn
   links:
     website: https://earthref.org/CDR
     github_issues: https://github.com/earthref/CDR/issues

@@ -1754,6 +1754,83 @@ def test_node_paths_stay_inside_the_node():
     svc.check_identity("new-node", "NewNode")
 
 
+def test_logo_svg_sanitizer_keeps_shapes_only():
+    import xml.etree.ElementTree as ET
+
+    from fiesta.svg import MAX_BYTES, SvgError, sanitize_svg
+
+    ns = "{http://www.w3.org/2000/svg}"
+    hostile = b"""<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 24 24" width="240" onload="alert(1)" style="fill:url(#x)" stroke="currentColor">
+  <!-- a comment -->
+  <script>alert(1)</script>
+  <style>path { fill: red }</style>
+  <foreignObject><div xmlns="http://www.w3.org/1999/xhtml">x</div></foreignObject>
+  <image href="https://example.org/x.png"/>
+  <use xlink:href="https://example.org/x.svg#a"/>
+  <text>hello</text>
+  <g transform="rotate(10)" onclick="alert(1)">
+    <path d="M1 1L23 23" stroke-width="2" fill="url(https://example.org/p)"/>
+    <circle cx="12" cy="12" r="4" fill="currentColor" stroke="javascript:alert(1)"/>
+    <a href="javascript:alert(1)"><rect x="1" y="1" width="2" height="2"/></a>
+  </g>
+  <polygon points="1,1 2,2 3,1"/>
+</svg>"""
+    root = ET.fromstring(sanitize_svg(hostile))
+    assert root.tag == f"{ns}svg"
+    assert root.attrib == {"viewBox": "0 0 24 24", "stroke": "currentColor"}
+    tags = [el.tag.removeprefix(ns) for el in root.iter()]
+    assert tags == ["svg", "g", "path", "circle", "polygon"]
+    path = root.find(f"{ns}g/{ns}path")
+    assert path.attrib == {"d": "M1 1L23 23", "stroke-width": "2"}
+    assert root.find(f"{ns}g/{ns}circle").get("stroke") is None
+    assert root.find(f"{ns}g").attrib == {"transform": "rotate(10)"}
+
+    # The approved node logos pass through with their drawing intact.
+    for slug in ("magic", "cdr", "geomagia", "sc"):
+        source = (CONFIG_DIR / slug / "assets" / "logo.svg").read_bytes()
+        clean = ET.fromstring(sanitize_svg(source))
+        assert clean.get("viewBox") == ET.fromstring(source).get("viewBox")
+        assert len(clean.findall(f"{ns}path")) == len(ET.fromstring(source).findall(f"{ns}path"))
+
+    # width/height stand in for a missing viewBox, then go.
+    sized = ET.fromstring(sanitize_svg(b'<svg width="32px" height="16"><rect/></svg>'))
+    assert sized.attrib == {"viewBox": "0 0 32 16"}
+
+    for bad, reason in (
+        (b"\x89PNG\r\n\x1a\n", "text SVG"),
+        (b"<svg><path d='M0 0'", "well-formed"),
+        (b"<html><path/></html>", "root element"),
+        (b'<!DOCTYPE svg [<!ENTITY a "aaa">]><svg viewBox="0 0 1 1"><path/></svg>', "DOCTYPE"),
+        (b'<svg viewBox="0 0 1 1"><script/></svg>', "no shapes"),
+        (b"<svg><path/></svg>", "viewBox"),
+        (b'<svg viewBox="0 0 1 1">' + b"<path/>" * (MAX_BYTES // 7) + b"</svg>", "limit"),
+    ):
+        with pytest.raises(SvgError, match=reason):
+            sanitize_svg(bad)
+
+
+def test_node_logo_is_served_and_validated(magic_node):
+    from fiesta.services import node_config as svc
+
+    config = magic_node.public_config()
+    assert config["logo_style"] == "tile" and config["logo_label"] is None
+    assert config["logo_svg"].startswith('<svg xmlns="http://www.w3.org/2000/svg"')
+    assert "<!--" not in config["logo_svg"]
+
+    files = svc.read_tree(CONFIG_DIR, "karar")
+    svc.validate_files("karar", files)
+    with pytest.raises(svc.ConfigError, match="node.logo"):
+        svc.validate_files("karar", {**files, "karar/assets/logo.svg": b"<svg><script/></svg>"})
+    gone = {p: c for p, c in files.items() if p != "karar/assets/logo.svg"}
+    with pytest.raises(svc.ConfigError, match="logo.svg is missing"):
+        svc.validate_files("karar", gone)
+    labelled = files["karar.yaml"].replace(b"  logo_style: tile", b"  logo_style: wide", 1)
+    with pytest.raises(svc.ConfigError, match="logo_style"):
+        svc.validate_files("karar", {**files, "karar.yaml": labelled})
+
+
 def test_settings_patch_keeps_yaml_comments():
     import yaml
 

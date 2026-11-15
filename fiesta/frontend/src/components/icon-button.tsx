@@ -22,8 +22,10 @@ import { SemanticIcon } from "./ui/fa-icon";
  */
 export interface IconButtonProps {
   icon?: string;
-  /** Image URL shown in the icon's place, at the base glyph's size (a node logo). */
+  /** Image URL shown in the icon's place, at the base glyph's size. */
   image?: string;
+  /** Shown in the icon's place, centered, as given (a node tile). */
+  media?: ReactNode;
   cornerIcon?: string;
   title: ReactNode;
   subtitle?: ReactNode;
@@ -54,6 +56,7 @@ export function titleLines(title: string): ReactNode {
 export function IconButton({
   icon,
   image,
+  media,
   cornerIcon,
   title,
   subtitle,
@@ -96,7 +99,12 @@ export function IconButton({
   };
   const content = (
     <>
-      {image && (
+      {media && (
+        <div className="mx-auto flex justify-center" style={{ marginBottom: "0.5rem" }}>
+          {media}
+        </div>
+      )}
+      {!media && image && (
         <img
           src={image}
           alt=""
@@ -104,7 +112,7 @@ export function IconButton({
           style={{ width: iconPx, height: iconPx, marginBottom: "0.5rem" }}
         />
       )}
-      {!image && icon && (
+      {!media && !image && icon && (
         <span
           className="relative inline-block text-ink-secondary"
           style={{ fontSize: iconPx, lineHeight: 1, marginBottom: "0.5rem" }}

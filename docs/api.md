@@ -83,7 +83,7 @@ routes are 409 on a deployment with `FIESTA_NODE_CONFIG_SOURCE=files`.
 | GET | `/v2/admin/users?q=&role=super\|node&offset=&limit=` | any admin | `{total, users: AdminUser[]}` |
 | POST | `/v2/admin/users` | super | create `{email, name, handle?, orcid?, password?, is_admin}` |
 | PATCH | `/v2/admin/users/{id}` | super | any of those fields plus `admin_nodes: [slug]` (replaces the roles); the last super admin cannot be demoted |
-| GET | `/v2/admin/nodes` | any admin | nodes the caller administers: `{slug, key, title, color, served, published, draft, draft_is_stale, admins}` |
+| GET | `/v2/admin/nodes` | any admin | nodes the caller administers: `{slug, key, title, color, logo_svg, logo_style, served, published, draft, draft_is_stale, admins}` |
 | POST | `/v2/admin/nodes` | super | new node as a draft only: `{slug, key, title, template}` copies the template node's data models and vocabularies |
 | GET | `/v2/admin/nodes/{slug}` | node | the above plus `revisions` (history) and `plugins`: every plugin in the code as `{name, description, schema}` (the JSON schema of its options, defaults included; the Plugins tab switches a plugin on in `features.plugins` and edits its options under `plugins.<name>` through the settings PATCH) |
 | PUT / DELETE | `/v2/admin/nodes/{slug}/admins/{user_id}` | node | grant / revoke a node admin |
@@ -93,6 +93,7 @@ routes are 409 on a deployment with `FIESTA_NODE_CONFIG_SOURCE=files`.
 | PUT | `/v2/admin/nodes/{slug}/draft/file` | node | `{path, content, encoding?, lock_version?}` — write a file into the draft (JSON/YAML syntax checked) |
 | DELETE | `/v2/admin/nodes/{slug}/draft/file?path=&lock_version=` | node | remove a file from the draft |
 | PATCH | `/v2/admin/nodes/{slug}/draft/settings` | node | `{ops: [{path: [...], value}], lock_version?}` — edit the YAML keeping its comments; `value: null` deletes |
+| PUT | `/v2/admin/nodes/{slug}/draft/logo` | node | `{content, lock_version?}` — the node logo SVG's text: sanitized (below) into `<slug>/assets/logo.svg`, and `node.logo` set to `logo.svg`, in the draft; 422 when it is not an acceptable SVG |
 | POST | `/v2/admin/nodes/{slug}/draft` | node | open the draft, optionally `{from_revision: n}` to roll back |
 | DELETE | `/v2/admin/nodes/{slug}/draft` | node | discard the draft |
 | GET | `/v2/admin/nodes/{slug}/validate?rev=` | node | `{ok, errors, protected_changes, can_publish, changes}` |
@@ -106,6 +107,23 @@ draft's `lock_version` and gets a 409 if someone saved in between. Invalid
 configuration is a 422 with `{"detail": {"errors": [...]}}`. A draft that
 changes a protected setting (`node.key`, `node.slug`, `search.index`,
 `storage`, `legacy`, `publish`) can only be published by a super admin.
+
+**Node logo.** `node.logo` names an SVG under `<slug>/assets/`, drawn as the
+node tile (header, portal home cards, admin list, favicon;
+`fiesta/frontend/src/components/node-mark.tsx`). `node.logo_style` is `tile`
+(the default: framed, drawn in the node color darkened to 4.5:1 on white, with
+`node.logo_label`, at most 12 characters and the key when unset, under it from
+44px up) or `full` (the SVG as drawn, unframed). A tile logo is one color
+(`currentColor`), with no stroke-width of its own on its shapes, and its viewBox
+crops it: the crop sets how large it sits in the tile. The logo is sanitized
+(`fiesta/backend/fiesta/svg.py`) on upload, when served (`logo_svg` in the
+config) and again before the SPA inlines it: only `svg g path circle ellipse
+rect line polyline polygon` and their geometry and presentation attributes
+survive (no `style`, `class`, `id`, `href` or event handlers, no value with
+`url(`, `javascript:` or `data:`), and a file over 100 KB, with a DOCTYPE or
+entities, without a viewBox (or numeric width and height) or with nothing left
+to draw is refused. Validation (and so publication) fails when `node.logo`
+is missing or refused.
 
 **Node configuration lifecycle.** Each node is a file tree, `configurations/<slug>.yaml`
 plus `configurations/<slug>/**`. Postgres keeps every version of it (shared schema:
@@ -158,6 +176,9 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "subtitle": "...",
   "color": "#800080",
   "logo": "logo.svg",
+  "logo_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"2 2 20 20\" ...>...</svg>",
+  "logo_style": "tile",
+  "logo_label": null,
   "links": {"website": "...", "github_issues": "..."},
   "data_model_versions": ["2.2", "2.3", "2.4", "2.5", "3.0"],
   "data_model_latest": "3.0",

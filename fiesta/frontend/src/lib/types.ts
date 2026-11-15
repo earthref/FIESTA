@@ -133,14 +133,22 @@ export interface NodePage {
   icon: string | null;
 }
 
+export type LogoStyle = "tile" | "full";
+
 export interface NodeConfig {
   key: string;
   slug: string;
   title: string;
   subtitle: string;
   color: string;
-  /** File under configurations/<slug>/assets/ (node YAML `node.logo`), shown on the portal home. */
+  /** File under configurations/<slug>/assets/ (node YAML `node.logo`): the node tile's drawing. */
   logo?: string | null;
+  /** That SVG, sanitized by the API (fiesta/svg.py); the tile inlines it. */
+  logo_svg?: string | null;
+  /** tile: framed, recolored, named (components/node-mark.tsx); full: as drawn. */
+  logo_style?: LogoStyle;
+  /** The name on the tile (default: key). */
+  logo_label?: string | null;
   links: Record<string, string>;
   data_model_versions: string[];
   data_model_latest: string;

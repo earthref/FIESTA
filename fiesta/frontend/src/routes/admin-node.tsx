@@ -9,6 +9,7 @@ import { AdminGate, Field, NodeChip, RepoStatus, Tabs } from "../components/admi
 import { DataModelEditor } from "../components/admin/data-model-editor";
 import { FiltersEditor } from "../components/admin/filters-editor";
 import { GridEditor } from "../components/admin/grid-editor";
+import { LogoFieldset, type LogoUpload } from "../components/admin/logo-editor";
 import { PagesEditor } from "../components/admin/pages-editor";
 import { PluginsEditor } from "../components/admin/plugins-editor";
 import { SourceEditor } from "../components/admin/source-editor";
@@ -32,6 +33,7 @@ import {
   type NodeSettings,
   patchSettings,
   putFile,
+  putLogo,
   readFile,
   type SettingsOp,
   useAdminConfig,
@@ -40,6 +42,7 @@ import {
   type Validation,
 } from "../lib/admin";
 import { api } from "../lib/api";
+import type { LogoStyle } from "../lib/types";
 import { cx } from "../lib/utils";
 import type { AdminNodeParams } from "../router";
 
@@ -257,6 +260,8 @@ interface SettingsForm {
   title: string;
   subtitle: string;
   color: string;
+  logo_style: LogoStyle;
+  logo_label: string;
   website: string;
   github_issues: string;
   doi_prefix: string;
@@ -271,6 +276,8 @@ function formOf(s: NodeSettings): SettingsForm {
     title: s.node.title ?? "",
     subtitle: s.node.subtitle ?? "",
     color: s.node.color ?? "#666666",
+    logo_style: s.node.logo_style ?? "tile",
+    logo_label: s.node.logo_label ?? "",
     website: s.node.links?.website ?? "",
     github_issues: s.node.links?.github_issues ?? "",
     doi_prefix: s.doi?.prefix ?? "",
@@ -288,6 +295,8 @@ function opsFor(before: SettingsForm, after: SettingsForm): SettingsOp[] {
     ["title", ["node", "title"], after.title.trim()],
     ["subtitle", ["node", "subtitle"], after.subtitle.trim()],
     ["color", ["node", "color"], after.color],
+    ["logo_style", ["node", "logo_style"], after.logo_style],
+    ["logo_label", ["node", "logo_label"], orNull(after.logo_label)],
     ["website", ["node", "links", "website"], orNull(after.website)],
     ["github_issues", ["node", "links", "github_issues"], orNull(after.github_issues)],
     ["doi_prefix", ["doi", "prefix"], orNull(after.doi_prefix)],
@@ -310,12 +319,20 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
   );
   const [form, setForm] = useState<SettingsForm | null>(null);
   useEffect(() => setForm(initial), [initial]);
+  // A logo SVG chosen in the editor, uploaded on save.
+  const [logoFile, setLogoFile] = useState<LogoUpload | null>(null);
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!initial || !form) throw new Error("nothing loaded");
-      return patchSettings(node.slug, opsFor(initial, form), lockOf(settings.data));
+      let lock = lockOf(settings.data);
+      if (logoFile) lock = (await putLogo(node.slug, logoFile.text, lock)).lock_version;
+      const ops = opsFor(initial, form);
+      if (ops.length) await patchSettings(node.slug, ops, lock);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.node(node.slug) }),
+    onSuccess: () => {
+      setLogoFile(null);
+      return queryClient.invalidateQueries({ queryKey: adminKeys.node(node.slug) });
+    },
   });
   if (settings.error) return <ErrorMessage error={settings.error} />;
   if (!form || !initial || !settings.data) return <Spinner />;
@@ -326,7 +343,7 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
     value: form[key] as string,
     onChange: (e: ChangeEvent<HTMLInputElement>) => set(key, e.target.value),
   });
-  const changed = opsFor(initial, form).length;
+  const changed = opsFor(initial, form).length + (logoFile ? 1 : 0);
   return (
     <form
       className="max-w-3xl space-y-4"
@@ -369,6 +386,16 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
             <Input {...input("color")} />
           </div>
         </Field>
+        <div className="sm:col-span-2">
+          <LogoFieldset
+            node={node}
+            logo={s.node.logo ?? null}
+            form={form}
+            update={(patch) => setForm({ ...form, ...patch })}
+            file={logoFile}
+            setFile={setLogoFile}
+          />
+        </div>
         <Field label="Website">
           <Input {...input("website")} />
         </Field>
@@ -442,7 +469,15 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
         <Button type="submit" disabled={!changed || save.isPending}>
           Save to Draft
         </Button>
-        <Button type="button" variant="ghost" disabled={!changed} onClick={() => setForm(initial)}>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={!changed}
+          onClick={() => {
+            setForm(initial);
+            setLogoFile(null);
+          }}
+        >
           Reset
         </Button>
         {changed > 0 && <Badge variant="warning">{changed} unsaved</Badge>}
