@@ -18,9 +18,9 @@ interface SampleTilesConfig {
    * `age_has_interval`; else the age columns as contributed. */
   age_interval: string;
   age_has_interval: boolean;
-  /** By level table, the column naming the type of a record's own age: on
-   * those levels the tile shows that age (its own row's) and its type. */
-  age_type_columns: Record<string, string>;
+  /** By level table, the columns describing a record's own age: on those
+   * levels the tile shows that age (its own row's) and their values under it. */
+  age_type_columns: Record<string, string[]>;
   /** A record's own age: its value column and sigma columns (tried in order). */
   age_value_column: string;
   age_sigma_columns: string[];
@@ -123,25 +123,27 @@ const plugin: PluginModule = {
       }
 
       case "age": {
-        // A record's own (preferred) age and its type (Plateau Age, ...), on
-        // the levels that name a type column; not every row below it.
+        // A record's own (preferred) age and its type and interpretation
+        // (Plateau, Eruption Age, ...), on the levels that name those columns;
+        // not every row below it.
         const table = String(doc.type);
-        const typeColumn = options.age_type_columns?.[table];
-        if (typeColumn) {
+        const typeColumns = options.age_type_columns?.[table];
+        if (typeColumns?.length) {
           const own = ownAge(doc, table, options);
           if (own) {
-            const ageType = firstString(getPath(doc, `summary.${table}.${typeColumn}`));
+            const lines = typeColumns
+              .map((column) => firstString(getPath(doc, `summary.${table}.${column}`)))
+              .filter((line): line is string => Boolean(line));
             return (
               <Cell width={width} wrap>
                 <b>Age:</b>
                 <br />
                 {own}
-                {ageType && (
-                  <>
-                    <br />
-                    {ageType}
-                  </>
-                )}
+                {lines.map((line) => (
+                  <span key={line} className="block">
+                    {line}
+                  </span>
+                ))}
               </Cell>
             );
           }

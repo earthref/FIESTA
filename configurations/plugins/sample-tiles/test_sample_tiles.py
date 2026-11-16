@@ -46,12 +46,17 @@ def test_tiles_follow_the_options_and_activation(magic_node):
 
 
 def test_age_type_column_by_level(magic_node, karar_node):
-    # KArAr's specimen Age tile names its preferred age's calculation method.
+    # KArAr's specimen Age tile: its preferred age's method and interpretation.
     plugin = all_plugins()["sample-tiles"]
     config = plugin.frontend_config(karar_node)
-    assert config["age_type_columns"] == {"specimens": "age_calculation_method"}
+    assert config["age_type_columns"] == {
+        "specimens": ["age_calculation_method", "age_interpretation"]
+    }
     assert config["age_has_interval"]
-    # Its own age: the interval's value and sigma columns, as contributed.
+    # Its own age: the interval's value column, its own sigma order.
     assert config["age_value_column"] == "age"
-    assert config["age_sigma_columns"][0] == "age_sigma_external"
-    assert plugin.frontend_config(magic_node)["age_type_columns"] == {}
+    assert config["age_sigma_columns"][0] == "age_sigma_internal"
+    magic = plugin.frontend_config(magic_node)
+    assert magic["age_type_columns"] == {}
+    # Without the option, the interval's sigma columns.
+    assert magic["age_sigma_columns"] == list(magic_node.search.interval("age").interval.sigma)

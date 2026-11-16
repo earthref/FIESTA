@@ -210,3 +210,12 @@ def test_narrowed_to_a_sample_and_to_the_ages():
     assert [s["specimen"] for s in one["specimens"]] == ["M2"]
     assert [s["sample"] for s in one["samples"]] == ["S2"]
     assert narrowed(data, sample="S1")["experiments"] == data["experiments"]
+
+
+def test_specimen_ages_take_the_internal_sigma():
+    row = {"specimen": "M1", "age": "10", "age_unit": "Ma", "age_sigma_external": "0.5"}
+    sigmas = {"age_sigma_analytical": "0.1", "age_sigma_internal": "0.2"}
+    (specimen,) = build_argon({"specimens": [{**row, **sigmas}]})["specimens"]
+    assert specimen["age_sigma"] == 0.2
+    (specimen,) = build_argon({"specimens": [row]})["specimens"]
+    assert specimen["age_sigma"] == 0.5

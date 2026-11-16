@@ -39,12 +39,20 @@ class SampleTilesOptions(PluginOptions):
             "years BP) it shows and sorts by; without one, the age columns as contributed"
         ),
     )
-    age_type_columns: dict[str, str] = Field(
+    age_type_columns: dict[str, Columns] = Field(
         default={},
         description=(
-            "Age tile: by level table, the column naming the type of a record's own "
-            "(preferred) age; on those levels the tile shows that age, from the record's own "
-            "row, with its type under it (KArAr specimens: age_calculation_method)"
+            "Age tile: by level table, the columns describing a record's own (preferred) "
+            "age; on those levels the tile shows that age, from the record's own row, with "
+            "each column's value on a line under it (KArAr specimens: age_calculation_method, "
+            "age_interpretation)"
+        ),
+    )
+    age_sigma_columns: Columns | None = Field(
+        default=None,
+        description=(
+            "Age tile: the sigma columns tried in order for a record's own age (default: "
+            "the interval's)"
         ),
     )
     intensity_columns: Columns = Field(
@@ -123,5 +131,6 @@ class SampleTilesPlugin(FiestaPlugin):
             # A record's own age on the age_type_columns levels: its value
             # column and its sigma columns, tried in order.
             "age_value_column": (spec.value if spec else None) or options.age_columns[-1],
-            "age_sigma_columns": list(spec.sigma) if spec else [],
+            "age_sigma_columns": options.age_sigma_columns
+            or (list(spec.sigma) if spec else []),
         }

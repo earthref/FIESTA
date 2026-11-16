@@ -169,7 +169,10 @@ function AgeDistributionTile(props: {
               label={`Specimen ages of ${where}`}
             />
             <span className="block truncate px-1 text-left text-xs">
-              {span} {plot.unit} (N={plot.items.length})
+              {span} {plot.unit}
+            </span>
+            <span className="block truncate px-1 text-left text-xs">
+              {plot.items.length} specimen{plot.items.length === 1 ? "" : "s"}
             </span>
           </span>
         );

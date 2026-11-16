@@ -206,8 +206,11 @@ plugins:
     geologic_class_columns: [material_classification]
     geologic_type_columns: [material]
     lithology_columns: [lithology]
-    # A specimen's Age tile: its preferred age and how it was calculated.
-    age_type_columns: { specimens: age_calculation_method }
+    # A specimen's Age tile: its preferred age ± internal sigma (analytical
+    # plus J, as the specimen ages plot), how it was calculated and what it
+    # is interpreted to date.
+    age_type_columns: { specimens: [age_calculation_method, age_interpretation] }
+    age_sigma_columns: [age_sigma_internal, age_sigma_analytical, age_sigma_external]
 
 features:
   plugins: [plateau-calculations, sample-tiles]

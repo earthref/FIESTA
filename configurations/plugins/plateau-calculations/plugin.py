@@ -126,15 +126,16 @@ def _int(value: Any) -> int | None:
     return int(number) if number is not None else None
 
 
-def _sigma(row: dict) -> float | None:
-    return next(
-        (
-            v
-            for c in ("age_sigma_analytical", "age_sigma_internal", "age_sigma_external")
-            if (v := to_float(row.get(c))) is not None
-        ),
-        None,
-    )
+# An experiment's ages are compared within one irradiation, so analytical σ
+# first; specimens' preferred ages across irradiations, so internal σ first
+# (analytical plus J). External σ adds the standard's age and the decay
+# constants, which all of a contribution's ages share, so it comes last.
+EXPERIMENT_SIGMAS = ("age_sigma_analytical", "age_sigma_internal", "age_sigma_external")
+SPECIMEN_SIGMAS = ("age_sigma_internal", "age_sigma_analytical", "age_sigma_external")
+
+
+def _sigma(row: dict, columns: tuple[str, ...] = EXPERIMENT_SIGMAS) -> float | None:
+    return next((v for c in columns if (v := to_float(row.get(c))) is not None), None)
 
 
 def contributed_age(row: dict) -> dict:
@@ -313,7 +314,7 @@ def build_argon(tables: dict[str, list[dict]]) -> dict:
                 "material": row.get("material_name") or row.get("material_type") or None,
                 "method": row.get("age_calculation_method") or None,
                 "age": to_float(row.get("age")),
-                "age_sigma": _sigma(row),
+                "age_sigma": _sigma(row, SPECIMEN_SIGMAS),
                 "age_unit": row.get("age_unit") or None,
                 "experiments": members,
                 # The irradiation, from whichever of its rows fills it.
