@@ -71,8 +71,11 @@ An experiment's spectrum is the `plot` tile of the levels in
 
 The `age_distribution` grid tile (header "Age"; KArAr's Contributions and
 Samples levels, 2026-11-15) draws the contribution's specimen ages, or a
-sample's, as the Specimen ages plot does, small, with their span and N under
-it. It fetches `?ages_only=true` (no experiments), plus `&sample=<name>` on a
+sample's, as the Specimen ages plot does, small, with their span (a sample's:
+its age ± σ, or its youngest and oldest ± σ) and N under it. An ideogram's
+curves reach 3σ beyond the ages, an outlier's no further than half the ages'
+span or 3 median σ, whichever is more, so one or two close ages still show
+their whole curves (2026-11-16). It fetches `?ages_only=true` (no experiments), plus `&sample=<name>` on a
 sample level, and opens the Contribution Age Plots tab at `?plot=ages`. It
 sorts by the record's median age (`summary._interval.<name>.mid`).
 
