@@ -99,6 +99,10 @@ class FakeSession:
         entity = stmt.column_descriptions[0]["entity"]
         if entity is AssistanceRequest:  # the routes re-check what they asked for
             return FakeResult(list(self.requests.values()))
+        params = stmt.compile().params
+        if "node_1" in params:  # the workspace list: every row on the node
+            rows = self.contributions.values()
+            return FakeResult([c for c in rows if c.node == params["node_1"]])
         (pk,) = stmt.compile().params.values()  # revisions.locked()
         return FakeResult(self.contributions[pk])
 
@@ -545,3 +549,42 @@ async def test_withdraw_and_resolve(outbox, admins):
         ("request-open", BOB),
         ("request-resolve", ADMIN),
     ]
+
+
+# -- the workspace lists: everyone's own work, node admins included --
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("actor", "listed"),
+    [
+        (ADA, {42}),  # her draft in her shared workspace
+        (CAROL, {42}),  # ... which its editor sees too
+        (BOB, {43}),  # his own private draft
+        (ADMIN, {44}),  # a node admin lists only their own, not Ada's or Bob's
+        (SUPER, set()),
+        (OTHER_ADMIN, set()),
+    ],
+)
+async def test_workspace_lists_hold_only_your_own_work(actor, listed):
+    session = FakeSession(
+        _contribution(),
+        others=(
+            _contribution(id=43, contributor_id=BOB, workspace_id=None),
+            _contribution(id=44, contributor_id=ADMIN, workspace_id=None),
+        ),
+    )
+    out = await private.list_contributions(session, _node(), session.users[actor])
+    assert {c.id for c in out} == listed
+
+
+@pytest.mark.asyncio
+async def test_admin_still_opens_a_requested_contribution_not_in_their_lists(outbox, admins):
+    session = _chain(BOB)
+    await _ask(session)
+    admin, n = session.users[ADMIN], _node()
+    assert DRAFT not in {c.id for c in await private.list_contributions(session, n, admin)}
+    (queued,) = await assistance.list_requests(session, n, admin, scope="node", state="open")
+    assert queued.contribution.id == DRAFT
+    opened = await private.get_contribution(session, n, admin, DRAFT)
+    assert (opened.id, opened.contributor_name, opened.can_publish) == (DRAFT, "Bob", True)

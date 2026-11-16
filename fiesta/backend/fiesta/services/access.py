@@ -12,7 +12,18 @@ async def can_access(session, contribution, user, write=False):
     admin of its node. This is also what an open assistance request relies on:
     it puts the contribution in front of the node's admins, who may already
     open it, and grants nobody else anything."""
-    if user.is_node_admin(contribution.node) or contribution.contributor_id == user.id:
+    if user.is_node_admin(contribution.node):
+        return True
+    return await is_member(session, contribution, user, write=write)
+
+
+async def is_member(session, contribution, user, write=False):
+    """Whether CONTRIBUTION is USER's own work: they contributed it, or own or
+    belong to (as an editor, for `write`) the shared workspace it is in. Node
+    admin rights are not counted; `can_access` adds them. The workspace lists
+    use this, so an admin's In Preparation and Published lists hold their own
+    work while other people's reach them through the Requests tab."""
+    if contribution.contributor_id == user.id:
         return True
     if not contribution.workspace_id:
         return False
