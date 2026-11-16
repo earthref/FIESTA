@@ -165,6 +165,24 @@ Last updated: 2026-11-15
       Check: an upload between the proxy's old limit and 512 MiB gets the API's answer,
       not a 413 from nginx.
 
+## 2026-11-16 — References, Users and Admin at the FIESTA portal (root)
+
+References, Users and Admin (super admin settings and every node's settings page) are
+FIESTA pages at the root of the origin, FIESTA-branded: the portal bar and the user
+menu link `dev.earthref.org/references`, `/users`, `/admin`, `/admin/nodes/<slug>` from
+every node. Locally (`make up`) that already works. On dev the root redirects to
+`/MagIC/` and `/references` is a 404, so **those links 404 on dev until this is done**
+(the old `/MagIC/admin` etc. still load if typed).
+
+- [ ] **fiesta-ct: serve a FIESTA portal build at `/`.** In `deploy-fiesta.sh`, add one
+      more `vite build` with the default base (`/`), its `fiesta-env.js` listing every
+      served node (`window.__FIESTA__={"node":"magic","apiUrl":"","nodes":"magic,kdd,cdr,karar,erda,osu-mgr,sc,geomagia,rd"}`),
+      and in nginx route `location = /`, `/references`, `/users`, `/admin` and
+      `/admin/` (prefix) to its `index.html` (with `ssi on` like the node locations), plus
+      its `/assets/`, `/fiesta-env.js` and `/version.json` (`no-store`); drop the `/` →
+      `/MagIC/` redirect. `/v2/` already proxies to the API at the root. Check:
+      `https://dev.earthref.org/admin` shows the FIESTA header and the node list.
+
 ## 2026-11-15 — Crawlers: page heads, sitemaps, robots.txt, llms.txt
 
 Contribution pages now carry their title, description, canonical link and schema.org

@@ -85,6 +85,15 @@ served nodes are `fiesta-env.js`'s list in the multi-node layout, else the
 config route's `deployment_nodes`; on a production host (any host in the
 portal list) every link stays on production.
 
+References, Users and Admin (`/admin`, `/admin/nodes/<slug>`) belong to no node:
+they are FIESTA pages at the portal, the root of the origin
+(`http://localhost:8080/admin`), and wear the FIESTA identity
+(`fiesta/frontend/src/lib/portal-paths.ts`). Links to them from a node's pages
+(the portal bar, the user menu's Admin entry) go through `portalPageUrl` in
+`portals.ts`; with one build per node that needs a FIESTA build at the parent
+of the node prefixes (`dev.earthref.org/`). Typed under a node
+(`/MagIC/admin`) they still load, FIESTA-branded.
+
 ## Seed data and local login
 
 `make up` starts Docker infrastructure, the API, the worker and the frontend,

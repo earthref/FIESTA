@@ -8,7 +8,7 @@ import { NodeHeader } from "../components/node-header";
 import { NodeMenu } from "../components/node-menu";
 import { PortalBar } from "../components/portal-bar";
 import { PageSpinner } from "../components/ui/spinner";
-import { BUILD_BASE, isPortalPath, NODE, nodeSiteUrl, PORTAL } from "../lib/base";
+import { BUILD_BASE, isPortalPath, nodeSiteUrl, PORTAL } from "../lib/base";
 import { applyNodeTheme, useNodeConfig } from "../lib/config";
 import { FIESTA_PORTAL, usePortalIdentity } from "../lib/portals";
 
@@ -23,17 +23,19 @@ export function RootLayout() {
     if (config) applyNodeTheme(portal ? FIESTA_PORTAL : config);
   }, [config, portal]);
 
-  // The portal home, References and Users are the only pages outside a node:
-  // any other route they link to (Admin, the user's workspace) loads under
-  // the default node.
+  // The portal home, References, Users and Admin are the only pages outside a
+  // node: any other route they link to (the user's workspace, Account) loads
+  // under the default node, at its /<Key>/ prefix (the case a per-node
+  // deployment serves: /MagIC/, not /magic/).
+  const nodeKey = config?.key;
   useEffect(() => {
-    if (PORTAL && !isPortalPath(pathname)) {
+    if (PORTAL && nodeKey && !isPortalPath(pathname)) {
       const { pathname: path, search, hash } = window.location;
       window.location.replace(
-        nodeSiteUrl(NODE, `${path.slice(BUILD_BASE.length - 1)}${search}${hash}`),
+        nodeSiteUrl(nodeKey, `${path.slice(BUILD_BASE.length - 1)}${search}${hash}`),
       );
     }
-  }, [pathname]);
+  }, [pathname, nodeKey]);
 
   if (isLoading) {
     return (
