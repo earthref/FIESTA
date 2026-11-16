@@ -16,7 +16,7 @@ need no change.
 | Release curve | Each step's cumulative ³⁹Ar against its `temp` (in its `temp_unit`), when the steps are sized by a ³⁹Ar column and two or more have a temperature. |
 | Specimen view | The spectra of the specimen's `age_experiments` (or, when that is empty, of the experiments whose `specimen` names it), one hue each, under the specimen's preferred age ± σ. |
 | Ranked ages and ideogram (specimen) | Each of its experiments' contributed age (the preferred row, else the plateau, else the first with an age) ± σ, youngest first, under the specimen's preferred age; and their ideogram: each age as a normal curve of its σ, summed, each one faint. Total-fusion experiments with no steps are drawn here, and a specimen with no spectrum shows its ranked ages on its card and grid tile. |
-| Specimen ages (contribution, and the Specimens search level) | Every specimen's preferred age as a histogram with the ideogram scaled to its tallest bin, the ages as ticks. Ages share the specimens' unit, or are converted to Ma when the units differ. |
+| Specimen ages (contribution, and the Specimens search level) | Every specimen's preferred age as a histogram with the ideogram scaled to its tallest bin, the ages as ticks. Ages share the specimens' unit, or are converted to Ma when the units differ. A specimen's σ is its internal one (analytical plus J, since specimens come from different irradiations), else analytical, else external; external σ adds the standard's age and decay-constant uncertainty that every age shares, which would only blur the comparison (2026-11-16). An experiment's ages keep analytical σ first. |
 | Age vs. elevation, stratigraphic height, core depth, composite depth | Each specimen's preferred age ± σ at its sample's `elevation`, `height` (± `height_sigma`), `core_depth` or `composite_depth`; depth increases downward. |
 | J vs. irradiation position | Per `irrad_name`: each specimen's `j_value` ± `j_value_sigma` against its numbered `irrad_position`, else `irrad_z`, else its positions in order. Flux monitors (`is_flux_monitor`) are filled, the specimens they calibrate hollow. |
 
@@ -37,7 +37,8 @@ matched to experiments exactly, or else on a hyphen-delimited prefix
 `j_value_sigma`, `irrad_name`, `irrad_position`, `irrad_x/y/z`,
 `is_flux_monitor`); the samples their `elevation`, `height`, `height_sigma`,
 `core_depth` and `composite_depth`. `?experiment=` or `?specimen=` narrows the
-result, as the tiles do (`?specimen=` keeps its sample). The built data is cached per contribution revision, and
+result, as the tiles do (`?specimen=` keeps its sample); `?sample=` keeps one
+sample's specimens and `?ages_only=true` leaves the experiments out. The built data is cached per contribution revision, and
 concurrent requests share a single download and parse.
 
 UI: three contribution-modal asset tabs, laid out as MagIC's plot tabs are
@@ -67,6 +68,13 @@ An experiment's spectrum is the `plot` tile of the levels in
 `experiment_levels`, and the specimen view is the tile of the levels in
 `specimen_levels`. A tile opens its tab with that item selected
 (`?plot=<name>`).
+
+The `age_distribution` grid tile (header "Age"; KArAr's Contributions and
+Samples levels, 2026-11-15) draws the contribution's specimen ages, or a
+sample's, as the Specimen ages plot does, small, with their span and N under
+it. It fetches `?ages_only=true` (no experiments), plus `&sample=<name>` on a
+sample level, and opens the Contribution Age Plots tab at `?plot=ages`. It
+sorts by the record's median age (`summary._interval.<name>.mid`).
 
 Options (set in karar.yaml): `experiment_levels` and `specimen_levels`.
 

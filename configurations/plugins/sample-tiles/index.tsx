@@ -18,6 +18,12 @@ interface SampleTilesConfig {
    * `age_has_interval`; else the age columns as contributed. */
   age_interval: string;
   age_has_interval: boolean;
+  /** By level table, the columns describing a record's own age: on those
+   * levels the tile shows that age (its own row's) and their values under it. */
+  age_type_columns: Record<string, string[]>;
+  /** A record's own age: its value column and sigma columns (tried in order). */
+  age_value_column: string;
+  age_sigma_columns: string[];
   intensity_columns: string[];
   method_code_columns: string[];
 }
@@ -50,6 +56,17 @@ function rangeText(value: unknown): string {
   }
   if (value === undefined || value === null) return "";
   return String(value);
+}
+
+/** A record's own age as contributed ("109.39 ± 2.89 Ma"), from its level
+ * summary block (its own row), or undefined without a value. */
+function ownAge(doc: SearchResult, table: string, options: SampleTilesConfig): string | undefined {
+  const own = (column: string) => firstString(getPath(doc, `summary.${table}.${column}`));
+  const value = own(options.age_value_column);
+  if (!value) return undefined;
+  const sigma = options.age_sigma_columns.map(own).find(Boolean);
+  const unit = own(options.age_unit_column);
+  return `${value}${sigma ? ` ± ${sigma}` : ""}${unit ? ` ${unit}` : ""}`;
 }
 
 /** Legacy intensity formatting: values are in Tesla; show nT/µT/mT/T. */
@@ -106,6 +123,31 @@ const plugin: PluginModule = {
       }
 
       case "age": {
+        // A record's own (preferred) age and its type and interpretation
+        // (Plateau, Eruption Age, ...), on the levels that name those columns;
+        // not every row below it.
+        const table = String(doc.type);
+        const typeColumns = options.age_type_columns?.[table];
+        if (typeColumns?.length) {
+          const own = ownAge(doc, table, options);
+          if (own) {
+            const lines = typeColumns
+              .map((column) => firstString(getPath(doc, `summary.${table}.${column}`)))
+              .filter((line): line is string => Boolean(line));
+            return (
+              <Cell width={width} wrap>
+                <b>Age:</b>
+                <br />
+                {own}
+                {lines.map((line) => (
+                  <span key={line} className="block">
+                    {line}
+                  </span>
+                ))}
+              </Cell>
+            );
+          }
+        }
         if (options.age_has_interval) {
           // Every row's age in years BP, shown in one scale (lib/age.ts).
           const interval = ageIntervalOf(doc, options.age_interval);

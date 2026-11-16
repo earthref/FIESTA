@@ -39,6 +39,22 @@ class SampleTilesOptions(PluginOptions):
             "years BP) it shows and sorts by; without one, the age columns as contributed"
         ),
     )
+    age_type_columns: dict[str, Columns] = Field(
+        default={},
+        description=(
+            "Age tile: by level table, the columns describing a record's own (preferred) "
+            "age; on those levels the tile shows that age, from the record's own row, with "
+            "each column's value on a line under it (KArAr specimens: age_calculation_method, "
+            "age_interpretation)"
+        ),
+    )
+    age_sigma_columns: Columns | None = Field(
+        default=None,
+        description=(
+            "Age tile: the sigma columns tried in order for a record's own age (default: "
+            "the interval's)"
+        ),
+    )
     intensity_columns: Columns = Field(
         default=["int_abs", "intensities"],
         description="Intensity tile: the columns tried in order, in Tesla",
@@ -61,7 +77,7 @@ class SampleTilesPlugin(FiestaPlugin):
     Options = SampleTilesOptions
     grid_tiles = (
         GridTile("geology", "Geology", 125, "Geologic class, type and lithology", default=True),
-        GridTile("age", "Age", 120, "Age range and unit", default=True),
+        GridTile("age", "Age", 120, "Age range and unit (and type)", default=True),
         GridTile("intensity", "Intensity", 90, "Paleointensity range and N", default=True),
         GridTile("method_codes", "Method Codes", 125, "Method codes", default=True),
     )
@@ -107,5 +123,14 @@ class SampleTilesPlugin(FiestaPlugin):
     def frontend_config(self, node: NodeConfig) -> dict:
         options = self.options(node)
         # Whether the Age tile has an interval to show (else the raw columns).
-        has_interval = node.search.interval(options.age_interval) is not None
-        return {**options.model_dump(), "age_has_interval": has_interval}
+        conversion = node.search.interval(options.age_interval)
+        spec = conversion.interval if conversion else None
+        return {
+            **options.model_dump(),
+            "age_has_interval": conversion is not None,
+            # A record's own age on the age_type_columns levels: its value
+            # column and its sigma columns, tried in order.
+            "age_value_column": (spec.value if spec else None) or options.age_columns[-1],
+            "age_sigma_columns": options.age_sigma_columns
+            or (list(spec.sigma) if spec else []),
+        }

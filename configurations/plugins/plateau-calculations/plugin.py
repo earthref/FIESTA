@@ -35,8 +35,8 @@ from pydantic import Field
 
 from fiesta.apps.deps import NodeDep, SessionDep
 from fiesta.domain.parse import parse_text
-from fiesta.nodeconfig import NodeConfig
-from fiesta.plugins.base import FiestaPlugin, PluginOptions
+from fiesta.nodeconfig import NodeConfig, SearchLevel
+from fiesta.plugins.base import FiestaPlugin, GridTile, GridTileFields, PluginOptions
 from fiesta.plugins.util import load_visible_contribution, to_float
 from fiesta.services.contributions import load_file
 
@@ -126,15 +126,16 @@ def _int(value: Any) -> int | None:
     return int(number) if number is not None else None
 
 
-def _sigma(row: dict) -> float | None:
-    return next(
-        (
-            v
-            for c in ("age_sigma_analytical", "age_sigma_internal", "age_sigma_external")
-            if (v := to_float(row.get(c))) is not None
-        ),
-        None,
-    )
+# An experiment's ages are compared within one irradiation, so analytical σ
+# first; specimens' preferred ages across irradiations, so internal σ first
+# (analytical plus J). External σ adds the standard's age and the decay
+# constants, which all of a contribution's ages share, so it comes last.
+EXPERIMENT_SIGMAS = ("age_sigma_analytical", "age_sigma_internal", "age_sigma_external")
+SPECIMEN_SIGMAS = ("age_sigma_internal", "age_sigma_analytical", "age_sigma_external")
+
+
+def _sigma(row: dict, columns: tuple[str, ...] = EXPERIMENT_SIGMAS) -> float | None:
+    return next((v for c in columns if (v := to_float(row.get(c))) is not None), None)
 
 
 def contributed_age(row: dict) -> dict:
@@ -313,7 +314,7 @@ def build_argon(tables: dict[str, list[dict]]) -> dict:
                 "material": row.get("material_name") or row.get("material_type") or None,
                 "method": row.get("age_calculation_method") or None,
                 "age": to_float(row.get("age")),
-                "age_sigma": _sigma(row),
+                "age_sigma": _sigma(row, SPECIMEN_SIGMAS),
                 "age_unit": row.get("age_unit") or None,
                 "experiments": members,
                 # The irradiation, from whichever of its rows fills it.
@@ -334,6 +335,19 @@ def build_argon(tables: dict[str, list[dict]]) -> dict:
         "experiments": experiments,
         "specimens": specimens,
         "samples": build_samples(tables.get("samples", [])),
+    }
+
+
+def narrowed(data: dict, *, sample: str | None = None, ages_only: bool = False) -> dict:
+    """`build_argon`'s data with only `sample`'s specimens and sample, and
+    without the experiments when `ages_only` (the age_distribution tile)."""
+    if sample is None and not ages_only:
+        return data
+    keep = (lambda row: row["sample"] == sample) if sample is not None else (lambda row: True)
+    return {
+        "experiments": [] if ages_only else data["experiments"],
+        "specimens": [s for s in data["specimens"] if keep(s)],
+        "samples": [s for s in data["samples"] if keep(s)],
     }
 
 
@@ -404,6 +418,22 @@ class PlateauPlugin(FiestaPlugin):
         "step ages, plateau and isochron results, on experiment and specimen result items."
     )
     Options = ArgonOptions
+    grid_tiles = (
+        GridTile(
+            "age_distribution",
+            "Age",
+            120,
+            "Its specimens' ages as a histogram and ideogram, opening the contribution's "
+            "Specimen ages plot (contribution and sample levels)",
+        ),
+    )
+
+    def grid_tile_fields(self, node: NodeConfig, level: SearchLevel, cell: str) -> GridTileFields:
+        # age_distribution: the records' median age in years BP, as the Age tile.
+        interval = next((c.interval.name for c in node.search.intervals if c.interval), None)
+        if interval is None:
+            return GridTileFields()
+        return GridTileFields(sort_fields=[f"summary._interval.{interval}.mid"], sort_type="number")
 
     def check(self, node: NodeConfig, options: PluginOptions) -> None:
         assert isinstance(options, ArgonOptions)
@@ -429,16 +459,21 @@ class PlateauPlugin(FiestaPlugin):
             private_key: str | None = None,
             experiment: str | None = None,
             specimen: str | None = None,
+            sample: str | None = None,
+            ages_only: bool = False,
         ) -> dict:
             """A contribution's experiments (steps, isochron points and every
             contributed age) and specimens (preferred age and its experiments).
             `experiment` narrows it to that experiment, and `specimen` to that
-            specimen and its experiments. Both are query parameters because
+            specimen and its experiments. `ages_only` leaves the experiments
+            out (the age_distribution tile's specimen ages), and `sample` keeps
+            only that sample's specimens. They are query parameters because
             the names can contain "/"."""
             contribution = await load_visible_contribution(
                 session, node, contribution_id, private_key
             )
             data = await _argon(node, contribution)
+            data = narrowed(data, sample=sample, ages_only=ages_only)
             if specimen is not None:
                 found = [s for s in data["specimens"] if s["specimen"] == specimen]
                 if not found:
