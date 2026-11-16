@@ -155,6 +155,16 @@ Last updated: 2026-11-15
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
 
+## 2026-11-16 — Upload size limit
+
+- [ ] **Keep the upload limit in step on fiesta-ct.** `FIESTA_MAX_UPLOAD_BYTES` (512 MiB,
+      added in PR #224) caps uploads and `POST /upgrade` in the API; the SPA image's nginx
+      allows the same (`client_max_body_size 512m`). Check that the deploy proxy in front
+      of dev.earthref.org (and the static server `deploy-fiesta.sh` configures) also
+      allows 512 MiB request bodies, and change all three together from now on.
+      Check: an upload between the proxy's old limit and 512 MiB gets the API's answer,
+      not a 413 from nginx.
+
 ## 2026-11-15 — Crawlers: page heads, sitemaps, robots.txt, llms.txt
 
 Contribution pages now carry their title, description, canonical link and schema.org

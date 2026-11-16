@@ -227,7 +227,7 @@ the latter become G5 work after cutover.*
 - [ ] **C4 Derived experiment docs** — MagIC's `experiments` search level is derived
       from measurements, not a table; port `summarize_contribution.js`'s experiment
       grouping as a plugin `derive_docs` hook or core summarizer step.
-- [ ] **C5 Tabular import** — the legacy upload's "Step 2": `.xlsx`/`.xls`/`.csv`
+- [x] **C5 Tabular import** (2026-11-16; PRs #200, #204, #206, #217) — the legacy upload's "Step 2": `.xlsx`/`.xls`/`.csv`
       → contribution text in the upload wizard, with sheet/table detection, header
       rows, a column-name suggester, skipping tables, worksheets and columns, value
       rounding with a warning for too many significant digits, and saved import
@@ -249,7 +249,8 @@ the latter become G5 work after cutover.*
       unit-tested without infra (`tests/test_v1.py`) and round-tripped in the
       Phase M integration suite. `reference_title` matches `_reference.title`
       (filled by C6).
-- [ ] **C11 Upload and online-editing parity with legacy MagIC** (inventory
+- [x] **C11 Upload and online-editing parity with legacy MagIC** (2026-11-16; PRs #200,
+      #204, #206, #217; inventory
       2026-11-13 against `MagIC/client/modules`: `upload_contribution.jsx`,
       `common/components/data_importer.jsx`, `private_contributions.jsx`,
       `fiesta/components/edit_contribution_modal.tsx`). Already at parity: the
