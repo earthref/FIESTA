@@ -13,6 +13,7 @@ import {
 } from "react";
 import { ColumnFilterButton } from "../components/column-filter-menu";
 import { ContributionModal } from "../components/contribution-modal";
+import { DownloadDialog } from "../components/download-dialog";
 import { ErrorMessage } from "../components/error-message";
 import {
   ExistsModal,
@@ -57,7 +58,6 @@ import { SortSelect } from "../components/ui/sort-select";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
@@ -756,6 +756,31 @@ export function SearchPage() {
     : [];
   const topContributionId =
     level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
+  // The Download Results dialog, and the ids of the search's first `max`
+  // matching contributions (its multi-contribution zip), in the grid's order.
+  const [downloading, setDownloading] = useState(false);
+  const matchingContributionIds = async (max: number) => {
+    const page = await api<SearchPageData>("/search/contribution", {
+      params: {
+        ...searchRequestParams(
+          q,
+          max,
+          0,
+          false,
+          queryRanges,
+          queryBbox,
+          sort,
+          gridFilterList,
+          queryHas,
+        ),
+        ...scope,
+        source: ["summary.contribution.id"],
+      },
+    });
+    return pageResults(page)
+      .map((hit) => contributionId(hit))
+      .filter((id): id is string => !!id);
+  };
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   // A new search starts at the top of its grid.
@@ -1198,9 +1223,9 @@ export function SearchPage() {
           {/* Download Results: hidden when searching a private_key (legacy) */}
           {!privateKey &&
             (topContributionId ? (
-              <a
-                href={nodeUrl(`/contributions/${topContributionId}/download`)}
-                download
+              <button
+                type="button"
+                onClick={() => setDownloading(true)}
                 className="flex items-center self-start whitespace-nowrap bg-surface hover:bg-node-soft"
                 style={{
                   ...basicButtonStyle("var(--node-ink)"),
@@ -1212,7 +1237,7 @@ export function SearchPage() {
               >
                 <Icon name="download" style={buttonIconStyle} />
                 Download Results
-              </a>
+              </button>
             ) : (
               <button
                 type="button"
@@ -1237,6 +1262,14 @@ export function SearchPage() {
                 Download Results
               </button>
             ))}
+          {downloading && topContributionId && (
+            <DownloadDialog
+              open
+              onClose={() => setDownloading(false)}
+              contributionId={topContributionId}
+              results={{ count: total, fetchIds: matchingContributionIds }}
+            />
+          )}
         </div>
 
         {/* Results flex row with independent scroll regions */}

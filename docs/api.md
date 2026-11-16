@@ -266,8 +266,10 @@ needs `publish.api`.
 | GET | `/v2/{repository}/search/{table}/numbers` | `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, columns: {<column>: n}}` — the level's number columns (`summary._num.<column>`, data-model order) and how many matches have a value of each, zeros included (the `numeric` filter's column picker) |
 | GET | `/v2/{repository}/search/{table}/filters` | `count` (repeated: `geo`, `bbox`, `numeric`, `exists`, `facet:<column>`, `range:<path>`, or `text:*` / `numeric:*` for a `facet:<column>` / `range:summary._num.<column>` key per text / number column of the level; else 422), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, counts: {<key>: n}}` — of the matches, how many have a value for each sidebar filter (a position, any number column, any recorded table, the facet's column, the range's field), zeros included: the count beside each filter in the search sidebar, which hides a filter at zero (and lists the `text` / `numeric` filters' columns by the keys `text:*` / `numeric:*` return) |
 | GET | `/v2/{repository}/search/{table}/has` | `of` (one of the level's `exists_tables`, else 422), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, with_table, columns: {<column>: n}}` — of the matches, how many have the table `of` and how many have a value in each of its columns (data-model order, zeros included); those without a column are `with_table` − n (the `exists` filter's modal; the caller leaves `of`'s own `has` entries out) |
-| GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
-| GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
+| GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc, plus `file: {name, size, sha256}`: the stored canonical file and its archival checksum (see [Downloads](#downloads)) |
+| GET | `/v2/{repository}/contributions/{id}/download` | `private_key?`, `compress?` (`gzip` \| `zip`), `original?` (bool) | the canonical file prepared for download (`text/plain` attachment; `<name>.gz` or `<stem>.zip` with `compress`), or byte for byte as stored with `original`; checksum headers — see [Downloads](#downloads) |
+| GET | `/v2/{repository}/contributions/{id}/download/info` | `private_key?` | `{filename, size, sha256, stored: {size, sha256}, formats}`: what `/download` serves and its sha256, and the stored file's (the download dialog) |
+| GET | `/v2/{repository}/contributions/download` | `ids` (comma-separated, ≤ `download_max_contributions`) | several contributions as one streamed zip (`<id>/<name>` each, `SHA256SUMS` last); see [Downloads](#downloads) |
 | GET | `/v2/{repository}/sitemap.xml` | | sitemap (served at `/<Key>/sitemap.xml`): the node's home, search and listed pages, and every public contribution page (`<site_url>/<Key>/<id>`, `lastmod` its last update), at most 50,000 URLs |
 | GET | `/v2/{repository}/llms.txt` | | llms.txt (served at `/<Key>/llms.txt`, `text/markdown`): what the node holds, how many public contributions, how to search, download and read them through the API, its data model and pages |
 | GET | `/v2/{repository}/contributions/{id}/jsonld` | `private_key?` | the contribution as a schema.org `Dataset` (`application/ld+json`, after Science-on-Schema.org; `fiesta.domain.jsonld`): `@id`/`url` its landing page `<api.site_url>/<Key>/<id>`, the DOI `<doi.prefix>/<id>` (activated only), creators with ORCIDs and the cited article from the reference, keywords from vocabulary columns, `spatialCoverage` (bounding box + points), `temporalCoverage` (years BP), `variableMeasured` (data-model label/unit, min/max from `summary._num`), provider/license from the node YAML's `jsonld` block, `funding` (MonetaryGrants) from its `jsonld.funding_column`, the download under the proxy's `X-Forwarded-Prefix`, and what active plugins add (`FiestaPlugin.jsonld`; method-codes: `measurementTechnique` as defined terms); the contribution modal's admin-only JSON-LD tab, and the contribution page's head (`/v2/seo/head`) |
@@ -514,6 +516,66 @@ re-applies the file to the cached references and their search docs.
 When omitted the API sorts by relevance if the query has free text and by
 `recent` otherwise.
 
+### Downloads
+
+A download never serves the stored file blindly, and never edits it either
+(published revision content is immutable): `fiesta.domain.download` prepares
+the text on output.
+
+- A leading UTF-8 BOM is dropped and line endings become `\n` (MagIC #621).
+- Only proper table separators remain (MagIC #311): every `>>>` line becomes
+  `>>>>>>>>>>`; separators before the first table, after the last, or with no
+  table between them are dropped, and so are rows holding only whitespace or
+  only `>`s (legacy exports left `\t\t\t>>>>>>>>>>` after a table).
+- The contribution table carries the contribution's id and workflow metadata
+  (MagIC #291, #315): of `id`, `version`, `timestamp` (activation, legacy's
+  `2017-10-20T17:47:21.383Z` form; none while unpublished), `contributor` (the
+  contributor's name) and `data_model_version`, every column the node's data
+  model declares `downloadOnly()` in its `contribution` table. They belong to
+  the system, so a stored value is overwritten (a legacy `@handle`
+  contributor, MagIC #497); an empty value never blanks one. A file without a
+  contribution table gains one at its front. Every row also gets the
+  `contribution_id` / `row_id` a save writes (`stamp_ids`), for files stored
+  before it.
+- A file that is not UTF-8 is served as stored; one that does not parse gets
+  the BOM and separator fixes only.
+
+`original=true` serves the stored bytes unchanged.
+
+Checksums: the stored checksum is the sha256 recorded in the revision snapshot
+when the file was saved (`file.sha256` on the contribution, `stored.sha256`
+from `/download/info`, and `original=true`'s bytes). The served checksum is the
+sha256 of the prepared text, which differs. Each download response names both:
+
+| Header | Value |
+|---|---|
+| `X-Checksum-SHA256` | hex sha256 of the served text file (the `.txt`, also the one inside a `.gz` or `.zip`) |
+| `X-Stored-SHA256` | hex sha256 of the stored canonical file |
+| `Repr-Digest` | RFC 9530 `sha-256=:<base64>:` of the response body (equals `X-Checksum-SHA256` for plain text; the `.gz` or `.zip` bytes otherwise) |
+
+`compress=gzip` is deterministic (no timestamp in the gzip header); `zip` adds
+a `SHA256SUMS` file (`sha256sum -c` format) next to the text.
+
+`GET /contributions/download?ids=1,2,3` streams one zip (one contribution's
+file in memory at a time): `<id>/<name>` per contribution in the order asked,
+then `SHA256SUMS` of the served texts. Every id goes through the same check as
+a single read: public (`load_visible_contribution`), or, for a signed-in
+caller, one they may open in the private workspace (`can_access`); otherwise
+the request is a 404 naming the ids, before anything is read. Repeats are
+dropped. More than `download_max_contributions` ids (setting, default 100) or
+more than `download_max_bytes` stored bytes (default 1 GiB, summed from the
+revision snapshots before any file is read) is a 422. A file that fails to
+read mid-stream becomes `<id>/ERROR.txt` and the rest go on. The search page's
+Download Results dialog sends the search's first 100 matching contributions.
+
+Text cells that begin with `@` (MagIC #497): the text format has no quoting,
+so a cell cannot be marked as text for Excel without changing its value for
+every other reader (PmagPy, a re-upload), and downloads leave such cells as
+they are. The download-only `contributor` column, the usual source, now holds
+the contributor's name rather than legacy's `@handle`. To open a file in Excel
+without `@…` cells turning into formulas, import it (Data → From Text/CSV,
+tab-delimited) and set those columns to Text instead of double-clicking it.
+
 ### Private workspace (`/v2/{repository}/private/contributions`, Bearer or Basic)
 
 | Method | Path | Body / params | Returns |
@@ -533,7 +595,7 @@ When omitted the API sorts by relevance if the query has free text and by
 | POST | `/{id}/deactivate` | | `ContributionOut` (unpublishes; node admins only, 403 otherwise: contributors correct published data with a new version) |
 | PUT | `/{id}/name` | `{name}` | `ContributionOut` (the contributor's label, legacy `_name`; any version, published too; saves no revision; empty clears it) |
 | DELETE | `/{id}` | | 204 (private, unactivated only) |
-| GET | `/{id}/download` | `revision_id?` | the canonical file (`text/plain`, `Content-Disposition: attachment` with its name) for anyone who may open the contribution here; 404 before the first upload |
+| GET | `/{id}/download` | `revision_id?`, `compress?`, `original?` | the canonical file (`text/plain`, `Content-Disposition: attachment` with its name) for anyone who may open the contribution here, prepared and labelled like the public download ([Downloads](#downloads)); 404 before the first upload |
 | PUT | `/{id}/contributor` | `{user}` (email or handle, any case, `@` optional) | `ContributionOut` (reassigns a private contribution: its contributor or a node admin only, 403 for a shared workspace's editor; 404 for an unknown account, 409 if published or already theirs; records a `reassign` audit event and re-indexes, no revision) |
 | GET | `/{id}/content` | `revision_id?` | `{revision_id, text}` (canonical file text) |
 | PUT | `/{id}/content` | `{text, expected_revision, request_key}` | `ContributionOut` (JSON edit) |

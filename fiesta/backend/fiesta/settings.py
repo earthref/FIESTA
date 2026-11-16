@@ -142,6 +142,12 @@ class Settings(BaseSettings):
     # the deploy proxy stop larger uploads first; keep the three in step.
     max_upload_bytes: int = 512 * 1024**2
 
+    # A multi-contribution download (GET /v2/{node}/contributions/download):
+    # at most this many contributions, holding at most this many stored bytes
+    # (it streams, so the cap bounds the transfer, not the API's memory).
+    download_max_contributions: int = 100
+    download_max_bytes: int = 1024**3
+
     # Path prefix the API is published under when a reverse proxy strips one
     # before the request reaches uvicorn (routes stay at /v2); this only tells
     # FastAPI where to advertise /v2/docs and openapi.json. "" or "/" means the

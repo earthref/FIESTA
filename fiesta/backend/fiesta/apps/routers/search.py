@@ -8,12 +8,13 @@ from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import HTTPBasicCredentials
 from opensearchpy.exceptions import NotFoundError, TransportError
 
 from fiesta.apps.deps import (
     NodeDep,
+    OptionalUser,
     SessionDep,
     basic_scheme,
     get_optional_user,
@@ -33,6 +34,7 @@ from fiesta.apps.schemas import (
 from fiesta.db.models import Contribution, User
 from fiesta.domain.jsonld import contribution_jsonld
 from fiesta.nodeconfig import ANY_TABLE, POSITION_COLUMNS, MapColor
+from fiesta.plugins.util import load_visible_contribution
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import (
     ROW_SORT_PREFIX,
@@ -48,9 +50,10 @@ from fiesta.search.queries import (
     build_search_body,
     facet_path,
 )
-from fiesta.services.access import constrain_search
-from fiesta.services.contributions import load_file
+from fiesta.services import downloads
+from fiesta.services.access import can_access, constrain_search
 from fiesta.services.history import locate_row, row_stats, table_page, versions
+from fiesta.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -1245,12 +1248,72 @@ async def _get_visible_contribution(
     return contribution
 
 
+# Before /contributions/{contribution_id}, which would take "download" for an id.
+@router.get("/contributions/download")
+async def download_contributions(
+    session: SessionDep, node: NodeDep, user: OptionalUser, ids: str
+) -> StreamingResponse:
+    """Several contributions' files as one streamed zip: `ids` is a
+    comma-separated list (order kept, repeats dropped). Each must be public,
+    or one the signed-in user may open in the workspace; any other id is a 404
+    naming it. Capped at `download_max_contributions` contributions and
+    `download_max_bytes` stored bytes."""
+    try:
+        wanted = list(dict.fromkeys(int(i) for i in ids.split(",") if i.strip()))
+    except ValueError:
+        raise HTTPException(422, "ids must be comma-separated contribution ids") from None
+    if not wanted:
+        raise HTTPException(422, "ids names no contribution")
+    settings = get_settings()
+    downloads.check_count(len(wanted), settings.download_max_contributions)
+    visible, missing = [], []
+    for contribution_id in wanted:
+        contribution = await _visible_for_download(session, node, user, contribution_id)
+        if contribution is None:
+            missing.append(str(contribution_id))
+        else:
+            visible.append(contribution)
+    if missing:
+        raise HTTPException(404, f"contributions not found: {', '.join(missing)}")
+    files = [await downloads.locate(session, node, c) for c in visible]
+    downloads.check_size(files, settings.download_max_bytes)
+    return downloads.zip_response(node, files)
+
+
+async def _visible_for_download(session, node, user, contribution_id: int) -> Contribution | None:
+    """The contribution if its file is public (load_visible_contribution) or
+    one USER may open in the workspace (can_access), else None."""
+    try:
+        return await load_visible_contribution(session, node, contribution_id)
+    except HTTPException:
+        pass
+    if user is None:
+        return None
+    contribution = await session.get(Contribution, contribution_id)
+    if (
+        contribution is not None
+        and contribution.deleted_at is None
+        and contribution.node == node.node.slug
+        and contribution.filename
+        and await can_access(session, contribution, user)
+    ):
+        return contribution
+    return None
+
+
 @router.get("/contributions/{contribution_id}")
 async def get_contribution(
     session: SessionDep, node: NodeDep, contribution_id: int, private_key: str | None = None
 ) -> dict:
     contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
-    return await _contribution_doc(node, contribution)
+    doc = await _contribution_doc(node, contribution)
+    # The stored canonical file and its archival checksum. What /download
+    # serves differs (fiesta.domain.download); /download/info has its checksum.
+    try:
+        stored = await downloads.locate(session, node, contribution)
+    except HTTPException:
+        return doc
+    return {**doc, "file": {"name": stored.name, "size": stored.size, "sha256": stored.sha256}}
 
 
 @router.get("/contributions/{contribution_id}/jsonld")
@@ -1380,14 +1443,30 @@ async def locate_table_row(
 
 @router.get("/contributions/{contribution_id}/download")
 async def download_contribution(
-    session: SessionDep, node: NodeDep, contribution_id: int, private_key: str | None = None
+    session: SessionDep,
+    node: NodeDep,
+    contribution_id: int,
+    private_key: str | None = None,
+    compress: downloads.Compression | None = None,
+    original: bool = False,
 ) -> Response:
+    """The canonical file, prepared for download (fiesta.domain.download), or
+    byte for byte as stored with `original`; `compress` gzips or zips it."""
     contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
     if not contribution.filename:
         raise HTTPException(404, "this contribution has no file")
-    data = await load_file(node, contribution.id, contribution.filename)
-    return Response(
-        content=data,
-        media_type="text/plain",
-        headers={"Content-Disposition": f'attachment; filename="{contribution.filename}"'},
-    )
+    served = await downloads.served_file(session, node, contribution, original=original)
+    return downloads.file_response(served, compress)
+
+
+@router.get("/contributions/{contribution_id}/download/info")
+async def download_info(
+    session: SessionDep, node: NodeDep, contribution_id: int, private_key: str | None = None
+) -> dict:
+    """What /download serves: its name, size and sha256, and the stored file's."""
+    contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    if not contribution.filename:
+        raise HTTPException(404, "this contribution has no file")
+    stored = await downloads.locate(session, node, contribution)
+    served = downloads.serve(node, stored, await downloads.read(node, stored))
+    return downloads.file_info(served, stored)
