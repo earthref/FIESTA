@@ -1,24 +1,28 @@
-"""Cross-node views for the EarthRef portal's Users and References pages:
+"""Cross-node views for the EarthRef portal's home, Users and References pages:
 
     /v2/portal/users        every contributor of a public contribution and how
                             many they have on each node
     /v2/portal/references   every publication (reference DOI) a public
                             contribution cites and how many cite it on each node
+    /v2/portal/stats        per node: public contributions, their contributors,
+                            and how many contributions (private too) are active
 
 Public data only: a contribution counts once it is activated, the latest
-version, and not deleted -- what public search shows. A user is listed by
-name, handle and ORCID, never by email. Each node is counted in its own
-schema; the totals are cached for a few minutes, and filtering, sorting and
-paging happen over that cached list.
+version, and not deleted -- what public search shows. The one exception is
+the stats' `active`, a bare count that includes private workspace
+contributions. A user is listed by name, handle and ORCID, never by email.
+Each node is counted in its own schema; the totals are cached for a few
+minutes, and filtering, sorting and paging happen over that cached list.
 """
 
 import time
+from datetime import timedelta
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
-from fiesta.db.models import Contribution, DoiReference, User
+from fiesta.db.models import Contribution, DoiReference, Revision, User, utcnow
 from fiesta.db.session import get_sessionmaker
 from fiesta.nodeconfig import get_deployment
 from fiesta.services.references import details, normalize
@@ -26,6 +30,8 @@ from fiesta.services.references import details, normalize
 router = APIRouter(prefix="/portal", tags=["portal"])
 
 TTL = 300.0
+# "Active": created or revised within this window (about six months).
+ACTIVE = timedelta(days=182)
 _cache: dict[str, tuple[float, Any]] = {}
 
 
@@ -223,6 +229,48 @@ async def list_references(
         limit=limit,
     )
     return {"nodes": _columns(rows), "total": page["total"], "references": page["rows"]}
+
+
+async def _stats() -> dict[str, dict[str, int]]:
+    since = utcnow() - ACTIVE
+    revised = (
+        select(Revision.id)
+        .where(Revision.contribution_id == Contribution.id, Revision.created_at >= since)
+        .exists()
+    )
+    out = {}
+    for node in _nodes():
+        async with get_sessionmaker(node["slug"])() as session:
+            contributions, contributors = (
+                await session.execute(
+                    select(
+                        func.count(), func.count(Contribution.contributor_id.distinct())
+                    ).where(*_public())
+                )
+            ).one()
+            active = await session.scalar(
+                select(func.count()).where(
+                    Contribution.is_latest.is_(True),
+                    Contribution.deleted_at.is_(None),
+                    or_(Contribution.created_at >= since, revised),
+                )
+            )
+            out[node["slug"]] = {
+                "contributions": contributions,
+                "contributors": contributors,
+                "active": active or 0,
+            }
+    return out
+
+
+@router.get("/stats")
+async def node_stats() -> dict:
+    """`{nodes: {slug: {contributions, contributors, active}}}`: public
+    contributions, the distinct users who contributed them, and contributions
+    created or revised in the last six months, private workspace ones included
+    (a count only). Imported revisions keep the source's timestamps, so a
+    legacy sync does not make a node's whole history active."""
+    return {"nodes": await _cached("stats", _stats)}
 
 
 @router.get("/references/{doi:path}")
