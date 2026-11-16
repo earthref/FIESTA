@@ -580,7 +580,7 @@ tab-delimited) and set those columns to Text instead of double-clicking it.
 
 | Method | Path | Body / params | Returns |
 |---|---|---|---|
-| GET | `` | | `ContributionOut[]` (contributions the caller can access, newest first) |
+| GET | `` | | `ContributionOut[]` (the caller's own work, newest first: contributions they made or that are in a shared workspace they own or belong to. Node admins too: other people's contributions on the node are not listed, though an admin may still open and act on any of them by id, as the Requests tab's cards do) |
 | POST | `` | | `ContributionOut` (201; allocates `id` + `private_key`) |
 | GET | `/{id}` | | `ContributionOut` |
 | PUT | `/{id}/file` | multipart `file`; headers `Idempotency-Key` (required), `If-Match` (revision; omit only for the first upload) | `ContributionOut` (stores file, enqueues processing). A file in an older data-model version is stored upgraded to the latest (as `POST /upgrade`, undefined columns kept), with the file as uploaded and `upgrade-report.txt` as attachments |

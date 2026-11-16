@@ -14,7 +14,7 @@ from fiesta.domain.parse import ParseError, parse_text, set_table_values
 from fiesta.jobs import tasks
 from fiesta.services import contributions as svc
 from fiesta.services import downloads, references
-from fiesta.services.access import can_access, may_publish
+from fiesta.services.access import can_access, is_member, may_publish
 from fiesta.services.revisions import (
     enqueue,
     locked,
@@ -76,9 +76,12 @@ async def list_contributions(
         .where(Contribution.node == node.node.slug, Contribution.deleted_at.is_(None))
         .order_by(Contribution.created_at.desc())
     )
+    # The caller's own work only, node admins included: other people's
+    # contributions reach an admin through the Requests tab or a direct link
+    # (`can_access`), not through these lists.
     output = []
     for c in result.scalars():
-        if await can_access(session, c, user):
+        if await is_member(session, c, user):
             output.append(await workspace_out(session, c, user))
     return output
 
