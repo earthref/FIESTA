@@ -90,32 +90,45 @@ export interface ArgonData {
   samples: Sample[];
 }
 
+/** What a request narrows to (the route's query parameters). */
+export interface ArgonOnly {
+  experiment?: string;
+  specimen?: string;
+  sample?: string;
+  /** The specimens and samples only, without the experiments. */
+  agesOnly?: boolean;
+}
+
 /** The request for a contribution's argon data (shared by the tabs and the
  * Contribution Age Plots count, so it is fetched once). */
-export function argonQuery(
-  id: string,
-  privateKey: string | undefined,
-  only?: { experiment?: string; specimen?: string },
-) {
+export function argonQuery(id: string, privateKey: string | undefined, only?: ArgonOnly) {
   return {
-    queryKey: ["plugin", "argon", id, privateKey, only?.experiment, only?.specimen] as const,
+    queryKey: [
+      "plugin",
+      "argon",
+      id,
+      privateKey,
+      only?.experiment,
+      only?.specimen,
+      only?.sample,
+      only?.agesOnly,
+    ] as const,
     queryFn: () =>
       api<ArgonData>(`/plugins/plateau-calculations/contributions/${id}`, {
         params: {
           private_key: privateKey || undefined,
           experiment: only?.experiment,
           specimen: only?.specimen,
+          sample: only?.sample,
+          ages_only: only?.agesOnly || undefined,
         },
       }),
   };
 }
 
-/** A contribution's argon data, or one experiment's / one specimen's. */
-export function useArgon(
-  id: string,
-  privateKey: string | undefined,
-  only?: { experiment?: string; specimen?: string },
-) {
+/** A contribution's argon data, or one experiment's / one specimen's, or
+ * (`agesOnly`) only its specimens, or one sample's. */
+export function useArgon(id: string, privateKey: string | undefined, only?: ArgonOnly) {
   return useQuery({
     ...argonQuery(id, privateKey, only),
     staleTime: 5 * 60 * 1000,

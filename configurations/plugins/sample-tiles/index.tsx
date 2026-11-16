@@ -18,8 +18,12 @@ interface SampleTilesConfig {
    * `age_has_interval`; else the age columns as contributed. */
   age_interval: string;
   age_has_interval: boolean;
-  /** By level table, the column naming a record's age type. */
+  /** By level table, the column naming the type of a record's own age: on
+   * those levels the tile shows that age (its own row's) and its type. */
   age_type_columns: Record<string, string>;
+  /** A record's own age: its value column and sigma columns (tried in order). */
+  age_value_column: string;
+  age_sigma_columns: string[];
   intensity_columns: string[];
   method_code_columns: string[];
 }
@@ -52,6 +56,17 @@ function rangeText(value: unknown): string {
   }
   if (value === undefined || value === null) return "";
   return String(value);
+}
+
+/** A record's own age as contributed ("109.39 ± 2.89 Ma"), from its level
+ * summary block (its own row), or undefined without a value. */
+function ownAge(doc: SearchResult, table: string, options: SampleTilesConfig): string | undefined {
+  const own = (column: string) => firstString(getPath(doc, `summary.${table}.${column}`));
+  const value = own(options.age_value_column);
+  if (!value) return undefined;
+  const sigma = options.age_sigma_columns.map(own).find(Boolean);
+  const unit = own(options.age_unit_column);
+  return `${value}${sigma ? ` ± ${sigma}` : ""}${unit ? ` ${unit}` : ""}`;
 }
 
 /** Legacy intensity formatting: values are in Tesla; show nT/µT/mT/T. */
@@ -108,11 +123,29 @@ const plugin: PluginModule = {
       }
 
       case "age": {
-        // The age's type (Plateau Age, ...), when the level names its column
-        // and the record has one.
-        const typeColumn = options.age_type_columns?.[String(doc.type)];
-        const types = typeColumn ? listOf(getPath(doc, `summary._all.${typeColumn}`)) : [];
-        const ageType = types.length === 1 ? types[0] : undefined;
+        // A record's own (preferred) age and its type (Plateau Age, ...), on
+        // the levels that name a type column; not every row below it.
+        const table = String(doc.type);
+        const typeColumn = options.age_type_columns?.[table];
+        if (typeColumn) {
+          const own = ownAge(doc, table, options);
+          if (own) {
+            const ageType = firstString(getPath(doc, `summary.${table}.${typeColumn}`));
+            return (
+              <Cell width={width} wrap>
+                <b>Age:</b>
+                <br />
+                {own}
+                {ageType && (
+                  <>
+                    <br />
+                    {ageType}
+                  </>
+                )}
+              </Cell>
+            );
+          }
+        }
         if (options.age_has_interval) {
           // Every row's age in years BP, shown in one scale (lib/age.ts).
           const interval = ageIntervalOf(doc, options.age_interval);
@@ -124,12 +157,6 @@ const plugin: PluginModule = {
                 <br />
                 {formatAgeInterval(interval)}
               </span>
-              {ageType && interval.n === 1 && (
-                <>
-                  <br />
-                  {ageType}
-                </>
-              )}
             </Cell>
           );
         }
@@ -142,12 +169,6 @@ const plugin: PluginModule = {
             <br />
             {age}
             {ageUnit ? ` ${ageUnit}` : ""}
-            {ageType && (
-              <>
-                <br />
-                {ageType}
-              </>
-            )}
           </Cell>
         );
       }

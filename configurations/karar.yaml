@@ -39,7 +39,7 @@ search:
         - { cell: map }
         - { cell: geo }
         - { cell: geology }
-        - { cell: age }
+        - { cell: age_distribution }
         - cell: fields
           label: Experiments
           show: values
@@ -56,6 +56,7 @@ search:
         - { cell: map }
         - { cell: geo }
         - { cell: geology }
+        - { cell: age_distribution }
         - cell: fields
           label: Details
           columns:

@@ -6,7 +6,7 @@ of core on 2026-11-11:
 | Tile (`cell`) | Shows | Sorts / filters on |
 |---|---|---|
 | `geology` | Class, Type and Lithology lines | the class columns; facets: all three lists |
-| `age` | the node's age interval (`summary._interval.<age_interval>`, years BP) as every age is shown (`lib/age.ts`: "12.3 ± 0.4 Ma", "10 – 15 Ma", a span for several; as contributed on hover), and under one age its type when the level names a column for it (`age_type_columns`; KArAr specimens: "Plateau Age"); without one, the age columns' range and unit as contributed | the interval's median age; without one, the age columns as numbers, text box |
+| `age` | the node's age interval (`summary._interval.<age_interval>`, years BP) as every age is shown (`lib/age.ts`: "12.3 ± 0.4 Ma", "10 – 15 Ma", a span for several; as contributed on hover); on a level that names an age type column (`age_type_columns`), the record's own (preferred) age as contributed, from its own row and not the rows below it, with its type under it (KArAr specimens: "16.45 ± 0.11 Ma", "Inverse Isochron"); without an interval, the age columns' range and unit as contributed | the interval's median age; without one, the age columns as numbers, text box |
 | `intensity` | Int (or Min/Max Int) in nT/µT/mT/T from Tesla, and N | the intensity columns, as numbers |
 | `method_codes` | the record's method codes | the codes, facet |
 
@@ -22,7 +22,7 @@ columns): `geologic_class_columns`, `geologic_type_columns`,
 `lithology_columns`, `age_interval` (the node YAML's `unit_conversions`
 interval, default `age`; the Age tile needs a reindex once a node adds one),
 `age_columns` (tried in order) and `age_unit_column` (without that interval),
-`age_type_columns` (by level table, the column naming a record's age type),
+`age_type_columns` (by level table, the column naming the type of a record's own age),
 `intensity_columns` (tried in order), `method_code_columns`.
 
 | File | What |

@@ -42,8 +42,9 @@ class SampleTilesOptions(PluginOptions):
     age_type_columns: dict[str, str] = Field(
         default={},
         description=(
-            "Age tile: by level table, the column naming a record's age type, shown under "
-            "its one age (KArAr specimens: age_calculation_method, e.g. Plateau Age)"
+            "Age tile: by level table, the column naming the type of a record's own "
+            "(preferred) age; on those levels the tile shows that age, from the record's own "
+            "row, with its type under it (KArAr specimens: age_calculation_method)"
         ),
     )
     intensity_columns: Columns = Field(
@@ -114,5 +115,13 @@ class SampleTilesPlugin(FiestaPlugin):
     def frontend_config(self, node: NodeConfig) -> dict:
         options = self.options(node)
         # Whether the Age tile has an interval to show (else the raw columns).
-        has_interval = node.search.interval(options.age_interval) is not None
-        return {**options.model_dump(), "age_has_interval": has_interval}
+        conversion = node.search.interval(options.age_interval)
+        spec = conversion.interval if conversion else None
+        return {
+            **options.model_dump(),
+            "age_has_interval": conversion is not None,
+            # A record's own age on the age_type_columns levels: its value
+            # column and its sigma columns, tried in order.
+            "age_value_column": (spec.value if spec else None) or options.age_columns[-1],
+            "age_sigma_columns": list(spec.sigma) if spec else [],
+        }

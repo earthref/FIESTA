@@ -37,7 +37,8 @@ matched to experiments exactly, or else on a hyphen-delimited prefix
 `j_value_sigma`, `irrad_name`, `irrad_position`, `irrad_x/y/z`,
 `is_flux_monitor`); the samples their `elevation`, `height`, `height_sigma`,
 `core_depth` and `composite_depth`. `?experiment=` or `?specimen=` narrows the
-result, as the tiles do (`?specimen=` keeps its sample). The built data is cached per contribution revision, and
+result, as the tiles do (`?specimen=` keeps its sample); `?sample=` keeps one
+sample's specimens and `?ages_only=true` leaves the experiments out. The built data is cached per contribution revision, and
 concurrent requests share a single download and parse.
 
 UI: three contribution-modal asset tabs, laid out as MagIC's plot tabs are
@@ -67,6 +68,13 @@ An experiment's spectrum is the `plot` tile of the levels in
 `experiment_levels`, and the specimen view is the tile of the levels in
 `specimen_levels`. A tile opens its tab with that item selected
 (`?plot=<name>`).
+
+The `age_distribution` grid tile (header "Age"; KArAr's Contributions and
+Samples levels, 2026-11-15) draws the contribution's specimen ages, or a
+sample's, as the Specimen ages plot does, small, with their span and N under
+it. It fetches `?ages_only=true` (no experiments), plus `&sample=<name>` on a
+sample level, and opens the Contribution Age Plots tab at `?plot=ages`. It
+sorts by the record's median age (`summary._interval.<name>.mid`).
 
 Options (set in karar.yaml): `experiment_levels` and `specimen_levels`.
 

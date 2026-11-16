@@ -5,9 +5,11 @@ import { useOpenContribution } from "@/lib/contribution-modal";
 import type { NodeConfig, SearchResult } from "@/lib/types";
 import { getPath } from "@/lib/utils";
 import type { ContributionTab, PluginGridCellProps, PluginModule } from "@/plugins";
+import { Ideogram } from "./argon-charts";
 import { type ArgonData, argonQuery, useArgon } from "./argon-data";
 import { AgeSpectrum } from "./argon-plots";
 import { AgeDistributionView } from "./argon-search";
+import { summaryPlots } from "./argon-summary";
 import {
   CONTRIBUTION_TAB,
   ContributionAgePlots,
@@ -43,6 +45,7 @@ function PlotTile({
   tab,
   plot,
   label,
+  noData = "Plot",
   query,
   render,
 }: {
@@ -52,6 +55,8 @@ function PlotTile({
   tab: string;
   plot: string;
   label: string;
+  /** The no-data placeholder's label ("No Plot Data"). */
+  noData?: string;
   query: ReturnType<typeof useArgon>;
   render: (data: ArgonData) => ReactNode | null;
 }) {
@@ -66,7 +71,7 @@ function PlotTile({
     );
   }
   const content = query.data ? render(query.data) : null;
-  if (!content) return <NoDataCell label="Plot" width={width} />;
+  if (!content) return <NoDataCell label={noData} width={width} />;
   return (
     <Cell width={width}>
       <button
@@ -127,6 +132,52 @@ function SpecimenTile(props: { id: string; specimen: string; privateKey?: string
   );
 }
 
+/** A contribution's or one sample's specimen ages, as the Contribution Age
+ * Plots tab's Specimen ages plot (histogram and ideogram) drawn small, with
+ * their span under it; opens that plot. */
+function AgeDistributionTile(props: {
+  id: string;
+  sample?: string;
+  privateKey?: string;
+  width: number;
+}) {
+  const query = useArgon(props.id, props.privateKey, { sample: props.sample, agesOnly: true });
+  const where = props.sample ? `sample ${props.sample}` : `contribution ${props.id}`;
+  return (
+    <PlotTile
+      {...props}
+      tab={CONTRIBUTION_TAB}
+      plot="ages"
+      noData="Age"
+      label={`Open the specimen ages plot of contribution ${props.id}`}
+      query={query}
+      render={(data) => {
+        const plot = summaryPlots(data).find((p) => p.kind === "ages");
+        if (plot?.kind !== "ages") return null;
+        const ages = plot.items.map((item) => item.age);
+        const [min, max] = [Math.min(...ages), Math.max(...ages)];
+        const digits = (v: number) => String(Number(v.toPrecision(Math.abs(v) >= 100 ? 5 : 4)));
+        const span = min === max ? digits(min) : `${digits(min)} – ${digits(max)}`;
+        return (
+          <span title={`${plot.items.length} specimen ages of ${where} (${plot.unit})`}>
+            <Ideogram
+              items={plot.items}
+              unit={plot.unit}
+              width={props.width - 4}
+              height={64}
+              withHistogram
+              label={`Specimen ages of ${where}`}
+            />
+            <span className="block truncate px-1 text-left text-xs">
+              {span} {plot.unit} (N={plot.items.length})
+            </span>
+          </span>
+        );
+      }}
+    />
+  );
+}
+
 /** The search table a tab counts: its option's first level's. */
 function levelTable(config: NodeConfig, key: string): string | undefined {
   const names = levelsOption(config, key);
@@ -179,11 +230,19 @@ const plateauPlugin: PluginModule = {
   },
   // The summary grid's plot tile: an experiment's age spectrum, or a
   // specimen's experiments under its preferred age.
+  // The age_distribution tile (contribution and sample levels): their
+  // specimens' ages.
   gridCell(props: PluginGridCellProps) {
-    if (props.column.cell !== "plot") return null;
     const id = contributionId(props.hit);
     if (!id) return null;
     const common = { id, privateKey: props.privateKey, width: props.column.width };
+    if (props.column.cell === "age_distribution") {
+      const table = props.level.table;
+      if (table === "contribution") return <AgeDistributionTile {...common} />;
+      const sample = nameOf(props.hit, table, table.replace(/s$/, ""));
+      return sample ? <AgeDistributionTile {...common} sample={sample} /> : null;
+    }
+    if (props.column.cell !== "plot") return null;
     if (levelsOption(props.config, "experiment_levels").includes(props.level.name)) {
       const experiment = nameOf(props.hit, props.level.table, "experiment");
       return experiment ? <ExperimentTile {...common} experiment={experiment} /> : null;

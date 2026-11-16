@@ -1,6 +1,6 @@
 """The plateau-calculations plugin: contributed ⁴⁰Ar/³⁹Ar ages, never refitted."""
 
-from fiesta.plugins.plateau_calculations import age_kind, build_argon, build_steps
+from fiesta.plugins.plateau_calculations import age_kind, build_argon, build_steps, narrowed
 
 
 def _step(name, seq, age, k39, experiment="EXP-1", **extra):
@@ -189,3 +189,24 @@ def test_specimen_irradiation_and_sample_sections():
     assert specimen["is_flux_monitor"] is True
     (sample,) = data["samples"]
     assert (sample["elevation"], sample["height"], sample["core_depth"]) == (1207.0, 3.5, None)
+
+
+def test_narrowed_to_a_sample_and_to_the_ages():
+    data = build_argon(
+        {
+            "measurements": [_step("m1", 1, 10.0, 5.0)],
+            "experiments": [{"experiment": "EXP-1", "specimen": "M1"}],
+            "specimens": [
+                {"specimen": "M1", "sample": "S1", "age": "10", "age_unit": "Ma"},
+                {"specimen": "M2", "sample": "S2", "age": "12", "age_unit": "Ma"},
+            ],
+            "samples": [{"sample": "S1"}, {"sample": "S2"}],
+        }
+    )
+    assert narrowed(data) is data
+    ages = narrowed(data, ages_only=True)
+    assert ages["experiments"] == [] and len(ages["specimens"]) == 2
+    one = narrowed(data, sample="S2", ages_only=True)
+    assert [s["specimen"] for s in one["specimens"]] == ["M2"]
+    assert [s["sample"] for s in one["samples"]] == ["S2"]
+    assert narrowed(data, sample="S1")["experiments"] == data["experiments"]

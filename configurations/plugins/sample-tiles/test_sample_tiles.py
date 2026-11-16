@@ -51,4 +51,7 @@ def test_age_type_column_by_level(magic_node, karar_node):
     config = plugin.frontend_config(karar_node)
     assert config["age_type_columns"] == {"specimens": "age_calculation_method"}
     assert config["age_has_interval"]
+    # Its own age: the interval's value and sigma columns, as contributed.
+    assert config["age_value_column"] == "age"
+    assert config["age_sigma_columns"][0] == "age_sigma_external"
     assert plugin.frontend_config(magic_node)["age_type_columns"] == {}
