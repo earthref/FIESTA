@@ -32,11 +32,11 @@ export interface GridTable {
 export type GridDoc = GridTable[];
 
 export class GridParseError extends Error {
-  constructor(
-    public line: number,
-    message: string,
-  ) {
+  // A plain field, not a parameter property, so node --test can strip the types.
+  line: number;
+  constructor(line: number, message: string) {
     super(`line ${line}: ${message}`);
+    this.line = line;
   }
 }
 
@@ -210,6 +210,8 @@ export function columnReference(column?: DataModelColumn): [string, string] | un
 }
 
 const NUMBER_WORDS = /^[+-]?(inf|infinity|nan)$/i;
+/** OpenSearch's long, the largest Integer cell the validator accepts. */
+const LONG_MAX = 2n ** 63n - 1n;
 const TIMESTAMP =
   /^\d{4}-\d{2}-\d{2}([T ]\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?)?(Z|[+-]\d{2}(:?\d{2})?)?$/;
 
@@ -243,6 +245,11 @@ export function checkCell(
   const type = column.type ?? "String";
   if (type === "Integer" && !/^\s*[+-]?\d+\s*$/.test(value))
     return [`expected an integer, got '${value}'`];
+  if (type === "Integer") {
+    const n = BigInt(value.trim());
+    if (n > LONG_MAX || n < -LONG_MAX - 1n)
+      return [`${value.trim()} is too large for an integer column (at most 19 digits)`];
+  }
   if (type === "Number" && asNumber(value) === null) return [`expected a number, got '${value}'`];
   if (type === "Timestamp" && !TIMESTAMP.test(value)) {
     return [`expected an ISO 8601 timestamp, got '${value}'`];
@@ -257,16 +264,61 @@ export function checkCell(
   if (number !== null && max !== undefined && asNumber(max) !== null && number > Number(max)) {
     errors.push(`${pyFloat(number)} is above the maximum ${pyFloat(Number(max))}`);
   }
-  const cv = calls.get("cv")?.[0];
-  const vocabulary = cv ? lookup(cv, "cv") : undefined;
-  if (cv && vocabulary) {
-    for (const v of splitValues(column, value)) {
+  // cv(), and a type() a controlled vocabulary is named for (method_codes).
+  const names = [calls.get("cv")?.[0], calls.get("type")?.[0]];
+  for (const cv of names) {
+    const vocabulary = cv ? lookup(cv, "cv") : undefined;
+    if (!cv || !vocabulary) continue;
+    for (const v of cellValues(column, value)) {
       if (!vocabulary.set.has(vocabulary.upper ? v.toUpperCase() : v)) {
-        errors.push(`'${v}' is not in the controlled vocabulary '${cv}'`);
+        const spelled = vocabulary.upper
+          ? undefined
+          : vocabulary.items.find((i) => String(i.item).toLowerCase() === v.toLowerCase());
+        errors.push(
+          `'${v}' is not in the controlled vocabulary '${cv}'` +
+            (spelled ? `; it is spelled '${spelled.item}'` : ""),
+        );
       }
     }
   }
   return errors;
+}
+
+/** Split on a delimiter outside double quotes (the validator's _split_outside_quotes). */
+function splitOutsideQuotes(value: string, delimiter: string): string[] {
+  const parts: string[] = [];
+  let start = 0;
+  let quoted = false;
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === '"') quoted = !quoted;
+    else if (value[i] === delimiter && !quoted) {
+      parts.push(value.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(value.slice(start));
+  return parts;
+}
+
+/**
+ * The values vocabulary checks see in a cell (the validator's cell_values):
+ * each item of a List, each Dictionary entry's key (before `[`), each Matrix
+ * row's first element (rows split on `;`, elements on `:`).
+ */
+export function cellValues(column: DataModelColumn | undefined, value: string): string[] {
+  if (!value) return [];
+  const type = column?.type;
+  if (type === "Matrix") {
+    return splitOutsideQuotes(value, ";")
+      .map((r) => r.trim())
+      .filter(Boolean)
+      .map((r) => r.split(":")[0].trim());
+  }
+  if (!isListColumn(column)) return [value];
+  const items = splitOutsideQuotes(value, ":")
+    .map((v) => v.trim())
+    .filter(Boolean);
+  return (type === "Dictionary" ? items.map((v) => v.split("[")[0].trim()) : items).filter(Boolean);
 }
 
 /** Index served vocabularies (controlled, plugin-supplied, suggested) for lookups. */

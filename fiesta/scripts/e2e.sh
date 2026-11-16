@@ -21,13 +21,13 @@ id	version	data_model_version	reference	lab_names
 12345	1	3.0	10.1029/93JB00024	Paleomagnetic Laboratory (AGICO Inc., Czech Republic)
 >>>>>>>>>>
 tab delimited	locations
-location	location_type	geologic_classes	lithologies	age_unit	lat_s	lat_n	lon_w	lon_e
-Hawaii	Outcrop	Igneous	Basalt	Ma	19.0	20.3	203.9	205.2
+location	location_type	geologic_classes	lithologies	age	age_unit	lat_s	lat_n	lon_w	lon_e
+Hawaii	Outcrop	Igneous	Basalt	0.5	Ma	19.0	20.3	203.9	205.2
 >>>>>>>>>>
 tab delimited	sites
-site	location	citations	geologic_types	geologic_classes	lithologies	age_unit	lat	lon	method_codes
-HW01	Hawaii	This study	Lava Flow	Igneous	Basalt	Ma	19.5	204.5	LP-DC3:SM-VSM
-HW02	Hawaii	This study	Lava Flow	Igneous	Basalt	Ma	19.7	204.6	LP-DC3
+site	location	citations	geologic_types	geologic_classes	lithologies	age	age_unit	lat	lon	method_codes
+HW01	Hawaii	This study	Lava Flow	Igneous	Basalt	0.5	Ma	19.5	204.5	LP-DC3:LP-HYS
+HW02	Hawaii	This study	Lava Flow	Igneous	Basalt	0.5	Ma	19.7	204.6	LP-DC3
 EOF
 
 json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
