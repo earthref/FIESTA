@@ -61,31 +61,31 @@ search:
     # refinements.py). data_type, pi_family, md_check, cooling_rate_check,
     # age_error and direction_n are derived by the geomag-series plugin (its
     # README); its site-name and radius searches follow these filters.
-    - { type: facet, field: data_type, label: Data Type, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: archeo_volcanic, views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Age, field: summary._num.age, unit: yr CE, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Paleointensity, field: summary._num.ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: VADM, field: summary._num.vadm, unit: 10²² Am², levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Declination, field: summary._num.decl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Inclination, field: summary._num.incl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: region_country, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: continent, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: materials, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: dating_methods, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: pi_family, label: Paleointensity Method Family, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: pi_methods, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: alteration_checks, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: md_check, label: Multi-Domain Checks, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: cooling_rate_check, label: Cooling Rate Correction, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: anisotropy_use_status, views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Paleointensity Specimens Accepted, field: summary._num.num_acc_spec, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Paleointensity Error σBa, field: summary._num.sigma_ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Directional Specimens or Samples, field: summary._num.direction_n, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Direction α95, field: summary._num.alpha_95, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Age Error, field: summary._num.age_error, unit: yr, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: numeric, label: Numeric, views: [Summaries, Rows, Map, Plots] }
-    - { type: text, label: Text, views: [Summaries, Rows, Map, Plots] }
-    - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map, Plots] }
+    - { type: facet, field: data_type, label: Data Type, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: archeo_volcanic, views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: Age, field: summary._num.age, unit: yr CE, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: Paleointensity, field: summary._num.ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: VADM, field: summary._num.vadm, unit: 10²² Am², levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: Declination, field: summary._num.decl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: Inclination, field: summary._num.incl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: region_country, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: continent, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: materials, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: dating_methods, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: pi_family, label: Paleointensity Method Family, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: pi_methods, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: alteration_checks, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: md_check, label: Multi-Domain Checks, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: cooling_rate_check, label: Cooling Rate Correction, views: [Summaries, Data, Map, Plots] }
+    - { type: facet, field: anisotropy_use_status, views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: Paleointensity Specimens Accepted, field: summary._num.num_acc_spec, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: Paleointensity Error σBa, field: summary._num.sigma_ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: Directional Specimens or Samples, field: summary._num.direction_n, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: Direction α95, field: summary._num.alpha_95, unit: "°", levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: range, label: Age Error, field: summary._num.age_error, unit: yr, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots] }
+    - { type: numeric, label: Numeric, views: [Summaries, Data, Map, Plots] }
+    - { type: text, label: Text, views: [Summaries, Data, Map, Plots] }
+    - { type: exists, label: With / Without Data, views: [Summaries, Data, Map, Plots] }
   map_colors:
     - { label: Age, field: age, unit: yr CE }
     - { label: Paleointensity, field: ba, unit: μT }
