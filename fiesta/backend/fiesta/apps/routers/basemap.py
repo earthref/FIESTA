@@ -10,6 +10,10 @@ services serve it uncacheable, or slowly):
                                     to pole
     /v2/basemap/undersea-features   the IHO-IOC GEBCO Gazetteer of Undersea
                                     Feature Names as GeoJSON, for the map labels
+    /v2/basemap/plates              the present-day tectonic plates as GeoJSON
+                                    (fiesta/plates.py; served from the repo,
+                                    not fetched), for the maps' plate boundaries
+                                    and the Geospatial filter's plate list
 
 The SPA's maps (fiesta/frontend/src/components/map/basemap.ts) take the basemap's
 tiles straight from Esri and the other labels from OpenFreeMap.
@@ -23,6 +27,8 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, Response
+
+from fiesta.plates import PLATES_FILE
 
 router = APIRouter(prefix="/basemap", tags=["basemap"])
 
@@ -169,6 +175,16 @@ async def _fetch_undersea() -> tuple[str, bytes]:
 @router.get("/undersea-features")
 async def get_undersea_features() -> Response:
     return _response(await _cached("undersea-features", _fetch_undersea))
+
+
+@router.get("/plates")
+async def get_plates() -> Response:
+    """The present-day tectonic plates as GeoJSON (fiesta/plates.py)."""
+    return Response(
+        PLATES_FILE.read_bytes(),
+        media_type="application/geo+json",
+        headers={"Cache-Control": f"public, max-age={MAX_AGE}"},
+    )
 
 
 @router.get("/{name}")

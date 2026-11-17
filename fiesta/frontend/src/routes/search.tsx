@@ -28,6 +28,7 @@ import {
   useNumberFilter,
 } from "../components/filter-modals";
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
+import { parsePlates, usePlates } from "../components/map/plates";
 import { SearchMap } from "../components/map/search-map";
 import {
   citationOf,
@@ -193,6 +194,7 @@ function searchRequestParams(
   sort?: string,
   filters?: string[],
   has?: string[],
+  plates?: string[],
 ) {
   return {
     query: query || undefined,
@@ -204,6 +206,7 @@ function searchRequestParams(
     sort,
     filter: filters && filters.length > 0 ? filters : undefined,
     has: has && has.length > 0 ? has : undefined,
+    plate: plates && plates.length > 0 ? plates : undefined,
   };
 }
 
@@ -394,6 +397,7 @@ export function SearchPage() {
     has?: string[];
     bbox?: string | undefined;
     area?: string | undefined;
+    plates?: string | undefined;
     mine?: SearchScope["mine"];
     versions?: SearchScope["versions"];
     /** Replace the history entry (a view's default filter, not a user's pick). */
@@ -411,6 +415,7 @@ export function SearchPage() {
         has: (next.has ?? has).length > 0 ? (next.has ?? has) : undefined,
         bbox: "bbox" in next ? next.bbox || undefined : bbox,
         area: "area" in next ? next.area || undefined : search.area,
+        plates: "plates" in next ? next.plates || undefined : search.plates,
         mine: "mine" in next ? next.mine : search.mine,
         versions: "versions" in next ? next.versions : search.versions,
       },
@@ -461,10 +466,18 @@ export function SearchPage() {
   const area = parseArea(search.area);
   const areaBbox = (entry: SearchLevel | undefined) =>
     area && entry?.geo ? areaToBbox(area) : undefined;
+  // And its plates (codes): records on any of them, inside the area if any.
+  const plates = parsePlates(search.plates);
+  const areaPlates = (entry: SearchLevel | undefined) =>
+    plates.length > 0 && entry?.geo ? plates : undefined;
+  const plateList = usePlates(plates.length > 0);
+  const plateName = (code: string) =>
+    plateList.data?.plates.find((plate) => plate.code === code)?.name ?? code;
   const [filterModal, setFilterModal] = useState<FilterModalState | null>(null);
   // The sidebar's Find box over its filters.
   const [filterFind, setFilterFind] = useState("");
   const setArea = (next: Area | null) => setSearch({ area: next?.join(",") });
+  const setPlates = (next: string[]) => setSearch({ plates: next.join(",") });
 
   // The with/without data entries a level's search applies on a view: those
   // on the tables its records cover, while an `exists` filter shows there.
@@ -483,7 +496,16 @@ export function SearchPage() {
       const entryRanges = entry.name === level?.name ? levelRanges : undefined;
       const entryHas = hasAt(entry, "Summaries");
       return {
-        queryKey: ["search-count", entry.table, q, areaBbox(entry), entryRanges, entryHas, scope],
+        queryKey: [
+          "search-count",
+          entry.table,
+          q,
+          areaBbox(entry),
+          areaPlates(entry),
+          entryRanges,
+          entryHas,
+          scope,
+        ],
         queryFn: () =>
           api<SearchPageData>(`/search/${entry.table}`, {
             params: {
@@ -497,6 +519,7 @@ export function SearchPage() {
                 undefined,
                 undefined,
                 entryHas,
+                areaPlates(entry),
               ),
               ...scope,
             },
@@ -593,6 +616,7 @@ export function SearchPage() {
   const ownDocsView = !!activeTab?.render && !activeTab.records;
   const queryRanges = ownDocsView ? undefined : activeRanges;
   const queryBbox = ownDocsView ? undefined : (areaBbox(level) ?? activeBbox);
+  const queryPlates = ownDocsView ? undefined : areaPlates(level);
   const activeHas = hasAt(level, activeTab?.name);
   const queryHas = ownDocsView ? undefined : activeHas;
   const dataModel = useLatestDataModel();
@@ -611,6 +635,7 @@ export function SearchPage() {
     sort,
     queryRanges,
     queryBbox,
+    queryPlates,
     gridFilterList,
     queryHas,
     scope,
@@ -631,6 +656,7 @@ export function SearchPage() {
             sort,
             gridFilterList,
             queryHas,
+            queryPlates,
           ),
           ...scope,
           // The Data and Map sub-tabs' counts, with the first page.
@@ -688,6 +714,7 @@ export function SearchPage() {
       undefined,
       gridFilterList,
       ownDocsView ? undefined : hasList,
+      queryPlates,
     ),
     ...scope,
   });
@@ -821,6 +848,7 @@ export function SearchPage() {
         sort,
         ownDocsView ? undefined : gridFilterList,
         has,
+        plates,
       ),
       size: undefined,
       ...scope,
@@ -847,6 +875,7 @@ export function SearchPage() {
       has: has.filter((entry) => !activeHas.includes(entry)),
       bbox: activeBbox ? undefined : bbox,
       area: undefined,
+      plates: undefined,
       mine: undefined,
       versions: undefined,
     });
@@ -858,6 +887,7 @@ export function SearchPage() {
     activeHas.length > 0 ||
     !!activeBbox ||
     !!area ||
+    plates.length > 0 ||
     gridFilterList.length > 0 ||
     !!scope.mine ||
     !!scope.versions;
@@ -916,7 +946,7 @@ export function SearchPage() {
     const active =
       queryTokens.filter(([field]) => column.facets.includes(field)).length +
       (text.trim() ? 1 : 0) +
-      (geospatial && area ? 1 : 0);
+      (geospatial ? (area ? 1 : 0) + plates.length : 0);
     const open = () =>
       setFilterModal(
         geospatial && column.facets.length === 0 && !column.filterable
@@ -985,16 +1015,24 @@ export function SearchPage() {
     open: () => setFilterModal({ kind: "range", filter }),
   });
   // A view with its own bbox filter (Poles) shows the area only while set.
-  const showGeo = !!level.geo && (!!area || !filters.some((f) => f.type === "bbox"));
+  const showGeo =
+    !!level.geo && (!!area || plates.length > 0 || !filters.some((f) => f.type === "bbox"));
   const entries: SidebarEntry[] = showGeo
     ? [
         {
           key: "geo",
           label: "Geospatial",
           count: filterCount("geo"),
-          chips: area
-            ? [{ key: "area", label: areaText(area), onRemove: () => setArea(null) }]
-            : [],
+          chips: [
+            ...(area
+              ? [{ key: "area", label: areaText(area), onRemove: () => setArea(null) }]
+              : []),
+            ...plates.map((code) => ({
+              key: `plate:${code}`,
+              label: `${plateName(code)} plate`,
+              onRemove: () => setPlates(plates.filter((other) => other !== code)),
+            })),
+          ],
           open: () => setFilterModal({ kind: "geo", title: "Geospatial", target: "area" }),
         },
       ]
@@ -1128,10 +1166,11 @@ export function SearchPage() {
         filters={gridFilterList}
         has={queryHas}
         area={isArea ? area : parseArea(bbox)}
+        plates={isArea ? plates : undefined}
         color={config.color}
-        onApply={(next) => {
+        onApply={(next, nextPlates) => {
           close();
-          if (isArea) setArea(next);
+          if (isArea) setSearch({ area: next?.join(","), plates: nextPlates.join(",") });
           else setSearch({ bbox: next ? areaToBbox(next) : undefined });
         }}
         onClose={close}
@@ -1491,6 +1530,7 @@ export function SearchPage() {
                   has={queryHas}
                   scope={scope}
                   area={area}
+                  plates={plates}
                   color={config.color}
                   onSelect={(id) => openContribution(id, level.table)}
                 />

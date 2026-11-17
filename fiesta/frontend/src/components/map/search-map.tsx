@@ -8,6 +8,7 @@ import { Icon } from "../ui/icon";
 import { Spinner } from "../ui/spinner";
 import { MERCATOR_LAT } from "./basemap";
 import { BODIES, type Body, bodiesOf } from "./bodies";
+import type { MapLine } from "./lines-layer";
 import {
   type ColorScale,
   colorPoints,
@@ -31,9 +32,12 @@ import {
   toMapPoint,
   WHOLE_GLOBE,
 } from "./map-points";
+import { usePlates } from "./plates";
 
 // MapLibre (~800 KB) loads with the first map.
 const MapLibreMap = lazy(() => import("./maplibre-map"));
+// No plates filter (a stable default).
+const NO_PLATES: string[] = [];
 
 interface MapPointsPage {
   total: number;
@@ -75,10 +79,22 @@ function usePoints(
   enabled = true,
   colorBy?: string,
   scope?: SearchScope,
+  plates?: string[],
 ) {
   const levels = useNodeConfig().data?.search_levels ?? [];
   return useQuery({
-    queryKey: ["search-points", level.table, query, ranges, filters, has, bbox, colorBy, scope],
+    queryKey: [
+      "search-points",
+      level.table,
+      query,
+      ranges,
+      filters,
+      has,
+      bbox,
+      plates,
+      colorBy,
+      scope,
+    ],
     queryFn: () =>
       api<MapPointsPage>(`/search/${level.table}/points`, {
         params: {
@@ -88,6 +104,7 @@ function usePoints(
           filter: filters?.length ? filters : undefined,
           has: has?.length ? has : undefined,
           bbox,
+          plate: plates?.length ? plates : undefined,
           color_by: colorBy,
         },
       }),
@@ -165,7 +182,7 @@ export type AreaRequest = { mode?: Mode; zoomTo?: boolean };
  * and resized on the map, and the records it leaves out stay on the map in
  * grey; the Map tab only shows the search, an area included (2026-11-13).
  * Records on the Moon are on its map (the Earth / Moon buttons); the area is
- * on Earth.
+ * on Earth. So are the filter's `plates`, which the modal's map outlines.
  */
 export function SearchMap({
   level,
@@ -174,6 +191,7 @@ export function SearchMap({
   filters,
   has,
   area,
+  plates = NO_PLATES,
   editArea = false,
   onAreaChange = () => {},
   areaRequest = null,
@@ -193,6 +211,8 @@ export function SearchMap({
   /** The search's scope filters (My contributions, Previous versions). */
   scope?: SearchScope;
   area: Area | null;
+  /** The Geospatial filter's plates (codes): records on any of them. */
+  plates?: string[];
   /** The area is drawn, moved and resized here (the Geospatial filter's map). */
   editArea?: boolean;
   onAreaChange?: (area: Area | null) => void;
@@ -238,8 +258,10 @@ export function SearchMap({
     true,
     colorOption?.field,
     scope,
+    plates,
   );
-  // With an area, the same search without it, for the grey context points.
+  const geoFiltered = Boolean(area) || plates.length > 0;
+  // With an area (or plates), the same search without it, for the grey context points.
   const all = usePoints(
     level,
     query,
@@ -248,9 +270,20 @@ export function SearchMap({
     has,
     undefined,
     color,
-    editArea && Boolean(area),
+    editArea && geoFiltered,
     undefined,
     scope,
+  );
+  // The filter's plates outlined on its map (the modal's), in the node color.
+  const plateList = usePlates(editArea && plates.length > 0);
+  const plateLines = useMemo<MapLine[]>(
+    () =>
+      editArea
+        ? (plateList.data?.plates ?? [])
+            .filter((plate) => plates.includes(plate.code))
+            .flatMap((plate) => plate.lines.map((coords) => ({ coords, color, width: 2.5 })))
+        : [],
+    [editArea, plateList.data, plates, color],
   );
   const fetched = inArea.data?.points;
   // Scaled to the values of the search's points (in the area, if any).
@@ -276,13 +309,13 @@ export function SearchMap({
     [colored, body],
   );
   const context = useMemo<MapPoint[]>(() => {
-    if (!editArea || !area || !all.data) return [];
+    if (!editArea || !geoFiltered || !all.data) return [];
     // A record, or a location's records in a contribution (whose name is their
     // number, which differs between the two searches).
     const key = (p: MapPoint) => `${p.id}|${p.count === undefined ? p.name : ""}|${pointKey(p)}`;
     const plotted = new Set(points.map(key));
     return all.data.points.filter((p) => (p.body ?? "earth") === body && !plotted.has(key(p)));
-  }, [area, all.data, points, body, editArea]);
+  }, [geoFiltered, all.data, points, body, editArea]);
 
   // An area asked for, in the view asked for, once the search's records have
   // loaded (as on osu-mgr.org): around them, or, for an unfiltered search,
@@ -331,7 +364,7 @@ export function SearchMap({
   // search, that clearing its filters shows more.
   const records = level.name.toLowerCase();
   const noneMapped = (where: string) =>
-    unfiltered && !area
+    unfiltered && !geoFiltered
       ? `No mapped ${records} ${where}`
       : `No mapped ${records} ${where} match this search; clear its filters to see more`;
   const onBody = (each: Body) => BODY_PLACES[each];
@@ -424,6 +457,7 @@ export function SearchMap({
             zoomTo={onEarth ? zoomTo : null}
             focusKey={focusKey}
             context={context}
+            lines={onEarth ? plateLines : undefined}
           />
         </Suspense>
         {colorOption && inArea.data && points.length > 0 && (

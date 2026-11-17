@@ -744,7 +744,6 @@ async def test_v2_serves_every_enabled_node_from_one_process():
 
         assert (await client.get("/v2/nope/config")).status_code == 404
         plugin_routes = {
-            "poles": "/plugins/poles/plate-boundaries",
             "depth-plot": "/plugins/depth-plot/contributions/1/measurements",
             "plateau-calculations": "/plugins/plateau-calculations/contributions/1",
         }

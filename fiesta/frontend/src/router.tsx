@@ -41,6 +41,8 @@ export interface SearchParams {
   bbox?: string;
   /** The Map tab's area filter: "west,south,east,north", east past 180 across the antimeridian. */
   area?: string;
+  /** The Geospatial filter's plates: codes from /basemap/plates, "PA,EU" (on any of them). */
+  plates?: string;
   /** The contribution whose modal is open, its tab, the row selected in a
    * level tab (its 1-based place in the file's table), and a private one's key. */
   contribution?: number;
@@ -126,6 +128,7 @@ const searchRoute = createRoute({
     has: strArray(search.has),
     bbox: str(search.bbox),
     area: str(search.area),
+    plates: str(search.plates),
     contribution: id(search.contribution),
     tab: str(search.tab),
     row: id(search.row),

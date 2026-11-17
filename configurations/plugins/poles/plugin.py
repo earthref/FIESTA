@@ -35,11 +35,9 @@ from functools import cache
 from typing import Any
 
 import numpy as np
-from fastapi import APIRouter, HTTPException
 from pmagpy import pmag
 from pydantic import BaseModel, Field, field_validator
 
-from fiesta.apps.deps import NodeDep
 from fiesta.domain.parse import ParsedContribution
 from fiesta.domain.summarize import interval_blocks
 from fiesta.nodeconfig import NodeConfig, normalize_view
@@ -248,7 +246,9 @@ class PolesOptions(PluginOptions):
         ),
     )
     plate_boundary_color: str = Field(
-        default="#990000", description="Color of the plate boundary lines on the map"
+        default="#990000",
+        description="Color of the plate boundary lines on the Poles map (shown by default "
+        "there; the platform's plates, see fiesta/plates.py)",
     )
     default_alpha95_max: float | None = Field(
         default=10.0,
@@ -360,21 +360,6 @@ class PolesPlugin(FiestaPlugin):
             )
         return docs
 
-    def build_router(self) -> APIRouter:
-        router = APIRouter()
-
-        @router.get("/plate-boundaries")
-        async def plate_boundaries(node: NodeDep) -> dict:
-            """Tectonic plate boundary polygons (GeoJSON) for the map."""
-            path = node.base_dir / node.node.slug / "plate_boundaries.json"
-            if not path.exists():
-                raise HTTPException(404, "this node has no plate boundary data")
-            import json
-
-            return json.loads(path.read_text())
-
-        return router
-
     def frontend_config(self, node: NodeConfig) -> dict:
         # The Age / Pole A95 / Geospatial controls on the Poles view are
         # `search.filters` entries in the node YAML (range on
@@ -383,7 +368,4 @@ class PolesPlugin(FiestaPlugin):
             "view": "poles",
             "table": "poles",
             **self.options(node).model_dump(),
-            "has_plate_boundaries": (
-                node.base_dir / node.node.slug / "plate_boundaries.json"
-            ).exists(),
         }

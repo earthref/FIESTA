@@ -10,7 +10,8 @@
 //   with min/max boxes.
 // - ExistsModal: the `exists` filter's columns with data (With Data) or
 //   without (Without Data), a tab per table the level's records cover.
-// - GeoModal: the geospatial area on the search's map, with its bounds as numbers.
+// - GeoModal: the geospatial area on the search's map, with its bounds as numbers,
+//   and the tectonic plates picked from a list.
 //
 // Each edits a draft and applies it with Apply, so a long list keeps its order
 // while values are picked and the search runs once.
@@ -44,6 +45,7 @@ import {
 import { type FacetValueDescription, usePluginFacetDescriptions } from "../plugins";
 import { type BrushRange, EChart, type EChartsOption } from "./echart";
 import { type Area, WHOLE_GLOBE } from "./map/map-points";
+import { usePlates } from "./map/plates";
 import { type AreaRequest, SearchMap } from "./map/search-map";
 import {
   ANY_TABLE,
@@ -1261,6 +1263,9 @@ const areaOf = (b: Bounds): Area | null => {
  * positions) with an area to drag and resize, drawn around them on opening
  * when there is none yet (and by "Filter by area" once removed), and its
  * bounds as numbers. Longitudes may run past ±180 across the antimeridian.
+ * With `plates` (the level's area, not a plugin view's bbox), the present-day
+ * plates picked from a list narrow it too: records on any of them (inside the
+ * area, if there is one), outlined on the map.
  */
 export function GeoModal({
   title,
@@ -1270,6 +1275,7 @@ export function GeoModal({
   filters,
   has,
   area,
+  plates,
   color,
   onApply,
   onClose,
@@ -1283,28 +1289,48 @@ export function GeoModal({
   /** The with/without data filter's entries. */
   has?: string[];
   area: Area | null;
+  /** The plate codes applied; undefined offers no plates (a plugin view's bbox). */
+  plates?: string[];
   color: string;
-  onApply: (area: Area | null) => void;
+  onApply: (area: Area | null, plates: string[]) => void;
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState<Area | null>(area);
+  const [draftPlates, setDraftPlates] = useState<string[]>(plates ?? []);
+  const plateList = usePlates(plates !== undefined);
+  const plateName = (code: string) =>
+    plateList.data?.plates.find((plate) => plate.code === code)?.name ?? code;
   const [bounds, setBounds] = useState<Bounds>(boundsOf(area));
-  // Opened without an area, the map draws one around the search's records.
-  const [request, setRequest] = useState<AreaRequest | null>(area || !level.geo ? null : {});
+  // Opened without an area (or plates), the map draws one around the search's
+  // records (`opening` until it does); picking a plate drops that one while
+  // it is untouched (`drawn`), not one asked for with Filter by area.
+  const opensDrawing = !area && !plates?.length && !!level.geo;
+  const [request, setRequest] = useState<AreaRequest | null>(opensDrawing ? {} : null);
+  const [opening, setOpening] = useState(opensDrawing);
+  const [drawn, setDrawn] = useState(false);
   const fromMap = (next: Area | null) => {
+    setDrawn(opening && next !== null);
+    setOpening(false);
     setRequest(null);
     setDraft(next);
     setBounds(boundsOf(next));
   };
+  const addPlate = (code: string) => {
+    setDraftPlates([...draftPlates, code]);
+    if (drawn) fromMap(null);
+  };
   const typed = (key: keyof Bounds, value: string) => {
     const next = { ...bounds, [key]: value };
+    setDrawn(false);
     setBounds(next);
     const parsed = areaOf(next);
     if (parsed) setDraft(parsed);
   };
   const empty = Object.values(bounds).every((v) => v.trim() === "");
   const invalid = !empty && !areaOf(bounds);
-  const changed = JSON.stringify(draft) !== JSON.stringify(area);
+  const changed =
+    JSON.stringify(draft) !== JSON.stringify(area) ||
+    JSON.stringify(draftPlates) !== JSON.stringify(plates ?? []);
   const boundInput = (key: keyof Bounds, name: string, placeholder: string) => (
     <label className="flex items-center gap-1.5">
       <span className="w-12 text-ink-muted">{name}</span>
@@ -1327,10 +1353,13 @@ export function GeoModal({
       title={title}
       footer={
         <Footer
-          onClear={() => fromMap(null)}
-          clearDisabled={!draft && empty}
+          onClear={() => {
+            fromMap(null);
+            setDraftPlates([]);
+          }}
+          clearDisabled={!draft && empty && draftPlates.length === 0}
           onCancel={onClose}
-          onApply={() => onApply(empty ? null : draft)}
+          onApply={() => onApply(empty ? null : draft, draftPlates)}
           applyDisabled={invalid || (!changed && !(empty && area))}
         />
       }
@@ -1345,6 +1374,7 @@ export function GeoModal({
               filters={filters}
               has={has}
               area={draft}
+              plates={draftPlates}
               editArea
               onAreaChange={fromMap}
               areaRequest={request}
@@ -1379,6 +1409,49 @@ export function GeoModal({
               ? "Drag the outline on the map or its corners, or type the bounds. Filter by area draws a new one."
               : "Type the bounds in degrees."}
           </p>
+        )}
+        {plates !== undefined && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <label className="flex items-center gap-1.5">
+              <span className="text-ink-muted">Plates</span>
+              <select
+                value=""
+                disabled={!plateList.data}
+                onChange={(event) => {
+                  const code = event.target.value;
+                  if (code) addPlate(code);
+                }}
+                className="rounded-sm border border-gray-300 bg-surface px-1.5 py-1"
+              >
+                <option value="">
+                  {plateList.isPending
+                    ? "Loading plates…"
+                    : plateList.error
+                      ? "The plates could not be loaded"
+                      : "Add a plate…"}
+                </option>
+                {(plateList.data?.plates ?? [])
+                  .filter((plate) => !draftPlates.includes(plate.code))
+                  .map((plate) => (
+                    <option key={plate.code} value={plate.code}>
+                      {plate.name} ({plate.code})
+                    </option>
+                  ))}
+              </select>
+            </label>
+            {draftPlates.map((code) => (
+              <Chip
+                key={code}
+                label={`${plateName(code)} plate`}
+                onRemove={() => setDraftPlates(draftPlates.filter((other) => other !== code))}
+              />
+            ))}
+            <span className="text-ink-muted">
+              {draftPlates.length > 0
+                ? `Records on ${draftPlates.length === 1 ? "this plate" : "any of these plates"}${draft ? ", inside the area" : ""}.`
+                : "Present-day plates (Bird 2003); records on any picked."}
+            </span>
+          </div>
         )}
       </div>
     </Modal>
