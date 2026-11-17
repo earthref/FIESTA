@@ -585,20 +585,29 @@ export function SearchPage(props: SearchPageProps) {
   const modalRow = modal?.row;
   const modalPlot = modal?.plot;
   const modalTab = modal?.tab ?? "Contribution";
+  const modalRowId = modal?.rowId;
+  const modalColumn = modal?.column;
   // `respell`: the same tab under its canonical name (/16901/sites ->
-  // /16901/Sites), keeping its row, plot and the row to find.
+  // /16901/Sites), keeping its row (or row link), column, plot and the row
+  // to find.
   const setModalTab = useCallback(
     (tab: string, respell?: boolean) =>
       navigate({
         to: "/$id/$tab",
         params: { id: modalId, tab: slug(tab) },
         search: respell
-          ? { row: modalRow, plot: modalPlot, private_key: modalKey }
+          ? {
+              row: modalRow,
+              row_id: modalRowId,
+              column: modalColumn,
+              plot: modalPlot,
+              private_key: modalKey,
+            }
           : { private_key: modalKey },
         state: respell ? (prev) => ({ ...prev, background }) : { background },
         replace: true,
       }),
-    [navigate, modalId, modalRow, modalPlot, modalKey, background],
+    [navigate, modalId, modalRow, modalRowId, modalColumn, modalPlot, modalKey, background],
   );
   // The row selected in the modal's level tab; replacing the entry drops the
   // Data grid's row to find (the history state) once it is found.
@@ -627,8 +636,6 @@ export function SearchPage(props: SearchPageProps) {
   );
   // A persistent row link (/CDR/672.59[.column]): find the file's row with
   // that row_id, then open its level tab on it (and the column, a data point).
-  const modalRowId = modal?.rowId;
-  const modalColumn = modal?.column;
   const rowIdKey = modalKey ?? privateKey ?? ownKey(modal?.id ?? 0);
   const linkedRow = useQuery({
     queryKey: ["contribution-row-id", modalId, modalRowId, rowIdKey],
