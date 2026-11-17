@@ -15,6 +15,15 @@ export const BASEMAP_ATTRIBUTION =
 // - undersea features: the IHO-IOC GEBCO Gazetteer of Undersea Feature Names,
 //   which the API fetches and caches (fiesta/backend/fiesta/apps/routers/basemap.py).
 export const PLACE_LABEL_STYLE = "https://tiles.openfreemap.org/styles/positron";
+// A geologic map over it, which the maps' Geo button turns on: Macrostrat's
+// "carto" raster tiles, its global compilation of geologic maps at the scale
+// that suits the zoom (512 pixels, transparent off land, CORS open). Its
+// TileJSON (tiles.macrostrat.org/carto/tilejson.json) offers zooms to 22, but
+// tiles are rendered on request, so the maps over-zoom past GEOLOGY_MAXZOOM.
+export const GEOLOGY_TILES = "https://tiles.macrostrat.org/carto/{z}/{x}/{y}.png";
+export const GEOLOGY_MAXZOOM = 13;
+export const GEOLOGY_ATTRIBUTION =
+  '<a href="https://macrostrat.org" target="_blank" rel="noopener">Macrostrat</a> (CC BY 4.0) and its map sources';
 export const UNDERSEA_FEATURES = apiUrl("/basemap/undersea-features");
 export const UNDERSEA_ATTRIBUTION = "IHO-IOC GEBCO Gazetteer of Undersea Feature Names";
 
