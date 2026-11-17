@@ -186,6 +186,16 @@ class MapPoints(BaseModel):
     contributions: dict[str, MapPointContribution] = {}
 
 
+class MapExtent(BaseModel):
+    # The matches with a position on Earth.
+    total: int
+    # [west, south, east, north] around them; west is east of east when they
+    # cross the antimeridian.
+    bounds: list[float] | None = None
+    # [lon, lat]: where most of them are (see search_extent).
+    center: list[float] | None = None
+
+
 class SearchValues(BaseModel):
     total: int
     fields: list[str]

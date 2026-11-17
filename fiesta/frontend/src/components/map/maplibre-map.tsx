@@ -587,11 +587,9 @@ const MapLibreMap: FC<{
   // collide), rather than only in its tooltip.
   labelPoints?: boolean;
   // The geospatial filter area, which can be moved and resized on the map;
-  // onAreaChange gets it when a drag ends, or, without one, when asked for
-  // (requestViewArea) over the middle of the view.
+  // onAreaChange gets it when a drag ends.
   area?: Area | null;
   onAreaChange?: (area: Area) => void;
-  requestViewArea?: boolean;
   // Zooms (when it changes) so this area fills about the middle quarter of the
   // view, outside the pole views.
   zoomTo?: Area | null;
@@ -627,7 +625,6 @@ const MapLibreMap: FC<{
   labelPoints,
   area,
   onAreaChange,
-  requestViewArea,
   zoomTo,
   centerOn,
   focusKey,
@@ -646,9 +643,9 @@ const MapLibreMap: FC<{
   const setPointsRef = useRef<(() => void) | null>(null);
   const focusKeyRef = useRef<unknown>(focusKey ?? points);
   focusKeyRef.current = focusKey ?? points;
-  const areaRef = useRef({ area: area ?? null, onAreaChange, requestViewArea });
-  areaRef.current = { area: area ?? null, onAreaChange, requestViewArea };
-  // Shows the latest area (or adds the one asked for) once the style has loaded.
+  const areaRef = useRef({ area: area ?? null, onAreaChange });
+  areaRef.current = { area: area ?? null, onAreaChange };
+  // Shows the latest area once the style has loaded.
   const syncAreaRef = useRef<(() => void) | null>(null);
   // The latest area to zoom to, and zooms to it once the style has loaded.
   const zoomToRef = useRef(zoomTo ?? null);
@@ -1320,39 +1317,6 @@ const MapLibreMap: FC<{
     // unfiltered search's area: over what's in view, with its handles easy to
     // reach. Its outline is sampled, as it curves on the globe, and a pole
     // within it takes in every longitude.
-    const viewArea = (): Area => {
-      const { width, height } = mapSize(map);
-      const [x0, y0, x1, y1] = [width / 4, height / 4, (width * 3) / 4, (height * 3) / 4];
-      const middle = map.unproject([width / 2, height / 2]);
-      const samples = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        .flatMap((i) => {
-          const t = i / 8;
-          return [
-            [x0 + (x1 - x0) * t, y0],
-            [x0 + (x1 - x0) * t, y1],
-            [x0, y0 + (y1 - y0) * t],
-            [x1, y0 + (y1 - y0) * t],
-          ];
-        })
-        .map((point) => map.unproject(point as [number, number]));
-      const lons = samples.map(({ lng }) => unwrapLon(lng, middle.lng));
-      const lats = samples.map(({ lat }) => lat);
-      let [west, south, east, north] = [
-        Math.min(...lons),
-        Math.min(...lats),
-        Math.max(...lons),
-        Math.max(...lats),
-      ];
-      const poleInView = (lat: number) => {
-        if (!globe || isOccluded(map, { lng: 0, lat })) return false;
-        const { x, y } = map.project([0, lat]);
-        return x >= x0 && x <= x1 && y >= y0 && y <= y1;
-      };
-      if (poleInView(90)) north = 90;
-      if (poleInView(-90)) south = -90;
-      if (east - west >= 360 || poleInView(90) || poleInView(-90)) [west, east] = [-180, 180];
-      return [west, Math.max(south, -90), east, Math.min(north, 90)];
-    };
     // Zooms so zoomTo fills the middle quarter of the view: padded by a quarter
     // of the view on each side (and within Web Mercator's limit, which
     // cameraForBounds works in). Each area once.
@@ -1397,16 +1361,7 @@ const MapLibreMap: FC<{
     };
     const syncArea = () => {
       if (dragging) return;
-      const { area, requestViewArea } = areaRef.current;
-      if (!area && requestViewArea) {
-        // Once the view has settled (it may be moving to the points).
-        if (map.isMoving()) return void map.once("moveend", syncArea);
-        shown = viewArea();
-        drawArea();
-        areaRef.current.onAreaChange?.(shown);
-        return;
-      }
-      shown = area;
+      shown = areaRef.current.area;
       drawArea();
     };
 
@@ -1643,7 +1598,7 @@ const MapLibreMap: FC<{
   // biome-ignore lint/correctness/useExhaustiveDependencies: the area by value; the sync reads it from areaRef
   useEffect(() => {
     syncAreaRef.current?.();
-  }, [area?.join(), requestViewArea]);
+  }, [area?.join()]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the area by value; the zoom reads it from zoomToRef
   useEffect(() => {
