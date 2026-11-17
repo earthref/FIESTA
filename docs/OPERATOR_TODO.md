@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-11-15
+Last updated: 2026-11-16
 
 ## A — Decisions
 
@@ -67,12 +67,6 @@ Last updated: 2026-11-15
       `legacy.exclude_ids: [88]` in `configurations/cdr.yaml` keeps #88 out of FIESTA
       entirely (decided 2026-11-10); remove it from that list to sync it as a private
       contribution, or once released.
-- [ ] **CDR 1.0 lacks most XRF element columns.** The OSU-MGR scans carry `al`, `si`,
-      `p`, `s`, `v`, `cr`, `ba`, `la`, `ce`, `pr`, `nd` and, on some cruises, `ag`,
-      `as`, `bi`, `cd`, `co`, `mo`, `sb`, `sc`, `se`, `sn`, `th`, `u`, none in
-      `configurations/cdr/data_models/1.0.json`, so FIESTA's CDR import will flag them. Adding
-      columns is allowed; approve adding them before the cdr-3 import. Unblocks:
-      valid XRF rows in FIESTA CDR.
 - [ ] **Rotate the `fiesta` OpenSearch password.** It is hard-coded in
       `osu-mgr/osu-mgr-pipeline` (`osu_mgr_to_cdr_pipeline.py`, `OPENSEARCH_HOST`,
       committed; private repo). Move it to that repo's `.env` (already loaded) and
@@ -154,6 +148,24 @@ Last updated: 2026-11-15
       References grid sorted by MagIC, rows with a count above 1. Versions whose parent is
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
+
+## 2026-11-16 — CDR XRF columns and depth plots
+
+- [ ] **Rebuild the CDR index on dev.** PR #241 added 31 `measurements` columns to
+      CDR 1.0 (25 XRF elements plus `xrf_total_cps`, `mo_inc`, `mo_coh`, `xrf_mse`,
+      `xrf_dead_time`, `xrf_processing_params`). The search index drops columns the
+      model lacks, so the elements already in the 18 OSU-MGR XRF contributions
+      (666–683) stay out of search, filters and the Data tab until a rebuild. After the
+      deploy, run `fiesta rebuild --yes` with `FIESTA_NODE=cdr` on fiesta-ct (and again at
+      the production cutover). The depth plots read the files, so they show the new
+      elements already. Check: the CDR Measurements filters list Silicon and Barium.
+- [ ] **OSU-MGR pipeline: magnetic susceptibility mapping.** If OSU-MGR MST data is
+      added to CDR, check `osu-mgr-pipeline/cdr_preview/parsers.py` first: it maps both
+      Geotek `MS1` (loop) and `MS2` (point sensor) to `mag_susc_chi_mass`, so one
+      overwrites the other. Geotek MS is usually volume susceptibility, not mass χ.
+      Decide with the curators which sensor goes where, and whether CDR needs a
+      volume-susceptibility column. Claude adds the column once decided. Unblocks:
+      correct susceptibility for OSU-MGR MST in CDR.
 
 ## 2026-11-16 — Upload size limit
 
@@ -906,6 +918,11 @@ created it, without a password, on the first record. The owner maps are in the
       contributions on dev but has no password (a password reset to that mailbox).
 
 ## Done
+
+- [x] **CDR XRF element columns approved and added** (2026-11-16, PR #241): the user
+      asked for the columns the XRF contributions carry; 25 elements and the
+      scanner's normalisation columns are now in `configurations/cdr/data_models/1.0.json`,
+      so FIESTA's CDR import no longer flags them. A rebuild on dev is still due (above).
 
 - [x] **Branch protection and Actions token on FIESTA** (2026-10-22): ruleset
       "Protect main" (PR + 1 approval + `CI` + `check-labels`, admin bypass PR-only),
