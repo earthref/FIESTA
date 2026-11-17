@@ -15,6 +15,7 @@ its options, its routes). A node switches a plugin on with
 | [periodic-table](periodic-table/README.md) | KdD |
 | [method-codes](method-codes/README.md) | MagIC |
 | [magic-3-upgrade](magic-3-upgrade/README.md) | MagIC |
+| [pmag-lab-formats](pmag-lab-formats/README.md) | MagIC |
 | [sample-tiles](sample-tiles/README.md) | every node |
 
 How to write one, the hooks, and how the tooling reaches this folder:

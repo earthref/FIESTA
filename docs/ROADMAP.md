@@ -235,6 +235,19 @@ the latter become G5 work after cutover.*
       #231, #248, #253, #273, #274, #283, #310, #344, #398, #425, #426, #428,
       #490, #558; dropping a folder #40). Lab file formats (BGC and the other
       legacy converters, #588) as plugins that convert to contribution text.
+      - [x] Lab instrument formats (2026-11-16): a core `import_formats` plugin hook
+            (`ImportFormat`: sniff, companions, an options model, `convert`) and
+            `/import-formats` routes (list, sniff, convert: login, upload cap, worker
+            thread, temporary directory); the `pmag-lab-formats` plugin (MagIC) wraps
+            PmagPy's generic, 2G binary/ASCII, CIT (.sam + specimen files), SIO, JR6
+            (.jr6, .txt), Utrecht, LDEO and HUJI converters. Step 2 offers them as
+            "Lab Instrument Formats", picks one when the server is sure, shows the
+            converter's options (re-converting on change) and report (warnings,
+            defaults used, hierarchy counts, a naming-convention hint) above the
+            converted tables, and keeps `<file>-conversion-report.txt` (PmagPy version,
+            converter, options) with the originals.
+      - [ ] The other PmagPy converters (AGM, BGC, IODP SRM/JR6/DSCR/KLY4S, K15,
+            KLY4S, LIVDB, MINI, MST, PMD, SUFAR4, TDT, VFTB): one `PmagFormat` each.
 - [x] **C6 Reference enrichment** (2026-09-28) — Crossref, then DataCite, for
       each `reference_doi`, cached in the shared `doi_references` table and set on
       the search docs as the legacy `_reference` (title, journal, year, citation,

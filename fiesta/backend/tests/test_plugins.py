@@ -18,6 +18,7 @@ def test_registry_names():
         "method-codes",
         "sample-tiles",
         "magic-3-upgrade",
+        "pmag-lab-formats",
         "geomag-series",
         "field-models",
     }

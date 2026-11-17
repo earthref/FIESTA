@@ -37,6 +37,20 @@ import {
   sheetBlock,
   singleSourceErrors,
 } from "../lib/importer";
+import {
+  conversionReportName,
+  isLabFormat,
+  type LabConversion,
+  type LabFormatKey,
+  type LabSettings,
+  labFormatKey,
+  labFormatsQuery,
+  labKey,
+  NO_LAB,
+  readLabFile,
+  sniffedLab,
+  sniffLabFormats,
+} from "../lib/lab-formats";
 import type {
   ContributionOut,
   DataModel,
@@ -50,6 +64,7 @@ import { mayNeedUpgrade, type UpgradeResult, upgradeText } from "../lib/upgrade"
 import { cx, formatBytes } from "../lib/utils";
 import { DataImporter, type TemplateActions } from "./data-importer";
 import { ErrorMessage } from "./error-message";
+import { LabConversionPanel } from "./lab-format-options";
 import { useLoginModal } from "./login-modal";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -103,13 +118,19 @@ interface ImportFile {
   id: string;
   name: string;
   bytes: ArrayBuffer;
-  format: ImportFormat;
+  format: ImportFormat | LabFormatKey;
   sheets: Sheet[];
   states: SheetState[];
   /** The upgrade of a file written in an older data model (its sheets are
    * the upgraded text's), with the blank defaults it was run with. */
   upgrade: UpgradeResult | null;
   defaults: Record<string, boolean>;
+  /** A lab format's server conversion (its sheets are the converted text's),
+   * the options the contributor set, and, for a file another file's
+   * conversion reads (a CIT specimen file), that file's name. */
+  lab: LabConversion | null;
+  labOptions: Record<string, unknown>;
+  companionOf: string | null;
   error: string | null;
 }
 
@@ -287,12 +308,31 @@ async function readFile(
   id: string,
   name: string,
   bytes: ArrayBuffer,
-  format: ImportFormat,
+  format: ImportFormat | LabFormatKey,
   model: DataModel | null,
   templates: Parameters<typeof readSheets>[2],
   upgradeSettings: UpgradeSettings,
+  labSettings: LabSettings = NO_LAB,
 ): Promise<ImportFile> {
-  const base = { id, name, bytes, format, defaults: upgradeSettings.defaults };
+  const base = {
+    id,
+    name,
+    bytes,
+    format,
+    defaults: upgradeSettings.defaults,
+    lab: null,
+    labOptions: labSettings.options,
+    companionOf: labSettings.companionOf,
+  };
+  if (isLabFormat(format)) {
+    const read = await readLabFile(format, { name, bytes }, labSettings);
+    return {
+      ...base,
+      ...read,
+      states: read.sheets.map((s) => initialState(s, model)),
+      upgrade: null,
+    };
+  }
   let upgrade: UpgradeResult | null = null;
   if (format === "fiesta" && upgradeSettings.latest) {
     const text = decodeText(bytes);
@@ -383,6 +423,8 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
     select: unwrapModel,
   });
   const templateActions = useTemplateActions(!!user);
+  // Lab formats the node's plugins convert on the server (lib/lab-formats).
+  const { data: labFormats = [] } = useQuery(labFormatsQuery);
 
   // Contributions an upload can go into: the unpublished ones the user can open.
   const privateQuery = useQuery({
@@ -472,18 +514,22 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
     setReading(true);
     setStep(2);
     const sorted = [...picked].sort((a, b) => a.name.localeCompare(b.name));
+    // A lab file the server recognises is read as its lab format.
+    const sniffed = labFormats.length ? await sniffLabFormats(sorted).catch(() => null) : null;
     const read = await Promise.all(
-      sorted.map((f) =>
-        readFile(
+      sorted.map((f) => {
+        const lab = f.format ? null : sniffedLab(f.name, sorted, sniffed);
+        return readFile(
           crypto.randomUUID(),
           f.name,
           f.bytes,
-          f.format ?? guessFormat(f.name, f.bytes),
+          lab?.format ?? f.format ?? guessFormat(f.name, f.bytes),
           model,
           templates,
           { latest, defaults: {} },
-        ),
-      ),
+          lab?.settings,
+        );
+      }),
     );
     setFiles(read);
     setReading(false);
@@ -527,13 +573,44 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
     }
   };
 
-  const setFormat = async (i: number, format: ImportFormat) => {
+  // The files a lab file's conversion reads with it (a CIT .sam's specimen files).
+  const companionsOf = (file: ImportFile) =>
+    files.filter((f) => f.companionOf === file.name).map((f) => ({ name: f.name, bytes: f.bytes }));
+
+  const setFormat = async (i: number, format: ImportFormat | LabFormatKey) => {
     const file = files[i];
-    const read = await readFile(file.id, file.name, file.bytes, format, model, templates, {
-      latest,
-      defaults: file.defaults,
-    });
+    setReading(true);
+    const read = await readFile(
+      file.id,
+      file.name,
+      file.bytes,
+      format,
+      model,
+      templates,
+      { latest, defaults: file.defaults },
+      isLabFormat(format) ? { ...NO_LAB, companions: companionsOf(file) } : NO_LAB,
+    );
     setFiles((current) => current.map((f, k) => (k === i ? read : f)));
+    setReading(false);
+  };
+
+  // A lab file's converter options changed: convert it again.
+  const setLabOptions = async (i: number, options: Record<string, unknown>) => {
+    const file = files[i];
+    if (!isLabFormat(file.format)) return;
+    setReading(true);
+    const read = await readFile(
+      file.id,
+      file.name,
+      file.bytes,
+      file.format,
+      model,
+      templates,
+      { latest, defaults: file.defaults },
+      { options, companions: companionsOf(file), companionOf: null },
+    );
+    setFiles((current) => current.map((f, k) => (k === i ? read : f)));
+    setReading(false);
   };
 
   // A blank default switched in an upgraded file's report: upgrade it again.
@@ -598,6 +675,12 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
         formData.append("originals", new Blob([file.bytes]), file.name);
         if (file.upgrade?.report_text)
           formData.append("originals", new Blob([file.upgrade.report_text]), reportName(file.name));
+        if (file.lab?.report_text)
+          formData.append(
+            "originals",
+            new Blob([file.lab.report_text]),
+            conversionReportName(file.name),
+          );
       }
       const headers: Record<string, string> = { "Idempotency-Key": crypto.randomUUID() };
       if (expected) headers["If-Match"] = expected;
@@ -769,15 +852,36 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                   <select
                     className="rounded-md border border-gray-300 bg-surface px-2 py-1.5 text-[13px]"
                     value={file.format}
-                    onChange={(event) => setFormat(i, event.target.value as ImportFormat)}
+                    onChange={(event) =>
+                      setFormat(i, event.target.value as ImportFormat | LabFormatKey)
+                    }
                   >
                     {FORMATS.map((format) => (
                       <option key={format} value={format}>
                         {formatLabel(format, key)}
                       </option>
                     ))}
+                    {labFormats.length > 0 && (
+                      <optgroup label="Lab Instrument Formats">
+                        {labFormats.map((format) => (
+                          <option key={format.key} value={labFormatKey(format.key)}>
+                            {format.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </label>
+                {isLabFormat(file.format) && (
+                  <LabConversionPanel
+                    format={labFormats.find((f) => f.key === labKey(file.format as LabFormatKey))}
+                    result={file.lab}
+                    options={file.labOptions}
+                    companionOf={file.companionOf}
+                    onOptions={(options) => setLabOptions(i, options)}
+                    busy={reading}
+                  />
+                )}
                 {file.upgrade && (
                   <UpgradeReportPanel
                     result={file.upgrade}
