@@ -33,13 +33,19 @@ export const colorScale = (option: MapColorOption, points: MapPoint[]): ColorSca
 
 const hex = (color: string) => [1, 3, 5].map((i) => Number.parseInt(color.slice(i, i + 2), 16));
 
-/** A value's color on the scale, or null for a value it can't place (≤ 0 on
- * a log scale). Values past the ends take the end colors. */
+/** A value's color on the scale, or null for one it can't place (not a
+ * number). Values past the ends take the end colors; on a log scale a value
+ * ≤ 0 is below every positive one, so it takes the low end's (an age after
+ * 1950, negative years BP, is the youngest, not one without a value). */
 export const colorOf = (scale: ColorScale, value: number): string | null => {
+  if (!Number.isFinite(value)) return null;
   const x = position(scale.option, value);
-  if (!Number.isFinite(x)) return null;
   const span = scale.high - scale.low;
-  const t = span > 0 ? Math.min(Math.max((x - scale.low) / span, 0), 1) : 0.5;
+  const t = !Number.isFinite(x)
+    ? 0
+    : span > 0
+      ? Math.min(Math.max((x - scale.low) / span, 0), 1)
+      : 0.5;
   const i = Math.min(Math.floor(t * (RAMP.length - 1)), RAMP.length - 2);
   const f = t * (RAMP.length - 1) - i;
   const [a, b] = [hex(RAMP[i]), hex(RAMP[i + 1])];

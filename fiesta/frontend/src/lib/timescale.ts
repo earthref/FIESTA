@@ -131,6 +131,14 @@ export const TIMESCALE: TimescaleUnit[] = TIMESCALE_RANKS.flatMap((rank) =>
   })),
 );
 
+/** A unit's age range in Ma as a filter selects it. One that reaches the
+ * present (Holocene, Quaternary, Cenozoic, Phanerozoic) has no younger bound:
+ * ages after 1950, negative years BP, are in it too, not left out by a 0. */
+export const unitSpan = (unit: TimescaleUnit): [number, number] => [
+  unit.min > 0 ? unit.min : Number.NEGATIVE_INFINITY,
+  unit.max,
+];
+
 /** The name a cell has room for: "Upper Cretaceous" -> "Upper". */
 export const cellLabel = (unit: TimescaleUnit) =>
   /^(Upper|Middle|Lower) /.test(unit.name)

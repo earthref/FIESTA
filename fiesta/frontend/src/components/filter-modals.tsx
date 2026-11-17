@@ -21,6 +21,7 @@ import { api } from "../lib/api";
 import { useNodeConfig } from "../lib/config";
 import { dataModelQuery, unwrapModel } from "../lib/data-model";
 import { plotColors } from "../lib/plot-colors";
+import { type TimescaleUnit, unitSpan } from "../lib/timescale";
 import type {
   DataModel,
   DataModelColumn,
@@ -509,7 +510,12 @@ export function RangeModal({
     () => bars.map((bar) => !anySelection || within(bar, lo, hi)),
     [bars, anySelection, lo, hi],
   );
-  const selectedCount = bars.reduce((n, bar, i) => n + (flags[i] ? bar.count : 0), 0);
+  // A record counts in every bin it has a value (or an interval) in, so the
+  // bins' sum is at most the records with a value.
+  const selectedCount = Math.min(
+    bars.reduce((n, bar, i) => n + (flags[i] ? bar.count : 0), 0),
+    data?.counted ?? Number.POSITIVE_INFINITY,
+  );
   const valid =
     (draft.gte === "" || Number.isFinite(lo)) &&
     (draft.lte === "" || Number.isFinite(hi)) &&
@@ -597,6 +603,16 @@ export function RangeModal({
       ],
     } as EChartsOption;
   }, [bars, flags, xLog, label, filter.unit, unit, color, date]);
+
+  // A geologic time unit's range; one reaching the present is open below
+  // (unitSpan), so ages after 1950 (negative years BP) are in it.
+  const pickUnit = (unit: TimescaleUnit) => {
+    const [min, max] = unitSpan(unit);
+    setDraft({
+      gte: Number.isFinite(min) ? edgeValue((min * 1e6) / scale) : "",
+      lte: edgeValue((max * 1e6) / scale),
+    });
+  };
 
   const changed = draft.gte !== initial.gte || draft.lte !== initial.lte;
   const apply = () => {
@@ -736,12 +752,7 @@ export function RangeModal({
               right={GRID.right}
               toValue={(ma) => (ma * 1e6) / scale}
               selected={{ lo, hi }}
-              onPick={(unit) =>
-                setDraft({
-                  gte: edgeValue((unit.min * 1e6) / scale),
-                  lte: edgeValue((unit.max * 1e6) / scale),
-                })
-              }
+              onPick={pickUnit}
             />
           )}
         </div>
@@ -757,12 +768,7 @@ export function RangeModal({
               <TimescalePicker
                 toValue={(ma) => (ma * 1e6) / scale}
                 selected={{ lo, hi }}
-                onPick={(unit) =>
-                  setDraft({
-                    gte: edgeValue((unit.min * 1e6) / scale),
-                    lte: edgeValue((unit.max * 1e6) / scale),
-                  })
-                }
+                onPick={pickUnit}
               />
             </>
           )}

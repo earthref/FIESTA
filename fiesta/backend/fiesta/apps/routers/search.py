@@ -928,12 +928,19 @@ async def search_histogram(
     (the filter modal's range histogram; the caller leaves the field's own
     range out of `range`). `log` bins in log10 space over the values above
     zero, and falls back to linear bins when there are none. Without `bins`
-    the count follows how many values there are (auto_bins)."""
+    the count follows how many values there are (auto_bins). A bin counts
+    the docs with a value in it; an interval's (summary._interval.<name>.range)
+    the docs any of whose intervals overlaps it, as its range filter matches
+    them (a 10 ± 5 Ma age in every bin from 0 to 20 Ma, not only at its ends
+    and best estimate). `counted` is how many docs have a value, each once."""
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
     path = _value_field(field)
+    interval_range: str | None = None
     if path.startswith("summary._interval.") and path.endswith(".range"):
-        # An interval's ranges have no stats: its ends' and best estimates' do.
+        # An interval's ranges have no stats: its ends' and best estimates'
+        # give the extent; the bins count the ranges that overlap them.
+        interval_range = path
         path = path.removesuffix(".range") + ".values"
     body = build_search_body(
         table=table,
@@ -947,7 +954,12 @@ async def search_histogram(
     await _constrain(session, node, body, query, contribution, private_key, scope)
     body.pop("sort", None)
     date = path in DATE_FIELDS
-    body["aggs"] = {"all": {"stats": {"field": path}}}
+    body["aggs"] = {
+        "all": {"stats": {"field": path}},
+        # Docs with a value, each once (a doc counts in every bin it has a
+        # value in, so the bins' sum can pass the docs').
+        "has": {"filter": {"exists": {"field": path}}},
+    }
     if not date:
         # The least value above zero of the docs with one: of each doc's
         # values only those above zero (a multi-valued field, summary._num,
@@ -979,6 +991,7 @@ async def search_histogram(
     total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
     stats = response["aggregations"]["all"]
     lo, hi = stats.get("min"), stats.get("max")
+    counted = int((response["aggregations"].get("has") or {}).get("doc_count") or 0)
     positive = response["aggregations"].get("positive")
     positive_min = positive["s"].get("value") if positive else None
     if positive_min is not None and not (0 < positive_min < math.inf):
@@ -996,7 +1009,14 @@ async def search_histogram(
         {"from": edges[i], "to": edges[i + 1]} if i < len(edges) - 2 else {"from": edges[i]}
         for i in range(len(edges) - 1)
     ]
-    body["aggs"] = {"bins": {"range": {"field": path, "ranges": ranges}}}
+    if interval_range:
+        # A range field has no range aggregation: a filter per bin, the
+        # range query its filter uses (intersects), in bin order.
+        bounds = [{"gte": r["from"], **({"lt": r["to"]} if "to" in r else {})} for r in ranges]
+        overlaps = [{"range": {interval_range: b}} for b in bounds]
+        body["aggs"] = {"bins": {"filters": {"filters": overlaps}}}
+    else:
+        body["aggs"] = {"bins": {"range": {"field": path, "ranges": ranges}}}
     response = await client.search(index=node.search_index, body=body)
     buckets = response["aggregations"]["bins"]["buckets"]
     out = [
@@ -1005,7 +1025,7 @@ async def search_histogram(
     ]
     return SearchHistogram(
         total=total,
-        counted=sum(b.count for b in out),
+        counted=counted,
         min=lo,
         max=hi,
         positive_min=positive_min,
