@@ -2,6 +2,9 @@ import {
   BASEMAP_ATTRIBUTION,
   BASEMAP_MAXZOOM,
   BASEMAP_TILES,
+  GEOLOGY_ATTRIBUTION,
+  GEOLOGY_MAXZOOM,
+  GEOLOGY_TILES,
   POLAR_CAPS,
   type PolarCap,
   type Pole,
@@ -12,7 +15,9 @@ import type { Body } from "./bodies";
 // ({z}/{x}/{y}), drawn to maxzoom and over-zoomed past it; optional raster
 // labels over them, which the maps' Labels button turns off (Earth's are
 // vector labels, see maplibre-map.tsx); and its polar caps past Web
-// Mercator's limit. (Its thumbnail image is components/map-thumbnail.tsx's.)
+// Mercator's limit; and an optional geologic map, raster tiles of tileSize
+// pixels drawn over the basemap when the maps' Geo button is on. (Its
+// thumbnail image is components/map-thumbnail.tsx's.)
 export type BodyBasemap = {
   tiles: string;
   maxzoom: number;
@@ -20,6 +25,7 @@ export type BodyBasemap = {
   labels?: string;
   labelsMaxzoom?: number;
   caps: Partial<Record<Pole, PolarCap>>;
+  geology?: { tiles: string; tileSize: number; maxzoom: number; attribution: string };
 };
 
 // OpenPlanetaryMap's basemaps (CARTO named maps, whose layers are picked by
@@ -35,6 +41,12 @@ export const BODY_BASEMAPS: Record<Body, BodyBasemap> = {
     maxzoom: BASEMAP_MAXZOOM,
     attribution: BASEMAP_ATTRIBUTION,
     caps: POLAR_CAPS,
+    geology: {
+      tiles: GEOLOGY_TILES,
+      tileSize: 512,
+      maxzoom: GEOLOGY_MAXZOOM,
+      attribution: GEOLOGY_ATTRIBUTION,
+    },
   },
   // LRO WAC albedo, hillshaded, with the names of maria, craters and landing sites.
   moon: {

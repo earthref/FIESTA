@@ -300,16 +300,34 @@ const globeFitCamera = (points: MapPoint[], width: number, height: number) => {
   return { center: [lon0, lat0] as [number, number], zoom };
 };
 
-// The basemap's labels, on unless turned off with the button under the zoom
-// buttons; remembered in this browser for every map.
-const LABELS_KEY = "map-labels";
-const labelsOn = () => {
+// The map buttons' settings, remembered in this browser for every map.
+const remembered = (key: string, fallback: boolean) => {
   try {
-    return localStorage.getItem(LABELS_KEY) !== "off";
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value === "on";
   } catch {
-    return true;
+    return fallback;
   }
 };
+const remember = (key: string, on: boolean) => {
+  try {
+    localStorage.setItem(key, on ? "on" : "off");
+  } catch {
+    /* not remembered */
+  }
+};
+// The basemap's labels, on unless turned off with the button under the zoom
+// buttons.
+const LABELS_KEY = "map-labels";
+const labelsOn = () => remembered(LABELS_KEY, true);
+// The body's geologic map (BodyBasemap.geology), off unless turned on with the
+// Geo button under the labels'. Partly transparent, so the basemap's relief
+// and the records' markers still read through its colours.
+const GEOLOGY_KEY = "map-geology";
+const geologyOn = () => remembered(GEOLOGY_KEY, false);
+const GEOLOGY_OPACITY = 0.65;
+// The Geo button's text, smaller than the labels' Aa to fit the button.
+const GEOLOGY_ICON = '<span style="font-size:11px">Geo</span>';
 // The labels (see PLACE_LABEL_STYLE), loaded once per page: Positron's layers
 // for places, water bodies and boundaries (roads and airports left out), with
 // its fonts, and the undersea features.
@@ -751,6 +769,15 @@ const MapLibreMap: FC<{
               maxzoom: basemap.labelsMaxzoom ?? basemap.maxzoom,
             },
           }),
+          ...(basemap.geology && {
+            geology: {
+              type: "raster",
+              tiles: [basemap.geology.tiles],
+              tileSize: basemap.geology.tileSize,
+              maxzoom: basemap.geology.maxzoom,
+              attribution: basemap.geology.attribution,
+            },
+          }),
           points: { type: "geojson", data: collection([]) },
           area: { type: "geojson", data: collection([]) },
           context: { type: "geojson", data: collection([]) },
@@ -758,7 +785,18 @@ const MapLibreMap: FC<{
         layers: [
           { id: "background", type: "background", paint: { "background-color": "#000000" } },
           { id: "basemap", type: "raster", source: "basemap" },
-          // Dark mode dims the imagery under it (the basemap, the polar caps);
+          ...(basemap.geology
+            ? [
+                {
+                  id: "geology",
+                  type: "raster" as const,
+                  source: "geology",
+                  layout: { visibility: geologyOn() ? ("visible" as const) : ("none" as const) },
+                  paint: { "raster-opacity": GEOLOGY_OPACITY },
+                },
+              ]
+            : []),
+          // Dark mode dims the imagery under it (the basemap, the geologic map, the polar caps);
           // labels and data are drawn above it, undimmed.
           {
             id: "dim",
@@ -850,11 +888,7 @@ const MapLibreMap: FC<{
     map.on("move", showPolarLabels);
     map.addControl(
       toggleControl("labels", "Aa", showLabels, (on) => {
-        try {
-          localStorage.setItem(LABELS_KEY, on ? "on" : "off");
-        } catch {
-          /* not remembered */
-        }
+        remember(LABELS_KEY, on);
         showLabels = on;
         for (const id of labelLayers) {
           map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
@@ -867,6 +901,15 @@ const MapLibreMap: FC<{
     if (body === "earth") {
       map.addControl(
         toggleControl("plate boundaries", PLATES_ICON, showPlatesRef.current, setShowPlates),
+        "top-right",
+      );
+    }
+    if (basemap.geology) {
+      map.addControl(
+        toggleControl("geologic map (Macrostrat)", GEOLOGY_ICON, geologyOn(), (on) => {
+          remember(GEOLOGY_KEY, on);
+          map.setLayoutProperty("geology", "visibility", on ? "visible" : "none");
+        }),
         "top-right",
       );
     }
@@ -1078,7 +1121,11 @@ const MapLibreMap: FC<{
     // (isStyleLoaded() is also false while tiles load, so it can't gate these.)
     map.on("load", () => {
       if (globe) {
-        map.addLayer(createPolarCapsLayer("polar-caps", basemap.caps), "dim");
+        // Under the geologic map, which stops at Web Mercator's limit anyway.
+        map.addLayer(
+          createPolarCapsLayer("polar-caps", basemap.caps),
+          basemap.geology ? "geology" : "dim",
+        );
       }
       applyDimRef.current = () => map.setPaintProperty("dim", "background-opacity", dimRef.current);
       applyDimRef.current();
