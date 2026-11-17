@@ -22,3 +22,11 @@ test("every portal page shows the FIESTA identity", () => {
   assert.equal(isPortalPath("/"), true);
   assert.equal(isPortalPage("/"), false);
 });
+
+test("Admin is a portal section, under a node too", () => {
+  for (const path of ["/admin", "/admin/", "/admin/nodes/magic"]) {
+    assert.equal(isPortalPath(path), true, path);
+    assert.equal(showsPortalIdentity(false, path), true, path);
+  }
+  assert.equal(isPortalPath("/administration"), false);
+});

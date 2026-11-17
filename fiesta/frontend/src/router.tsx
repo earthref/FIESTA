@@ -258,7 +258,9 @@ const contactRoute = createRoute({
   component: ContactPage,
 });
 
-// Admin settings (super admins and node admins; the API enforces who sees what).
+// Admin settings (super admins and node admins; the API enforces who sees what):
+// a FIESTA page at the portal, like References and Users (portal-paths.ts
+// PORTAL_SECTIONS); the user menu links there from every node.
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
