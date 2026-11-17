@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef } from "react";
 import { typeUnitLabel, useDataModelTable } from "../lib/data-model";
 import type { CellIssue, DataModelColumn, DataModelTable, SearchResult } from "../lib/types";
@@ -16,6 +17,28 @@ export interface GridRow {
   issues?: Record<string, CellIssue>;
   /** The search hit the row is from (the search page's Data view). */
   hit?: SearchResult;
+}
+
+/** A row's persistent link: its number (`<contribution>.<row_id>`), the
+ * node path it links to (`672.59`, the /$page route) and what a plain click
+ * does instead of following it. */
+export interface RowLink {
+  label: string;
+  page: string;
+  onOpen: () => void;
+}
+
+/** A row's persistent link, from its stamped `contribution_id` and `row_id`
+ * (`contribution` when the row lacks its own), or undefined. */
+export function rowLinkOf(
+  values: Record<string, unknown>,
+  onOpen: () => void,
+  contribution?: string,
+): RowLink | undefined {
+  const rowId = String(values.row_id ?? "").trim();
+  const id = String(values.contribution_id ?? contribution ?? "").trim();
+  if (!/^\d+$/.test(rowId) || !/^\d+$/.test(id)) return undefined;
+  return { label: `${id}.${rowId}`, page: `${id}.${rowId}`, onOpen };
 }
 
 /** The validation colors of the online editor's cells (error red, warning amber). */
@@ -234,6 +257,8 @@ export function RowsGrid({
   empty = "No row data for these results.",
   groupKey,
   groupHeader,
+  rowLink,
+  selectedColumn,
 }: {
   items: (GridRow[] | undefined)[];
   columns: string[];
@@ -257,6 +282,11 @@ export function RowsGrid({
   groupKey?: (index: number) => string | undefined;
   /** The header row's content for the group an item opens. */
   groupHeader?: (index: number) => ReactNode;
+  /** A row's persistent link, shown as its number in the leading column
+   * (in place of its label) when it has one. */
+  rowLink?: (row: GridRow) => RowLink | undefined;
+  /** The selected row's cell in this column is outlined and scrolled into view. */
+  selectedColumn?: string;
 }) {
   const model = useDataModelTable(table);
   // A record still loading: skeleton rows, as many as a record has on average.
@@ -288,6 +318,42 @@ export function RowsGrid({
   const loaded = items.some(Boolean);
   // biome-ignore lint/correctness/useExhaustiveDependencies: measured from the first rows only
   const widths = useMemo(() => columnWidths(columns, items, model), [columns, loaded, model]);
+  // The leading column (the rows' labels and/or their persistent links, when
+  // the first rows have any), wide enough for their numbers ("16901.123456").
+  // biome-ignore lint/correctness/useExhaustiveDependencies: measured from the first rows only
+  const { leading, labelWidth } = useMemo(() => {
+    let chars = 0;
+    let linked = false;
+    let seen = 0;
+    outer: for (const item of items) {
+      if (!item) continue;
+      for (const row of item) {
+        const link = rowLink?.(row);
+        linked ||= !!link;
+        chars = Math.max(chars, (link?.label ?? row.label ?? "").length);
+        if (++seen >= 200) break outer;
+      }
+    }
+    return { leading: labelled || linked, labelWidth: Math.max(64, Math.ceil(chars * 7.5) + 24) };
+  }, [loaded, labelled, rowLink === undefined]);
+
+  // Bring the selected row's `selectedColumn` cell into view sideways, once.
+  const pointed = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const target = selected !== undefined && selectedColumn ? `${selected}:${selectedColumn}` : "";
+    if (!target || pointed.current === target) return;
+    let frame = 0;
+    let tries = 0;
+    const attempt = () => {
+      const cell = scrollRef?.current?.querySelector<HTMLElement>('[data-pointed="true"]');
+      if (cell) {
+        cell.scrollIntoView({ block: "nearest", inline: "center" });
+        pointed.current = target;
+      } else if (++tries <= 60) frame = requestAnimationFrame(attempt);
+    };
+    frame = requestAnimationFrame(attempt);
+    return () => cancelAnimationFrame(frame);
+  }, [selected, selectedColumn, scrollRef]);
 
   // Scroll to `scrollTo` once, when it is among the items. The virtualizer
   // may not have its scroller yet: try again each frame (a few) until the
@@ -316,7 +382,7 @@ export function RowsGrid({
   if (items.length === 0) {
     return <p className="py-8 text-center text-[13px] text-gray-500">{empty}</p>;
   }
-  const span = columns.length + (labelled ? 1 : 0);
+  const span = columns.length + (leading ? 1 : 0);
   const headers = columns.map((column) =>
     headerCells({
       column,
@@ -326,8 +392,7 @@ export function RowsGrid({
       issue: columnIssues?.[column],
     }),
   );
-  const labelWidth = 64;
-  const width = widths.reduce((total, w) => total + w, labelled ? labelWidth : 0);
+  const width = widths.reduce((total, w) => total + w, leading ? labelWidth : 0);
   return (
     <>
       <table
@@ -335,7 +400,7 @@ export function RowsGrid({
         style={{ tableLayout: "fixed", width: `max(${width}px, 100%)` }}
       >
         <colgroup>
-          {labelled && <col style={{ width: labelWidth }} />}
+          {leading && <col style={{ width: labelWidth }} />}
           {widths.map((w, i) => (
             <col key={columns[i]} style={{ width: w }} />
           ))}
@@ -343,9 +408,15 @@ export function RowsGrid({
         <thead className="sticky top-0 z-10">
           {[0, 1, 2].map((line) => (
             <tr key={line}>
-              {line === 0 && labelled && (
-                <th scope="col" rowSpan={3} className={TH} style={UNDERLINE}>
-                  <span className="sr-only">Row</span>
+              {line === 0 && leading && (
+                <th
+                  scope="col"
+                  rowSpan={3}
+                  className={cx(TH, "text-right font-semibold text-gray-700")}
+                  style={UNDERLINE}
+                  title={rowLink ? "Each row's link: <contribution>.<row id>" : undefined}
+                >
+                  {rowLink ? "Row" : <span className="sr-only">Row</span>}
                 </th>
               )}
               {headers.map((cells) => cells[line])}
@@ -365,7 +436,7 @@ export function RowsGrid({
                 {Array.from({ length: placeholderRows }, (_, r) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count skeleton rows
                   <tr key={r} style={{ height: ROW_HEIGHT }}>
-                    {labelled && (
+                    {leading && (
                       <td className={cx(TD, "border-b border-gray-100")}>
                         <Skeleton className="ml-auto h-3 w-6" />
                       </td>
@@ -419,7 +490,7 @@ export function RowsGrid({
                     )}
                     title={rowIssue && issueTitle(rowIssue)}
                   >
-                    {labelled && (
+                    {leading && (
                       <td
                         className={cx(
                           TD,
@@ -427,20 +498,51 @@ export function RowsGrid({
                           rowIssue && ISSUE_CLASS[rowIssue.severity],
                         )}
                       >
-                        {row.label}
+                        {(() => {
+                          const link = rowLink?.(row);
+                          if (!link) return row.label;
+                          return (
+                            <Link
+                              to="/$page"
+                              params={{ page: link.page }}
+                              title={`Link to row ${link.label}`}
+                              className="text-node-ink hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+                              onClick={(event) => {
+                                // A plain click opens the row here; a modified
+                                // one (new tab, copy) follows the link.
+                                if (
+                                  event.button !== 0 ||
+                                  event.metaKey ||
+                                  event.ctrlKey ||
+                                  event.shiftKey ||
+                                  event.altKey
+                                ) {
+                                  return;
+                                }
+                                event.preventDefault();
+                                link.onOpen();
+                              }}
+                            >
+                              {link.label}
+                            </Link>
+                          );
+                        })()}
                       </td>
                     )}
                     {columns.map((column) => {
                       const issue = row.issues?.[column] ?? rowIssue;
                       const text = display(row.values[column]);
+                      const isPointed = isSelected && column === selectedColumn;
                       return (
                         <td
                           key={column}
+                          data-pointed={isPointed || undefined}
                           title={issue ? issueTitle(issue) : text.length > 40 ? text : undefined}
                           className={cx(
                             TD,
                             "overflow-hidden text-ellipsis border-b border-gray-100",
                             issue && ISSUE_CLASS[issue.severity],
+                            isPointed && "font-semibold ring-2 ring-node ring-inset",
                           )}
                         >
                           {text}

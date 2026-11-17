@@ -29,7 +29,7 @@ import {
   toMapPoint,
 } from "./map/map-points";
 import { citationOf, DefinitionTable, firstString, formatDateLL, InlineHtml } from "./result-item";
-import { type GridRow, RowsGrid } from "./rows-table";
+import { type GridRow, RowsGrid, rowLinkOf } from "./rows-table";
 import { isSourceMode } from "./source-mode-notice";
 import type { GridSort } from "./summary-grid";
 import { Icon } from "./ui/icon";
@@ -119,6 +119,7 @@ export function ContributionModal({
   id,
   tab,
   row,
+  column,
   plot,
   rowMatch,
   privateKey,
@@ -131,6 +132,8 @@ export function ContributionModal({
   tab?: string;
   /** The row selected in a level tab (its 1-based place in the file's table). */
   row?: number;
+  /** A column of the selected row to point at (a data point's link). */
+  column?: string;
   /** The plot selected in a plot tab (`?plot=`; `onPlot` names a new one). */
   plot?: string;
   /** A search row to find in the level tab and select (then `onRow` names it). */
@@ -187,6 +190,7 @@ export function ContributionModal({
             config={config}
             tab={tab}
             row={row}
+            column={column}
             rowMatch={rowMatch}
             privateKey={privateKey}
             onTab={onTab}
@@ -299,6 +303,7 @@ function ModalBody({
   config,
   tab,
   row,
+  column,
   plot,
   rowMatch,
   privateKey,
@@ -312,6 +317,7 @@ function ModalBody({
   config: NodeConfig;
   tab?: string;
   row?: number;
+  column?: string;
   plot?: string;
   rowMatch?: RowMatch;
   privateKey?: string;
@@ -438,6 +444,7 @@ function ModalBody({
           privateKey={privateKey}
           showIssues={showIssues}
           selected={row}
+          column={column}
           match={
             rowMatch?.id === id && rowMatch.table === level.table ? rowMatch.values : undefined
           }
@@ -1084,6 +1091,7 @@ function LevelPanel({
   privateKey,
   showIssues,
   selected,
+  column,
   match,
   onSelect,
 }: {
@@ -1094,6 +1102,8 @@ function LevelPanel({
   showIssues: boolean;
   /** The selected row: its 1-based place in the file's table. */
   selected?: number;
+  /** A column of the selected row to point at (a data point's link). */
+  column?: string;
   /** A search row's values to find in the table, then select. */
   match?: Record<string, unknown>;
   onSelect: (row: number | undefined) => void;
@@ -1151,7 +1161,11 @@ function LevelPanel({
         table={level.table}
         labelled
         selected={selected !== undefined ? String(selected) : undefined}
+        selectedColumn={column}
         onRowClick={(row) => onSelect(Number(row.key))}
+        // Each row's number (<contribution>.<row_id>) links to it; a plain
+        // click selects it here.
+        rowLink={(row) => rowLinkOf(row.values, () => onSelect(Number(row.key)), id)}
         // Each item is one row of the file's table.
         scrollTo={sort ? undefined : target}
         columnIssues={showIssues ? first?.column_issues : undefined}
