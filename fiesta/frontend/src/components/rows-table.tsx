@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { type ReactNode, type RefObject, useEffect, useMemo, useRef } from "react";
+import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { siteUrl } from "../lib/base";
 import { typeUnitLabel, useDataModelTable } from "../lib/data-model";
 import type { CellIssue, DataModelColumn, DataModelTable, SearchResult } from "../lib/types";
 import { cx } from "../lib/utils";
@@ -21,13 +21,38 @@ export interface GridRow {
   hit?: SearchResult;
 }
 
-/** A row's persistent link: its number (`<contribution>.<row_id>`), the
- * node path it links to (`672.59`, the /$page route) and what a plain click
- * does instead of following it. */
+/** A row's persistent link: its number (`<contribution>.<row_id>`) and the
+ * node URL it names (/CDR/672.59, with a private contribution's key). */
 export interface RowLink {
   label: string;
-  page: string;
-  onOpen: () => void;
+  url: string;
+}
+
+/** A row's number as a small node-colored button (the Download Results
+ * pill's style) that copies the row's persistent link. */
+function RowLinkButton({ link }: { link: RowLink }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () =>
+    navigator.clipboard?.writeText(link.url).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    });
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title={copied ? "Link copied" : `Copy a persistent link to row ${link.label}\n${link.url}`}
+      aria-label={`Copy a persistent link to row ${link.label}`}
+      className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-sm bg-node font-bold text-white tabular-nums hover:bg-node-dark focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-1"
+      style={{ padding: "0.3em 0.5em", fontSize: 12, lineHeight: "1em" }}
+    >
+      <Icon
+        name={copied ? "check" : "linkify"}
+        style={{ width: "0.9em", height: "0.9em", marginRight: "0.35em" }}
+      />
+      {link.label}
+    </button>
+  );
 }
 
 /** The columns a row's number (`<contribution>.<row_id>`) shows, so a grid
@@ -38,13 +63,17 @@ export const ROW_ID_COLUMNS = new Set(["contribution_id", "row_id"]);
  * `row_id`) and its contribution, or undefined. */
 export function rowLinkOf(
   row: GridRow,
-  onOpen: () => void,
   contribution?: string,
+  privateKey?: string,
 ): RowLink | undefined {
   const rowId = String(row.rowId ?? row.values.row_id ?? "").trim();
   const id = String(contribution ?? row.values.contribution_id ?? "").trim();
   if (!/^\d+$/.test(rowId) || !/^\d+$/.test(id)) return undefined;
-  return { label: `${id}.${rowId}`, page: `${id}.${rowId}`, onOpen };
+  const key = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
+  return {
+    label: `${id}.${rowId}`,
+    url: `${window.location.origin}${siteUrl(`/${id}.${rowId}`)}${key}`,
+  };
 }
 
 /** The validation colors of the online editor's cells (error red, warning amber). */
@@ -295,12 +324,20 @@ export function RowsGrid({
   selectedColumn?: string;
 }) {
   const model = useDataModelTable(table);
-  // With row links, each row's number shows its contribution and row ids.
+  // The data model's order (its columns' positions), then columns it lacks in
+  // the order they were seen. With row links, each row's number shows its
+  // contribution and row ids, so those columns are left out.
   const linked = rowLink !== undefined;
-  const columns = useMemo(
-    () => (linked ? allColumns.filter((column) => !ROW_ID_COLUMNS.has(column)) : allColumns),
-    [allColumns, linked],
-  );
+  const columns = useMemo(() => {
+    const shown = linked ? allColumns.filter((column) => !ROW_ID_COLUMNS.has(column)) : allColumns;
+    const position = (column: string) =>
+      model?.columns[column]?.position ?? Number.POSITIVE_INFINITY;
+    // A stable sort keeps the unmodelled columns' first-seen order.
+    return [...shown].sort((a, b) => {
+      const [x, y] = [position(a), position(b)];
+      return x === y ? 0 : x < y ? -1 : 1;
+    });
+  }, [allColumns, linked, model]);
   // A record still loading: skeleton rows, as many as a record has on average.
   const placeholderRows = Math.max(1, Math.round(estimateRows));
   // Whether a loaded item with rows opens a group: its key differs from the
@@ -331,22 +368,24 @@ export function RowsGrid({
   // biome-ignore lint/correctness/useExhaustiveDependencies: measured from the first rows only
   const widths = useMemo(() => columnWidths(columns, items, model), [columns, loaded, model]);
   // The leading column (the rows' labels and/or their persistent links, when
-  // the first rows have any), wide enough for their numbers ("16901.123456").
+  // the first rows have any), wide enough for their numbers ("16901.123456"),
+  // a link's button with its icon and padding too.
   // biome-ignore lint/correctness/useExhaustiveDependencies: measured from the first rows only
   const { leading, labelWidth } = useMemo(() => {
     let chars = 0;
-    let linked = false;
+    let anyLink = false;
     let seen = 0;
     outer: for (const item of items) {
       if (!item) continue;
       for (const row of item) {
         const link = rowLink?.(row);
-        linked ||= !!link;
+        anyLink ||= !!link;
         chars = Math.max(chars, (link?.label ?? row.label ?? "").length);
         if (++seen >= 200) break outer;
       }
     }
-    return { leading: labelled || linked, labelWidth: Math.max(64, Math.ceil(chars * 7.5) + 24) };
+    const width = Math.ceil(chars * (anyLink ? 7 : 7.5)) + (anyLink ? 50 : 24);
+    return { leading: labelled || anyLink, labelWidth: Math.max(64, width) };
   }, [loaded, labelled, rowLink === undefined]);
 
   // Bring the selected row's `selectedColumn` cell into view sideways, once.
@@ -512,32 +551,7 @@ export function RowsGrid({
                       >
                         {(() => {
                           const link = rowLink?.(row);
-                          if (!link) return row.label;
-                          return (
-                            <Link
-                              to="/$page"
-                              params={{ page: link.page }}
-                              title={`Link to row ${link.label}`}
-                              className="text-node-ink hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
-                              onClick={(event) => {
-                                // A plain click opens the row here; a modified
-                                // one (new tab, copy) follows the link.
-                                if (
-                                  event.button !== 0 ||
-                                  event.metaKey ||
-                                  event.ctrlKey ||
-                                  event.shiftKey ||
-                                  event.altKey
-                                ) {
-                                  return;
-                                }
-                                event.preventDefault();
-                                link.onOpen();
-                              }}
-                            >
-                              {link.label}
-                            </Link>
-                          );
+                          return link ? <RowLinkButton link={link} /> : row.label;
                         })()}
                       </td>
                     )}
