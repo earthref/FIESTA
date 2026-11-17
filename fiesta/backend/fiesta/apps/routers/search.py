@@ -29,6 +29,7 @@ from fiesta.apps.schemas import (
     FilterCounts,
     HasColumns,
     HistogramBin,
+    MapExtent,
     MapPoints,
     NumberColumns,
     SearchHistogram,
@@ -727,6 +728,73 @@ async def search_points(
         points=points,
         truncated=total > MAX_MAP_POINTS,
         contributions=await _contribution_labels(node, points),
+    )
+
+
+# The extent's `center`: the centroid of the busiest geotile at this zoom
+# (about 22.5° across, near the Geospatial filter's 20° default area).
+EXTENT_PRECISION = 4
+
+
+@router.get("/search/{table}/extent", response_model=MapExtent, response_model_exclude_none=True)
+async def search_extent(
+    session: SessionDep,
+    node: NodeDep,
+    scope: ScopeDep,
+    table: str,
+    query: str | None = None,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
+    contribution: int | None = None,
+    private_key: str | None = None,
+) -> MapExtent:
+    """Where a search's positioned docs are on Earth, for the Geospatial
+    filter's default area before any of them are fetched: how many there are,
+    the `bounds` around them (a geo_bounds aggregation) and the `center` of
+    the busiest ~22.5° cell (a geotile grid's top bucket's centroid). One
+    request, no hits."""
+    if table not in node.geo_tables:
+        raise HTTPException(404, f"search table {table!r} has no positions")
+    body = build_search_body(
+        table=table,
+        query=query,
+        size=0,
+        ranges=_parse_ranges(range_),
+        column_filters=_grid_filters(node, table, filter_),
+        has=_parse_has(node, table, has),
+    )
+    await _constrain(session, node, body, query, contribution, private_key, scope)
+    body.pop("sort", None)
+    body["query"]["bool"]["filter"].append({"exists": {"field": GEO_FIELD}})
+    body["aggs"] = {
+        "bounds": {"geo_bounds": {"field": GEO_FIELD, "wrap_longitude": True}},
+        "busiest": {
+            "geotile_grid": {"field": GEO_FIELD, "precision": EXTENT_PRECISION, "size": 1},
+            "aggs": {"at": {"geo_centroid": {"field": GEO_FIELD}}},
+        },
+    }
+    try:
+        response = await get_opensearch().search(index=node.search_index, body=body)
+    except NotFoundError:
+        return MapExtent(total=0)
+    hits = response["hits"]
+    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+    aggs = response.get("aggregations") or {}
+    box = (aggs.get("bounds") or {}).get("bounds")
+    buckets = (aggs.get("busiest") or {}).get("buckets") or []
+    at = (buckets[0].get("at") or {}).get("location") if buckets else None
+    return MapExtent(
+        total=total,
+        bounds=[
+            box["top_left"]["lon"],
+            box["bottom_right"]["lat"],
+            box["bottom_right"]["lon"],
+            box["top_left"]["lat"],
+        ]
+        if box
+        else None,
+        center=[at["lon"], at["lat"]] if at else None,
     )
 
 
