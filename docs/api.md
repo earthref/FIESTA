@@ -197,7 +197,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
   ],
   "facets": ["method_codes", "geologic_classes"],
   "filters": [
-    {"type": "facet", "field": "method_codes", "label": null, "levels": [], "views": ["Summaries", "Rows"], "unit": null, "scale": 1.0, "min": null, "max": null},
+    {"type": "facet", "field": "method_codes", "label": null, "levels": [], "views": ["Summaries", "Data"], "unit": null, "scale": 1.0, "min": null, "max": null},
     {"type": "range", "field": "summary.poles.age", "label": "Age", "levels": ["Locations"], "views": ["Poles"], "unit": "Ma", "scale": 1000000.0, "min": null, "max": null},
     {"type": "bbox", "field": null, "label": "Geospatial", "levels": ["Locations"], "views": ["Poles"], "unit": null, "scale": 1.0, "min": null, "max": null}
   ],
@@ -224,8 +224,9 @@ geo level that gets no Map tab and no layer on a contribution's Map tab (MagIC's
 measurements, whose positions only repeat their specimens').
 
 `filters` are the node YAML's `search.filters`: the sidebar controls, each
-restricted to the search `levels` and result `views` (Summaries, Rows, a plugin
-tab) it names, empty meaning all. `facets` lists the facet filters' fields (what
+restricted to the search `levels` and result `views` (Summaries, Data, a plugin
+tab) it names, empty meaning all (a legacy `Rows`, the Data view's name until
+2026-11-16, is read and served as `Data`). `facets` lists the facet filters' fields (what
 `facets=true` aggregates; the pre-2026-09 YAML key `search.facets` still loads as
 facet filters). `map_colors` are the node YAML's `search.map_colors`, what the
 Map tab's "Color by" menu offers (as `color_by` on `/search/{table}/points`) on
@@ -275,7 +276,7 @@ needs `publish.api`.
 | GET | `/v2/{repository}/contributions/{id}/versions` | `private_key?` | the `previous_id` chain, oldest first: every published version plus this one — `[{id, version, data_model_version, timestamp, contributor, is_activated, is_latest}]` |
 | GET | `/v2/{repository}/contributions/{id}/rows` | `private_key?` | per-table row stats — `{validated, previous: {id, version} \| null, tables: {<table>: {errors?, warnings?, changed?, removed?}}}`: distinct rows the current revision's validation flagged, and rows added/edited (`changed`) or dropped (`removed`) since the previous published version, ignoring the stamped `row_id`/`contribution_id` (the contribution modal's level-tab badges) |
 | GET | `/v2/{repository}/contributions/{id}/tables/{table}` | `private_key?`, `sort?` (`<column>:asc\|desc`), `from?`, `size?` (≤1000, default 100) | one page of a data-model table of the contribution's current file, in file order or sorted over the whole table (numbers numerically, blanks last) — `{total, columns, validated, column_issues: {<column>: {severity, messages}}, rows: [{row, values, issues: {<column> \| "": {severity: error\|warning, messages}}}]}`; `row` is the 1-based position in the file's table that validation issues name, `""` an issue on the whole row (the contribution modal's level tabs; 404 for a table not in the data model, no rows for a file without it) |
-| GET | `/v2/{repository}/contributions/{id}/tables/{table}/locate` | `values` (a row as a JSON object), `private_key?` | where a search doc's row sits in the file's table — `{row}`, the 1-based position of the first row whose named columns all equal `values` as text (blank matching blank), or null (the search page's Rows grid opening the modal on that row) |
+| GET | `/v2/{repository}/contributions/{id}/tables/{table}/locate` | `values` (a row as a JSON object), `private_key?` | where a search doc's row sits in the file's table — `{row}`, the 1-based position of the first row whose named columns all equal `values` as text (blank matching blank), or null (the search page's Data grid opening the modal on that row) |
 
 ```json
 SearchPage = {
@@ -289,7 +290,7 @@ SearchPage = {
 
 With `totals=true`, `rows_total` is the matches' rows (the level's `count_field`
 summed, a doc without it counting as one) and `mapped_total` the matches with a
-position (levels whose `geo` is true): the search page's Rows and Map sub-tab
+position (levels whose `geo` is true): the search page's Data and Map sub-tab
 counts. Otherwise both are null. Each facet bucket likewise carries
 `rows_count` (levels with a `count_field`) and, with `totals` on a `geo` level,
 `mapped_count`, so the sidebar's facet counts follow the active sub-tab; a
@@ -444,7 +445,7 @@ newest), `recent` / `recent_asc` (contribution timestamp), `published` /
 `citation_az` / `citation_za` (`_reference.citation`), `id_desc` / `id_asc`.
 It may instead be `<column>:asc|desc`, a sortable column of the level's summary
 grid (below): its header's sort, newest first on ties. Or `rows.<column>:asc|desc`,
-the Rows grid's header sort on a raw row column: raw rows are not indexed, so it
+the Data grid's header sort on a raw row column: raw rows are not indexed, so it
 orders the records by their rows' smallest (ascending) or largest (descending)
 value of the column (`summary._all.<column>`, then the merged
 `summary.<table>.<column>`; numerically for a data-model Number), and the SPA
@@ -708,7 +709,7 @@ rows of that level sharing a name (its key column, `site` for sites) are one
 doc, `rows` holding them all, `summary.<level>` their merge (each column's first
 value) plus `_n_results`, how many rows (the level's `count_field`). A row
 without a name is a doc of its own. So a level's matches count records (the
-Summaries tab), and their summed `_n_results` its rows (the Rows tab).
+Summaries tab), and their summed `_n_results` its rows (the Data tab).
 
 Row values are text everywhere above (`summary.<level>`, `_all`), so every doc
 also carries `summary._num` (2026-11-10): per data-model number column

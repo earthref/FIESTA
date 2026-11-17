@@ -83,7 +83,7 @@ def _grid_columns(node, table: str) -> dict:
 def _grid_sort(node, table: str, sort: str | None) -> str | list | None:
     """A named SORT_OPTIONS key, `<column>:asc|desc` on a sortable grid
     column of the level (its header's sort), or `rows.<column>:asc|desc` on a
-    raw row column (the Rows grid's header sort)."""
+    raw row column (the Data grid's header sort)."""
     if sort is None or sort in SORT_OPTIONS:
         return sort
     key, _, order = sort.rpartition(":")

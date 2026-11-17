@@ -262,7 +262,7 @@ def test_summarize_places_other_bodies(magic_node):
 
 def test_summarize_groups_a_records_rows(magic_node):
     # A specimen's rows (e.g. a hysteresis and an anisotropy result) are one
-    # doc, as in the legacy index: Summaries count records, Rows their rows.
+    # doc, as in the legacy index: Summaries count records, Data their rows.
     text = "\n>>>>>>>>>>\n".join(
         [
             _tab_block(
@@ -1476,6 +1476,24 @@ def test_contribution_filters_on_every_node():
         SearchFilter(type="facet", field="id", date=True)
 
 
+def test_search_filter_views_read_legacy_rows_as_data():
+    """The Data result view was called Rows until 2026-11-16: a filter's
+    legacy `Rows` view (a YAML, or a node revision published before the
+    rename) is read as `Data`, once, and no node in git still says Rows."""
+    from fiesta.nodeconfig import SearchFilter, normalize_view
+
+    assert normalize_view("Rows") == "Data"
+    assert normalize_view("Poles") == "Poles"
+    legacy = SearchFilter(type="numeric", views=["Summaries", "Rows", "Map"])
+    assert legacy.views == ["Summaries", "Data", "Map"]
+    both = SearchFilter.model_validate({"type": "text", "views": ["Rows", "Data"]})
+    assert both.views == ["Data"]
+    assert SearchFilter(type="text").views == []
+    for node in load_deployment().nodes.values():
+        for f in node.search.filters:
+            assert "Rows" not in f.views, (node.node.slug, f.key)
+
+
 def test_search_body_sort_options():
     from fiesta.search.queries import DEFAULT_SORT, SORT_OPTIONS, build_search_body
 
@@ -2408,7 +2426,7 @@ def test_search_scoped_to_one_contribution(monkeypatch):
 
 def test_facet_buckets_count_rows_and_mapped():
     """A facet value carries its rows and positioned docs besides its docs, so
-    the sidebar counts follow the Summaries, Rows and Map sub-tabs."""
+    the sidebar counts follow the Summaries, Data and Map sub-tabs."""
     from fiesta.apps.routers.search import _facet_bucket
     from fiesta.search.queries import build_search_body
 

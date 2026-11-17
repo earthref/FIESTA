@@ -2,6 +2,7 @@ import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/
 import type { ComponentType, ReactNode } from "react";
 import { BASE_PATH, PORTAL } from "./lib/base";
 import { useNodeConfig } from "./lib/config";
+import { normalizeView } from "./lib/utils";
 import { pluginPages } from "./plugins";
 import { AccountPage } from "./routes/account";
 import { AdminPage } from "./routes/admin";
@@ -25,7 +26,8 @@ import { VocabulariesPage } from "./routes/vocabularies";
 export interface SearchParams {
   q?: string;
   level?: string;
-  /** The result sub-tab to open with (Summaries, Rows, Map, a plugin view). */
+  /** The result sub-tab to open with (Summaries, Data, Map, a plugin view); a
+   * legacy `view=Rows` link opens Data. */
   view?: string;
   sort?: string;
   /** Plugin range filters, each "field:gte:lte" (blank = open end). */
@@ -82,6 +84,12 @@ function str(value: unknown): string | undefined {
   return typeof value === "string" && value !== "" ? value : undefined;
 }
 
+/** A result sub-tab param, a legacy name read as the current one. */
+function view(value: unknown): string | undefined {
+  const text = str(value);
+  return text && normalizeView(text);
+}
+
 /** A name param: a record's name may be all digits (`?plot=34178`), which
  * the router parses as a number. */
 function name(value: unknown): string | undefined {
@@ -111,7 +119,7 @@ const searchRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
     q: str(search.q),
     level: str(search.level),
-    view: str(search.view),
+    view: view(search.view),
     sort: str(search.sort),
     ranges: strArray(search.ranges),
     filter: strArray(search.filter),

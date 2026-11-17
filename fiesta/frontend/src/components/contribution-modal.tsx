@@ -1096,7 +1096,7 @@ function LevelPanel({
   const scroller = useRef<HTMLDivElement>(null);
   // The table opens on the selected row (in file order), in the middle of the view.
   const [target, setTarget] = useState(() => (selected !== undefined ? selected - 1 : undefined));
-  // A search row (the Rows grid) is found in the file, then selected.
+  // A search row (the Data grid) is found in the file, then selected.
   const located = useQuery({
     queryKey: ["contribution-row", id, level.table, privateKey, match],
     queryFn: () =>

@@ -275,7 +275,7 @@ def build_search_body(
         for facet in facets:
             agg: dict[str, Any] = {"terms": {"field": facet_path(facet), "size": facet_size}}
             if count_field:
-                # Each value's rows, for the Rows sub-tab (a doc without the
+                # Each value's rows, for the Data sub-tab (a doc without the
                 # count field is one row, as in the router's `_n_rows`).
                 agg["aggs"] = {"count": {"sum": {"field": count_field, "missing": 1}}}
             aggs[facet] = agg

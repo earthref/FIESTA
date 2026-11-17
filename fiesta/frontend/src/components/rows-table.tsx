@@ -14,7 +14,7 @@ export interface GridRow {
   label?: string;
   values: Record<string, unknown>;
   issues?: Record<string, CellIssue>;
-  /** The search hit the row is from (the search page's Rows view). */
+  /** The search hit the row is from (the search page's Data view). */
   hit?: SearchResult;
 }
 
@@ -192,9 +192,11 @@ function columnWidths(
 
 /** A row's height (one line of 14px text and its padding). */
 const ROW_HEIGHT = 37;
+/** A group header row's height (one line of 13px text and its padding). */
+const GROUP_HEIGHT = 33;
 
 /**
- * Raw rows as one grid (the search page's Rows view, the contribution
+ * Raw rows as one grid (the search page's Data view, the contribution
  * modal's level tabs) under a sticky three-row header: each column's name,
  * field and type from the node's latest data model (`table`), the name
  * sorting with `onSort`.
@@ -208,7 +210,10 @@ const ROW_HEIGHT = 37;
  * the whole of it as the tooltip. With `onRowClick` a row is clickable (or
  * Enter on a focused one); `selected` (a row's key) is highlighted, and
  * `scrollTo` (an item's index) is brought to the middle of the view once it
- * is among the items.
+ * is among the items. With `groupKey` (an item's group: the search page's
+ * contribution) a full-width `groupHeader` row opens an item whenever its
+ * group differs from the item's above, under any sort: the items are not
+ * reordered, so a group split by the sort gets a header at each run.
  */
 export function RowsGrid({
   items,
@@ -227,6 +232,8 @@ export function RowsGrid({
   scrollTo,
   footer,
   empty = "No row data for these results.",
+  groupKey,
+  groupHeader,
 }: {
   items: (GridRow[] | undefined)[];
   columns: string[];
@@ -246,14 +253,34 @@ export function RowsGrid({
   onRange?: (start: number, end: number) => void;
   footer?: ReactNode;
   empty?: ReactNode;
+  /** An item's group (undefined: none). */
+  groupKey?: (index: number) => string | undefined;
+  /** The header row's content for the group an item opens. */
+  groupHeader?: (index: number) => ReactNode;
 }) {
   const model = useDataModelTable(table);
   // A record still loading: skeleton rows, as many as a record has on average.
   const placeholderRows = Math.max(1, Math.round(estimateRows));
+  // Whether a loaded item with rows opens a group: its key differs from the
+  // nearest item above with rows (or that item is still loading, when the
+  // header shows until it arrives).
+  const startsGroup = (index: number): boolean => {
+    if (!groupKey || !items[index]?.length) return false;
+    const key = groupKey(index);
+    if (key === undefined) return false;
+    for (let above = index - 1; above >= 0; above--) {
+      const item = items[above];
+      if (!item) return true;
+      if (item.length > 0) return groupKey(above) !== key;
+    }
+    return true;
+  };
   const { startRef, indexes, measure, padTop, padBottom, scrollToIndex } = useVirtualRows({
     count: items.length,
     scrollRef,
-    estimateSize: (index) => (items[index]?.length || Math.max(1, estimateRows)) * ROW_HEIGHT,
+    estimateSize: (index) =>
+      (items[index]?.length || Math.max(1, estimateRows)) * ROW_HEIGHT +
+      (startsGroup(index) ? GROUP_HEIGHT : 0),
     overscan,
     onRange,
   });
@@ -355,6 +382,20 @@ export function RowsGrid({
           }
           return (
             <tbody key={`item-${index}`} data-index={index} ref={measure}>
+              {startsGroup(index) && (
+                <tr style={{ height: GROUP_HEIGHT }}>
+                  <th
+                    scope="colgroup"
+                    colSpan={span}
+                    className="whitespace-nowrap border-gray-200 border-y bg-gray-50 px-3 py-1.5 text-left font-normal text-[13px] text-gray-700"
+                  >
+                    {/* Stays in view when the grid scrolls sideways. */}
+                    <div className="sticky left-3 inline-block max-w-full overflow-hidden text-ellipsis align-bottom">
+                      {groupHeader?.(index)}
+                    </div>
+                  </th>
+                </tr>
+              )}
               {item.map((row) => {
                 const rowIssue = row.issues?.[""];
                 const isSelected = selected !== undefined && row.key === selected;

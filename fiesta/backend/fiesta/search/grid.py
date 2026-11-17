@@ -408,7 +408,7 @@ _ROW_COLUMN = re.compile(r"^[A-Za-z0-9_]+$")
 def row_sort_clauses(
     node: NodeConfig, table: str, column: str, order: Literal["asc", "desc"]
 ) -> list | None:
-    """OpenSearch sort clauses for a Rows grid header (`sort=rows.<column>:…`):
+    """OpenSearch sort clauses for a Data grid header (`sort=rows.<column>:…`):
     records by their rows' smallest (ascending) or largest (descending) value
     of the column, numerically for a data-model Number. Raw rows are not
     indexed, so this reads the record's `summary._all` values and, for the ID

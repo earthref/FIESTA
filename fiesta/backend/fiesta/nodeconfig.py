@@ -227,6 +227,17 @@ class SearchLevel(BaseModel):
         return self
 
 
+# Result sub-tabs renamed since their names were first stored (filter `views`,
+# a plugin's `after_sub_tab`): the old name is read as the new.
+RENAMED_VIEWS = {"Rows": "Data"}
+
+
+def normalize_view(name: str) -> str:
+    """A result sub-tab's current name for `name`, which may be a legacy one
+    (`Rows` -> `Data`)."""
+    return RENAMED_VIEWS.get(name, name)
+
+
 class SearchFilter(BaseModel):
     """One control in the search page's filter sidebar.
 
@@ -251,8 +262,10 @@ class SearchFilter(BaseModel):
     ticked one `has=<table>:<column>` (with data) or `has=!<table>:<column>`
     (has the table, not that column) on `summary._has.<table>`.
     `levels` / `views` restrict where the control shows: search level names and
-    result sub-tab names (Summaries, Rows, Map on levels with positions, a plugin
-    tab); empty means everywhere. `timescale` (range, on a field of ages in
+    result sub-tab names (Summaries, Data, Map on levels with positions, a plugin
+    tab); empty means everywhere. The Data view was called Rows until
+    2026-11-16: a legacy `Rows` (a YAML or a revision published before the
+    rename) is read as `Data` (`normalize_view`). `timescale` (range, on a field of ages in
     years): the geologic time scale's units under the histogram, each a
     shortcut to its age range.
     """
@@ -268,6 +281,18 @@ class SearchFilter(BaseModel):
     max: float | None = None
     timescale: bool = False
     date: bool = False
+
+    @field_validator("views", mode="before")
+    @classmethod
+    def _normalize_views(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return value
+        out: list = []
+        for name in value:
+            name = normalize_view(name) if isinstance(name, str) else name
+            if name not in out:
+                out.append(name)
+        return out
 
     @model_validator(mode="after")
     def _check_field(self) -> "SearchFilter":
