@@ -296,6 +296,12 @@ the latter become G5 work after cutover.*
             is capped at the upload limit (`FIESTA_MAX_UPLOAD_BYTES`) and converts in
             a worker thread; the Upgrade page and the upload page's Step 2 ask a
             signed-out user to log in.
+      - [x] Step 2 overview (2026-11-16): an upload-wide summary and per-table
+            status, a "needs your attention" list with inline fixes (guessed
+            table/header row, soft column matches, type/range/required value
+            checks from the data model), a filtered column list instead of a
+            pulldown per column, bulk actions, template offers and remembered
+            columns (`lib/import-review.ts`; legacy-ux-spec.md "Step 2 overview").
 - [ ] **C8 Finish the validator.** `domain/validate.py` accepts but does not enforce
       `requiredIf`/`requiredUnless` variants, `in`, `matrix` and `type`. Enforce
       them, `requiredIfGroup` per row, not per table (MagIC #564, which is why the
