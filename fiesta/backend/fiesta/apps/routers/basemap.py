@@ -20,13 +20,14 @@ tiles straight from Esri and the other labels from OpenFreeMap.
 """
 
 import asyncio
+import hashlib
 import json
 import math
 import time
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Header, HTTPException, Response
 
 from fiesta.plates import PLATES_FILE
 
@@ -178,13 +179,20 @@ async def get_undersea_features() -> Response:
 
 
 @router.get("/plates")
-async def get_plates() -> Response:
-    """The present-day tectonic plates as GeoJSON (fiesta/plates.py)."""
-    return Response(
-        PLATES_FILE.read_bytes(),
-        media_type="application/geo+json",
-        headers={"Cache-Control": f"public, max-age={MAX_AGE}"},
-    )
+async def get_plates(if_none_match: str | None = Header(default=None)) -> Response:
+    """The present-day tectonic plates as GeoJSON (fiesta/plates.py).
+
+    Revalidated on every use (`no-cache` with an ETag of the file's content,
+    304 while it is unchanged), never kept for a day like the fetched basemap
+    data: it changes with the code, and a browser holding an old copy drew the
+    old boundaries until it expired.
+    """
+    body = PLATES_FILE.read_bytes()
+    etag = f'"{hashlib.sha256(body).hexdigest()[:16]}"'
+    headers = {"Cache-Control": "public, no-cache", "ETag": etag}
+    if if_none_match and etag in [tag.strip() for tag in if_none_match.split(",")]:
+        return Response(status_code=304, headers=headers)
+    return Response(body, media_type="application/geo+json", headers=headers)
 
 
 @router.get("/{name}")
