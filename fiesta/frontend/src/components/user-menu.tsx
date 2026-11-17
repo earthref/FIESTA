@@ -125,34 +125,26 @@ export function UserMenu({
             {user.email}
           </div>
           {!isSourceMode(config) && (
-            <Link to="/private" role="menuitem" className={entryClass} onClick={close}>
+            <Link to="/Private" role="menuitem" className={entryClass} onClick={close}>
               <Entry icon="folder-open">Private Workspace</Entry>
             </Link>
           )}
-          <Link to="/account" role="menuitem" className={entryClass} onClick={close}>
+          <Link to="/Account" role="menuitem" className={entryClass} onClick={close}>
             <Entry icon="user">Account</Entry>
           </Link>
           {isAnyAdmin(user) &&
             (() => {
-              // Straight to this node's settings when the user administers it.
-              // Admin is a FIESTA page at the portal, not under this node.
-              const adminPath =
-                config && isNodeAdmin(user, config.slug) ? `/admin/nodes/${config.slug}` : "/admin";
-              const href = portalPageUrl(adminPath);
+              // Straight to this node's settings (/MagIC/Admin) when the user
+              // administers it; otherwise the portal's Admin, outside the node.
+              const ownNode = !!config && isNodeAdmin(user, config.slug);
+              const href = ownNode ? null : portalPageUrl("/Admin");
               const entry = <Entry icon="edit">Admin</Entry>;
               return href ? (
                 <a href={href} role="menuitem" className={entryClass} onClick={close}>
                   {entry}
                 </a>
               ) : (
-                <Link
-                  {...(config && isNodeAdmin(user, config.slug)
-                    ? { to: "/admin/nodes/$slug", params: { slug: config.slug } }
-                    : { to: "/admin" })}
-                  role="menuitem"
-                  className={entryClass}
-                  onClick={close}
-                >
+                <Link to="/Admin" role="menuitem" className={entryClass} onClick={close}>
                   {entry}
                 </Link>
               );

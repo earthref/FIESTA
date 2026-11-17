@@ -1,8 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useContext } from "react";
-import type { SearchParams } from "../router";
+import { createContext, useContext } from "react";
+import { pluginContributionTabs } from "../plugins";
+import type { SearchBackground } from "../router";
 import { nodeSiteUrl } from "./base";
-import { NodeConfigScope } from "./config";
+import { NodeConfigScope, useNodeConfig } from "./config";
+import { contributionPath, slug } from "./search-state";
+import type { NodeConfig } from "./types";
 
 /** A search doc's row for the modal to find in a level tab and select. */
 export interface RowMatch {
@@ -18,15 +21,30 @@ declare module "@tanstack/react-router" {
   }
 }
 
+/** The search page a contribution's modal opens over (its route params);
+ * the search page provides it, so the modal closes back onto that search. */
+export const SearchBackgroundContext = createContext<SearchBackground | undefined>(undefined);
+
+/** A modal tab's label (its path segment) for its key: "sites" -> "Sites",
+ * "map" -> "Map", a plugin tab's key -> its label. */
+export function contributionTabLabel(config: NodeConfig | undefined, key: string): string {
+  if (key === "contribution") return "Contribution";
+  if (key === "map") return "Map";
+  const level = config?.search_levels.find((entry) => entry.table === key);
+  if (level) return level.name;
+  const plugin = config ? pluginContributionTabs(config).find((tab) => tab.key === key) : undefined;
+  return plugin?.label ?? key;
+}
+
 /**
- * Opens a contribution's modal: the search page with `?contribution=<id>`
- * (and `tab`, the modal's tab: "contribution", a level's table, "map" or a
- * plugin tab's key), keeping the current search behind it. `match` is a row
- * of that level's table for the modal to find and select (carried in the
- * history entry, not the URL). `options.plot` selects a plot in a plot tab
- * (`?plot=`), and `options.privateKey` opens a private contribution (the
- * private workspace's). On the portal home (NodeConfigScope) it loads the
- * scoped node's search page instead.
+ * Opens a contribution's modal: /<id>/<tab> (the modal's tab, by key:
+ * "contribution", a level's table, "map" or a plugin tab's key; the URL names
+ * it by its label), over the current search. `match` is a row of that level's
+ * table for the modal to find and select (carried in the history entry, not
+ * the URL). `options.plot` selects a plot in a plot tab (`?plot=`), and
+ * `options.privateKey` opens a private contribution (the private
+ * workspace's). On the portal home (NodeConfigScope) it loads the scoped
+ * node's page instead.
  */
 export function useOpenContribution(): (
   id: string,
@@ -35,31 +53,30 @@ export function useOpenContribution(): (
   options?: { plot?: string; privateKey?: string },
 ) => void {
   const scoped = useContext(NodeConfigScope);
+  const background = useContext(SearchBackgroundContext);
+  const { data: config } = useNodeConfig();
   const navigate = useNavigate();
   return (id, tab, match, options) => {
     const plot = options?.plot;
     const privateKey = options?.privateKey;
+    const label = tab ? contributionTabLabel(config, tab) : undefined;
     if (scoped) {
       const query = new URLSearchParams({
-        contribution: id,
-        ...(tab ? { tab } : {}),
         ...(plot ? { plot } : {}),
         ...(privateKey ? { private_key: privateKey } : {}),
       });
-      window.location.assign(nodeSiteUrl(scoped.key, `/search?${query}`));
+      const suffix = query.size ? `?${query}` : "";
+      window.location.assign(nodeSiteUrl(scoped.key, `${contributionPath(id, label)}${suffix}`));
       return;
     }
     navigate({
-      to: "/search",
-      search: (prev: SearchParams) => ({
-        ...prev,
-        contribution: Number(id),
-        tab,
-        row: undefined,
-        plot,
-        ...(privateKey ? { private_key: privateKey } : {}),
-      }),
-      state: match && tab ? { rowMatch: { id, table: tab, values: match } } : undefined,
+      to: "/$id/$tab",
+      params: { id, tab: label ? slug(label) : "Contribution" },
+      search: { plot, private_key: privateKey },
+      state: {
+        background,
+        ...(match && tab ? { rowMatch: { id, table: tab, values: match } } : {}),
+      },
     });
   };
 }

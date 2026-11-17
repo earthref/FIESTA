@@ -186,9 +186,21 @@ into core components. The hooks besides those above:
 
 | Hook | Use for |
 |---|---|
+| `homeCards(config)` | full-width cards under the home page's primary cards (`{key, title, subtitle?, level, view}` opens that search view, `/Search/<level>/<view>`; or `to` a page of the node); a card for a quick-launch view replaces its default card |
 | `pages` | SPA pages at their own paths (`{path: "/method-codes", component, validateSearch?}`): every plugin's are routes (the router is built once), each a not-found page on a node that does not activate it; their slugs are the backend plugin's `pages` |
 | `resourceCards(config)` | `HomeCard`s for the home page's default resource row (a node YAML without `features.home.resources`), after its Data Model card |
 | `facetDescriptions(config)` | a query (`{queryKey, queryFn, select}`, select giving `Map<value, {definition, group, order}>`) whose values' definitions the filter modals show beside any facet's values, grouped and ordered as given |
+
+A search view's settings belong to the search: the search page's URL is a
+saved search (`/MagIC/Search/Sites/Poles?q=<id>`, [api.md](api.md) "Saved
+searches"), so a shared link opens the view as it was. Keep a setting with
+`useSearchSetting(key, default, valid?)` from `@/plugins` instead of
+`useState`: `key` is `"<plugin>.<name>"` (`poles.vgps`, `kd-plots.color`), a
+value equal to the default is not stored, and `valid` (`isBoolean`,
+`isString`, or your own) refuses a stored value of the wrong shape. Outside
+the search page (a contribution modal's tab, a plugin page) it is plain
+component state. Transient state — a selection, a zoom, a hover — stays in
+`useState`. Each change is a new saved search, replacing the history entry.
 
 Plugin files import core code through the `@/` alias (`@/lib/api`,
 `@/components/echart`, `@/plugins` for the types) and npm packages as usual;

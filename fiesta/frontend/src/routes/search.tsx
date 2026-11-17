@@ -1,5 +1,5 @@
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
-import { getRouteApi, Link, useRouterState } from "@tanstack/react-router";
+import { getRouteApi, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   type CSSProperties,
   type FormEvent,
@@ -67,13 +67,16 @@ import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useNodeConfig } from "../lib/config";
-import { useOpenContribution } from "../lib/contribution-modal";
+import { SearchBackgroundContext, useOpenContribution } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
+import { type SearchSettings, SearchSettingsContext, useSavedSearch } from "../lib/saved-search";
+import { type SearchState, slug, slugMatches } from "../lib/search-state";
 import type {
   ContributionOut,
   FacetBucket,
   FilterCounts,
   GridColumn,
+  NodeConfig,
   SearchFilter,
   SearchLevel,
   SearchPage as SearchPageData,
@@ -109,10 +112,30 @@ const ROWS_SORT = "rows.";
 /** A sub-tab by name; a renamed view's old name ("Rows") finds its new one. */
 function findSubTab<T extends { name: string }>(tabs: T[], name: string | null | undefined) {
   if (!name) return undefined;
-  const wanted = normalizeView(name);
-  return tabs.find((tab) => tab.name === wanted);
+  return (
+    tabs.find((tab) => slugMatches(tab.name, name)) ??
+    tabs.find((tab) => slugMatches(tab.name, normalizeView(name)))
+  );
 }
-const routeApi = getRouteApi("/search");
+// Result sub-tabs: Summaries, Data (non-contribution), Map (levels with
+// positions), then plugin tabs. The chosen view persists across levels and
+// falls back to the first tab when a level lacks it (legacy `state.view`).
+type SubTab = {
+  name: string;
+  render?: (ctx: PluginSubTabContext) => ReactNode;
+  countTable?: string;
+  records?: boolean;
+};
+function subTabsOf(config: NodeConfig | undefined, level: SearchLevel | undefined): SubTab[] {
+  if (!config || !level) return [];
+  const tabs: SubTab[] = [{ name: "Summaries" }];
+  if (level.table !== "contribution") tabs.push({ name: "Data" });
+  if (level.geo && level.map !== false) tabs.push({ name: "Map" });
+  return [...tabs, ...pluginSubTabs(config, level)];
+}
+const searchRouteApi = getRouteApi("/Search/{-$level}/{-$view}");
+const contributionRouteApi = getRouteApi("/$id/$tab");
+const NO_STATE: SearchState = {};
 const TAB_BORDER = "var(--er-edge)";
 /** Legacy `styles.activeTab` on the level tabs and the Filters tab. */
 const ACTIVE_TAB_BG = "var(--er-panel)";
@@ -323,19 +346,70 @@ function NoItemsMessage() {
 
 // --- Search page ----------------------------------------------------------------
 
-export function SearchPage() {
+/** /Search/<level>/<view>?q=<saved search>. */
+export function SearchRoutePage() {
+  const params = searchRouteApi.useParams();
+  const { q } = searchRouteApi.useSearch();
+  return <SearchPage level={params.level} view={params.view} q={q} />;
+}
+
+/** /<id>/<tab>: a contribution's modal over the search it was opened from
+ * (the history entry's), else the default search. */
+export function ContributionRoutePage() {
+  const { id, tab } = contributionRouteApi.useParams();
+  const search = contributionRouteApi.useSearch();
+  const background = useRouterState({ select: (state) => state.location.state.background });
+  return (
+    <SearchPage
+      level={background?.level}
+      view={background?.view}
+      q={background?.q}
+      contribution={{
+        id: Number(id),
+        tab,
+        row: search.row,
+        plot: search.plot,
+        privateKey: search.private_key,
+      }}
+    />
+  );
+}
+
+interface SearchPageProps {
+  /** The level and result view path segments (a name in any case, hyphens for spaces). */
+  level?: string;
+  view?: string;
+  /** The saved search's id. */
+  q?: string;
+  /** The contribution whose modal is open: its tab (path segment), the row
+   * selected in a level tab, the plot in a plot tab, a private one's key. */
+  contribution?: { id: number; tab: string; row?: number; plot?: string; privateKey?: string };
+}
+
+export function SearchPage(props: SearchPageProps) {
   const { data: config } = useNodeConfig();
   const { user } = useAuth();
-  const search = routeApi.useSearch();
-  const navigate = routeApi.useNavigate();
+  const navigate = useNavigate();
 
-  const q = search.q ?? "";
+  // The search's state: the saved search the URL names, or while a new one is
+  // being saved, that one (the page follows it at once, the URL once it has
+  // its id).
+  const saved = useSavedSearch(props.q, { level: props.level, view: props.view });
+  const [pending, setPending] = useState<SearchState | null>(null);
+  const current: SearchState = pending ?? saved.state ?? NO_STATE;
+  const search = current;
+  const background = useMemo(
+    () => ({ level: props.level, view: props.view, q: props.q }),
+    [props.level, props.view, props.q],
+  );
+
+  const q = search.query ?? "";
   const ranges = useMemo(() => search.ranges ?? [], [search.ranges]);
   const has = useMemo(() => search.has ?? [], [search.has]);
   const bbox = search.bbox;
   const levels = config?.search_levels ?? [];
   const level: SearchLevel | undefined =
-    levels.find((entry) => entry.name === search.level) ?? levels[0];
+    levels.find((entry) => slugMatches(entry.name, props.level)) ?? levels[0];
   const privateKey = getQueryToken(q, "private_key");
   const hasFreeText = parseQueryTokens(q).freeText.length > 0;
   // Legacy `sortDefault`: relevance whenever there is free text and the user
@@ -374,11 +448,64 @@ export function SearchPage() {
     myContributions.data?.find((c) => c.id === id)?.private_key;
 
   const [input, setInput] = useState(q);
-  // A link may open a sub-tab (the home page's plugin cards and quick-launch
-  // buttons); it is kept in the page's state from then on. Unset, the level
-  // opens on its `default_view` (node YAML), else Summaries.
-  const [view, setView] = useState<string | undefined>(search.view);
+  // The result sub-tab is the path's last segment. Unset, the level opens on
+  // its `default_view` (node YAML), else Summaries.
+  const view = props.view;
   useEffect(() => setInput(q), [q]);
+
+  // Go to a level, view and/or state: the state is saved first (its id is the
+  // URL's `q`), the page following it meanwhile. A later call wins.
+  const seq = useRef(0);
+  const { save } = saved;
+  const go = useCallback(
+    async (next: {
+      level?: string;
+      /** A sub-tab name; null for the level's default. */
+      view?: string | null;
+      state?: SearchState;
+      replace?: boolean;
+    }) => {
+      const nextLevel = next.level ?? props.level;
+      const nextView = next.view === null ? undefined : (next.view ?? props.view);
+      const n = ++seq.current;
+      if (next.state) setPending(next.state);
+      let q = props.q;
+      let saveFailed = false;
+      try {
+        q = await save(next.state ?? current, { level: nextLevel, view: nextView });
+      } catch {
+        // The API is unreachable: the page keeps the state, the URL its old id.
+        saveFailed = true;
+      }
+      if (n !== seq.current) return;
+      await navigate({
+        to: "/Search/{-$level}/{-$view}",
+        params: {
+          level: nextLevel ? slug(nextLevel) : undefined,
+          view: nextView ? slug(nextView) : undefined,
+        },
+        search: { q },
+        replace: next.replace,
+      });
+      if (n === seq.current && !saveFailed) setPending(null);
+    },
+    [current, navigate, props.level, props.q, props.view, save],
+  );
+  const setView = (name: string | undefined) => void go({ view: name ?? null });
+  // The view settings plugins keep in the search (useSearchSetting); a change
+  // replaces the history entry.
+  const settingsContext = useMemo<SearchSettings>(
+    () => ({
+      settings: current.settings ?? {},
+      set: (key, value) => {
+        const settings = { ...(current.settings ?? {}) };
+        if (value === undefined) delete settings[key];
+        else settings[key] = value;
+        void go({ state: { ...current, settings }, replace: true });
+      },
+    }),
+    [current, go],
+  );
 
   // Independent scroll regions: compute the available height so the page body
   // does not scroll (legacy onWindowResize). The fixed footer's height comes
@@ -400,6 +527,8 @@ export function SearchPage() {
   const setSearch = (next: {
     q?: string;
     level?: string;
+    /** A sub-tab name; null for the level's default. */
+    view?: string | null;
     sort?: string | undefined;
     ranges?: string[];
     filter?: string[];
@@ -413,11 +542,13 @@ export function SearchPage() {
     replace?: boolean;
   }) => {
     const filter = next.filter ?? gridFilterList;
-    navigate({
+    void go({
+      level: next.level,
+      view: next.view,
       replace: next.replace,
-      search: {
-        q: next.q !== undefined ? next.q || undefined : q || undefined,
-        level: next.level ?? search.level,
+      state: {
+        ...current,
+        query: next.q !== undefined ? next.q || undefined : q || undefined,
         sort: "sort" in next ? next.sort : search.sort,
         ranges: (next.ranges ?? ranges).length > 0 ? (next.ranges ?? ranges) : undefined,
         filter: filter.length > 0 ? filter : undefined,
@@ -430,42 +561,60 @@ export function SearchPage() {
       },
     });
   };
-  // A contribution's modal, over the search (?contribution=<id>&tab=...).
+  // A contribution's modal, over the search (/<id>/<tab>); its history
+  // entries keep the search behind it (`background`).
   const openContribution = useOpenContribution();
+  const modal = props.contribution;
+  const modalId = modal ? String(modal.id) : "";
+  const modalKey = modal?.privateKey;
+  const modalRow = modal?.row;
+  const modalPlot = modal?.plot;
+  const modalTab = modal?.tab ?? "Contribution";
   const setModalTab = useCallback(
     (tab: string) =>
       navigate({
-        search: (prev) => ({ ...prev, tab, row: undefined, plot: undefined }),
+        to: "/$id/$tab",
+        params: { id: modalId, tab: slug(tab) },
+        search: { private_key: modalKey },
+        state: { background },
         replace: true,
       }),
-    [navigate],
+    [navigate, modalId, modalKey, background],
   );
   // The row selected in the modal's level tab; replacing the entry drops the
   // Data grid's row to find (the history state) once it is found.
   const setModalRow = useCallback(
-    (row: number | undefined) => navigate({ search: (prev) => ({ ...prev, row }), replace: true }),
-    [navigate],
+    (row: number | undefined) =>
+      navigate({
+        to: "/$id/$tab",
+        params: { id: modalId, tab: modalTab },
+        search: { row, plot: modalPlot, private_key: modalKey },
+        state: { background },
+        replace: true,
+      }),
+    [navigate, modalId, modalTab, modalPlot, modalKey, background],
   );
   // The plot selected in a plot tab of the modal.
   const setModalPlot = useCallback(
     (plot: string | undefined) =>
-      navigate({ search: (prev) => ({ ...prev, plot }), replace: true }),
-    [navigate],
+      navigate({
+        to: "/$id/$tab",
+        params: { id: modalId, tab: modalTab },
+        search: { row: modalRow, plot, private_key: modalKey },
+        state: { background },
+        replace: true,
+      }),
+    [navigate, modalId, modalTab, modalRow, modalKey, background],
   );
   const rowMatch = useRouterState({ select: (state) => state.location.state.rowMatch });
   const closeModal = useCallback(
     () =>
       navigate({
-        search: (prev) => ({
-          ...prev,
-          contribution: undefined,
-          tab: undefined,
-          row: undefined,
-          plot: undefined,
-          private_key: undefined,
-        }),
+        to: "/Search/{-$level}/{-$view}",
+        params: { level: background.level, view: background.view },
+        search: { q: background.q },
       }),
-    [navigate],
+    [navigate, background],
   );
   // The Data grid's row last opened, highlighted (a new search replaces the rows).
   const [openedRow, setOpenedRow] = useState<string>();
@@ -539,24 +688,13 @@ export function SearchPage() {
     }),
   });
 
-  // Result sub-tabs: Summaries, Data (non-contribution), Map (levels with
-  // positions), then plugin tabs. The
-  // chosen view persists across levels and falls back to the first tab when a
-  // level lacks it (legacy `state.view`).
-  type SubTab = {
-    name: string;
-    render?: (ctx: PluginSubTabContext) => ReactNode;
-    countTable?: string;
-    records?: boolean;
-  };
-  const subTabs = useMemo<SubTab[]>(() => {
-    if (!config || !level) return [];
-    const tabs: SubTab[] = [{ name: "Summaries" }];
-    if (level.table !== "contribution") tabs.push({ name: "Data" });
-    if (level.geo && level.map !== false) tabs.push({ name: "Map" });
-    return [...tabs, ...pluginSubTabs(config, level)];
-  }, [config, level]);
+  const subTabs = useMemo<SubTab[]>(() => subTabsOf(config, level), [config, level]);
   const activeTab = findSubTab(subTabs, view ?? level?.default_view) ?? subTabs[0];
+  // A view the level does not have leaves the URL (the page shows the first).
+  const unknownView = !!view && subTabs.length > 0 && !findSubTab(subTabs, view);
+  useEffect(() => {
+    if (unknownView) void go({ view: null, replace: true });
+  }, [unknownView, go]);
 
   // A plugin view's count: its own docs matching the search and its filters
   // (ranges on its summary block, the bbox), as it fetches them. Switching
@@ -906,7 +1044,7 @@ export function SearchPage() {
     setSearch({ q: input.trim() });
   };
 
-  if (!config || !level) return <PageSpinner />;
+  if (!config || !level || !saved.ready) return <PageSpinner />;
 
   // A header sort shows in the dropdown as its own (selected) entry.
   const gridSortColumn = gridSort && level.columns?.find((c) => c.key === gridSort.key);
@@ -944,10 +1082,11 @@ export function SearchPage() {
   // A level tab: its own filters start empty. A level with a `default_view`
   // opens on it; without one the open sub-tab carries over (legacy).
   const openLevel = (entry: SearchLevel, nextView?: string) => {
-    if (nextView) setView(nextView);
-    else if (entry.default_view) setView(undefined);
+    // The open view carries over where the level has it (the URL names it).
+    const carried = !!view && !!findSubTab(subTabsOf(config, entry), view);
     setSearch({
       level: entry.name,
+      view: nextView ?? (entry.default_view || !carried ? null : undefined),
       ranges: [],
       filter: [],
       // The with/without data entries on tables its records cover.
@@ -1214,8 +1353,15 @@ export function SearchPage() {
     );
   };
 
-  return (
+  const page = (
     <div className="fiesta-search">
+      {saved.missing && (
+        <div className="mb-2">
+          <ErrorMessage
+            error={new Error("This saved search was not found; showing the default search.")}
+          />
+        </div>
+      )}
       {/* Level tabs: Semantic tabular menu (bottom border only; grey active tab) */}
       <div className="flex flex-wrap items-end" style={{ borderBottom: `1px solid ${TAB_BORDER}` }}>
         {levels.map((entry, index) => {
@@ -1240,7 +1386,7 @@ export function SearchPage() {
         {user && !isSourceMode(config) && (
           <div className="ml-auto flex items-center self-center" style={{ paddingRight: 0 }}>
             <Link
-              to="/private"
+              to="/Private"
               className="inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
               style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
             >
@@ -1331,8 +1477,8 @@ export function SearchPage() {
             </button>
           </form>
           {/* Quick launch (node YAML `search.quick_launch`): the main views
-              beside the search box, as basic buttons on its line height; the
-              open view's button is hidden. */}
+          beside the search box, as basic buttons on its line height; the
+          open view's button is hidden. */}
           {launchViews.length > 0 && (
             <nav
               aria-label="Quick launch"
@@ -1549,7 +1695,7 @@ export function SearchPage() {
                 style={{ margin: privateKey ? "0 1rem 0 auto" : "0 0 0 auto" }}
               />
               {/* Download Results, in the sort dropdown's node-colored pill:
-                  hidden when searching a private_key (legacy) */}
+              hidden when searching a private_key (legacy) */}
               {!privateKey && (
                 <button
                   type="button"
@@ -1719,20 +1865,30 @@ export function SearchPage() {
         </div>
       </div>
       {renderFilterModal()}
-      {search.contribution !== undefined && (
-        <ContributionModal
-          id={String(search.contribution)}
-          tab={search.tab}
-          row={search.row}
-          plot={search.plot}
-          rowMatch={rowMatch}
-          privateKey={search.private_key ?? privateKey ?? ownKey(search.contribution)}
-          onTab={setModalTab}
-          onRow={setModalRow}
-          onPlot={setModalPlot}
-          onClose={closeModal}
-        />
+      {modal && (
+        // A plugin tab's settings are its own, not the search's.
+        <SearchSettingsContext.Provider value={null}>
+          <ContributionModal
+            id={modalId}
+            tab={modal.tab}
+            row={modal.row}
+            plot={modal.plot}
+            rowMatch={rowMatch}
+            privateKey={modal.privateKey ?? privateKey ?? ownKey(modal.id)}
+            onTab={setModalTab}
+            onRow={setModalRow}
+            onPlot={setModalPlot}
+            onClose={closeModal}
+          />
+        </SearchSettingsContext.Provider>
       )}
     </div>
+  );
+  return (
+    <SearchBackgroundContext.Provider value={background}>
+      <SearchSettingsContext.Provider value={settingsContext}>
+        {page}
+      </SearchSettingsContext.Provider>
+    </SearchBackgroundContext.Provider>
   );
 }

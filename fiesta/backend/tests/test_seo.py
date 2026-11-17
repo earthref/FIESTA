@@ -93,6 +93,11 @@ def test_resolve_spa_paths(magic_node):
     assert resolve("/MagIC/about", {}).page == "about"
     assert resolve("/MagIC/private", {}).kind == "private"
     assert resolve("/MagIC/nope", {}).kind == "other"
+    # The clean URLs: /Search/<level>/<view>, /<id>/<tab>, any case.
+    assert resolve("/MagIC/Search/Locations/Data", {"q": "x"}).kind == "search"
+    assert resolve("/MagIC/16901/Contribution", {}).contribution_id == 16901
+    assert resolve("/MagIC/Private", {}).kind == "private"
+    assert resolve("/MagIC/Admin/Files", {}).kind == "private"
     assert resolve("/Nowhere/1", {}).node is None
 
 

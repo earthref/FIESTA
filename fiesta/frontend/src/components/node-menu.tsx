@@ -61,7 +61,7 @@ export function nodeMenuItems(config: NodeConfig | undefined): {
     });
   }
   right.push(...pages.filter((page) => page.menu === "right").map(item));
-  right.push({ key: "contact", label: "Contact", to: "/contact", icon: "mail" });
+  right.push({ key: "contact", label: "Contact", to: "/Contact", icon: "mail" });
 
   return { left, right };
 }

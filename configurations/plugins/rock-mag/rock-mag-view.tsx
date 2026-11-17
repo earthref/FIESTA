@@ -9,6 +9,7 @@ import { type PlotColors, plotColors, plotInk, usePlotColors } from "@/lib/plot-
 import { useTheme } from "@/lib/theme";
 import type { SearchScope } from "@/lib/types";
 import { cx } from "@/lib/utils";
+import { isString, useSearchSetting } from "@/plugins";
 import {
   axisName,
   COLOR_BY,
@@ -88,7 +89,7 @@ export default function RockMagView({
   });
 
   const specimens = useMemo(() => (values.data ? specimensFrom(values.data) : []), [values.data]);
-  const [colorBy, setColorBy] = useState<ColorBy>("none");
+  const [colorBy, setColorBy] = useSearchSetting<ColorBy>("rock-mag.color", "none", isString);
   // The node's brand colour (MagIC purple) for the specimens, not a fixed blue;
   // lightened in dark mode so the points stand out from the dark plot.
   const { theme } = useTheme();

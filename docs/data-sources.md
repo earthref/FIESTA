@@ -133,7 +133,7 @@ legacy:
     cron: "20 * * * *"  # UTC; default hourly at :20
 ```
 
-The admin node page's **Data source** tab (`/admin/nodes/<slug>?section=source`)
+The admin node page's **Data source** tab (`/<Key>/Admin/Data-Source`)
 edits it into the draft like any other setting (publish to apply), and shows
 the mode, whether the checkout has `configurations/sources/<slug>.py`, how many records are
 synced, the ops scheduler's last run of the schedule (queued, running,

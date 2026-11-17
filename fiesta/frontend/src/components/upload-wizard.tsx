@@ -814,7 +814,7 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                 Files in an older {key} data model version are upgraded to version {latest} as they
                 are read, and the import step shows what changed. To upgrade a file without
                 uploading it, use the{" "}
-                <Link to="/upgrade" className="text-node-ink underline">
+                <Link to="/Upgrade" className="text-node-ink underline">
                   Upgrade page
                 </Link>
                 .
@@ -1092,7 +1092,7 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                   </p>
                 )}
                 <div className="flex gap-2">
-                  <Link to="/private">
+                  <Link to="/Private">
                     <Button>Open private workspace</Button>
                   </Link>
                   <Button variant="secondary" onClick={reset}>

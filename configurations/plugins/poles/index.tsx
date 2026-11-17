@@ -26,7 +26,12 @@ import type {
   SearchResult,
 } from "@/lib/types";
 import { cx, getPath } from "@/lib/utils";
-import type { PluginModule, PluginSubTabContext } from "@/plugins";
+import {
+  isBoolean,
+  type PluginModule,
+  type PluginSubTabContext,
+  useSearchSetting,
+} from "@/plugins";
 import {
   type AgeColors,
   DEFAULT_AGE_COLORS,
@@ -505,8 +510,9 @@ function PolesMapView({
   // The pole a grid row picked, which the map turns or pans to (a new object
   // per pick, so every pick moves the map, even back to the same pole).
   const [centerOn, setCenterOn] = useState<{ lon: number; lat: number } | null>(null);
-  const [showEllipses, setShowEllipses] = useState(true);
-  const [showVgps, setShowVgps] = useState(true);
+  // The plot's toggles are settings of the saved search (a shared link keeps them).
+  const [showEllipses, setShowEllipses] = useSearchSetting("poles.ellipses", true, isBoolean);
+  const [showVgps, setShowVgps] = useSearchSetting("poles.vgps", true, isBoolean);
   const rootRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const available = useAvailableHeight(rootRef);
@@ -731,8 +737,8 @@ const polesPlugin: PluginModule = {
       {
         key: "poles",
         title: "Poles\nView",
-        to: "/search",
-        search: { level: pconfig.base_level, view: "Poles" },
+        level: pconfig.base_level,
+        view: "Poles",
       },
     ];
   },

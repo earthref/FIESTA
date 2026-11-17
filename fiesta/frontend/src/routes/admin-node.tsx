@@ -3,13 +3,14 @@
 // Publishing the draft makes it live and writes it to the repository.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { AdminGate, Field, NodeChip, RepoStatus, Tabs } from "../components/admin/admin-ui";
 import { DataModelEditor } from "../components/admin/data-model-editor";
 import { FiltersEditor } from "../components/admin/filters-editor";
 import { GridEditor } from "../components/admin/grid-editor";
 import { LogoFieldset, type LogoUpload } from "../components/admin/logo-editor";
+import { useOpenNodeAdmin } from "../components/admin/node-admin-link";
 import { PagesEditor } from "../components/admin/pages-editor";
 import { PluginsEditor } from "../components/admin/plugins-editor";
 import { SourceEditor } from "../components/admin/source-editor";
@@ -42,9 +43,12 @@ import {
   type Validation,
 } from "../lib/admin";
 import { api } from "../lib/api";
+import { NODE, siteUrl } from "../lib/base";
+import { nodePageUrl, portalPageUrl } from "../lib/portals";
+import { slug as pathSlug, slugMatches } from "../lib/search-state";
 import type { LogoStyle } from "../lib/types";
 import { cx, normalizeView } from "../lib/utils";
-import type { AdminNodeParams } from "../router";
+import { NotFoundPage } from "./not-found";
 
 type Section =
   | "settings"
@@ -57,8 +61,11 @@ type Section =
   | "source"
   | "files"
   | "admins"
+  | "searches"
   | "history";
 
+// Each section's path segment is its label (/MagIC/Admin/Data-Source); an
+// older link's `?section=<key>` finds it too.
 const SECTIONS: { key: Section; label: string }[] = [
   { key: "settings", label: "Settings" },
   { key: "pages", label: "Pages" },
@@ -70,8 +77,20 @@ const SECTIONS: { key: Section; label: string }[] = [
   { key: "source", label: "Data Source" },
   { key: "files", label: "Files" },
   { key: "admins", label: "Admins" },
+  { key: "searches", label: "Searches" },
   { key: "history", label: "History" },
 ];
+
+function sectionOf(segment: string | undefined): Section | undefined {
+  return SECTIONS.find((s) => slugMatches(s.label, segment) || s.key === segment)?.key;
+}
+
+/** A section's path segment; none for Settings (the page itself). */
+function sectionSegment(section: Section): string | undefined {
+  if (section === "settings") return undefined;
+  const label = SECTIONS.find((s) => s.key === section)?.label;
+  return label ? pathSlug(label) : undefined;
+}
 
 const CHANGE_BADGE: Record<FileChange["change"], "success" | "warning" | "danger"> = {
   added: "success",
@@ -938,10 +957,142 @@ function HistorySection({ node }: { node: AdminNode }) {
   );
 }
 
+// --- Searches -------------------------------------------------------------------
+
+interface SearchUsage {
+  days: number;
+  uses: number;
+  searches: number;
+  users: number;
+  levels: { level: string | null; view: string | null; uses: number }[];
+  keys: { key: string; uses: number }[];
+  top: {
+    id: string;
+    state: Record<string, unknown>;
+    uses: number;
+    users: number;
+    last_used_at: string;
+  }[];
+}
+
+const USAGE_DAYS = [7, 30, 90, 365];
+
+/** What the node's saved searches were used for (/v2/{node}/searches/usage):
+ * levels and views, the filters and settings they set, the most used ones. */
+function SearchUsageSection({ node }: { node: AdminNode }) {
+  const [days, setDays] = useState(30);
+  const usage = useQuery({
+    queryKey: [...adminKeys.node(node.slug), "searches", days],
+    queryFn: () => api<SearchUsage>(`/v2/${node.slug}/searches/usage?days=${days}&limit=50`),
+    enabled: node.served,
+  });
+  if (!node.served) {
+    return <p className="text-sm text-gray-600">This API does not serve {node.key}.</p>;
+  }
+  if (usage.isLoading) return <Spinner />;
+  if (usage.error || !usage.data) return <ErrorMessage error={usage.error ?? "no data"} />;
+  const u = usage.data;
+  const searchLink = (id: string) =>
+    nodePageUrl(node.key, `/Search?q=${id}`) ?? siteUrl(`/Search?q=${id}`);
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700">
+        <span>Over the last</span>
+        <select
+          value={days}
+          onChange={(event) => setDays(Number(event.target.value))}
+          className="rounded-sm border border-gray-300 px-2 py-1"
+        >
+          {USAGE_DAYS.map((d) => (
+            <option key={d} value={d}>
+              {d} days
+            </option>
+          ))}
+        </select>
+        <span>
+          {u.uses} uses of {u.searches} searches by {u.users} signed-in users (signed-out uses count
+          but have no user).
+        </span>
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div>
+          <h3 className="mb-2 font-semibold text-gray-900">Levels and views</h3>
+          <Table>
+            <THead>
+              <tr>
+                <Th>Level</Th>
+                <Th>View</Th>
+                <Th>Uses</Th>
+              </tr>
+            </THead>
+            <TBody>
+              {u.levels.map((row) => (
+                <Tr key={`${row.level}/${row.view}`}>
+                  <Td>{row.level ?? "—"}</Td>
+                  <Td>{row.view ?? "default"}</Td>
+                  <Td>{row.uses}</Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+        </div>
+        <div>
+          <h3 className="mb-2 font-semibold text-gray-900">Filters and settings used</h3>
+          <Table>
+            <THead>
+              <tr>
+                <Th>Field</Th>
+                <Th>Uses</Th>
+              </tr>
+            </THead>
+            <TBody>
+              {u.keys.map((row) => (
+                <Tr key={row.key}>
+                  <Td>
+                    <code>{row.key}</code>
+                  </Td>
+                  <Td>{row.uses}</Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+        </div>
+      </div>
+      <div>
+        <h3 className="mb-2 font-semibold text-gray-900">Most used searches</h3>
+        <Table>
+          <THead>
+            <tr>
+              <Th>Search</Th>
+              <Th>Uses</Th>
+              <Th>Users</Th>
+              <Th>Last used</Th>
+            </tr>
+          </THead>
+          <TBody>
+            {u.top.map((row) => (
+              <Tr key={row.id}>
+                <Td>
+                  <a href={searchLink(row.id)} className="text-node-ink underline">
+                    <code className="break-all text-xs">{JSON.stringify(row.state)}</code>
+                  </a>
+                </Td>
+                <Td>{row.uses}</Td>
+                <Td>{row.users}</Td>
+                <Td>{formatDate(row.last_used_at)}</Td>
+              </Tr>
+            ))}
+          </TBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
 // --- Page ---------------------------------------------------------------------
 
 function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
-  const navigate = useNavigate();
+  const openNodeAdmin = useOpenNodeAdmin();
   const config = useAdminConfig();
   const node = useAdminNode(slug);
   const settings = useNodeSettings(slug);
@@ -949,11 +1100,23 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
   if (node.error || !node.data) return <ErrorMessage error={node.error ?? "not found"} />;
   const n = node.data;
   const superAdmin = !!config.data?.is_super_admin;
+  // Back to the portal's node list (a page load from under a node).
+  const adminHome = portalPageUrl("/Admin/Nodes");
   return (
     <div className="pb-10">
-      <Link to="/admin" search={{ tab: "nodes" }} className="text-sm text-node-ink underline">
-        ← Admin Settings
-      </Link>
+      {adminHome ? (
+        <a href={adminHome} className="text-sm text-node-ink underline">
+          ← Admin Settings
+        </a>
+      ) : (
+        <Link
+          to="/Admin/$tab"
+          params={{ tab: "Nodes" }}
+          className="text-sm text-node-ink underline"
+        >
+          ← Admin Settings
+        </Link>
+      )}
       <h1 className="mt-1 flex flex-wrap items-baseline gap-2 text-xl font-semibold text-gray-900">
         <NodeChip node={n} /> {n.title}
       </h1>
@@ -975,9 +1138,7 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
       <Tabs
         tabs={SECTIONS}
         active={section}
-        onChange={(next) =>
-          navigate({ to: "/admin/nodes/$slug", params: { slug }, search: { section: next } })
-        }
+        onChange={(next) => openNodeAdmin(n, sectionSegment(next as Section))}
       />
       {section === "settings" && <SettingsSection node={n} superAdmin={superAdmin} />}
       {["pages", "filters", "grid", "plugins", "data-models", "vocabularies", "source"].includes(
@@ -1030,20 +1191,36 @@ function NodeAdmin({ slug, section }: { slug: string; section: Section }) {
         ))}
       {section === "files" && <FilesSection node={n} />}
       {section === "admins" && <AdminsSection node={n} />}
+      {section === "searches" && <SearchUsageSection node={n} />}
       {section === "history" && <HistorySection node={n} />}
     </div>
   );
 }
 
-export function AdminNodePage() {
-  const { slug } = useParams({ from: "/admin/nodes/$slug" });
-  const search = useSearch({ from: "/admin/nodes/$slug" }) as AdminNodeParams;
-  const section = SECTIONS.some((s) => s.key === search.section)
-    ? (search.section as Section)
-    : "settings";
+function sectionPage(segment: string | undefined): Section | null {
+  if (!segment) return "settings";
+  return sectionOf(segment) ?? null;
+}
+
+/** /Admin/Nodes/<slug>/<section> (the portal's, for any node). */
+export function AdminNodeRoutePage() {
+  const { slug, section: segment } = useParams({ from: "/Admin/Nodes/$slug/{-$section}" });
+  const section = sectionPage(segment);
+  if (!section) return <NotFoundPage />;
   return (
     <AdminGate>
       <NodeAdmin slug={slug} section={section} />
+    </AdminGate>
+  );
+}
+
+/** /MagIC/Admin/<section>: this app's own node's settings. */
+export function CurrentNodeAdminPage({ section: segment }: { section?: string }) {
+  const section = sectionPage(segment);
+  if (!section) return <NotFoundPage />;
+  return (
+    <AdminGate>
+      <NodeAdmin slug={NODE} section={section} />
     </AdminGate>
   );
 }

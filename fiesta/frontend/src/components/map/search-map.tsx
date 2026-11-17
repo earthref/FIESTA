@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/api";
 import { useNodeConfig } from "../../lib/config";
+import { useSearchSetting } from "../../lib/saved-search";
 import type { MapColorOption, SearchLevel, SearchScope } from "../../lib/types";
 import { singularize } from "../../lib/utils";
 import { Icon } from "../ui/icon";
@@ -47,8 +48,10 @@ interface MapPointsPage {
 }
 
 // The field the markers are colored by (a node `map_colors` field, or "" for
-// the node's color), remembered in this browser for every search map.
-const COLOR_KEY = "search-map-color";
+// the node's color): a setting of the saved search, so a shared link colors
+// its map the same way.
+const COLOR_SETTING = "map.color";
+const isString = (value: unknown) => typeof value === "string";
 
 // Where a body's or a view's records are, in its disabled button's tooltip.
 const BODY_PLACES: Record<Body, string> = {
@@ -60,13 +63,6 @@ const MODE_PLACES: Record<Exclude<Mode, "globe">, string> = {
   north: "in the northern hemisphere",
   south: "in the southern hemisphere",
 };
-function savedColorBy(): string {
-  try {
-    return localStorage.getItem(COLOR_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
 
 function usePoints(
   level: SearchLevel,
@@ -236,15 +232,7 @@ export function SearchMap({
   // when it is offered again.
   const { data: config } = useNodeConfig();
   const colorOptions = (config?.map_colors ?? []).filter((o) => o.tables.includes(level.table));
-  const [colorBy, setColorByState] = useState(savedColorBy);
-  const setColorBy = (next: string) => {
-    setColorByState(next);
-    try {
-      localStorage.setItem(COLOR_KEY, next);
-    } catch {
-      // private window: the choice just isn't remembered
-    }
-  };
+  const [colorBy, setColorBy] = useSearchSetting(COLOR_SETTING, "", isString);
   const colorOption = colorOptions.find((o) => o.field === colorBy) ?? null;
 
   const inArea = usePoints(

@@ -9,7 +9,7 @@ export interface Portal {
   color: string;
   /** A FIESTA page standing in for the portal (routes/portal-pages.tsx),
    * served at the portal (portalPageUrl). */
-  path?: "/references" | "/users";
+  path?: "/References" | "/Users";
 }
 
 export const PORTALS: Portal[] = [
@@ -25,8 +25,8 @@ export const PORTALS: Portal[] = [
   { label: "SCC", url: "https://earthref.org/SCC/", color: "#8b216a" },
   { label: "ERESE", url: "https://earthref.org/ERESE/", color: "#3030bb" },
   { label: "ERDA", url: "https://earthref.org/ERDA/", color: "#006600" },
-  { label: "References", url: "https://earthref.org/ERR/", color: "#006600", path: "/references" },
-  { label: "Users", url: "https://earthref.org/ERML/", color: "#006600", path: "/users" },
+  { label: "References", url: "https://earthref.org/ERR/", color: "#006600", path: "/References" },
+  { label: "Users", url: "https://earthref.org/ERML/", color: "#006600", path: "/Users" },
 ];
 
 /** The EarthRef.org entry: the FIESTA portal home stands in for it. */
@@ -78,6 +78,15 @@ const siblingBase: string | null = NODES.length
 export function portalPageUrl(path: string): string | null {
   if (PORTAL || siblingBase === null) return null;
   return `${siblingBase}${path.replace(/^\//, "")}`;
+}
+
+/**
+ * Where a node's own page ("/Admin") lives on this origin: under its /<Key>/
+ * prefix beside this app (http://localhost:8080/CDR/Admin,
+ * dev.earthref.org/CDR/Admin). null: this origin serves no other nodes.
+ */
+export function nodePageUrl(key: string, path: string): string | null {
+  return siblingBase === null ? null : `${siblingBase}${key}${path}`;
 }
 
 /**

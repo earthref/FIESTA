@@ -182,7 +182,10 @@ every node. Locally (`make up`) that already works. On dev the root redirects to
       more `vite build` with the default base (`/`), its `fiesta-env.js` listing every
       served node (`window.__FIESTA__={"node":"magic","apiUrl":"","nodes":"magic,kdd,cdr,karar,erda,osu-mgr,sc,geomagia,rd"}`),
       and in nginx route `location = /`, `/references`, `/users`, `/admin` and
-      `/admin/` (prefix) to its `index.html` (with `ssi on` like the node locations), plus
+      `/admin/` (prefix) to its `index.html` (with `ssi on` like the node locations) —
+      **case-insensitively** since PR "clean URLs" (2026-11-17): the SPA now links
+      `/References`, `/Users`, `/Admin/Nodes`, `/Admin/Accounts`, so use
+      `location ~* ^/(references|users|admin)(/|$)` — plus
       its `/assets/`, `/fiesta-env.js` and `/version.json` (`no-store`); drop the `/` →
       `/MagIC/` redirect. `/v2/` already proxies to the API at the root. Check:
       `https://dev.earthref.org/admin` shows the FIESTA header and the node list.
