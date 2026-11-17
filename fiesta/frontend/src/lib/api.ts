@@ -65,6 +65,21 @@ interface RequestOptions {
   signal?: AbortSignal;
 }
 
+/** `?…` for query params (array values as repeated keys), or "" for none. */
+function queryString(params: RequestOptions["params"]): string {
+  if (!params) return "";
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const entry of value) qs.append(key, String(entry));
+    } else if (value !== undefined && value !== "") {
+      qs.set(key, String(value));
+    }
+  }
+  const encoded = qs.toString();
+  return encoded ? `?${encoded}` : "";
+}
+
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { ...options.headers };
   const token = getToken();
@@ -81,19 +96,8 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     body = options.formData;
   }
 
-  let url = path.startsWith("/v2/") ? apiUrl(path.slice(3)) : nodeUrl(path);
-  if (options.params) {
-    const qs = new URLSearchParams();
-    for (const [key, value] of Object.entries(options.params)) {
-      if (Array.isArray(value)) {
-        for (const entry of value) qs.append(key, String(entry));
-      } else if (value !== undefined && value !== "") {
-        qs.set(key, String(value));
-      }
-    }
-    const encoded = qs.toString();
-    if (encoded) url += `?${encoded}`;
-  }
+  const url =
+    (path.startsWith("/v2/") ? apiUrl(path.slice(3)) : nodeUrl(path)) + queryString(options.params);
 
   const response = await fetch(url, {
     method: options.method ?? (body !== undefined ? "POST" : "GET"),
@@ -125,10 +129,23 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 /** Save a file from an authenticated route (a plain link can't send the
  * Bearer token), named by its Content-Disposition, else `fallback`. */
 export async function download(path: string, fallback: string): Promise<void> {
+  const file = await fetchFile(path);
+  saveBlob(file.blob, file.name ?? fallback);
+}
+
+/** A file from the API (with the Bearer token): its body, its
+ * Content-Disposition name and the X-Download-Truncated note, if any. */
+export async function fetchFile(
+  path: string,
+  options: Pick<RequestOptions, "params" | "signal"> = {},
+): Promise<{ blob: Blob; name?: string; truncated?: string }> {
   const headers: Record<string, string> = {};
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(nodeUrl(path), { headers });
+  const response = await fetch(nodeUrl(path) + queryString(options.params), {
+    headers,
+    signal: options.signal,
+  });
   if (!response.ok) {
     let detail: unknown = response.statusText;
     try {
@@ -139,8 +156,16 @@ export async function download(path: string, fallback: string): Promise<void> {
     throw new ApiError(response.status, detail);
   }
   const disposition = response.headers.get("Content-Disposition") ?? "";
-  const name = /filename="([^"]+)"/.exec(disposition)?.[1] ?? fallback;
-  const url = URL.createObjectURL(await response.blob());
+  return {
+    blob: await response.blob(),
+    name: /filename="([^"]+)"/.exec(disposition)?.[1],
+    truncated: response.headers.get("X-Download-Truncated") ?? undefined,
+  };
+}
+
+/** Hand a blob to the browser as a download named `name`. */
+export function saveBlob(blob: Blob, name: string): void {
+  const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = name;

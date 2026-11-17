@@ -13,6 +13,7 @@ import {
 } from "react";
 import { ColumnFilterButton } from "../components/column-filter-menu";
 import { ContributionModal } from "../components/contribution-modal";
+import { DownloadResultsModal } from "../components/download-results-modal";
 import { ErrorMessage } from "../components/error-message";
 import {
   ExistsModal,
@@ -63,7 +64,6 @@ import { SortSelect } from "../components/ui/sort-select";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
@@ -797,8 +797,36 @@ export function SearchPage() {
         ]),
       ].filter((field) => !rangeFields.has(field))
     : [];
-  const topContributionId =
-    level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
+  // Download Results: each level's matches (the open level's as its view
+  // counts them, the others as their tabs do) and the search it repeats.
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const downloadCounts = Object.fromEntries(
+    levels.map((entry, index) => [
+      entry.table,
+      entry.name === level?.name && !ownDocsView
+        ? results.data?.total
+        : countQueries[index]?.data?.total,
+    ]),
+  );
+  const downloadSearch = {
+    table: level?.table ?? "contribution",
+    params: {
+      ...searchRequestParams(
+        q,
+        1,
+        0,
+        false,
+        ownDocsView ? levelRanges : queryRanges,
+        area ? areaToBbox(area) : undefined,
+        sort,
+        ownDocsView ? undefined : gridFilterList,
+        has,
+      ),
+      size: undefined,
+      ...scope,
+    },
+  };
+  const anyResults = Object.values(downloadCounts).some((count) => (count ?? 0) > 0);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   // A new search starts at the top of its grid.
@@ -1239,47 +1267,35 @@ export function SearchPage() {
             </button>
           </form>
           {/* Download Results: hidden when searching a private_key (legacy) */}
-          {!privateKey &&
-            (topContributionId ? (
-              <a
-                href={nodeUrl(`/contributions/${topContributionId}/download`)}
-                download
-                className="flex items-center self-start whitespace-nowrap bg-surface hover:bg-node-soft"
-                style={{
-                  ...basicButtonStyle("var(--node-ink)"),
-                  margin: "1em 1em 0 0",
-                  fontSize: "1rem",
-                  padding: "0.78571429em 1.5em",
-                  lineHeight: "1em",
-                }}
-              >
-                <Icon name="download" style={buttonIconStyle} />
-                Download Results
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                title={
-                  level.table === "contribution"
-                    ? "No results to download"
-                    : "Switch to the Contributions level to download results"
-                }
-                className="flex items-center self-start whitespace-nowrap bg-surface"
-                style={{
-                  ...basicButtonStyle("var(--node-ink)"),
-                  opacity: 0.45,
-                  margin: "1em 1em 0 0",
-                  cursor: "default",
-                  fontSize: "1rem",
-                  padding: "0.78571429em 1.5em",
-                  lineHeight: "1em",
-                }}
-              >
-                <Icon name="download" style={buttonIconStyle} />
-                Download Results
-              </button>
-            ))}
+          {!privateKey && (
+            <button
+              type="button"
+              disabled={!anyResults}
+              title={anyResults ? undefined : "No results to download"}
+              onClick={() => setDownloadOpen(true)}
+              className="flex items-center self-start whitespace-nowrap bg-surface enabled:hover:bg-node-soft disabled:cursor-default disabled:opacity-45"
+              style={{
+                ...basicButtonStyle("var(--node-ink)"),
+                margin: "1em 1em 0 0",
+                fontSize: "1rem",
+                padding: "0.78571429em 1.5em",
+                lineHeight: "1em",
+              }}
+            >
+              <Icon name="download" style={buttonIconStyle} />
+              Download Results
+            </button>
+          )}
+          {downloadOpen && (
+            <DownloadResultsModal
+              open
+              onClose={() => setDownloadOpen(false)}
+              nodeKey={config.key}
+              levels={levels}
+              counts={downloadCounts}
+              search={downloadSearch}
+            />
+          )}
         </div>
 
         {/* Results flex row with independent scroll regions */}

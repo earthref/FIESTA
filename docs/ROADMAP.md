@@ -299,7 +299,10 @@ the latter become G5 work after cutover.*
       leading UTF-8 BOM from served legacy files (#621); the contribution ID and
       metadata in every downloaded file (#291, #315); no stray `>>>>` separators
       (#311); text cells starting with `@` survive Excel (#497). Compressed and
-      multi-contribution downloads (#463, #343) and a download dialog (#509, #316).
+      multi-contribution downloads (#463, #343) and a download dialog (#509, #316):
+      done 2026-11-16 for the search page — Download Results opens a modal picking
+      contribution files (zip of up to 100) or the rows of chosen levels, as text,
+      Excel or JSON (`/search/{table}/download`).
 - [ ] **C10 Usage statistics.** Download counts per contribution (MagIC #135) and
       an internal contribution statistics page (#365).
 
