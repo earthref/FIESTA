@@ -85,13 +85,21 @@ served nodes are `fiesta-env.js`'s list in the multi-node layout, else the
 config route's `deployment_nodes`; on a production host (any host in the
 portal list) every link stays on production.
 
-SPA paths are PascalCase and match in any case (`/MagIC/Search` =
-`/magic/search`): `/<Key>/Search/<level>/<view>?q=<saved search>` (api.md
-"Saved searches"), `/<Key>/<id>/<tab>` (a contribution's modal:
-`/CDR/667/Contribution`), `/Upload`, `/Private`, `/Account`. Older links
-(`/MagIC/search?level=Sites&sort=…`, `?contribution=667&tab=sites`,
-`/contributions/667`, `/admin?tab=users`, `/admin/nodes/magic?section=files`)
-redirect (`fiesta/frontend/src/router.tsx`).
+SPA paths are PascalCase: `/<Key>/Search/<Level>/<View>?q=<saved search>`
+(api.md "Saved searches"), `/<Key>/<id>/<Tab>` (a contribution's modal:
+`/CDR/667/Contribution`), `/Upload`, `/Private`, `/Data-Models/3.0`, content
+pages and plugin pages as their slugs capitalized word by word (`about` →
+`/About`, `grand-challenges` → `/Grand-Challenges`, `/method-codes` →
+`/Method-Codes`; a node YAML and a plugin keep writing lowercase slugs). Any
+spelling works and is replaced by the canonical one
+(`fiesta/frontend/src/lib/canonical-path.ts`): the root layout fixes a
+route's static segments, each page its own names (level, view, tab, admin
+section, content page), and in the multi-node layout a lowercase node prefix
+(`/magic/`) reloads as `/MagIC/`. Older links (`/MagIC/search?level=Sites&sort=…`,
+`?contribution=667&tab=sites`, `/contributions/667`, `/admin?tab=users`,
+`/admin/nodes/magic?section=files`) redirect (`fiesta/frontend/src/router.tsx`).
+The API's sitemap, canonical links and llms.txt use the same spellings
+(`seo.py` `path_segment`).
 
 References, Users and Admin (`/Admin`, `/Admin/Nodes`, `/Admin/Accounts`)
 belong to no node: they are FIESTA pages at the portal, the root of the origin

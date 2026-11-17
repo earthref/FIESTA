@@ -9,6 +9,7 @@ import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { nodeUrl } from "../lib/base";
+import { casedPath } from "../lib/canonical-path";
 import { useNodeConfig } from "../lib/config";
 import { sanitizeHtml } from "../lib/sanitize";
 import { searchPath } from "../lib/search-state";
@@ -114,7 +115,7 @@ function defaultResources(config: NodeConfig): HomeCard[] {
       title: "Data\nModel",
       icon: "sitemap",
       corner_icon: "table",
-      to: `/data-models/${config.data_model_latest}`,
+      to: `/Data-Models/${config.data_model_latest}`,
       href: null,
     },
     ...pluginResourceCards(config),
@@ -138,7 +139,7 @@ function defaultResources(config: NodeConfig): HomeCard[] {
       title: "Help\nPages",
       icon: "question",
       corner_icon: null,
-      to: "/help",
+      to: "/Help",
       href: null,
     });
   }
@@ -150,7 +151,8 @@ function cardProps(card: HomeCard): IconButtonProps {
     title: card.title,
     icon: card.icon,
     cornerIcon: card.corner_icon ?? undefined,
-    to: card.to ?? undefined,
+    // The node YAML's own resources may name a page in lowercase.
+    to: card.to ? casedPath(card.to) : undefined,
     href: card.href ?? undefined,
   };
 }
