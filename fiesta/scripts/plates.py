@@ -18,6 +18,7 @@ out (fiesta/frontend/src/components/map/plates.ts).
 """
 
 import json
+import math
 import sys
 
 from shapely.geometry import MultiPolygon, Polygon, box, mapping
@@ -34,14 +35,37 @@ def unwrap(ring: list[list[float]]) -> list[tuple[float, float]]:
     return out
 
 
+def band(lon: float) -> int:
+    """Which 360° band [-180 + 360k, 180 + 360k) an unwrapped longitude is in."""
+    return math.floor((lon + 180) / 360)
+
+
 def close_over_pole(ring: list[tuple[float, float]]) -> list[tuple[float, float]]:
     """A ring circling a pole (its unwrapped longitudes end 360° from where
-    they start) closed over the pole nearer its points."""
+    they start) closed over the pole nearer its points, starting where it
+    crosses the antimeridian: the closing edges then run along ±180° (and the
+    pole), which the maps leave out. Closed from anywhere else, they would be
+    a meridian drawn from the ring up to the pole."""
     start, end = ring[0][0], ring[-1][0]
     if abs(end - start) < 180:
         return ring
-    pole = 90.0 if sum(lat for _, lat in ring) > 0 else -90.0
-    return [*ring, (end, pole), (start, pole), ring[0]]
+    wind = 360 * round((end - start) / 360)
+    for i in range(1, len(ring)):
+        (x1, y1), (x2, y2) = ring[i - 1], ring[i]
+        if band(x1) != band(x2):
+            seam = 360 * max(band(x1), band(x2)) - 180
+            lat = y1 + (seam - x1) * (y2 - y1) / (x2 - x1)
+            break
+    else:
+        raise ValueError("a ring circling a pole that never crosses ±180°")
+    rotated = [
+        (seam, lat),
+        *ring[i:],
+        *[(x + wind, y) for x, y in ring[1:i]],
+        (seam + wind, lat),
+    ]
+    pole = 90.0 if sum(y for _, y in ring) > 0 else -90.0
+    return [*rotated, (seam + wind, pole), (seam, pole), rotated[0]]
 
 
 def pieces(geometry: dict) -> list[Polygon]:

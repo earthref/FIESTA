@@ -316,18 +316,15 @@ const remember = (key: string, on: boolean) => {
     /* not remembered */
   }
 };
-// The basemap's labels, on unless turned off with the button under the zoom
-// buttons.
+// The basemap's labels, on unless turned off with the Labels toggle (top left).
 const LABELS_KEY = "map-labels";
 const labelsOn = () => remembered(LABELS_KEY, true);
 // The body's geologic map (BodyBasemap.geology), off unless turned on with the
-// Geo button under the labels'. Partly transparent, so the basemap's relief
+// Geology toggle. Partly transparent, so the basemap's relief
 // and the records' markers still read through its colours.
 const GEOLOGY_KEY = "map-geology";
 const geologyOn = () => remembered(GEOLOGY_KEY, false);
 const GEOLOGY_OPACITY = 0.65;
-// The Geo button's text, smaller than the labels' Aa to fit the button.
-const GEOLOGY_ICON = '<span style="font-size:11px">Geo</span>';
 // The labels (see PLACE_LABEL_STYLE), loaded once per page: Positron's layers
 // for places, water bodies and boundaries (roads and airports left out), with
 // its fonts, and the undersea features.
@@ -465,34 +462,49 @@ const labelPoint = ({ geometry }: GeoJSON.Feature): [number, number] | null => {
 const POLAR_LABEL_STYLE =
   `font:italic 11px 'Noto Sans',sans-serif;color:${UNDERSEA_COLOR};white-space:nowrap;pointer-events:none;` +
   "text-shadow:0 0 2px rgba(255,255,255,0.9),0 0 2px rgba(255,255,255,0.9)";
-// A button under the zoom buttons turning a layer on and off (dimmed and,
-// for text, struck through while off): `content` is its fixed markup.
-const toggleControl = (
-  name: string,
-  content: string,
-  initial: boolean,
-  onChange: (on: boolean) => void,
-): maplibregl.IControl => {
+// The layer toggles, one labelled button each in a row in the map's top-left
+// corner (Labels, Plates, Geology): a checkbox square filled while on.
+type Toggle = {
+  label: string;
+  // What it shows, in its tooltip ("Hide plate boundaries").
+  name: string;
+  initial: boolean;
+  onChange: (on: boolean) => void;
+};
+const TOGGLE_STYLE =
+  "width:auto;height:26px;padding:0 8px;display:flex;align-items:center;gap:5px;" +
+  "font:600 12px sans-serif;color:#333;white-space:nowrap;cursor:pointer";
+const togglesControl = (toggles: Toggle[]): maplibregl.IControl => {
   const container = document.createElement("div");
   return {
     onAdd() {
       container.className = "maplibregl-ctrl maplibregl-ctrl-group";
-      const button = document.createElement("button");
-      button.type = "button";
-      button.innerHTML = content;
-      let on = initial;
-      const show = () => {
-        button.title = on ? `Hide ${name}` : `Show ${name}`;
-        button.setAttribute("aria-pressed", String(on));
-        button.style.cssText = `font:bold 13px/29px sans-serif;color:#333;display:flex;align-items:center;justify-content:center;opacity:${on ? 1 : 0.45};text-decoration:${on ? "none" : "line-through"}`;
-      };
-      show();
-      button.onclick = () => {
-        on = !on;
+      container.style.display = "flex";
+      toggles.forEach(({ label, name, initial, onChange }, i) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        const box = document.createElement("span");
+        button.append(box, label);
+        let on = initial;
+        const show = () => {
+          button.title = on ? `Hide ${name}` : `Show ${name}`;
+          button.setAttribute("aria-pressed", String(on));
+          button.style.cssText =
+            TOGGLE_STYLE +
+            (i > 0 ? ";border-top:none;border-left:1px solid #ddd" : "") +
+            (on ? "" : ";color:#6b7280");
+          box.style.cssText =
+            "width:10px;height:10px;border-radius:2px;flex:none;" +
+            (on ? "background:#333;border:1px solid #333" : "border:1px solid #9ca3af");
+        };
         show();
-        onChange(on);
-      };
-      container.appendChild(button);
+        button.onclick = () => {
+          on = !on;
+          show();
+          onChange(on);
+        };
+        container.appendChild(button);
+      });
       return container;
     },
     onRemove() {
@@ -500,12 +512,6 @@ const toggleControl = (
     },
   };
 };
-
-// The plates button: a stretch of ridge offset by a transform fault.
-const PLATES_ICON =
-  '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.8" ' +
-  `stroke-linejoin="round" stroke="${PLATE_COLOR}" aria-hidden="true">` +
-  '<path d="M3 2 5 6 4 9h6l1 3-1 4"/></svg>';
 
 // The box behind the records' labels (labelPoints), like the tooltip: white,
 // with a grey border, rounded corners and a slight shadow. Drawn at twice the
@@ -606,8 +612,8 @@ const MapLibreMap: FC<{
   lines?: MapLine[];
   // The points' circle radius in pixels, instead of 3.
   pointRadius?: number;
-  // Earth's plate boundaries (plates.ts) start shown; the map's plates
-  // button turns them on and off either way. In `plateColor`.
+  // Earth's plate boundaries (plates.ts) start shown; the map's Plates
+  // toggle turns them on and off either way. In `plateColor`.
   plates?: boolean;
   plateColor?: string;
 }> = ({
@@ -886,33 +892,42 @@ const MapLibreMap: FC<{
         element.style.display = showLabels && pixelsPerDegree >= minPixelsPerDegree ? "" : "none";
       });
     map.on("move", showPolarLabels);
-    map.addControl(
-      toggleControl("labels", "Aa", showLabels, (on) => {
-        remember(LABELS_KEY, on);
-        showLabels = on;
-        for (const id of labelLayers) {
-          map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
-        }
-        showPolarLabels();
-      }),
-      "top-right",
-    );
+    const toggles: Toggle[] = [
+      {
+        label: "Labels",
+        name: "labels",
+        initial: showLabels,
+        onChange: (on) => {
+          remember(LABELS_KEY, on);
+          showLabels = on;
+          for (const id of labelLayers) {
+            map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+          }
+          showPolarLabels();
+        },
+      },
+    ];
     // Plate boundaries are Earth's.
     if (body === "earth") {
-      map.addControl(
-        toggleControl("plate boundaries", PLATES_ICON, showPlatesRef.current, setShowPlates),
-        "top-right",
-      );
+      toggles.push({
+        label: "Plates",
+        name: "plate boundaries",
+        initial: showPlatesRef.current,
+        onChange: setShowPlates,
+      });
     }
     if (basemap.geology) {
-      map.addControl(
-        toggleControl("geologic map (Macrostrat)", GEOLOGY_ICON, geologyOn(), (on) => {
+      toggles.push({
+        label: "Geology",
+        name: "geologic map (Macrostrat)",
+        initial: geologyOn(),
+        onChange: (on) => {
           remember(GEOLOGY_KEY, on);
           map.setLayoutProperty("geology", "visibility", on ? "visible" : "none");
-        }),
-        "top-right",
-      );
+        },
+      });
     }
+    map.addControl(togglesControl(toggles), "top-left");
     const addLabels = (loaded: Labels | null) => {
       if (!loaded || removed) return;
       map.setGlyphs(loaded.glyphs);

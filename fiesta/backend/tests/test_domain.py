@@ -2361,6 +2361,15 @@ def test_plates_data_and_filter():
         for ring in (ring for rings in polygons for ring in rings):
             assert ring[0] == ring[-1], feature["properties"]
             assert all(-180 <= lon <= 180 and -90 <= lat <= 90 for lon, lat in ring)
+            # The maps draw every edge but those along ±180° or a pole, so a
+            # ring closed over a pole must not leave a meridian to it.
+            for (lon1, lat1), (lon2, lat2) in zip(ring, ring[1:], strict=False):
+                seam = abs(lon1) == abs(lon2) == 180 or abs(lat1) == abs(lat2) == 90
+                assert seam or max(abs(lon2 - lon1), abs(lat2 - lat1)) < 10, (
+                    feature["properties"],
+                    (lon1, lat1),
+                    (lon2, lat2),
+                )
     # Antarctica reaches the pole; the Pacific plate crosses the antimeridian.
     for lat, lon, code in (
         (19.6, -155.5, "PA"),  # Hawaii
