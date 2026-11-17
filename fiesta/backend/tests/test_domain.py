@@ -480,10 +480,62 @@ def test_age_intervals_merge_and_cap():
     assert (got.low, got.high, got.best) == (7e6, 12e6, 10e6)
     assert got.detail["contributed"] == "10 ± 1 Ma (> 7)"
     assert conversion.interval_of({"u": "Ma"}) is None
+    # A negative sigma is a size all the same.
+    got = conversion.interval_of({"u": "Ma", "v": "10", "s1": "-1"})
+    assert (got.low, got.high, got.detail["sigma"]) == (8e6, 12e6, 1e6)
     with pytest.raises(ValueError, match="sigma"):
         UnitConversion(
             unit_column="u", columns=["v"], factors={}, interval={"name": "a", "sigma": "x"}
         )
+
+
+def test_age_intervals_after_1950_and_single_ad_bounds(magic_node):
+    """Years AD run the other way from years BP: a lone age_high of 1600 AD
+    (no later than it) is a lower bound of 350 years BP (no younger), a lone
+    age_low an upper one; ages after 1950 are negative years BP and keep
+    their whole sigma window, while a window of an age before 1950 stops at
+    the present (a young K-Ar age's 2 sigma never reaches into the future)."""
+    (conversion,) = magic_node.search.intervals
+
+    def interval(**row):
+        got = conversion.interval_of(row)
+        return got and (got.low, got.high, got.best)
+
+    ad = "Years AD (+/-)"
+    assert interval(age_high="1600", age_unit=ad) == (350.0, None, 350.0)
+    assert interval(age_low="1500", age_unit=ad) == (None, 450.0, 450.0)
+    assert interval(age_low="1500", age_high="1600", age_unit=ad) == (350.0, 450.0, 400.0)
+    assert conversion.convert({"age_high": "1600", "age_unit": ad}) == {"age_low": 350.0}
+    got = conversion.interval_of({"age_high": "1600", "age_unit": ad})
+    assert got.detail == {"low": 350.0, "contributed": "< 1600 Years AD (+/-)"}
+    # A 2010 AD flow: -60 years BP, its window either side.
+    assert interval(age="2010", age_sigma="5", age_unit=ad) == (-70.0, -50.0, -60.0)
+    # 0.02 ± 0.015 Ma: 0 – 0.05 Ma, not from -10 ka; stated bounds as stated.
+    assert interval(age="0.02", age_sigma="0.015", age_unit="Ma") == (0.0, 50000.0, 20000.0)
+    assert interval(age="100", age_sigma="60", age_unit="Years BP") == (0.0, 220.0, 100.0)
+    assert interval(age_low="-0.0001", age_high="0.001", age_unit="Ma") == (-100.0, 1000.0, 450.0)
+
+
+def test_karar_measurement_step_ages_are_not_record_ages(karar_node):
+    """KArAr's age interval comes from specimens and experiments only: a
+    measurement's age is one heating step's apparent age, so it neither
+    widens its specimen's (or sample's, or the contribution's) ages nor
+    lets the Age filter match them by a stray step."""
+    parsed = parse_text((CONFIG_DIR / "karar" / "seeds" / "typical-1.txt").read_text())
+    steps = [float(r["age"]) for r in parsed.tables["measurements"] if r.get("age")]
+    assert steps and min(steps) > 10  # 12.1 – 12.6 Ma steps
+    docs = summarize(karar_node, parsed, {"id": 1})
+    for doc in docs:
+        block = doc["summary"].get("_interval", {}).get("age")
+        if doc["type"] == "measurements":
+            assert block is None
+        elif block:
+            assert block["max"] < 10e6, (doc["type"], block)
+    contribution = docs[0]["summary"]["_interval"]["age"]
+    # The specimen's 1.678 ± 1.5 Ma and the experiment's 0.9287 ± 1.5 Ma, their
+    # 2 sigma windows stopping at the present.
+    assert contribution["range"] == [{"gte": 0.0, "lte": 4.678e6}]
+    assert contribution["n"] == 2
 
 
 def test_number_columns_cap_keeps_the_ends(magic_node):
@@ -2489,6 +2541,7 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     open above so the max is counted; log falls back to linear without
     positive values."""
     import asyncio
+    import copy
 
     import pytest
 
@@ -2504,16 +2557,19 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     def client_for(positive_min):
         class Client:
             async def search(self, index, body):
-                bodies.append(body)
+                # A copy: the route reuses one body for both requests.
+                bodies.append(copy.deepcopy(body))
                 if "all" in body["aggs"]:
                     return {
                         "hits": {"total": {"value": 9}},
                         "aggregations": {
                             "all": {"min": -5.0, "max": 1000.0},
+                            "has": {"doc_count": 4},
                             "positive": {"s": {"value": positive_min}},
                         },
                     }
-                n = len(body["aggs"]["bins"]["range"]["ranges"])
+                bins = body["aggs"]["bins"]
+                n = len(bins["range"]["ranges"] if "range" in bins else bins["filters"]["filters"])
                 return {"aggregations": {"bins": {"buckets": [{"doc_count": 2}] * n}}}
 
         return Client()
@@ -2542,7 +2598,8 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     monkeypatch.setattr(router, "get_opensearch", lambda: client_for(1.0))
     out = run(bins=3, log=True)
     ranges = bodies[-1]["aggs"]["bins"]["range"]["ranges"]
-    assert out.log and out.total == 9 and out.counted == 6
+    # `counted`: the docs with a value, each once (not the bins' sum, 6).
+    assert out.log and out.total == 9 and out.counted == 4
     assert ranges[0]["from"] == 1.0 and "to" not in ranges[-1]
     assert [b.hi for b in out.bins] == pytest.approx([10, 100, 1000])
 
@@ -2551,9 +2608,15 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     assert not out.log and out.bins[0].lo == -5.0 and out.bins[-1].hi == 1000.0
     # No `bins`: as many as the values call for (9 here, so the floor of 10).
     assert len(run(bins=None, log=False).bins) == 10
-    # An interval's ranges have no stats: the histogram reads its values.
-    run(field="summary._interval.age.range", bins=4, log=False)
-    assert bodies[-1]["aggs"]["bins"]["range"]["field"] == "summary._interval.age.values"
+    # An interval's ranges have no stats: its values give the extent, and a
+    # bin counts the docs any of whose ranges overlaps it (the filter's
+    # intersects), not those with an end or best estimate in it.
+    out = run(field="summary._interval.age.range", bins=4, log=False)
+    assert bodies[-2]["aggs"]["all"]["stats"]["field"] == "summary._interval.age.values"
+    overlaps = bodies[-1]["aggs"]["bins"]["filters"]["filters"]
+    assert overlaps[0] == {"range": {"summary._interval.age.range": {"gte": -5.0, "lt": 246.25}}}
+    assert overlaps[-1] == {"range": {"summary._interval.age.range": {"gte": 748.75}}}
+    assert [b.count for b in out.bins] == [2, 2, 2, 2] and out.counted == 4
 
     # Only summary fields, never a private one.
     with pytest.raises(router.HTTPException):

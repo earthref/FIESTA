@@ -286,7 +286,8 @@ def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[s
         if node.page_path(page.slug) not in files:
             errors.append(f"page {page.slug!r}: {node.page_path(page.slug)} is missing")
     try:
-        columns = {c for cols in data_model_columns(node).values() for c in cols}
+        tables = data_model_columns(node)
+        columns = {c for cols in tables.values() for c in cols}
     except (KeyError, TypeError, AttributeError):
         return errors  # reported by the data model checks
     from fiesta.plugins import active_plugins
@@ -333,6 +334,12 @@ def check_pages_and_filters(node: NodeConfig, files: dict[str, bytes]) -> list[s
             if column not in columns:
                 errors.append(
                     f"unit conversion {conversion.unit_column!r}: {column!r} is not a column "
+                    f"of data model {node.data_model.latest}"
+                )
+        for table in conversion.interval.tables if conversion.interval else []:
+            if table not in tables:
+                errors.append(
+                    f"interval {conversion.interval.name!r}: {table!r} is not a table "
                     f"of data model {node.data_model.latest}"
                 )
     for c in node.search.map_colors:
