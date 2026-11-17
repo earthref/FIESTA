@@ -74,7 +74,6 @@ interface PolesPluginConfig {
   base_level?: string;
   after_sub_tab?: string;
   table?: string;
-  has_plate_boundaries?: boolean;
   plate_boundary_color?: string;
   age_color?: Partial<AgeColors>;
   /** The interval its Age tile shows (summary._interval.<name>). */
@@ -596,13 +595,6 @@ function PolesMapView({
   });
   const rows = useMemo(() => grid.items.map((hit) => hit && cardDocOf(hit)), [grid.items]);
 
-  const boundaries = useQuery({
-    queryKey: ["plugin", "poles", "plate-boundaries"],
-    queryFn: () => api<unknown>("/plugins/poles/plate-boundaries"),
-    enabled: pconfig.has_plate_boundaries === true,
-    staleTime: Number.POSITIVE_INFINITY,
-  });
-
   const poles = useMemo<Pole[]>(() => {
     if (!mapLoaded || !firstMapPage.data) return [];
     const hits = [firstMapPage.data, ...restMapPages.pages].flatMap((page) => page?.results ?? []);
@@ -644,13 +636,11 @@ function PolesMapView({
         {/* Row 1 — map + side panel */}
         <div className="flex shrink-0" style={{ height: mapHeight }}>
           <div ref={mapColumnRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {boundaries.error && <ErrorMessage error={boundaries.error} className="m-2" />}
             <div className="min-h-0 flex-1">
               <PolesMap
                 poles={poles}
                 matched={matched > MAX_POLES ? matched : undefined}
                 ageScale={ageScale}
-                boundaries={boundaries.data ?? null}
                 plateColor={pconfig.plate_boundary_color ?? "#990000"}
                 selectedColor={colors.selected}
                 showEllipses={showEllipses}
