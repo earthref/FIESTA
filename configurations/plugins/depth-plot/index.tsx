@@ -188,7 +188,9 @@ function ContributionDepthPlots({
       {query.data !== undefined && payload.cores.length === 0 && (
         <p className="text-[13px] text-ink-faint">No depth measurements available.</p>
       )}
-      {payload.cores.length > 0 && <ContributionPlots payload={payload} />}
+      {payload.cores.length > 0 && (
+        <ContributionPlots payload={payload} storageKey={`fiesta:depth-plot:${config.slug}`} />
+      )}
     </div>
   );
 }
