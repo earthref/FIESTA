@@ -7,7 +7,7 @@ import { IS_LOCAL_HOST, nodeUrl, siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { type RowMatch, useOpenContribution } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
-import { slugMatches } from "../lib/search-state";
+import { slug, slugMatches } from "../lib/search-state";
 import type {
   ContributionRowStats,
   ContributionVersion,
@@ -139,7 +139,7 @@ export function ContributionModal({
   /** A search row to find in the level tab and select (then `onRow` names it). */
   rowMatch?: RowMatch;
   privateKey?: string;
-  onTab: (tab: string) => void;
+  onTab: (tab: string, respell?: boolean) => void;
   onRow: (row: number | undefined) => void;
   onPlot: (plot: string | undefined) => void;
   onClose: () => void;
@@ -321,7 +321,7 @@ function ModalBody({
   plot?: string;
   rowMatch?: RowMatch;
   privateKey?: string;
-  onTab: (tab: string) => void;
+  onTab: (tab: string, respell?: boolean) => void;
   onRow: (row: number | undefined) => void;
   onPlot: (plot: string | undefined) => void;
   onClose: () => void;
@@ -487,11 +487,15 @@ function ModalBody({
   }
   // The URL names a tab by its label (/16901/Sites), any case; an older link
   // by its key (?tab=sites).
-  const current =
-    tabs.find((entry) => slugMatches(entry.label, tab)) ??
-    tabs.find((entry) => entry.key === tab) ??
-    tabs[0];
+  const named =
+    tabs.find((entry) => slugMatches(entry.label, tab)) ?? tabs.find((entry) => entry.key === tab);
+  const current = named ?? tabs[0];
   const selectTab = (key: string) => onTab(tabs.find((entry) => entry.key === key)?.label ?? key);
+  // Another spelling of a tab's name becomes its canonical one (its label).
+  const respell = named && tab !== slug(named.label) ? named.label : undefined;
+  useEffect(() => {
+    if (respell) onTab(respell, true);
+  }, [respell, onTab]);
 
   return (
     <>

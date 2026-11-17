@@ -99,9 +99,18 @@ def resolve(path: str, query: dict[str, str]) -> Target:
         return Target(node, "search")
     if first in PRIVATE_ROUTES:
         return Target(node, "private")
-    if len(rest) == 1 and node.page(rest[0]):
-        return Target(node, "page", page=rest[0])
+    if len(rest) == 1:
+        page = next((p for p in node.pages if p.slug.lower() == first), None)
+        if page:
+            return Target(node, "page", page=page.slug)
     return Target(node, "other")
+
+
+def path_segment(slug: str) -> str:
+    """A slug as the SPA's canonical path segment, each hyphenated word
+    capitalized ("grand-challenges" -> "Grand-Challenges"; the frontend's
+    lib/canonical-path.ts)."""
+    return "-".join(word[:1].upper() + word[1:] for word in slug.split("-"))
 
 
 @dataclass
@@ -166,7 +175,9 @@ def _links(items: list[tuple[str, str]]) -> str:
 def _node_links(node: NodeConfig) -> list[tuple[str, str]]:
     catalog = catalog_url(node)
     return [(f"Search {node.node.key}", f"{catalog}/Search")] + [
-        (page.title, f"{catalog}/{page.slug}") for page in node.pages if page.menu != "hidden"
+        (page.title, f"{catalog}/{path_segment(page.slug)}")
+        for page in node.pages
+        if page.menu != "hidden"
     ]
 
 
@@ -282,7 +293,7 @@ async def describe(request: Request, target: Target) -> Described:
         return Described(
             title=f"{page.title} — {identity.title}",
             description=(" ".join(paragraphs)[:300] or default.description),
-            canonical=f"{catalog}/{target.page}",
+            canonical=f"{catalog}/{path_segment(target.page)}",
             body=f"<h1>{_esc(page.title)}</h1>" + "".join(f"<p>{_esc(p)}</p>" for p in paragraphs),
         )
     if target.kind == "contribution" and target.contribution_id is not None:
@@ -436,7 +447,7 @@ async def llms_node(request: Request, node: NodeDep) -> PlainTextResponse:
     pages = [p for p in node.pages if p.menu != "hidden"]
     if pages:
         lines += ["", "## Pages", ""]
-        lines += [f"- [{p.title}]({catalog}/{p.slug})" for p in pages]
+        lines += [f"- [{p.title}]({catalog}/{path_segment(p.slug)})" for p in pages]
     optional = []
     if (website := identity.links.website) and website.rstrip("/") != catalog:
         optional.append(f"- [Website]({website})")
@@ -451,7 +462,9 @@ async def llms_node(request: Request, node: NodeDep) -> PlainTextResponse:
 async def sitemap(session: SessionDep, node: NodeDep) -> Response:
     catalog = catalog_url(node)
     urls: list[tuple[str, str | None]] = [(catalog, None), (f"{catalog}/Search", None)]
-    urls += [(f"{catalog}/{p.slug}", None) for p in node.pages if p.menu != "hidden"]
+    urls += [
+        (f"{catalog}/{path_segment(p.slug)}", None) for p in node.pages if p.menu != "hidden"
+    ]
     rows = await session.execute(
         select(Contribution.id, Contribution.updated_at)
         .where(*_public(node))

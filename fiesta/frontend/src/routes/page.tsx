@@ -1,21 +1,25 @@
-// A content page from the node YAML's `pages` list: /<slug> renders the HTML
+// A content page from the node YAML's `pages` list: /<Slug> renders the HTML
 // of configurations/<node>/pages/<slug>.html, served by /config/pages/{slug}. One
 // route covers every page, so an admin can add one without a deploy.
 
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { Navigate, useParams } from "@tanstack/react-router";
 import { ErrorMessage } from "../components/error-message";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
+import { pathSegment } from "../lib/canonical-path";
 import { useNodeConfig } from "../lib/config";
 import { sanitizeHtml } from "../lib/sanitize";
 import type { NodePage } from "../lib/types";
 import { NotFoundPage } from "./not-found";
 
 export function ContentPage() {
-  const { page: slug } = useParams({ from: "/$page" });
+  const { page: segment } = useParams({ from: "/$page" });
   const { data: config } = useNodeConfig();
-  const page = config?.pages.find((entry) => entry.slug === slug);
+  // The URL names the page in any case; its canonical spelling is the slug
+  // capitalized (/MagIC/About, /MagIC/Grand-Challenges).
+  const page = config?.pages.find((entry) => entry.slug.toLowerCase() === segment.toLowerCase());
+  const slug = page?.slug;
   const content = useQuery({
     queryKey: ["page", slug],
     queryFn: () => api<NodePage & { html: string }>(`/config/pages/${slug}`),
@@ -24,6 +28,9 @@ export function ContentPage() {
   });
   if (!config) return <PageSpinner />;
   if (!page) return <NotFoundPage />;
+  if (segment !== pathSegment(page.slug)) {
+    return <Navigate to="/$page" params={{ page: pathSegment(page.slug) }} replace />;
+  }
   return (
     <div className="py-6">
       <h1 className="mb-3 text-xl font-semibold text-gray-900">{page.title}</h1>

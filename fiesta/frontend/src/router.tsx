@@ -2,11 +2,13 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  Navigate,
   notFound,
   redirect,
 } from "@tanstack/react-router";
 import type { ComponentType, ReactNode } from "react";
 import { BASE_PATH, PORTAL } from "./lib/base";
+import { casedPath } from "./lib/canonical-path";
 import { useNodeConfig } from "./lib/config";
 import { ADMIN_TABS } from "./lib/portal-paths";
 import { saveSearchState } from "./lib/saved-search";
@@ -278,13 +280,13 @@ const upgradeRoute = createRoute({
 
 const dataModelsIndexRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/data-models",
+  path: "/Data-Models",
   component: DataModelsIndex,
 });
 
 const dataModelRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/data-models/$version",
+  path: "/Data-Models/$version",
   validateSearch: (search: Record<string, unknown>): FilterParams => ({
     q: str(search.q),
   }),
@@ -313,7 +315,7 @@ function pluginPageComponent(plugin: string, Page: ComponentType): () => ReactNo
 const pluginRoutes = pluginPages().map(({ plugin, page }) =>
   createRoute({
     getParentRoute: () => rootRoute,
-    path: page.path,
+    path: casedPath(page.path),
     validateSearch: page.validateSearch ?? (() => ({})),
     component: pluginPageComponent(plugin, page.component),
   }),
@@ -380,6 +382,10 @@ const adminTabRoute = createRoute({
   component: function AdminTab() {
     const { tab } = adminTabRoute.useParams();
     const portalTab = adminTab(tab);
+    // /admin/nodes -> /Admin/Nodes.
+    if (portalTab && portalTab !== tab) {
+      return <Navigate to="/Admin/$tab" params={{ tab: portalTab }} replace />;
+    }
     if (portalTab) return <AdminPage tab={portalTab} />;
     return PORTAL ? <NotFoundPage /> : <CurrentNodeAdminPage section={tab} />;
   },

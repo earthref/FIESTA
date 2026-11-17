@@ -181,7 +181,8 @@ export interface PluginModule {
   ) => PluginFilter[];
   /** Asset tabs for the contribution modal, after its Map tab. */
   contributionTabs?: (config: NodeConfig) => ContributionTab[];
-  /** SPA pages at their own paths (/method-codes); each is a not-found page on
+  /** SPA pages at their own paths (`/method-codes`, served as `/Method-Codes`:
+   * every path is PascalCase, lib/canonical-path.ts); each is a not-found page on
    * a node that does not activate the plugin. Their slugs are the backend
    * plugin's `pages`, so no content page takes them. */
   pages?: PluginPage[];

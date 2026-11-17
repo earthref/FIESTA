@@ -585,16 +585,20 @@ export function SearchPage(props: SearchPageProps) {
   const modalRow = modal?.row;
   const modalPlot = modal?.plot;
   const modalTab = modal?.tab ?? "Contribution";
+  // `respell`: the same tab under its canonical name (/16901/sites ->
+  // /16901/Sites), keeping its row, plot and the row to find.
   const setModalTab = useCallback(
-    (tab: string) =>
+    (tab: string, respell?: boolean) =>
       navigate({
         to: "/$id/$tab",
         params: { id: modalId, tab: slug(tab) },
-        search: { private_key: modalKey },
-        state: { background },
+        search: respell
+          ? { row: modalRow, plot: modalPlot, private_key: modalKey }
+          : { private_key: modalKey },
+        state: respell ? (prev) => ({ ...prev, background }) : { background },
         replace: true,
       }),
-    [navigate, modalId, modalKey, background],
+    [navigate, modalId, modalRow, modalPlot, modalKey, background],
   );
   // The row selected in the modal's level tab; replacing the entry drops the
   // Data grid's row to find (the history state) once it is found.
@@ -742,6 +746,24 @@ export function SearchPage(props: SearchPageProps) {
   useEffect(() => {
     if (unknownView) void go({ view: null, replace: true });
   }, [unknownView, go]);
+  // The level and view as their names spell them (/Search/sites/map ->
+  // /Search/Sites/Map); the modal's background search is left as it is.
+  const namedView = view ? findSubTab(subTabs, view)?.name : undefined;
+  const canonicalLevel = props.level && level ? slug(level.name) : props.level;
+  const canonicalView = namedView ? slug(namedView) : props.view;
+  const misspelled =
+    !props.contribution &&
+    !unknownView &&
+    (canonicalLevel !== props.level || canonicalView !== props.view);
+  useEffect(() => {
+    if (!misspelled) return;
+    navigate({
+      to: "/Search/{-$level}/{-$view}",
+      params: { level: canonicalLevel, view: canonicalView },
+      search: { q: props.q },
+      replace: true,
+    });
+  }, [misspelled, canonicalLevel, canonicalView, props.q, navigate]);
 
   // A plugin view's count: its own docs matching the search and its filters
   // (ranges on its summary block, the bbox), as it fetches them. Switching

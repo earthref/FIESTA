@@ -3,7 +3,7 @@
 // Publishing the draft makes it live and writes it to the repository.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, Navigate, useParams } from "@tanstack/react-router";
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { AdminGate, Field, NodeChip, RepoStatus, Tabs } from "../components/admin/admin-ui";
 import { DataModelEditor } from "../components/admin/data-model-editor";
@@ -1207,6 +1207,16 @@ export function AdminNodeRoutePage() {
   const { slug, section: segment } = useParams({ from: "/Admin/Nodes/$slug/{-$section}" });
   const section = sectionPage(segment);
   if (!section) return <NotFoundPage />;
+  // A section by its key or in another case -> its label (/Data-Source).
+  if (segment !== sectionSegment(section)) {
+    return (
+      <Navigate
+        to="/Admin/Nodes/$slug/{-$section}"
+        params={{ slug, section: sectionSegment(section) }}
+        replace
+      />
+    );
+  }
   return (
     <AdminGate>
       <NodeAdmin slug={slug} section={section} />
@@ -1218,6 +1228,14 @@ export function AdminNodeRoutePage() {
 export function CurrentNodeAdminPage({ section: segment }: { section?: string }) {
   const section = sectionPage(segment);
   if (!section) return <NotFoundPage />;
+  if (segment !== sectionSegment(section)) {
+    const canonical = sectionSegment(section);
+    return canonical ? (
+      <Navigate to="/Admin/$tab" params={{ tab: canonical }} replace />
+    ) : (
+      <Navigate to="/Admin" replace />
+    );
+  }
   return (
     <AdminGate>
       <NodeAdmin slug={NODE} section={section} />
