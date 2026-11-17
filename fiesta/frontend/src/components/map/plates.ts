@@ -70,10 +70,12 @@ export const readPlates = (geojson: GeoJSON.FeatureCollection): Plates => {
   return { plates, lines };
 };
 
-// Loaded once per page, the first time a map or the filter asks.
+// Loaded once per page, the first time a map or the filter asks; always
+// checked with the API (`no-cache`: a 304 while unchanged), so a copy the
+// browser kept from before the plates changed is never drawn.
 let plates: Promise<Plates | null> | null = null;
 export const loadPlates = () =>
-  (plates ||= fetch(PLATES_URL)
+  (plates ||= fetch(PLATES_URL, { cache: "no-cache" })
     .then((response) => (response.ok ? response.json() : null))
     .then((geojson) => (geojson ? readPlates(geojson) : null))
     .catch(() => null));

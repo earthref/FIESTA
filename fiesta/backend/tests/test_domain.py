@@ -2453,6 +2453,19 @@ def test_plates_data_and_filter():
     assert "geo_shape" not in str(build_search_body(table="sites", query=None))
 
 
+def test_plates_route_revalidates():
+    # A browser keeps no copy past a change: no-cache + ETag, 304 while unchanged.
+    import asyncio
+
+    from fiesta.apps.routers.basemap import get_plates
+
+    full = asyncio.run(get_plates(None))
+    assert full.status_code == 200 and full.headers["cache-control"] == "public, no-cache"
+    etag = full.headers["etag"]
+    assert asyncio.run(get_plates(f'"stale", {etag}')).status_code == 304
+    assert asyncio.run(get_plates('"stale"')).status_code == 200
+
+
 def test_map_points_name_the_rows_above_and_their_contribution():
     """A record's tooltip names its parents (from their blocks, else `_all`)
     and its contribution's citation, contributor and date."""
