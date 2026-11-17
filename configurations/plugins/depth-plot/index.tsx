@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { type ReactNode, useMemo } from "react";
 import { ErrorMessage } from "@/components/error-message";
 import { contributionId, NoPlotsCell } from "@/components/result-item";
@@ -18,19 +18,27 @@ import {
   trackPoints,
   valueDomain,
 } from "./depth-plot-data";
-import { ContributionPlots } from "./depth-plot-view";
+import {
+  badCountOf,
+  ContributionPlots,
+  CorePlots,
+  TrackControlsBar,
+  useTrackControls,
+} from "./depth-plot-view";
 
 /** A contribution's measurements (the plugin route), shared by the modal, the
  * Plots sub-tab and the summary grid's thumbnails. */
+const measurementsQuery = (id: string, privateKey?: string) => ({
+  queryKey: ["plugin", "depth-plot", id, privateKey],
+  queryFn: () =>
+    api<unknown>(`/plugins/depth-plot/contributions/${id}/measurements`, {
+      params: { private_key: privateKey },
+    }),
+  staleTime: 5 * 60 * 1000,
+});
+
 function useMeasurements(id: string, privateKey?: string) {
-  return useQuery({
-    queryKey: ["plugin", "depth-plot", id, privateKey],
-    queryFn: () =>
-      api<unknown>(`/plugins/depth-plot/contributions/${id}/measurements`, {
-        params: { private_key: privateKey },
-      }),
-    staleTime: 5 * 60 * 1000,
-  });
+  return useQuery(measurementsQuery(id, privateKey));
 }
 
 const THUMB_HEIGHT = 98;
@@ -195,16 +203,81 @@ function ContributionDepthPlots({
   );
 }
 
-function DepthPlotsView({ hits, config, privateKey }: PluginSubTabContext) {
-  const ids = [...new Set(hits.map((hit) => contributionId(hit)).filter(Boolean))] as string[];
+/** The Plots sub-tab: the matched cores' plots, by contribution, under one
+ * set of controls (tracks, order, colors, scales) at the top. On a cores
+ * level only the cores that match are drawn, so the tab's count (the
+ * level's matches) is what it plots. */
+function DepthPlotsView({ hits, level, config, privateKey }: PluginSubTabContext) {
+  // Contribution ids in hit order; on a cores level, the cores matched in each.
+  const matched = useMemo(() => {
+    const byId = new Map<string, Set<string> | null>();
+    for (const hit of hits) {
+      const id = contributionId(hit);
+      if (!id) continue;
+      const core = level.table === "cores" ? getPath(hit, "summary.cores.core") : undefined;
+      const cores = byId.get(id);
+      if (typeof core !== "string" || !core) byId.set(id, null);
+      else if (cores !== null) byId.set(id, new Set([...(cores ?? []), core]));
+    }
+    return byId;
+  }, [hits, level.table]);
+  const ids = [...matched.keys()];
+  const queries = useQueries({ queries: ids.map((id) => measurementsQuery(id, privateKey)) });
+  const dataKey = queries.map((query) => query.dataUpdatedAt).join(",");
+  const payloads = useMemo(() => {
+    const fallback = seriesDefsOf(config);
+    return ids.map((id, index) => {
+      const payload = parsePayload(queries[index]?.data, fallback);
+      const keep = matched.get(id);
+      return {
+        id,
+        cores: keep ? payload.cores.filter((core) => keep.has(core.name)) : payload.cores,
+        tracks: payload.tracks,
+      };
+    });
+  }, [dataKey, matched, config]);
+  // Every plotted contribution's tracks once: the node's default series in
+  // their YAML order, then the rest as first seen, ratios last.
+  const tracks = useMemo(() => {
+    const series = seriesDefsOf(config).map((def) => def.key);
+    const seen = new Map<string, TrackDef>();
+    for (const payload of payloads) {
+      for (const track of payload.tracks) if (!seen.has(track.key)) seen.set(track.key, track);
+    }
+    const all = [...seen.values()];
+    const rank = (track: TrackDef) => {
+      const at = series.indexOf(track.key);
+      if (at >= 0) return at;
+      return (track.group === "Ratios" ? 2e6 : 1e6) + all.indexOf(track);
+    };
+    return all.sort((a, b) => rank(a) - rank(b));
+  }, [payloads, config]);
+  const controls = useTrackControls(tracks, `fiesta:depth-plot:${config.slug}`);
+  const badCount = useMemo(
+    () => payloads.reduce((n, payload) => n + badCountOf(payload.cores), 0),
+    [payloads],
+  );
+
   if (ids.length === 0) {
     return <p className="py-6 text-center text-[13px] text-gray-500">No results to plot.</p>;
   }
   return (
     <div className="py-3">
-      {ids.map((id) => (
-        <ContributionDepthPlots key={id} id={id} privateKey={privateKey} config={config} />
-      ))}
+      {tracks.length > 0 && <TrackControlsBar controls={controls} badCount={badCount} />}
+      {payloads.map((payload, index) => {
+        const query = queries[index];
+        return (
+          <div key={payload.id} className="mb-6 border-b border-gray-200 pb-4">
+            <h3 className="mb-2 text-[13px] font-bold">Contribution {payload.id}</h3>
+            {query?.isPending && <PageSpinner label={`Loading measurements for ${payload.id}…`} />}
+            {query?.error && <ErrorMessage error={query.error} />}
+            {query?.data !== undefined && payload.cores.length === 0 && (
+              <p className="text-[13px] text-ink-faint">No depth measurements available.</p>
+            )}
+            {payload.cores.length > 0 && <CorePlots cores={payload.cores} controls={controls} />}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -233,7 +306,9 @@ const depthPlotPlugin: PluginModule = {
     const levels = config.plugins["depth-plot"]?.levels;
     const enabled = Array.isArray(levels) ? levels.map(String) : [];
     if (!enabled.includes(level.name)) return [];
-    return [{ name: "Plots", render: (ctx) => <DepthPlotsView {...ctx} /> }];
+    // `records`: the level's own records, filtered as on Summaries, and their
+    // count on the tab.
+    return [{ name: "Plots", records: true, render: (ctx) => <DepthPlotsView {...ctx} /> }];
   },
   // The summary grid's plot tile (legacy CDR's depth thumbnail), wherever the
   // node YAML places a `plot` cell.

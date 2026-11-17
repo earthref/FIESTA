@@ -88,19 +88,16 @@ function usePlotSettings(key: string) {
 
 const hex = (color: string) => (/^#[0-9a-f]{6}$/i.test(color) ? color : "#666666");
 
-/** Track chips, the flagged-point toggle and every core's plots, sharing
- * the viewer's track choices. */
-export function ContributionPlots({
-  payload,
-  storageKey,
-}: {
-  payload: Payload;
-  storageKey: string;
-}) {
-  const { cores, tracks } = payload;
+/** The viewer's track choices over a set of tracks (one contribution's, or
+ * the union of every plotted contribution's): which are shown and in what
+ * order and colors, their scales and the flagged-point toggle. One set of
+ * controls drives every plot under it. */
+export function useTrackControls(tracks: TrackDef[], storageKey: string) {
   const [settings, setSettings] = usePlotSettings(storageKey);
   const [showBad, setShowBad] = useState(false);
 
+  const colored = (t: TrackDef) =>
+    settings.colors[t.key] ? { ...t, color: settings.colors[t.key] } : t;
   const isOn = (t: TrackDef) =>
     settings.on.includes(t.key) || (t.default && !settings.off.includes(t.key));
   const rank = (t: TrackDef) => {
@@ -110,11 +107,7 @@ export function ContributionPlots({
   const shown = tracks
     .filter(isOn)
     .sort((a, b) => rank(a) - rank(b))
-    .map((t) => (settings.colors[t.key] ? { ...t, color: settings.colors[t.key] } : t));
-  const badCount = useMemo(
-    () => cores.reduce((n, core) => n + core.rows.filter(isBad).length, 0),
-    [cores],
-  );
+    .map(colored);
   const logOf = (track: TrackDef) => settings.logs[track.key] ?? track.log;
 
   const toggle = (track: TrackDef) =>
@@ -145,48 +138,77 @@ export function ContributionPlots({
       return { ...prev, order: [...keys, ...prev.order.filter((k) => !keys.includes(k))] };
     });
 
+  return {
+    chips: {
+      tracks: tracks.map(colored),
+      isOn,
+      onToggle: toggle,
+      onDefaults: () => setSettings((prev) => ({ ...NO_SETTINGS, colors: prev.colors })),
+      onAll: () => setSettings((prev) => ({ ...prev, on: tracks.map((t) => t.key), off: [] })),
+      onNone: () =>
+        setSettings((prev) => ({
+          ...prev,
+          on: [],
+          off: tracks.filter((t) => t.default).map((t) => t.key),
+        })),
+      showBad,
+      onShowBad: setShowBad,
+    },
+    plots: {
+      tracks: shown,
+      showBad,
+      logOf,
+      onToggleLog: (track: TrackDef) =>
+        setSettings((prev) => ({ ...prev, logs: { ...prev.logs, [track.key]: !logOf(track) } })),
+      onMove: move,
+      onColor: (track: TrackDef, color: string) =>
+        setSettings((prev) => ({ ...prev, colors: { ...prev.colors, [track.key]: color } })),
+    },
+  };
+}
+
+export type TrackControls = ReturnType<typeof useTrackControls>;
+
+/** Rows flagged bad across cores, for the flagged-point toggle. */
+export const badCountOf = (cores: CoreData[]) =>
+  cores.reduce((n, core) => n + core.rows.filter(isBad).length, 0);
+
+/** The controls bar: every track as a chip and the flagged-point toggle. */
+export function TrackControlsBar({
+  controls,
+  badCount,
+}: {
+  controls: TrackControls;
+  badCount: number;
+}) {
+  return <TrackChips {...controls.chips} badCount={badCount} />;
+}
+
+/** Cores' plots, drawn with the controls' tracks, order, colors and scales. */
+export function CorePlots({ cores, controls }: { cores: CoreData[]; controls: TrackControls }) {
+  return (
+    <div className="flex flex-wrap gap-6">
+      {cores.map((core) => (
+        <CoreTracks key={core.name} core={core} {...controls.plots} />
+      ))}
+    </div>
+  );
+}
+
+/** One contribution's plots under their own controls (the modal's tab). */
+export function ContributionPlots({
+  payload,
+  storageKey,
+}: {
+  payload: Payload;
+  storageKey: string;
+}) {
+  const controls = useTrackControls(payload.tracks, storageKey);
+  const badCount = useMemo(() => badCountOf(payload.cores), [payload.cores]);
   return (
     <>
-      <TrackChips
-        tracks={tracks.map((t) =>
-          settings.colors[t.key] ? { ...t, color: settings.colors[t.key] } : t,
-        )}
-        isOn={isOn}
-        onToggle={toggle}
-        onDefaults={() => setSettings((prev) => ({ ...NO_SETTINGS, colors: prev.colors }))}
-        onAll={() => setSettings((prev) => ({ ...prev, on: tracks.map((t) => t.key), off: [] }))}
-        onNone={() =>
-          setSettings((prev) => ({
-            ...prev,
-            on: [],
-            off: tracks.filter((t) => t.default).map((t) => t.key),
-          }))
-        }
-        badCount={badCount}
-        showBad={showBad}
-        onShowBad={setShowBad}
-      />
-      <div className="flex flex-wrap gap-6">
-        {cores.map((core) => (
-          <CoreTracks
-            key={core.name}
-            core={core}
-            tracks={shown}
-            showBad={showBad}
-            logOf={logOf}
-            onToggleLog={(track) =>
-              setSettings((prev) => ({
-                ...prev,
-                logs: { ...prev.logs, [track.key]: !logOf(track) },
-              }))
-            }
-            onMove={move}
-            onColor={(track, color) =>
-              setSettings((prev) => ({ ...prev, colors: { ...prev.colors, [track.key]: color } }))
-            }
-          />
-        ))}
-      </div>
+      <TrackControlsBar controls={controls} badCount={badCount} />
+      <CorePlots cores={payload.cores} controls={controls} />
     </>
   );
 }
