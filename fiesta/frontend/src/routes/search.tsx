@@ -38,7 +38,7 @@ import {
   InlineHtml,
   ResultDivider,
 } from "../components/result-item";
-import { columnsOf, RowsGrid, rowsOfHit } from "../components/rows-table";
+import { columnsOf, type GridRow, RowsGrid, rowLinkOf, rowsOfHit } from "../components/rows-table";
 import {
   applicableFilters,
   type FilterChip,
@@ -67,7 +67,11 @@ import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useNodeConfig } from "../lib/config";
-import { SearchBackgroundContext, useOpenContribution } from "../lib/contribution-modal";
+import {
+  contributionTabLabel,
+  SearchBackgroundContext,
+  useOpenContribution,
+} from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
 import { type SearchSettings, SearchSettingsContext, useSavedSearch } from "../lib/saved-search";
 import { type SearchState, slug, slugMatches } from "../lib/search-state";
@@ -368,6 +372,8 @@ export function ContributionRoutePage() {
         id: Number(id),
         tab,
         row: search.row,
+        rowId: search.row_id,
+        column: search.column,
         plot: search.plot,
         privateKey: search.private_key,
       }}
@@ -382,8 +388,17 @@ interface SearchPageProps {
   /** The saved search's id. */
   q?: string;
   /** The contribution whose modal is open: its tab (path segment), the row
-   * selected in a level tab, the plot in a plot tab, a private one's key. */
-  contribution?: { id: number; tab: string; row?: number; plot?: string; privateKey?: string };
+   * selected in a level tab and a column of it, a persistent link's row id
+   * still to find, the plot in a plot tab, a private one's key. */
+  contribution?: {
+    id: number;
+    tab: string;
+    row?: number;
+    rowId?: number;
+    column?: string;
+    plot?: string;
+    privateKey?: string;
+  };
 }
 
 export function SearchPage(props: SearchPageProps) {
@@ -606,6 +621,31 @@ export function SearchPage(props: SearchPageProps) {
       }),
     [navigate, modalId, modalTab, modalRow, modalKey, background],
   );
+  // A persistent row link (/CDR/672.59[.column]): find the file's row with
+  // that row_id, then open its level tab on it (and the column, a data point).
+  const modalRowId = modal?.rowId;
+  const modalColumn = modal?.column;
+  const rowIdKey = modalKey ?? privateKey ?? ownKey(modal?.id ?? 0);
+  const linkedRow = useQuery({
+    queryKey: ["contribution-row-id", modalId, modalRowId, rowIdKey],
+    queryFn: () =>
+      api<{ table: string; row: number }>(`/contributions/${modalId}/rows/${modalRowId}`, {
+        params: { private_key: rowIdKey || undefined },
+      }),
+    enabled: modalRowId !== undefined && !!modalId,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  });
+  useEffect(() => {
+    if (!linkedRow.data || modalRowId === undefined) return;
+    navigate({
+      to: "/$id/$tab",
+      params: { id: modalId, tab: slug(contributionTabLabel(config, linkedRow.data.table)) },
+      search: { row: linkedRow.data.row, column: modalColumn, private_key: modalKey },
+      state: { background },
+      replace: true,
+    });
+  }, [linkedRow.data, modalRowId, modalId, modalColumn, modalKey, config, navigate, background]);
   const rowMatch = useRouterState({ select: (state) => state.location.state.rowMatch });
   const closeModal = useCallback(
     () =>
@@ -618,6 +658,13 @@ export function SearchPage(props: SearchPageProps) {
   );
   // The Data grid's row last opened, highlighted (a new search replaces the rows).
   const [openedRow, setOpenedRow] = useState<string>();
+  // A Data grid row opens its contribution's level tab with the row selected.
+  const openDataRow = (row: GridRow) => {
+    const id = row.hit && contributionId(row.hit);
+    if (!id || !level) return;
+    setOpenedRow(row.key);
+    openContribution(id, level.table, level.table === "contribution" ? undefined : row.values);
+  };
   // The geospatial filter (the sidebar's Geospatial filter and its modal's
   // map) narrows every level with positions, and each level tab's count; it
   // stays across level tabs. The Map tab shows it but does not edit it.
@@ -1790,17 +1837,16 @@ export function SearchPage(props: SearchPageProps) {
                           columns={gridRowColumns}
                           table={level.table}
                           selected={openedRow}
-                          onRowClick={(row) => {
-                            const id = row.hit && contributionId(row.hit);
-                            if (!id) return;
-                            setOpenedRow(row.key);
-                            // A level row opens its tab with the row selected.
-                            openContribution(
-                              id,
-                              level.table,
-                              level.table === "contribution" ? undefined : row.values,
-                            );
-                          }}
+                          onRowClick={openDataRow}
+                          // Each row's number (<contribution>.<row_id>) links to
+                          // it; a plain click opens it as a row click does.
+                          rowLink={(row) =>
+                            rowLinkOf(
+                              row.values,
+                              () => openDataRow(row),
+                              row.hit && contributionId(row.hit),
+                            )
+                          }
                           estimateRows={rowsPerRecord}
                           sort={rowsSort}
                           onSort={onRowsSort}
@@ -1875,6 +1921,7 @@ export function SearchPage(props: SearchPageProps) {
             id={modalId}
             tab={modal.tab}
             row={modal.row}
+            column={modal.column}
             plot={modal.plot}
             rowMatch={rowMatch}
             privateKey={modal.privateKey ?? privateKey ?? ownKey(modal.id)}

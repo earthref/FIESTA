@@ -61,10 +61,14 @@ export interface SearchRouteParams {
 }
 
 /** A contribution's modal (/MagIC/16901/Sites): the row selected in a level
- * tab (its 1-based place in the file's table), the plot in a plot tab, a
- * private one's key. */
+ * tab (its 1-based place in the file's table) and a column of it to point
+ * at, the plot in a plot tab, a private one's key. `row_id` is a persistent
+ * row link's row (/CDR/672.59: the file's row with that `row_id`), which the
+ * modal swaps for its level tab and `row` once found. */
 export interface ContributionRouteParams {
   row?: number;
+  row_id?: number;
+  column?: string;
   plot?: string;
   private_key?: string;
 }
@@ -123,8 +127,19 @@ function id(value: unknown): number | undefined {
 }
 
 function contributionParams(search: Record<string, unknown>): ContributionRouteParams {
-  return { row: id(search.row), plot: name(search.plot), private_key: str(search.private_key) };
+  return {
+    row: id(search.row),
+    row_id: id(search.row_id),
+    column: str(search.column),
+    plot: name(search.plot),
+    private_key: str(search.private_key),
+  };
 }
+
+/** A persistent link's path segment: a contribution (`672`), one of its
+ * file's rows (`672.59`, by `row_id`) or a data point, a column of that row
+ * (`672.59.measurement`). */
+const CONTRIBUTION_LINK = /^(\d+)(?:\.(\d+)(?:\.([A-Za-z_]\w*))?)?$/;
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -399,11 +414,17 @@ const contentPageRoute = createRoute({
     private_key: str(search.private_key),
   }),
   beforeLoad: ({ params, search }) => {
-    if (/^\d+$/.test(params.page)) {
+    const link = CONTRIBUTION_LINK.exec(params.page);
+    if (link) {
+      const [, contribution, rowId, column] = link;
       throw redirect({
         to: "/$id/$tab",
-        params: { id: params.page, tab: "Contribution" },
-        search: { private_key: search.private_key },
+        params: { id: contribution, tab: "Contribution" },
+        search: {
+          row_id: rowId ? Number(rowId) : undefined,
+          column,
+          private_key: search.private_key,
+        },
         replace: true,
       });
     }

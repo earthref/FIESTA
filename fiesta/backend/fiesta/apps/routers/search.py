@@ -58,7 +58,13 @@ from fiesta.search.queries import (
 )
 from fiesta.services.access import constrain_search
 from fiesta.services.contributions import load_file
-from fiesta.services.history import locate_row, row_stats, table_page, versions
+from fiesta.services.history import (
+    locate_row,
+    locate_row_id,
+    row_stats,
+    table_page,
+    versions,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1496,6 +1502,27 @@ async def locate_table_row(
     if not isinstance(parsed, dict):
         raise HTTPException(422, "values must be a JSON object")
     return {"row": await locate_row(node, contribution, table, parsed)}
+
+
+@router.get("/contributions/{contribution_id}/rows/{row_id}")
+async def locate_contribution_row(
+    session: SessionDep,
+    node: NodeDep,
+    contribution_id: int,
+    row_id: int,
+    private_key: str | None = None,
+) -> dict:
+    """Where a persistent row link (`/<node>/<contribution>.<row_id>`) points:
+    the table holding the file's row with that `row_id`, and the row's 1-based
+    position in it (as the table pages number it)."""
+    contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    if not contribution.filename:
+        raise HTTPException(404, "this contribution has no file")
+    found = await locate_row_id(node, contribution, row_id)
+    if found is None:
+        raise HTTPException(404, f"no row {row_id} in contribution {contribution_id}")
+    table, row = found
+    return {"table": table, "row": row}
 
 
 @router.get("/contributions/{contribution_id}/download")

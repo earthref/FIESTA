@@ -3067,6 +3067,33 @@ def test_matching_row_finds_a_search_rows_place_in_the_file():
     assert matching_row([], {"site": "A"}) is None
 
 
+def test_row_with_id_finds_a_persistent_row_links_table_and_place():
+    from fiesta.domain.parse import parse_text, stamp_ids
+    from fiesta.services.history import row_with_id
+
+    model = {
+        "tables": {
+            "contribution": {"columns": {"id": {}}},
+            "sections": {"columns": {"contribution_id": {}, "row_id": {}, "section": {}}},
+            "measurements": {
+                "columns": {"contribution_id": {}, "row_id": {}, "measurement": {}}
+            },
+        }
+    }
+    text = (
+        "tab\tsections\nsection\nS1\nS2\n>>>>>>>>>>\n"
+        "tab\tmeasurements\nmeasurement\nm1\nm2\nm3\n"
+    )
+    tables = parse_text(stamp_ids(text, 672, model)).tables
+    # row_id runs 1..N across the tables in file order (/CDR/672.4: the
+    # second measurement).
+    assert row_with_id(tables, 1) == ("sections", 1)
+    assert row_with_id(tables, 2) == ("sections", 2)
+    assert row_with_id(tables, 4) == ("measurements", 2)
+    assert row_with_id(tables, 6) is None
+    assert row_with_id({"sites": [{"site": "A"}]}, 1) is None
+
+
 def test_changed_rows_ignores_order_blanks_and_stamped_ids():
     previous = ParsedContribution(
         tables={

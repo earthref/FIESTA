@@ -208,6 +208,28 @@ def _cell_text(value: Any) -> str:
     return "" if value is None else str(value).strip()
 
 
+def row_with_id(tables: dict[str, list[dict[str, str]]], row_id: int) -> tuple[str, int] | None:
+    """The table and 1-based position of the row whose `row_id` (numbered
+    1..N across the file's tables by `parse.stamp_ids`) is `row_id`, or None."""
+    wanted = str(row_id)
+    for table, rows in tables.items():
+        if table == "contribution":
+            continue
+        for index, row in enumerate(rows):
+            if _cell_text(row.get("row_id")) == wanted:
+                return table, index + 1
+    return None
+
+
+async def locate_row_id(
+    node: NodeConfig, contribution: Contribution, row_id: int
+) -> tuple[str, int] | None:
+    """Where a row id (a persistent link's `<contribution>.<row>`) sits in
+    the contribution's current file: its table and 1-based `row`."""
+    entry = await _parsed_tables(node, contribution)
+    return await asyncio.to_thread(row_with_id, entry["tables"], row_id)
+
+
 async def locate_row(
     node: NodeConfig, contribution: Contribution, table: str, values: dict[str, Any]
 ) -> int | None:
