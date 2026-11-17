@@ -1350,6 +1350,9 @@ export function SearchPage() {
                     fontSize: "1rem",
                     padding: "0.78571429em 1.5em",
                     lineHeight: "1em",
+                    // The search box's height (its input's, which Search and
+                    // Clear stretch to), not the 36px the padding gives.
+                    minHeight: "2.71428571rem",
                   }}
                 >
                   <Icon name={view.icon} style={buttonIconStyle} />
