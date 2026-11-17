@@ -543,6 +543,12 @@ def summarize(
         if table not in levels
     }
 
+    # Each row's core id, by the row (the docs' rows are the parsed ones).
+    row_ids = {
+        id(row): parsed.row_id_of(table, index)
+        for table in levels
+        for index, row in enumerate(parsed.tables.get(table, []))
+    }
     for index, level in enumerate(levels):
         rows = parsed.tables.get(level, [])
         level_counts[level] = {"_n_results": len(rows)}
@@ -610,7 +616,12 @@ def summarize(
                     "_all": _finalize_all(row_all, None),
                     **_num_block(row_numbers),
                 },
-                "rows": group,
+                # Each row with its core id (/<Node>/<id>.<row_id>), whatever
+                # the file stamps or the data model declares.
+                "rows": [
+                    {**row, "row_id": str(rid)} if (rid := row_ids.get(id(row))) else row
+                    for row in group
+                ],
             }
             docs.append(doc)
             # The nearest record above it that it names.

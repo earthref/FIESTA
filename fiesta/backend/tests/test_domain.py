@@ -3067,31 +3067,46 @@ def test_matching_row_finds_a_search_rows_place_in_the_file():
     assert matching_row([], {"site": "A"}) is None
 
 
-def test_row_with_id_finds_a_persistent_row_links_table_and_place():
-    from fiesta.domain.parse import parse_text, stamp_ids
+def test_every_row_has_a_core_id_that_stamp_ids_writes():
+    from fiesta.domain.parse import ParsedContribution, parse_text, stamp_ids
     from fiesta.services.history import row_with_id
 
+    # `notes` declares no row_id; its rows are numbered all the same.
     model = {
         "tables": {
             "contribution": {"columns": {"id": {}}},
             "sections": {"columns": {"contribution_id": {}, "row_id": {}, "section": {}}},
+            "notes": {"columns": {"note": {}}},
             "measurements": {
                 "columns": {"contribution_id": {}, "row_id": {}, "measurement": {}}
             },
         }
     }
     text = (
-        "tab\tsections\nsection\nS1\nS2\n>>>>>>>>>>\n"
-        "tab\tmeasurements\nmeasurement\nm1\nm2\nm3\n"
+        "tab\tcontribution\nid\n672\n>>>>>>>>>>\n"
+        "tab\tsections\nsection\nS1\n\t\nS2\n>>>>>>>>>>\n"
+        "tab\tnotes\nnote\nn1\n>>>>>>>>>>\n"
+        "tab\tmeasurements\nmeasurement\nm1\nm2\nm3\n>>>>>>>>>>\n"
+        "tab\tsections\nsection\nS3\n"
     )
-    tables = parse_text(stamp_ids(text, 672, model)).tables
-    # row_id runs 1..N across the tables in file order (/CDR/672.4: the
-    # second measurement).
-    assert row_with_id(tables, 1) == ("sections", 1)
-    assert row_with_id(tables, 2) == ("sections", 2)
-    assert row_with_id(tables, 4) == ("measurements", 2)
-    assert row_with_id(tables, 6) is None
-    assert row_with_id({"sites": [{"site": "A"}]}, 1) is None
+    parsed = parse_text(text)
+    # 1..N across every table but the contribution's, in file order (a blank
+    # row skipped; a table split over blocks keeps each block's ids).
+    assert parsed.row_ids == {"sections": [1, 2, 7], "notes": [3], "measurements": [4, 5, 6]}
+    assert parsed.row_id_of("measurements", 1) == 5
+    assert parsed.row_id_of("measurements", 3) is None
+    # stamp_ids writes the same ids where the data model has the column.
+    stamped = parse_text(stamp_ids(text, 672, model))
+    for table, ids in parsed.row_ids.items():
+        written = [row.get("row_id") for row in stamped.tables[table]]
+        assert written == ([str(i) for i in ids] if table != "notes" else [None])
+    # /CDR/672.5 is the second measurement; an unknown id is nowhere.
+    assert row_with_id(parsed.row_ids, 5) == ("measurements", 2)
+    assert row_with_id(parsed.row_ids, 7) == ("sections", 3)
+    assert row_with_id(parsed.row_ids, 8) is None
+    # Built from tables (an import, an upgrade): numbered in table order.
+    built = ParsedContribution(tables={"contribution": [{}], "sites": [{}, {}], "samples": [{}]})
+    assert built.row_id_of("samples", 0) == 3
 
 
 def test_changed_rows_ignores_order_blanks_and_stamped_ids():

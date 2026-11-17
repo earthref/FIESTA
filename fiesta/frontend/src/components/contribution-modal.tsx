@@ -1078,6 +1078,7 @@ const tableItemsOf =
       {
         key: String(row.row),
         label: formatNumber(row.row),
+        rowId: row.row_id ?? undefined,
         values: row.values,
         issues: showIssues ? row.issues : undefined,
       },
@@ -1165,7 +1166,7 @@ function LevelPanel({
         onRowClick={(row) => onSelect(Number(row.key))}
         // Each row's number (<contribution>.<row_id>) links to it; a plain
         // click selects it here.
-        rowLink={(row) => rowLinkOf(row.values, () => onSelect(Number(row.key)), id)}
+        rowLink={(row) => rowLinkOf(row, () => onSelect(Number(row.key)), id)}
         // Each item is one row of the file's table.
         scrollTo={sort ? undefined : target}
         columnIssues={showIssues ? first?.column_issues : undefined}

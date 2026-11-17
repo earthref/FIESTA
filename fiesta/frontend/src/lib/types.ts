@@ -418,7 +418,13 @@ export interface TablePage {
   columns: string[];
   validated: boolean;
   column_issues: Record<string, CellIssue>;
-  rows: { row: number; values: Record<string, string>; issues: Record<string, CellIssue> }[];
+  rows: {
+    row: number;
+    /** The row's core id in its contribution (/<Node>/<id>.<row_id>). */
+    row_id?: number | null;
+    values: Record<string, string>;
+    issues: Record<string, CellIssue>;
+  }[];
 }
 
 export interface ValidationIssue {
