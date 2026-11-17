@@ -8,6 +8,7 @@ in the node YAML's `plugins: {<name>: {...}}` map.
 """
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import APIRouter
@@ -67,6 +68,104 @@ class PluginOptions(BaseModel):
     typo in the YAML is caught at validation, not ignored."""
 
     model_config = {"extra": "forbid"}
+
+
+class ImportOptions(BaseModel):
+    """Base of an import format's `Options`: what a contributor sets in the
+    upload page's import step to steer the conversion (a naming convention, a
+    location name, a lab field). Its JSON schema is served to the SPA, which
+    renders it as a form; an enum field may carry `x-enum-labels` ({value:
+    label}) in its schema extras for the menu. Unknown keys are an error."""
+
+    model_config = {"extra": "forbid"}
+
+
+@dataclass(frozen=True)
+class ImportNote:
+    """One line of a conversion's report. `kind`: "converter" (what the
+    converter printed or raised), "default" (an option the contributor left at
+    a default that shapes the result), or "hint" (something in the result worth
+    a second look, e.g. every specimen its own sample)."""
+
+    level: Literal["error", "warning", "info"]
+    message: str
+    kind: Literal["converter", "default", "hint"] = "converter"
+    count: int = 1
+
+
+@dataclass
+class ImportInput:
+    """What a conversion reads: the uploaded files written into `directory`
+    (`files[0]` is the one the contributor read as this format, the rest the
+    companions it reads with it, see ImportFormat.companions), and an empty
+    `work_dir` for the converter's own output. Both are removed afterwards."""
+
+    directory: Path
+    files: list[str]
+    work_dir: Path
+
+
+@dataclass
+class ImportResult:
+    """A conversion: `text` in the node's multi-table text format (what the
+    contributor would have uploaded), its report notes, and the tool that made
+    it (`{"name", "version", "function"}`), which the report records."""
+
+    text: str
+    notes: list[ImportNote] = field(default_factory=list)
+    tool: dict[str, str] = field(default_factory=dict)
+
+
+class ImportConversionError(Exception):
+    """A conversion that produced nothing usable: `message` is shown to the
+    contributor with the notes gathered so far."""
+
+    def __init__(self, message: str, notes: list[ImportNote] | None = None):
+        super().__init__(message)
+        self.message = message
+        self.notes = notes or []
+
+
+class ImportFormat:
+    """A file format the upload page's import step converts to the node's
+    text format on the server (a lab instrument's output, say), supplied by a
+    plugin's `import_formats`. Stateless: the core writes the files into a
+    temporary directory, runs `convert` in a worker thread, and parses and
+    counts the text it returns; nothing is stored."""
+
+    #: Unique among a node's import formats; the API's and the SPA's key.
+    key: str = ""
+    #: The import file-type menu's label.
+    label: str = ""
+    #: A sentence for the format's help text.
+    description: str = ""
+    #: File name extensions it usually has (lower case, with the dot), a hint.
+    extensions: tuple[str, ...] = ()
+    #: Whether one conversion reads several files (`companions`).
+    multi_file: bool = False
+    #: The contributor's options (see ImportOptions). The plain base: none.
+    Options: type[ImportOptions] = ImportOptions
+
+    def sniff(self, filename: str, head: bytes) -> float:
+        """How sure (0 to 1) it is that a file is in this format, from its
+        name and first bytes. The import step picks a format at 0.8 or more."""
+        return 0.0
+
+    def companions(self, filename: str, head: bytes, others: list[str]) -> list[str]:
+        """For a multi-file format: which of the other files picked with this
+        one (`others`, by name) its conversion reads. Those are sent with it
+        and are not read on their own."""
+        return []
+
+    def options_schema(self) -> dict[str, Any]:
+        return self.Options.model_json_schema()
+
+    def convert(self, node: NodeConfig, files: ImportInput, options: ImportOptions) -> ImportResult:
+        """The files converted to the node's text format; raise
+        ImportConversionError when nothing usable comes out. Synchronous (it
+        runs in a worker thread). `options.model_fields_set` holds the options
+        the contributor set; the rest are defaults."""
+        raise NotImplementedError
 
 
 class FiestaPlugin:
@@ -168,6 +267,12 @@ class FiestaPlugin:
         models' `previous_columns` cannot express (fiesta.domain.upgrade):
         each UpgradeStep names its from_version and to_version. At most one
         active plugin may supply a given step."""
+        return []
+
+    def import_formats(self, node: NodeConfig) -> list[ImportFormat]:
+        """File formats the upload page's import step converts to the node's
+        text format (fiesta.services.import_formats; GET /import-formats). Keys
+        are unique among a node's active plugins."""
         return []
 
     def build_router(self) -> APIRouter | None:
