@@ -29,6 +29,7 @@ import {
 } from "../components/filter-modals";
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
 import { SearchMap } from "../components/map/search-map";
+import { QuickLaunch, type QuickLaunchView } from "../components/quick-launch";
 import {
   citationOf,
   contributionId,
@@ -84,6 +85,7 @@ import {
   formatNumber,
   getPath,
   getQueryToken,
+  normalizeView,
   parseQueryTokens,
   queryWithout,
   toggleQueryToken,
@@ -103,6 +105,12 @@ const pageTotal = (page: SearchPageData) => page.total;
 const pageResults = (page: SearchPageData) => page.results;
 /** The Data grid's header sort names a raw row column: `rows.<column>:asc|desc`. */
 const ROWS_SORT = "rows.";
+/** A sub-tab by name; a renamed view's old name ("Rows") finds its new one. */
+function findSubTab<T extends { name: string }>(tabs: T[], name: string | null | undefined) {
+  if (!name) return undefined;
+  const wanted = normalizeView(name);
+  return tabs.find((tab) => tab.name === wanted);
+}
 const routeApi = getRouteApi("/search");
 const TAB_BORDER = "var(--er-edge)";
 /** Legacy `styles.activeTab` on the level tabs and the Filters tab. */
@@ -363,9 +371,10 @@ export function SearchPage() {
     myContributions.data?.find((c) => c.id === id)?.private_key;
 
   const [input, setInput] = useState(q);
-  // A link may open a sub-tab (the home page's plugin cards); it is kept in
-  // the page's state from then on.
-  const [view, setView] = useState(search.view ?? "Summaries");
+  // A link may open a sub-tab (the home page's plugin cards and quick-launch
+  // buttons); it is kept in the page's state from then on. Unset, the level
+  // opens on its `default_view` (node YAML), else Summaries.
+  const [view, setView] = useState<string | undefined>(search.view);
   useEffect(() => setInput(q), [q]);
 
   // Independent scroll regions: compute the available height so the page body
@@ -524,7 +533,7 @@ export function SearchPage() {
     if (level.geo && level.map !== false) tabs.push({ name: "Map" });
     return [...tabs, ...pluginSubTabs(config, level)];
   }, [config, level]);
-  const activeTab = subTabs.find((tab) => tab.name === view) ?? subTabs[0];
+  const activeTab = findSubTab(subTabs, view ?? level?.default_view) ?? subTabs[0];
 
   // A plugin view's count: its own docs matching the search and its filters
   // (ranges on its summary block, the bbox), as it fetches them. Switching
@@ -902,6 +911,29 @@ export function SearchPage() {
   const onRowsSort = (next: GridSort | undefined) =>
     setSearch({ sort: next ? `${ROWS_SORT}${next.key}:${next.order}` : undefined });
 
+  // A level tab: its own filters start empty. A level with a `default_view`
+  // opens on it; without one the open sub-tab carries over (legacy).
+  const openLevel = (entry: SearchLevel, nextView?: string) => {
+    if (nextView) setView(nextView);
+    else if (entry.default_view) setView(undefined);
+    setSearch({
+      level: entry.name,
+      ranges: [],
+      filter: [],
+      // The with/without data entries on tables its records cover.
+      has: hasAt(entry, "Summaries"),
+      bbox: undefined,
+      // A header sort names this level's columns.
+      sort: headerSort ? undefined : search.sort,
+    });
+  };
+  // A quick-launch button: its view on its level (the open level keeps its filters).
+  const launch = (target: QuickLaunchView) => {
+    const entry = levels.find((candidate) => candidate.name === target.level);
+    if (entry?.name === level.name) setView(target.name);
+    else if (entry) openLevel(entry, target.name);
+  };
+
   // A column header's filter icon opens its modal: its facet lists (the
   // sidebar's, sharing their tokens and labels) and/or a text box, or on the
   // map tile the area.
@@ -1150,18 +1182,7 @@ export function SearchPage() {
             <button
               key={entry.name}
               type="button"
-              onClick={() =>
-                setSearch({
-                  level: entry.name,
-                  ranges: [],
-                  filter: [],
-                  // The with/without data entries on tables its records cover.
-                  has: hasAt(entry, "Summaries"),
-                  bbox: undefined,
-                  // A header sort names this level's columns.
-                  sort: headerSort ? undefined : search.sort,
-                })
-              }
+              onClick={() => openLevel(entry)}
               className={cx(
                 "flex items-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node",
                 !active && "cursor-pointer hover:text-node-ink-strong",
@@ -1266,6 +1287,15 @@ export function SearchPage() {
               Clear
             </button>
           </form>
+          {/* Quick launch (node YAML `search.quick_launch`): the main views,
+              beside the search box, on the search box's line height. */}
+          <QuickLaunch
+            config={config}
+            onLaunch={launch}
+            current={{ level: level.name, view: activeTab?.name }}
+            className="self-start"
+            style={{ margin: "1em 1em 0 0", minHeight: "2.71428571rem" }}
+          />
           {/* Download Results: hidden when searching a private_key (legacy) */}
           {!privateKey && (
             <button

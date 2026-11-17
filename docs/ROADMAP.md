@@ -322,6 +322,11 @@ the latter become G5 work after cutover.*
       boundaries and a95 / dp-dm outlines (deviations at the top of
       `configurations/plugins/poles/globe-spec.md`). A Rock Magnetism view (`rock-mag` plugin) shipped
       alongside it on the Specimens level.
+- [x] **D6 Quick-launch buttons** (2026-11-16, team meeting decision) — Map and
+      the node's plugin views one click away on the home and search pages,
+      configured per node (`search.map_level`, `search.quick_launch`,
+      `search.levels[].default_view`; admin Settings tab). Deviation recorded in
+      `legacy-ux-spec.md` §5.
 - [ ] **D5 Search and contribution-page issues from legacy MagIC.** Part of D2,
       listed so none are lost. Filters: lower levels return only matching rows
       (MagIC #213), the age range filter (#350), "contains" for ranges (#349), sort

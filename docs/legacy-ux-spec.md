@@ -590,6 +590,22 @@ ui grid divided → Grid.Row
   nine resource cards are centred when a row is not full (legacy left-aligned).
   From 2026-09-28 the News divider header has no top margin at ≥1024px, where it
   opens its own column level with the main column; stacked below, it keeps it.
+- **FIESTA deviation (2026-11-16, team meeting decision): quick-launch
+  buttons.** A row of small node-outlined buttons, an icon and a short label
+  each, under the primary card row (there is no "PulseView" element; it sits
+  by the Search Interface card, the main search entry) and on the search page
+  after the search box's Clear button, before Download Results, on the search
+  box's line (`components/quick-launch.tsx`). They open the node's main views in one
+  click: Map on `search.map_level` (MagIC: Sites), then each plugin search
+  view the node has (Poles, Rock Magnetism, Kd Plots, Age Distribution, ...),
+  or the names `search.quick_launch` lists, in its order. A node only gets
+  buttons for views it has: no Map without a level with a map, no Poles
+  without the poles plugin. On the search page the open level keeps its
+  filters; another level opens as its level tab would, and the open view's
+  button shows pressed. The legacy "Poles / View" cards stay. Alongside, a
+  level's `default_view` (Summaries, Data or Map) is the sub-tab its level tab
+  opens on; MagIC, KArAr and CDR open Measurements on Data, as legacy (rows
+  only) did. Legacy had neither.
 - **Portal home (FIESTA only, 2026-09-27):** where one origin serves every node
   (`fiesta-env.js` lists `nodes`), the build base (`http://localhost:8080/`) is a
   FIESTA home in the same grid: a node card (key, title, contribution count) in

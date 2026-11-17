@@ -157,7 +157,19 @@ export interface NodeSettings {
   };
   search: {
     index: string;
-    levels: { name: string; table: string; count_field?: string; columns?: SettingsColumn[] }[];
+    levels: {
+      name: string;
+      table: string;
+      count_field?: string;
+      map?: boolean;
+      /** The result sub-tab it opens on: Summaries | Data (older YAML: Rows) | Map. */
+      default_view?: string | null;
+      columns?: SettingsColumn[];
+    }[];
+    /** The level the quick-launch Map button opens; unset = the first record level with a map. */
+    map_level?: string | null;
+    /** The quick-launch buttons by name, in order; unset = Map, then every plugin view. */
+    quick_launch?: string[] | null;
     /** Pre-2026-09 shape, still loaded by the API as facet filters. */
     facets?: string[];
     filters?: SettingsFilter[];

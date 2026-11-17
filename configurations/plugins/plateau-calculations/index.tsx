@@ -243,7 +243,13 @@ const plateauPlugin: PluginModule = {
   // The specimen levels' search results: every matching specimen's age.
   levelSubTabs(level, config) {
     if (!levelsOption(config, "specimen_levels").includes(level.name)) return [];
-    return [{ name: "Age Distribution", render: (ctx) => <AgeDistributionView {...ctx} /> }];
+    return [
+      {
+        name: "Age Distribution",
+        icon: "bar-chart",
+        render: (ctx) => <AgeDistributionView {...ctx} />,
+      },
+    ];
   },
   // The summary grid's plot tile: an experiment's age spectrum, or a
   // specimen's experiments under its preferred age.

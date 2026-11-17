@@ -43,7 +43,7 @@ import {
 } from "../lib/admin";
 import { api } from "../lib/api";
 import type { LogoStyle } from "../lib/types";
-import { cx } from "../lib/utils";
+import { cx, normalizeView } from "../lib/utils";
 import type { AdminNodeParams } from "../router";
 
 type Section =
@@ -269,7 +269,16 @@ interface SettingsForm {
   bucket: string;
   publish_api: boolean;
   publish_web: boolean;
+  /** Quick launch: the Map button's level ("" = the first record level with a map). */
+  map_level: string;
+  /** The buttons by name, comma-separated ("" = Map, then every plugin view). */
+  quick_launch: string;
+  /** Each search level's default sub-tab, by position ("" = Summaries). */
+  default_views: string[];
 }
+
+/** The sub-tabs a level can open on (`search.levels[].default_view`). */
+const DEFAULT_VIEWS = ["Summaries", "Data", "Map"];
 
 function formOf(s: NodeSettings): SettingsForm {
   return {
@@ -285,6 +294,11 @@ function formOf(s: NodeSettings): SettingsForm {
     bucket: s.storage.bucket,
     publish_api: s.publish?.api ?? true,
     publish_web: s.publish?.web ?? true,
+    map_level: s.search.map_level ?? "",
+    quick_launch: (s.search.quick_launch ?? []).join(", "),
+    default_views: s.search.levels.map((level) =>
+      level.default_view ? normalizeView(level.default_view) : "",
+    ),
   };
 }
 
@@ -304,10 +318,32 @@ function opsFor(before: SettingsForm, after: SettingsForm): SettingsOp[] {
     ["bucket", ["storage", "bucket"], after.bucket.trim()],
     ["publish_api", ["publish", "api"], after.publish_api],
     ["publish_web", ["publish", "web"], after.publish_web],
+    ["map_level", ["search", "map_level"], orNull(after.map_level)],
+    ["quick_launch", ["search", "quick_launch"], quickLaunchOf(after.quick_launch)],
   ];
-  return fields
-    .filter(([key]) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
-    .map(([, path, value]) => ({ path, value }));
+  const views = after.default_views
+    .map(
+      (view, index): SettingsOp => ({
+        path: ["search", "levels", index, "default_view"],
+        value: view || null,
+      }),
+    )
+    .filter((_, index) => before.default_views[index] !== after.default_views[index]);
+  return [
+    ...fields
+      .filter(([key]) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+      .map(([, path, value]) => ({ path, value })),
+    ...views,
+  ];
+}
+
+/** The quick-launch names typed comma-separated; none = the default buttons. */
+function quickLaunchOf(text: string): string[] | null {
+  const names = text
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+  return names.length ? names : null;
 }
 
 function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: boolean }) {
@@ -339,7 +375,9 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
   const s = settings.data.settings;
   const set = <K extends keyof SettingsForm>(key: K, value: SettingsForm[K]) =>
     setForm({ ...form, [key]: value });
-  const input = (key: Exclude<keyof SettingsForm, "publish_api" | "publish_web">) => ({
+  const input = (
+    key: Exclude<keyof SettingsForm, "publish_api" | "publish_web" | "default_views">,
+  ) => ({
     value: form[key] as string,
     onChange: (e: ChangeEvent<HTMLInputElement>) => set(key, e.target.value),
   });
@@ -458,6 +496,62 @@ function SettingsSection({ node, superAdmin }: { node: AdminNode; superAdmin: bo
           <p className="text-xs text-gray-500">
             A local stack (FIESTA_ENVIRONMENT=development) serves every node either way.
           </p>
+        </div>
+      </fieldset>
+      <fieldset className="rounded-md border border-gray-200 p-3">
+        <legend className="px-1 text-xs font-semibold text-gray-700">Quick launch</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field
+            label="Map button opens"
+            hint="A level with positions; default: the first record level with a map."
+          >
+            <select
+              value={form.map_level}
+              onChange={(e) => set("map_level", e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">(default)</option>
+              {s.search.levels.map((level) => (
+                <option key={level.name} value={level.name}>
+                  {level.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label="Buttons"
+            hint="Map and plugin view names (Poles, Rock Magnetism), comma-separated, in order; blank: Map, then every plugin view."
+          >
+            <Input {...input("quick_launch")} placeholder="Map, Poles" />
+          </Field>
+        </div>
+        <p className="mt-3 mb-1 text-xs font-semibold text-gray-700">Opening sub-tab per level</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {s.search.levels.map((level, index) => (
+            <Field key={level.name} label={level.name}>
+              <select
+                value={form.default_views[index] ?? ""}
+                onChange={(e) =>
+                  set(
+                    "default_views",
+                    form.default_views.map((view, i) => (i === index ? e.target.value : view)),
+                  )
+                }
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              >
+                <option value="">(Summaries; keeps the open tab)</option>
+                {DEFAULT_VIEWS.filter(
+                  (view) =>
+                    !(view === "Data" && level.table === "contribution") &&
+                    !(view === "Map" && level.map === false),
+                ).map((view) => (
+                  <option key={view} value={view}>
+                    {view}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ))}
         </div>
       </fieldset>
       <p className="text-xs text-gray-500">

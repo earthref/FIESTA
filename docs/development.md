@@ -322,6 +322,30 @@ the tiles a level's data can fill: the defaults are MagIC's, and on another
 node or a leaf level most of them are always "No … Data" (every node's YAML
 names its levels' tiles since 2026-11-13).
 
+The quick-launch buttons (an icon and a label each, on the home page under
+the Search Interface card and on the search page beside the search box)
+open the node's main views in one click: Map, then each plugin search view
+the node has (Poles, Rock Magnetism, Kd Plots, Age Distribution, ...), each on
+the first level offering it. Three YAML fields tune them, all optional and
+edited on the admin Settings tab's Quick launch fieldset:
+
+- `search.map_level`: the level the Map button opens on its Map tab. It must
+  name a level whose rows have positions and no `map: false`. Unset, it is
+  the first such record level (Contributions only when no other level has a
+  map), and a node with no map gets no Map button. MagIC sets `Sites`.
+- `search.quick_launch`: the buttons by name, in order, e.g. `[Map, Poles]`.
+  Unset, every button shows; `[]` shows none. A name the node has no view for
+  (a plugin it does not activate) shows no button, so the list can never
+  invent a view.
+- `search.levels[].default_view`: the result sub-tab a level opens on:
+  `Summaries`, `Data` (its raw rows; the older name `Rows` loads as `Data`) or
+  `Map` (only on a level with a map). A level that sets one opens on it when
+  its level tab is clicked; a level without one keeps the open sub-tab, as the
+  legacy search did. MagIC, KArAr and CDR open Measurements on `Data` (the
+  legacy apps had only a rows view there).
+
+A plugin view's button icon is its `PluginSubTab.icon` (default `chart-line`).
+
 Home page content is YAML too: `features.home.resources` lists the resource
 cards (title, Semantic icon name, optional corner icon, `to` for an SPA route
 or `href` for an external URL) and `features.home.news` the news items

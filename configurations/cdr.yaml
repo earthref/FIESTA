@@ -99,6 +99,8 @@ search:
       table: measurements
       count_field: summary.measurements._n_results
       map: false
+      # Legacy opened Measurements on its rows (it had no Summaries view).
+      default_view: Data
       columns:
         - { cell: record }
         - { cell: map }

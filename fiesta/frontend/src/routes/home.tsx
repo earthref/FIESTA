@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton, type IconButtonProps } from "../components/icon-button";
+import { QuickLaunch } from "../components/quick-launch";
 import { isSourceMode } from "../components/source-mode-notice";
 import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
@@ -247,6 +248,10 @@ export function HomePage() {
               </>
             )}
           </div>
+
+          {/* Quick launch: the node's main search views (Map, plugin views), one
+              click away under the Search Interface card (2026-11 decision). */}
+          <QuickLaunch config={config} className="mt-[0.875em]" />
 
           {/* Plugin cards (legacy: the full-width "Poles / View" tiny card),
               side by side when a node has several */}
