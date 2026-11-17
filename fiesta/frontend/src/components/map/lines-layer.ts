@@ -17,6 +17,11 @@ export type MapLine = {
   /** In CSS pixels. */
   width?: number;
   opacity?: number;
+  /** A dot's point: hovering the dot shows that point's tooltip and clicking
+   * it selects the point (the map's onSelect), like the point's own marker. */
+  id?: string;
+  /** The dot's line in that tooltip, in place of the point's label. */
+  label?: string;
 };
 
 // Mercator y is infinite at the pole itself.
