@@ -730,6 +730,62 @@ def test_with_and_without_data_clauses():
     assert {"terms": {"summary._has._any": ["lat"]}} in body["query"]["bool"]["filter"]
 
 
+def test_search_extent_bounds_and_busiest_cell(magic_node, monkeypatch):
+    """GET /search/{table}/extent: one size-0 request over the positioned
+    docs, a geo_bounds (antimeridian-aware) and the busiest geotile's
+    centroid, read as [west, south, east, north] and [lon, lat]."""
+    import asyncio
+
+    from fiesta.apps.routers import search as router
+
+    bodies = []
+    replies = [
+        {
+            "hits": {"total": {"value": 4}},
+            "aggregations": {
+                "bounds": {
+                    "bounds": {
+                        "top_left": {"lat": -10.0, "lon": 170.0},
+                        "bottom_right": {"lat": -20.0, "lon": -170.0},
+                    }
+                },
+                "busiest": {
+                    "buckets": [{"key": "4/15/9", "at": {"location": {"lat": -15, "lon": 179}}}]
+                },
+            },
+        },
+        {
+            "hits": {"total": {"value": 0}},
+            "aggregations": {"bounds": {}, "busiest": {"buckets": []}},
+        },
+    ]
+
+    class Client:
+        async def search(self, index, body):
+            bodies.append(body)
+            return replies[len(bodies) - 1]
+
+    async def unconstrained(*args):
+        return None
+
+    monkeypatch.setattr(router, "_constrain", unconstrained)
+    monkeypatch.setattr(router, "get_opensearch", lambda: Client())
+    run = lambda table: asyncio.run(  # noqa: E731
+        router.search_extent(None, magic_node, None, table, range_=None, filter_=None)
+    )
+    out = run("sites")
+    assert (out.total, out.bounds, out.center) == (4, [170.0, -20.0, -170.0, -10.0], [179, -15])
+    body = bodies[0]
+    assert body["size"] == 0 and "sort" not in body
+    assert {"exists": {"field": router.GEO_FIELD}} in body["query"]["bool"]["filter"]
+    assert body["aggs"]["bounds"]["geo_bounds"]["wrap_longitude"] is True
+    assert body["aggs"]["busiest"]["geotile_grid"]["size"] == 1
+    empty = run("sites")
+    assert (empty.total, empty.bounds, empty.center) == (0, None, None)
+    with pytest.raises(router.HTTPException):
+        run("ages")
+
+
 def test_search_has_counts_one_table(magic_node, monkeypatch):
     """GET /search/{table}/has: one request, the table's docs and a terms
     aggregation of its columns (every listed column, zero included); `has`

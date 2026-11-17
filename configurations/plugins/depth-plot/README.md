@@ -13,13 +13,18 @@ or shallower than `min_depth` (calibration runs) are left out; rows whose
 UI: multi-track SVG depth plots as a "Plots" sub-tab on the `levels` option's
 levels, the contribution modal's Depth Plots tab, and the summary grid's
 `plot` tile (legacy CDR's depth thumbnail; a core's card draws that core) on
-the levels where the node YAML places one. The full plot has:
+the levels where the node YAML places one. The Plots sub-tab is a `records`
+tab: it counts the level's matches (filtered as on Summaries), draws only the
+matched cores, and has one controls bar at the top, over the union of every
+plotted contribution's tracks, that drives all of its plots. The full plot has:
 
 - every track as a toggle **chip** above the plots, by group (MST / XRF /
   Ratios; Defaults, All, None);
-- plots **reordered** by dragging a header onto another (or the left and
-  right arrow keys on its grip) and **recolored** from its swatch; picks,
-  order, colors and log scales are kept per node in the browser
+- a **Plotted, in order** row in the same controls: drag a track onto another
+  (or the left and right arrow keys on its grip) to **reorder** it, its
+  swatch to **recolor** it, × to hide it, for every plot below (plot headers
+  carry only the label and the log toggle); picks, order, colors and log
+  scales are kept per node in the browser
   (`localStorage` `fiesta:depth-plot:<slug>`);
 - text no smaller than 11px (the modal's count pills) and 800px plots;
 - **flagged points** hidden by default, drawn as red dots on request;

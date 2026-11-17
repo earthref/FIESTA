@@ -9,6 +9,7 @@ import { Icon } from "../ui/icon";
 import { Spinner } from "../ui/spinner";
 import { MERCATOR_LAT } from "./basemap";
 import { BODIES, type Body, bodiesOf } from "./bodies";
+import { defaultArea, type Extent } from "./default-area";
 import type { MapLine } from "./lines-layer";
 import {
   type ColorScale,
@@ -24,14 +25,12 @@ import {
   type ApiMapContribution,
   type ApiMapPoint,
   type Area,
-  areaAround,
   areaToBbox,
   type MapPoint,
   type Mode,
   pointKey,
   recordsOf,
   toMapPoint,
-  WHOLE_GLOBE,
 } from "./map-points";
 import { usePlates } from "./plates";
 
@@ -132,6 +131,34 @@ function usePoints(
   });
 }
 
+/** Where the search's positioned records are (the Geospatial filter's
+ * default area), without fetching them. */
+function useExtent(
+  level: SearchLevel,
+  query: string,
+  ranges: string[] | undefined,
+  filters: string[] | undefined,
+  has: string[] | undefined,
+  scope: SearchScope | undefined,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ["search-extent", level.table, query, ranges, filters, has, scope],
+    queryFn: () =>
+      api<Extent>(`/search/${level.table}/extent`, {
+        params: {
+          ...scope,
+          query: query || undefined,
+          range: ranges,
+          filter: filters?.length ? filters : undefined,
+          has: has?.length ? has : undefined,
+        },
+      }),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 /** The colors' key: the ramp from the scale's low to high value, and the
  * color of records without one. */
 function ColorLegend({ scale, option }: { scale: ColorScale | null; option: MapColorOption }) {
@@ -189,6 +216,7 @@ export function SearchMap({
   area,
   plates = NO_PLATES,
   editArea = false,
+  areaDisabled = false,
   onAreaChange = () => {},
   areaRequest = null,
   onRequestArea = () => {},
@@ -211,6 +239,8 @@ export function SearchMap({
   plates?: string[];
   /** The area is drawn, moved and resized here (the Geospatial filter's map). */
   editArea?: boolean;
+  /** No area can be drawn (the filter is by plates): no Filter by area button. */
+  areaDisabled?: boolean;
   onAreaChange?: (area: Area | null) => void;
   areaRequest?: AreaRequest | null;
   onRequestArea?: () => void;
@@ -235,6 +265,11 @@ export function SearchMap({
   const [colorBy, setColorBy] = useSearchSetting(COLOR_SETTING, "", isString);
   const colorOption = colorOptions.find((o) => o.field === colorBy) ?? null;
 
+  // While the Geospatial filter's default area is drawn (asked for, with no
+  // area or plates yet), no records are fetched: the search's extent comes
+  // first (one aggregation), the area from it, then only the records inside.
+  const drawing = editArea && Boolean(areaRequest) && !area && plates.length === 0;
+  const extent = useExtent(level, query, ranges, filters, has, scope, drawing);
   const inArea = usePoints(
     level,
     query,
@@ -243,13 +278,14 @@ export function SearchMap({
     has,
     area ? areaToBbox(area) : undefined,
     color,
-    true,
+    !drawing,
     colorOption?.field,
     scope,
     plates,
   );
   const geoFiltered = Boolean(area) || plates.length > 0;
-  // With an area (or plates), the same search without it, for the grey context points.
+  // With an area (or plates), the same search without it, for the grey context
+  // points: after the records in the area, which show first.
   const all = usePoints(
     level,
     query,
@@ -258,7 +294,7 @@ export function SearchMap({
     has,
     undefined,
     color,
-    editArea && geoFiltered,
+    editArea && geoFiltered && inArea.isSuccess,
     undefined,
     scope,
   );
@@ -305,27 +341,31 @@ export function SearchMap({
     return all.data.points.filter((p) => (p.body ?? "earth") === body && !plotted.has(key(p)));
   }, [geoFiltered, all.data, points, body, editArea]);
 
-  // An area asked for, in the view asked for, once the search's records have
-  // loaded (as on osu-mgr.org): around them, or, for an unfiltered search,
-  // over the middle of the view (requestViewArea), which leaves the map where
-  // it is. With an area already, the request only zooms to it.
+  // An area asked for, in the view asked for, once the search's extent has
+  // loaded: around its records when they fit in 20° each way, else 20° around
+  // where most of them are (defaultArea), and the map zoomed to it. With an
+  // area already, the request only zooms to it.
   const unfiltered = !query.trim() && !ranges?.length && !filters?.length && !has?.length;
   const areaPending =
-    Boolean(areaRequest) && (!areaRequest?.mode || areaRequest.mode === mode) && !inArea.isFetching;
+    Boolean(areaRequest) &&
+    (!areaRequest?.mode || areaRequest.mode === mode) &&
+    (Boolean(area) ||
+      (!drawing && !inArea.isFetching) ||
+      (drawing && !extent.isFetching && (extent.isSuccess || extent.isError)));
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the request can be answered
   useEffect(() => {
     if (!areaPending) return;
-    if (area) {
-      if (areaRequest?.zoomTo) setZoomTo(area);
+    if (area || !drawing) {
+      if (area && areaRequest?.zoomTo) setZoomTo(area);
       onAreaRequestDone?.();
       return;
     }
-    if (unfiltered) return;
-    const next = areaAround(points) ?? WHOLE_GLOBE;
-    if (areaRequest?.zoomTo) setZoomTo(next);
+    const next = extent.data ? defaultArea(extent.data) : null;
+    // None positioned (or the extent failed): no area; the records load as they are.
+    if (!next) return onAreaRequestDone?.();
+    setZoomTo(next);
     onAreaChange(next);
-  }, [areaPending, unfiltered]);
-  const requestViewArea = areaPending && !area && unfiltered;
+  }, [areaPending]);
 
   // The records on each body, and in each view of the body shown, for their
   // buttons (none until the points load): a contribution is drawn at each of
@@ -362,11 +402,12 @@ export function SearchMap({
   const focusKey = JSON.stringify([level.table, query, ranges, filters, has]);
   // Only show the loading overlay when a refresh is slow.
   const [showLoading, setShowLoading] = useState(false);
+  const loading = inArea.isFetching || (drawing && extent.isFetching);
   useEffect(() => {
-    if (!inArea.isFetching) return setShowLoading(false);
+    if (!loading) return setShowLoading(false);
     const timer = setTimeout(() => setShowLoading(true), 500);
     return () => clearTimeout(timer);
-  }, [inArea.isFetching]);
+  }, [loading]);
 
   const buttonClass = mapButtonClass;
 
@@ -386,7 +427,7 @@ export function SearchMap({
           counts={counts?.modes}
           emptyTitle={(each) => noneMapped(inMode(each))}
         />
-        {!editArea ? null : area ? (
+        {!editArea || areaDisabled ? null : area ? (
           <button
             type="button"
             onClick={() => onAreaChange(null)}
@@ -441,7 +482,6 @@ export function SearchMap({
             onSelect={onSelect}
             area={editArea && onEarth ? area : null}
             onAreaChange={onAreaChange}
-            requestViewArea={editArea && onEarth && requestViewArea}
             zoomTo={onEarth ? zoomTo : null}
             focusKey={focusKey}
             context={context}
@@ -459,7 +499,8 @@ export function SearchMap({
             </span>
           </div>
         ) : (
-          !inArea.isFetching &&
+          !loading &&
+          !drawing &&
           points.length === 0 && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="rounded-sm bg-surface/90 px-3 py-1.5 text-[13px] text-gray-500 shadow">

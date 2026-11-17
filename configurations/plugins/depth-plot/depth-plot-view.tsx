@@ -88,19 +88,16 @@ function usePlotSettings(key: string) {
 
 const hex = (color: string) => (/^#[0-9a-f]{6}$/i.test(color) ? color : "#666666");
 
-/** Track chips, the flagged-point toggle and every core's plots, sharing
- * the viewer's track choices. */
-export function ContributionPlots({
-  payload,
-  storageKey,
-}: {
-  payload: Payload;
-  storageKey: string;
-}) {
-  const { cores, tracks } = payload;
+/** The viewer's track choices over a set of tracks (one contribution's, or
+ * the union of every plotted contribution's): which are shown and in what
+ * order and colors, their scales and the flagged-point toggle. One set of
+ * controls drives every plot under it. */
+export function useTrackControls(tracks: TrackDef[], storageKey: string) {
   const [settings, setSettings] = usePlotSettings(storageKey);
   const [showBad, setShowBad] = useState(false);
 
+  const colored = (t: TrackDef) =>
+    settings.colors[t.key] ? { ...t, color: settings.colors[t.key] } : t;
   const isOn = (t: TrackDef) =>
     settings.on.includes(t.key) || (t.default && !settings.off.includes(t.key));
   const rank = (t: TrackDef) => {
@@ -110,11 +107,7 @@ export function ContributionPlots({
   const shown = tracks
     .filter(isOn)
     .sort((a, b) => rank(a) - rank(b))
-    .map((t) => (settings.colors[t.key] ? { ...t, color: settings.colors[t.key] } : t));
-  const badCount = useMemo(
-    () => cores.reduce((n, core) => n + core.rows.filter(isBad).length, 0),
-    [cores],
-  );
+    .map(colored);
   const logOf = (track: TrackDef) => settings.logs[track.key] ?? track.log;
 
   const toggle = (track: TrackDef) =>
@@ -145,57 +138,92 @@ export function ContributionPlots({
       return { ...prev, order: [...keys, ...prev.order.filter((k) => !keys.includes(k))] };
     });
 
+  return {
+    chips: {
+      tracks: tracks.map(colored),
+      isOn,
+      onToggle: toggle,
+      onDefaults: () => setSettings((prev) => ({ ...NO_SETTINGS, colors: prev.colors })),
+      onAll: () => setSettings((prev) => ({ ...prev, on: tracks.map((t) => t.key), off: [] })),
+      onNone: () =>
+        setSettings((prev) => ({
+          ...prev,
+          on: [],
+          off: tracks.filter((t) => t.default).map((t) => t.key),
+        })),
+      showBad,
+      onShowBad: setShowBad,
+      shown,
+      onMove: move,
+      onColor: (track: TrackDef, color: string) =>
+        setSettings((prev) => ({ ...prev, colors: { ...prev.colors, [track.key]: color } })),
+    },
+    plots: {
+      tracks: shown,
+      showBad,
+      logOf,
+      onToggleLog: (track: TrackDef) =>
+        setSettings((prev) => ({ ...prev, logs: { ...prev.logs, [track.key]: !logOf(track) } })),
+    },
+  };
+}
+
+export type TrackControls = ReturnType<typeof useTrackControls>;
+
+/** Rows flagged bad across cores, for the flagged-point toggle. */
+export const badCountOf = (cores: CoreData[]) =>
+  cores.reduce((n, core) => n + core.rows.filter(isBad).length, 0);
+
+/** The controls bar: every track as a chip and the flagged-point toggle. */
+export function TrackControlsBar({
+  controls,
+  badCount,
+}: {
+  controls: TrackControls;
+  badCount: number;
+}) {
+  return <TrackChips {...controls.chips} badCount={badCount} />;
+}
+
+/** Cores' plots, drawn with the controls' tracks, order, colors and scales. */
+export function CorePlots({ cores, controls }: { cores: CoreData[]; controls: TrackControls }) {
+  return (
+    <div className="flex flex-wrap gap-6">
+      {cores.map((core) => (
+        <CoreTracks key={core.name} core={core} {...controls.plots} />
+      ))}
+    </div>
+  );
+}
+
+/** One contribution's plots under their own controls (the modal's tab). */
+export function ContributionPlots({
+  payload,
+  storageKey,
+}: {
+  payload: Payload;
+  storageKey: string;
+}) {
+  const controls = useTrackControls(payload.tracks, storageKey);
+  const badCount = useMemo(() => badCountOf(payload.cores), [payload.cores]);
   return (
     <>
-      <TrackChips
-        tracks={tracks.map((t) =>
-          settings.colors[t.key] ? { ...t, color: settings.colors[t.key] } : t,
-        )}
-        isOn={isOn}
-        onToggle={toggle}
-        onDefaults={() => setSettings((prev) => ({ ...NO_SETTINGS, colors: prev.colors }))}
-        onAll={() => setSettings((prev) => ({ ...prev, on: tracks.map((t) => t.key), off: [] }))}
-        onNone={() =>
-          setSettings((prev) => ({
-            ...prev,
-            on: [],
-            off: tracks.filter((t) => t.default).map((t) => t.key),
-          }))
-        }
-        badCount={badCount}
-        showBad={showBad}
-        onShowBad={setShowBad}
-      />
-      <div className="flex flex-wrap gap-6">
-        {cores.map((core) => (
-          <CoreTracks
-            key={core.name}
-            core={core}
-            tracks={shown}
-            showBad={showBad}
-            logOf={logOf}
-            onToggleLog={(track) =>
-              setSettings((prev) => ({
-                ...prev,
-                logs: { ...prev.logs, [track.key]: !logOf(track) },
-              }))
-            }
-            onMove={move}
-            onColor={(track, color) =>
-              setSettings((prev) => ({ ...prev, colors: { ...prev.colors, [track.key]: color } }))
-            }
-          />
-        ))}
-      </div>
+      <TrackControlsBar controls={controls} badCount={badCount} />
+      <CorePlots cores={payload.cores} controls={controls} />
     </>
   );
 }
 
-/** Every track as a toggle chip, by group, above the plots. */
+/** The controls: the plotted tracks in plot order (drag to reorder, swatch
+ * to recolor, × to hide), then every track as a toggle chip by group. Every
+ * plot under them follows. */
 function TrackChips({
   tracks,
+  shown,
   isOn,
   onToggle,
+  onMove,
+  onColor,
   onDefaults,
   onAll,
   onNone,
@@ -204,8 +232,11 @@ function TrackChips({
   onShowBad,
 }: {
   tracks: TrackDef[];
+  shown: TrackDef[];
   isOn: (track: TrackDef) => boolean;
   onToggle: (track: TrackDef) => void;
+  onMove: (key: string, target: string | number) => void;
+  onColor: (track: TrackDef, color: string) => void;
   onDefaults: () => void;
   onAll: () => void;
   onNone: () => void;
@@ -213,15 +244,19 @@ function TrackChips({
   showBad: boolean;
   onShowBad: (show: boolean) => void;
 }) {
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [dropOn, setDropOn] = useState<string | null>(null);
   const groups = [...new Set(tracks.map((t) => t.group))];
   const linkClass = "cursor-pointer text-node hover:underline";
+  const rowLabel =
+    "w-full text-[11px] font-bold uppercase tracking-wide text-ink-faint sm:w-44 sm:shrink-0";
   return (
     <div className="mb-4 text-[13px]">
       <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="font-bold">
           Tracks{" "}
           <span className="font-normal text-ink-faint">
-            ({tracks.filter(isOn).length} of {tracks.length})
+            ({shown.length} of {tracks.length})
           </span>
         </span>
         <button type="button" className={linkClass} onClick={onDefaults}>
@@ -249,11 +284,85 @@ function TrackChips({
           </label>
         )}
       </div>
+
+      {/* The plotted tracks, in plot order. */}
+      <div className="mb-3 flex flex-wrap items-center gap-1.5 border-b border-gray-200 pb-3">
+        <span className={rowLabel}>Plotted, in order</span>
+        {shown.length === 0 && (
+          <span className="text-[12px] text-ink-faint">None: pick tracks below.</span>
+        )}
+        {shown.map((track) => (
+          // biome-ignore lint/a11y/noStaticElementInteractions: dragging is the pointer path; the grip button moves it by keyboard
+          <div
+            key={track.key}
+            draggable
+            onDragStart={(event: DragEvent<HTMLDivElement>) => {
+              event.dataTransfer.setData(DRAG_TYPE, track.key);
+              event.dataTransfer.effectAllowed = "move";
+              setDragging(track.key);
+            }}
+            onDragEnd={() => {
+              setDragging(null);
+              setDropOn(null);
+            }}
+            onDragOver={(event: DragEvent<HTMLDivElement>) => {
+              if (!event.dataTransfer.types.includes(DRAG_TYPE)) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+              setDropOn(track.key);
+            }}
+            onDragLeave={() => setDropOn((key) => (key === track.key ? null : key))}
+            onDrop={(event: DragEvent<HTMLDivElement>) => {
+              event.preventDefault();
+              const key = event.dataTransfer.getData(DRAG_TYPE);
+              if (key) onMove(key, track.key);
+              setDragging(null);
+              setDropOn(null);
+            }}
+            className={`inline-flex cursor-grab items-center gap-1 rounded-full border-2 py-0.5 pr-1 pl-1 text-[12px] font-bold active:cursor-grabbing ${
+              dragging === track.key ? "opacity-40" : ""
+            } ${dropOn === track.key && dragging !== track.key ? "bg-gray-100" : "bg-surface"}`}
+            style={{ borderColor: track.color, color: track.color }}
+          >
+            <button
+              type="button"
+              aria-label={`Move ${track.label}: left and right arrow keys`}
+              title="Drag to reorder, or use the left and right arrow keys"
+              onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+                const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+                if (!step) return;
+                event.preventDefault();
+                onMove(track.key, step);
+              }}
+              className="cursor-grab rounded px-0.5 text-[13px] leading-none text-gray-400 hover:text-gray-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+            >
+              ⠿
+            </button>
+            <input
+              type="color"
+              value={hex(track.color)}
+              onChange={(event) => onColor(track, event.target.value)}
+              aria-label={`Color of ${track.label}`}
+              title="Change the color"
+              className="size-[18px] cursor-pointer rounded-full border border-gray-300 bg-transparent p-0"
+            />
+            <span className="px-0.5">{track.label}</span>
+            <button
+              type="button"
+              aria-label={`Hide ${track.label}`}
+              title="Hide"
+              onClick={() => onToggle(track)}
+              className="cursor-pointer rounded-full px-1 text-[13px] leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
       {groups.map((group) => (
         <div key={group} className="mb-1.5 flex flex-wrap items-center gap-1.5">
-          <span className="w-full text-[11px] font-bold uppercase tracking-wide text-ink-faint sm:w-44 sm:shrink-0">
-            {group}
-          </span>
+          <span className={rowLabel}>{group}</span>
           {tracks
             .filter((t) => t.group === group)
             .map((track) => {
@@ -282,8 +391,8 @@ function TrackChips({
         </div>
       ))}
       <p className="m-0 mt-2 text-[12px] text-ink-faint">
-        Drag a plot's header to reorder it, click its swatch to change its color; drag on a plot to
-        zoom in on depth, double-click to reset.
+        Drag a plotted track to reorder it and click its swatch to change its color, for every plot
+        below; drag on a plot to zoom in on depth, double-click to reset.
       </p>
     </div>
   );
@@ -306,20 +415,14 @@ function CoreTracks({
   showBad,
   logOf,
   onToggleLog,
-  onMove,
-  onColor,
 }: {
   core: CoreData;
   tracks: TrackDef[];
   showBad: boolean;
   logOf: (track: TrackDef) => boolean;
   onToggleLog: (track: TrackDef) => void;
-  onMove: (key: string, target: string | number) => void;
-  onColor: (track: TrackDef, color: string) => void;
 }) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  const [dragging, setDragging] = useState<string | null>(null);
-  const [dropOn, setDropOn] = useState<string | null>(null);
   const [zoom, setZoom] = useState<[number, number] | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [brush, setBrush] = useState<{ from: number; to: number } | null>(null);
@@ -433,87 +536,36 @@ function CoreTracks({
           </>
         )}
       </div>
-      {/* Track headers: drag one onto another to reorder (or arrow keys on
-          its grip), the swatch picks its color, and the scale toggle. */}
+      {/* Track headers: the label and the scale toggle (order and colors
+          are picked in the controls above, for every plot). */}
       <div className="flex" style={{ paddingLeft: AXIS_LEFT, width }}>
         {panels.map(({ track, log }) => (
-          // biome-ignore lint/a11y/noStaticElementInteractions: dragging is the pointer path; the grip button moves it by keyboard
           <div
             key={track.key}
-            draggable
-            onDragStart={(event: DragEvent<HTMLDivElement>) => {
-              event.dataTransfer.setData(DRAG_TYPE, track.key);
-              event.dataTransfer.effectAllowed = "move";
-              setDragging(track.key);
-            }}
-            onDragEnd={() => {
-              setDragging(null);
-              setDropOn(null);
-            }}
-            onDragOver={(event: DragEvent<HTMLDivElement>) => {
-              if (!event.dataTransfer.types.includes(DRAG_TYPE)) return;
-              event.preventDefault();
-              event.dataTransfer.dropEffect = "move";
-              setDropOn(track.key);
-            }}
-            onDragLeave={() => setDropOn((key) => (key === track.key ? null : key))}
-            onDrop={(event: DragEvent<HTMLDivElement>) => {
-              event.preventDefault();
-              const key = event.dataTransfer.getData(DRAG_TYPE);
-              if (key) onMove(key, track.key);
-              setDragging(null);
-              setDropOn(null);
-            }}
-            className={`min-w-0 cursor-grab rounded-t border-b-2 px-1 pb-1 active:cursor-grabbing ${
-              dragging === track.key ? "opacity-40" : ""
-            } ${dropOn === track.key && dragging !== track.key ? "bg-gray-100" : ""}`}
+            className="flex min-w-0 items-center justify-between gap-1 border-b-2 px-1 pb-1"
             style={{ width: PANEL_WIDTH, marginRight: PANEL_GAP, borderColor: track.color }}
           >
-            <div
+            <span
               className="truncate text-[12px] font-bold leading-[18px]"
               style={{ color: track.color }}
               title={track.label}
             >
               {track.label}
-            </div>
-            <div className="flex items-center gap-1.5">
+            </span>
+            {!track.ratio?.log && (
               <button
                 type="button"
-                aria-label={`Move ${track.label}: left and right arrow keys`}
-                title="Drag to reorder, or use the left and right arrow keys"
-                onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
-                  const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
-                  if (!step) return;
-                  event.preventDefault();
-                  onMove(track.key, step);
-                }}
-                className="cursor-grab rounded px-0.5 text-[13px] leading-none text-gray-400 hover:text-gray-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+                aria-pressed={log}
+                title={log ? "Log scale (switch to linear)" : "Linear scale (switch to log)"}
+                aria-label={`Log scale for ${track.label}`}
+                onClick={() => onToggleLog(track)}
+                className={`shrink-0 cursor-pointer rounded px-1.5 text-[11px] leading-[18px] ${
+                  log ? "bg-gray-600 text-white" : "border border-gray-300 text-gray-500"
+                }`}
               >
-                ⠿
+                log
               </button>
-              <input
-                type="color"
-                value={hex(track.color)}
-                onChange={(event) => onColor(track, event.target.value)}
-                aria-label={`Color of ${track.label}`}
-                title="Change the color"
-                className="size-[18px] cursor-pointer rounded border border-gray-300 bg-transparent p-0"
-              />
-              {!track.ratio?.log && (
-                <button
-                  type="button"
-                  aria-pressed={log}
-                  title={log ? "Log scale (switch to linear)" : "Linear scale (switch to log)"}
-                  aria-label={`Log scale for ${track.label}`}
-                  onClick={() => onToggleLog(track)}
-                  className={`ml-auto shrink-0 cursor-pointer rounded px-1.5 text-[11px] leading-[18px] ${
-                    log ? "bg-gray-600 text-white" : "border border-gray-300 text-gray-500"
-                  }`}
-                >
-                  log
-                </button>
-              )}
-            </div>
+            )}
           </div>
         ))}
       </div>
