@@ -102,8 +102,9 @@ curl -s -o /dev/null -w "v1 undefined path: HTTP %{http_code}\n" "$V1/MagIC/nope
 curl -s -o /dev/null -w "v1 private without credentials: HTTP %{http_code}\n" "$V1/MagIC/private/search/contributions"
 
 echo "== plugin route guard =="
-curl -sf "$API/plugins/poles/plate-boundaries" | json '"poles on magic: %s" % d["type"]'
-curl -s -o /dev/null -w "poles on kdd: HTTP %{http_code}\n" "$V2/kdd/plugins/poles/plate-boundaries"
+curl -sf "$API/plugins/method-codes" | json '"method-codes on magic: %d groups" % len(d)'
+curl -s -o /dev/null -w "method-codes on kdd: HTTP %{http_code}\n" "$V2/kdd/plugins/method-codes"
+curl -sf "$V2/basemap/plates" | json '"plates: %d" % len(d["features"])'
 
 echo "== notification email (mailpit; the worker sends it asynchronously) =="
 MESSAGES=0

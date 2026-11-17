@@ -1887,7 +1887,7 @@ def test_api_mounts_every_node_router_once_under_v2(monkeypatch):
         "/v2/{repository}/private/contributions",
         "/v2/{repository}/workspaces",
         "/v2/{repository}/contributions/{contribution_id}/download",
-        "/v2/{repository}/plugins/poles/plate-boundaries",
+        "/v2/basemap/plates",
         "/v2/{repository}/plugins/depth-plot/contributions/{contribution_id}/measurements",
         "/v2/admin/users",
         "/v2/admin/nodes/{slug}/publish",
@@ -2338,6 +2338,54 @@ def test_map_points_from_a_search_doc():
         "body": "moon",
     }
     assert len(_map_points(contribution, "contribution", (170, -5, -170, 5))) == 1
+    # Plates narrow the drawn points the same way (and leave out other bodies').
+    on_plate = _map_points(contribution, "contribution", None, None, (), ("AF",))
+    assert [(p["lon"], p.get("body")) for p in on_plate] == [(10.0, None)]
+
+
+def test_plates_data_and_filter():
+    from fastapi import HTTPException
+
+    from fiesta.plates import in_plates, parse_plates, plates_geojson, plates_shape
+    from fiesta.search.queries import build_search_body
+
+    features = plates_geojson()["features"]
+    assert len(features) == 52
+    for feature in features:
+        geometry = feature["geometry"]
+        polygons = (
+            geometry["coordinates"]
+            if geometry["type"] == "MultiPolygon"
+            else [geometry["coordinates"]]
+        )
+        for ring in (ring for rings in polygons for ring in rings):
+            assert ring[0] == ring[-1], feature["properties"]
+            assert all(-180 <= lon <= 180 and -90 <= lat <= 90 for lon, lat in ring)
+    # Antarctica reaches the pole; the Pacific plate crosses the antimeridian.
+    for lat, lon, code in (
+        (19.6, -155.5, "PA"),  # Hawaii
+        (-17.7, 178.1, "AU"),  # Fiji
+        (-89.9, 30, "AN"),
+        (89.9, 0, "NA"),
+        (38.5, -98, "NA"),  # Kansas
+        (48.8, 2.3, "EU"),  # Paris
+        (-15, -55, "SA"),
+        (0, 20, "AF"),
+    ):
+        codes = [f["properties"]["code"] for f in features]
+        on = [c for c in codes if in_plates(lat, lon, (c,))]
+        assert on == [code], (lat, lon, on)
+    assert in_plates(19.6, 204.5, ("PA",))  # 0–360 longitudes too
+    assert in_plates(0, 0, ())
+    assert parse_plates(["pa,EU", "PA"]) == ("PA", "EU")
+    with pytest.raises(HTTPException):
+        parse_plates(["XX"])
+    shape = plates_shape(("PA", "EU"))
+    assert shape["type"] == "MultiPolygon" and len(shape["coordinates"]) >= 2
+    body = build_search_body(table="sites", query=None, plates=("EU",))
+    clause = next(f for f in body["query"]["bool"]["filter"] if "geo_shape" in f)
+    assert clause["geo_shape"]["summary._all._geo_point"]["shape"] == plates_shape(("EU",))
+    assert "geo_shape" not in str(build_search_body(table="sites", query=None))
 
 
 def test_map_points_name_the_rows_above_and_their_contribution():

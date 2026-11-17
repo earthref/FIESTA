@@ -1,6 +1,6 @@
 import * as maplibregl from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
-import { type FC, useEffect, useRef } from "react";
+import { type FC, useEffect, useMemo, useRef, useState } from "react";
 import { mapDim, useTheme } from "../../lib/theme";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
@@ -23,6 +23,7 @@ import {
   spotName,
 } from "./map-points";
 import { isOccluded, mapSize } from "./map-view";
+import { loadPlates, PLATE_COLOR } from "./plates";
 import { createPolarCapsLayer } from "./polar-caps";
 
 // MapLibre 6 can't find its worker inside a bundle: Vite bundles it as an
@@ -446,19 +447,26 @@ const labelPoint = ({ geometry }: GeoJSON.Feature): [number, number] | null => {
 const POLAR_LABEL_STYLE =
   `font:italic 11px 'Noto Sans',sans-serif;color:${UNDERSEA_COLOR};white-space:nowrap;pointer-events:none;` +
   "text-shadow:0 0 2px rgba(255,255,255,0.9),0 0 2px rgba(255,255,255,0.9)";
-const labelsControl = (initial: boolean, onChange: (on: boolean) => void): maplibregl.IControl => {
+// A button under the zoom buttons turning a layer on and off (dimmed and,
+// for text, struck through while off): `content` is its fixed markup.
+const toggleControl = (
+  name: string,
+  content: string,
+  initial: boolean,
+  onChange: (on: boolean) => void,
+): maplibregl.IControl => {
   const container = document.createElement("div");
   return {
     onAdd() {
       container.className = "maplibregl-ctrl maplibregl-ctrl-group";
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = "Aa";
+      button.innerHTML = content;
       let on = initial;
       const show = () => {
-        button.title = on ? "Hide labels" : "Show labels";
+        button.title = on ? `Hide ${name}` : `Show ${name}`;
         button.setAttribute("aria-pressed", String(on));
-        button.style.cssText = `font:bold 13px/29px sans-serif;color:#333;opacity:${on ? 1 : 0.45};text-decoration:${on ? "none" : "line-through"}`;
+        button.style.cssText = `font:bold 13px/29px sans-serif;color:#333;display:flex;align-items:center;justify-content:center;opacity:${on ? 1 : 0.45};text-decoration:${on ? "none" : "line-through"}`;
       };
       show();
       button.onclick = () => {
@@ -474,6 +482,12 @@ const labelsControl = (initial: boolean, onChange: (on: boolean) => void): mapli
     },
   };
 };
+
+// The plates button: a stretch of ridge offset by a transform fault.
+const PLATES_ICON =
+  '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke-width="1.8" ' +
+  `stroke-linejoin="round" stroke="${PLATE_COLOR}" aria-hidden="true">` +
+  '<path d="M3 2 5 6 4 9h6l1 3-1 4"/></svg>';
 
 // The box behind the records' labels (labelPoints), like the tooltip: white,
 // with a grey border, rounded corners and a slight shadow. Drawn at twice the
@@ -574,6 +588,10 @@ const MapLibreMap: FC<{
   lines?: MapLine[];
   // The points' circle radius in pixels, instead of 3.
   pointRadius?: number;
+  // Earth's plate boundaries (plates.ts) start shown; the map's plates
+  // button turns them on and off either way. In `plateColor`.
+  plates?: boolean;
+  plateColor?: string;
 }> = ({
   mode,
   body = "earth",
@@ -591,6 +609,8 @@ const MapLibreMap: FC<{
   context,
   lines,
   pointRadius = 3,
+  plates = false,
+  plateColor = PLATE_COLOR,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -617,8 +637,33 @@ const MapLibreMap: FC<{
   contextRef.current = context || [];
   // Plots the latest context points once the style has loaded.
   const setContextRef = useRef<(() => void) | null>(null);
-  const linesRef = useRef(lines || []);
-  linesRef.current = lines || [];
+  // The plate boundaries, under the other lines while shown (on Earth).
+  const [showPlates, setShowPlates] = useState(plates);
+  const showPlatesRef = useRef(showPlates);
+  showPlatesRef.current = showPlates;
+  const [plateLines, setPlateLines] = useState<[number, number][][] | null>(null);
+  const platesShown = showPlates && body === "earth";
+  useEffect(() => {
+    if (!platesShown || plateLines) return;
+    let current = true;
+    loadPlates().then((loaded) => {
+      if (current && loaded) setPlateLines(loaded.lines);
+    });
+    return () => {
+      current = false;
+    };
+  }, [platesShown, plateLines]);
+  const allLines = useMemo<MapLine[]>(
+    () => [
+      ...(platesShown && plateLines
+        ? plateLines.map((coords) => ({ coords, color: plateColor, width: 1.5, opacity: 0.8 }))
+        : []),
+      ...(lines || []),
+    ],
+    [platesShown, plateLines, plateColor, lines],
+  );
+  const linesRef = useRef(allLines);
+  linesRef.current = allLines;
   // The lines' layer, once the style has loaded.
   const linesLayerRef = useRef<LinesLayer | null>(null);
   // Dark mode's dimming of the imagery; applied to the map once the style has loaded.
@@ -804,7 +849,7 @@ const MapLibreMap: FC<{
       });
     map.on("move", showPolarLabels);
     map.addControl(
-      labelsControl(showLabels, (on) => {
+      toggleControl("labels", "Aa", showLabels, (on) => {
         try {
           localStorage.setItem(LABELS_KEY, on ? "on" : "off");
         } catch {
@@ -818,6 +863,13 @@ const MapLibreMap: FC<{
       }),
       "top-right",
     );
+    // Plate boundaries are Earth's.
+    if (body === "earth") {
+      map.addControl(
+        toggleControl("plate boundaries", PLATES_ICON, showPlatesRef.current, setShowPlates),
+        "top-right",
+      );
+    }
     const addLabels = (loaded: Labels | null) => {
       if (!loaded || removed) return;
       map.setGlyphs(loaded.glyphs);
@@ -1541,8 +1593,8 @@ const MapLibreMap: FC<{
   }, [context]);
 
   useEffect(() => {
-    linesLayerRef.current?.setLines(lines || []);
-  }, [lines]);
+    linesLayerRef.current?.setLines(allLines);
+  }, [allLines]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the dim reaches the map through dimRef
   useEffect(() => {

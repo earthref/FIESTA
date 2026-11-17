@@ -20,7 +20,8 @@ must fill them.
 
 `controlled_vocabularies.json` and `suggested_vocabularies.json`, plus
 `method_codes.json` (the method-code list the `method-codes` plugin serves and
-validates against) and `plate_boundaries.json`.
+validates against). The plate boundaries the maps draw are the platform's
+(`fiesta/backend/fiesta/data/plates.json`, every node's maps).
 
 ## Search
 

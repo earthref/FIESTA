@@ -19,7 +19,7 @@
 Source: `MagIC/client/modules/magic/components/search_poles_view.jsx`. The
 rebuild's poles view should match this. Backend already provides everything:
 `GET /v2/{node}/plugins/poles/base-texture` (earth relief JPEG),
-`GET /v2/{node}/plugins/poles/plate-boundaries` (GeoJSON), `GET /v2/{node}/search/poles`
+`GET /v2/basemap/plates` (GeoJSON, was the plugin's `plate-boundaries` route), `GET /v2/{node}/search/poles`
 (pole docs), and `config.plugins.poles` (colors, columns, filters, flags).
 
 ## ECharts-GL globe option (both globes share this)

@@ -39,6 +39,7 @@ from fiesta.db.models import Contribution, User
 from fiesta.domain.jsonld import contribution_jsonld
 from fiesta.domain.parse import ParsedContribution, ParseError, export_text, parse_text
 from fiesta.nodeconfig import ANY_TABLE, POSITION_COLUMNS, MapColor
+from fiesta.plates import in_plates, parse_plates
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import (
     ROW_SORT_PREFIX,
@@ -191,6 +192,8 @@ def _parse_has(node, table: str, has: list[str] | None) -> list[dict] | None:
 
 
 HasQuery = Annotated[list[str] | None, Query()]
+# The Geospatial filter's plates: `plate=` codes (fiesta/plates.py), repeated.
+PlateQuery = Annotated[list[str] | None, Query()]
 
 
 def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
@@ -299,6 +302,7 @@ async def search(
     facet_size: int = Query(100, ge=1, le=2000),
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     sort: str | None = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
@@ -324,6 +328,7 @@ async def search(
         count_field=level.count_field if level else None,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         sort=_grid_sort(node, table, sort),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
@@ -516,10 +521,12 @@ def _map_points(
     bbox: tuple[float, float, float, float] | None = None,
     color: MapColor | None = None,
     parents: tuple[str, ...] = (),
+    plates: tuple[str, ...] = (),
 ) -> list[dict]:
     """A doc's positions for the map: its `_geo_point` (a contribution's are
-    all of its rows', and only those inside `bbox` are drawn) and, without a
-    `bbox` (an area on Earth), its `_body_point`s with their `body`; what to
+    all of its rows', and only those inside `bbox` and on one of the `plates`
+    are drawn) and, without either (an area on Earth), its `_body_point`s with
+    their `body`; what to
     call it, the names of the rows above it (at its `parents` levels, top
     first), and its `color` value."""
     summary = source.get("summary") or {}
@@ -543,9 +550,13 @@ def _map_points(
     points = []
     for entry in geo if isinstance(geo, list) else [geo]:
         lat, lon = _to_float(entry.get("lat")), _to_float(entry.get("lon"))
-        if lat is not None and lon is not None and (len(geo) < 2 or _inside(lat, lon, bbox)):
+        if (
+            lat is not None
+            and lon is not None
+            and (len(geo) < 2 or (_inside(lat, lon, bbox) and in_plates(lat, lon, plates)))
+        ):
             points.append({**base, "lat": lat, "lon": lon})
-    if bbox is None:
+    if bbox is None and not plates:
         for entry in elsewhere if isinstance(elsewhere, list) else [elsewhere]:
             lat, lon = _to_float(entry.get("lat")), _to_float(entry.get("lon"))
             if lat is not None and lon is not None and entry.get("body"):
@@ -624,6 +635,7 @@ async def search_points(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -641,12 +653,14 @@ async def search_points(
     if color_by and color is None:
         raise HTTPException(400, f"{color_by!r} is not a map color of {table!r}")
     area = _parse_bbox(bbox)
+    plates = parse_plates(plate)
     body = build_search_body(
         table=table,
         query=query,
         size=MAP_PAGE_SIZE,
         ranges=_parse_ranges(range_),
         bbox=area,
+        plates=plates,
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -688,7 +702,9 @@ async def search_points(
             await _scroll(
                 node,
                 elsewhere,
-                lambda source: points.extend(_map_points(source, table, area, color, parents)),
+                lambda source: points.extend(
+                    _map_points(source, table, area, color, parents, plates)
+                ),
                 lambda: len(points) >= MAX_MAP_POINTS,
             )
             points = points[:MAX_MAP_POINTS]
@@ -702,7 +718,7 @@ async def search_points(
     total = await _scroll(
         node,
         body,
-        lambda source: points.extend(_map_points(source, table, area, color, parents)),
+        lambda source: points.extend(_map_points(source, table, area, color, parents, plates)),
         lambda: len(points) >= MAX_MAP_POINTS,
     )
     points = points[:MAX_MAP_POINTS]
@@ -849,6 +865,7 @@ async def search_values(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -866,6 +883,7 @@ async def search_values(
         size=MAP_PAGE_SIZE,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -925,6 +943,7 @@ async def search_histogram(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -954,6 +973,7 @@ async def search_histogram(
         size=0,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -1049,6 +1069,7 @@ async def search_numbers(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -1066,6 +1087,7 @@ async def search_numbers(
         size=0,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -1099,6 +1121,7 @@ async def search_has(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -1124,6 +1147,7 @@ async def search_has(
         size=0,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -1198,6 +1222,7 @@ async def search_filter_counts(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -1233,6 +1258,7 @@ async def search_filter_counts(
         size=0,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -1466,6 +1492,7 @@ async def download_results(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     sort: str | None = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
@@ -1490,6 +1517,7 @@ async def download_results(
             from_=0,
             ranges=_parse_ranges(range_) if own else None,
             bbox=_parse_bbox(bbox) if target in node.geo_tables else None,
+            plates=parse_plates(plate) if target in node.geo_tables else (),
             sort=_grid_sort(node, target, sort) if own else None,
             column_filters=_grid_filters(node, target, filter_) if own else [],
             has=_parse_has(
