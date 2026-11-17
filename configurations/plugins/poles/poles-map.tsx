@@ -25,7 +25,8 @@ const ellipse = (pole: Pole, color: string, width: number, segments?: number): M
   return coords ? [{ coords, color, width, opacity: 0.9 }] : [];
 };
 
-/** A pole's VGPs as dots, `share` of them (evenly spaced in its list). */
+/** A pole's VGPs as dots, `share` of them (evenly spaced in its list); each
+ * hovers as its pole and a click selects the pole (and its grid row). */
 const vgpDots = (
   pole: Pole,
   color: string,
@@ -35,11 +36,16 @@ const vgpDots = (
 ): MapLine[] => {
   const vgps = pole.vgps ?? [];
   const count = share >= 1 ? vgps.length : Math.ceil(vgps.length * share);
+  const id = String(pole.index);
+  const label =
+    pole.age !== undefined ? `VGP of this pole, ${formatAge(pole.age)}` : "VGP of this pole";
   return Array.from({ length: count }, (_, i) => ({
     coords: [vgps[Math.floor((i * vgps.length) / count)]],
     color,
     width,
     opacity,
+    id,
+    label,
   }));
 };
 
@@ -66,7 +72,7 @@ interface PolesMapProps {
  * each pole's uncertainty outline in its age colour (its a95 circle or dp/dm
  * ellipse, a ring the backend computed with PmagPy), over the VGPs averaged
  * into it as dots in the same colour (the selected pole's on top in the
- * selected colour). Replaces the legacy
+ * selected colour); clicking a VGP selects its pole. Replaces the legacy
  * pair of echarts-gl globes (view + antipode): the pole views show both
  * hemispheres' poles without one.
  */

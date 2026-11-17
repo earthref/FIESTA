@@ -569,7 +569,8 @@ const MapLibreMap: FC<{
   // leaves out. They can't be hovered or clicked.
   context?: MapPoint[];
   // Lines under the points (plate boundaries, uncertainty ellipses), drawn
-  // past Web Mercator's limit too (see lines-layer.ts).
+  // past Web Mercator's limit too (see lines-layer.ts). A dot with an `id`
+  // (a pole's VGP) hovers and selects as that point does.
   lines?: MapLine[];
   // The points' circle radius in pixels, instead of 3.
   pointRadius?: number;
@@ -1407,11 +1408,71 @@ const MapLibreMap: FC<{
       const key = features[0]?.properties?.key;
       return key ? pointsRef.current.index.get(key) : undefined;
     };
+    // The lines' dots that stand for a point (an `id`, e.g. a pole's VGPs),
+    // projected to the screen once per view: on the first hit test after a
+    // move or new lines.
+    let dots: { lines: MapLine[]; at: number[]; xs: Float32Array; ys: Float32Array } | null = null;
+    map.on("move", () => {
+      dots = null;
+    });
+    // The dot under the pointer, if no record is: the nearest (the topmost of
+    // equals) on the near side of the globe (the far side's are clipped).
+    const dotTest = (e: maplibregl.MapMouseEvent): MapLine | undefined => {
+      const lines = linesRef.current;
+      if (dots?.lines !== lines) {
+        const at = lines.flatMap((line, i) =>
+          line.id !== undefined && line.coords.length === 1 ? [i] : [],
+        );
+        const xs = new Float32Array(at.length);
+        const ys = new Float32Array(at.length);
+        at.forEach((i, k) => {
+          const [lon, lat] = lines[i].coords[0];
+          // Past ±89.99° Mercator y is infinite (as lines-layer clamps).
+          const { x, y } = map.project([lon, Math.max(-89.99, Math.min(89.99, lat))]);
+          xs[k] = x;
+          ys[k] = y;
+        });
+        dots = { lines, at, xs, ys };
+      }
+      if (dots.at.length === 0) return undefined;
+      // The Mercator map repeats the world sideways (as lines-layer does).
+      const world = globe ? 0 : map.project([180, 0]).x - map.project([-180, 0]).x;
+      const shifts = globe ? [0] : [-world, 0, world];
+      const near: [number, number][] = [];
+      for (let k = 0; k < dots.at.length; k++) {
+        const reach = Math.max(HIT_PX, (lines[dots.at[k]].width ?? 1) / 2 + 1);
+        for (const shift of shifts) {
+          const dx = dots.xs[k] + shift - e.point.x;
+          const dy = dots.ys[k] - e.point.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 <= reach * reach) near.push([d2, k]);
+        }
+      }
+      near.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
+      for (const [, k] of near) {
+        const line = lines[dots.at[k]];
+        const [lng, lat] = line.coords[0];
+        if (!globe || !isOccluded(map, { lng, lat })) return line;
+      }
+      return undefined;
+    };
+    // A dot's tooltip: its point's, with the dot's label.
+    const dotTooltip = (dot: MapLine) => {
+      const point = pointsRef.current.points.find((p) => p.id === dot.id);
+      return point ? markerTooltip([dot.label ? { ...point, label: dot.label } : point]) : null;
+    };
+    // While the view moves (a drag, a pole view's own panning), every frame
+    // would project the dots again.
+    const viewMoving = (e: maplibregl.MapMouseEvent) =>
+      map.isMoving() || (e.originalEvent as MouseEvent).buttons !== 0;
     map.on("mousemove", (e) => {
       if (overMarker) return;
       const members = hitTest(e);
-      canvas.style.cursor = members ? "pointer" : onOutline(e.point.x, e.point.y) ? "move" : "";
-      if (members) tooltip.show(markerTooltip(members), e.point.x, e.point.y);
+      const dot = members || viewMoving(e) ? undefined : dotTest(e);
+      const html = members ? markerTooltip(members) : dot ? dotTooltip(dot) : null;
+      canvas.style.cursor =
+        members || dot ? "pointer" : onOutline(e.point.x, e.point.y) ? "move" : "";
+      if (html) tooltip.show(html, e.point.x, e.point.y);
       else tooltip.scheduleHide();
     });
     map.on("movestart", tooltip.hide);
@@ -1419,6 +1480,10 @@ const MapLibreMap: FC<{
     map.on("click", (e) => {
       const members = hitTest(e);
       if (members?.length === 1) onSelectRef.current?.(members[0].id);
+      else if (!members) {
+        const id = dotTest(e)?.id;
+        if (id !== undefined) onSelectRef.current?.(id);
+      }
     });
 
     const observer =
