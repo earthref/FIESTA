@@ -3,9 +3,10 @@
 // Node configuration editing lives in admin-node.tsx.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { AdminGate, Field, NodeChip, RepoStatus, Tabs } from "../components/admin/admin-ui";
+import { NodeAdminLink, useOpenNodeAdmin } from "../components/admin/node-admin-link";
 import { ErrorMessage } from "../components/error-message";
 import { NodeMark } from "../components/node-mark";
 import { Badge } from "../components/ui/badge";
@@ -24,7 +25,6 @@ import {
 } from "../lib/admin";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import type { AdminParams } from "../router";
 
 // --- Nodes ----------------------------------------------------------------------
 
@@ -69,13 +69,9 @@ function NodesPanel({ superAdmin }: { superAdmin: boolean }) {
                     style={node.logo_style}
                   />
                   <div>
-                    <Link
-                      to="/admin/nodes/$slug"
-                      params={{ slug: node.slug }}
-                      className="underline"
-                    >
+                    <NodeAdminLink node={node} className="underline">
                       <NodeChip node={node} />
-                    </Link>
+                    </NodeAdminLink>
                     <div className="text-xs text-gray-500">{node.slug}</div>
                   </div>
                 </div>
@@ -115,7 +111,7 @@ function NodesPanel({ superAdmin }: { superAdmin: boolean }) {
 
 function NewNodeModal({ nodes, onClose }: { nodes: AdminNode[]; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const openNodeAdmin = useOpenNodeAdmin();
   const [key, setKey] = useState("");
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
@@ -127,7 +123,7 @@ function NewNodeModal({ nodes, onClose }: { nodes: AdminNode[]; onClose: () => v
       }),
     onSuccess: (node) => {
       queryClient.invalidateQueries({ queryKey: adminKeys.nodes });
-      navigate({ to: "/admin/nodes/$slug", params: { slug: node.slug } });
+      openNodeAdmin(node);
     },
   });
   const submit = (event: FormEvent) => {
@@ -490,11 +486,11 @@ function NodeEditingOff() {
   );
 }
 
-export function AdminPage() {
-  const search = useSearch({ from: "/admin" }) as AdminParams;
+/** /Admin/Nodes and /Admin/Accounts (portal-paths.ts ADMIN_TABS). */
+export function AdminPage({ tab: tabName }: { tab: string }) {
   const navigate = useNavigate();
   const config = useAdminConfig();
-  const tab = search.tab === "users" ? "users" : "nodes";
+  const tab = tabName === "Accounts" ? "users" : "nodes";
   return (
     <AdminGate>
       <div className="pb-10">
@@ -510,7 +506,12 @@ export function AdminPage() {
             { key: "users", label: "Accounts" },
           ]}
           active={tab}
-          onChange={(next) => navigate({ to: "/admin", search: { tab: next } })}
+          onChange={(next) =>
+            navigate({
+              to: "/Admin/$tab",
+              params: { tab: next === "users" ? "Accounts" : "Nodes" },
+            })
+          }
         />
         {config.isLoading ? (
           <Spinner />

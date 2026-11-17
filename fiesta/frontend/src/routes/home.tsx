@@ -11,6 +11,7 @@ import { api } from "../lib/api";
 import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { sanitizeHtml } from "../lib/sanitize";
+import { searchPath } from "../lib/search-state";
 import type { HomeCard, HomeNews, NodeConfig, SearchPage } from "../lib/types";
 import { cx } from "../lib/utils";
 import { type PluginHomeCard, pluginHomeCards, pluginResourceCards } from "../plugins";
@@ -87,18 +88,23 @@ function launchCards(config: NodeConfig): (PluginHomeCard & { icon?: string })[]
   const pluginCards = pluginHomeCards(config);
   const used = new Set<string>();
   const cards = quickLaunchViews(config).map((view) => {
-    const card = pluginCards.find((candidate) => candidate.search?.view === view.name);
+    const card = pluginCards.find((candidate) => candidate.view === view.name);
     if (card) used.add(card.key);
     return {
       key: `launch-${view.name}`,
       title: view.name === "Map" ? `${view.level}\nMap` : `${view.label}\nView`,
-      to: "/search",
-      search: { level: view.level, view: view.name },
+      level: view.level,
+      view: view.name,
       ...card,
       icon: view.icon,
     };
   });
   return [...cards, ...pluginCards.filter((card) => !used.has(card.key))];
+}
+
+/** Where a home card links: its search view, else its page. */
+function cardTo(card: PluginHomeCard): string | undefined {
+  return card.level ? searchPath(card.level, card.view) : card.to;
 }
 
 /** Resource cards for a node whose YAML defines none. */
@@ -117,7 +123,7 @@ function defaultResources(config: NodeConfig): HomeCard[] {
     title: "Vocabulary\nLists",
     icon: "list",
     corner_icon: "info",
-    to: "/vocabularies",
+    to: "/Vocabularies",
     href: null,
   });
   cards.push({
@@ -239,7 +245,7 @@ export function HomePage() {
           <div className="flex flex-wrap" style={threeCards}>
             <div className={threeCardClass} style={threeCard}>
               <IconButton
-                to="/search"
+                to="/Search"
                 icon="database"
                 cornerIcon="search"
                 title="Search Interface"
@@ -250,7 +256,7 @@ export function HomePage() {
               <>
                 <div className={threeCardClass} style={threeCard}>
                   <IconButton
-                    to="/upload"
+                    to="/Upload"
                     icon="table"
                     cornerIcon="add"
                     title="Upload Tool"
@@ -259,7 +265,7 @@ export function HomePage() {
                 </div>
                 <div className={threeCardClass} style={threeCard}>
                   <IconButton
-                    to="/private"
+                    to="/Private"
                     icon="file text outline"
                     cornerIcon="checkmark"
                     title="Private Workspace"
@@ -275,9 +281,15 @@ export function HomePage() {
               side by side when a node has several */}
           {launchCards(config).length > 0 && (
             <div className="flex gap-[0.875em]" style={{ marginTop: "0.875em" }}>
-              {launchCards(config).map(({ key, ...card }) => (
-                <div key={key} className="min-w-0 flex-1">
-                  <IconButton variant="wide" {...card} />
+              {launchCards(config).map((card) => (
+                <div key={card.key} className="min-w-0 flex-1">
+                  <IconButton
+                    variant="wide"
+                    title={card.title}
+                    subtitle={card.subtitle}
+                    icon={card.icon}
+                    to={cardTo(card)}
+                  />
                 </div>
               ))}
             </div>
@@ -304,7 +316,7 @@ export function HomePage() {
                 variant="wide"
                 fontSize={15}
                 titleEm={1}
-                to="/search"
+                to="/Search"
                 title={`View More Contributions in the ${config.key} Search Interface`}
               />
             </>
@@ -322,7 +334,7 @@ export function HomePage() {
             <>
               <p style={{ margin: "1em 0" }}>No news yet.</p>
               <p style={{ margin: "0 0 1em" }}>
-                <Link to="/contact" className="text-node-ink hover:underline">
+                <Link to="/Contact" className="text-node-ink hover:underline">
                   Contact the {config.key} team
                 </Link>
               </p>

@@ -537,6 +537,28 @@ re-applies the file to the cached references and their search docs.
 When omitted the API sorts by relevance if the query has free text and by
 `recent` otherwise.
 
+### Saved searches (`/v2/{repository}/searches`)
+
+The search page's URL is `/<Key>/Search/<level>/<view>?q=<id>`: the level and
+result view are path segments, and everything else is a saved search's
+`state` — `{query?, sort?, ranges?, filter?, has?, bbox?, area?, plates?,
+mine?, versions?, settings?}` (the search request params above, `query` the
+free text and tokens; `settings` maps `"<owner>.<name>"` view settings such as
+`map.color` or `poles.vgps` to any JSON). The id is a UUIDv5 of the node and
+the state's canonical JSON (`fiesta.services.searches`), so the same search
+always gets the same id and a saved search is never changed. Rows live in each
+node's schema (`searches`, and `search_uses`: one row per save or open, with
+the user if signed in and the level and view it was on).
+
+| Method | Path | Auth | Body / params → returns |
+|---|---|---|---|
+| POST | `/v2/{repository}/searches` | optional | `{state, level?, view?}` → `{id, state, created_at}` (the canonical state; empty fields dropped, unknown fields 422, over 16 kB 413) |
+| GET | `/v2/{repository}/searches/{id}` | optional | `level?`, `view?` → `{id, state, created_at}`; counts as an opening; 404 if unknown |
+| GET | `/v2/{repository}/searches/usage` | node admin | `days` (default 30), `limit` (default 50) → `{days, uses, searches, users, levels: [{level, view, uses}], keys: [{key, uses}], top: [{id, state, uses, users, last_used_at}]}`: the admin page's Searches tab |
+
+A link from before the saved searches (`/MagIC/search?q=basalt&level=Sites`,
+`?contribution=16901&tab=sites`) is saved and redirected by the SPA.
+
 ### Private workspace (`/v2/{repository}/private/contributions`, Bearer or Basic)
 
 | Method | Path | Body / params | Returns |

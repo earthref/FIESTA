@@ -85,14 +85,25 @@ served nodes are `fiesta-env.js`'s list in the multi-node layout, else the
 config route's `deployment_nodes`; on a production host (any host in the
 portal list) every link stays on production.
 
-References, Users and Admin (`/admin`, `/admin/nodes/<slug>`) belong to no node:
-they are FIESTA pages at the portal, the root of the origin
-(`http://localhost:8080/admin`), and wear the FIESTA identity
+SPA paths are PascalCase and match in any case (`/MagIC/Search` =
+`/magic/search`): `/<Key>/Search/<level>/<view>?q=<saved search>` (api.md
+"Saved searches"), `/<Key>/<id>/<tab>` (a contribution's modal:
+`/CDR/667/Contribution`), `/Upload`, `/Private`, `/Account`. Older links
+(`/MagIC/search?level=Sites&sort=…`, `?contribution=667&tab=sites`,
+`/contributions/667`, `/admin?tab=users`, `/admin/nodes/magic?section=files`)
+redirect (`fiesta/frontend/src/router.tsx`).
+
+References, Users and Admin (`/Admin`, `/Admin/Nodes`, `/Admin/Accounts`)
+belong to no node: they are FIESTA pages at the portal, the root of the origin
+(`http://localhost:8080/Admin`), and wear the FIESTA identity
 (`fiesta/frontend/src/lib/portal-paths.ts`). Links to them from a node's pages
 (the portal bar, the user menu's Admin entry) go through `portalPageUrl` in
 `portals.ts`; with one build per node that needs a FIESTA build at the parent
 of the node prefixes (`dev.earthref.org/`). Typed under a node
-(`/MagIC/admin`) they still load, FIESTA-branded.
+(`/MagIC/Admin/Nodes`) they still load, FIESTA-branded. A node's own settings
+are under the node, in its identity: `/MagIC/Admin`, `/MagIC/Admin/Data-Source`
+(the user menu's Admin entry for that node's admins); a node no app serves yet
+(just created) has them at the portal's `/Admin/Nodes/<slug>/<section>`.
 
 ## Seed data and local login
 
@@ -142,7 +153,7 @@ A local stack runs every node in **public contributions** mode (upload, publish,
 new versions), although `configurations/fiesta.yaml` puts deployments in **data-source**
 mode until the cutover from Meteor. To try a node in data-source mode, set
 `FIESTA_CONTRIBUTIONS_MODE=public,kdd=source` in `.env` (or on the `make up`
-line): the SPA stops offering uploads for KdD, `/admin/nodes/kdd?section=source`
+line): the SPA stops offering uploads for KdD, `/KdD/Admin/Data-Source`
 shows its sync, and `configurations/sources/kdd.py` can sync it from Meteor KdD. See
 [data-sources.md](data-sources.md).
 

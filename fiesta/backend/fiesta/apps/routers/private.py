@@ -402,7 +402,7 @@ async def activate(
         subject=f"[{node.node.key}] Contribution {contribution.id} published",
         body=(
             f"Your contribution {contribution.id} is now published{approved} at "
-            f"{node.node.links.website or ''}/contributions/{contribution.id}"
+            f"{node.node.links.website or ''}/{contribution.id}/Contribution"
         ),
     )
     return await workspace_out(session, contribution, user)

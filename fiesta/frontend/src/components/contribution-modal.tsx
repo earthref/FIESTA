@@ -7,6 +7,7 @@ import { IS_LOCAL_HOST, nodeUrl, siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { type RowMatch, useOpenContribution } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
+import { slugMatches } from "../lib/search-state";
 import type {
   ContributionRowStats,
   ContributionVersion,
@@ -477,13 +478,19 @@ function ModalBody({
       render: () => <JsonLdPanel id={id} privateKey={privateKey} />,
     });
   }
-  const current = tabs.find((entry) => entry.key === tab) ?? tabs[0];
+  // The URL names a tab by its label (/16901/Sites), any case; an older link
+  // by its key (?tab=sites).
+  const current =
+    tabs.find((entry) => slugMatches(entry.label, tab)) ??
+    tabs.find((entry) => entry.key === tab) ??
+    tabs[0];
+  const selectTab = (key: string) => onTab(tabs.find((entry) => entry.key === key)?.label ?? key);
 
   return (
     <>
       <ModalHeader id={id} config={config} doc={doc} privateKey={privateKey} onClose={onClose} />
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <TabList tabs={tabs} current={current} onSelect={onTab} />
+        <TabList tabs={tabs} current={current} onSelect={selectTab} />
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">{current.render()}</div>
       </div>
     </>
@@ -929,7 +936,7 @@ function PrepareVersion({ id, nodeKey }: { id: string; nodeKey: string }) {
   const prepare = useMutation({
     mutationFn: () =>
       api<{ id: number }>(`/private/contributions/${id}/versions`, { method: "POST" }),
-    onSuccess: () => window.location.assign(siteUrl("/private")),
+    onSuccess: () => window.location.assign(siteUrl("/Private")),
   });
   if (!user) return null;
   return (

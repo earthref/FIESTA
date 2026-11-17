@@ -5,6 +5,13 @@ import { useQueries } from "@tanstack/react-query";
 import type { ComponentType, ReactNode } from "react";
 import type { SearchParams } from "../components/filter-modals";
 import type { IconName } from "../components/ui/icon";
+
+// A view setting a plugin keeps in the search's saved state (lib/saved-search.tsx):
+// `useSearchSetting("<plugin>.<name>", default, isBoolean)` like useState.
+export { useSearchSetting } from "../lib/saved-search";
+export const isBoolean = (value: unknown): boolean => typeof value === "boolean";
+export const isString = (value: unknown): boolean => typeof value === "string";
+
 import type {
   FacetBucket,
   GridColumn,
@@ -115,8 +122,11 @@ export interface PluginHomeCard {
   key: string;
   title: string;
   subtitle?: ReactNode;
-  to: string;
-  search?: Record<string, unknown>;
+  /** A search view it opens (/Search/<level>/<view>)... */
+  level?: string;
+  view?: string;
+  /** ...or a page of the node ("/method-codes"). */
+  to?: string;
 }
 
 export interface ContributionTabContext {

@@ -82,18 +82,22 @@ def resolve(path: str, query: dict[str, str]) -> Target:
     if node is None:
         return Target(None, "portal" if not segments else "other")
     rest = segments[1:]
+    # SPA paths match in any case (/MagIC/Search, /MagIC/search).
+    first = rest[0].lower() if rest else ""
     cid = query.get("contribution", "")
     if cid.isdigit():
         return Target(node, "contribution", int(cid))
     if not rest:
         return Target(node, "home")
-    if len(rest) == 1 and rest[0].isdigit():
-        return Target(node, "contribution", int(rest[0]))
-    if len(rest) == 2 and rest[0] == "contributions" and rest[1].isdigit():
+    # /MagIC/20907 and /MagIC/20907/<tab> (a contribution's modal).
+    if len(rest) <= 2 and first.isdigit():
+        return Target(node, "contribution", int(first))
+    if len(rest) == 2 and first == "contributions" and rest[1].isdigit():
         return Target(node, "contribution", int(rest[1]))
-    if rest == ["search"]:
+    # /MagIC/Search[/<level>[/<view>]].
+    if first == "search" and len(rest) <= 3:
         return Target(node, "search")
-    if rest[0] in PRIVATE_ROUTES:
+    if first in PRIVATE_ROUTES:
         return Target(node, "private")
     if len(rest) == 1 and node.page(rest[0]):
         return Target(node, "page", page=rest[0])
@@ -161,7 +165,7 @@ def _links(items: list[tuple[str, str]]) -> str:
 
 def _node_links(node: NodeConfig) -> list[tuple[str, str]]:
     catalog = catalog_url(node)
-    return [(f"Search {node.node.key}", f"{catalog}/search")] + [
+    return [(f"Search {node.node.key}", f"{catalog}/Search")] + [
         (page.title, f"{catalog}/{page.slug}") for page in node.pages if page.menu != "hidden"
     ]
 
@@ -270,7 +274,7 @@ async def describe(request: Request, target: Target) -> Described:
         return default
     if target.kind == "search":
         default.title = f"Search {identity.key} — {identity.title}"
-        default.canonical = f"{catalog}/search"
+        default.canonical = f"{catalog}/Search"
         return default
     if target.kind == "page" and target.page:
         page = node.page(target.page)
@@ -446,7 +450,7 @@ async def llms_node(request: Request, node: NodeDep) -> PlainTextResponse:
 @node_router.get("/sitemap.xml", include_in_schema=False)
 async def sitemap(session: SessionDep, node: NodeDep) -> Response:
     catalog = catalog_url(node)
-    urls: list[tuple[str, str | None]] = [(catalog, None), (f"{catalog}/search", None)]
+    urls: list[tuple[str, str | None]] = [(catalog, None), (f"{catalog}/Search", None)]
     urls += [(f"{catalog}/{p.slug}", None) for p in node.pages if p.menu != "hidden"]
     rows = await session.execute(
         select(Contribution.id, Contribution.updated_at)

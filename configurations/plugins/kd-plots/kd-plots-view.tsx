@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { type PlotColors, plotColors, usePlotColors } from "@/lib/plot-colors";
 import type { SearchScope } from "@/lib/types";
 import { cx } from "@/lib/utils";
+import { isBoolean, isString, useSearchSetting } from "@/plugins";
 import {
   type ColorBy,
   type Group,
@@ -102,9 +103,13 @@ function Plots({
   onOpen?: (contributionId: string) => void;
 }) {
   const colors = usePlotColors();
-  const [view, setView] = useState<View>("spider");
-  const [colorBy, setColorByState] = useState<ColorBy>(
+  // The plot, its coloring, coordination and error bars are settings of the
+  // saved search (a shared link keeps them).
+  const [view, setView] = useSearchSetting<View>("kd-plots.view", "spider", isString);
+  const [colorBy, setColorByState] = useSearchSetting<ColorBy>(
+    "kd-plots.color",
     options.pattern_columns[0] ?? "contribution",
+    isString,
   );
   const [hidden, setHidden] = useState<Set<number>>(new Set());
   const setColorBy = (by: ColorBy) => {
@@ -120,8 +125,8 @@ function Plots({
     return inIt * 2 >= data.rows.length ? "incompatible" : "atomic";
   }, [data]);
   const order = orderPick ?? autoOrder;
-  const [cn, setCn] = useState<Coordination>("VIII");
-  const [errors, setErrors] = useState(true);
+  const [cn, setCn] = useSearchSetting<Coordination>("kd-plots.cn", "VIII", isString);
+  const [errors, setErrors] = useSearchSetting("kd-plots.errors", true, isBoolean);
 
   const { groups, of } = useMemo(() => groupPatterns(data.patterns, colorBy), [data, colorBy]);
   const ctx = useMemo<ChartContext>(

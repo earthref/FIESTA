@@ -139,7 +139,7 @@ async def node_admin_emails(session, slug: str) -> list[str]:
 
 
 def _workspace_url(node) -> str:
-    return f"{(node.node.links.website or '').rstrip('/')}/private"
+    return f"{(node.node.links.website or '').rstrip('/')}/Private"
 
 
 @router.get("/requests", response_model=list[RequestOut])
