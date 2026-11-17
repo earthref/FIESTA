@@ -13,6 +13,7 @@ import {
 } from "react";
 import { ColumnFilterButton } from "../components/column-filter-menu";
 import { ContributionModal } from "../components/contribution-modal";
+import { DownloadResultsModal } from "../components/download-results-modal";
 import { ErrorMessage } from "../components/error-message";
 import {
   ExistsModal,
@@ -29,7 +30,13 @@ import {
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
 import { SearchMap } from "../components/map/search-map";
 import { QuickLaunch, type QuickLaunchView } from "../components/quick-launch";
-import { contributionId, ResultDivider } from "../components/result-item";
+import {
+  citationOf,
+  contributionId,
+  firstString,
+  InlineHtml,
+  ResultDivider,
+} from "../components/result-item";
 import { columnsOf, RowsGrid, rowsOfHit } from "../components/rows-table";
 import {
   applicableFilters,
@@ -58,7 +65,6 @@ import { SortSelect } from "../components/ui/sort-select";
 import { PageSpinner, Spinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
@@ -77,7 +83,9 @@ import {
   cx,
   facetTitle,
   formatNumber,
+  getPath,
   getQueryToken,
+  normalizeView,
   parseQueryTokens,
   queryWithout,
   toggleQueryToken,
@@ -95,17 +103,13 @@ const PAGE_SIZE = 20;
 const MAX_RESULTS = 10_000;
 const pageTotal = (page: SearchPageData) => page.total;
 const pageResults = (page: SearchPageData) => page.results;
-/** The Rows grid's header sort names a raw row column: `rows.<column>:asc|desc`. */
+/** The Data grid's header sort names a raw row column: `rows.<column>:asc|desc`. */
 const ROWS_SORT = "rows.";
-/** The raw-row sub-tab's names: "Data", and "Rows" from older links and YAML. */
-const DATA_TAB_NAMES = new Set(["Data", "Rows"]);
-
-/** A sub-tab by name, the raw-row tab under either of its names. */
+/** A sub-tab by name; a renamed view's old name ("Rows") finds its new one. */
 function findSubTab<T extends { name: string }>(tabs: T[], name: string | null | undefined) {
   if (!name) return undefined;
-  return tabs.find(
-    (tab) => tab.name === name || (DATA_TAB_NAMES.has(name) && DATA_TAB_NAMES.has(tab.name)),
-  );
+  const wanted = normalizeView(name);
+  return tabs.find((tab) => tab.name === wanted);
 }
 const routeApi = getRouteApi("/search");
 const TAB_BORDER = "var(--er-edge)";
@@ -243,7 +247,43 @@ function areaText(area: Area): string {
   return `${latitude}, ${longitude}`;
 }
 
-// --- Rows view ----------------------------------------------------------------
+// --- Data view ----------------------------------------------------------------
+
+/** A Data grid group's header: the contribution its rows are from (opening
+ * it), its citation and version, and its reference's title. */
+function ContributionGroupHeader({
+  hit,
+  onOpen,
+}: {
+  hit: SearchResult;
+  onOpen: (id: string) => void;
+}) {
+  const id = contributionId(hit);
+  if (!id) return null;
+  const title = firstString(getPath(hit, "summary.contribution._reference.title"));
+  const citation = citationOf(hit);
+  const version = getPath(hit, "summary.contribution.version");
+  const versionText = version !== undefined && version !== null ? ` v. ${String(version)}` : "";
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => onOpen(id)}
+        title={`Open contribution ${id}`}
+        className="cursor-pointer font-semibold text-node-ink hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+      >
+        Contribution {id}
+      </button>
+      {citation && citation !== title && (
+        <span className="ml-2">
+          {citation}
+          {versionText}
+        </span>
+      )}
+      {title && <InlineHtml html={title} className="ml-2 text-gray-500" />}
+    </>
+  );
+}
 
 /** Legacy SearchDividedList placeholder: a 100px item with a "Loading" dimmer. */
 function LoadingItem({ divider }: { divider: boolean }) {
@@ -299,7 +339,7 @@ export function SearchPage() {
   // has not picked a sort, otherwise newest first.
   const sort = search.sort ?? (hasFreeText ? RELEVANCE_OPTION.value : SORT_OPTIONS[0].value);
   // The Summaries grid's header sort ("<column>:asc|desc") and column filters,
-  // both on this level's columns; the Rows grid's ("rows.<column>:asc|desc")
+  // both on this level's columns; the Data grid's ("rows.<column>:asc|desc")
   // on a raw row column. Either sorts the search itself, every match.
   const { headerSort, gridSort, rowsSort } = useMemo(() => {
     const header = parseGridSort(search.sort);
@@ -396,7 +436,7 @@ export function SearchPage() {
     [navigate],
   );
   // The row selected in the modal's level tab; replacing the entry drops the
-  // Rows grid's row to find (the history state) once it is found.
+  // Data grid's row to find (the history state) once it is found.
   const setModalRow = useCallback(
     (row: number | undefined) => navigate({ search: (prev) => ({ ...prev, row }), replace: true }),
     [navigate],
@@ -422,7 +462,7 @@ export function SearchPage() {
       }),
     [navigate],
   );
-  // The Rows grid's row last opened, highlighted (a new search replaces the rows).
+  // The Data grid's row last opened, highlighted (a new search replaces the rows).
   const [openedRow, setOpenedRow] = useState<string>();
   // The geospatial filter (the sidebar's Geospatial filter and its modal's
   // map) narrows every level with positions, and each level tab's count; it
@@ -476,7 +516,7 @@ export function SearchPage() {
     }),
   });
 
-  // Result sub-tabs: Summaries, Rows (non-contribution), Map (levels with
+  // Result sub-tabs: Summaries, Data (non-contribution), Map (levels with
   // positions), then plugin tabs. The
   // chosen view persists across levels and falls back to the first tab when a
   // level lacks it (legacy `state.view`).
@@ -489,7 +529,7 @@ export function SearchPage() {
   const subTabs = useMemo<SubTab[]>(() => {
     if (!config || !level) return [];
     const tabs: SubTab[] = [{ name: "Summaries" }];
-    if (level.table !== "contribution") tabs.push({ name: "Rows" });
+    if (level.table !== "contribution") tabs.push({ name: "Data" });
     if (level.geo && level.map !== false) tabs.push({ name: "Map" });
     return [...tabs, ...pluginSubTabs(config, level)];
   }, [config, level]);
@@ -602,7 +642,7 @@ export function SearchPage() {
             queryHas,
           ),
           ...scope,
-          // The Rows and Map sub-tabs' counts, with the first page.
+          // The Data and Map sub-tabs' counts, with the first page.
           totals: page === 0 || undefined,
         },
       }),
@@ -629,7 +669,7 @@ export function SearchPage() {
   const subTabCount = (tab: SubTab): number | null | undefined => {
     const first = results.isPending ? undefined : results.data;
     if (tab.name === "Summaries") return first?.total;
-    if (tab.name === "Rows") return first && (first.rows_total ?? first.total);
+    if (tab.name === "Data") return first && (first.rows_total ?? first.total);
     if (tab.name === "Map") return first && (first.mapped_total ?? null);
     if (tab.records) return first?.total;
     const index = countedTabs.indexOf(tab);
@@ -639,7 +679,7 @@ export function SearchPage() {
   // rows, those on the map, or a plugin view's own docs.
   const pluginTable = activeTab?.countTable;
   const bucketCount =
-    pluginTable === undefined && activeTab?.name === "Rows"
+    pluginTable === undefined && activeTab?.name === "Data"
       ? (bucket: FacetBucket) => bucket.rows_count
       : pluginTable === undefined && activeTab?.name === "Map"
         ? (bucket: FacetBucket) => bucket.mapped_count
@@ -766,8 +806,36 @@ export function SearchPage() {
         ]),
       ].filter((field) => !rangeFields.has(field))
     : [];
-  const topContributionId =
-    level?.table === "contribution" ? contributionId(hits[0] ?? {}) : undefined;
+  // Download Results: each level's matches (the open level's as its view
+  // counts them, the others as their tabs do) and the search it repeats.
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const downloadCounts = Object.fromEntries(
+    levels.map((entry, index) => [
+      entry.table,
+      entry.name === level?.name && !ownDocsView
+        ? results.data?.total
+        : countQueries[index]?.data?.total,
+    ]),
+  );
+  const downloadSearch = {
+    table: level?.table ?? "contribution",
+    params: {
+      ...searchRequestParams(
+        q,
+        1,
+        0,
+        false,
+        ownDocsView ? levelRanges : queryRanges,
+        area ? areaToBbox(area) : undefined,
+        sort,
+        ownDocsView ? undefined : gridFilterList,
+        has,
+      ),
+      size: undefined,
+      ...scope,
+    },
+  };
+  const anyResults = Object.values(downloadCounts).some((count) => (count ?? 0) > 0);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   // A new search starts at the top of its grid.
@@ -1229,47 +1297,35 @@ export function SearchPage() {
             style={{ margin: "1em 1em 0 0", minHeight: "2.71428571rem" }}
           />
           {/* Download Results: hidden when searching a private_key (legacy) */}
-          {!privateKey &&
-            (topContributionId ? (
-              <a
-                href={nodeUrl(`/contributions/${topContributionId}/download`)}
-                download
-                className="flex items-center self-start whitespace-nowrap bg-surface hover:bg-node-soft"
-                style={{
-                  ...basicButtonStyle("var(--node-ink)"),
-                  margin: "1em 1em 0 0",
-                  fontSize: "1rem",
-                  padding: "0.78571429em 1.5em",
-                  lineHeight: "1em",
-                }}
-              >
-                <Icon name="download" style={buttonIconStyle} />
-                Download Results
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                title={
-                  level.table === "contribution"
-                    ? "No results to download"
-                    : "Switch to the Contributions level to download results"
-                }
-                className="flex items-center self-start whitespace-nowrap bg-surface"
-                style={{
-                  ...basicButtonStyle("var(--node-ink)"),
-                  opacity: 0.45,
-                  margin: "1em 1em 0 0",
-                  cursor: "default",
-                  fontSize: "1rem",
-                  padding: "0.78571429em 1.5em",
-                  lineHeight: "1em",
-                }}
-              >
-                <Icon name="download" style={buttonIconStyle} />
-                Download Results
-              </button>
-            ))}
+          {!privateKey && (
+            <button
+              type="button"
+              disabled={!anyResults}
+              title={anyResults ? undefined : "No results to download"}
+              onClick={() => setDownloadOpen(true)}
+              className="flex items-center self-start whitespace-nowrap bg-surface enabled:hover:bg-node-soft disabled:cursor-default disabled:opacity-45"
+              style={{
+                ...basicButtonStyle("var(--node-ink)"),
+                margin: "1em 1em 0 0",
+                fontSize: "1rem",
+                padding: "0.78571429em 1.5em",
+                lineHeight: "1em",
+              }}
+            >
+              <Icon name="download" style={buttonIconStyle} />
+              Download Results
+            </button>
+          )}
+          {downloadOpen && (
+            <DownloadResultsModal
+              open
+              onClose={() => setDownloadOpen(false)}
+              nodeKey={config.key}
+              levels={levels}
+              counts={downloadCounts}
+              search={downloadSearch}
+            />
+          )}
         </div>
 
         {/* Results flex row with independent scroll regions */}
@@ -1510,8 +1566,8 @@ export function SearchPage() {
                         />
                       </div>
                     )}
-                    {activeTab?.name === "Rows" && (
-                      // Rows run edge to edge of the view, as Summaries do.
+                    {activeTab?.name === "Data" && (
+                      // The Data grid runs edge to edge of the view, as Summaries does.
                       <div style={{ margin: "0 -1em 1em" }}>
                         <RowsGrid
                           items={rowItems}
@@ -1535,6 +1591,22 @@ export function SearchPage() {
                           scrollRef={scrollerRef}
                           onRange={paged.onRange}
                           footer={windowNote}
+                          // A header row wherever the contribution changes.
+                          groupKey={(index) => {
+                            const hit = paged.items[index];
+                            return hit && contributionId(hit);
+                          }}
+                          groupHeader={(index) => {
+                            const hit = paged.items[index];
+                            return (
+                              hit && (
+                                <ContributionGroupHeader
+                                  hit={hit}
+                                  onOpen={(id) => openContribution(id, level.table)}
+                                />
+                              )
+                            );
+                          }}
                         />
                       </div>
                     )}

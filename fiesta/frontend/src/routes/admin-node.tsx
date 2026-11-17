@@ -43,7 +43,7 @@ import {
 } from "../lib/admin";
 import { api } from "../lib/api";
 import type { LogoStyle } from "../lib/types";
-import { cx } from "../lib/utils";
+import { cx, normalizeView } from "../lib/utils";
 import type { AdminNodeParams } from "../router";
 
 type Section =
@@ -297,7 +297,7 @@ function formOf(s: NodeSettings): SettingsForm {
     map_level: s.search.map_level ?? "",
     quick_launch: (s.search.quick_launch ?? []).join(", "),
     default_views: s.search.levels.map((level) =>
-      level.default_view === "Rows" ? "Data" : (level.default_view ?? ""),
+      level.default_view ? normalizeView(level.default_view) : "",
     ),
   };
 }

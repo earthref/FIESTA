@@ -10,6 +10,7 @@ import {
   TIMESCALE_RANKS,
   type TimescaleUnit,
   textOn,
+  unitSpan,
 } from "../lib/timescale";
 import { cx } from "../lib/utils";
 
@@ -80,8 +81,7 @@ export function TimescaleStrip({
           </span>
           <div ref={row === 0 ? trackRef : undefined} className="relative flex-1 overflow-hidden">
             {rows[row].map(({ unit, lo, hi }) => {
-              const picked =
-                near(selected.lo, toValue(unit.min)) && near(selected.hi, toValue(unit.max));
+              const picked = isPicked(unit, selected, toValue);
               const show = () => setHover({ unit, center: (lo + hi) / 2, row });
               return (
                 <button
@@ -146,7 +146,19 @@ function findUnits(text: string): TimescaleUnit[] {
   ];
 }
 
-const near = (a: number, b: number) => Math.abs(a - b) <= 1e-5 * Math.max(Math.abs(b), 1e-9);
+const near = (a: number, b: number) =>
+  a === b || Math.abs(a - b) <= 1e-5 * Math.max(Math.abs(b), 1e-9);
+
+/** Whether the selection is a unit's range (`unitSpan`: open below for one
+ * that reaches the present). */
+const isPicked = (
+  unit: TimescaleUnit,
+  selected: { lo: number; hi: number },
+  toValue: (ma: number) => number,
+) => {
+  const [min, max] = unitSpan(unit);
+  return near(selected.lo, toValue(min)) && near(selected.hi, toValue(max));
+};
 
 /**
  * A named age range: a box to type a geologic time unit's name in, over the
@@ -168,9 +180,7 @@ export function TimescalePicker({
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(0);
-  const current = TIMESCALE.find(
-    (unit) => near(selected.lo, toValue(unit.min)) && near(selected.hi, toValue(unit.max)),
-  );
+  const current = TIMESCALE.find((unit) => isPicked(unit, selected, toValue));
   const matches = open ? findUnits(text) : [];
   const at = Math.min(cursor, matches.length - 1);
 

@@ -226,7 +226,7 @@ class SearchLevel(BaseModel):
     @field_validator("default_view", mode="before")
     @classmethod
     def _rows_is_data(cls, value: Any) -> Any:
-        return "Data" if value == "Rows" else value
+        return normalize_view(value) if isinstance(value, str) else value
 
     @model_validator(mode="after")
     def _unique_columns(self) -> "SearchLevel":
@@ -234,6 +234,17 @@ class SearchLevel(BaseModel):
         if dupes := sorted({k for k in keys if keys.count(k) > 1}):
             raise ValueError(f"search level {self.name!r} repeats grid columns {dupes}")
         return self
+
+
+# Result sub-tabs renamed since their names were first stored (filter `views`,
+# a plugin's `after_sub_tab`): the old name is read as the new.
+RENAMED_VIEWS = {"Rows": "Data"}
+
+
+def normalize_view(name: str) -> str:
+    """A result sub-tab's current name for `name`, which may be a legacy one
+    (`Rows` -> `Data`)."""
+    return RENAMED_VIEWS.get(name, name)
 
 
 class SearchFilter(BaseModel):
@@ -260,8 +271,10 @@ class SearchFilter(BaseModel):
     ticked one `has=<table>:<column>` (with data) or `has=!<table>:<column>`
     (has the table, not that column) on `summary._has.<table>`.
     `levels` / `views` restrict where the control shows: search level names and
-    result sub-tab names (Summaries, Rows, Map on levels with positions, a plugin
-    tab); empty means everywhere. `timescale` (range, on a field of ages in
+    result sub-tab names (Summaries, Data, Map on levels with positions, a plugin
+    tab); empty means everywhere. The Data view was called Rows until
+    2026-11-16: a legacy `Rows` (a YAML or a revision published before the
+    rename) is read as `Data` (`normalize_view`). `timescale` (range, on a field of ages in
     years): the geologic time scale's units under the histogram, each a
     shortcut to its age range.
     """
@@ -277,6 +290,18 @@ class SearchFilter(BaseModel):
     max: float | None = None
     timescale: bool = False
     date: bool = False
+
+    @field_validator("views", mode="before")
+    @classmethod
+    def _normalize_views(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return value
+        out: list = []
+        for name in value:
+            name = normalize_view(name) if isinstance(name, str) else name
+            if name not in out:
+                out.append(name)
+        return out
 
     @model_validator(mode="after")
     def _check_field(self) -> "SearchFilter":
@@ -363,12 +388,16 @@ class IntervalSpec(BaseModel):
     best estimate's column (`age`), `sigma` its standard deviation's
     (`age_sigma`; a list is tried in order, the first with a value used),
     widened to `sigma_multiple` of it either side (2: about a 95% window); the
-    conversion's `bounds` are the explicit low and high."""
+    conversion's `bounds` are the explicit low and high. `tables`, when set,
+    are the only tables whose rows give intervals (KArAr leaves out its
+    measurements, whose `age` is one heating step's apparent age, not an age
+    of the record); empty means every table's rows."""
 
     name: str
     value: str | None = None
     sigma: list[str] = []
     sigma_multiple: float = 2.0
+    tables: list[str] = []
 
     @field_validator("sigma", mode="before")
     @classmethod
@@ -424,11 +453,20 @@ class UnitConversion(BaseModel):
                 raise ValueError(f"interval {spec.name!r} needs a value column or bounds")
         return self
 
+    def gives_intervals(self, table: str | None) -> bool:
+        """Whether a table's rows give intervals (any table's without
+        `interval.tables`, or when the table is not known)."""
+        spec = self.interval
+        return spec is not None and (not spec.tables or table is None or table in spec.tables)
+
     def interval_of(self, row: dict) -> RowInterval | None:
         """A row's interval in the base unit, whatever of value, sigma, low
         and high it has: each end is the explicit bound, else value -/+
         sigma_multiple x sigma, else the value; a side with none is open.
-        None without a known unit or any of them."""
+        In years BP a sigma window of a value at or before the present (>= 0)
+        stops at the present (0.02 ± 0.015 Ma: 0 – 0.05 Ma, not from -10 ka):
+        only a value already after 1950 (negative) is younger. Stated bounds
+        are kept as contributed. None without a known unit or any of them."""
         spec = self.interval
         if spec is None:
             return None
@@ -441,6 +479,8 @@ class UnitConversion(BaseModel):
         spread = spec.sigma_multiple * sigma if value is not None and sigma is not None else 0.0
         if low is None and value is not None:
             low = value - spread
+            if self.years_bp and value >= 0 and low < 0:
+                low = 0.0
         if high is None and value is not None:
             high = value + spread
         if low is None and high is None:
@@ -493,9 +533,17 @@ class UnitConversion(BaseModel):
     def all_columns(self) -> list[str]:
         return [*self.columns, *self.scaled]
 
+    @property
+    def years_bp(self) -> bool:
+        """Whether the base unit is years BP (0 = 1950 CE, the present)."""
+        return (self.unit or "").strip().lower() == "years bp"
+
     def convert(self, row: dict) -> dict[str, float]:
         """A row's values of these columns in the base unit (none without a
-        known unit)."""
+        known unit). An uncertainty is a size, never negative. A negative
+        factor reverses order, so the bounds trade places, also when a row
+        has only one: an age_high of 1600 Years AD (no later than 1600 AD) is
+        the low bound of 350 years BP (no younger than that)."""
         unit = str(row.get(self.unit_column) or self.default_unit or "").strip()
         factor = self.factors.get(unit)
         if factor is None:
@@ -505,11 +553,14 @@ class UnitConversion(BaseModel):
         for column in self.all_columns:
             if (value := number(row.get(column))) is not None:
                 out[column] = (
-                    value * factor + offset if column in self.columns else value * abs(factor)
+                    value * factor + offset if column in self.columns else abs(value * factor)
                 )
-        if factor < 0 and self.bounds and all(c in out for c in self.bounds):
+        if factor < 0 and self.bounds:
             low, high = self.bounds
-            out[low], out[high] = out[high], out[low]
+            swapped = {high: out[low]} if low in out else {}
+            if high in out:
+                swapped[low] = out[high]
+            out = {k: v for k, v in out.items() if k not in self.bounds} | swapped
         return out
 
 

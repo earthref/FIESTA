@@ -135,3 +135,14 @@ export function queryWithout(q: string, fields: string[]): string {
     tokens.filter(([field]) => !fields.includes(field)),
   );
 }
+
+/** Search result sub-tabs renamed since links and node configs first stored
+ * their names (a `view=` bookmark, a filter's `views`): the Data view was
+ * called Rows until 2026-11-16. The backend reads node configs the same way
+ * (nodeconfig.py `RENAMED_VIEWS`). */
+const RENAMED_VIEWS: Record<string, string> = { Rows: "Data" };
+
+/** A result sub-tab's current name for `name`, which may be a legacy one. */
+export function normalizeView(name: string): string {
+  return RENAMED_VIEWS[name] ?? name;
+}

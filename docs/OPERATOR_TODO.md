@@ -251,6 +251,19 @@ configurations/rd/README.md.
   template on its own, so contributions indexed after the deploy are fine. Production
   needs the same rebuild at cutover. Claude needs nothing after this.
 
+## 2026-11-16 — Age filter fixes (negative ages, uncertainty roll-up)
+
+- [ ] **Rebuild the MagIC, KArAr, ERDA and SC search indexes on dev** once the "age
+  filter fixes" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`,
+  then `karar`, `erda`, `sc`; one rebuild also covers the 2026-11-13 item above if it is
+  still open). The shape of `summary._interval.age` is unchanged, but its values are
+  not: a lone `age_low`/`age_high` in years AD now points the right way, a young age's
+  2σ window stops at the present instead of running to negative ages, and KArAr leaves
+  measurement step ages out of its specimens', samples' and contributions' ages. Until
+  the rebuild, docs indexed before the deploy keep the old intervals (the Age filter
+  can match a KArAr contribution by a stray step age, and histograms reach below zero).
+  Production needs the same rebuild at cutover. Claude needs nothing after this.
+
 ## 2026-11-13 — dev host unresponsive
 
 - [ ] **Check fiesta-ct (dev.earthref.org).** From about 20:51 UTC every API request
@@ -568,8 +581,8 @@ Every path outside the repo has to follow; the layout PR waits for the first ite
 - [ ] **Rebuild every node's search index after the records-and-rows change**
   (`fiesta rebuild --yes` per node, dev and production; covers the two rebuild
   items above). A level's rows sharing a name are now one doc, so Summaries
-  counts records and Rows their rows. Until the rebuild, old one-row docs
-  show Summaries = Rows, and the Rock Magnetism view says nothing is indexed.
+  counts records and Data (then Rows) their rows. Until the rebuild, old one-row docs
+  show Summaries = Data, and the Rock Magnetism view says nothing is indexed.
 - [ ] **Check the Rock Magnetism view against real use** with a rock magnetist
   (e.g. on dev after the rebuild): the panel set, and the rule that reads a
   contribution's coercivities/MDFs as mT when their median is above 1 T.

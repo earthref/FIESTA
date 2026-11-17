@@ -13,7 +13,7 @@ export interface RowMatch {
 
 declare module "@tanstack/react-router" {
   interface HistoryState {
-    /** Set by the search page's Rows grid; the modal swaps it for `?row=`. */
+    /** Set by the search page's Data grid; the modal swaps it for `?row=`. */
     rowMatch?: RowMatch;
   }
 }
