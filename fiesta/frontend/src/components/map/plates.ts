@@ -4,7 +4,7 @@ import { apiUrl } from "../../lib/base";
 /**
  * Earth's present-day tectonic plates (Bird 2003, PB2002), from the API's
  * /basemap/plates (fiesta/backend/fiesta/plates.py): every map's plate
- * boundaries (its plates button) and the Geospatial filter's plate list.
+ * boundaries (its Plates toggle) and the Geospatial filter's plate list.
  */
 
 export type Plate = {

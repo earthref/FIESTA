@@ -68,7 +68,7 @@ interface PolesMapProps {
 /**
  * The poles on the search map's MapLibre views (globe, Mercator, and a globe
  * over either pole, where most poles crowd), with the plate boundaries (on by
- * default here, the map's plates button) and
+ * default here, the map's Plates toggle) and
  * each pole's uncertainty outline in its age colour (its a95 circle or dp/dm
  * ellipse, a ring the backend computed with PmagPy), over the VGPs averaged
  * into it as dots in the same colour (the selected pole's on top in the
@@ -148,7 +148,7 @@ export default function PolesMap({
             points={points}
             lines={lines}
             pointRadius={5}
-            // The plate boundaries start shown here (the map's plates button).
+            // The plate boundaries start shown here (the map's Plates toggle).
             plates
             plateColor={plateColor}
             // Not `fit`: a pole map always opens on the whole globe (the world
