@@ -11,6 +11,7 @@ import {
 } from "./basemap";
 import type { Body } from "./bodies";
 import { BODY_BASEMAPS } from "./body-basemaps";
+import { geologyTiles } from "./geology-tiles";
 import { createLinesLayer, type LinesLayer, type MapLine } from "./lines-layer";
 import {
   type Area,
@@ -713,6 +714,8 @@ const MapLibreMap: FC<{
     // A body's raster labels, but not over a pole, where its zoom-0 tiles'
     // names would be stretched across the whole view.
     const bodyLabels = sign ? undefined : basemap.labels;
+    // The geologic map at one level of detail for the view (geology-tiles.ts).
+    const geology = basemap.geology && geologyTiles(basemap.geology.tiles, basemap.geology.maxzoom);
     const { points: initialPoints } = pointsRef.current;
     // The focus key the view was last centred for.
     let focused: unknown = null;
@@ -775,15 +778,16 @@ const MapLibreMap: FC<{
               maxzoom: basemap.labelsMaxzoom ?? basemap.maxzoom,
             },
           }),
-          ...(basemap.geology && {
-            geology: {
-              type: "raster",
-              tiles: [basemap.geology.tiles],
-              tileSize: basemap.geology.tileSize,
-              maxzoom: basemap.geology.maxzoom,
-              attribution: basemap.geology.attribution,
-            },
-          }),
+          ...(basemap.geology &&
+            geology && {
+              geology: {
+                type: "raster",
+                tiles: geology.tiles,
+                tileSize: basemap.geology.tileSize,
+                maxzoom: basemap.geology.maxzoom,
+                attribution: basemap.geology.attribution,
+              },
+            }),
           points: { type: "geojson", data: collection([]) },
           area: { type: "geojson", data: collection([]) },
           context: { type: "geojson", data: collection([]) },
@@ -859,6 +863,7 @@ const MapLibreMap: FC<{
         ],
       },
     });
+    const detachGeology = geology?.attach(map, "geology");
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     // The attribution starts as just its (i) button. MapLibre opens it the
     // first time it collapses it to the button (once sources have credits);
@@ -1630,6 +1635,7 @@ const MapLibreMap: FC<{
       container.removeEventListener("pointerup", onMoveEnd, true);
       container.removeEventListener("pointercancel", onMoveEnd, true);
       container.removeEventListener("touchstart", onTouchStart, true);
+      detachGeology?.();
       map.remove();
     };
   }, [mode, body]);
