@@ -30,7 +30,7 @@ import {
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
 import { parsePlates, usePlates } from "../components/map/plates";
 import { SearchMap } from "../components/map/search-map";
-import { QuickLaunch, type QuickLaunchView } from "../components/quick-launch";
+import { type QuickLaunchView, quickLaunchViews } from "../components/quick-launch";
 import {
   citationOf,
   contributionId,
@@ -957,6 +957,10 @@ export function SearchPage() {
       sort: headerSort ? undefined : search.sort,
     });
   };
+  // The quick-launch buttons, less the one for the open level and view.
+  const launchViews = quickLaunchViews(config).filter(
+    (view) => !(view.level === level.name && view.name === (activeTab?.name ?? "Summaries")),
+  );
   // A quick-launch button: its view on its level (the open level keeps its filters).
   const launch = (target: QuickLaunchView) => {
     const entry = levels.find((candidate) => candidate.name === target.level);
@@ -1326,34 +1330,33 @@ export function SearchPage() {
               Clear
             </button>
           </form>
-          {/* Quick launch (node YAML `search.quick_launch`): the main views,
-              beside the search box, on the search box's line height. */}
-          <QuickLaunch
-            config={config}
-            onLaunch={launch}
-            current={{ level: level.name, view: activeTab?.name }}
-            className="self-start"
-            style={{ margin: "1em 1em 0 0", minHeight: "2.71428571rem" }}
-          />
-          {/* Download Results: hidden when searching a private_key (legacy) */}
-          {!privateKey && (
-            <button
-              type="button"
-              disabled={!anyResults}
-              title={anyResults ? undefined : "No results to download"}
-              onClick={() => setDownloadOpen(true)}
-              className="flex items-center self-start whitespace-nowrap bg-surface enabled:hover:bg-node-soft disabled:cursor-default disabled:opacity-45"
-              style={{
-                ...basicButtonStyle("var(--node-ink)"),
-                margin: "1em 1em 0 0",
-                fontSize: "1rem",
-                padding: "0.78571429em 1.5em",
-                lineHeight: "1em",
-              }}
+          {/* Quick launch (node YAML `search.quick_launch`): the main views
+              beside the search box, as basic buttons on its line height; the
+              open view's button is hidden. */}
+          {launchViews.length > 0 && (
+            <nav
+              aria-label="Quick launch"
+              className="flex flex-wrap items-start self-start"
+              style={{ margin: "1em 1em 0 0", gap: "0.5em" }}
             >
-              <Icon name="download" style={buttonIconStyle} />
-              Download Results
-            </button>
+              {launchViews.map((view) => (
+                <button
+                  key={view.name}
+                  type="button"
+                  onClick={() => launch(view)}
+                  className="flex cursor-pointer items-center whitespace-nowrap bg-surface hover:bg-node-soft"
+                  style={{
+                    ...basicButtonStyle("var(--node-ink)"),
+                    fontSize: "1rem",
+                    padding: "0.78571429em 1.5em",
+                    lineHeight: "1em",
+                  }}
+                >
+                  <Icon name={view.icon} style={buttonIconStyle} />
+                  {view.label}
+                </button>
+              ))}
+            </nav>
           )}
           {downloadOpen && (
             <DownloadResultsModal
@@ -1540,11 +1543,35 @@ export function SearchPage() {
                 options={sortOptions}
                 onChange={(next) => setSearch({ sort: next })}
                 className="self-center"
-                // Auto left margin pushes it right; 1rem right margin matches the
-                // Download Results button's, so their right edges line up. (An
-                // inline `margin` shorthand would override an `ml-auto` class.)
-                style={{ margin: "0 1rem 0 auto" }}
+                // Auto left margin pushes it right, with Download Results after
+                // it. (An inline `margin` shorthand would override an `ml-auto`
+                // class.)
+                style={{ margin: privateKey ? "0 1rem 0 auto" : "0 0 0 auto" }}
               />
+              {/* Download Results, in the sort dropdown's node-colored pill:
+                  hidden when searching a private_key (legacy) */}
+              {!privateKey && (
+                <button
+                  type="button"
+                  disabled={!anyResults}
+                  title={anyResults ? undefined : "No results to download"}
+                  onClick={() => setDownloadOpen(true)}
+                  className="flex items-center self-center whitespace-nowrap bg-node font-bold text-white enabled:cursor-pointer enabled:hover:bg-node-dark focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-1 disabled:cursor-default disabled:opacity-45"
+                  style={{
+                    margin: "0 1rem 0 0.5em",
+                    padding: "0.5em",
+                    fontSize: "0.92857143rem",
+                    lineHeight: "1em",
+                    borderRadius: "0.28571429rem",
+                  }}
+                >
+                  <Icon
+                    name="download"
+                    style={{ width: "0.857rem", height: "0.857rem", marginRight: "0.4em" }}
+                  />
+                  Download Results
+                </button>
+              )}
             </div>
 
             {activeTab?.name === "Map" ? (

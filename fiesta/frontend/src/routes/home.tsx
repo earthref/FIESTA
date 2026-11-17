@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton, type IconButtonProps } from "../components/icon-button";
-import { QuickLaunch } from "../components/quick-launch";
+import { quickLaunchViews } from "../components/quick-launch";
 import { isSourceMode } from "../components/source-mode-notice";
 import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
@@ -13,7 +13,7 @@ import { useNodeConfig } from "../lib/config";
 import { sanitizeHtml } from "../lib/sanitize";
 import type { HomeCard, HomeNews, NodeConfig, SearchPage } from "../lib/types";
 import { cx } from "../lib/utils";
-import { pluginHomeCards, pluginResourceCards } from "../plugins";
+import { type PluginHomeCard, pluginHomeCards, pluginResourceCards } from "../plugins";
 
 const RULE = "var(--er-line)";
 
@@ -78,6 +78,27 @@ export function Rule() {
       }}
     />
   );
+}
+
+/** The quick-launch views as wide cards, in their order: a plugin's own home
+ * card where it has one for the view ("Poles / View"), else "<level> / Map" or
+ * "<view> / View"; then any plugin card for a view not launched. */
+function launchCards(config: NodeConfig): (PluginHomeCard & { icon?: string })[] {
+  const pluginCards = pluginHomeCards(config);
+  const used = new Set<string>();
+  const cards = quickLaunchViews(config).map((view) => {
+    const card = pluginCards.find((candidate) => candidate.search?.view === view.name);
+    if (card) used.add(card.key);
+    return {
+      key: `launch-${view.name}`,
+      title: view.name === "Map" ? `${view.level}\nMap` : `${view.label}\nView`,
+      to: "/search",
+      search: { level: view.level, view: view.name },
+      ...card,
+      icon: view.icon,
+    };
+  });
+  return [...cards, ...pluginCards.filter((card) => !used.has(card.key))];
 }
 
 /** Resource cards for a node whose YAML defines none. */
@@ -249,15 +270,12 @@ export function HomePage() {
             )}
           </div>
 
-          {/* Quick launch: the node's main search views (Map, plugin views), one
-              click away under the Search Interface card (2026-11 decision). */}
-          <QuickLaunch config={config} className="mt-[0.875em]" />
-
-          {/* Plugin cards (legacy: the full-width "Poles / View" tiny card),
+          {/* Quick launch (2026-11 decision): the node's main search views as
+              legacy's full-width "Poles / View" tiny cards, with their icons,
               side by side when a node has several */}
-          {pluginHomeCards(config).length > 0 && (
+          {launchCards(config).length > 0 && (
             <div className="flex gap-[0.875em]" style={{ marginTop: "0.875em" }}>
-              {pluginHomeCards(config).map(({ key, ...card }) => (
+              {launchCards(config).map(({ key, ...card }) => (
                 <div key={key} className="min-w-0 flex-1">
                   <IconButton variant="wide" {...card} />
                 </div>

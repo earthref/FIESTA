@@ -597,18 +597,21 @@ ui grid divided → Grid.Row
   From 2026-09-28 the News divider header has no top margin at ≥1024px, where it
   opens its own column level with the main column; stacked below, it keeps it.
 - **FIESTA deviation (2026-11-16, team meeting decision): quick-launch
-  buttons.** A row of small node-outlined buttons, an icon and a short label
-  each, under the primary card row (there is no "PulseView" element; it sits
-  by the Search Interface card, the main search entry) and on the search page
-  after the search box's Clear button, before Download Results, on the search
-  box's line (`components/quick-launch.tsx`). They open the node's main views in one
-  click: Map on `search.map_level` (MagIC: Sites), then each plugin search
+  buttons.** On the home page, the full-width "Poles / View" tiny cards under
+  the primary card row, one per view, side by side, each with its icon left of
+  its title (a plugin's own home card where it has one, else "Sites / Map" or
+  "<view> / View"). On the search page, basic node-ink buttons (the old
+  Download Results style: icon + label) after the search box's Clear button,
+  on its line, the open view's button hidden; Download Results moved to the
+  sub-tab bar, right of the sort dropdown, in its node-colored pill (2026-11-16
+  follow-up). The Map button names its level ("Sites Map"). They open the
+  node's main views in one click (`components/quick-launch.tsx`): Map on
+  `search.map_level` (MagIC: Sites), then each plugin search
   view the node has (Poles, Rock Magnetism, Kd Plots, Age Distribution, ...),
   or the names `search.quick_launch` lists, in its order. A node only gets
   buttons for views it has: no Map without a level with a map, no Poles
   without the poles plugin. On the search page the open level keeps its
-  filters; another level opens as its level tab would, and the open view's
-  button shows pressed. The legacy "Poles / View" cards stay. Alongside, a
+  filters; another level opens as its level tab would. Alongside, a
   level's `default_view` (Summaries, Data or Map) is the sub-tab its level tab
   opens on; MagIC, KArAr and CDR open Measurements on Data, as legacy (rows
   only) did. Legacy had neither.
