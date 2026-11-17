@@ -151,14 +151,6 @@ Last updated: 2026-11-16
 
 ## 2026-11-16 — CDR XRF columns and depth plots
 
-- [ ] **Rebuild the CDR index on dev.** PR #241 added 31 `measurements` columns to
-      CDR 1.0 (25 XRF elements plus `xrf_total_cps`, `mo_inc`, `mo_coh`, `xrf_mse`,
-      `xrf_dead_time`, `xrf_processing_params`). The search index drops columns the
-      model lacks, so the elements already in the 18 OSU-MGR XRF contributions
-      (666–683) stay out of search, filters and the Data tab until a rebuild. After the
-      deploy, run `fiesta rebuild --yes` with `FIESTA_NODE=cdr` on fiesta-ct (and again at
-      the production cutover). The depth plots read the files, so they show the new
-      elements already. Check: the CDR Measurements filters list Silicon and Barium.
 - [ ] **OSU-MGR pipeline: magnetic susceptibility mapping.** If OSU-MGR MST data is
       added to CDR, check `osu-mgr-pipeline/cdr_preview/parsers.py` first: it maps both
       Geotek `MS1` (loop) and `MS2` (point sensor) to `mag_susc_chi_mass`, so one
@@ -940,7 +932,9 @@ created it, without a password, on the first record. The owner maps are in the
 - [x] **CDR XRF element columns approved and added** (2026-11-16, PR #241): the user
       asked for the columns the XRF contributions carry; 25 elements and the
       scanner's normalisation columns are now in `configurations/cdr/data_models/1.0.json`,
-      so FIESTA's CDR import no longer flags them. A rebuild on dev is still due (above).
+      so FIESTA's CDR import no longer flags them. CDR rebuilt on dev 2026-11-16
+      (`fiesta-cdr-build-b5e41653…`, 682 contributions, 18 min) and locally; dev search
+      returns `si`, `ba`, `la`, `nd` for contribution 668. Rebuild again at the production cutover.
 
 - [x] **Branch protection and Actions token on FIESTA** (2026-10-22): ruleset
       "Protect main" (PR + 1 approval + `CI` + `check-labels`, admin bypass PR-only),
