@@ -76,7 +76,7 @@ export function UpgradePage() {
         renamed, split and merged as the data models record, and the report lists everything that
         changed or was dropped. Nothing is uploaded or kept. To put the file in your private
         workspace, import it on the{" "}
-        <Link to="/upload" className="text-node-ink underline">
+        <Link to="/Upload" className="text-node-ink underline">
           upload page
         </Link>
         , which upgrades it the same way.

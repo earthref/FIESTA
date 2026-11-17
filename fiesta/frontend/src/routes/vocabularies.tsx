@@ -9,7 +9,7 @@ import { api } from "../lib/api";
 import type { Vocabularies, Vocabulary } from "../lib/types";
 import { cx } from "../lib/utils";
 
-const routeApi = getRouteApi("/vocabularies");
+const routeApi = getRouteApi("/Vocabularies");
 const ITEM_LIMIT = 300;
 
 function VocabularyEntry({

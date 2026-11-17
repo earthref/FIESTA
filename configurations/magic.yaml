@@ -29,6 +29,10 @@ search:
     geologic: [plate_blocks, terranes, geological_province_sections, tectonic_settings]
     geographic: [continent_ocean, country, ocean_sea, region, village_city, location, location_type, location_alternatives]
   placeholder: 'e.g. metamorphic "field intensity" -precambrian'
+  # The quick-launch Map button opens Sites' map (the default would be the
+  # first level with one, Locations); the buttons are Map, then the plugin
+  # views (Poles, Rock Magnetism, ...) unless `quick_launch` lists them.
+  map_level: Sites
   # Ordered search tabs; `table` is the doc `type` in the index and the
   # data-model table the rows come from.
   # `columns` are each level's Summaries tiles (fiesta.search.grid; none = the
@@ -136,6 +140,8 @@ search:
       table: measurements
       count_field: summary.measurements._n_results
       map: false
+      # Legacy opened Measurements on its rows (it had no Summaries view).
+      default_view: Data
       columns:
         - { cell: record }
         - { cell: map }
@@ -168,10 +174,10 @@ search:
   extra_types: []
   # Filter sidebar controls (facet / range / bbox / numeric / exists), edited in the admin
   # UI's Search Filters tab. Facets aggregate on summary._all.<field>.raw and show
-  # on every level's Summaries, Rows and Map views; the poles range/bbox filters
+  # on every level's Summaries, Data and Map views; the poles range/bbox filters
   # show on the Locations level's Poles view (the `poles` plugin indexes
   # summary.poles.age in years, hence the Ma scale).
-  # The Summaries / Rows / Map views list a filter per column with data:
+  # The Summaries / Data / Map views list a filter per column with data:
   # `numeric` adds every number column of the level as a range filter of its
   # own (summary._num, in its data-model unit), `text` every text column (and
   # a record's inherited geography) as a facet, and `exists` With Data and
@@ -182,11 +188,11 @@ search:
   # its age_unit), matching a record any of whose intervals overlaps the range
   # typed in Ma with the time scale. Plugin views keep their own filters.
   filters:
-    - { type: range, label: Publication Year, field: summary.contribution._reference.year, views: [Summaries, Rows, Map] }
-    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Locations, Sites, Samples, Specimens], views: [Summaries, Rows, Map] }
-    - { type: numeric, label: Numeric, views: [Summaries, Rows, Map] }
-    - { type: text, label: Text, views: [Summaries, Rows, Map] }
-    - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map] }
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year, views: [Summaries, Data, Map] }
+    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Locations, Sites, Samples, Specimens], views: [Summaries, Data, Map] }
+    - { type: numeric, label: Numeric, views: [Summaries, Data, Map] }
+    - { type: text, label: Text, views: [Summaries, Data, Map] }
+    - { type: exists, label: With / Without Data, views: [Summaries, Data, Map] }
     - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Locations], views: [Poles] }
     - { type: range, label: Pole A95, field: summary.poles.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
     - { type: bbox, label: Geospatial, levels: [Locations], views: [Poles] }
@@ -209,10 +215,10 @@ search:
     - { type: facet, field: plate_blocks, views: [Rock Magnetism] }
     - { type: facet, field: tectonic_settings, views: [Rock Magnetism] }
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
-    - { type: facet, field: id, label: Contribution ID, views: [Summaries, Rows, Map] }
-    - { type: facet, field: doi, label: Contribution DOI, views: [Summaries, Rows, Map] }
-    - { type: facet, field: contributor, label: Contributor, views: [Summaries, Rows, Map] }
-    - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true, views: [Summaries, Rows, Map] }
+    - { type: facet, field: id, label: Contribution ID, views: [Summaries, Data, Map] }
+    - { type: facet, field: doi, label: Contribution DOI, views: [Summaries, Data, Map] }
+    - { type: facet, field: contributor, label: Contributor, views: [Summaries, Data, Map] }
+    - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true, views: [Summaries, Data, Map] }
   # The Map view's "Color by" menu: a column (offered on the levels whose table
   # has it) or a summary.* path, parsed as a number; `scale` as a range
   # filter's. Age is a record's median age in years BP (summary._interval
@@ -334,7 +340,7 @@ plugins:
   poles:
     display_columns: [pole_lat, pole_lon, pole_alpha95, age, age_unit]
     base_level: Locations # the Poles view is a sub-tab of this level, after `after_sub_tab`
-    after_sub_tab: Rows
+    after_sub_tab: Data
     # Poles are colored by an age gradient (young -> old): yellow -> red,
     # black for unknown age, purple for the selected pole.
     age_color: { young: "#ffff00", old: "#ff0000", unknown: "#000000", selected: "#800080" }
@@ -351,7 +357,7 @@ plugins:
     file: method_codes.json # in magic/: {group: {label, codes: [{code, definition}]}}
 
 features:
-  plugins: [poles, rock-mag, pmag-plots, method-codes, sample-tiles, magic-3-upgrade]
+  plugins: [poles, rock-mag, pmag-plots, method-codes, sample-tiles, magic-3-upgrade, pmag-lab-formats]
   # Home page content (legacy client/modules/magic/components/home.jsx + home_news.jsx).
   home:
     # `ui nine cards` resource row: Semantic icon names; `to` = SPA route, `href` = external.

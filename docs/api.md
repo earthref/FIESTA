@@ -58,8 +58,10 @@ Two schemes are accepted; the private routes take either.
 | GET | `/v2/basemap/moon` | — | JPEG: the Moon (LROC WAC) as a 1024×512 plate carrée image, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on the Moon |
 | GET | `/v2/portal/users` | — | `{nodes, total, users: [{id, name, handle, orcid, counts, total}]}`: every user with a public contribution (activated, latest, not deleted) and how many they have per node; no email. Query `q` (every word in name/handle/ORCID), `sort` (`total`, a node slug, `name`, `handle`, `orcid`), `order` (`asc`\|`desc`), `offset`, `limit` (≤ 1000, default 100). The portal's Users page |
 | GET | `/v2/portal/references` | — | `{nodes, total, references: [{doi, citation, title, journal, year, long_citation, counts, total}]}`: every reference DOI (normalized, upper case) a public contribution cites and how many cite it per node; the metadata from the `doi_references` cache, `null` until fetched. Same query parameters (`sort` also `citation`, `title`, `year`, `doi`; blanks sort last). The portal's References page |
+| GET | `/v2/portal/stats` | — | `{nodes: {<slug>: {contributions, contributors, active}}}`: per web node, its public contributions, the distinct users who contributed them, and its latest, undeleted contributions (private workspace ones included, as a count only) created or revised in the last 182 days (imported revisions keep the source's timestamps); cached 5 minutes. The portal home's node buttons |
 | GET | `/v2/portal/references/{doi}` | — | one cached DOI's `{reference, abstract?, openalex?, citations_by_year?, topics?, keywords?, open_access?}` (see "Search & retrieval", `summary.contribution._reference`); 404 until fetched. The contribution panel's Reference section |
 | GET | `/v2/basemap/undersea-features` | — | GeoJSON `FeatureCollection` of the IHO-IOC GEBCO Gazetteer of Undersea Feature Names (NOAA NCEI's feature service), each `{name, kind: point\|line\|area}` with areas reduced to their middle point; fetched once a day and cached, for the Map tab's labels |
+| GET | `/v2/basemap/plates` | — | GeoJSON `FeatureCollection` of Earth's present-day tectonic plates (Bird 2003, PB2002: 52 plates), each `{code, name}`, its polygons split at the antimeridian and closed over a pole where they circle one; served from the repo (`fiesta/backend/fiesta/data/plates.json`) with `Cache-Control: no-cache` and an ETag of its content (304 to a matching `If-None-Match`), so a changed file reaches browsers at once, for every map's plate boundaries and the Geospatial filter's plates |
 | GET | `/v2/seo/head/{path}` | — | HTML fragment for the SPA shell's `<head>` (nginx SSI, `fiesta.apps.routers.seo`): `<title>`, description, canonical link and Open Graph tags for the SPA path as requested (`/MagIC/20907`, `/MagIC/search?contribution=20907`, `/MagIC/about`), plus JSON-LD: a public contribution's `Dataset` (as `/contributions/{id}/jsonld`), a node home's `DataCatalog`; `<meta name="robots" content="noindex">` off the `api.site_url` host and for private, unknown or account pages. Always 200 |
 | GET | `/v2/seo/body/{path}` | — | HTML fragment inside the shell's root element: the same page as plain HTML for crawlers that run no JavaScript (a contribution's summary, a content page's text without markup, a node's links); React replaces it on start |
 | GET | `/v2/robots.txt` | — | robots.txt (served at `/robots.txt`): crawlers and AI crawlers allowed, account routes disallowed, every served node's sitemap listed; `Disallow: /` off the `api.site_url` host |
@@ -172,6 +174,9 @@ after its YAML is merged and deployed, because the frontend is built per node.
 | GET | `/v2/{repository}/config/vocabularies/suggested` | same shape |
 | GET | `/v2/{repository}/config/vocabularies/plugins` | the `cv()` lists active plugins supply (method codes): `{<name>: {label, case_insensitive, items: [{item, label}]}}`, `label` = the item's definition or null; the grid editor's pulldowns |
 | POST | `/v2/{repository}/upgrade` | JSON `{text, unknown_columns?: keep\|drop, renames?: {"table.column": name}, defaults?: {key: bool}}` → `{upgraded, from_version, to_version, guessed, text, report, report_text}`: contribution text in an older data-model version upgraded to the latest (`fiesta.domain.upgrade` + the active plugins' `upgrade_steps`), or `upgraded: false` (text and report null) when it is already in the latest version or in none the node knows. The version is the contribution table's `data_model_version`/`magic_version`, else guessed from the tables and columns. `report`: `{steps, notes: [{level, kind, message, step, table, column, to, count}], defaults: [{key, label, on, count, step}], rows_in, rows_out}` — kinds `renamed`, `merged`, `dropped_column`, `dropped_value`, `dropped_row`, `dropped_table`, `unknown_column`, `unknown_table`, `converted`, `conversion`, `merged_rows`, `collision`, `version`. Columns and tables the old model does not define are kept under their own names unless `unknown_columns` is `drop`; `renames` apply before upgrading (`""` drops a column); `defaults` switches the old model's blank defaults. Stateless (nothing is stored) but a contributor action: Bearer or Basic auth (401 without), the body capped at the upload limit (`FIESTA_MAX_UPLOAD_BYTES`, 512 MiB like the SPA's nginx; 413 over it, by `Content-Length` before reading or while a chunked body streams), and the conversion runs in a worker thread; 422 when the text does not parse |
+| GET | `/v2/{repository}/import-formats` | → `[{key, label, description, extensions, multi_file, plugin, options_schema}]`: file formats the active plugins convert to the node's text format in the upload page's import step (`FiestaPlugin.import_formats`, `fiesta.services.import_formats`; MagIC's lab instrument formats are the `pmag-lab-formats` plugin). `options_schema` is the format's options model's JSON schema (an enum may carry `x-enum-labels`). Public |
+| POST | `/v2/{repository}/import-formats/sniff` | JSON `{files: [{name, head}]}` (`head`: the file's first 16 KB, base64; up to 1000 files) → `{auto_pick, files: [{name, format, confidence, companion_of}]}`: per file, the format most sure of it (`confidence` 0–1; the import step picks it at `auto_pick`, 0.8, or more) and, for a file a confident multi-file format reads with another (a CIT `.sam` file's specimen files), that file's name. Public; capped at 24 MB |
+| POST | `/v2/{repository}/import-formats/{key}/convert` | JSON `{files: [{name, data}], options?}` (`data` base64; the file read as this format first, then the companions it reads; `options`: only those the contributor set) → `{format, label, plugin, files, tool: {name, version, function}, options, options_set, text, tables: {table: rows}, hierarchy: [{table, count}], notes: [{level, kind, message, count}], report_text}`: the files converted in a temporary directory, in a worker thread; `text` is the node's multi-table text the import step reads as its sheets, `hierarchy` the row counts of the node's hierarchy tables, `notes` kinds `converter` (what the converter printed), `default` (an option left at a default that shapes the result), `hint` (e.g. every specimen its own sample and site), and `report_text` the report the upload page keeps beside the originals (`<name>-conversion-report.txt`). Stateless but a contributor action: Bearer or Basic auth (401 without), capped at the upload limit (413), 404 for a format the node does not have, 422 for options that do not fit the schema or a failed conversion (the detail names the converter's error and first warnings) |
 
 `GET /v2/{repository}/config` response:
 
@@ -196,7 +201,7 @@ after its YAML is merged and deployed, because the frontend is built per node.
   ],
   "facets": ["method_codes", "geologic_classes"],
   "filters": [
-    {"type": "facet", "field": "method_codes", "label": null, "levels": [], "views": ["Summaries", "Rows"], "unit": null, "scale": 1.0, "min": null, "max": null},
+    {"type": "facet", "field": "method_codes", "label": null, "levels": [], "views": ["Summaries", "Data"], "unit": null, "scale": 1.0, "min": null, "max": null},
     {"type": "range", "field": "summary.poles.age", "label": "Age", "levels": ["Locations"], "views": ["Poles"], "unit": "Ma", "scale": 1000000.0, "min": null, "max": null},
     {"type": "bbox", "field": null, "label": "Geospatial", "levels": ["Locations"], "views": ["Poles"], "unit": null, "scale": 1.0, "min": null, "max": null}
   ],
@@ -211,6 +216,8 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "doi_prefix": "10.7288",
   "geography": {"geologic": ["plate_blocks", "terranes"], "geographic": ["country", "location"]},
   "search_placeholder": "e.g. metamorphic \"field intensity\" -precambrian",
+  "map_level": "Sites",
+  "quick_launch": null,
   "plugins": {"poles": { /* frontend_config per active plugin */ }, "method-codes": {"has_codes": true}},
   "deployment_nodes": ["MagIC", "KdD", "CDR", "KArAr", "ERDA", "OSU-MGR"],
   "hidden_nodes": ["OSU-MGR"]
@@ -220,11 +227,19 @@ after its YAML is merged and deployed, because the frontend is built per node.
 `search_levels[].geo` is true for a level whose rows carry a position (the area
 filter narrows it); `map` is the node YAML's `search.levels[].map`, false for a
 geo level that gets no Map tab and no layer on a contribution's Map tab (MagIC's
-measurements, whose positions only repeat their specimens').
+measurements, whose positions only repeat their specimens'). `default_view` is
+the YAML's `search.levels[].default_view` (`Summaries`, `Data` or `Map`; null:
+Summaries, and the level tab keeps the open sub-tab).
+
+`map_level` is the level the quick-launch Map button opens (the YAML's
+`search.map_level`, else the first record level with a map; null when no level
+has one) and `quick_launch` the YAML's `search.quick_launch`, the buttons'
+names in order (null: Map, then every plugin view the node has).
 
 `filters` are the node YAML's `search.filters`: the sidebar controls, each
-restricted to the search `levels` and result `views` (Summaries, Rows, a plugin
-tab) it names, empty meaning all. `facets` lists the facet filters' fields (what
+restricted to the search `levels` and result `views` (Summaries, Data, a plugin
+tab) it names, empty meaning all (a legacy `Rows`, the Data view's name until
+2026-11-16, is read and served as `Data`). `facets` lists the facet filters' fields (what
 `facets=true` aggregates; the pre-2026-09 YAML key `search.facets` still loads as
 facet filters). `map_colors` are the node YAML's `search.map_colors`, what the
 Map tab's "Color by" menu offers (as `color_by` on `/search/{table}/points`) on
@@ -259,13 +274,15 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet, a text column of the level (the `text` filter's), or a facet of the level's grid columns, else 422; `id` and `contributor` aggregate the contribution block's `summary.contribution.id` / `_contributor.raw`, keys always strings), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below), `source` (repeatable `summary.<block>.<name>`, 1–50: each result holds only those fields, for a view paging through thousands of matches) | `SearchPage` |
-| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
-| GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `SearchValues` |
-| GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (1–200; default from how many values there are, 2·n^⅓ between 10 and 100), `log` (bool), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `SearchHistogram` |
-| GET | `/v2/{repository}/search/{table}/numbers` | `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, columns: {<column>: n}}` — the level's number columns (`summary._num.<column>`, data-model order) and how many matches have a value of each, zeros included (the `numeric` filter's column picker) |
-| GET | `/v2/{repository}/search/{table}/filters` | `count` (repeated: `geo`, `bbox`, `numeric`, `exists`, `facet:<column>`, `range:<path>`, or `text:*` / `numeric:*` for a `facet:<column>` / `range:summary._num.<column>` key per text / number column of the level; else 422), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, counts: {<key>: n}}` — of the matches, how many have a value for each sidebar filter (a position, any number column, any recorded table, the facet's column, the range's field), zeros included: the count beside each filter in the search sidebar, which hides a filter at zero (and lists the `text` / `numeric` filters' columns by the keys `text:*` / `numeric:*` return) |
-| GET | `/v2/{repository}/search/{table}/has` | `of` (one of the level's `exists_tables`, else 422), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, with_table, columns: {<column>: n}}` — of the matches, how many have the table `of` and how many have a value in each of its columns (data-model order, zeros included); those without a column are `with_table` − n (the `exists` filter's modal; the caller leaves `of`'s own `has` entries out) |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet, a text column of the level (the `text` filter's), or a facet of the level's grid columns, else 422; `id` and `contributor` aggregate the contribution block's `summary.contribution.id` / `_contributor.raw`, keys always strings), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `plate` (repeatable plate code from `/v2/basemap/plates`, e.g. `PA`: a position on any of them; with `bbox`, both apply; unknown codes 422), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below), `source` (repeatable `summary.<block>.<name>`, 1–50: each result holds only those fields, for a view paging through thousands of matches) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}/extent` | `query`, `range`, `filter`, `has`, `contribution`, `private_key?`, `mine?` / `versions?` | `{total, bounds?, center?}`: where the matches with a position on Earth are, without fetching them: `bounds` `[west, south, east, north]` (a geo_bounds; west is east of east across the antimeridian) and `center` `[lon, lat]`, the centroid of the busiest zoom-4 geotile (~22.5°); both absent when none is positioned; 404 for a level without positions (the Geospatial filter's default area, at most 20° each way) |
+| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
+| GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` | `SearchValues` |
+| GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (1–200; default from how many values there are, 2·n^⅓ between 10 and 100), `log` (bool), `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` | `SearchHistogram` |
+| GET | `/v2/{repository}/search/{table}/numbers` | `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` | `{total, columns: {<column>: n}}` — the level's number columns (`summary._num.<column>`, data-model order) and how many matches have a value of each, zeros included (the `numeric` filter's column picker) |
+| GET | `/v2/{repository}/search/{table}/filters` | `count` (repeated: `geo`, `bbox`, `plate`, `numeric`, `exists`, `facet:<column>`, `range:<path>`, or `text:*` / `numeric:*` for a `facet:<column>` / `range:summary._num.<column>` key per text / number column of the level; else 422), `query`, `range`, `bbox`, `filter`, `has`, `contribution`, `private_key?` | `{total, counts: {<key>: n}}` — of the matches, how many have a value for each sidebar filter (a position, any number column, any recorded table, the facet's column, the range's field), zeros included: the count beside each filter in the search sidebar, which hides a filter at zero (and lists the `text` / `numeric` filters' columns by the keys `text:*` / `numeric:*` return) |
+| GET | `/v2/{repository}/search/{table}/has` | `of` (one of the level's `exists_tables`, else 422), `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` | `{total, with_table, columns: {<column>: n}}` — of the matches, how many have the table `of` and how many have a value in each of its columns (data-model order, zeros included); those without a column are `with_table` − n (the `exists` filter's modal; the caller leaves `of`'s own `has` entries out) |
+| GET | `/v2/{repository}/search/{table}/download` | `tables` (repeatable search levels below the contribution, else 422) or `files` (bool), `format` (`txt` default, or `json`), `query`, `range`, `bbox`, `plate`, `sort`, `filter`, `has`, `mine?` / `versions?` | the search page's Download Results (an attachment, `<Key> Download - <UTC stamp>.<ext>`). With `tables`: each level's matching rows as one table (every row of each matching record, `citations` "This study" replaced by its contribution's reference), after a `contribution` row naming the latest data model, in the node's text format or as JSON `{<table>: [row, …]}`, at most 200,000 rows. With `files`: the first 100 matching contributions' files (at most 512 MB of text), in the search's order, as `<id>/<slug>_contribution_<id>.txt|json` in a zip. `table` is the open level: every level is searched as its tab counts it (the query, `bbox` where it has positions, the `has` entries on its tables), and `table` also takes `range`, `filter` and `sort`. A capped download sets `X-Download-Truncated` (e.g. `100 of 240 contributions`); 404 when nothing matches |
 | GET | `/v2/{repository}/contributions/{id}` | `private_key?` | Contribution summary doc |
 | GET | `/v2/{repository}/contributions/{id}/download` | `private_key?` | canonical text file (`text/plain` attachment) |
 | GET | `/v2/{repository}/sitemap.xml` | | sitemap (served at `/<Key>/sitemap.xml`): the node's home, search and listed pages, and every public contribution page (`<site_url>/<Key>/<id>`, `lastmod` its last update), at most 50,000 URLs |
@@ -274,7 +291,8 @@ needs `publish.api`.
 | GET | `/v2/{repository}/contributions/{id}/versions` | `private_key?` | the `previous_id` chain, oldest first: every published version plus this one — `[{id, version, data_model_version, timestamp, contributor, is_activated, is_latest}]` |
 | GET | `/v2/{repository}/contributions/{id}/rows` | `private_key?` | per-table row stats — `{validated, previous: {id, version} \| null, tables: {<table>: {errors?, warnings?, changed?, removed?}}}`: distinct rows the current revision's validation flagged, and rows added/edited (`changed`) or dropped (`removed`) since the previous published version, ignoring the stamped `row_id`/`contribution_id` (the contribution modal's level-tab badges) |
 | GET | `/v2/{repository}/contributions/{id}/tables/{table}` | `private_key?`, `sort?` (`<column>:asc\|desc`), `from?`, `size?` (≤1000, default 100) | one page of a data-model table of the contribution's current file, in file order or sorted over the whole table (numbers numerically, blanks last) — `{total, columns, validated, column_issues: {<column>: {severity, messages}}, rows: [{row, values, issues: {<column> \| "": {severity: error\|warning, messages}}}]}`; `row` is the 1-based position in the file's table that validation issues name, `""` an issue on the whole row (the contribution modal's level tabs; 404 for a table not in the data model, no rows for a file without it) |
-| GET | `/v2/{repository}/contributions/{id}/tables/{table}/locate` | `values` (a row as a JSON object), `private_key?` | where a search doc's row sits in the file's table — `{row}`, the 1-based position of the first row whose named columns all equal `values` as text (blank matching blank), or null (the search page's Rows grid opening the modal on that row) |
+| GET | `/v2/{repository}/contributions/{id}/tables/{table}/locate` | `values` (a row as a JSON object), `private_key?` | where a search doc's row sits in the file's table — `{row}`, the 1-based position of the first row whose named columns all equal `values` as text (blank matching blank), or null (the search page's Data grid opening the modal on that row) |
+| GET | `/v2/{repository}/contributions/{id}/rows/{row_id}` | `private_key?` | where a persistent row link points — `{table, row}`: the table holding the row with that core `row_id` and its 1-based position there; 404 when no row has it. Every row of a contribution outside its `contribution` table has a core `row_id`, 1..N across the file in file order, whatever its data model declares (`ParsedContribution.row_ids`): table pages return it per row (`row_id`), search docs' `rows` carry it, and `stamp_ids` writes the same number where the data model has a `row_id` column. The SPA's `/<Node>/<id>.<row_id>` (a row) and `/<Node>/<id>.<row_id>.<column>` (a data point: that row's column) open the modal's level tab on the row, the column's cell outlined; the Data grid and the modal's level tabs show each row's number, `<id>.<row_id>`, as a button that copies that link |
 
 ```json
 SearchPage = {
@@ -288,7 +306,7 @@ SearchPage = {
 
 With `totals=true`, `rows_total` is the matches' rows (the level's `count_field`
 summed, a doc without it counting as one) and `mapped_total` the matches with a
-position (levels whose `geo` is true): the search page's Rows and Map sub-tab
+position (levels whose `geo` is true): the search page's Data and Map sub-tab
 counts. Otherwise both are null. Each facet bucket likewise carries
 `rows_count` (levels with a `count_field`) and, with `totals` on a `geo` level,
 `mapped_count`, so the sidebar's facet counts follow the active sub-tab; a
@@ -328,8 +346,8 @@ contribution level), `body` the planetary body a point on another one is on
 (`moon`; absent on Earth). A doc with several positions (a
 contribution; an area such as a location, mapped at its sites' and samples'
 positions rather than drawn as its box) gives a point per position it carries
-(only those inside `bbox`, when one is given: a `bbox` is on Earth, so it
-leaves out the points on other bodies). `{table}` must be a level whose
+(only those inside `bbox` and on a `plate`, when given: both are on Earth,
+so either leaves out the points on other bodies). `{table}` must be a level whose
 `geo` is true, otherwise 404.
 
 Past 10,000 matches at a level of single points (not the contribution level,
@@ -378,8 +396,15 @@ range filter's modal; the caller leaves the field's own range out of
 the last closed so the max is counted, as `range` aggregation buckets. With
 `log` the bins are equal in log10 between `positive_min` (the smallest value
 above zero) and the max, values at or below zero left out; without positive
-values `log` comes back false and the bins are linear. `counted` docs have a
-value in a bin; a field no match has has no bins, and a text field (row values
+values `log` comes back false and the bins are linear. A bin counts the docs
+with a value in it, so a multi-valued doc counts in each bin it has values in;
+`counted` is how many docs have a value at all, each once (2026-11-16: it was
+the bins' sum, which could pass `total`). An interval's histogram
+(`field=summary._interval.<name>.range`) takes its extent from the block's
+`values` and counts in each bin the docs any of whose intervals overlaps it —
+a `filters` aggregation of the same `intersects` range query its filter runs,
+so a 10 ± 5 Ma age fills every bin from 0 to 20 Ma, not only those at its
+ends and best estimate. A field no match has has no bins, and a text field (row values
 are strings) is a 422 — a data-model number column's histogram is on its
 `summary._num.<column>`. Field rules and visibility are as for `values`.
 A `range` on a multi-valued field (`summary._num`) matches a doc with any value
@@ -443,7 +468,7 @@ newest), `recent` / `recent_asc` (contribution timestamp), `published` /
 `citation_az` / `citation_za` (`_reference.citation`), `id_desc` / `id_asc`.
 It may instead be `<column>:asc|desc`, a sortable column of the level's summary
 grid (below): its header's sort, newest first on ties. Or `rows.<column>:asc|desc`,
-the Rows grid's header sort on a raw row column: raw rows are not indexed, so it
+the Data grid's header sort on a raw row column: raw rows are not indexed, so it
 orders the records by their rows' smallest (ascending) or largest (descending)
 value of the column (`summary._all.<column>`, then the merged
 `summary.<table>.<column>`; numerically for a data-model Number), and the SPA
@@ -513,6 +538,28 @@ title, journal, year, volume, issue or page for every node; `fiesta init`
 re-applies the file to the cached references and their search docs.
 When omitted the API sorts by relevance if the query has free text and by
 `recent` otherwise.
+
+### Saved searches (`/v2/{repository}/searches`)
+
+The search page's URL is `/<Key>/Search/<level>/<view>?q=<id>`: the level and
+result view are path segments, and everything else is a saved search's
+`state` — `{query?, sort?, ranges?, filter?, has?, bbox?, area?, plates?,
+mine?, versions?, settings?}` (the search request params above, `query` the
+free text and tokens; `settings` maps `"<owner>.<name>"` view settings such as
+`map.color` or `poles.vgps` to any JSON). The id is a UUIDv5 of the node and
+the state's canonical JSON (`fiesta.services.searches`), so the same search
+always gets the same id and a saved search is never changed. Rows live in each
+node's schema (`searches`, and `search_uses`: one row per save or open, with
+the user if signed in and the level and view it was on).
+
+| Method | Path | Auth | Body / params → returns |
+|---|---|---|---|
+| POST | `/v2/{repository}/searches` | optional | `{state, level?, view?}` → `{id, state, created_at}` (the canonical state; empty fields dropped, unknown fields 422, over 16 kB 413) |
+| GET | `/v2/{repository}/searches/{id}` | optional | `level?`, `view?` → `{id, state, created_at}`; counts as an opening; 404 if unknown |
+| GET | `/v2/{repository}/searches/usage` | node admin | `days` (default 30), `limit` (default 50) → `{days, uses, searches, users, levels: [{level, view, uses}], keys: [{key, uses}], top: [{id, state, uses, users, last_used_at}]}`: the admin page's Searches tab |
+
+A link from before the saved searches (`/MagIC/search?q=basalt&level=Sites`,
+`?contribution=16901&tab=sites`) is saved and redirected by the SPA.
 
 ### Private workspace (`/v2/{repository}/private/contributions`, Bearer or Basic)
 
@@ -685,10 +732,9 @@ loading), which enforces the same visibility rules as the core API.
 
 | Method | Path | Plugin (node) |
 |---|---|---|
-| GET | `/v2/{repository}/plugins/poles/plate-boundaries` | `poles` (MagIC) — GeoJSON |
 | GET | `/v2/{repository}/plugins/method-codes` | `method-codes` (MagIC) — `{<group>: {label, codes: [{code, definition, ...}]}}` (404 if the node has no codes file); was `/config/method-codes` until 2026-11-11 |
 | GET | `/v2/{repository}/plugins/pmag-plots/contributions/{id}/{kind}` | `pmag-plots` (MagIC) — plot data, `kind` ∈ `demag`, `eqarea`, `arai`, `hyst`; counts are `summary.pmag_plots` of `GET /search/pmag_plots?contribution={id}` |
-| GET | `/v2/{repository}/plugins/depth-plot/contributions/{id}/measurements` | `depth-plot` (CDR) |
+| GET | `/v2/{repository}/plugins/depth-plot/contributions/{id}/measurements` | `depth-plot` (CDR) — `{series_defs, tracks: [{key, label, unit, group, color, log, default}], ratios: [{key, label, numerator, denominator, log, color, default}], cores: {<core>: [{depth, section, _bad?, <column>: number, ...}]}, sections: {<core>: [{section, top, bottom}]}}`: every Number measurements column with data is a track; calibration sections and rows above `min_depth` are left out, rows whose quality is in `bad_quality` carry `_bad`; section spans come from the rows' depths (2026-11-16) |
 | GET | `/v2/{repository}/plugins/plateau-calculations/contributions/{id}` | `plateau-calculations` (KArAr) — `{experiments: [{experiment, specimen, steps, ages, ...}], specimens: [{specimen, age, experiments, j_value, irrad_*, is_flux_monitor, ...}], samples: [{sample, elevation, height, core_depth, composite_depth, ...}]}` (steps also carry `k_ca`, `ar40_rad` in %, and `cl_k` = ³⁸Ar(Cl)/³⁹Ar(K)), every value as contributed; `?experiment=` or `?specimen=` narrows it (query params: names contain `/`); replaced `.../experiments/{name}/plateau` on 2026-11-12 |
 
 ## Search document shape
@@ -707,7 +753,7 @@ rows of that level sharing a name (its key column, `site` for sites) are one
 doc, `rows` holding them all, `summary.<level>` their merge (each column's first
 value) plus `_n_results`, how many rows (the level's `count_field`). A row
 without a name is a doc of its own. So a level's matches count records (the
-Summaries tab), and their summed `_n_results` its rows (the Rows tab).
+Summaries tab), and their summed `_n_results` its rows (the Data tab).
 
 Row values are text everywhere above (`summary.<level>`, `_all`), so every doc
 also carries `summary._num` (2026-11-10): per data-model number column
@@ -717,8 +763,10 @@ column but always keeping the least and the greatest; values that do not parse
 are left out. The contribution doc's is the union across its levels (as its
 `_all`). Columns a `search.unit_conversions` entry names are in its base unit:
 MagIC's `age`, `age_low`, `age_high` are years BP by the row's `age_unit`
-(factor, then offset: years AD → 1950 − year, which swaps low and high;
-`age_sigma` only scaled), and a row whose unit has no factor leaves them out.
+(factor, then offset: years AD → 1950 − year, which swaps low and high, also
+when a row has only one of them: an `age_high` of 1600 years AD is the
+`age_low` of 350 years BP; `age_sigma` only scaled, and never negative), and a
+row whose unit has no factor leaves them out.
 Range filters (`range=summary._num.age:0:5e6`) and histograms use these:
 
 ```json
@@ -734,7 +782,14 @@ gives every doc `summary._interval.<name>` (2026-11-13): each row's ages as
 ONE interval in the base unit, whatever of value, sigma and bounds it has —
 `age_low`..`age_high`; a missing end `age` ∓ `sigma_multiple` × `age_sigma`
 (2, about 95%), else the age itself; a side with neither open (only an
-`age_high`: younger than it). A record's are its own rows' plus those of rows
+`age_high`: younger than it). In years BP a sigma window stops at the present
+(2026-11-16): a young age's window never reaches past 1950 (0.02 ± 0.015 Ma is
+0 – 0.05 Ma, not −10 ka – 0.05 Ma), while an age already after 1950 (a negative
+years BP: 2010 AD is −60) keeps its whole window, and stated bounds are kept
+as stated. `interval.tables`, when set, are the only tables whose rows give
+intervals: KArAr's are `specimens` and `experiments`, as a measurement's
+`age` is one heating step's apparent age (often far off, even negative), not
+an age of its specimen, sample or contribution. A record's are its own rows' plus those of rows
 outside the hierarchy that name it as their most specific record (an `ages`
 row naming a sample), else those of the records below it (a location without
 ages has its sites'); the contribution's are every row's.
@@ -763,7 +818,12 @@ tried external (J and decay constants), internal, analytical.
 `range` is mapped `double_range`, so `range=summary._interval.age.range:5e6:2e7`
 matches a doc any of whose intervals overlaps 5–20 Ma (OpenSearch's default
 `intersects` relation; the legacy `_age_range_ybp` behaved the same on one
-envelope per record); its histogram is over `values`. The UI shows these with
+envelope per record); its histogram's extent is over `values`, its bins
+count overlapping intervals (above). The time scale's shortcuts for a unit
+that reaches the present (Holocene, Quaternary, Cenozoic, Phanerozoic) leave
+the younger bound open (the Holocene is `range=summary._interval.age.range::11700`),
+so ages after 1950 are in them; the search map's log Age color gives an age at or after 1950 (≤ 0) the
+youngest color rather than "No value". The UI shows these with
 `fiesta/frontend/src/lib/age.ts` (Ga / Ma / ka by magnitude, "yr BP" below 1 ka
 with present = 1950 CE, one row in full as "500 ± 10 ka", several as their span).
 `ensure_index` adds the template to an existing index; its docs gain the block

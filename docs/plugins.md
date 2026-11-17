@@ -91,6 +91,7 @@ tests import it as `fiesta.plugins.<name>` with dashes as underscores
 | `frontend_config(node)` | `GET /v2/{node}/config` | arbitrary JSON under `plugins[name]` telling the UI plugin what to mount and with which options |
 | `vocabularies(node)` | every validation; `GET /config/vocabularies/plugins` | `{name: PluginVocabulary(items, case_insensitive, label, labels)}`: the list a `cv("<name>")` data-model validation checks when the node's controlled vocabularies have none of that name (method codes). `label` (the list's title) and `labels` (item → definition) are optional; the grid editor's pulldowns and vocabulary panel show them |
 | `upgrade_steps(node)` | every upload or import in an older data-model version; `POST /upgrade` | `UpgradeStep`s (`fiesta.domain.upgrade`) for the version steps whose restructuring the data models' `previous_columns` cannot express: `prepare` (whole old tables), `map_row` (a `RowPlan`: the row, the new tables it may feed, values to add as they are), `map_value`, `finish_row` (blank defaults, each a `BlankDefault` the contributor can switch), `finish`, plus `merge_keys`, `retired_tables` and `quiet_columns`. The core does the renames, splits, merges and row merging from the models; at most one active plugin supplies a step |
+| `import_formats(node)` | the upload page's import step; `GET /import-formats`, `POST /import-formats/sniff`, `POST /import-formats/{key}/convert` | `ImportFormat`s: file formats (lab instrument output) the import step converts to the node's text format on the server, see "Import formats" below. Keys are unique among a node's active plugins |
 | `grid_tiles` (class attribute) | config load | the summary grid tiles it adds, `GridTile(cell, label, width, hint, default)`: a node that activates it may name them in `search.levels[].columns`, and `default` ones are columns of every level that configures none (after the core's `geo`, before `citations`); the admin UI's Summary Grid tab offers them. Its UI renders them through `gridCell` |
 | `grid_tile_fields(node, level, cell)` | config load, every search | a tile's default sort (`sort_fields`, `sort_type`), text filter fields and facets (`GridTileFields`), from the plugin's options; a column's YAML may replace them |
 | `pages` (class attribute) | startup and every validation | slugs of the SPA pages its UI registers (`pages` below); no node's content page may take one |
@@ -114,6 +115,38 @@ Plugin routes read contribution data through
 visibility rules as the core API (activated, or matching private key) and
 parses the canonical file from the bucket.
 
+### Import formats
+
+`import_formats(node)` returns `ImportFormat` instances (`fiesta.plugins.base`)
+the upload page's import step offers beside the node text, delimited and Excel
+files, grouped as lab formats in its file-type menu. Each sets `key`, `label`,
+`description`, `extensions`, `multi_file` and `Options` (an `ImportOptions`
+pydantic model: what the contributor sets, served as JSON schema and rendered
+as the format's options form; an enum field may carry `x-enum-labels` in
+`json_schema_extra`), and implements:
+
+- `sniff(filename, head) -> float`: how sure it is (0–1) from the name and the
+  first 16 KB; the import step picks the format at 0.8 or more.
+- `companions(filename, head, others) -> list[str]` (a `multi_file` format):
+  which of the other files picked with this one its conversion reads (a CIT
+  `.sam` file's specimen files). They are sent with it and not read alone.
+- `convert(node, files, options) -> ImportResult`: `files` is an `ImportInput`
+  (the uploads written into `directory`, `files[0]` the one read as this format,
+  an empty `work_dir`); return the node's multi-table text, `ImportNote`s
+  (`converter` what the tool printed, `default` an option left at a default
+  that shapes the result, `hint` something worth a second look) and `tool`
+  (`{name, version, function}`); raise `ImportConversionError(message, notes)`
+  when nothing usable comes out. `options.model_fields_set` holds what the
+  contributor set.
+
+The core (`fiesta.services.import_formats`) runs `convert` in a worker thread
+in a temporary directory, parses the text, counts the tables and the node's
+hierarchy, and writes `report_text` (tool, version, files, options, counts,
+notes), which the upload keeps beside the originals as
+`<name>-conversion-report.txt`. Nothing is stored by the conversion itself.
+MagIC's are the [`pmag-lab-formats`](../configurations/plugins/pmag-lab-formats/README.md)
+plugin (PmagPy's `convert_2_magic`).
+
 ## UI half (`index.tsx`)
 
 `index.tsx` default-exports a `PluginModule` (`fiesta/frontend/src/plugins/index.tsx`):
@@ -129,7 +162,10 @@ records drawn another way, as Map draws them (`geomag-series`'s Plots): the
 sidebar's filters, area, grid filters and with/without data apply as on
 Summaries, its count is the level's, and it fetches the matches with the
 context's `searchParams` (the level search's request params) from
-`GET /search/{table}/values`.
+`GET /search/{table}/values`. Every level sub-tab is also a quick-launch button
+on the home and search pages (on the first level offering it; the node YAML's
+`search.quick_launch` can pick and order them), drawn with the sub-tab's
+optional `icon` (an icon-map name; default `chart-line`, Poles uses `globe`).
 
 `sidebarFilters(levelName, subTabName, config)` adds filters to the facet
 sidebar after the node's own (`filtersPanel` instead replaces the whole
@@ -150,9 +186,21 @@ into core components. The hooks besides those above:
 
 | Hook | Use for |
 |---|---|
-| `pages` | SPA pages at their own paths (`{path: "/method-codes", component, validateSearch?}`): every plugin's are routes (the router is built once), each a not-found page on a node that does not activate it; their slugs are the backend plugin's `pages` |
+| `homeCards(config)` | full-width cards under the home page's primary cards (`{key, title, subtitle?, level, view}` opens that search view, `/Search/<level>/<view>`; or `to` a page of the node); a card for a quick-launch view replaces its default card |
+| `pages` | SPA pages at their own paths (`{path: "/method-codes", component, validateSearch?}`, served at the PascalCase `/Method-Codes`, which links should use): every plugin's are routes (the router is built once), each a not-found page on a node that does not activate it; their slugs are the backend plugin's `pages` |
 | `resourceCards(config)` | `HomeCard`s for the home page's default resource row (a node YAML without `features.home.resources`), after its Data Model card |
 | `facetDescriptions(config)` | a query (`{queryKey, queryFn, select}`, select giving `Map<value, {definition, group, order}>`) whose values' definitions the filter modals show beside any facet's values, grouped and ordered as given |
+
+A search view's settings belong to the search: the search page's URL is a
+saved search (`/MagIC/Search/Sites/Poles?q=<id>`, [api.md](api.md) "Saved
+searches"), so a shared link opens the view as it was. Keep a setting with
+`useSearchSetting(key, default, valid?)` from `@/plugins` instead of
+`useState`: `key` is `"<plugin>.<name>"` (`poles.vgps`, `kd-plots.color`), a
+value equal to the default is not stored, and `valid` (`isBoolean`,
+`isString`, or your own) refuses a stored value of the wrong shape. Outside
+the search page (a contribution modal's tab, a plugin page) it is plain
+component state. Transient state — a selection, a zoom, a hover — stays in
+`useState`. Each change is a new saved search, replacing the history entry.
 
 Plugin files import core code through the `@/` alias (`@/lib/api`,
 `@/components/echart`, `@/plugins` for the types) and npm packages as usual;
@@ -183,6 +231,7 @@ net, surface for marker halos, the node color lightened in dark mode) inside
 | [`method-codes`](../configurations/plugins/method-codes/README.md) | MagIC | the method-code vocabulary: the Method Codes page and home card, code definitions beside facet values, case-insensitive `cv()` validation |
 | [`sample-tiles`](../configurations/plugins/sample-tiles/README.md) | every node | the Geology, Age, Intensity and Method Codes summary grid tiles (the legacy result card's sample columns), default tiles after Geography |
 | [`periodic-table`](../configurations/plugins/periodic-table/README.md) | KdD | a periodic-table element filter in the search sidebar, each element counted in the search |
+| [`pmag-lab-formats`](../configurations/plugins/pmag-lab-formats/README.md) | MagIC | lab instrument files (2G binary/ASCII, CIT, SIO, JR6, Utrecht, LDEO, HUJI, PmagPy generic) converted to MagIC text in the upload page's import step by PmagPy's converters, with their options and a report |
 | [`magic-3-upgrade`](../configurations/plugins/magic-3-upgrade/README.md) | MagIC | the 2.5 → 3.0 upgrade step: results split by level and direction, the wide criteria table, method codes, dates, measurement parents and sequence, the 2.5 blank defaults |
 | [`geomag-series`](../configurations/plugins/geomag-series/README.md) | GEOMAGIA | the Sites level's Plots sub-tab (intensity or VADM, declination and inclination against age, linked zoom, PNG export), and the GEOMAGIA site's query refinements: derived facets and ranges, site-name and radius searches |
 | [`field-models`](../configurations/plugins/field-models/README.md) | GEOMAGIA | the Sites level's Field Models sub-tab: published geomagnetic field models (SHMODEL in numpy) as intensity/VADM, declination and inclination/ΔI curves at chosen or searched site locations with uncertainty bands, ensembles and the search's data, global Mollweide maps with a year movie, GEOMAGIA's exports; models fetched from their public sources into storage by its `fetch_models.py` |

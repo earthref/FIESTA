@@ -9,7 +9,7 @@ deployment: node
 node:
   key: GEOMAGIA
   slug: geomagia
-  title: GEOMAGIA50 Archeomagnetic and Volcanic Database (GEOMAGIA)
+  title: Archeomagnetic and Volcanic Database
   subtitle: >-
     Archeomagnetic and volcanic paleomagnetic directions and intensities of
     the past 50,000 years, compiled from the published literature.
@@ -29,68 +29,68 @@ search:
     - name: Contributions
       table: contribution
       columns:
-        - { cell: title, column: citation, subtitle_column: title }
-        - { column: journal, label: Journal, width: 180 }
-        - { column: year, label: Year, width: 80, facets: [] }
-        - { cell: counts }
-        - { cell: map }
-        - { cell: contributed }
+        - {cell: title, column: citation, subtitle_column: title}
+        - {column: journal, label: Journal, width: 180}
+        - {column: year, label: Year, width: 80, facets: []}
+        - {cell: counts}
+        - {cell: map}
+        - {cell: contributed}
     - name: Sites
       table: sites
       count_field: summary.sites._n_results
       columns:
-        - { cell: title, column: site, subtitle_column: site_name }
-        - { column: archeo_volcanic, label: Type, width: 90 }
-        - { column: region_country, label: Region/Country, width: 140 }
-        - { column: materials, label: Materials, width: 150 }
-        - { column: age, label: Age (CE), width: 90 }
-        - { column: ba, label: Intensity (μT), width: 110 }
-        - { column: vadm, label: VADM (10²² Am²), width: 130 }
-        - { column: decl, label: Dec, width: 70 }
-        - { column: incl, label: Inc, width: 70 }
-        - { column: alpha_95, label: α95, width: 70 }
-        - { cell: citation }
+        - {cell: title, column: site, subtitle_column: site_name}
+        - {column: archeo_volcanic, label: Type, width: 90}
+        - {column: region_country, label: Region/Country, width: 140}
+        - {column: materials, label: Materials, width: 150}
+        - {column: age, label: Age (CE), width: 90}
+        - {column: ba, label: Intensity (μT), width: 110}
+        - {column: vadm, label: VADM (10²² Am²), width: 130}
+        - {column: decl, label: Dec, width: 70}
+        - {column: incl, label: Inc, width: 70}
+        - {column: alpha_95, label: α95, width: 70}
+        - {cell: citation}
   extra_types: []
   filters:
     # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
-    - { type: facet, field: id, label: Contribution ID }
-    - { type: facet, field: doi, label: Contribution DOI }
-    - { type: facet, field: contributor, label: Contributor }
-    - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
+    - {type: facet, field: id, label: Contribution ID}
+    - {type: facet, field: doi, label: Contribution DOI}
+    - {type: facet, field: contributor, label: Contributor}
+    - {type: range, field: summary.contribution.timestamp, label: Contributed On, date: true}
     # The GEOMAGIA site's query form and refinements (search/forms.py,
     # refinements.py). data_type, pi_family, md_check, cooling_rate_check,
     # age_error and direction_n are derived by the geomag-series plugin (its
     # README); its site-name and radius searches follow these filters.
-    - { type: facet, field: data_type, label: Data Type, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: archeo_volcanic, views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Age, field: summary._num.age, unit: yr CE, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Paleointensity, field: summary._num.ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: VADM, field: summary._num.vadm, unit: 10²² Am², levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Declination, field: summary._num.decl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Inclination, field: summary._num.incl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: region_country, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: continent, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: materials, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: dating_methods, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: pi_family, label: Paleointensity Method Family, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: pi_methods, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: alteration_checks, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: md_check, label: Multi-Domain Checks, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: cooling_rate_check, label: Cooling Rate Correction, views: [Summaries, Rows, Map, Plots] }
-    - { type: facet, field: anisotropy_use_status, views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Paleointensity Specimens Accepted, field: summary._num.num_acc_spec, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Paleointensity Error σBa, field: summary._num.sigma_ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Directional Specimens or Samples, field: summary._num.direction_n, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Direction α95, field: summary._num.alpha_95, unit: "°", levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: range, label: Age Error, field: summary._num.age_error, unit: yr, levels: [Contributions, Sites], views: [Summaries, Rows, Map, Plots] }
-    - { type: numeric, label: Numeric, views: [Summaries, Rows, Map, Plots] }
-    - { type: text, label: Text, views: [Summaries, Rows, Map, Plots] }
-    - { type: exists, label: With / Without Data, views: [Summaries, Rows, Map, Plots] }
+    - {type: facet, field: data_type, label: Data Type, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: archeo_volcanic, views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: Age, field: summary._num.age, unit: yr CE, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: Paleointensity, field: summary._num.ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: VADM, field: summary._num.vadm, unit: 10²² Am², levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: Declination, field: summary._num.decl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: Inclination, field: summary._num.incl, unit: "°", levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: region_country, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: continent, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: materials, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: dating_methods, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: pi_family, label: Paleointensity Method Family, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: pi_methods, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: alteration_checks, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: md_check, label: Multi-Domain Checks, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: cooling_rate_check, label: Cooling Rate Correction, views: [Summaries, Data, Map, Plots]}
+    - {type: facet, field: anisotropy_use_status, views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: Paleointensity Specimens Accepted, field: summary._num.num_acc_spec, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: Paleointensity Error σBa, field: summary._num.sigma_ba, unit: μT, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: Directional Specimens or Samples, field: summary._num.direction_n, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: Direction α95, field: summary._num.alpha_95, unit: "°", levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: range, label: Age Error, field: summary._num.age_error, unit: yr, levels: [Contributions, Sites], views: [Summaries, Data, Map, Plots]}
+    - {type: numeric, label: Numeric, views: [Summaries, Data, Map, Plots]}
+    - {type: text, label: Text, views: [Summaries, Data, Map, Plots]}
+    - {type: exists, label: With / Without Data, views: [Summaries, Data, Map, Plots]}
   map_colors:
-    - { label: Age, field: age, unit: yr CE }
-    - { label: Paleointensity, field: ba, unit: μT }
-    - { label: VADM, field: vadm, unit: 10²² Am² }
-    - { label: Inclination, field: incl, unit: "°" }
+    - {label: Age, field: age, unit: yr CE}
+    - {label: Paleointensity, field: ba, unit: μT}
+    - {label: VADM, field: vadm, unit: 10²² Am²}
+    - {label: Inclination, field: incl, unit: "°"}
 
 storage:
   bucket: geomagia
@@ -167,14 +167,14 @@ plugins:
           - Microwave IZZI protocol
           - Microwave Aitken protocol
           - Microwave Walton (1977)
-      - { name: Triaxe, methods: ["Vibrating Triaxe (Le Goff and Gallet, 2004)"] }
+      - {name: Triaxe, methods: ["Vibrating Triaxe (Le Goff and Gallet, 2004)"]}
       - name: Dekkers and Bohnel Family
         methods:
           - Multispecimen parallel differential pTRM (Dekkers and Boehnel, 2006)
           - Extended multispecimen parallel differential pTRM protocol (Fabian and Leonhardt, 2010)
-      - { name: Walton, methods: [Walton (1977), Microwave Walton (1977)] }
-      - { name: Wilson, methods: [Wilson (1961)] }
-      - { name: Pseudo-Thellier, methods: ["Calibrated Pseudo-Thellier (de Groot et al., 2013)"] }
+      - {name: Walton, methods: [Walton (1977), Microwave Walton (1977)]}
+      - {name: Wilson, methods: [Wilson (1961)]}
+      - {name: Pseudo-Thellier, methods: ["Calibrated Pseudo-Thellier (de Groot et al., 2013)"]}
     # Yes / No refinements: No = only these names, Yes = any other.
     checks:
       md_check: md_checks

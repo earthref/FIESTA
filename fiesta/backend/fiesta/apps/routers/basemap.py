@@ -10,19 +10,26 @@ services serve it uncacheable, or slowly):
                                     to pole
     /v2/basemap/undersea-features   the IHO-IOC GEBCO Gazetteer of Undersea
                                     Feature Names as GeoJSON, for the map labels
+    /v2/basemap/plates              the present-day tectonic plates as GeoJSON
+                                    (fiesta/plates.py; served from the repo,
+                                    not fetched), for the maps' plate boundaries
+                                    and the Geospatial filter's plate list
 
 The SPA's maps (fiesta/frontend/src/components/map/basemap.ts) take the basemap's
 tiles straight from Esri and the other labels from OpenFreeMap.
 """
 
 import asyncio
+import hashlib
 import json
 import math
 import time
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Header, HTTPException, Response
+
+from fiesta.plates import PLATES_FILE
 
 router = APIRouter(prefix="/basemap", tags=["basemap"])
 
@@ -169,6 +176,23 @@ async def _fetch_undersea() -> tuple[str, bytes]:
 @router.get("/undersea-features")
 async def get_undersea_features() -> Response:
     return _response(await _cached("undersea-features", _fetch_undersea))
+
+
+@router.get("/plates")
+async def get_plates(if_none_match: str | None = Header(default=None)) -> Response:
+    """The present-day tectonic plates as GeoJSON (fiesta/plates.py).
+
+    Revalidated on every use (`no-cache` with an ETag of the file's content,
+    304 while it is unchanged), never kept for a day like the fetched basemap
+    data: it changes with the code, and a browser holding an old copy drew the
+    old boundaries until it expired.
+    """
+    body = PLATES_FILE.read_bytes()
+    etag = f'"{hashlib.sha256(body).hexdigest()[:16]}"'
+    headers = {"Cache-Control": "public, no-cache", "ETag": etag}
+    if if_none_match and etag in [tag.strip() for tag in if_none_match.split(",")]:
+        return Response(status_code=304, headers=headers)
+    return Response(body, media_type="application/geo+json", headers=headers)
 
 
 @router.get("/{name}")

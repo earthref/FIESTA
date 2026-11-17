@@ -1,4 +1,5 @@
-import { type ReactNode, type RefObject, useEffect, useMemo, useRef } from "react";
+import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { siteUrl } from "../lib/base";
 import { typeUnitLabel, useDataModelTable } from "../lib/data-model";
 import type { CellIssue, DataModelColumn, DataModelTable, SearchResult } from "../lib/types";
 import { cx } from "../lib/utils";
@@ -12,10 +13,67 @@ import { Skeleton, skeletonWidth } from "./ui/skeleton";
 export interface GridRow {
   key: string;
   label?: string;
+  /** The row's core id in its contribution (else its values' `row_id`). */
+  rowId?: number;
   values: Record<string, unknown>;
   issues?: Record<string, CellIssue>;
-  /** The search hit the row is from (the search page's Rows view). */
+  /** The search hit the row is from (the search page's Data view). */
   hit?: SearchResult;
+}
+
+/** A row's persistent link: its number (`<contribution>.<row_id>`) and the
+ * node URL it names (/CDR/672.59, with a private contribution's key). */
+export interface RowLink {
+  label: string;
+  url: string;
+}
+
+/** A row's number as a small node-colored button (the Download Results
+ * pill's style) that copies the row's persistent link. */
+function RowLinkButton({ link }: { link: RowLink }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () =>
+    navigator.clipboard?.writeText(link.url).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    });
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title={copied ? "Link copied" : `Copy a persistent link to row ${link.label}\n${link.url}`}
+      aria-label={`Copy a persistent link to row ${link.label}`}
+      className="inline-flex cursor-pointer items-center whitespace-nowrap rounded-sm bg-node font-bold text-white tabular-nums hover:bg-node-dark focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-1"
+      style={{ padding: "0.3em 0.5em", fontSize: 12, lineHeight: "1em" }}
+    >
+      <Icon
+        name={copied ? "check" : "linkify"}
+        style={{ width: "0.9em", height: "0.9em", marginRight: "0.35em" }}
+      />
+      {link.label}
+    </button>
+  );
+}
+
+/** The columns a row's number (`<contribution>.<row_id>`) shows, so a grid
+ * with row links leaves them out. */
+export const ROW_ID_COLUMNS = new Set(["contribution_id", "row_id"]);
+
+/** A row's persistent link, from its core id (the API's, else its values'
+ * `row_id`) and its contribution, or undefined. */
+export function rowLinkOf(
+  row: GridRow,
+  contribution?: string,
+  privateKey?: string,
+): RowLink | undefined {
+  const rowId = String(row.rowId ?? row.values.row_id ?? "").trim();
+  const id = String(contribution ?? row.values.contribution_id ?? "").trim();
+  if (!/^\d+$/.test(rowId) || !/^\d+$/.test(id)) return undefined;
+  const key = privateKey ? `?private_key=${encodeURIComponent(privateKey)}` : "";
+  return {
+    label: `${id}.${rowId}`,
+    url: `${window.location.origin}${siteUrl(`/${id}.${rowId}`)}${key}`,
+  };
 }
 
 /** The validation colors of the online editor's cells (error red, warning amber). */
@@ -192,9 +250,11 @@ function columnWidths(
 
 /** A row's height (one line of 14px text and its padding). */
 const ROW_HEIGHT = 37;
+/** A group header row's height (one line of 13px text and its padding). */
+const GROUP_HEIGHT = 33;
 
 /**
- * Raw rows as one grid (the search page's Rows view, the contribution
+ * Raw rows as one grid (the search page's Data view, the contribution
  * modal's level tabs) under a sticky three-row header: each column's name,
  * field and type from the node's latest data model (`table`), the name
  * sorting with `onSort`.
@@ -208,11 +268,14 @@ const ROW_HEIGHT = 37;
  * the whole of it as the tooltip. With `onRowClick` a row is clickable (or
  * Enter on a focused one); `selected` (a row's key) is highlighted, and
  * `scrollTo` (an item's index) is brought to the middle of the view once it
- * is among the items.
+ * is among the items. With `groupKey` (an item's group: the search page's
+ * contribution) a full-width `groupHeader` row opens an item whenever its
+ * group differs from the item's above, under any sort: the items are not
+ * reordered, so a group split by the sort gets a header at each run.
  */
 export function RowsGrid({
   items,
-  columns,
+  columns: allColumns,
   labelled = false,
   estimateRows = 1,
   sort,
@@ -227,6 +290,10 @@ export function RowsGrid({
   scrollTo,
   footer,
   empty = "No row data for these results.",
+  groupKey,
+  groupHeader,
+  rowLink,
+  selectedColumn,
 }: {
   items: (GridRow[] | undefined)[];
   columns: string[];
@@ -246,14 +313,53 @@ export function RowsGrid({
   onRange?: (start: number, end: number) => void;
   footer?: ReactNode;
   empty?: ReactNode;
+  /** An item's group (undefined: none). */
+  groupKey?: (index: number) => string | undefined;
+  /** The header row's content for the group an item opens. */
+  groupHeader?: (index: number) => ReactNode;
+  /** A row's persistent link, shown as its number in the leading column
+   * (in place of its label) when it has one. */
+  rowLink?: (row: GridRow) => RowLink | undefined;
+  /** The selected row's cell in this column is outlined and scrolled into view. */
+  selectedColumn?: string;
 }) {
   const model = useDataModelTable(table);
+  // The data model's order (its columns' positions), then columns it lacks in
+  // the order they were seen. With row links, each row's number shows its
+  // contribution and row ids, so those columns are left out.
+  const linked = rowLink !== undefined;
+  const columns = useMemo(() => {
+    const shown = linked ? allColumns.filter((column) => !ROW_ID_COLUMNS.has(column)) : allColumns;
+    const position = (column: string) =>
+      model?.columns[column]?.position ?? Number.POSITIVE_INFINITY;
+    // A stable sort keeps the unmodelled columns' first-seen order.
+    return [...shown].sort((a, b) => {
+      const [x, y] = [position(a), position(b)];
+      return x === y ? 0 : x < y ? -1 : 1;
+    });
+  }, [allColumns, linked, model]);
   // A record still loading: skeleton rows, as many as a record has on average.
   const placeholderRows = Math.max(1, Math.round(estimateRows));
+  // Whether a loaded item with rows opens a group: its key differs from the
+  // nearest item above with rows (or that item is still loading, when the
+  // header shows until it arrives).
+  const startsGroup = (index: number): boolean => {
+    if (!groupKey || !items[index]?.length) return false;
+    const key = groupKey(index);
+    if (key === undefined) return false;
+    for (let above = index - 1; above >= 0; above--) {
+      const item = items[above];
+      if (!item) return true;
+      if (item.length > 0) return groupKey(above) !== key;
+    }
+    return true;
+  };
   const { startRef, indexes, measure, padTop, padBottom, scrollToIndex } = useVirtualRows({
     count: items.length,
     scrollRef,
-    estimateSize: (index) => (items[index]?.length || Math.max(1, estimateRows)) * ROW_HEIGHT,
+    estimateSize: (index) =>
+      (items[index]?.length || Math.max(1, estimateRows)) * ROW_HEIGHT +
+      (startsGroup(index) ? GROUP_HEIGHT : 0),
     overscan,
     onRange,
   });
@@ -261,6 +367,44 @@ export function RowsGrid({
   const loaded = items.some(Boolean);
   // biome-ignore lint/correctness/useExhaustiveDependencies: measured from the first rows only
   const widths = useMemo(() => columnWidths(columns, items, model), [columns, loaded, model]);
+  // The leading column (the rows' labels and/or their persistent links, when
+  // the first rows have any), wide enough for their numbers ("16901.123456"),
+  // a link's button with its icon and padding too.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: measured from the first rows only
+  const { leading, labelWidth } = useMemo(() => {
+    let chars = 0;
+    let anyLink = false;
+    let seen = 0;
+    outer: for (const item of items) {
+      if (!item) continue;
+      for (const row of item) {
+        const link = rowLink?.(row);
+        anyLink ||= !!link;
+        chars = Math.max(chars, (link?.label ?? row.label ?? "").length);
+        if (++seen >= 200) break outer;
+      }
+    }
+    const width = Math.ceil(chars * (anyLink ? 7 : 7.5)) + (anyLink ? 50 : 24);
+    return { leading: labelled || anyLink, labelWidth: Math.max(64, width) };
+  }, [loaded, labelled, rowLink === undefined]);
+
+  // Bring the selected row's `selectedColumn` cell into view sideways, once.
+  const pointed = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const target = selected !== undefined && selectedColumn ? `${selected}:${selectedColumn}` : "";
+    if (!target || pointed.current === target) return;
+    let frame = 0;
+    let tries = 0;
+    const attempt = () => {
+      const cell = scrollRef?.current?.querySelector<HTMLElement>('[data-pointed="true"]');
+      if (cell) {
+        cell.scrollIntoView({ block: "nearest", inline: "center" });
+        pointed.current = target;
+      } else if (++tries <= 60) frame = requestAnimationFrame(attempt);
+    };
+    frame = requestAnimationFrame(attempt);
+    return () => cancelAnimationFrame(frame);
+  }, [selected, selectedColumn, scrollRef]);
 
   // Scroll to `scrollTo` once, when it is among the items. The virtualizer
   // may not have its scroller yet: try again each frame (a few) until the
@@ -289,7 +433,7 @@ export function RowsGrid({
   if (items.length === 0) {
     return <p className="py-8 text-center text-[13px] text-gray-500">{empty}</p>;
   }
-  const span = columns.length + (labelled ? 1 : 0);
+  const span = columns.length + (leading ? 1 : 0);
   const headers = columns.map((column) =>
     headerCells({
       column,
@@ -299,8 +443,7 @@ export function RowsGrid({
       issue: columnIssues?.[column],
     }),
   );
-  const labelWidth = 64;
-  const width = widths.reduce((total, w) => total + w, labelled ? labelWidth : 0);
+  const width = widths.reduce((total, w) => total + w, leading ? labelWidth : 0);
   return (
     <>
       <table
@@ -308,7 +451,7 @@ export function RowsGrid({
         style={{ tableLayout: "fixed", width: `max(${width}px, 100%)` }}
       >
         <colgroup>
-          {labelled && <col style={{ width: labelWidth }} />}
+          {leading && <col style={{ width: labelWidth }} />}
           {widths.map((w, i) => (
             <col key={columns[i]} style={{ width: w }} />
           ))}
@@ -316,9 +459,15 @@ export function RowsGrid({
         <thead className="sticky top-0 z-10">
           {[0, 1, 2].map((line) => (
             <tr key={line}>
-              {line === 0 && labelled && (
-                <th scope="col" rowSpan={3} className={TH} style={UNDERLINE}>
-                  <span className="sr-only">Row</span>
+              {line === 0 && leading && (
+                <th
+                  scope="col"
+                  rowSpan={3}
+                  className={cx(TH, "text-right font-semibold text-gray-700")}
+                  style={UNDERLINE}
+                  title={rowLink ? "Each row's link: <contribution>.<row id>" : undefined}
+                >
+                  {rowLink ? "Row" : <span className="sr-only">Row</span>}
                 </th>
               )}
               {headers.map((cells) => cells[line])}
@@ -338,7 +487,7 @@ export function RowsGrid({
                 {Array.from({ length: placeholderRows }, (_, r) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count skeleton rows
                   <tr key={r} style={{ height: ROW_HEIGHT }}>
-                    {labelled && (
+                    {leading && (
                       <td className={cx(TD, "border-b border-gray-100")}>
                         <Skeleton className="ml-auto h-3 w-6" />
                       </td>
@@ -355,6 +504,20 @@ export function RowsGrid({
           }
           return (
             <tbody key={`item-${index}`} data-index={index} ref={measure}>
+              {startsGroup(index) && (
+                <tr style={{ height: GROUP_HEIGHT }}>
+                  <th
+                    scope="colgroup"
+                    colSpan={span}
+                    className="whitespace-nowrap border-gray-200 border-y bg-gray-50 px-3 py-1.5 text-left font-normal text-[13px] text-gray-700"
+                  >
+                    {/* Stays in view when the grid scrolls sideways. */}
+                    <div className="sticky left-3 inline-block max-w-full overflow-hidden text-ellipsis align-bottom">
+                      {groupHeader?.(index)}
+                    </div>
+                  </th>
+                </tr>
+              )}
               {item.map((row) => {
                 const rowIssue = row.issues?.[""];
                 const isSelected = selected !== undefined && row.key === selected;
@@ -378,7 +541,7 @@ export function RowsGrid({
                     )}
                     title={rowIssue && issueTitle(rowIssue)}
                   >
-                    {labelled && (
+                    {leading && (
                       <td
                         className={cx(
                           TD,
@@ -386,20 +549,26 @@ export function RowsGrid({
                           rowIssue && ISSUE_CLASS[rowIssue.severity],
                         )}
                       >
-                        {row.label}
+                        {(() => {
+                          const link = rowLink?.(row);
+                          return link ? <RowLinkButton link={link} /> : row.label;
+                        })()}
                       </td>
                     )}
                     {columns.map((column) => {
                       const issue = row.issues?.[column] ?? rowIssue;
                       const text = display(row.values[column]);
+                      const isPointed = isSelected && column === selectedColumn;
                       return (
                         <td
                           key={column}
+                          data-pointed={isPointed || undefined}
                           title={issue ? issueTitle(issue) : text.length > 40 ? text : undefined}
                           className={cx(
                             TD,
                             "overflow-hidden text-ellipsis border-b border-gray-100",
                             issue && ISSUE_CLASS[issue.severity],
+                            isPointed && "font-semibold ring-2 ring-node ring-inset",
                           )}
                         >
                           {text}

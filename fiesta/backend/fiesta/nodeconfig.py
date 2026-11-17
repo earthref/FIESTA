@@ -216,8 +216,17 @@ class SearchLevel(BaseModel):
     # rows have positions (MagIC's measurements only repeat their specimens');
     # the area filter still narrows it.
     map: bool = True
+    # The result sub-tab the level opens on (a link naming none, or its level
+    # tab clicked): Summaries, Data (its raw rows; "Rows" is the old name) or
+    # Map. None = Summaries, and its level tab keeps the open sub-tab.
+    default_view: Literal["Summaries", "Data", "Map"] | None = None
     # The Summaries grid's columns, in order; None = the default tiles.
     columns: list[GridColumn] | None = None
+
+    @field_validator("default_view", mode="before")
+    @classmethod
+    def _rows_is_data(cls, value: Any) -> Any:
+        return normalize_view(value) if isinstance(value, str) else value
 
     @model_validator(mode="after")
     def _unique_columns(self) -> "SearchLevel":
@@ -225,6 +234,17 @@ class SearchLevel(BaseModel):
         if dupes := sorted({k for k in keys if keys.count(k) > 1}):
             raise ValueError(f"search level {self.name!r} repeats grid columns {dupes}")
         return self
+
+
+# Result sub-tabs renamed since their names were first stored (filter `views`,
+# a plugin's `after_sub_tab`): the old name is read as the new.
+RENAMED_VIEWS = {"Rows": "Data"}
+
+
+def normalize_view(name: str) -> str:
+    """A result sub-tab's current name for `name`, which may be a legacy one
+    (`Rows` -> `Data`)."""
+    return RENAMED_VIEWS.get(name, name)
 
 
 class SearchFilter(BaseModel):
@@ -251,8 +271,10 @@ class SearchFilter(BaseModel):
     ticked one `has=<table>:<column>` (with data) or `has=!<table>:<column>`
     (has the table, not that column) on `summary._has.<table>`.
     `levels` / `views` restrict where the control shows: search level names and
-    result sub-tab names (Summaries, Rows, Map on levels with positions, a plugin
-    tab); empty means everywhere. `timescale` (range, on a field of ages in
+    result sub-tab names (Summaries, Data, Map on levels with positions, a plugin
+    tab); empty means everywhere. The Data view was called Rows until
+    2026-11-16: a legacy `Rows` (a YAML or a revision published before the
+    rename) is read as `Data` (`normalize_view`). `timescale` (range, on a field of ages in
     years): the geologic time scale's units under the histogram, each a
     shortcut to its age range.
     """
@@ -268,6 +290,18 @@ class SearchFilter(BaseModel):
     max: float | None = None
     timescale: bool = False
     date: bool = False
+
+    @field_validator("views", mode="before")
+    @classmethod
+    def _normalize_views(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return value
+        out: list = []
+        for name in value:
+            name = normalize_view(name) if isinstance(name, str) else name
+            if name not in out:
+                out.append(name)
+        return out
 
     @model_validator(mode="after")
     def _check_field(self) -> "SearchFilter":
@@ -354,12 +388,16 @@ class IntervalSpec(BaseModel):
     best estimate's column (`age`), `sigma` its standard deviation's
     (`age_sigma`; a list is tried in order, the first with a value used),
     widened to `sigma_multiple` of it either side (2: about a 95% window); the
-    conversion's `bounds` are the explicit low and high."""
+    conversion's `bounds` are the explicit low and high. `tables`, when set,
+    are the only tables whose rows give intervals (KArAr leaves out its
+    measurements, whose `age` is one heating step's apparent age, not an age
+    of the record); empty means every table's rows."""
 
     name: str
     value: str | None = None
     sigma: list[str] = []
     sigma_multiple: float = 2.0
+    tables: list[str] = []
 
     @field_validator("sigma", mode="before")
     @classmethod
@@ -415,11 +453,20 @@ class UnitConversion(BaseModel):
                 raise ValueError(f"interval {spec.name!r} needs a value column or bounds")
         return self
 
+    def gives_intervals(self, table: str | None) -> bool:
+        """Whether a table's rows give intervals (any table's without
+        `interval.tables`, or when the table is not known)."""
+        spec = self.interval
+        return spec is not None and (not spec.tables or table is None or table in spec.tables)
+
     def interval_of(self, row: dict) -> RowInterval | None:
         """A row's interval in the base unit, whatever of value, sigma, low
         and high it has: each end is the explicit bound, else value -/+
         sigma_multiple x sigma, else the value; a side with none is open.
-        None without a known unit or any of them."""
+        In years BP a sigma window of a value at or before the present (>= 0)
+        stops at the present (0.02 ± 0.015 Ma: 0 – 0.05 Ma, not from -10 ka):
+        only a value already after 1950 (negative) is younger. Stated bounds
+        are kept as contributed. None without a known unit or any of them."""
         spec = self.interval
         if spec is None:
             return None
@@ -432,6 +479,8 @@ class UnitConversion(BaseModel):
         spread = spec.sigma_multiple * sigma if value is not None and sigma is not None else 0.0
         if low is None and value is not None:
             low = value - spread
+            if self.years_bp and value >= 0 and low < 0:
+                low = 0.0
         if high is None and value is not None:
             high = value + spread
         if low is None and high is None:
@@ -484,9 +533,17 @@ class UnitConversion(BaseModel):
     def all_columns(self) -> list[str]:
         return [*self.columns, *self.scaled]
 
+    @property
+    def years_bp(self) -> bool:
+        """Whether the base unit is years BP (0 = 1950 CE, the present)."""
+        return (self.unit or "").strip().lower() == "years bp"
+
     def convert(self, row: dict) -> dict[str, float]:
         """A row's values of these columns in the base unit (none without a
-        known unit)."""
+        known unit). An uncertainty is a size, never negative. A negative
+        factor reverses order, so the bounds trade places, also when a row
+        has only one: an age_high of 1600 Years AD (no later than 1600 AD) is
+        the low bound of 350 years BP (no younger than that)."""
         unit = str(row.get(self.unit_column) or self.default_unit or "").strip()
         factor = self.factors.get(unit)
         if factor is None:
@@ -496,11 +553,14 @@ class UnitConversion(BaseModel):
         for column in self.all_columns:
             if (value := number(row.get(column))) is not None:
                 out[column] = (
-                    value * factor + offset if column in self.columns else value * abs(factor)
+                    value * factor + offset if column in self.columns else abs(value * factor)
                 )
-        if factor < 0 and self.bounds and all(c in out for c in self.bounds):
+        if factor < 0 and self.bounds:
             low, high = self.bounds
-            out[low], out[high] = out[high], out[low]
+            swapped = {high: out[low]} if low in out else {}
+            if high in out:
+                swapped[low] = out[high]
+            out = {k: v for k, v in out.items() if k not in self.bounds} | swapped
         return out
 
 
@@ -554,6 +614,26 @@ class SearchConfig(BaseModel):
     geography: GeographyConfig = GeographyConfig()
     # The search box's example query.
     placeholder: str = 'e.g. keyword "exact phrase" -excluded'
+    # The level the quick-launch Map button opens on its Map sub-tab; None =
+    # the first record level with a map, else Contributions (if it has one).
+    map_level: str | None = None
+    # The quick-launch buttons (home page and search page), in order: "Map"
+    # and plugin search views by name ("Poles", "Rock Magnetism"). None = Map,
+    # then every plugin view the node has; [] = none. A name the node has no
+    # view for shows no button.
+    quick_launch: list[str] | None = None
+
+    @model_validator(mode="after")
+    def _quick_launch(self) -> "SearchConfig":
+        names = [level.name for level in self.levels]
+        if self.map_level is not None and self.map_level not in names:
+            raise ValueError(f"search.map_level {self.map_level!r} is not a search level {names}")
+        launch = self.quick_launch or []
+        if dupes := sorted({n for n in launch if launch.count(n) > 1}):
+            raise ValueError(f"search.quick_launch repeats {dupes}")
+        if blank := [n for n in launch if not n.strip()]:
+            raise ValueError(f"search.quick_launch has blank names {blank}")
+        return self
 
     @model_validator(mode="after")
     def _map_color_units(self) -> "SearchConfig":
@@ -945,6 +1025,7 @@ class NodeConfig(BaseModel):
         ):
             raise ValueError(f"search.bodies column {bodies.column!r} is in no hierarchy table")
         self._check_grid_columns()
+        self._check_views()
         if self.workspace.fields:
             columns = model_tables.get(self.workspace.table, {}).get("columns")
             if columns is None:
@@ -967,6 +1048,45 @@ class NodeConfig(BaseModel):
                 f"duplicate page slugs: {sorted({s for s in slugs if slugs.count(s) > 1})}"
             )
         return self
+
+    def has_map(self, level: SearchLevel) -> bool:
+        """The level has a Map sub-tab: its rows have positions and the YAML
+        does not turn it off."""
+        return level.map and level.table in self.geo_tables
+
+    @property
+    def map_level(self) -> str | None:
+        """The level the quick-launch Map button opens: `search.map_level`,
+        else the first record level with a map, else Contributions if it has
+        one; None when no level has a map."""
+        if self.search.map_level is not None:
+            return self.search.map_level
+        mapped = [level for level in self.search.levels if self.has_map(level)]
+        records = [level for level in mapped if level.table != "contribution"]
+        first = next(iter(records or mapped), None)
+        return first.name if first else None
+
+    def _check_views(self) -> None:
+        # A default sub-tab or Map button the level does not have would open
+        # its first tab instead, silently: catch it before publishing.
+        for level in self.search.levels:
+            if level.default_view == "Data" and level.table == "contribution":
+                raise ValueError(
+                    f"search level {level.name!r}: default_view Data, but the "
+                    "contribution level has no Data sub-tab"
+                )
+            if level.default_view == "Map" and not self.has_map(level):
+                raise ValueError(
+                    f"search level {level.name!r}: default_view Map, but it has no map "
+                    "(no position columns, or map: false)"
+                )
+        if self.search.map_level is not None:
+            level = next(lvl for lvl in self.search.levels if lvl.name == self.search.map_level)
+            if not self.has_map(level):
+                raise ValueError(
+                    f"search.map_level {level.name!r} has no map "
+                    "(no position columns, or map: false)"
+                )
 
     def _check_grid_columns(self) -> None:
         # A grid column naming a column its level's table does not have would
@@ -1304,6 +1424,10 @@ class NodeConfig(BaseModel):
             # The Geography tile's columns and the search box's example query.
             "geography": self.search.geography.model_dump(),
             "search_placeholder": self.search.placeholder,
+            # The quick-launch buttons: the Map button's level (None: no map)
+            # and the buttons' names in order (None: Map + every plugin view).
+            "map_level": self.map_level,
+            "quick_launch": self.search.quick_launch,
             "workspace": {
                 "fields": self.workspace_fields(),
                 "require_reference": self.workspace.require_reference,

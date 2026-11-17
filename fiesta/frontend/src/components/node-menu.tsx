@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { CSSProperties } from "react";
+import { pathSegment } from "../lib/canonical-path";
 import { useNodeConfig } from "../lib/config";
 import type { NodeConfig, NodePage } from "../lib/types";
 import { Icon, type IconName, iconName } from "./ui/icon";
@@ -43,7 +44,7 @@ export function nodeMenuItems(config: NodeConfig | undefined): {
   const item = (page: NodePage): NodeMenuItem => ({
     key: page.slug,
     label: page.title,
-    to: `/${page.slug}`,
+    to: `/${pathSegment(page.slug)}`,
     icon: page.icon ? iconName(page.icon) : undefined,
   });
   const left: NodeMenuItem[] = [
@@ -61,7 +62,7 @@ export function nodeMenuItems(config: NodeConfig | undefined): {
     });
   }
   right.push(...pages.filter((page) => page.menu === "right").map(item));
-  right.push({ key: "contact", label: "Contact", to: "/contact", icon: "mail" });
+  right.push({ key: "contact", label: "Contact", to: "/Contact", icon: "mail" });
 
   return { left, right };
 }

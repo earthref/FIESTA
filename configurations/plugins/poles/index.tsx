@@ -26,7 +26,12 @@ import type {
   SearchResult,
 } from "@/lib/types";
 import { cx, getPath } from "@/lib/utils";
-import type { PluginModule, PluginSubTabContext } from "@/plugins";
+import {
+  isBoolean,
+  type PluginModule,
+  type PluginSubTabContext,
+  useSearchSetting,
+} from "@/plugins";
 import {
   type AgeColors,
   DEFAULT_AGE_COLORS,
@@ -74,7 +79,6 @@ interface PolesPluginConfig {
   base_level?: string;
   after_sub_tab?: string;
   table?: string;
-  has_plate_boundaries?: boolean;
   plate_boundary_color?: string;
   age_color?: Partial<AgeColors>;
   /** The interval its Age tile shows (summary._interval.<name>). */
@@ -506,8 +510,9 @@ function PolesMapView({
   // The pole a grid row picked, which the map turns or pans to (a new object
   // per pick, so every pick moves the map, even back to the same pole).
   const [centerOn, setCenterOn] = useState<{ lon: number; lat: number } | null>(null);
-  const [showEllipses, setShowEllipses] = useState(true);
-  const [showVgps, setShowVgps] = useState(true);
+  // The plot's toggles are settings of the saved search (a shared link keeps them).
+  const [showEllipses, setShowEllipses] = useSearchSetting("poles.ellipses", true, isBoolean);
+  const [showVgps, setShowVgps] = useSearchSetting("poles.vgps", true, isBoolean);
   const rootRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const available = useAvailableHeight(rootRef);
@@ -596,13 +601,6 @@ function PolesMapView({
   });
   const rows = useMemo(() => grid.items.map((hit) => hit && cardDocOf(hit)), [grid.items]);
 
-  const boundaries = useQuery({
-    queryKey: ["plugin", "poles", "plate-boundaries"],
-    queryFn: () => api<unknown>("/plugins/poles/plate-boundaries"),
-    enabled: pconfig.has_plate_boundaries === true,
-    staleTime: Number.POSITIVE_INFINITY,
-  });
-
   const poles = useMemo<Pole[]>(() => {
     if (!mapLoaded || !firstMapPage.data) return [];
     const hits = [firstMapPage.data, ...restMapPages.pages].flatMap((page) => page?.results ?? []);
@@ -644,13 +642,11 @@ function PolesMapView({
         {/* Row 1 — map + side panel */}
         <div className="flex shrink-0" style={{ height: mapHeight }}>
           <div ref={mapColumnRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {boundaries.error && <ErrorMessage error={boundaries.error} className="m-2" />}
             <div className="min-h-0 flex-1">
               <PolesMap
                 poles={poles}
                 matched={matched > MAX_POLES ? matched : undefined}
                 ageScale={ageScale}
-                boundaries={boundaries.data ?? null}
                 plateColor={pconfig.plate_boundary_color ?? "#990000"}
                 selectedColor={colors.selected}
                 showEllipses={showEllipses}
@@ -741,8 +737,8 @@ const polesPlugin: PluginModule = {
       {
         key: "poles",
         title: "Poles\nView",
-        to: "/search",
-        search: { level: pconfig.base_level, view: "Poles" },
+        level: pconfig.base_level,
+        view: "Poles",
       },
     ];
   },
@@ -776,6 +772,7 @@ const polesPlugin: PluginModule = {
     return [
       {
         name: "Poles",
+        icon: "globe",
         countTable: pconfig.table ?? "poles",
         render: (ctx) => <PolesMapView {...ctx} />,
       },

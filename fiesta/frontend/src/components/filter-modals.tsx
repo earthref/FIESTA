@@ -10,7 +10,8 @@
 //   with min/max boxes.
 // - ExistsModal: the `exists` filter's columns with data (With Data) or
 //   without (Without Data), a tab per table the level's records cover.
-// - GeoModal: the geospatial area on the search's map, with its bounds as numbers.
+// - GeoModal: the geospatial area on the search's map, with its bounds as numbers,
+//   and the tectonic plates picked from a list.
 //
 // Each edits a draft and applies it with Apply, so a long list keeps its order
 // while values are picked and the search runs once.
@@ -21,6 +22,7 @@ import { api } from "../lib/api";
 import { useNodeConfig } from "../lib/config";
 import { dataModelQuery, unwrapModel } from "../lib/data-model";
 import { plotColors } from "../lib/plot-colors";
+import { type TimescaleUnit, unitSpan } from "../lib/timescale";
 import type {
   DataModel,
   DataModelColumn,
@@ -43,6 +45,7 @@ import {
 import { type FacetValueDescription, usePluginFacetDescriptions } from "../plugins";
 import { type BrushRange, EChart, type EChartsOption } from "./echart";
 import { type Area, WHOLE_GLOBE } from "./map/map-points";
+import { usePlates } from "./map/plates";
 import { type AreaRequest, SearchMap } from "./map/search-map";
 import {
   ANY_TABLE,
@@ -509,7 +512,12 @@ export function RangeModal({
     () => bars.map((bar) => !anySelection || within(bar, lo, hi)),
     [bars, anySelection, lo, hi],
   );
-  const selectedCount = bars.reduce((n, bar, i) => n + (flags[i] ? bar.count : 0), 0);
+  // A record counts in every bin it has a value (or an interval) in, so the
+  // bins' sum is at most the records with a value.
+  const selectedCount = Math.min(
+    bars.reduce((n, bar, i) => n + (flags[i] ? bar.count : 0), 0),
+    data?.counted ?? Number.POSITIVE_INFINITY,
+  );
   const valid =
     (draft.gte === "" || Number.isFinite(lo)) &&
     (draft.lte === "" || Number.isFinite(hi)) &&
@@ -597,6 +605,16 @@ export function RangeModal({
       ],
     } as EChartsOption;
   }, [bars, flags, xLog, label, filter.unit, unit, color, date]);
+
+  // A geologic time unit's range; one reaching the present is open below
+  // (unitSpan), so ages after 1950 (negative years BP) are in it.
+  const pickUnit = (unit: TimescaleUnit) => {
+    const [min, max] = unitSpan(unit);
+    setDraft({
+      gte: Number.isFinite(min) ? edgeValue((min * 1e6) / scale) : "",
+      lte: edgeValue((max * 1e6) / scale),
+    });
+  };
 
   const changed = draft.gte !== initial.gte || draft.lte !== initial.lte;
   const apply = () => {
@@ -736,12 +754,7 @@ export function RangeModal({
               right={GRID.right}
               toValue={(ma) => (ma * 1e6) / scale}
               selected={{ lo, hi }}
-              onPick={(unit) =>
-                setDraft({
-                  gte: edgeValue((unit.min * 1e6) / scale),
-                  lte: edgeValue((unit.max * 1e6) / scale),
-                })
-              }
+              onPick={pickUnit}
             />
           )}
         </div>
@@ -757,12 +770,7 @@ export function RangeModal({
               <TimescalePicker
                 toValue={(ma) => (ma * 1e6) / scale}
                 selected={{ lo, hi }}
-                onPick={(unit) =>
-                  setDraft({
-                    gte: edgeValue((unit.min * 1e6) / scale),
-                    lte: edgeValue((unit.max * 1e6) / scale),
-                  })
-                }
+                onPick={pickUnit}
               />
             </>
           )}
@@ -1251,10 +1259,15 @@ const areaOf = (b: Bounds): Area | null => {
 };
 
 /**
- * The geospatial area: the search's records on a map (with a level that has
- * positions) with an area to drag and resize, drawn around them on opening
- * when there is none yet (and by "Filter by area" once removed), and its
- * bounds as numbers. Longitudes may run past ±180 across the antimeridian.
+ * The geospatial area: its bounds as numbers, or present-day plates picked
+ * from a list instead (`plates`, the level's area, not a plugin view's bbox:
+ * records on any of them, outlined on the map; a plate turns the bounds off),
+ * over the search's records on a map (with a level that has positions) with
+ * the area to drag and resize. Opened without either, the map draws a default
+ * area first (at most 20° each way, around the records or where most of them
+ * are; see defaultArea) and fetches only the records inside it; Filter by area
+ * draws it again once removed. Longitudes may run past ±180 across the
+ * antimeridian.
  */
 export function GeoModal({
   title,
@@ -1264,6 +1277,7 @@ export function GeoModal({
   filters,
   has,
   area,
+  plates,
   color,
   onApply,
   onClose,
@@ -1277,18 +1291,31 @@ export function GeoModal({
   /** The with/without data filter's entries. */
   has?: string[];
   area: Area | null;
+  /** The plate codes applied; undefined offers no plates (a plugin view's bbox). */
+  plates?: string[];
   color: string;
-  onApply: (area: Area | null) => void;
+  onApply: (area: Area | null, plates: string[]) => void;
   onClose: () => void;
 }) {
-  const [draft, setDraft] = useState<Area | null>(area);
-  const [bounds, setBounds] = useState<Bounds>(boundsOf(area));
-  // Opened without an area, the map draws one around the search's records.
-  const [request, setRequest] = useState<AreaRequest | null>(area || !level.geo ? null : {});
+  const [draftPlates, setDraftPlates] = useState<string[]>(plates ?? []);
+  const byPlates = draftPlates.length > 0;
+  const [draft, setDraft] = useState<Area | null>(byPlates ? null : area);
+  const plateList = usePlates(plates !== undefined);
+  const plateName = (code: string) =>
+    plateList.data?.plates.find((plate) => plate.code === code)?.name ?? code;
+  const [bounds, setBounds] = useState<Bounds>(boundsOf(draft));
+  const [request, setRequest] = useState<AreaRequest | null>(
+    !area && !plates?.length && level.geo ? {} : null,
+  );
   const fromMap = (next: Area | null) => {
     setRequest(null);
     setDraft(next);
     setBounds(boundsOf(next));
+  };
+  // A plate turns the bounds off (and drops them).
+  const addPlate = (code: string) => {
+    setDraftPlates([...draftPlates, code]);
+    fromMap(null);
   };
   const typed = (key: keyof Bounds, value: string) => {
     const next = { ...bounds, [key]: value };
@@ -1297,17 +1324,20 @@ export function GeoModal({
     if (parsed) setDraft(parsed);
   };
   const empty = Object.values(bounds).every((v) => v.trim() === "");
-  const invalid = !empty && !areaOf(bounds);
-  const changed = JSON.stringify(draft) !== JSON.stringify(area);
+  const invalid = !byPlates && !empty && !areaOf(bounds);
+  const changed =
+    JSON.stringify(draft) !== JSON.stringify(area) ||
+    JSON.stringify(draftPlates) !== JSON.stringify(plates ?? []);
   const boundInput = (key: keyof Bounds, name: string, placeholder: string) => (
     <label className="flex items-center gap-1.5">
-      <span className="w-12 text-ink-muted">{name}</span>
+      <span className={cx("w-12", byPlates ? "text-gray-400" : "text-ink-muted")}>{name}</span>
       <input
         type="number"
         value={bounds[key]}
         placeholder={placeholder}
+        disabled={byPlates}
         onChange={(event) => typed(key, event.target.value)}
-        className={cx(inputClass, "w-28")}
+        className={cx(inputClass, "w-28 disabled:opacity-50")}
       />
     </label>
   );
@@ -1321,15 +1351,91 @@ export function GeoModal({
       title={title}
       footer={
         <Footer
-          onClear={() => fromMap(null)}
-          clearDisabled={!draft && empty}
+          onClear={() => {
+            fromMap(null);
+            setDraftPlates([]);
+          }}
+          clearDisabled={!draft && empty && !byPlates}
           onCancel={onClose}
-          onApply={() => onApply(empty ? null : draft)}
+          onApply={() => onApply(empty || byPlates ? null : draft, draftPlates)}
           applyDisabled={invalid || (!changed && !(empty && area))}
         />
       }
     >
       <div className="flex flex-col gap-3 text-[13px] text-ink">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          {boundInput("north", "North", "90")}
+          {boundInput("south", "South", "-90")}
+          {boundInput("west", "West", "-180")}
+          {boundInput("east", "East", "180")}
+          <button
+            type="button"
+            disabled={byPlates}
+            onClick={() => fromMap(WHOLE_GLOBE)}
+            className="cursor-pointer text-node-ink hover:underline disabled:cursor-default disabled:text-gray-400 disabled:no-underline"
+          >
+            Whole globe
+          </button>
+        </div>
+        {plates !== undefined && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <label className="flex items-center gap-1.5">
+              <span className="w-12 text-ink-muted">Plates</span>
+              <select
+                value=""
+                disabled={!plateList.data}
+                onChange={(event) => {
+                  const code = event.target.value;
+                  if (code) addPlate(code);
+                }}
+                className="rounded-sm border border-gray-300 bg-surface px-1.5 py-1"
+              >
+                <option value="">
+                  {plateList.isPending
+                    ? "Loading plates…"
+                    : plateList.error
+                      ? "The plates could not be loaded"
+                      : byPlates
+                        ? "Add another plate…"
+                        : "Filter by plate instead…"}
+                </option>
+                {(plateList.data?.plates ?? [])
+                  .filter((plate) => !draftPlates.includes(plate.code))
+                  .map((plate) => (
+                    <option key={plate.code} value={plate.code}>
+                      {plate.name} ({plate.code})
+                    </option>
+                  ))}
+              </select>
+            </label>
+            {draftPlates.map((code) => (
+              <Chip
+                key={code}
+                label={`${plateName(code)} plate`}
+                onRemove={() => {
+                  const rest = draftPlates.filter((other) => other !== code);
+                  setDraftPlates(rest);
+                  // The last one gone, the bounds are back with the default area.
+                  if (rest.length === 0 && level.geo) setRequest({});
+                }}
+              />
+            ))}
+          </div>
+        )}
+        {invalid ? (
+          <p className="text-red-700">
+            Give all four bounds in degrees: South below North (−90 to 90), West below East (East
+            may pass 180 to cross the antimeridian).
+          </p>
+        ) : (
+          <p className="text-[13px] text-ink-muted">
+            {byPlates
+              ? `Records on ${draftPlates.length === 1 ? "this present-day plate" : "any of these present-day plates"} (Bird 2003). Remove ${draftPlates.length === 1 ? "it" : "them"} to filter by bounds instead.`
+              : level.geo
+                ? `Drag the outline on the map or its corners, or type the bounds${plates !== undefined ? ", or pick a plate instead" : ""}. Filter by area draws a new one.`
+                : `Type the bounds in degrees${plates !== undefined ? ", or pick a plate instead" : ""}.`}
+          </p>
+        )}
         {level.geo && (
           <div style={{ height: "52vh", minHeight: 320 }}>
             <SearchMap
@@ -1339,7 +1445,9 @@ export function GeoModal({
               filters={filters}
               has={has}
               area={draft}
+              plates={draftPlates}
               editArea
+              areaDisabled={byPlates}
               onAreaChange={fromMap}
               areaRequest={request}
               onRequestArea={() => setRequest({})}
@@ -1348,31 +1456,6 @@ export function GeoModal({
               color={color}
             />
           </div>
-        )}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          {boundInput("north", "North", "90")}
-          {boundInput("south", "South", "-90")}
-          {boundInput("west", "West", "-180")}
-          {boundInput("east", "East", "180")}
-          <button
-            type="button"
-            onClick={() => fromMap(WHOLE_GLOBE)}
-            className="cursor-pointer text-node-ink hover:underline"
-          >
-            Whole globe
-          </button>
-        </div>
-        {invalid ? (
-          <p className="text-red-700">
-            Give all four bounds in degrees: South below North (−90 to 90), West below East (East
-            may pass 180 to cross the antimeridian).
-          </p>
-        ) : (
-          <p className="text-[13px] text-ink-muted">
-            {level.geo
-              ? "Drag the outline on the map or its corners, or type the bounds. Filter by area draws a new one."
-              : "Type the bounds in degrees."}
-          </p>
         )}
       </div>
     </Modal>

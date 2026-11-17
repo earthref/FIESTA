@@ -82,22 +82,35 @@ def resolve(path: str, query: dict[str, str]) -> Target:
     if node is None:
         return Target(None, "portal" if not segments else "other")
     rest = segments[1:]
+    # SPA paths match in any case (/MagIC/Search, /MagIC/search).
+    first = rest[0].lower() if rest else ""
     cid = query.get("contribution", "")
     if cid.isdigit():
         return Target(node, "contribution", int(cid))
     if not rest:
         return Target(node, "home")
-    if len(rest) == 1 and rest[0].isdigit():
-        return Target(node, "contribution", int(rest[0]))
-    if len(rest) == 2 and rest[0] == "contributions" and rest[1].isdigit():
+    # /MagIC/20907 and /MagIC/20907/<tab> (a contribution's modal).
+    if len(rest) <= 2 and first.isdigit():
+        return Target(node, "contribution", int(first))
+    if len(rest) == 2 and first == "contributions" and rest[1].isdigit():
         return Target(node, "contribution", int(rest[1]))
-    if rest == ["search"]:
+    # /MagIC/Search[/<level>[/<view>]].
+    if first == "search" and len(rest) <= 3:
         return Target(node, "search")
-    if rest[0] in PRIVATE_ROUTES:
+    if first in PRIVATE_ROUTES:
         return Target(node, "private")
-    if len(rest) == 1 and node.page(rest[0]):
-        return Target(node, "page", page=rest[0])
+    if len(rest) == 1:
+        page = next((p for p in node.pages if p.slug.lower() == first), None)
+        if page:
+            return Target(node, "page", page=page.slug)
     return Target(node, "other")
+
+
+def path_segment(slug: str) -> str:
+    """A slug as the SPA's canonical path segment, each hyphenated word
+    capitalized ("grand-challenges" -> "Grand-Challenges"; the frontend's
+    lib/canonical-path.ts)."""
+    return "-".join(word[:1].upper() + word[1:] for word in slug.split("-"))
 
 
 @dataclass
@@ -161,8 +174,10 @@ def _links(items: list[tuple[str, str]]) -> str:
 
 def _node_links(node: NodeConfig) -> list[tuple[str, str]]:
     catalog = catalog_url(node)
-    return [(f"Search {node.node.key}", f"{catalog}/search")] + [
-        (page.title, f"{catalog}/{page.slug}") for page in node.pages if page.menu != "hidden"
+    return [(f"Search {node.node.key}", f"{catalog}/Search")] + [
+        (page.title, f"{catalog}/{path_segment(page.slug)}")
+        for page in node.pages
+        if page.menu != "hidden"
     ]
 
 
@@ -270,7 +285,7 @@ async def describe(request: Request, target: Target) -> Described:
         return default
     if target.kind == "search":
         default.title = f"Search {identity.key} — {identity.title}"
-        default.canonical = f"{catalog}/search"
+        default.canonical = f"{catalog}/Search"
         return default
     if target.kind == "page" and target.page:
         page = node.page(target.page)
@@ -278,7 +293,7 @@ async def describe(request: Request, target: Target) -> Described:
         return Described(
             title=f"{page.title} — {identity.title}",
             description=(" ".join(paragraphs)[:300] or default.description),
-            canonical=f"{catalog}/{target.page}",
+            canonical=f"{catalog}/{path_segment(target.page)}",
             body=f"<h1>{_esc(page.title)}</h1>" + "".join(f"<p>{_esc(p)}</p>" for p in paragraphs),
         )
     if target.kind == "contribution" and target.contribution_id is not None:
@@ -432,7 +447,7 @@ async def llms_node(request: Request, node: NodeDep) -> PlainTextResponse:
     pages = [p for p in node.pages if p.menu != "hidden"]
     if pages:
         lines += ["", "## Pages", ""]
-        lines += [f"- [{p.title}]({catalog}/{p.slug})" for p in pages]
+        lines += [f"- [{p.title}]({catalog}/{path_segment(p.slug)})" for p in pages]
     optional = []
     if (website := identity.links.website) and website.rstrip("/") != catalog:
         optional.append(f"- [Website]({website})")
@@ -446,8 +461,10 @@ async def llms_node(request: Request, node: NodeDep) -> PlainTextResponse:
 @node_router.get("/sitemap.xml", include_in_schema=False)
 async def sitemap(session: SessionDep, node: NodeDep) -> Response:
     catalog = catalog_url(node)
-    urls: list[tuple[str, str | None]] = [(catalog, None), (f"{catalog}/search", None)]
-    urls += [(f"{catalog}/{p.slug}", None) for p in node.pages if p.menu != "hidden"]
+    urls: list[tuple[str, str | None]] = [(catalog, None), (f"{catalog}/Search", None)]
+    urls += [
+        (f"{catalog}/{path_segment(p.slug)}", None) for p in node.pages if p.menu != "hidden"
+    ]
     rows = await session.execute(
         select(Contribution.id, Contribution.updated_at)
         .where(*_public(node))

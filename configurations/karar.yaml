@@ -104,6 +104,8 @@ search:
       table: measurements
       count_field: summary.measurements._n_results
       map: false
+      # Legacy opened Measurements on its rows (it had no Summaries view).
+      default_view: Data
       columns:
         - { cell: record }
         - { cell: map }
@@ -145,7 +147,10 @@ search:
   # summary._num, and each specimen's / experiment's as one interval in
   # summary._interval.age (the Age filter, tile and sort): age_low..age_high,
   # a missing end age -/+ 2 x its sigma (external, else internal, else
-  # analytical; all 1 sigma), a side with neither open.
+  # analytical; all 1 sigma), a side with neither open. Only specimens' and
+  # experiments' rows: a measurement's age is one heating step's apparent
+  # age (often far off, even negative), not an age of the specimen, its
+  # sample or the contribution.
   unit_conversions:
     - unit_column: age_unit
       columns: [age, age_low, age_high]
@@ -161,6 +166,7 @@ search:
         value: age
         sigma: [age_sigma_external, age_sigma_internal, age_sigma_analytical]
         sigma_multiple: 2
+        tables: [specimens, experiments]
   # Samples on another planetary body, by their location_type: they and their
   # specimens, ... are mapped on that body's globe, not Earth's.
   # Martian is left out: those samples are meteorites, mapped where found.

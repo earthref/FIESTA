@@ -13,7 +13,7 @@ export function NotFoundPage() {
         <Link to="/">
           <Button variant="secondary">Home</Button>
         </Link>
-        <Link to="/search">
+        <Link to="/Search/{-$level}/{-$view}" params={{}}>
           <Button>Search</Button>
         </Link>
       </div>

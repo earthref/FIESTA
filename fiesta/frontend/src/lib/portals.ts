@@ -7,9 +7,9 @@ export interface Portal {
   label: string;
   url: string;
   color: string;
-  /** A FIESTA page standing in for the portal (routes/portal-pages.tsx):
-   * the portal home's page in the multi-node layout, else this node's. */
-  path?: "/references" | "/users";
+  /** A FIESTA page standing in for the portal (routes/portal-pages.tsx),
+   * served at the portal (portalPageUrl). */
+  path?: "/References" | "/Users";
 }
 
 export const PORTALS: Portal[] = [
@@ -25,8 +25,8 @@ export const PORTALS: Portal[] = [
   { label: "SCC", url: "https://earthref.org/SCC/", color: "#8b216a" },
   { label: "ERESE", url: "https://earthref.org/ERESE/", color: "#3030bb" },
   { label: "ERDA", url: "https://earthref.org/ERDA/", color: "#006600" },
-  { label: "References", url: "https://earthref.org/ERR/", color: "#006600", path: "/references" },
-  { label: "Users", url: "https://earthref.org/ERML/", color: "#006600", path: "/users" },
+  { label: "References", url: "https://earthref.org/ERR/", color: "#006600", path: "/References" },
+  { label: "Users", url: "https://earthref.org/ERML/", color: "#006600", path: "/Users" },
 ];
 
 /** The EarthRef.org entry: the FIESTA portal home stands in for it. */
@@ -42,8 +42,8 @@ export const FIESTA_PORTAL = {
 
 /**
  * The current page shows the FIESTA identity (FIESTA_PORTAL: header, theme
- * color, favicon; no node menu): the portal home, and References and Users
- * wherever they are served. Follows the route, not the load-time PORTAL: in a
+ * color, favicon; no node menu): the portal home, and References, Users and
+ * Admin wherever they are served. Follows the route, not the load-time PORTAL: in a
  * per-node build (dev.earthref.org/MagIC/references) those pages live under
  * the node's base path, where PORTAL is false, and the router can move between
  * them and the node's pages without a reload (portal-paths.ts).
@@ -68,6 +68,28 @@ const siblingBase: string | null = NODES.length
     : BASE_PATH.replace(/[^/]+\/$/, "");
 
 /**
+ * Where a FIESTA page (References, Users, Admin: portal-paths.ts) lives: the
+ * portal at the root of this origin, wherever the link is shown. The
+ * multi-node layout serves it at the build base (http://localhost:8080/admin);
+ * with one build per node, a FIESTA build at the parent of the node prefixes
+ * does (dev.earthref.org/admin). null: this app is the portal (base.ts PORTAL)
+ * or a build at "/" with no other nodes on its origin -- link with the router.
+ */
+export function portalPageUrl(path: string): string | null {
+  if (PORTAL || siblingBase === null) return null;
+  return `${siblingBase}${path.replace(/^\//, "")}`;
+}
+
+/**
+ * Where a node's own page ("/Admin") lives on this origin: under its /<Key>/
+ * prefix beside this app (http://localhost:8080/CDR/Admin,
+ * dev.earthref.org/CDR/Admin). null: this origin serves no other nodes.
+ */
+export function nodePageUrl(key: string, path: string): string | null {
+  return siblingBase === null ? null : `${siblingBase}${key}${path}`;
+}
+
+/**
  * The URL a portal links to. EarthRef.org is the FIESTA portal home in the
  * multi-node layout. Off the production hosts (a local stack, the dev
  * server), a node this deployment also serves -- listed in fiesta-env.js for
@@ -78,10 +100,10 @@ export function portalUrl(portal: Portal, deploymentNodes: string[] = []): strin
   // Where this origin serves every node, EarthRef.org is the FIESTA portal home
   // at the build base (base.ts PORTAL).
   if (portal === EARTHREF && NODES.length) return BUILD_BASE;
-  // References and Users are FIESTA pages wherever FIESTA serves them; production
-  // keeps the legacy ones until the cutover.
+  // References and Users are FIESTA pages at the portal wherever FIESTA serves
+  // them; production keeps the legacy ones until the cutover.
   if (portal.path && !productionHosts.has(location.hostname)) {
-    return NODES.length ? `${BUILD_BASE}${portal.path.slice(1)}` : siteUrl(portal.path);
+    return portalPageUrl(portal.path) ?? siteUrl(portal.path);
   }
   if (siblingBase === null || productionHosts.has(location.hostname)) return portal.url;
   const slug = portal.label.toLowerCase();

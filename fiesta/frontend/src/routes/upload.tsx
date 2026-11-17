@@ -9,7 +9,7 @@ export function UploadPage() {
   const { data: config } = useNodeConfig();
   const { user } = useAuth();
   const { openLogin } = useLoginModal();
-  const { to } = useSearch({ from: "/upload" }) as { to?: number };
+  const { to } = useSearch({ from: "/Upload" }) as { to?: number };
 
   if (isSourceMode(config)) {
     return (

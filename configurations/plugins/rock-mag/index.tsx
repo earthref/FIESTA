@@ -42,8 +42,8 @@ const rockMagPlugin: PluginModule = {
       {
         key: "rock-mag",
         title: "Rock Magnetism\nView",
-        to: "/search",
-        search: { level: rconfig.base_level, view: VIEW_NAME },
+        level: rconfig.base_level,
+        view: VIEW_NAME,
       },
     ];
   },

@@ -15,8 +15,9 @@ import { Icon, iconName } from "./ui/icon";
  * - small  (`ui nine cards`, borderless): 10px, padding .875em, transparent;
  *          `i.icons` (10px) → 30px base glyph + 15px corner; title
  *          1.0714em/700. 82px tall.
- * - wide   (`tiny card` / `small card`, full width): padding .786em, no icon,
- *          title on one or two header lines.
+ * - wide   (`tiny card` / `small card`, full width): padding .786em, title on
+ *          one or two header lines; legacy had no icon, an `icon` here sits
+ *          left of the title (the quick-launch cards, 2026-11).
  * Hover bg #f0f0f0 on all of them. Icons are Semantic icon names, drawn as
  * Lucide glyphs (ui/icon-map.ts); the corner glyph is a node-colored badge at
  * the base glyph's bottom right (ui/icon.tsx `corner`), not legacy's
@@ -96,6 +97,18 @@ export function IconButton({
     padding: wide ? "0.786em" : "0.875em",
     borderRadius: "0.28571429rem",
   };
+  const titleBlock = (
+    <div
+      className="font-bold text-node-ink"
+      style={{
+        fontSize: `${titleSize}em`,
+        lineHeight: "1.28571429em",
+        margin: subtitle ? "0 0 0.5rem" : 0,
+      }}
+    >
+      {typeof title === "string" ? titleLines(title) : title}
+    </div>
+  );
   const content = (
     <>
       {media && (
@@ -111,7 +124,7 @@ export function IconButton({
           style={{ width: iconPx, height: iconPx, marginBottom: "0.5rem" }}
         />
       )}
-      {!media && !image && icon && (
+      {!media && !image && icon && !wide && (
         <Icon
           name={iconName(icon)}
           corner={cornerIcon ? iconName(cornerIcon) : undefined}
@@ -120,16 +133,21 @@ export function IconButton({
           style={{ display: "block", margin: "0 auto 0.5rem" }}
         />
       )}
-      <div
-        className="font-bold text-node-ink"
-        style={{
-          fontSize: `${titleSize}em`,
-          lineHeight: "1.28571429em",
-          margin: subtitle ? "0 0 0.5rem" : 0,
-        }}
-      >
-        {typeof title === "string" ? titleLines(title) : title}
-      </div>
+      {!media && !image && icon && wide ? (
+        // A wide card's icon sits left of its title, as tall as two title lines.
+        <div className="flex items-center justify-center">
+          <Icon
+            name={iconName(icon)}
+            corner={cornerIcon ? iconName(cornerIcon) : undefined}
+            size={cardFont * 2.5}
+            className="shrink-0 text-ink-secondary"
+            style={{ marginRight: "0.75em" }}
+          />
+          {titleBlock}
+        </div>
+      ) : (
+        titleBlock
+      )}
       {subtitle && (
         <div className="text-ink-secondary" style={{ fontSize: "1em", lineHeight: 1.2 }}>
           {subtitle}

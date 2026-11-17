@@ -21,10 +21,12 @@ from fiesta.apps.routers import (
     auth,
     basemap,
     config,
+    import_formats,
     imports,
     portal,
     private,
     search,
+    searches,
     seo,
     source,
     upgrade,
@@ -79,8 +81,9 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
-        # The SPA names an authenticated download (fetched, not linked) by it.
-        expose_headers=["Content-Disposition"],
+        # The SPA names an authenticated download (fetched, not linked) by it,
+        # and tells the user when Download Results stopped at its cap.
+        expose_headers=["Content-Disposition", "X-Download-Truncated"],
     )
     # Compress responses for clients that accept gzip (search results, plot
     # data and downloads are JSON or text and shrink 3-5x). Level 6: nearly
@@ -132,9 +135,11 @@ def create_app() -> FastAPI:
     for router in (
         config.router,
         search.router,
+        searches.router,
         private.router,
         assistance.router,
         imports.router,
+        import_formats.router,
         upgrade.router,
         workspaces.router,
         source.router,

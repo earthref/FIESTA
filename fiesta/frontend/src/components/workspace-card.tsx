@@ -14,6 +14,7 @@ import { useAuth } from "../lib/auth";
 import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
+import { contributionPath } from "../lib/search-state";
 import type {
   ContributionOut,
   ContributionStatus,
@@ -618,7 +619,7 @@ export function ContributionCard({
     }
   };
 
-  const pagePath = siteUrl(`/contributions/${contribution.id}`);
+  const pagePath = siteUrl(contributionPath(contribution.id));
   const publicUrl = `${window.location.origin}${pagePath}`;
   const privateUrl = `${publicUrl}?private_key=${contribution.private_key ?? ""}`;
   const copy = async (which: "private" | "public") => {
@@ -967,7 +968,7 @@ export function ContributionCard({
           {downloadButton}
           {/* Legacy "Add Data to This Contribution" (MagIC #327): the upload
               page with this contribution as its target. */}
-          <Link to="/upload" search={{ to: contribution.id }} className={linkButton}>
+          <Link to="/Upload" search={{ to: contribution.id }} className={linkButton}>
             <Icon name="upload" size="small" /> Add Data
           </Link>
           <Button variant="secondary" onClick={() => setEditorOpen(true)} disabled={busy}>

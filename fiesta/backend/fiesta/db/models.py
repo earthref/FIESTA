@@ -240,6 +240,45 @@ class AssistanceRequest(Base):
     note: Mapped[str | None] = mapped_column(Text)
 
 
+class SavedSearch(Base):
+    """A search page's state (query, filters, sort, plugin view settings),
+    stored so a short URL (`/MagIC/Search/Sites/Data?q=<id>`) opens it. The id
+    is derived from the canonical state (fiesta.services.searches), so the same
+    search always gets the same id and a row is never edited: a link keeps
+    showing what it showed when it was shared. `use_count` and `search_uses`
+    show what a node's searches are used for."""
+
+    __tablename__ = "searches"
+    __table_args__ = {"schema": NODE_SCHEMA}
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    state: Mapped[dict] = mapped_column(JSON)
+    # Who first ran it (null: signed out).
+    created_by: Mapped[int | None] = mapped_column(ForeignKey(f"{SHARED_SCHEMA}.users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_used_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, index=True
+    )
+    use_count: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class SearchUse(Base):
+    """One run (`save`: the state was set on the search page) or opening
+    (`open`: a link loaded) of a saved search, with the level and result view
+    it was on -- those are in the URL path, not the state."""
+
+    __tablename__ = "search_uses"
+    __table_args__ = {"schema": NODE_SCHEMA}
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    search_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(f"{NODE_SCHEMA}.searches.id"), index=True
+    )
+    user_id: Mapped[int | None] = mapped_column(ForeignKey(f"{SHARED_SCHEMA}.users.id"))
+    kind: Mapped[str] = mapped_column(String(8))
+    level: Mapped[str | None] = mapped_column(String(64))
+    view: Mapped[str | None] = mapped_column(String(64))
+    used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
 class LegacyImport(Base):
     __tablename__ = "legacy_imports"
     __table_args__ = {"schema": NODE_SCHEMA}
