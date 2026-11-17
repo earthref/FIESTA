@@ -1867,15 +1867,16 @@ export function SearchPage(props: SearchPageProps) {
                           table={level.table}
                           selected={openedRow}
                           onRowClick={openDataRow}
-                          // Each row's number (<contribution>.<row_id>) links to
-                          // it; a plain click opens it as a row click does.
-                          rowLink={(row) =>
-                            rowLinkOf(
+                          // Each row's number (<contribution>.<row_id>) copies its
+                          // persistent link (with a private contribution's key).
+                          rowLink={(row) => {
+                            const id = row.hit && contributionId(row.hit);
+                            return rowLinkOf(
                               row,
-                              () => openDataRow(row),
-                              row.hit && contributionId(row.hit),
-                            )
-                          }
+                              id,
+                              privateKey ?? (id ? ownKey(Number(id)) : undefined),
+                            );
+                          }}
                           estimateRows={rowsPerRecord}
                           sort={rowsSort}
                           onSort={onRowsSort}

@@ -1168,9 +1168,8 @@ function LevelPanel({
         selected={selected !== undefined ? String(selected) : undefined}
         selectedColumn={column}
         onRowClick={(row) => onSelect(Number(row.key))}
-        // Each row's number (<contribution>.<row_id>) links to it; a plain
-        // click selects it here.
-        rowLink={(row) => rowLinkOf(row, () => onSelect(Number(row.key)), id)}
+        // Each row's number (<contribution>.<row_id>) copies its persistent link.
+        rowLink={(row) => rowLinkOf(row, id, privateKey)}
         // Each item is one row of the file's table.
         scrollTo={sort ? undefined : target}
         columnIssues={showIssues ? first?.column_issues : undefined}
