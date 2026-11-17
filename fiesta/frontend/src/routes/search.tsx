@@ -1842,7 +1842,7 @@ export function SearchPage(props: SearchPageProps) {
                           // it; a plain click opens it as a row click does.
                           rowLink={(row) =>
                             rowLinkOf(
-                              row.values,
+                              row,
                               () => openDataRow(row),
                               row.hit && contributionId(row.hit),
                             )

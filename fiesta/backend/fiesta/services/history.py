@@ -157,7 +157,7 @@ async def _parsed_tables(node: NodeConfig, contribution: Contribution) -> dict[s
     if entry is None:
         raw = await load_file(node, contribution.id, contribution.filename)
         parsed = await asyncio.to_thread(parse_text, raw.decode("utf-8", errors="replace"))
-        entry = {"tables": parsed.tables, "orders": {}}
+        entry = {"tables": parsed.tables, "row_ids": parsed.row_ids, "orders": {}}
         _TABLES[key] = entry
         while len(_TABLES) > _TABLES_SIZE:
             _TABLES.popitem(last=False)
@@ -208,16 +208,13 @@ def _cell_text(value: Any) -> str:
     return "" if value is None else str(value).strip()
 
 
-def row_with_id(tables: dict[str, list[dict[str, str]]], row_id: int) -> tuple[str, int] | None:
-    """The table and 1-based position of the row whose `row_id` (numbered
-    1..N across the file's tables by `parse.stamp_ids`) is `row_id`, or None."""
-    wanted = str(row_id)
-    for table, rows in tables.items():
-        if table == "contribution":
-            continue
-        for index, row in enumerate(rows):
-            if _cell_text(row.get("row_id")) == wanted:
-                return table, index + 1
+def row_with_id(row_ids: dict[str, list[int]], row_id: int) -> tuple[str, int] | None:
+    """The table and 1-based position of the row with that core id
+    (`ParsedContribution.row_ids`), or None."""
+    for table, ids in row_ids.items():
+        # A table's ids rise; split over blocks, they may skip.
+        if ids and ids[0] <= row_id <= ids[-1] and row_id in ids:
+            return table, ids.index(row_id) + 1
     return None
 
 
@@ -227,7 +224,7 @@ async def locate_row_id(
     """Where a row id (a persistent link's `<contribution>.<row>`) sits in
     the contribution's current file: its table and 1-based `row`."""
     entry = await _parsed_tables(node, contribution)
-    return await asyncio.to_thread(row_with_id, entry["tables"], row_id)
+    return await asyncio.to_thread(row_with_id, entry["row_ids"], row_id)
 
 
 async def locate_row(
@@ -276,6 +273,7 @@ async def table_page(
     (column, "asc"|"desc") over every row of the table, not just the page."""
     entry = await _parsed_tables(node, contribution)
     rows: list[dict[str, str]] = entry["tables"].get(table, [])
+    ids: list[int] = entry["row_ids"].get(table, [])
     columns = list(dict.fromkeys(column for row in rows for column in row))
     if sort is not None and sort[0] in columns:
         column, order = sort
@@ -300,5 +298,14 @@ async def table_page(
         "columns": columns,
         "validated": report is not None,
         "column_issues": by_column,
-        "rows": [{"row": i + 1, "values": rows[i], "issues": by_row.get(i + 1, {})} for i in page],
+        "rows": [
+            {
+                "row": i + 1,
+                # The row's core id (/<Node>/<id>.<row_id>), whatever the file stamps.
+                "row_id": ids[i] if i < len(ids) else None,
+                "values": rows[i],
+                "issues": by_row.get(i + 1, {}),
+            }
+            for i in page
+        ],
     }

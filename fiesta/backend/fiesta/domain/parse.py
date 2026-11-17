@@ -33,9 +33,28 @@ class ParseError(Exception):
 @dataclass
 class ParsedContribution:
     tables: dict[str, list[dict[str, str]]] = field(default_factory=dict)
+    # Each row's id, aligned with `tables`: every row outside the contribution
+    # table numbered 1..N across the file in file order, whatever the data
+    # model declares. It is the row's persistent identity within its
+    # contribution (`/<Node>/<id>.<row_id>`), and what `stamp_ids` writes as
+    # `row_id` where the data model has that column.
+    row_ids: dict[str, list[int]] = field(default_factory=dict)
 
     def row_count(self, table: str) -> int:
         return len(self.tables.get(table, []))
+
+    def row_id_of(self, table: str, index: int) -> int | None:
+        """The id of a table's row by its 0-based place, or None. A
+        contribution built from tables rather than parsed from text numbers
+        its rows in table order (the order its exported text would have)."""
+        if not self.row_ids and self.tables:
+            row_id = 0
+            for name, rows in self.tables.items():
+                if name != "contribution":
+                    self.row_ids[name] = list(range(row_id + 1, row_id + len(rows) + 1))
+                    row_id += len(rows)
+        ids = self.row_ids.get(table, [])
+        return ids[index] if 0 <= index < len(ids) else None
 
 
 def parse_text(text: str) -> ParsedContribution:
@@ -57,6 +76,7 @@ def parse_text(text: str) -> ParsedContribution:
             current.append(line)
     blocks.append((block_start, current))
 
+    row_id = 0
     for start, block in blocks:
         # Strip leading/trailing blank lines within the block.
         while block and not block[0].strip():
@@ -99,6 +119,9 @@ def parse_text(text: str) -> ParsedContribution:
             if row:
                 rows.append(row)
         parsed.tables.setdefault(table, []).extend(rows)
+        if table != "contribution":
+            parsed.row_ids.setdefault(table, []).extend(range(row_id + 1, row_id + len(rows) + 1))
+            row_id += len(rows)
 
     return parsed
 
@@ -121,13 +144,16 @@ def stamp_ids(text: str, contribution_id: int, model: dict) -> str:
     """Write the download-only identifiers into a contribution's text: the
     `contribution` table's `id`, and in every other table `contribution_id`
     plus a `row_id` numbered 1..N across all of the contribution's rows in
-    file order. A column is written only where the data model declares it for
+    file order (`ParsedContribution.row_ids`: every table's rows count, so a
+    table's `row_id` is its rows' core ids even where another table lacks the
+    column). A column is written only where the data model declares it for
     that table, added at the front of the block when the file lacks it, and
     overwritten when present (a re-uploaded download renumbers). Nothing else
     in the text changes. Call it only on text that `parse_text` accepts."""
     tables = model.get("tables", {})
     lines = text.lstrip("﻿").replace("\r\n", "\n").replace("\r", "\n").split("\n")
     row_id = 0
+    counted = False
     state, missing, index = "table", [], {}
     for n, line in enumerate(lines):
         if line.startswith(">>>"):
@@ -140,6 +166,7 @@ def stamp_ids(text: str, contribution_id: int, model: dict) -> str:
             declared = tables.get(table, {}).get("columns", {})
             targets = ["id"] if table == "contribution" else ["contribution_id", "row_id"]
             targets = [c for c in targets if c in declared]
+            counted = table != "contribution"
             state = "columns"
         elif state == "columns":
             columns = [c.strip() for c in line.split("\t")]
@@ -148,15 +175,17 @@ def stamp_ids(text: str, contribution_id: int, model: dict) -> str:
             index = {c: columns.index(c) for c in targets}
             lines[n] = "\t".join([*missing, line])
             state = "rows"
-        elif index:
+        else:
+            # Every row outside the contribution table takes the next id,
+            # written or not (parse_text numbers the same rows).
+            if counted:
+                row_id += 1
+            if not index:
+                continue
             cells = [""] * len(missing) + line.split("\t")
             for column, i in index.items():
                 cells += [""] * (i + 1 - len(cells))
-                if column == "row_id":
-                    row_id += 1
-                    cells[i] = str(row_id)
-                else:
-                    cells[i] = str(contribution_id)
+                cells[i] = str(row_id) if column == "row_id" else str(contribution_id)
             lines[n] = "\t".join(cells)
     return "\n".join(lines)
 

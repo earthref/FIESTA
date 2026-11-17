@@ -13,6 +13,8 @@ import { Skeleton, skeletonWidth } from "./ui/skeleton";
 export interface GridRow {
   key: string;
   label?: string;
+  /** The row's core id in its contribution (else its values' `row_id`). */
+  rowId?: number;
   values: Record<string, unknown>;
   issues?: Record<string, CellIssue>;
   /** The search hit the row is from (the search page's Data view). */
@@ -28,15 +30,19 @@ export interface RowLink {
   onOpen: () => void;
 }
 
-/** A row's persistent link, from its stamped `contribution_id` and `row_id`
- * (`contribution` when the row lacks its own), or undefined. */
+/** The columns a row's number (`<contribution>.<row_id>`) shows, so a grid
+ * with row links leaves them out. */
+export const ROW_ID_COLUMNS = new Set(["contribution_id", "row_id"]);
+
+/** A row's persistent link, from its core id (the API's, else its values'
+ * `row_id`) and its contribution, or undefined. */
 export function rowLinkOf(
-  values: Record<string, unknown>,
+  row: GridRow,
   onOpen: () => void,
   contribution?: string,
 ): RowLink | undefined {
-  const rowId = String(values.row_id ?? "").trim();
-  const id = String(values.contribution_id ?? contribution ?? "").trim();
+  const rowId = String(row.rowId ?? row.values.row_id ?? "").trim();
+  const id = String(contribution ?? row.values.contribution_id ?? "").trim();
   if (!/^\d+$/.test(rowId) || !/^\d+$/.test(id)) return undefined;
   return { label: `${id}.${rowId}`, page: `${id}.${rowId}`, onOpen };
 }
@@ -240,7 +246,7 @@ const GROUP_HEIGHT = 33;
  */
 export function RowsGrid({
   items,
-  columns,
+  columns: allColumns,
   labelled = false,
   estimateRows = 1,
   sort,
@@ -289,6 +295,12 @@ export function RowsGrid({
   selectedColumn?: string;
 }) {
   const model = useDataModelTable(table);
+  // With row links, each row's number shows its contribution and row ids.
+  const linked = rowLink !== undefined;
+  const columns = useMemo(
+    () => (linked ? allColumns.filter((column) => !ROW_ID_COLUMNS.has(column)) : allColumns),
+    [allColumns, linked],
+  );
   // A record still loading: skeleton rows, as many as a record has on average.
   const placeholderRows = Math.max(1, Math.round(estimateRows));
   // Whether a loaded item with rows opens a group: its key differs from the

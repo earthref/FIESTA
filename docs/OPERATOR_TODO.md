@@ -149,6 +149,17 @@ Last updated: 2026-11-16
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
 
+## 2026-11-17 — Core row ids (row numbers and /<Node>/<id>.<row_id> links)
+
+- [ ] **Rebuild search on dev for the nodes whose data model has no `row_id` column.**
+      Once the "Core row ids" PR has deployed, run `fiesta rebuild` for `geomagia` and
+      `rd` (`make fiesta ENV_FILE=.env.prod NODE=geomagia ARGS="rebuild --yes"`, then
+      `rd`; a rebuild other items owe covers it too). Until then their search page's
+      Data view has no row numbers; the contribution modal's tabs and the
+      `/<Node>/<id>.<row_id>` links work without it. Nodes whose files already carry a
+      `row_id` (MagIC 3.0, CDR, KArAr, KdD, ERDA, SC, OSU-MGR) need nothing. Production
+      needs the same at cutover. Claude needs nothing after this.
+
 ## 2026-11-16 — CDR XRF columns and depth plots
 
 - [ ] **OSU-MGR pipeline: magnetic susceptibility mapping.** If OSU-MGR MST data is
