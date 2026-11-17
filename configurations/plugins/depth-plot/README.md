@@ -15,7 +15,13 @@ levels, the contribution modal's Depth Plots tab, and the summary grid's
 `plot` tile (legacy CDR's depth thumbnail; a core's card draws that core) on
 the levels where the node YAML places one. The full plot has:
 
-- a **Tracks** menu (grouped MST / XRF / Ratios; Defaults, All, None);
+- every track as a toggle **chip** above the plots, by group (MST / XRF /
+  Ratios; Defaults, All, None);
+- plots **reordered** by dragging a header onto another (or the left and
+  right arrow keys on its grip) and **recolored** from its swatch; picks,
+  order, colors and log scales are kept per node in the browser
+  (`localStorage` `fiesta:depth-plot:<slug>`);
+- text no smaller than 11px (the modal's count pills) and 800px plots;
 - **flagged points** hidden by default, drawn as red dots on request;
 - value axes scaled to the **2nd–98th percentile** so spikes do not flatten a
   track, a per-track **log** toggle (`log: true` on a series starts it there),
