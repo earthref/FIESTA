@@ -4,6 +4,7 @@
 import { useQueries } from "@tanstack/react-query";
 import type { ComponentType, ReactNode } from "react";
 import type { SearchParams } from "../components/filter-modals";
+import type { IconName } from "../components/ui/icon";
 import type {
   FacetBucket,
   GridColumn,
@@ -50,6 +51,8 @@ export interface PluginSubTabContext {
 
 export interface PluginSubTab {
   name: string;
+  /** Its quick-launch button's icon (components/quick-launch.tsx); default chart-line. */
+  icon?: IconName;
   render: (ctx: PluginSubTabContext) => ReactNode;
   /** A search table whose matches (with the ranges on its summary block and
    * the bbox) are the tab's count. */

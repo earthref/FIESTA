@@ -16,6 +16,7 @@ const fieldModelsPlugin: PluginModule = {
     return [
       {
         name: VIEW_NAME,
+        icon: "globe",
         render: ({ query, ranges, bbox, scope, contribution }) =>
           contribution ? null : (
             <Suspense fallback={<PageSpinner label="Loading field models…" />}>

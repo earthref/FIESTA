@@ -129,7 +129,10 @@ records drawn another way, as Map draws them (`geomag-series`'s Plots): the
 sidebar's filters, area, grid filters and with/without data apply as on
 Summaries, its count is the level's, and it fetches the matches with the
 context's `searchParams` (the level search's request params) from
-`GET /search/{table}/values`.
+`GET /search/{table}/values`. Every level sub-tab is also a quick-launch button
+on the home and search pages (on the first level offering it; the node YAML's
+`search.quick_launch` can pick and order them), drawn with the sub-tab's
+optional `icon` (an icon-map name; default `chart-line`, Poles uses `globe`).
 
 `sidebarFilters(levelName, subTabName, config)` adds filters to the facet
 sidebar after the node's own (`filtersPanel` instead replaces the whole

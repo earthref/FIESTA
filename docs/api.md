@@ -211,6 +211,8 @@ after its YAML is merged and deployed, because the frontend is built per node.
   "doi_prefix": "10.7288",
   "geography": {"geologic": ["plate_blocks", "terranes"], "geographic": ["country", "location"]},
   "search_placeholder": "e.g. metamorphic \"field intensity\" -precambrian",
+  "map_level": "Sites",
+  "quick_launch": null,
   "plugins": {"poles": { /* frontend_config per active plugin */ }, "method-codes": {"has_codes": true}},
   "deployment_nodes": ["MagIC", "KdD", "CDR", "KArAr", "ERDA", "OSU-MGR"],
   "hidden_nodes": ["OSU-MGR"]
@@ -220,7 +222,14 @@ after its YAML is merged and deployed, because the frontend is built per node.
 `search_levels[].geo` is true for a level whose rows carry a position (the area
 filter narrows it); `map` is the node YAML's `search.levels[].map`, false for a
 geo level that gets no Map tab and no layer on a contribution's Map tab (MagIC's
-measurements, whose positions only repeat their specimens').
+measurements, whose positions only repeat their specimens'). `default_view` is
+the YAML's `search.levels[].default_view` (`Summaries`, `Data` or `Map`; null:
+Summaries, and the level tab keeps the open sub-tab).
+
+`map_level` is the level the quick-launch Map button opens (the YAML's
+`search.map_level`, else the first record level with a map; null when no level
+has one) and `quick_launch` the YAML's `search.quick_launch`, the buttons'
+names in order (null: Map, then every plugin view the node has).
 
 `filters` are the node YAML's `search.filters`: the sidebar controls, each
 restricted to the search `levels` and result `views` (Summaries, Rows, a plugin

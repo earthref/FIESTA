@@ -862,6 +862,46 @@ def test_workspace_fields_are_node_configuration(magic_node):
         type(magic_node).model_validate(bad)
 
 
+def test_quick_launch_is_node_configuration(magic_node, karar_node):
+    public = magic_node.public_config()
+    assert public["map_level"] == "Sites"
+    assert public["quick_launch"] is None  # Map, then every plugin view
+    views = {lvl["name"]: lvl["default_view"] for lvl in public["search_levels"]}
+    assert views["Measurements"] == "Data" and views["Sites"] is None
+    # Without `map_level`, the first record level with a map.
+    assert karar_node.search.map_level is None and karar_node.map_level == "Samples"
+
+    def node_with(views: dict | None = None, **search):
+        levels = [
+            {**lvl.model_dump(), "default_view": (views or {}).get(lvl.name, lvl.default_view)}
+            for lvl in magic_node.search.levels
+        ]
+        return magic_node.model_validate(
+            {
+                **magic_node.model_dump(),
+                "search": {**magic_node.search.model_dump(), "levels": levels, **search},
+            }
+        )
+
+    # "Rows" (the Data sub-tab's old name) still loads, as Data.
+    sites = node_with({"Sites": "Rows"}).search.levels[2]
+    assert (sites.name, sites.default_view) == ("Sites", "Data")
+    launch = ["Poles", "Map"]
+    assert node_with(quick_launch=launch).search.quick_launch == launch
+    with pytest.raises(ValueError, match="not a search level"):
+        node_with(map_level="Cruises")
+    with pytest.raises(ValueError, match="'Measurements' has no map"):
+        node_with(map_level="Measurements")
+    with pytest.raises(ValueError, match="repeats"):
+        node_with(quick_launch=["Map", "Map"])
+    with pytest.raises(ValueError, match="no Data sub-tab"):
+        node_with({"Contributions": "Data"})
+    with pytest.raises(ValueError, match="default_view Map, but it has no map"):
+        node_with({"Measurements": "Map"})
+    with pytest.raises(ValueError, match="default_view"):
+        node_with({"Sites": "Plots"})
+
+
 def test_karar_config_loads(karar_node):
     assert karar_node.hierarchy[-1] == "measurements"
     assert karar_node.search.index == "karar"

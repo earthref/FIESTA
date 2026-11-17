@@ -8,6 +8,10 @@ export interface SearchLevel {
   geo?: boolean;
   /** False: no Map tab, though it is geo (node YAML `search.levels[].map`). */
   map?: boolean;
+  /** The result sub-tab it opens on (node YAML `search.levels[].default_view`):
+   * Summaries, Data (its raw rows; older YAML says "Rows") or Map; null =
+   * Summaries, and its level tab keeps the open sub-tab. */
+  default_view?: "Summaries" | "Data" | "Map" | null;
   /** Its Summaries grid, in order (node YAML `search.levels[].columns`, or the default tiles). */
   columns?: GridColumn[];
 }
@@ -184,6 +188,12 @@ export interface NodeConfig {
   geography?: { geologic: string[]; geographic: string[] };
   /** The search box's example query (node YAML `search.placeholder`). */
   search_placeholder?: string;
+  /** The level the quick-launch Map button opens (node YAML `search.map_level`,
+   * else the first record level with a map); null = no level has a map. */
+  map_level?: string | null;
+  /** The quick-launch buttons by name, in order (node YAML `search.quick_launch`):
+   * "Map" and plugin search views; null = Map, then every plugin view. */
+  quick_launch?: string[] | null;
   /** Keys of every node the API serves; the portal bar links them to their
    * instances next to this one off the production hosts (lib/portals.ts). */
   deployment_nodes?: string[];

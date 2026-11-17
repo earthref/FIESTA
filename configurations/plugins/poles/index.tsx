@@ -776,6 +776,7 @@ const polesPlugin: PluginModule = {
     return [
       {
         name: "Poles",
+        icon: "globe",
         countTable: pconfig.table ?? "poles",
         render: (ctx) => <PolesMapView {...ctx} />,
       },
