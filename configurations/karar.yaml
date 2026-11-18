@@ -134,6 +134,10 @@ search:
   # row's age interval in years BP (unit_conversions below), matching a record
   # any of whose intervals overlaps the range typed in Ma.
   filters:
+    # The legacy KArAr sidebar's Publication Year. Its other facets (scientists,
+    # analysts, software packages, lithology, ...) are data-model text columns,
+    # which the `text` filter lists one by one.
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year }
     - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Samples, Specimens, Experiments] }
     - { type: text, label: Text }
     - { type: numeric, label: Numeric }

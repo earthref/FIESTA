@@ -35,7 +35,9 @@ export function SortSelect<T extends string>({
         onChange={(event) => onChange(event.target.value as T)}
         className="cursor-pointer appearance-none border-0 bg-node font-bold text-white focus:outline-hidden focus-visible:ring-2 focus-visible:ring-node focus-visible:ring-offset-1"
         style={{
-          padding: "0.5em calc(1.86em - 8px) 0.5em 0.5em",
+          // Room on the right for the caret (0.857rem at right 0.5rem) and a
+          // gap before it, so a long label never runs into it.
+          padding: "0.5em 1.75rem 0.5em 0.5em",
           fontSize: "0.92857143rem",
           lineHeight: "1em",
           borderRadius: "0.28571429rem",

@@ -77,6 +77,10 @@ search:
   # `numeric`: each number column as a range; `exists`: With / Without Data),
   # found with the sidebar's filter search (2026-11-13).
   filters:
+    # The legacy KdD sidebar's Publication Year. Its other facets (rock types,
+    # minerals, Kd definition and types) are data-model text columns, which
+    # the `text` filter lists one by one.
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year }
     - { type: text, label: Text }
     - { type: numeric, label: Numeric }
     - { type: exists, label: With / Without Data }
