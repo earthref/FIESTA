@@ -85,6 +85,34 @@ served nodes are `fiesta-env.js`'s list in the multi-node layout, else the
 config route's `deployment_nodes`; on a production host (any host in the
 portal list) every link stays on production.
 
+SPA paths are PascalCase: `/<Key>/Search/<Level>/<View>?q=<saved search>`
+(api.md "Saved searches"), `/<Key>/<id>/<Tab>` (a contribution's modal:
+`/CDR/667/Contribution`), `/Upload`, `/Private`, `/Data-Models/3.0`, content
+pages and plugin pages as their slugs capitalized word by word (`about` →
+`/About`, `grand-challenges` → `/Grand-Challenges`, `/method-codes` →
+`/Method-Codes`; a node YAML and a plugin keep writing lowercase slugs). Any
+spelling works and is replaced by the canonical one
+(`fiesta/frontend/src/lib/canonical-path.ts`): the root layout fixes a
+route's static segments, each page its own names (level, view, tab, admin
+section, content page), and in the multi-node layout a lowercase node prefix
+(`/magic/`) reloads as `/MagIC/`. Older links (`/MagIC/search?level=Sites&sort=…`,
+`?contribution=667&tab=sites`, `/contributions/667`, `/admin?tab=users`,
+`/admin/nodes/magic?section=files`) redirect (`fiesta/frontend/src/router.tsx`).
+The API's sitemap, canonical links and llms.txt use the same spellings
+(`seo.py` `path_segment`).
+
+References, Users and Admin (`/Admin`, `/Admin/Nodes`, `/Admin/Accounts`)
+belong to no node: they are FIESTA pages at the portal, the root of the origin
+(`http://localhost:8080/Admin`), and wear the FIESTA identity
+(`fiesta/frontend/src/lib/portal-paths.ts`). Links to them from a node's pages
+(the portal bar, the user menu's Admin entry) go through `portalPageUrl` in
+`portals.ts`; with one build per node that needs a FIESTA build at the parent
+of the node prefixes (`dev.earthref.org/`). Typed under a node
+(`/MagIC/Admin/Nodes`) they still load, FIESTA-branded. A node's own settings
+are under the node, in its identity: `/MagIC/Admin`, `/MagIC/Admin/Data-Source`
+(the user menu's Admin entry for that node's admins); a node no app serves yet
+(just created) has them at the portal's `/Admin/Nodes/<slug>/<section>`.
+
 ## Seed data and local login
 
 `make up` starts Docker infrastructure, the API, the worker and the frontend,
@@ -133,7 +161,7 @@ A local stack runs every node in **public contributions** mode (upload, publish,
 new versions), although `configurations/fiesta.yaml` puts deployments in **data-source**
 mode until the cutover from Meteor. To try a node in data-source mode, set
 `FIESTA_CONTRIBUTIONS_MODE=public,kdd=source` in `.env` (or on the `make up`
-line): the SPA stops offering uploads for KdD, `/admin/nodes/kdd?section=source`
+line): the SPA stops offering uploads for KdD, `/KdD/Admin/Data-Source`
 shows its sync, and `configurations/sources/kdd.py` can sync it from Meteor KdD. See
 [data-sources.md](data-sources.md).
 
@@ -312,6 +340,30 @@ the Summary Grid tab; a level without `columns` shows the default tiles. Pick
 the tiles a level's data can fill: the defaults are MagIC's, and on another
 node or a leaf level most of them are always "No … Data" (every node's YAML
 names its levels' tiles since 2026-11-13).
+
+The quick-launch buttons (an icon and a label each, on the home page under
+the Search Interface card and on the search page beside the search box)
+open the node's main views in one click: Map, then each plugin search view
+the node has (Poles, Rock Magnetism, Kd Plots, Age Distribution, ...), each on
+the first level offering it. Three YAML fields tune them, all optional and
+edited on the admin Settings tab's Quick launch fieldset:
+
+- `search.map_level`: the level the Map button opens on its Map tab. It must
+  name a level whose rows have positions and no `map: false`. Unset, it is
+  the first such record level (Contributions only when no other level has a
+  map), and a node with no map gets no Map button. MagIC sets `Sites`.
+- `search.quick_launch`: the buttons by name, in order, e.g. `[Map, Poles]`.
+  Unset, every button shows; `[]` shows none. A name the node has no view for
+  (a plugin it does not activate) shows no button, so the list can never
+  invent a view.
+- `search.levels[].default_view`: the result sub-tab a level opens on:
+  `Summaries`, `Data` (its raw rows; the older name `Rows` loads as `Data`) or
+  `Map` (only on a level with a map). A level that sets one opens on it when
+  its level tab is clicked; a level without one keeps the open sub-tab, as the
+  legacy search did. MagIC, KArAr and CDR open Measurements on `Data` (the
+  legacy apps had only a rows view there).
+
+A plugin view's button icon is its `PluginSubTab.icon` (default `chart-line`).
 
 Home page content is YAML too: `features.home.resources` lists the resource
 cards (title, Semantic icon name, optional corner icon, `to` for an SPA route

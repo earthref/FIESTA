@@ -1,20 +1,24 @@
 """Public search + contribution retrieval for the node frontend."""
 
+import io
 import json
 import logging
 import math
+import re
 import uuid as uuid_mod
+import zipfile
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBasicCredentials
 from opensearchpy.exceptions import NotFoundError, TransportError
+from sqlalchemy import select
 
 from fiesta.apps.deps import (
     NodeDep,
-    OptionalUser,
     SessionDep,
     basic_scheme,
     get_optional_user,
@@ -25,6 +29,7 @@ from fiesta.apps.schemas import (
     FilterCounts,
     HasColumns,
     HistogramBin,
+    MapExtent,
     MapPoints,
     NumberColumns,
     SearchHistogram,
@@ -33,8 +38,9 @@ from fiesta.apps.schemas import (
 )
 from fiesta.db.models import Contribution, User
 from fiesta.domain.jsonld import contribution_jsonld
+from fiesta.domain.parse import ParsedContribution, ParseError, export_text, parse_text
 from fiesta.nodeconfig import ANY_TABLE, POSITION_COLUMNS, MapColor
-from fiesta.plugins.util import load_visible_contribution
+from fiesta.plates import in_plates, parse_plates
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import (
     ROW_SORT_PREFIX,
@@ -51,9 +57,14 @@ from fiesta.search.queries import (
     facet_path,
 )
 from fiesta.services import downloads
-from fiesta.services.access import can_access, constrain_search
-from fiesta.services.history import locate_row, row_stats, table_page, versions
-from fiesta.settings import get_settings
+from fiesta.services.access import constrain_search
+from fiesta.services.history import (
+    locate_row,
+    locate_row_id,
+    row_stats,
+    table_page,
+    versions,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +97,7 @@ def _grid_columns(node, table: str) -> dict:
 def _grid_sort(node, table: str, sort: str | None) -> str | list | None:
     """A named SORT_OPTIONS key, `<column>:asc|desc` on a sortable grid
     column of the level (its header's sort), or `rows.<column>:asc|desc` on a
-    raw row column (the Rows grid's header sort)."""
+    raw row column (the Data grid's header sort)."""
     if sort is None or sort in SORT_OPTIONS:
         return sort
     key, _, order = sort.rpartition(":")
@@ -188,6 +199,8 @@ def _parse_has(node, table: str, has: list[str] | None) -> list[dict] | None:
 
 
 HasQuery = Annotated[list[str] | None, Query()]
+# The Geospatial filter's plates: `plate=` codes (fiesta/plates.py), repeated.
+PlateQuery = Annotated[list[str] | None, Query()]
 
 
 def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
@@ -296,6 +309,7 @@ async def search(
     facet_size: int = Query(100, ge=1, le=2000),
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     sort: str | None = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
@@ -321,6 +335,7 @@ async def search(
         count_field=level.count_field if level else None,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         sort=_grid_sort(node, table, sort),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
@@ -513,10 +528,12 @@ def _map_points(
     bbox: tuple[float, float, float, float] | None = None,
     color: MapColor | None = None,
     parents: tuple[str, ...] = (),
+    plates: tuple[str, ...] = (),
 ) -> list[dict]:
     """A doc's positions for the map: its `_geo_point` (a contribution's are
-    all of its rows', and only those inside `bbox` are drawn) and, without a
-    `bbox` (an area on Earth), its `_body_point`s with their `body`; what to
+    all of its rows', and only those inside `bbox` and on one of the `plates`
+    are drawn) and, without either (an area on Earth), its `_body_point`s with
+    their `body`; what to
     call it, the names of the rows above it (at its `parents` levels, top
     first), and its `color` value."""
     summary = source.get("summary") or {}
@@ -540,9 +557,13 @@ def _map_points(
     points = []
     for entry in geo if isinstance(geo, list) else [geo]:
         lat, lon = _to_float(entry.get("lat")), _to_float(entry.get("lon"))
-        if lat is not None and lon is not None and (len(geo) < 2 or _inside(lat, lon, bbox)):
+        if (
+            lat is not None
+            and lon is not None
+            and (len(geo) < 2 or (_inside(lat, lon, bbox) and in_plates(lat, lon, plates)))
+        ):
             points.append({**base, "lat": lat, "lon": lon})
-    if bbox is None:
+    if bbox is None and not plates:
         for entry in elsewhere if isinstance(elsewhere, list) else [elsewhere]:
             lat, lon = _to_float(entry.get("lat")), _to_float(entry.get("lon"))
             if lat is not None and lon is not None and entry.get("body"):
@@ -621,6 +642,7 @@ async def search_points(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -638,12 +660,14 @@ async def search_points(
     if color_by and color is None:
         raise HTTPException(400, f"{color_by!r} is not a map color of {table!r}")
     area = _parse_bbox(bbox)
+    plates = parse_plates(plate)
     body = build_search_body(
         table=table,
         query=query,
         size=MAP_PAGE_SIZE,
         ranges=_parse_ranges(range_),
         bbox=area,
+        plates=plates,
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -685,7 +709,9 @@ async def search_points(
             await _scroll(
                 node,
                 elsewhere,
-                lambda source: points.extend(_map_points(source, table, area, color, parents)),
+                lambda source: points.extend(
+                    _map_points(source, table, area, color, parents, plates)
+                ),
                 lambda: len(points) >= MAX_MAP_POINTS,
             )
             points = points[:MAX_MAP_POINTS]
@@ -699,7 +725,7 @@ async def search_points(
     total = await _scroll(
         node,
         body,
-        lambda source: points.extend(_map_points(source, table, area, color, parents)),
+        lambda source: points.extend(_map_points(source, table, area, color, parents, plates)),
         lambda: len(points) >= MAX_MAP_POINTS,
     )
     points = points[:MAX_MAP_POINTS]
@@ -708,6 +734,73 @@ async def search_points(
         points=points,
         truncated=total > MAX_MAP_POINTS,
         contributions=await _contribution_labels(node, points),
+    )
+
+
+# The extent's `center`: the centroid of the busiest geotile at this zoom
+# (about 22.5° across, near the Geospatial filter's 20° default area).
+EXTENT_PRECISION = 4
+
+
+@router.get("/search/{table}/extent", response_model=MapExtent, response_model_exclude_none=True)
+async def search_extent(
+    session: SessionDep,
+    node: NodeDep,
+    scope: ScopeDep,
+    table: str,
+    query: str | None = None,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
+    contribution: int | None = None,
+    private_key: str | None = None,
+) -> MapExtent:
+    """Where a search's positioned docs are on Earth, for the Geospatial
+    filter's default area before any of them are fetched: how many there are,
+    the `bounds` around them (a geo_bounds aggregation) and the `center` of
+    the busiest ~22.5° cell (a geotile grid's top bucket's centroid). One
+    request, no hits."""
+    if table not in node.geo_tables:
+        raise HTTPException(404, f"search table {table!r} has no positions")
+    body = build_search_body(
+        table=table,
+        query=query,
+        size=0,
+        ranges=_parse_ranges(range_),
+        column_filters=_grid_filters(node, table, filter_),
+        has=_parse_has(node, table, has),
+    )
+    await _constrain(session, node, body, query, contribution, private_key, scope)
+    body.pop("sort", None)
+    body["query"]["bool"]["filter"].append({"exists": {"field": GEO_FIELD}})
+    body["aggs"] = {
+        "bounds": {"geo_bounds": {"field": GEO_FIELD, "wrap_longitude": True}},
+        "busiest": {
+            "geotile_grid": {"field": GEO_FIELD, "precision": EXTENT_PRECISION, "size": 1},
+            "aggs": {"at": {"geo_centroid": {"field": GEO_FIELD}}},
+        },
+    }
+    try:
+        response = await get_opensearch().search(index=node.search_index, body=body)
+    except NotFoundError:
+        return MapExtent(total=0)
+    hits = response["hits"]
+    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+    aggs = response.get("aggregations") or {}
+    box = (aggs.get("bounds") or {}).get("bounds")
+    buckets = (aggs.get("busiest") or {}).get("buckets") or []
+    at = (buckets[0].get("at") or {}).get("location") if buckets else None
+    return MapExtent(
+        total=total,
+        bounds=[
+            box["top_left"]["lon"],
+            box["bottom_right"]["lat"],
+            box["bottom_right"]["lon"],
+            box["top_left"]["lat"],
+        ]
+        if box
+        else None,
+        center=[at["lon"], at["lat"]] if at else None,
     )
 
 
@@ -846,6 +939,7 @@ async def search_values(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -863,6 +957,7 @@ async def search_values(
         size=MAP_PAGE_SIZE,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -922,6 +1017,7 @@ async def search_histogram(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -931,12 +1027,19 @@ async def search_histogram(
     (the filter modal's range histogram; the caller leaves the field's own
     range out of `range`). `log` bins in log10 space over the values above
     zero, and falls back to linear bins when there are none. Without `bins`
-    the count follows how many values there are (auto_bins)."""
+    the count follows how many values there are (auto_bins). A bin counts
+    the docs with a value in it; an interval's (summary._interval.<name>.range)
+    the docs any of whose intervals overlaps it, as its range filter matches
+    them (a 10 ± 5 Ma age in every bin from 0 to 20 Ma, not only at its ends
+    and best estimate). `counted` is how many docs have a value, each once."""
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
     path = _value_field(field)
+    interval_range: str | None = None
     if path.startswith("summary._interval.") and path.endswith(".range"):
-        # An interval's ranges have no stats: its ends' and best estimates' do.
+        # An interval's ranges have no stats: its ends' and best estimates'
+        # give the extent; the bins count the ranges that overlap them.
+        interval_range = path
         path = path.removesuffix(".range") + ".values"
     body = build_search_body(
         table=table,
@@ -944,13 +1047,19 @@ async def search_histogram(
         size=0,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
     await _constrain(session, node, body, query, contribution, private_key, scope)
     body.pop("sort", None)
     date = path in DATE_FIELDS
-    body["aggs"] = {"all": {"stats": {"field": path}}}
+    body["aggs"] = {
+        "all": {"stats": {"field": path}},
+        # Docs with a value, each once (a doc counts in every bin it has a
+        # value in, so the bins' sum can pass the docs').
+        "has": {"filter": {"exists": {"field": path}}},
+    }
     if not date:
         # The least value above zero of the docs with one: of each doc's
         # values only those above zero (a multi-valued field, summary._num,
@@ -982,6 +1091,7 @@ async def search_histogram(
     total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
     stats = response["aggregations"]["all"]
     lo, hi = stats.get("min"), stats.get("max")
+    counted = int((response["aggregations"].get("has") or {}).get("doc_count") or 0)
     positive = response["aggregations"].get("positive")
     positive_min = positive["s"].get("value") if positive else None
     if positive_min is not None and not (0 < positive_min < math.inf):
@@ -999,7 +1109,14 @@ async def search_histogram(
         {"from": edges[i], "to": edges[i + 1]} if i < len(edges) - 2 else {"from": edges[i]}
         for i in range(len(edges) - 1)
     ]
-    body["aggs"] = {"bins": {"range": {"field": path, "ranges": ranges}}}
+    if interval_range:
+        # A range field has no range aggregation: a filter per bin, the
+        # range query its filter uses (intersects), in bin order.
+        bounds = [{"gte": r["from"], **({"lt": r["to"]} if "to" in r else {})} for r in ranges]
+        overlaps = [{"range": {interval_range: b}} for b in bounds]
+        body["aggs"] = {"bins": {"filters": {"filters": overlaps}}}
+    else:
+        body["aggs"] = {"bins": {"range": {"field": path, "ranges": ranges}}}
     response = await client.search(index=node.search_index, body=body)
     buckets = response["aggregations"]["bins"]["buckets"]
     out = [
@@ -1008,7 +1125,7 @@ async def search_histogram(
     ]
     return SearchHistogram(
         total=total,
-        counted=sum(b.count for b in out),
+        counted=counted,
         min=lo,
         max=hi,
         positive_min=positive_min,
@@ -1026,6 +1143,7 @@ async def search_numbers(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -1043,6 +1161,7 @@ async def search_numbers(
         size=0,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -1076,6 +1195,7 @@ async def search_has(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -1101,6 +1221,7 @@ async def search_has(
         size=0,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -1175,6 +1296,7 @@ async def search_filter_counts(
     query: str | None = None,
     range_: Annotated[list[str] | None, Query(alias="range")] = None,
     bbox: str | None = None,
+    plate: PlateQuery = None,
     filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
     has: HasQuery = None,
     contribution: int | None = None,
@@ -1210,6 +1332,7 @@ async def search_filter_counts(
         size=0,
         ranges=_parse_ranges(range_),
         bbox=_parse_bbox(bbox),
+        plates=parse_plates(plate),
         column_filters=_grid_filters(node, table, filter_),
         has=_parse_has(node, table, has),
     )
@@ -1246,59 +1369,6 @@ async def _get_visible_contribution(
         if supplied != contribution.private_key:
             raise HTTPException(404, f"contribution {contribution_id} not found")
     return contribution
-
-
-# Before /contributions/{contribution_id}, which would take "download" for an id.
-@router.get("/contributions/download")
-async def download_contributions(
-    session: SessionDep, node: NodeDep, user: OptionalUser, ids: str
-) -> StreamingResponse:
-    """Several contributions' files as one streamed zip: `ids` is a
-    comma-separated list (order kept, repeats dropped). Each must be public,
-    or one the signed-in user may open in the workspace; any other id is a 404
-    naming it. Capped at `download_max_contributions` contributions and
-    `download_max_bytes` stored bytes."""
-    try:
-        wanted = list(dict.fromkeys(int(i) for i in ids.split(",") if i.strip()))
-    except ValueError:
-        raise HTTPException(422, "ids must be comma-separated contribution ids") from None
-    if not wanted:
-        raise HTTPException(422, "ids names no contribution")
-    settings = get_settings()
-    downloads.check_count(len(wanted), settings.download_max_contributions)
-    visible, missing = [], []
-    for contribution_id in wanted:
-        contribution = await _visible_for_download(session, node, user, contribution_id)
-        if contribution is None:
-            missing.append(str(contribution_id))
-        else:
-            visible.append(contribution)
-    if missing:
-        raise HTTPException(404, f"contributions not found: {', '.join(missing)}")
-    files = [await downloads.locate(session, node, c) for c in visible]
-    downloads.check_size(files, settings.download_max_bytes)
-    return downloads.zip_response(node, files)
-
-
-async def _visible_for_download(session, node, user, contribution_id: int) -> Contribution | None:
-    """The contribution if its file is public (load_visible_contribution) or
-    one USER may open in the workspace (can_access), else None."""
-    try:
-        return await load_visible_contribution(session, node, contribution_id)
-    except HTTPException:
-        pass
-    if user is None:
-        return None
-    contribution = await session.get(Contribution, contribution_id)
-    if (
-        contribution is not None
-        and contribution.deleted_at is None
-        and contribution.node == node.node.slug
-        and contribution.filename
-        and await can_access(session, contribution, user)
-    ):
-        return contribution
-    return None
 
 
 @router.get("/contributions/{contribution_id}")
@@ -1441,6 +1511,27 @@ async def locate_table_row(
     return {"row": await locate_row(node, contribution, table, parsed)}
 
 
+@router.get("/contributions/{contribution_id}/rows/{row_id}")
+async def locate_contribution_row(
+    session: SessionDep,
+    node: NodeDep,
+    contribution_id: int,
+    row_id: int,
+    private_key: str | None = None,
+) -> dict:
+    """Where a persistent row link (`/<node>/<contribution>.<row_id>`) points:
+    the table holding the file's row with that `row_id`, and the row's 1-based
+    position in it (as the table pages number it)."""
+    contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    if not contribution.filename:
+        raise HTTPException(404, "this contribution has no file")
+    found = await locate_row_id(node, contribution, row_id)
+    if found is None:
+        raise HTTPException(404, f"no row {row_id} in contribution {contribution_id}")
+    table, row = found
+    return {"table": table, "row": row}
+
+
 @router.get("/contributions/{contribution_id}/download")
 async def download_contribution(
     session: SessionDep,
@@ -1470,3 +1561,198 @@ async def download_info(
     stored = await downloads.locate(session, node, contribution)
     served = downloads.serve(node, stored, await downloads.read(node, stored))
     return downloads.file_info(served, stored)
+
+
+# ---- Download Results ------------------------------------------------------------
+
+# Rows a rows download holds at most (every table together); past it the file
+# stops after a whole record and X-Download-Truncated says so.
+MAX_DOWNLOAD_ROWS = 200_000
+# Contribution files a files download zips at most, in the search's order, and
+# their total size (uncompressed text) past which it stops.
+MAX_DOWNLOAD_FILES = 100
+MAX_DOWNLOAD_BYTES = 512 * 1024 * 1024
+THIS_STUDY = re.compile(r"this study", re.IGNORECASE)
+
+
+def _this_study(row: dict[str, str], source: dict) -> dict[str, str]:
+    """A row's `citations` with "This study" replaced by its contribution's
+    reference, as legacy Download Rows did: the rows leave their contribution."""
+    citations = row.get("citations", "")
+    if "this study" not in citations.lower():
+        return row
+    block = (source.get("summary") or {}).get("contribution") or {}
+    reference = block.get("reference") or (block.get("_reference") or {}).get("citation")
+    if not reference:
+        return row
+    return {**row, "citations": THIS_STUDY.sub(str(reference), citations)}
+
+
+def _cell(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return ":".join(str(v) for v in value)
+    return str(value)
+
+
+@router.get("/search/{table}/download")
+async def download_results(
+    session: SessionDep,
+    node: NodeDep,
+    scope: ScopeDep,
+    table: str,
+    # The levels whose rows the file holds (a table each); not with `files`.
+    tables: Annotated[list[str] | None, Query()] = None,
+    format_: Literal["txt", "json"] = Query("txt", alias="format"),
+    # The matching contributions' files, zipped, instead of rows.
+    files: bool = False,
+    query: str | None = None,
+    range_: Annotated[list[str] | None, Query(alias="range")] = None,
+    bbox: str | None = None,
+    plate: PlateQuery = None,
+    sort: str | None = None,
+    filter_: Annotated[list[str] | None, Query(alias="filter")] = None,
+    has: HasQuery = None,
+) -> Response:
+    """The search page's Download Results: the rows of the chosen levels that
+    match the search, a table each, in the node's text format or as JSON; or,
+    with `files`, the matching contributions' files in a zip. Each level is
+    searched as its level tab counts it (the query, the area where it has
+    positions, the with/without data entries on its tables); `table`, the open
+    level, also takes the ranges, column filters and sort."""
+    levels = {lvl.table for lvl in node.search.levels}
+    if table not in levels:
+        raise HTTPException(404, f"unknown search table {table!r}")
+
+    def level_body(target: str, size: int) -> dict:
+        own = target == table
+        exists = set(node.exists_tables(target))
+        return build_search_body(
+            table=target,
+            query=query,
+            size=size,
+            from_=0,
+            ranges=_parse_ranges(range_) if own else None,
+            bbox=_parse_bbox(bbox) if target in node.geo_tables else None,
+            plates=parse_plates(plate) if target in node.geo_tables else (),
+            sort=_grid_sort(node, target, sort) if own else None,
+            column_filters=_grid_filters(node, target, filter_) if own else [],
+            has=_parse_has(
+                node,
+                target,
+                [h for h in has or [] if h.removeprefix("!").partition(":")[0] in exists],
+            ),
+        )
+
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    if files:
+        return await _download_files(session, node, scope, query, level_body, format_, stamp)
+
+    wanted = list(dict.fromkeys(t for t in tables or [] if t != "contribution"))
+    if not wanted or any(t not in levels for t in wanted):
+        raise HTTPException(
+            422, f"tables must name search levels below the contribution, got {tables!r}"
+        )
+    out: dict[str, list[dict[str, str]]] = {
+        "contribution": [
+            {
+                "data_model_version": node.data_model.latest,
+                "description": f"Downloaded from {node.node.key} at {stamp}.",
+            }
+        ]
+    }
+    n_rows = 0
+    for target in wanted:
+        body = level_body(target, MAP_PAGE_SIZE)
+        await _constrain(session, node, body, query, None, None, scope)
+        body["_source"] = [
+            "rows",
+            "summary.contribution.reference",
+            "summary.contribution._reference.citation",
+        ]
+        rows = out.setdefault(target, [])
+
+        def collect(source: dict, rows=rows) -> None:
+            nonlocal n_rows
+            for row in source.get("rows") or []:
+                rows.append(_this_study({k: _cell(v) for k, v in row.items()}, source))
+                n_rows += 1
+
+        await _scroll(node, body, collect, lambda: n_rows >= MAX_DOWNLOAD_ROWS)
+        if n_rows >= MAX_DOWNLOAD_ROWS:
+            break
+    if not any(out.get(t) for t in wanted):
+        raise HTTPException(404, "no rows match this search")
+    name = f"{node.node.key} Download - {stamp}.{format_}"
+    headers = {"Content-Disposition": f'attachment; filename="{name}"'}
+    if n_rows >= MAX_DOWNLOAD_ROWS:
+        headers["X-Download-Truncated"] = f"the first {n_rows} rows"
+    if format_ == "json":
+        return Response(json.dumps(out), media_type="application/json", headers=headers)
+    model = node.load_data_model(node.data_model.latest)
+    text = export_text(ParsedContribution(tables=out), model)
+    return Response(text, media_type="text/plain; charset=utf-8", headers=headers)
+
+
+async def _download_files(session, node, scope, query, level_body, format_, stamp) -> Response:
+    """Download Results' contribution files: the first MAX_DOWNLOAD_FILES
+    matches in the search's order, each `<id>/<slug>_contribution_<id>.<txt|json>`
+    in one zip, laid out as the v1 API's archives are, and SHA256SUMS of the
+    members last. Each file is prepared as a single download is
+    (fiesta.domain.download: BOM, separators, the contribution's metadata)."""
+    body = level_body("contribution", MAX_DOWNLOAD_FILES)
+    await _constrain(session, node, body, query, None, None, scope)
+    body["_source"] = ["summary.contribution.id"]
+    try:
+        response = await get_opensearch().search(index=node.search_index, body=body)
+    except NotFoundError:
+        response = {"hits": {"total": {"value": 0}, "hits": []}}
+    hits = response["hits"]
+    total = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+    ids = [h["_source"]["summary"]["contribution"]["id"] for h in hits["hits"]]
+    # The search was constrained to what the caller may see; these only drop
+    # a contribution deleted since it was indexed.
+    found = {
+        c.id: c
+        for c in (await session.scalars(select(Contribution).where(Contribution.id.in_(ids))))
+        if c.node == node.node.slug and c.deleted_at is None
+    }
+    buffer = io.BytesIO()
+    added = size = 0
+    sums: list[tuple[str, str]] = []
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for contribution_id in ids:
+            contribution = found.get(contribution_id)
+            if contribution is None:
+                continue
+            try:
+                served = await downloads.served_file(session, node, contribution)
+            except HTTPException:
+                continue
+            if not served.data:
+                continue
+            size += len(served.data)
+            if added and size > MAX_DOWNLOAD_BYTES:
+                break
+            stem = f"{contribution.id}/{node.node.slug}_contribution_{contribution.id}"
+            if format_ == "json":
+                try:
+                    tables = parse_text(served.data.decode("utf-8", errors="replace")).tables
+                except ParseError:
+                    continue
+                path, content = f"{stem}.json", json.dumps(tables, indent=2).encode()
+            else:
+                path, content = f"{stem}.txt", served.data
+            zf.writestr(path, content)
+            sums.append((path, downloads.sha256(content)))
+            added += 1
+        if sums:
+            zf.writestr(downloads.SUMS_NAME, downloads.sums(sums))
+    if not added:
+        raise HTTPException(404, "no matching contribution has a file")
+    name = f"{node.node.key} Download - {stamp}.zip"
+    headers = {"Content-Disposition": f'attachment; filename="{name}"'}
+    if added < total:
+        headers["X-Download-Truncated"] = f"{added} of {total} contributions"
+    return Response(buffer.getvalue(), media_type="application/zip", headers=headers)

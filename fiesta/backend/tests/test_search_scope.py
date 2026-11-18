@@ -35,6 +35,9 @@ class FakeSession:
     async def execute(self, stmt):
         return FakeResult(self.contributions)
 
+    async def scalars(self, stmt):
+        return iter(self.contributions)
+
     async def get(self, model, pk):
         return self.users.get(pk) if model is User else None
 
@@ -69,7 +72,7 @@ class FakeSearch:
     def __init__(self, docs):
         self.docs = docs
 
-    async def search(self, index, body):
+    async def search(self, index, body, **_):
         query = body["query"]["bool"]
         assert not query["must"]
         hits = [d for d in self.docs if all(_matches(d, c) for c in query["filter"])]
@@ -207,3 +210,66 @@ async def test_another_users_in_prep_never_appears_even_from_a_stale_doc(app, cl
         "/v2/magic/search/contribution", params=params, headers=as_user(ADA)
     )
     assert response.json()["total"] == 0
+
+
+def site_doc(c: Contribution) -> dict:
+    """A sites doc of contribution `c`: one site whose citation is "This study"."""
+    block = doc(c)["summary"]["contribution"] | {"reference": f"10.1/{c.id}"}
+    return {
+        "type": "sites",
+        "summary": {"contribution": block},
+        "rows": [{"site": f"s{c.id}", "lat": 1.5, "citations": "This study:Other 2001"}],
+    }
+
+
+async def test_download_results_rows_are_the_visible_matches(app, client):
+    """Download Results' rows: each chosen level's visible matches as one
+    table, "This study" naming the contribution's reference."""
+    app.state.search.docs = [site_doc(c) for c in CONTRIBUTIONS]
+    url = "/v2/magic/search/contribution/download"
+    response = await client.get(url, params={"tables": "sites", "format": "json"})
+    assert response.status_code == 200, response.text
+    assert "attachment" in response.headers["content-disposition"]
+    tables = response.json()
+    assert tables["contribution"][0]["data_model_version"]
+    assert tables["sites"] == [
+        {"site": "s1", "lat": "1.5", "citations": "10.1/1:Other 2001"},
+        {"site": "s4", "lat": "1.5", "citations": "10.1/4:Other 2001"},
+    ]
+    # The node's text format, a block per table.
+    text = (await client.get(url, params={"tables": "sites"})).text
+    assert text.startswith("tab delimited\tcontribution\n")
+    assert "tab delimited\tsites\n" in text
+    # Ada's own in-prep rows with `mine`, never anyone's anonymously.
+    params = {"tables": "sites", "format": "json", "mine": "in_prep"}
+    mine = await client.get(url, params=params, headers=as_user(ADA))
+    assert [r["site"] for r in mine.json()["sites"]] == ["s2"]
+    assert (await client.get(url, params=params)).status_code == 401
+    # A level is required, and only search levels below the contribution.
+    for bad in ({}, {"tables": "contribution"}, {"tables": "nonsense"}):
+        assert (await client.get(url, params=bad)).status_code == 422
+
+
+async def test_download_results_files_zip_the_visible_contributions(app, client, monkeypatch):
+    import io
+    import zipfile
+
+    from fiesta.services import downloads
+
+    async def served(session, node, c):
+        data = f"tab delimited\tcontribution\nid\n{c.id}\n".encode()
+        return downloads.ServedFile(c.filename, data, downloads.sha256(data), None)
+
+    monkeypatch.setattr(downloads, "served_file", served)
+    url = "/v2/magic/search/contribution/download"
+    response = await client.get(url, params={"files": True})
+    assert response.status_code == 200, response.text
+    archive = zipfile.ZipFile(io.BytesIO(response.content))
+    names = ["1/magic_contribution_1.txt", "4/magic_contribution_4.txt"]
+    assert sorted(archive.namelist()) == [*names, "SHA256SUMS"]
+    # SHA256SUMS lists every member's checksum (sha256sum -c lines).
+    sums = archive.read("SHA256SUMS").decode().splitlines()
+    assert sorted(sums) == sorted(f"{downloads.sha256(archive.read(n))}  {n}" for n in names)
+    response = await client.get(url, params={"files": True, "format": "json"})
+    archive = zipfile.ZipFile(io.BytesIO(response.content))
+    assert archive.read("1/magic_contribution_1.json").startswith(b'{\n  "contribution"')

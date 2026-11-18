@@ -9,15 +9,15 @@ import { dataModelQuery, typeUnitLabel, unwrapModel } from "../lib/data-model";
 import type { DataModelColumn, DataModelTable } from "../lib/types";
 import { cx, formatDate } from "../lib/utils";
 
-const routeApi = getRouteApi("/data-models/$version");
+const routeApi = getRouteApi("/Data-Models/$version");
 const TAB_BORDER = "var(--er-edge)";
 
-/** /data-models redirects to the node's latest data model version. */
+/** /Data-Models redirects to the node's latest data model version. */
 export function DataModelsIndex() {
   const { data: config } = useNodeConfig();
   if (!config) return <PageSpinner />;
   return (
-    <Navigate to="/data-models/$version" params={{ version: config.data_model_latest }} replace />
+    <Navigate to="/Data-Models/$version" params={{ version: config.data_model_latest }} replace />
   );
 }
 
@@ -442,7 +442,7 @@ export function DataModelPage() {
           return (
             <Link
               key={entry}
-              to="/data-models/$version"
+              to="/Data-Models/$version"
               params={{ version: entry }}
               search={{ q: search.q }}
               className={cx("flex items-center text-[13px]", !active && "hover:bg-shade/3")}

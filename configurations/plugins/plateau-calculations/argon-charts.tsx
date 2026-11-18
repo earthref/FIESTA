@@ -402,9 +402,14 @@ export function Ideogram({
   if (items.length === 0) return null;
   const withSigma = items.filter((d) => d.sigma != null && d.sigma > 0);
   const ages = items.map((d) => d.age);
-  // The curves reach 2σ beyond the ages, but no more than half their span.
+  // The curves reach 3σ beyond the ages (their whole width), but an outlier's
+  // wide σ no further than half the ages' span or 3 median σ, whichever is
+  // more (so a sample's one or two close ages still show their full curves).
   const span = Math.max(...ages) - Math.min(...ages) || Math.abs(ages[0]) * 0.1 || 1;
-  const reach = (d: DatedItem) => Math.min(2 * (d.sigma ?? 0), span / 2);
+  const sigmas = withSigma.map((d) => d.sigma as number).sort((a, b) => a - b);
+  const medianSigma = sigmas.length ? sigmas[Math.floor(sigmas.length / 2)] : 0;
+  const cap = Math.max(span / 2, 3 * medianSigma);
+  const reach = (d: DatedItem) => Math.min(3 * (d.sigma ?? 0), cap);
   const lows = items.map((d) => d.age - reach(d));
   const highs = items.map((d) => d.age + reach(d));
   if (reference) {

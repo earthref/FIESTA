@@ -17,6 +17,8 @@ import math
 import re
 from typing import Any
 
+from fiesta.plates import plates_shape
+
 TOKEN_RE = re.compile(r'(\w+):"([^"]*)"')
 
 # Tokens that map to summary.contribution.* instead of summary._all.*
@@ -187,6 +189,7 @@ def build_search_body(
     private_only: bool = False,
     ranges: list[dict] | None = None,
     bbox: tuple[float, float, float, float] | None = None,
+    plates: tuple[str, ...] = (),
     sort: str | list | None = None,
     column_filters: list[dict] | None = None,
     has: list[dict] | None = None,
@@ -195,7 +198,8 @@ def build_search_body(
     header's); None picks relevance when there is free text and newest-first
     otherwise (the legacy page's default behaviour). `column_filters` are
     extra filter clauses (the grid's column filters); `has` the with/without
-    data filter's entries (see has_clauses)."""
+    data filter's entries (see has_clauses); `bbox` and `plates` (codes, any
+    of which a position is on) the Geospatial filter's."""
     text, tokens = parse_query(query)
     has_private_key = "private_key" in tokens
 
@@ -243,6 +247,18 @@ def build_search_body(
             }
         )
 
+    if plates:
+        filters.append(
+            {
+                "geo_shape": {
+                    "summary._all._geo_point": {
+                        "shape": plates_shape(plates),
+                        "relation": "intersects",
+                    }
+                }
+            }
+        )
+
     if text:
         must.append(
             {
@@ -275,7 +291,7 @@ def build_search_body(
         for facet in facets:
             agg: dict[str, Any] = {"terms": {"field": facet_path(facet), "size": facet_size}}
             if count_field:
-                # Each value's rows, for the Rows sub-tab (a doc without the
+                # Each value's rows, for the Data sub-tab (a doc without the
                 # count field is one row, as in the router's `_n_rows`).
                 agg["aggs"] = {"count": {"sum": {"field": count_field, "missing": 1}}}
             aggs[facet] = agg

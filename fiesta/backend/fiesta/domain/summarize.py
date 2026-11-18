@@ -32,7 +32,8 @@ numbers are left out.
 A node whose unit conversion has an `interval` (MagIC's ages) also gives
 every doc `summary._interval.<name>`: each row's interval in the base unit
 (age_low..age_high, else age +/- 2 sigma, else the age; a side without either
-open) as a `double_range` list, merged and capped at MAX_INTERVALS, so a range
+open; a sigma window stops at the present; rows of `interval.tables` only,
+when set) as a `double_range` list, merged and capped at MAX_INTERVALS, so a range
 filter matches a doc when any row overlaps it; with `values` (every end and
 best estimate) for its histogram, `min`/`max` (the span of best estimates and
 stated bounds, without the sigma windows: what the tile shows; sigmas are
@@ -310,9 +311,13 @@ class _Intervals:
     def __init__(self) -> None:
         self.blocks: dict[str, _Interval] = {}
 
-    def add_rows(self, node: NodeConfig, rows: list[dict]) -> None:
+    def add_rows(self, node: NodeConfig, rows: list[dict], table: str | None = None) -> None:
+        """The rows' intervals (of the conversions whose `interval.tables`
+        take this table's rows, when it is named)."""
         for conversion in node.search.intervals:
             assert conversion.interval is not None
+            if not conversion.gives_intervals(table):
+                continue
             for row in rows:
                 if (interval := conversion.interval_of(row)) is not None:
                     self.blocks.setdefault(conversion.interval.name, _Interval()).add(interval)
@@ -508,8 +513,8 @@ def summarize(
     all_numbers = _Numbers()
     # The contribution's intervals: every table's rows' (the ages table's too).
     all_intervals = _Intervals()
-    for table_rows in parsed.tables.values():
-        all_intervals.add_rows(node, table_rows)
+    for table, table_rows in parsed.tables.items():
+        all_intervals.add_rows(node, table_rows, table)
     level_counts: dict[str, dict] = {}
     # Every level's positions by row name ({"samples": {"S1-a": point}}), for
     # the rows below it that have none of their own.
@@ -538,6 +543,12 @@ def summarize(
         if table not in levels
     }
 
+    # Each row's core id, by the row (the docs' rows are the parsed ones).
+    row_ids = {
+        id(row): parsed.row_id_of(table, index)
+        for table in levels
+        for index, row in enumerate(parsed.tables.get(table, []))
+    }
     for index, level in enumerate(levels):
         rows = parsed.tables.get(level, [])
         level_counts[level] = {"_n_results": len(rows)}
@@ -605,7 +616,12 @@ def summarize(
                     "_all": _finalize_all(row_all, None),
                     **_num_block(row_numbers),
                 },
-                "rows": group,
+                # Each row with its core id (/<Node>/<id>.<row_id>), whatever
+                # the file stamps or the data model declares.
+                "rows": [
+                    {**row, "row_id": str(rid)} if (rid := row_ids.get(id(row))) else row
+                    for row in group
+                ],
             }
             docs.append(doc)
             # The nearest record above it that it names.
@@ -619,7 +635,7 @@ def summarize(
             )
             placement = {"doc": doc, "body": body, "points": points, "own": own, "geo": geo}
             own_intervals = _Intervals()
-            own_intervals.add_rows(node, group)
+            own_intervals.add_rows(node, group, level)
             placements.append(
                 {
                     **placement,
@@ -652,7 +668,7 @@ def summarize(
                     None,
                 )
                 if target is not None:
-                    target["intervals"].add_rows(node, [row])
+                    target["intervals"].add_rows(node, [row], table)
 
     # The deepest records first, so each passes its descendants' points on too
     # (a sample's through its site to its location).

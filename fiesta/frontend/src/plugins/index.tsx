@@ -4,6 +4,14 @@
 import { useQueries } from "@tanstack/react-query";
 import type { ComponentType, ReactNode } from "react";
 import type { SearchParams } from "../components/filter-modals";
+import type { IconName } from "../components/ui/icon";
+
+// A view setting a plugin keeps in the search's saved state (lib/saved-search.tsx):
+// `useSearchSetting("<plugin>.<name>", default, isBoolean)` like useState.
+export { useSearchSetting } from "../lib/saved-search";
+export const isBoolean = (value: unknown): boolean => typeof value === "boolean";
+export const isString = (value: unknown): boolean => typeof value === "string";
+
 import type {
   FacetBucket,
   GridColumn,
@@ -50,6 +58,8 @@ export interface PluginSubTabContext {
 
 export interface PluginSubTab {
   name: string;
+  /** Its quick-launch button's icon (components/quick-launch.tsx); default chart-line. */
+  icon?: IconName;
   render: (ctx: PluginSubTabContext) => ReactNode;
   /** A search table whose matches (with the ranges on its summary block and
    * the bbox) are the tab's count. */
@@ -112,8 +122,11 @@ export interface PluginHomeCard {
   key: string;
   title: string;
   subtitle?: ReactNode;
-  to: string;
-  search?: Record<string, unknown>;
+  /** A search view it opens (/Search/<level>/<view>)... */
+  level?: string;
+  view?: string;
+  /** ...or a page of the node ("/method-codes"). */
+  to?: string;
 }
 
 export interface ContributionTabContext {
@@ -168,7 +181,8 @@ export interface PluginModule {
   ) => PluginFilter[];
   /** Asset tabs for the contribution modal, after its Map tab. */
   contributionTabs?: (config: NodeConfig) => ContributionTab[];
-  /** SPA pages at their own paths (/method-codes); each is a not-found page on
+  /** SPA pages at their own paths (`/method-codes`, served as `/Method-Codes`:
+   * every path is PascalCase, lib/canonical-path.ts); each is a not-found page on
    * a node that does not activate the plugin. Their slugs are the backend
    * plugin's `pages`, so no content page takes them. */
   pages?: PluginPage[];

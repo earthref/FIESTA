@@ -30,7 +30,7 @@ const plugin: PluginModule = {
         title: "Method\nCodes",
         icon: "lab",
         corner_icon: "write",
-        to: "/method-codes",
+        to: "/Method-Codes",
         href: null,
       },
     ];

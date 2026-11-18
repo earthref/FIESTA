@@ -442,7 +442,7 @@ def catalog_jsonld(node: NodeConfig, *, catalog_url: str, contributions: int | N
         },
         "potentialAction": {
             "@type": "SearchAction",
-            "target": f"{catalog_url}/search?q={{search_term_string}}",
+            "target": f"{catalog_url}/Search?q={{search_term_string}}",
             "query-input": "required name=search_term_string",
         },
     }

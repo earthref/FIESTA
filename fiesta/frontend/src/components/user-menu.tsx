@@ -9,6 +9,7 @@ import {
 } from "react";
 import { isAnyAdmin, isNodeAdmin } from "../lib/admin";
 import { useAuth } from "../lib/auth";
+import { portalPageUrl } from "../lib/portals";
 import { useTheme } from "../lib/theme";
 import type { NodeConfig, UserOut } from "../lib/types";
 import { isSourceMode } from "./source-mode-notice";
@@ -124,26 +125,30 @@ export function UserMenu({
             {user.email}
           </div>
           {!isSourceMode(config) && (
-            <Link to="/private" role="menuitem" className={entryClass} onClick={close}>
+            <Link to="/Private" role="menuitem" className={entryClass} onClick={close}>
               <Entry icon="folder-open">Private Workspace</Entry>
             </Link>
           )}
-          <Link to="/account" role="menuitem" className={entryClass} onClick={close}>
+          <Link to="/Account" role="menuitem" className={entryClass} onClick={close}>
             <Entry icon="user">Account</Entry>
           </Link>
-          {isAnyAdmin(user) && (
-            // Straight to this node's settings when the user administers it.
-            <Link
-              {...(config && isNodeAdmin(user, config.slug)
-                ? { to: "/admin/nodes/$slug", params: { slug: config.slug } }
-                : { to: "/admin" })}
-              role="menuitem"
-              className={entryClass}
-              onClick={close}
-            >
-              <Entry icon="edit">Admin</Entry>
-            </Link>
-          )}
+          {isAnyAdmin(user) &&
+            (() => {
+              // Straight to this node's settings (/MagIC/Admin) when the user
+              // administers it; otherwise the portal's Admin, outside the node.
+              const ownNode = !!config && isNodeAdmin(user, config.slug);
+              const href = ownNode ? null : portalPageUrl("/Admin");
+              const entry = <Entry icon="edit">Admin</Entry>;
+              return href ? (
+                <a href={href} role="menuitem" className={entryClass} onClick={close}>
+                  {entry}
+                </a>
+              ) : (
+                <Link to="/Admin" role="menuitem" className={entryClass} onClick={close}>
+                  {entry}
+                </Link>
+              );
+            })()}
           <div className="my-1 border-t border-edge" />
           <button type="button" role="menuitem" className={entryClass} onClick={toggleTheme}>
             <Entry icon={theme === "dark" ? "sun" : "moon"}>

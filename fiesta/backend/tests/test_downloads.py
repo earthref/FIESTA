@@ -1,7 +1,6 @@
 """Contribution downloads (fiesta.domain.download, fiesta.services.downloads
 and the public routes): the text served from a stored file, its checksums,
-compression, and the multi-contribution zip's visibility and caps, with a
-fake session holding the rows and a fake bucket."""
+and compression, with a fake session holding the rows and a fake bucket."""
 
 import base64
 import gzip
@@ -96,6 +95,23 @@ def test_contribution_metadata_is_filled(magic_node):
     assert text.split("\n")[1].startswith("id\t")
     assert [r["row_id"] for r in parsed.tables["sites"]] == ["1", "2"]
     assert {r["contribution_id"] for r in parsed.tables["sites"]} == {"7"}
+
+
+def test_dropped_stray_rows_keep_every_row_id(magic_node):
+    # A stray `>` row inside a table is a row to parse_text, so it holds a
+    # row id; dropping it from the download must not renumber the rows after
+    # it, or their row_id would no longer match the row links.
+    model = magic_node.load_data_model("3.0")
+    stored = (
+        "tab delimited\tsites\nsite\tlat\tlon\nS1\t10\t20\n\t\t>>>>>>>>>>\n"
+        ">>>>>>>>>>\ntab delimited\tsamples\nsample\tsite\nA\tS1\nB\tS1\n"
+    )
+    ids = parse_text(stored).row_ids
+    assert ids == {"sites": [1, 2], "samples": [3, 4]}
+    parsed = parse_text(prepare_download(stored.encode(), model, RECORD).decode())
+    assert [r["site"] for r in parsed.tables["sites"]] == ["S1"]
+    assert [r["row_id"] for r in parsed.tables["sites"]] == ["1"]
+    assert [r["row_id"] for r in parsed.tables["samples"]] == ["3", "4"]
 
 
 def test_a_missing_contribution_table_is_added(magic_node):
@@ -263,18 +279,6 @@ def bucket(monkeypatch):
     return SimpleNamespace(reads=reads, broken=broken)
 
 
-@pytest.fixture
-def caps(monkeypatch):
-    settings = SimpleNamespace(download_max_contributions=3, download_max_bytes=1024**3)
-    monkeypatch.setattr(search, "get_settings", lambda: settings)
-    return settings
-
-
-async def _unzip(response) -> zipfile.ZipFile:
-    body = b"".join([chunk async for chunk in response.body_iterator])
-    return zipfile.ZipFile(io.BytesIO(body))
-
-
 async def test_public_download_is_prepared_and_checksummed(magic_node, bucket):
     session = FakeSession()
     response = await search.download_contribution(session, magic_node, PUBLIC)
@@ -308,83 +312,3 @@ async def test_private_single_download_needs_its_key(magic_node, bucket):
         "timestamp"
         not in parse_text(gzip.decompress(response.body).decode()).tables["contribution"][0]
     )
-
-
-async def test_multi_download_streams_a_zip_with_checksums(magic_node, bucket, caps):
-    session = FakeSession()
-    response = await search.download_contributions(
-        session, magic_node, None, f"{PUBLIC},{BIG},{PUBLIC}"
-    )
-    assert bucket.reads == []  # nothing is read before the response streams
-    zf = await _unzip(response)
-    names = [f"{PUBLIC}/magic_contribution_{PUBLIC}.txt", f"{BIG}/magic_contribution_{BIG}.txt"]
-    assert zf.namelist() == [*names, "SHA256SUMS"]
-    sums = dict(line.split("  ")[::-1] for line in zf.read("SHA256SUMS").decode().splitlines())
-    for name in names:
-        text = zf.read(name)
-        assert sums[name] == sha(text)
-        assert not text.startswith(b"\xef\xbb\xbf")
-    assert bucket.reads == [PUBLIC, BIG]
-
-
-async def test_multi_download_keeps_going_past_an_unreadable_file(magic_node, bucket, caps):
-    bucket.broken.add(PUBLIC)
-    response = await search.download_contributions(
-        FakeSession(), magic_node, None, f"{PUBLIC},{BIG}"
-    )
-    zf = await _unzip(response)
-    assert zf.namelist() == [
-        f"{PUBLIC}/ERROR.txt",
-        f"{BIG}/magic_contribution_{BIG}.txt",
-        "SHA256SUMS",
-    ]
-    assert f"{PUBLIC}/" not in zf.read("SHA256SUMS").decode()
-
-
-@pytest.mark.parametrize(
-    ("user", "ids", "missing"),
-    [
-        # Anonymous: only public files; a private one is not found (no private_key here).
-        (None, [PUBLIC, PRIVATE], [PRIVATE]),
-        (BOB, [PUBLIC, PRIVATE], [PRIVATE]),
-        # Its contributor and a node admin may open it in the workspace.
-        (ADA, [PUBLIC, PRIVATE], []),
-        (ADMIN, [PRIVATE], []),
-        # Deleted, or another node's: never.
-        (ADA, [DELETED, OTHER_NODE], [DELETED, OTHER_NODE]),
-        (ADMIN, [999], [999]),
-    ],
-)
-async def test_multi_download_checks_every_contribution(
-    magic_node, bucket, caps, user, ids, missing
-):
-    session = FakeSession()
-    call = search.download_contributions(
-        session, magic_node, session.users.get(user), ",".join(map(str, ids))
-    )
-    if missing:
-        with pytest.raises(HTTPException) as err:
-            await call
-        assert err.value.status_code == 404
-        assert err.value.detail == f"contributions not found: {', '.join(map(str, missing))}"
-        assert bucket.reads == []
-        return
-    zf = await _unzip(await call)
-    assert len(zf.namelist()) == len(ids) + 1
-
-
-async def test_multi_download_caps(magic_node, bucket, caps):
-    session = FakeSession()
-    with pytest.raises(HTTPException) as err:
-        await search.download_contributions(session, magic_node, None, "1,2,3,4")
-    assert err.value.status_code == 422 and "at most 3" in err.value.detail
-    # The size cap reads the stored sizes from the revisions, not the files.
-    caps.download_max_bytes = 500 * 1024**2
-    with pytest.raises(HTTPException) as err:
-        await search.download_contributions(session, magic_node, None, f"{PUBLIC},{BIG}")
-    assert err.value.status_code == 422 and "500 MiB" in err.value.detail
-    assert bucket.reads == []
-    for bad in ("", "1,x", ","):
-        with pytest.raises(HTTPException) as err:
-            await search.download_contributions(session, magic_node, None, bad)
-        assert err.value.status_code == 422

@@ -54,7 +54,9 @@ def test_poles_is_searchable_table_not_top_level(magic_node):
     # ...but `poles` is a searchable table, surfaced as a Locations sub-tab.
     assert plugins[0].search_tables(magic_node) == ["poles"]
     cfg = plugins[0].frontend_config(magic_node)
-    assert cfg["base_level"] == "Locations" and cfg["after_sub_tab"] == "Rows"
+    assert cfg["base_level"] == "Locations" and cfg["after_sub_tab"] == "Data"
+    # A legacy "Rows" (the Data view's name until 2026-11-16) is read as "Data".
+    assert plugins[0].Options(after_sub_tab="Rows").after_sub_tab == "Data"
 
 
 # --- Uncertainty rings (PmagPy) -----------------------------------------------

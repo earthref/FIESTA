@@ -1,6 +1,6 @@
 import * as maplibregl from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
-import { type FC, useEffect, useRef } from "react";
+import { type FC, useEffect, useMemo, useRef, useState } from "react";
 import { mapDim, useTheme } from "../../lib/theme";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
@@ -11,6 +11,7 @@ import {
 } from "./basemap";
 import type { Body } from "./bodies";
 import { BODY_BASEMAPS } from "./body-basemaps";
+import { geologyTiles } from "./geology-tiles";
 import { createLinesLayer, type LinesLayer, type MapLine } from "./lines-layer";
 import {
   type Area,
@@ -23,6 +24,7 @@ import {
   spotName,
 } from "./map-points";
 import { isOccluded, mapSize } from "./map-view";
+import { loadPlates, PLATE_COLOR } from "./plates";
 import { createPolarCapsLayer } from "./polar-caps";
 
 // MapLibre 6 can't find its worker inside a bundle: Vite bundles it as an
@@ -299,16 +301,31 @@ const globeFitCamera = (points: MapPoint[], width: number, height: number) => {
   return { center: [lon0, lat0] as [number, number], zoom };
 };
 
-// The basemap's labels, on unless turned off with the button under the zoom
-// buttons; remembered in this browser for every map.
-const LABELS_KEY = "map-labels";
-const labelsOn = () => {
+// The map buttons' settings, remembered in this browser for every map.
+const remembered = (key: string, fallback: boolean) => {
   try {
-    return localStorage.getItem(LABELS_KEY) !== "off";
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value === "on";
   } catch {
-    return true;
+    return fallback;
   }
 };
+const remember = (key: string, on: boolean) => {
+  try {
+    localStorage.setItem(key, on ? "on" : "off");
+  } catch {
+    /* not remembered */
+  }
+};
+// The basemap's labels, on unless turned off with the Labels toggle (top left).
+const LABELS_KEY = "map-labels";
+const labelsOn = () => remembered(LABELS_KEY, true);
+// The body's geologic map (BodyBasemap.geology), off unless turned on with the
+// Geology toggle. Partly transparent, so the basemap's relief
+// and the records' markers still read through its colours.
+const GEOLOGY_KEY = "map-geology";
+const geologyOn = () => remembered(GEOLOGY_KEY, false);
+const GEOLOGY_OPACITY = 0.65;
 // The labels (see PLACE_LABEL_STYLE), loaded once per page: Positron's layers
 // for places, water bodies and boundaries (roads and airports left out), with
 // its fonts, and the undersea features.
@@ -446,27 +463,49 @@ const labelPoint = ({ geometry }: GeoJSON.Feature): [number, number] | null => {
 const POLAR_LABEL_STYLE =
   `font:italic 11px 'Noto Sans',sans-serif;color:${UNDERSEA_COLOR};white-space:nowrap;pointer-events:none;` +
   "text-shadow:0 0 2px rgba(255,255,255,0.9),0 0 2px rgba(255,255,255,0.9)";
-const labelsControl = (initial: boolean, onChange: (on: boolean) => void): maplibregl.IControl => {
+// The layer toggles, one labelled button each in a row in the map's top-left
+// corner (Labels, Plates, Geology): a checkbox square filled while on.
+type Toggle = {
+  label: string;
+  // What it shows, in its tooltip ("Hide plate boundaries").
+  name: string;
+  initial: boolean;
+  onChange: (on: boolean) => void;
+};
+const TOGGLE_STYLE =
+  "width:auto;height:26px;padding:0 8px;display:flex;align-items:center;gap:5px;" +
+  "font:600 12px sans-serif;color:#333;white-space:nowrap;cursor:pointer";
+const togglesControl = (toggles: Toggle[]): maplibregl.IControl => {
   const container = document.createElement("div");
   return {
     onAdd() {
       container.className = "maplibregl-ctrl maplibregl-ctrl-group";
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = "Aa";
-      let on = initial;
-      const show = () => {
-        button.title = on ? "Hide labels" : "Show labels";
-        button.setAttribute("aria-pressed", String(on));
-        button.style.cssText = `font:bold 13px/29px sans-serif;color:#333;opacity:${on ? 1 : 0.45};text-decoration:${on ? "none" : "line-through"}`;
-      };
-      show();
-      button.onclick = () => {
-        on = !on;
+      container.style.display = "flex";
+      toggles.forEach(({ label, name, initial, onChange }, i) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        const box = document.createElement("span");
+        button.append(box, label);
+        let on = initial;
+        const show = () => {
+          button.title = on ? `Hide ${name}` : `Show ${name}`;
+          button.setAttribute("aria-pressed", String(on));
+          button.style.cssText =
+            TOGGLE_STYLE +
+            (i > 0 ? ";border-top:none;border-left:1px solid #ddd" : "") +
+            (on ? "" : ";color:#6b7280");
+          box.style.cssText =
+            "width:10px;height:10px;border-radius:2px;flex:none;" +
+            (on ? "background:#333;border:1px solid #333" : "border:1px solid #9ca3af");
+        };
         show();
-        onChange(on);
-      };
-      container.appendChild(button);
+        button.onclick = () => {
+          on = !on;
+          show();
+          onChange(on);
+        };
+        container.appendChild(button);
+      });
       return container;
     },
     onRemove() {
@@ -548,11 +587,9 @@ const MapLibreMap: FC<{
   // collide), rather than only in its tooltip.
   labelPoints?: boolean;
   // The geospatial filter area, which can be moved and resized on the map;
-  // onAreaChange gets it when a drag ends, or, without one, when asked for
-  // (requestViewArea) over the middle of the view.
+  // onAreaChange gets it when a drag ends.
   area?: Area | null;
   onAreaChange?: (area: Area) => void;
-  requestViewArea?: boolean;
   // Zooms (when it changes) so this area fills about the middle quarter of the
   // view, outside the pole views.
   zoomTo?: Area | null;
@@ -569,10 +606,15 @@ const MapLibreMap: FC<{
   // leaves out. They can't be hovered or clicked.
   context?: MapPoint[];
   // Lines under the points (plate boundaries, uncertainty ellipses), drawn
-  // past Web Mercator's limit too (see lines-layer.ts).
+  // past Web Mercator's limit too (see lines-layer.ts). A dot with an `id`
+  // (a pole's VGP) hovers and selects as that point does.
   lines?: MapLine[];
   // The points' circle radius in pixels, instead of 3.
   pointRadius?: number;
+  // Earth's plate boundaries (plates.ts) start shown; the map's Plates
+  // toggle turns them on and off either way. In `plateColor`.
+  plates?: boolean;
+  plateColor?: string;
 }> = ({
   mode,
   body = "earth",
@@ -583,13 +625,14 @@ const MapLibreMap: FC<{
   labelPoints,
   area,
   onAreaChange,
-  requestViewArea,
   zoomTo,
   centerOn,
   focusKey,
   context,
   lines,
   pointRadius = 3,
+  plates = false,
+  plateColor = PLATE_COLOR,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -600,9 +643,9 @@ const MapLibreMap: FC<{
   const setPointsRef = useRef<(() => void) | null>(null);
   const focusKeyRef = useRef<unknown>(focusKey ?? points);
   focusKeyRef.current = focusKey ?? points;
-  const areaRef = useRef({ area: area ?? null, onAreaChange, requestViewArea });
-  areaRef.current = { area: area ?? null, onAreaChange, requestViewArea };
-  // Shows the latest area (or adds the one asked for) once the style has loaded.
+  const areaRef = useRef({ area: area ?? null, onAreaChange });
+  areaRef.current = { area: area ?? null, onAreaChange };
+  // Shows the latest area once the style has loaded.
   const syncAreaRef = useRef<(() => void) | null>(null);
   // The latest area to zoom to, and zooms to it once the style has loaded.
   const zoomToRef = useRef(zoomTo ?? null);
@@ -616,8 +659,33 @@ const MapLibreMap: FC<{
   contextRef.current = context || [];
   // Plots the latest context points once the style has loaded.
   const setContextRef = useRef<(() => void) | null>(null);
-  const linesRef = useRef(lines || []);
-  linesRef.current = lines || [];
+  // The plate boundaries, under the other lines while shown (on Earth).
+  const [showPlates, setShowPlates] = useState(plates);
+  const showPlatesRef = useRef(showPlates);
+  showPlatesRef.current = showPlates;
+  const [plateLines, setPlateLines] = useState<[number, number][][] | null>(null);
+  const platesShown = showPlates && body === "earth";
+  useEffect(() => {
+    if (!platesShown || plateLines) return;
+    let current = true;
+    loadPlates().then((loaded) => {
+      if (current && loaded) setPlateLines(loaded.lines);
+    });
+    return () => {
+      current = false;
+    };
+  }, [platesShown, plateLines]);
+  const allLines = useMemo<MapLine[]>(
+    () => [
+      ...(platesShown && plateLines
+        ? plateLines.map((coords) => ({ coords, color: plateColor, width: 1.5, opacity: 0.8 }))
+        : []),
+      ...(lines || []),
+    ],
+    [platesShown, plateLines, plateColor, lines],
+  );
+  const linesRef = useRef(allLines);
+  linesRef.current = allLines;
   // The lines' layer, once the style has loaded.
   const linesLayerRef = useRef<LinesLayer | null>(null);
   // Dark mode's dimming of the imagery; applied to the map once the style has loaded.
@@ -643,6 +711,8 @@ const MapLibreMap: FC<{
     // A body's raster labels, but not over a pole, where its zoom-0 tiles'
     // names would be stretched across the whole view.
     const bodyLabels = sign ? undefined : basemap.labels;
+    // The geologic map at one level of detail for the view (geology-tiles.ts).
+    const geology = basemap.geology && geologyTiles(basemap.geology.tiles, basemap.geology.maxzoom);
     const { points: initialPoints } = pointsRef.current;
     // The focus key the view was last centred for.
     let focused: unknown = null;
@@ -705,6 +775,16 @@ const MapLibreMap: FC<{
               maxzoom: basemap.labelsMaxzoom ?? basemap.maxzoom,
             },
           }),
+          ...(basemap.geology &&
+            geology && {
+              geology: {
+                type: "raster",
+                tiles: geology.tiles,
+                tileSize: basemap.geology.tileSize,
+                maxzoom: basemap.geology.maxzoom,
+                attribution: basemap.geology.attribution,
+              },
+            }),
           points: { type: "geojson", data: collection([]) },
           area: { type: "geojson", data: collection([]) },
           context: { type: "geojson", data: collection([]) },
@@ -712,7 +792,18 @@ const MapLibreMap: FC<{
         layers: [
           { id: "background", type: "background", paint: { "background-color": "#000000" } },
           { id: "basemap", type: "raster", source: "basemap" },
-          // Dark mode dims the imagery under it (the basemap, the polar caps);
+          ...(basemap.geology
+            ? [
+                {
+                  id: "geology",
+                  type: "raster" as const,
+                  source: "geology",
+                  layout: { visibility: geologyOn() ? ("visible" as const) : ("none" as const) },
+                  paint: { "raster-opacity": GEOLOGY_OPACITY },
+                },
+              ]
+            : []),
+          // Dark mode dims the imagery under it (the basemap, the geologic map, the polar caps);
           // labels and data are drawn above it, undimmed.
           {
             id: "dim",
@@ -769,6 +860,7 @@ const MapLibreMap: FC<{
         ],
       },
     });
+    const detachGeology = geology?.attach(map, "geology");
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     // The attribution starts as just its (i) button. MapLibre opens it the
     // first time it collapses it to the button (once sources have credits);
@@ -802,21 +894,42 @@ const MapLibreMap: FC<{
         element.style.display = showLabels && pixelsPerDegree >= minPixelsPerDegree ? "" : "none";
       });
     map.on("move", showPolarLabels);
-    map.addControl(
-      labelsControl(showLabels, (on) => {
-        try {
-          localStorage.setItem(LABELS_KEY, on ? "on" : "off");
-        } catch {
-          /* not remembered */
-        }
-        showLabels = on;
-        for (const id of labelLayers) {
-          map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
-        }
-        showPolarLabels();
-      }),
-      "top-right",
-    );
+    const toggles: Toggle[] = [
+      {
+        label: "Labels",
+        name: "labels",
+        initial: showLabels,
+        onChange: (on) => {
+          remember(LABELS_KEY, on);
+          showLabels = on;
+          for (const id of labelLayers) {
+            map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+          }
+          showPolarLabels();
+        },
+      },
+    ];
+    // Plate boundaries are Earth's.
+    if (body === "earth") {
+      toggles.push({
+        label: "Plates",
+        name: "plate boundaries",
+        initial: showPlatesRef.current,
+        onChange: setShowPlates,
+      });
+    }
+    if (basemap.geology) {
+      toggles.push({
+        label: "Geology",
+        name: "geologic map (Macrostrat)",
+        initial: geologyOn(),
+        onChange: (on) => {
+          remember(GEOLOGY_KEY, on);
+          map.setLayoutProperty("geology", "visibility", on ? "visible" : "none");
+        },
+      });
+    }
+    map.addControl(togglesControl(toggles), "top-left");
     const addLabels = (loaded: Labels | null) => {
       if (!loaded || removed) return;
       map.setGlyphs(loaded.glyphs);
@@ -1025,7 +1138,11 @@ const MapLibreMap: FC<{
     // (isStyleLoaded() is also false while tiles load, so it can't gate these.)
     map.on("load", () => {
       if (globe) {
-        map.addLayer(createPolarCapsLayer("polar-caps", basemap.caps), "dim");
+        // Under the geologic map, which stops at Web Mercator's limit anyway.
+        map.addLayer(
+          createPolarCapsLayer("polar-caps", basemap.caps),
+          basemap.geology ? "geology" : "dim",
+        );
       }
       applyDimRef.current = () => map.setPaintProperty("dim", "background-opacity", dimRef.current);
       applyDimRef.current();
@@ -1200,39 +1317,6 @@ const MapLibreMap: FC<{
     // unfiltered search's area: over what's in view, with its handles easy to
     // reach. Its outline is sampled, as it curves on the globe, and a pole
     // within it takes in every longitude.
-    const viewArea = (): Area => {
-      const { width, height } = mapSize(map);
-      const [x0, y0, x1, y1] = [width / 4, height / 4, (width * 3) / 4, (height * 3) / 4];
-      const middle = map.unproject([width / 2, height / 2]);
-      const samples = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        .flatMap((i) => {
-          const t = i / 8;
-          return [
-            [x0 + (x1 - x0) * t, y0],
-            [x0 + (x1 - x0) * t, y1],
-            [x0, y0 + (y1 - y0) * t],
-            [x1, y0 + (y1 - y0) * t],
-          ];
-        })
-        .map((point) => map.unproject(point as [number, number]));
-      const lons = samples.map(({ lng }) => unwrapLon(lng, middle.lng));
-      const lats = samples.map(({ lat }) => lat);
-      let [west, south, east, north] = [
-        Math.min(...lons),
-        Math.min(...lats),
-        Math.max(...lons),
-        Math.max(...lats),
-      ];
-      const poleInView = (lat: number) => {
-        if (!globe || isOccluded(map, { lng: 0, lat })) return false;
-        const { x, y } = map.project([0, lat]);
-        return x >= x0 && x <= x1 && y >= y0 && y <= y1;
-      };
-      if (poleInView(90)) north = 90;
-      if (poleInView(-90)) south = -90;
-      if (east - west >= 360 || poleInView(90) || poleInView(-90)) [west, east] = [-180, 180];
-      return [west, Math.max(south, -90), east, Math.min(north, 90)];
-    };
     // Zooms so zoomTo fills the middle quarter of the view: padded by a quarter
     // of the view on each side (and within Web Mercator's limit, which
     // cameraForBounds works in). Each area once.
@@ -1277,16 +1361,7 @@ const MapLibreMap: FC<{
     };
     const syncArea = () => {
       if (dragging) return;
-      const { area, requestViewArea } = areaRef.current;
-      if (!area && requestViewArea) {
-        // Once the view has settled (it may be moving to the points).
-        if (map.isMoving()) return void map.once("moveend", syncArea);
-        shown = viewArea();
-        drawArea();
-        areaRef.current.onAreaChange?.(shown);
-        return;
-      }
-      shown = area;
+      shown = areaRef.current.area;
       drawArea();
     };
 
@@ -1407,11 +1482,71 @@ const MapLibreMap: FC<{
       const key = features[0]?.properties?.key;
       return key ? pointsRef.current.index.get(key) : undefined;
     };
+    // The lines' dots that stand for a point (an `id`, e.g. a pole's VGPs),
+    // projected to the screen once per view: on the first hit test after a
+    // move or new lines.
+    let dots: { lines: MapLine[]; at: number[]; xs: Float32Array; ys: Float32Array } | null = null;
+    map.on("move", () => {
+      dots = null;
+    });
+    // The dot under the pointer, if no record is: the nearest (the topmost of
+    // equals) on the near side of the globe (the far side's are clipped).
+    const dotTest = (e: maplibregl.MapMouseEvent): MapLine | undefined => {
+      const lines = linesRef.current;
+      if (dots?.lines !== lines) {
+        const at = lines.flatMap((line, i) =>
+          line.id !== undefined && line.coords.length === 1 ? [i] : [],
+        );
+        const xs = new Float32Array(at.length);
+        const ys = new Float32Array(at.length);
+        at.forEach((i, k) => {
+          const [lon, lat] = lines[i].coords[0];
+          // Past ±89.99° Mercator y is infinite (as lines-layer clamps).
+          const { x, y } = map.project([lon, Math.max(-89.99, Math.min(89.99, lat))]);
+          xs[k] = x;
+          ys[k] = y;
+        });
+        dots = { lines, at, xs, ys };
+      }
+      if (dots.at.length === 0) return undefined;
+      // The Mercator map repeats the world sideways (as lines-layer does).
+      const world = globe ? 0 : map.project([180, 0]).x - map.project([-180, 0]).x;
+      const shifts = globe ? [0] : [-world, 0, world];
+      const near: [number, number][] = [];
+      for (let k = 0; k < dots.at.length; k++) {
+        const reach = Math.max(HIT_PX, (lines[dots.at[k]].width ?? 1) / 2 + 1);
+        for (const shift of shifts) {
+          const dx = dots.xs[k] + shift - e.point.x;
+          const dy = dots.ys[k] - e.point.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 <= reach * reach) near.push([d2, k]);
+        }
+      }
+      near.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
+      for (const [, k] of near) {
+        const line = lines[dots.at[k]];
+        const [lng, lat] = line.coords[0];
+        if (!globe || !isOccluded(map, { lng, lat })) return line;
+      }
+      return undefined;
+    };
+    // A dot's tooltip: its point's, with the dot's label.
+    const dotTooltip = (dot: MapLine) => {
+      const point = pointsRef.current.points.find((p) => p.id === dot.id);
+      return point ? markerTooltip([dot.label ? { ...point, label: dot.label } : point]) : null;
+    };
+    // While the view moves (a drag, a pole view's own panning), every frame
+    // would project the dots again.
+    const viewMoving = (e: maplibregl.MapMouseEvent) =>
+      map.isMoving() || (e.originalEvent as MouseEvent).buttons !== 0;
     map.on("mousemove", (e) => {
       if (overMarker) return;
       const members = hitTest(e);
-      canvas.style.cursor = members ? "pointer" : onOutline(e.point.x, e.point.y) ? "move" : "";
-      if (members) tooltip.show(markerTooltip(members), e.point.x, e.point.y);
+      const dot = members || viewMoving(e) ? undefined : dotTest(e);
+      const html = members ? markerTooltip(members) : dot ? dotTooltip(dot) : null;
+      canvas.style.cursor =
+        members || dot ? "pointer" : onOutline(e.point.x, e.point.y) ? "move" : "";
+      if (html) tooltip.show(html, e.point.x, e.point.y);
       else tooltip.scheduleHide();
     });
     map.on("movestart", tooltip.hide);
@@ -1419,6 +1554,10 @@ const MapLibreMap: FC<{
     map.on("click", (e) => {
       const members = hitTest(e);
       if (members?.length === 1) onSelectRef.current?.(members[0].id);
+      else if (!members) {
+        const id = dotTest(e)?.id;
+        if (id !== undefined) onSelectRef.current?.(id);
+      }
     });
 
     const observer =
@@ -1451,6 +1590,7 @@ const MapLibreMap: FC<{
       container.removeEventListener("pointerup", onMoveEnd, true);
       container.removeEventListener("pointercancel", onMoveEnd, true);
       container.removeEventListener("touchstart", onTouchStart, true);
+      detachGeology?.();
       map.remove();
     };
   }, [mode, body]);
@@ -1458,7 +1598,7 @@ const MapLibreMap: FC<{
   // biome-ignore lint/correctness/useExhaustiveDependencies: the area by value; the sync reads it from areaRef
   useEffect(() => {
     syncAreaRef.current?.();
-  }, [area?.join(), requestViewArea]);
+  }, [area?.join()]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the area by value; the zoom reads it from zoomToRef
   useEffect(() => {
@@ -1476,8 +1616,8 @@ const MapLibreMap: FC<{
   }, [context]);
 
   useEffect(() => {
-    linesLayerRef.current?.setLines(lines || []);
-  }, [lines]);
+    linesLayerRef.current?.setLines(allLines);
+  }, [allLines]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the dim reaches the map through dimRef
   useEffect(() => {

@@ -16,6 +16,7 @@ import {
   settingsFilters,
 } from "../../lib/admin";
 import { ApiError } from "../../lib/api";
+import { normalizeView } from "../../lib/utils";
 import { ErrorMessage } from "../error-message";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -29,7 +30,7 @@ const TYPES: SettingsFilter["type"][] = ["facet", "range", "bbox", "numeric", "t
 // Types without a field: the box is summary._all._geo_point; numeric and
 // text add a filter per column, exists (with/without data) picks columns.
 const NO_FIELD: SettingsFilter["type"][] = ["bbox", "numeric", "text", "exists"];
-const VIEWS = ["Summaries", "Rows", "Map"];
+const VIEWS = ["Summaries", "Data", "Map"];
 
 // Stable keys so the list survives reordering without index-based keys.
 let counter = 0;
@@ -182,7 +183,7 @@ export function FiltersEditor({
                 {(row.filter.levels ?? []).join(", ") || "all"}
               </Td>
               <Td className="text-xs text-gray-600">
-                {(row.filter.views ?? []).join(", ") || "all"}
+                {(row.filter.views ?? []).map(normalizeView).join(", ") || "all"}
               </Td>
               <Td className="whitespace-nowrap">
                 <Button
@@ -272,7 +273,10 @@ function FilterModal({
   const [field, setField] = useState(filter.field ?? "");
   const [label, setLabel] = useState(filter.label ?? "");
   const [levels, setLevels] = useState<string[]>(filter.levels ?? []);
-  const [views, setViews] = useState<string[]>(filter.views ?? []);
+  // A draft from before the Data view's rename may still say Rows.
+  const [views, setViews] = useState<string[]>(() => [
+    ...new Set((filter.views ?? []).map(normalizeView)),
+  ]);
   const [unit, setUnit] = useState(filter.unit ?? "");
   const [scale, setScale] = useState(filter.scale != null ? String(filter.scale) : "");
   const [min, setMin] = useState(filter.min != null ? String(filter.min) : "");

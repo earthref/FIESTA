@@ -99,6 +99,8 @@ search:
       table: measurements
       count_field: summary.measurements._n_results
       map: false
+      # Legacy opened Measurements on its rows (it had no Summaries view).
+      default_view: Data
       columns:
         - { cell: record }
         - { cell: map }
@@ -191,11 +193,13 @@ plugins:
   depth-plot:
     levels: [Cores]
     depth_columns: [mbs_corrected, depth]
-    # Measurement tracks, matching the legacy seriesDefs (key, label, color).
+    # Default measurement tracks, matching the legacy seriesDefs (key, label,
+    # color; `log` starts a track on a log scale). Every other Number column
+    # with data can be picked in the plot's Tracks menu.
     series:
       - { key: gamma_density, label: Gamma Density, color: "#1f77b4" }
       - { key: mag_susc_chi_mass, label: Mag Susc χmass, color: "#ff7f0e" }
-      - { key: res, label: Resistivity (ohm-m), color: "#2ca02c" }
+      - { key: res, label: Resistivity (ohm-m), color: "#2ca02c", log: true }
       - { key: pwave_v, label: P-wave Velocity (m/s), color: "#d62728" }
       - { key: fp, label: Porosity (frac), color: "#9467bd" }
       - { key: k, label: K (cps), color: "#8c564b" }
@@ -203,6 +207,20 @@ plugins:
       - { key: ti, label: Ti (cps), color: "#7f7f7f" }
       - { key: fe, label: Fe (cps), color: "#bcbd22" }
       - { key: zr, label: Zr (cps), color: "#17becf" }
+    # XRF scanner counts depend on water content and grain size, so element
+    # ratios are the usual proxies: carbonate vs terrigenous (Ca/Ti), grain
+    # size (Zr/Rb), redox (Mn/Ti), marine organic matter (Br/Ti).
+    ratios:
+      - { numerator: ca, denominator: ti, log: true, color: "#c2185b", default: true }
+      - { numerator: zr, denominator: rb, color: "#00838f" }
+      - { numerator: mn, denominator: ti, color: "#6a1b9a" }
+      - { numerator: br, denominator: ti, color: "#5d4037" }
+    # Calibration runs and rows the scanner flagged bad (quality `b`, shown
+    # on request) stay out of the default plot.
+    quality_column: quality
+    bad_quality: [b]
+    exclude_sections: [cal]
+    min_depth: 0
 
 features:
   plugins: [depth-plot, sample-tiles]

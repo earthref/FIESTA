@@ -50,8 +50,8 @@ interface PortalReference extends Counted {
  * layout, else this deployment's own node (a per-node build serves only it). */
 function nodeSearchUrl(node: PortalNode, q: string): string {
   const query = `?q=${encodeURIComponent(q)}`;
-  if (NODES.length) return nodeSiteUrl(node.key, `/search${query}`);
-  return `${BASE_PATH}search${query}`;
+  if (NODES.length) return nodeSiteUrl(node.key, `/Search${query}`);
+  return `${BASE_PATH}Search${query}`;
 }
 
 interface Column<T> {

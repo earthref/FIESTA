@@ -59,11 +59,12 @@ Options: `display_columns`, `base_level`, `after_sub_tab`, `age_color`,
 filter), `default_alpha95_above` (1000), `facet_columns` (the location
 columns a pole doc's `summary._all` carries, lists split).
 
-API: `GET /v2/{node}/plugins/poles/plate-boundaries`.
+The plate boundaries are the platform's (`GET /v2/basemap/plates`, every map's
+plates toggle); the Poles map turns them on by default, in `plate_boundary_color`.
 
 | File | What |
 |---|---|
-| `plugin.py` | `PolesPlugin`: options, derived `poles` docs and their PmagPy uncertainty rings, the plate-boundaries route |
+| `plugin.py` | `PolesPlugin`: options, derived `poles` docs and their PmagPy uncertainty rings |
 | `index.tsx` | the UI module: the map over the poles' grid and its tiles, the Locations sub-tab, the contribution modal's Poles tab |
 | `poles-map.tsx`, `poles-data.ts` | the map views; reading poles and their rings from the docs, age colours, plate-boundary rings split at the date line |
 | `test_poles.py` | derived docs, the rings (α95 radius, dp/dm orientation, date line, malformed values) and the sub-tab wiring |

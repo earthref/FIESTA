@@ -13,6 +13,7 @@ import { useNodeConfig } from "@/lib/config";
 import { type PlotColors, plotColors, usePlotColors } from "@/lib/plot-colors";
 import type { NodeConfig } from "@/lib/types";
 import { cx, facetTitle } from "@/lib/utils";
+import { useSearchSetting } from "@/plugins";
 import {
   type ColorGroup,
   type Component,
@@ -116,7 +117,11 @@ export default function GeomagSeriesView({ options, searchParams, onOpen }: Geom
     [values.data, options],
   );
   const plots = useMemo(() => plotsOf(options), [options]);
-  const [mode, setMode] = useState<"ba" | "vadm">("ba");
+  const [mode, setMode] = useSearchSetting<"ba" | "vadm">(
+    "geomag-series.mode",
+    "ba",
+    (value) => value === "ba" || value === "vadm",
+  );
   const [xView, setXView] = useState<Range | null>(null);
   const onXView = useCallback((x: Range | undefined) => setXView(x ?? null), []);
   const [status, setStatus] = useState("");

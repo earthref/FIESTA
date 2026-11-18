@@ -93,7 +93,21 @@ def test_resolve_spa_paths(magic_node):
     assert resolve("/MagIC/about", {}).page == "about"
     assert resolve("/MagIC/private", {}).kind == "private"
     assert resolve("/MagIC/nope", {}).kind == "other"
+    # The clean URLs: /Search/<level>/<view>, /<id>/<tab>, any case.
+    assert resolve("/MagIC/Search/Locations/Data", {"q": "x"}).kind == "search"
+    assert resolve("/MagIC/16901/Contribution", {}).contribution_id == 16901
+    assert resolve("/MagIC/Private", {}).kind == "private"
+    assert resolve("/MagIC/Admin/Files", {}).kind == "private"
+    # A content page in any case names its slug.
+    assert resolve("/MagIC/About", {}).page == "about"
     assert resolve("/Nowhere/1", {}).node is None
+
+
+def test_path_segment():
+    from fiesta.apps.routers.seo import path_segment
+
+    assert path_segment("about") == "About"
+    assert path_segment("grand-challenges") == "Grand-Challenges"
 
 
 def test_page_paragraphs_drop_markup_and_scripts():
@@ -146,7 +160,7 @@ async def test_home_is_a_data_catalog(client):
     data = json.loads(re.search(r'ld\+json">(.*)</script>', head).group(1))
     assert data["@type"] == "DataCatalog"
     assert "1,234 public contributions" in data["description"]
-    assert data["potentialAction"]["target"].endswith("/MagIC/search?q={search_term_string}")
+    assert data["potentialAction"]["target"].endswith("/MagIC/Search?q={search_term_string}")
 
 
 async def test_bodies_are_readable_text(client):
@@ -169,7 +183,7 @@ async def test_sitemap_lists_public_contributions(client):
     xml = response.text
     assert "<loc>https://earthref.org/MagIC/7</loc><lastmod>2026-01-02</lastmod>" in xml
     assert "<loc>https://earthref.org/MagIC/9</loc></url>" in xml
-    assert "<loc>https://earthref.org/MagIC/about</loc>" in xml
+    assert "<loc>https://earthref.org/MagIC/About</loc>" in xml
     assert "jupyter-notebooks" not in xml  # a hidden page
 
 

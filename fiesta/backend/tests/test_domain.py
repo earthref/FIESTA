@@ -262,7 +262,7 @@ def test_summarize_places_other_bodies(magic_node):
 
 def test_summarize_groups_a_records_rows(magic_node):
     # A specimen's rows (e.g. a hysteresis and an anisotropy result) are one
-    # doc, as in the legacy index: Summaries count records, Rows their rows.
+    # doc, as in the legacy index: Summaries count records, Data their rows.
     text = "\n>>>>>>>>>>\n".join(
         [
             _tab_block(
@@ -480,10 +480,62 @@ def test_age_intervals_merge_and_cap():
     assert (got.low, got.high, got.best) == (7e6, 12e6, 10e6)
     assert got.detail["contributed"] == "10 ± 1 Ma (> 7)"
     assert conversion.interval_of({"u": "Ma"}) is None
+    # A negative sigma is a size all the same.
+    got = conversion.interval_of({"u": "Ma", "v": "10", "s1": "-1"})
+    assert (got.low, got.high, got.detail["sigma"]) == (8e6, 12e6, 1e6)
     with pytest.raises(ValueError, match="sigma"):
         UnitConversion(
             unit_column="u", columns=["v"], factors={}, interval={"name": "a", "sigma": "x"}
         )
+
+
+def test_age_intervals_after_1950_and_single_ad_bounds(magic_node):
+    """Years AD run the other way from years BP: a lone age_high of 1600 AD
+    (no later than it) is a lower bound of 350 years BP (no younger), a lone
+    age_low an upper one; ages after 1950 are negative years BP and keep
+    their whole sigma window, while a window of an age before 1950 stops at
+    the present (a young K-Ar age's 2 sigma never reaches into the future)."""
+    (conversion,) = magic_node.search.intervals
+
+    def interval(**row):
+        got = conversion.interval_of(row)
+        return got and (got.low, got.high, got.best)
+
+    ad = "Years AD (+/-)"
+    assert interval(age_high="1600", age_unit=ad) == (350.0, None, 350.0)
+    assert interval(age_low="1500", age_unit=ad) == (None, 450.0, 450.0)
+    assert interval(age_low="1500", age_high="1600", age_unit=ad) == (350.0, 450.0, 400.0)
+    assert conversion.convert({"age_high": "1600", "age_unit": ad}) == {"age_low": 350.0}
+    got = conversion.interval_of({"age_high": "1600", "age_unit": ad})
+    assert got.detail == {"low": 350.0, "contributed": "< 1600 Years AD (+/-)"}
+    # A 2010 AD flow: -60 years BP, its window either side.
+    assert interval(age="2010", age_sigma="5", age_unit=ad) == (-70.0, -50.0, -60.0)
+    # 0.02 ± 0.015 Ma: 0 – 0.05 Ma, not from -10 ka; stated bounds as stated.
+    assert interval(age="0.02", age_sigma="0.015", age_unit="Ma") == (0.0, 50000.0, 20000.0)
+    assert interval(age="100", age_sigma="60", age_unit="Years BP") == (0.0, 220.0, 100.0)
+    assert interval(age_low="-0.0001", age_high="0.001", age_unit="Ma") == (-100.0, 1000.0, 450.0)
+
+
+def test_karar_measurement_step_ages_are_not_record_ages(karar_node):
+    """KArAr's age interval comes from specimens and experiments only: a
+    measurement's age is one heating step's apparent age, so it neither
+    widens its specimen's (or sample's, or the contribution's) ages nor
+    lets the Age filter match them by a stray step."""
+    parsed = parse_text((CONFIG_DIR / "karar" / "seeds" / "typical-1.txt").read_text())
+    steps = [float(r["age"]) for r in parsed.tables["measurements"] if r.get("age")]
+    assert steps and min(steps) > 10  # 12.1 – 12.6 Ma steps
+    docs = summarize(karar_node, parsed, {"id": 1})
+    for doc in docs:
+        block = doc["summary"].get("_interval", {}).get("age")
+        if doc["type"] == "measurements":
+            assert block is None
+        elif block:
+            assert block["max"] < 10e6, (doc["type"], block)
+    contribution = docs[0]["summary"]["_interval"]["age"]
+    # The specimen's 1.678 ± 1.5 Ma and the experiment's 0.9287 ± 1.5 Ma, their
+    # 2 sigma windows stopping at the present.
+    assert contribution["range"] == [{"gte": 0.0, "lte": 4.678e6}]
+    assert contribution["n"] == 2
 
 
 def test_number_columns_cap_keeps_the_ends(magic_node):
@@ -678,6 +730,62 @@ def test_with_and_without_data_clauses():
     assert {"terms": {"summary._has._any": ["lat"]}} in body["query"]["bool"]["filter"]
 
 
+def test_search_extent_bounds_and_busiest_cell(magic_node, monkeypatch):
+    """GET /search/{table}/extent: one size-0 request over the positioned
+    docs, a geo_bounds (antimeridian-aware) and the busiest geotile's
+    centroid, read as [west, south, east, north] and [lon, lat]."""
+    import asyncio
+
+    from fiesta.apps.routers import search as router
+
+    bodies = []
+    replies = [
+        {
+            "hits": {"total": {"value": 4}},
+            "aggregations": {
+                "bounds": {
+                    "bounds": {
+                        "top_left": {"lat": -10.0, "lon": 170.0},
+                        "bottom_right": {"lat": -20.0, "lon": -170.0},
+                    }
+                },
+                "busiest": {
+                    "buckets": [{"key": "4/15/9", "at": {"location": {"lat": -15, "lon": 179}}}]
+                },
+            },
+        },
+        {
+            "hits": {"total": {"value": 0}},
+            "aggregations": {"bounds": {}, "busiest": {"buckets": []}},
+        },
+    ]
+
+    class Client:
+        async def search(self, index, body):
+            bodies.append(body)
+            return replies[len(bodies) - 1]
+
+    async def unconstrained(*args):
+        return None
+
+    monkeypatch.setattr(router, "_constrain", unconstrained)
+    monkeypatch.setattr(router, "get_opensearch", lambda: Client())
+    run = lambda table: asyncio.run(  # noqa: E731
+        router.search_extent(None, magic_node, None, table, range_=None, filter_=None)
+    )
+    out = run("sites")
+    assert (out.total, out.bounds, out.center) == (4, [170.0, -20.0, -170.0, -10.0], [179, -15])
+    body = bodies[0]
+    assert body["size"] == 0 and "sort" not in body
+    assert {"exists": {"field": router.GEO_FIELD}} in body["query"]["bool"]["filter"]
+    assert body["aggs"]["bounds"]["geo_bounds"]["wrap_longitude"] is True
+    assert body["aggs"]["busiest"]["geotile_grid"]["size"] == 1
+    empty = run("sites")
+    assert (empty.total, empty.bounds, empty.center) == (0, None, None)
+    with pytest.raises(router.HTTPException):
+        run("ages")
+
+
 def test_search_has_counts_one_table(magic_node, monkeypatch):
     """GET /search/{table}/has: one request, the table's docs and a terms
     aggregation of its columns (every listed column, zero included); `has`
@@ -860,6 +968,46 @@ def test_workspace_fields_are_node_configuration(magic_node):
     bad = magic_node.model_dump() | {"workspace": {"fields": [{"column": "no_such_column"}]}}
     with pytest.raises(ValueError, match="no_such_column"):
         type(magic_node).model_validate(bad)
+
+
+def test_quick_launch_is_node_configuration(magic_node, karar_node):
+    public = magic_node.public_config()
+    assert public["map_level"] == "Sites"
+    assert public["quick_launch"] is None  # Map, then every plugin view
+    views = {lvl["name"]: lvl["default_view"] for lvl in public["search_levels"]}
+    assert views["Measurements"] == "Data" and views["Sites"] is None
+    # Without `map_level`, the first record level with a map.
+    assert karar_node.search.map_level is None and karar_node.map_level == "Samples"
+
+    def node_with(views: dict | None = None, **search):
+        levels = [
+            {**lvl.model_dump(), "default_view": (views or {}).get(lvl.name, lvl.default_view)}
+            for lvl in magic_node.search.levels
+        ]
+        return magic_node.model_validate(
+            {
+                **magic_node.model_dump(),
+                "search": {**magic_node.search.model_dump(), "levels": levels, **search},
+            }
+        )
+
+    # "Rows" (the Data sub-tab's old name) still loads, as Data.
+    sites = node_with({"Sites": "Rows"}).search.levels[2]
+    assert (sites.name, sites.default_view) == ("Sites", "Data")
+    launch = ["Poles", "Map"]
+    assert node_with(quick_launch=launch).search.quick_launch == launch
+    with pytest.raises(ValueError, match="not a search level"):
+        node_with(map_level="Cruises")
+    with pytest.raises(ValueError, match="'Measurements' has no map"):
+        node_with(map_level="Measurements")
+    with pytest.raises(ValueError, match="repeats"):
+        node_with(quick_launch=["Map", "Map"])
+    with pytest.raises(ValueError, match="no Data sub-tab"):
+        node_with({"Contributions": "Data"})
+    with pytest.raises(ValueError, match="default_view Map, but it has no map"):
+        node_with({"Measurements": "Map"})
+    with pytest.raises(ValueError, match="default_view"):
+        node_with({"Sites": "Plots"})
 
 
 def test_karar_config_loads(karar_node):
@@ -1476,6 +1624,24 @@ def test_contribution_filters_on_every_node():
         SearchFilter(type="facet", field="id", date=True)
 
 
+def test_search_filter_views_read_legacy_rows_as_data():
+    """The Data result view was called Rows until 2026-11-16: a filter's
+    legacy `Rows` view (a YAML, or a node revision published before the
+    rename) is read as `Data`, once, and no node in git still says Rows."""
+    from fiesta.nodeconfig import SearchFilter, normalize_view
+
+    assert normalize_view("Rows") == "Data"
+    assert normalize_view("Poles") == "Poles"
+    legacy = SearchFilter(type="numeric", views=["Summaries", "Rows", "Map"])
+    assert legacy.views == ["Summaries", "Data", "Map"]
+    both = SearchFilter.model_validate({"type": "text", "views": ["Rows", "Data"]})
+    assert both.views == ["Data"]
+    assert SearchFilter(type="text").views == []
+    for node in load_deployment().nodes.values():
+        for f in node.search.filters:
+            assert "Rows" not in f.views, (node.node.slug, f.key)
+
+
 def test_search_body_sort_options():
     from fiesta.search.queries import DEFAULT_SORT, SORT_OPTIONS, build_search_body
 
@@ -1777,7 +1943,7 @@ def test_api_mounts_every_node_router_once_under_v2(monkeypatch):
         "/v2/{repository}/private/contributions",
         "/v2/{repository}/workspaces",
         "/v2/{repository}/contributions/{contribution_id}/download",
-        "/v2/{repository}/plugins/poles/plate-boundaries",
+        "/v2/basemap/plates",
         "/v2/{repository}/plugins/depth-plot/contributions/{contribution_id}/measurements",
         "/v2/admin/users",
         "/v2/admin/nodes/{slug}/publish",
@@ -2228,6 +2394,76 @@ def test_map_points_from_a_search_doc():
         "body": "moon",
     }
     assert len(_map_points(contribution, "contribution", (170, -5, -170, 5))) == 1
+    # Plates narrow the drawn points the same way (and leave out other bodies').
+    on_plate = _map_points(contribution, "contribution", None, None, (), ("AF",))
+    assert [(p["lon"], p.get("body")) for p in on_plate] == [(10.0, None)]
+
+
+def test_plates_data_and_filter():
+    from fastapi import HTTPException
+
+    from fiesta.plates import in_plates, parse_plates, plates_geojson, plates_shape
+    from fiesta.search.queries import build_search_body
+
+    features = plates_geojson()["features"]
+    assert len(features) == 52
+    for feature in features:
+        geometry = feature["geometry"]
+        polygons = (
+            geometry["coordinates"]
+            if geometry["type"] == "MultiPolygon"
+            else [geometry["coordinates"]]
+        )
+        for ring in (ring for rings in polygons for ring in rings):
+            assert ring[0] == ring[-1], feature["properties"]
+            assert all(-180 <= lon <= 180 and -90 <= lat <= 90 for lon, lat in ring)
+            # The maps draw every edge but those along ±180° or a pole, so a
+            # ring closed over a pole must not leave a meridian to it.
+            for (lon1, lat1), (lon2, lat2) in zip(ring, ring[1:], strict=False):
+                seam = abs(lon1) == abs(lon2) == 180 or abs(lat1) == abs(lat2) == 90
+                assert seam or max(abs(lon2 - lon1), abs(lat2 - lat1)) < 10, (
+                    feature["properties"],
+                    (lon1, lat1),
+                    (lon2, lat2),
+                )
+    # Antarctica reaches the pole; the Pacific plate crosses the antimeridian.
+    for lat, lon, code in (
+        (19.6, -155.5, "PA"),  # Hawaii
+        (-17.7, 178.1, "AU"),  # Fiji
+        (-89.9, 30, "AN"),
+        (89.9, 0, "NA"),
+        (38.5, -98, "NA"),  # Kansas
+        (48.8, 2.3, "EU"),  # Paris
+        (-15, -55, "SA"),
+        (0, 20, "AF"),
+    ):
+        codes = [f["properties"]["code"] for f in features]
+        on = [c for c in codes if in_plates(lat, lon, (c,))]
+        assert on == [code], (lat, lon, on)
+    assert in_plates(19.6, 204.5, ("PA",))  # 0–360 longitudes too
+    assert in_plates(0, 0, ())
+    assert parse_plates(["pa,EU", "PA"]) == ("PA", "EU")
+    with pytest.raises(HTTPException):
+        parse_plates(["XX"])
+    shape = plates_shape(("PA", "EU"))
+    assert shape["type"] == "MultiPolygon" and len(shape["coordinates"]) >= 2
+    body = build_search_body(table="sites", query=None, plates=("EU",))
+    clause = next(f for f in body["query"]["bool"]["filter"] if "geo_shape" in f)
+    assert clause["geo_shape"]["summary._all._geo_point"]["shape"] == plates_shape(("EU",))
+    assert "geo_shape" not in str(build_search_body(table="sites", query=None))
+
+
+def test_plates_route_revalidates():
+    # A browser keeps no copy past a change: no-cache + ETag, 304 while unchanged.
+    import asyncio
+
+    from fiesta.apps.routers.basemap import get_plates
+
+    full = asyncio.run(get_plates(None))
+    assert full.status_code == 200 and full.headers["cache-control"] == "public, no-cache"
+    etag = full.headers["etag"]
+    assert asyncio.run(get_plates(f'"stale", {etag}')).status_code == 304
+    assert asyncio.run(get_plates('"stale"')).status_code == 200
 
 
 def test_map_points_name_the_rows_above_and_their_contribution():
@@ -2408,7 +2644,7 @@ def test_search_scoped_to_one_contribution(monkeypatch):
 
 def test_facet_buckets_count_rows_and_mapped():
     """A facet value carries its rows and positioned docs besides its docs, so
-    the sidebar counts follow the Summaries, Rows and Map sub-tabs."""
+    the sidebar counts follow the Summaries, Data and Map sub-tabs."""
     from fiesta.apps.routers.search import _facet_bucket
     from fiesta.search.queries import build_search_body
 
@@ -2471,6 +2707,7 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     open above so the max is counted; log falls back to linear without
     positive values."""
     import asyncio
+    import copy
 
     import pytest
 
@@ -2486,16 +2723,19 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     def client_for(positive_min):
         class Client:
             async def search(self, index, body):
-                bodies.append(body)
+                # A copy: the route reuses one body for both requests.
+                bodies.append(copy.deepcopy(body))
                 if "all" in body["aggs"]:
                     return {
                         "hits": {"total": {"value": 9}},
                         "aggregations": {
                             "all": {"min": -5.0, "max": 1000.0},
+                            "has": {"doc_count": 4},
                             "positive": {"s": {"value": positive_min}},
                         },
                     }
-                n = len(body["aggs"]["bins"]["range"]["ranges"])
+                bins = body["aggs"]["bins"]
+                n = len(bins["range"]["ranges"] if "range" in bins else bins["filters"]["filters"])
                 return {"aggregations": {"bins": {"buckets": [{"doc_count": 2}] * n}}}
 
         return Client()
@@ -2524,7 +2764,8 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     monkeypatch.setattr(router, "get_opensearch", lambda: client_for(1.0))
     out = run(bins=3, log=True)
     ranges = bodies[-1]["aggs"]["bins"]["range"]["ranges"]
-    assert out.log and out.total == 9 and out.counted == 6
+    # `counted`: the docs with a value, each once (not the bins' sum, 6).
+    assert out.log and out.total == 9 and out.counted == 4
     assert ranges[0]["from"] == 1.0 and "to" not in ranges[-1]
     assert [b.hi for b in out.bins] == pytest.approx([10, 100, 1000])
 
@@ -2533,9 +2774,15 @@ def test_search_histogram_bins(magic_node, monkeypatch):
     assert not out.log and out.bins[0].lo == -5.0 and out.bins[-1].hi == 1000.0
     # No `bins`: as many as the values call for (9 here, so the floor of 10).
     assert len(run(bins=None, log=False).bins) == 10
-    # An interval's ranges have no stats: the histogram reads its values.
-    run(field="summary._interval.age.range", bins=4, log=False)
-    assert bodies[-1]["aggs"]["bins"]["range"]["field"] == "summary._interval.age.values"
+    # An interval's ranges have no stats: its values give the extent, and a
+    # bin counts the docs any of whose ranges overlaps it (the filter's
+    # intersects), not those with an end or best estimate in it.
+    out = run(field="summary._interval.age.range", bins=4, log=False)
+    assert bodies[-2]["aggs"]["all"]["stats"]["field"] == "summary._interval.age.values"
+    overlaps = bodies[-1]["aggs"]["bins"]["filters"]["filters"]
+    assert overlaps[0] == {"range": {"summary._interval.age.range": {"gte": -5.0, "lt": 246.25}}}
+    assert overlaps[-1] == {"range": {"summary._interval.age.range": {"gte": 748.75}}}
+    assert [b.count for b in out.bins] == [2, 2, 2, 2] and out.counted == 4
 
     # Only summary fields, never a private one.
     with pytest.raises(router.HTTPException):
@@ -2831,6 +3078,48 @@ def test_matching_row_finds_a_search_rows_place_in_the_file():
     assert matching_row(rows, {"site": "A", "description": ""}) == 1
     assert matching_row(rows, {"site": "C"}) is None
     assert matching_row([], {"site": "A"}) is None
+
+
+def test_every_row_has_a_core_id_that_stamp_ids_writes():
+    from fiesta.domain.parse import ParsedContribution, parse_text, stamp_ids
+    from fiesta.services.history import row_with_id
+
+    # `notes` declares no row_id; its rows are numbered all the same.
+    model = {
+        "tables": {
+            "contribution": {"columns": {"id": {}}},
+            "sections": {"columns": {"contribution_id": {}, "row_id": {}, "section": {}}},
+            "notes": {"columns": {"note": {}}},
+            "measurements": {
+                "columns": {"contribution_id": {}, "row_id": {}, "measurement": {}}
+            },
+        }
+    }
+    text = (
+        "tab\tcontribution\nid\n672\n>>>>>>>>>>\n"
+        "tab\tsections\nsection\nS1\n\t\nS2\n>>>>>>>>>>\n"
+        "tab\tnotes\nnote\nn1\n>>>>>>>>>>\n"
+        "tab\tmeasurements\nmeasurement\nm1\nm2\nm3\n>>>>>>>>>>\n"
+        "tab\tsections\nsection\nS3\n"
+    )
+    parsed = parse_text(text)
+    # 1..N across every table but the contribution's, in file order (a blank
+    # row skipped; a table split over blocks keeps each block's ids).
+    assert parsed.row_ids == {"sections": [1, 2, 7], "notes": [3], "measurements": [4, 5, 6]}
+    assert parsed.row_id_of("measurements", 1) == 5
+    assert parsed.row_id_of("measurements", 3) is None
+    # stamp_ids writes the same ids where the data model has the column.
+    stamped = parse_text(stamp_ids(text, 672, model))
+    for table, ids in parsed.row_ids.items():
+        written = [row.get("row_id") for row in stamped.tables[table]]
+        assert written == ([str(i) for i in ids] if table != "notes" else [None])
+    # /CDR/672.5 is the second measurement; an unknown id is nowhere.
+    assert row_with_id(parsed.row_ids, 5) == ("measurements", 2)
+    assert row_with_id(parsed.row_ids, 7) == ("sections", 3)
+    assert row_with_id(parsed.row_ids, 8) is None
+    # Built from tables (an import, an upgrade): numbered in table order.
+    built = ParsedContribution(tables={"contribution": [{}], "sites": [{}, {}], "samples": [{}]})
+    assert built.row_id_of("samples", 0) == 3
 
 
 def test_changed_rows_ignores_order_blanks_and_stamped_ids():

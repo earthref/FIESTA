@@ -133,7 +133,7 @@ export function PrivateWorkspacePage() {
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center" style={{ gap: "0 1em" }}>
-        <Link to="/upload" className={uploadClass} style={{ margin: "0 0 0.5em" }}>
+        <Link to="/Upload" className={uploadClass} style={{ margin: "0 0 0.5em" }}>
           <Icon name="plus" size="small" /> Upload Data Into Your Private Workspace
         </Link>
         <Button
@@ -225,7 +225,7 @@ export function PrivateWorkspacePage() {
               : "Upload a data file to start a contribution. It stays private while you complete its details, validate it and publish it."}
           </p>
           {!showPublished && (
-            <Link to="/upload" className={cx(uploadClass, "mt-4")}>
+            <Link to="/Upload" className={cx(uploadClass, "mt-4")}>
               <Icon name="plus" size="small" /> Upload Data
             </Link>
           )}

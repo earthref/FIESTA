@@ -1167,17 +1167,263 @@
      "unit": "cps",
      "description": "Count rate for Lead"
     },
+    "al": {
+     "label": "Aluminium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 49,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Aluminium"
+    },
+    "si": {
+     "label": "Silicon",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 50,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Silicon"
+    },
+    "p": {
+     "label": "Phosphorus",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 51,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Phosphorus"
+    },
+    "s": {
+     "label": "Sulfur",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 52,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Sulfur"
+    },
+    "sc": {
+     "label": "Scandium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 53,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Scandium"
+    },
+    "v": {
+     "label": "Vanadium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 54,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Vanadium"
+    },
+    "cr": {
+     "label": "Chromium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 55,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Chromium"
+    },
+    "co": {
+     "label": "Cobalt",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 56,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Cobalt"
+    },
+    "as": {
+     "label": "Arsenic",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 57,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Arsenic"
+    },
+    "se": {
+     "label": "Selenium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 58,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Selenium"
+    },
+    "nb": {
+     "label": "Niobium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 59,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Niobium"
+    },
+    "mo": {
+     "label": "Molybdenum",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 60,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Molybdenum"
+    },
+    "ag": {
+     "label": "Silver",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 61,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Silver"
+    },
+    "cd": {
+     "label": "Cadmium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 62,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Cadmium"
+    },
+    "sn": {
+     "label": "Tin",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 63,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Tin"
+    },
+    "sb": {
+     "label": "Antimony",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 64,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Antimony"
+    },
+    "ba": {
+     "label": "Barium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 65,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Barium"
+    },
+    "la": {
+     "label": "Lanthanum",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 66,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Lanthanum"
+    },
+    "ce": {
+     "label": "Cerium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 67,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Cerium"
+    },
+    "pr": {
+     "label": "Praseodymium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 68,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Praseodymium"
+    },
+    "nd": {
+     "label": "Neodymium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 69,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Neodymium"
+    },
+    "tl": {
+     "label": "Thallium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 70,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Thallium"
+    },
+    "bi": {
+     "label": "Bismuth",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 71,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Bismuth"
+    },
+    "th": {
+     "label": "Thorium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 72,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Thorium"
+    },
+    "u": {
+     "label": "Uranium",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 73,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Count rate for Uranium"
+    },
+    "xrf_total_cps": {
+     "label": "XRF Total Count Rate",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 74,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Total count rate of the XRF spectrum"
+    },
+    "mo_inc": {
+     "label": "Mo Incoherent Scatter",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 75,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Incoherent (Compton) scatter count rate of the molybdenum tube line, used to normalise element counts"
+    },
+    "mo_coh": {
+     "label": "Mo Coherent Scatter",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 76,
+     "type": "Number",
+     "unit": "cps",
+     "description": "Coherent (Rayleigh) scatter count rate of the molybdenum tube line, used to normalise element counts"
+    },
+    "xrf_mse": {
+     "label": "XRF Spectrum Fit MSE",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 77,
+     "type": "Number",
+     "description": "Mean squared error of the XRF spectrum fit"
+    },
+    "xrf_dead_time": {
+     "label": "XRF Dead Time",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 78,
+     "type": "Number",
+     "unit": "%",
+     "description": "Detector dead time during the XRF measurement"
+    },
+    "xrf_processing_params": {
+     "label": "XRF Processing Parameters",
+     "group": "X-Ray Flourescence (XRF)",
+     "position": 79,
+     "type": "Dictionary",
+     "description": "Dictionary of parameters and values used during acquisition and processing of XRF data (e.g. tube voltage, current, live time)"
+    },
     "description": {
      "label": "Description",
      "group": "Metadata",
-     "position": 49,
+     "position": 80,
      "type": "String",
      "description": "Measurement description and comments"
     },
     "timestamp": {
      "label": "Measurement Timestamp",
      "group": "Metadata",
-     "position": 50,
+     "position": 81,
      "type": "Timestamp",
      "description": "Date and time when the measurement occured",
      "notes": "ISO 8601 date and time (e.g. \"yyyy-mm-ddThh:mm:ss.sssZ\")",
@@ -1191,7 +1437,7 @@
     "software_packages": {
      "label": "CDR Software Packages",
      "group": "Metadata",
-     "position": 51,
+     "position": 82,
      "type": "List",
      "description": "Colon-delimited list of software used for data reduction",
      "examples": [
@@ -1202,7 +1448,7 @@
     "external_database_ids": {
      "label": "External Database IDs",
      "group": "Metadata",
-     "position": 52,
+     "position": 83,
      "type": "Dictionary",
      "description": "Dictionary of external databases and IDs where data are used",
      "examples": [
@@ -1217,7 +1463,7 @@
     "analysts": {
      "label": "Analyst Names",
      "group": "Metadata",
-     "position": 53,
+     "position": 84,
      "type": "List",
      "description": "Colon-delimited list of EarthRef handles or ORCIDs or names and emails for analysts or ORCID id",
      "examples": [

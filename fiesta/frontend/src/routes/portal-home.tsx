@@ -1,4 +1,4 @@
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton } from "../components/icon-button";
@@ -15,6 +15,48 @@ import { DividerHeader, NewsItem, Rule, threeCard, threeCardClass, threeCards } 
 
 /** Recent contributions listed across every node. */
 const RECENT = 7;
+
+/** `/v2/portal/stats` per node (routers/portal.py). */
+interface NodeStatsOut {
+  contributions: number;
+  contributors: number;
+  /** Created or revised in the last six months, private workspace ones included. */
+  active: number;
+}
+
+/** "Magnetics Information Consortium (MagIC)" → "Magnetics Information
+ * Consortium": the card's title already names the node. */
+function withoutKey(title: string, key: string): string {
+  const suffix = ` (${key})`;
+  return title.endsWith(suffix) ? title.slice(0, -suffix.length) : title;
+}
+
+/** A node card's statistics row: three numbers over their labels. */
+function NodeStats({ stats }: { stats: NodeStatsOut }) {
+  const items: [number, string, string][] = [
+    [stats.contributions, "contributions", "Public contributions"],
+    [stats.contributors, "contributors", "Users with a public contribution"],
+    [
+      stats.active,
+      "active",
+      "Contributions, private workspace ones included, created or revised in the last six months",
+    ],
+  ];
+  return (
+    <div className="mt-[0.75rem] flex justify-center gap-[1rem]">
+      {items.map(([value, label, help]) => (
+        <div key={label} title={help} className="min-w-0">
+          <div className="font-bold text-node-ink" style={{ fontSize: "1.2857em", lineHeight: 1 }}>
+            {value.toLocaleString()}
+          </div>
+          <div className="uppercase" style={{ fontSize: "0.7143em", letterSpacing: "0.03em" }}>
+            {label}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /** Scope the node color variables (text-node-ink, the card outline) to one node. */
 function nodeColorStyle(color: string): CSSProperties {
@@ -74,6 +116,11 @@ export function PortalHomePage() {
       staleTime: Number.POSITIVE_INFINITY,
     })),
   });
+  const stats = useQuery({
+    queryKey: ["portal", "stats"],
+    queryFn: () => api<{ nodes: Record<string, NodeStatsOut> }>("/v2/portal/stats"),
+    staleTime: 60_000,
+  });
   const recents = useQueries({
     queries: NODES.map((slug) => ({
       queryKey: ["portal", slug, "recent", RECENT],
@@ -112,7 +159,7 @@ export function PortalHomePage() {
         <div className="min-w-0 lg:w-3/4" style={{ padding: "0 1rem" }}>
           {configError && <ErrorMessage error={configError} />}
           <div className="flex flex-wrap" style={threeCards}>
-            {nodes.map(({ config, recent }) => (
+            {nodes.map(({ config }) => (
               <div
                 key={config.slug}
                 className={threeCardClass}
@@ -127,6 +174,7 @@ export function PortalHomePage() {
                       size={88}
                       color={config.color}
                       label={config.logo_label || config.key}
+                      named={false}
                       svg={config.logo_svg}
                       style={config.logo_style}
                     />
@@ -134,13 +182,9 @@ export function PortalHomePage() {
                   title={config.key}
                   subtitle={
                     <>
-                      {config.title}
-                      {recent?.data && (
-                        <>
-                          <br />
-                          {recent.data.total.toLocaleString()}{" "}
-                          {recent.data.total === 1 ? "contribution" : "contributions"}
-                        </>
+                      {withoutKey(config.title, config.key)}
+                      {stats.data?.nodes[config.slug] && (
+                        <NodeStats stats={stats.data.nodes[config.slug]} />
                       )}
                     </>
                   }

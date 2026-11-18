@@ -5,7 +5,7 @@ docs with `type: "poles"`, but nothing ever indexed them (the view was driven
 client-side from location rows). This plugin makes the intent real: at
 summarize time, every locations row carrying both `pole_lat` and `pole_lon`
 becomes a `poles` search doc. `poles` is a searchable table (not a top-level
-tab); the frontend surfaces it as a sub-tab of Locations, after "Rows".
+tab); the frontend surfaces it as a sub-tab of Locations, after "Data".
 
 Each doc also carries the pole's uncertainty outline, computed here with
 PmagPy so the map only draws it: the α95 circle (`pmag.circ`, the pole's
@@ -35,14 +35,12 @@ from functools import cache
 from typing import Any
 
 import numpy as np
-from fastapi import APIRouter, HTTPException
 from pmagpy import pmag
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from fiesta.apps.deps import NodeDep
 from fiesta.domain.parse import ParsedContribution
 from fiesta.domain.summarize import interval_blocks
-from fiesta.nodeconfig import NodeConfig
+from fiesta.nodeconfig import NodeConfig, normalize_view
 from fiesta.plugins.base import FiestaPlugin, PluginOptions
 from fiesta.plugins.util import to_float
 
@@ -237,7 +235,7 @@ class PolesOptions(PluginOptions):
         description="Search level the Poles view attaches to as a sub-tab",
     )
     after_sub_tab: str = Field(
-        default="Rows", description="Result sub-tab the Poles tab is placed after"
+        default="Data", description="Result sub-tab the Poles tab is placed after"
     )
     age_color: AgeColors = Field(default=AgeColors(), description="Pole colors by age")
     age_interval: str = Field(
@@ -248,7 +246,9 @@ class PolesOptions(PluginOptions):
         ),
     )
     plate_boundary_color: str = Field(
-        default="#990000", description="Color of the plate boundary lines on the map"
+        default="#990000",
+        description="Color of the plate boundary lines on the Poles map (shown by default "
+        "there; the platform's plates, see fiesta/plates.py)",
     )
     default_alpha95_max: float | None = Field(
         default=10.0,
@@ -265,6 +265,12 @@ class PolesOptions(PluginOptions):
         description="Location columns copied (colon-delimited lists split) into a pole's "
         "summary._all, for its facets and free-text search",
     )
+
+    @field_validator("after_sub_tab")
+    @classmethod
+    def _normalize_after_sub_tab(cls, value: str) -> str:
+        # A legacy "Rows" (before the Data view's rename) is read as "Data".
+        return normalize_view(value)
 
 
 class PolesPlugin(FiestaPlugin):
@@ -354,21 +360,6 @@ class PolesPlugin(FiestaPlugin):
             )
         return docs
 
-    def build_router(self) -> APIRouter:
-        router = APIRouter()
-
-        @router.get("/plate-boundaries")
-        async def plate_boundaries(node: NodeDep) -> dict:
-            """Tectonic plate boundary polygons (GeoJSON) for the map."""
-            path = node.base_dir / node.node.slug / "plate_boundaries.json"
-            if not path.exists():
-                raise HTTPException(404, "this node has no plate boundary data")
-            import json
-
-            return json.loads(path.read_text())
-
-        return router
-
     def frontend_config(self, node: NodeConfig) -> dict:
         # The Age / Pole A95 / Geospatial controls on the Poles view are
         # `search.filters` entries in the node YAML (range on
@@ -377,7 +368,4 @@ class PolesPlugin(FiestaPlugin):
             "view": "poles",
             "table": "poles",
             **self.options(node).model_dump(),
-            "has_plate_boundaries": (
-                node.base_dir / node.node.slug / "plate_boundaries.json"
-            ).exists(),
         }

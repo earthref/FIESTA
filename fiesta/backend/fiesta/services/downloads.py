@@ -1,6 +1,7 @@
-"""Contribution downloads: one file (plain, gzip or zip) or several as one
-streamed zip, each prepared on output by `fiesta.domain.download` and
-labelled with its checksums.
+"""Contribution downloads: one file (plain, gzip or zip), prepared on output
+by `fiesta.domain.download` and labelled with its checksums. Download
+Results' contribution files zip (`/search/{table}/download?files=true`)
+prepares each of its files here too.
 
 Two checksums, never confused:
 - the stored checksum: sha256 of the canonical file in the bucket, recorded in
@@ -17,22 +18,19 @@ the search router's private-key check, or the workspace `can_access`).
 import base64
 import gzip
 import hashlib
-import logging
 import zipfile
-from collections.abc import AsyncIterator, Iterable
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import HTTPException
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 
 from fiesta.db.models import Contribution, Revision, User
 from fiesta.domain.download import prepare_download
 from fiesta.nodeconfig import NodeConfig
 from fiesta.storage import Storage, file_key
-
-logger = logging.getLogger(__name__)
 
 Compression = Literal["gzip", "zip"]
 SUMS_NAME = "SHA256SUMS"
@@ -167,7 +165,7 @@ def _stem(name: str) -> str:
     return name.rsplit(".", 1)[0] if "." in name else name
 
 
-def _sums(entries: Iterable[tuple[str, str]]) -> bytes:
+def sums(entries: Iterable[tuple[str, str]]) -> bytes:
     """`sha256sum -c` lines for (path, sha256) pairs."""
     return "".join(f"{digest}  {path}\n" for path, digest in entries).encode()
 
@@ -184,7 +182,7 @@ def file_response(served: ServedFile, compress: Compression | None = None) -> Re
     elif compress == "zip":
         writer = _ZipStream()
         body = writer.add(served.name, served.data)
-        body += writer.add(SUMS_NAME, _sums([(served.name, served.sha256)]))
+        body += writer.add(SUMS_NAME, sums([(served.name, served.sha256)]))
         name, body, media_type = (
             f"{_stem(served.name)}.zip",
             body + writer.close(),
@@ -210,7 +208,7 @@ def file_info(served: ServedFile, stored: StoredFile) -> dict:
     }
 
 
-# ---- streamed zips ------------------------------------------------------------------
+# ---- zips ---------------------------------------------------------------------------
 
 
 class _Sink:
@@ -246,53 +244,3 @@ class _ZipStream:
     def close(self) -> bytes:
         self.zip.close()
         return self.sink.take()
-
-
-async def zip_chunks(node: NodeConfig, files: list[StoredFile]) -> AsyncIterator[bytes]:
-    """FILES as one zip, a member at a time (only one contribution's file in
-    memory): `<id>/<name>` each, and SHA256SUMS of the served texts last. A
-    file that cannot be read becomes `<id>/ERROR.txt` and the rest go on."""
-    writer = _ZipStream()
-    sums = []
-    for stored in files:
-        path = f"{stored.contribution_id}/{stored.name}"
-        try:
-            served = serve(node, stored, await read(node, stored))
-        except Exception:
-            logger.exception("download of contribution %s failed", stored.contribution_id)
-            yield writer.add(
-                f"{stored.contribution_id}/ERROR.txt",
-                b"This contribution's file could not be read; please try again later.\n",
-            )
-            continue
-        sums.append((path, served.sha256))
-        yield writer.add(path, served.data)
-    yield writer.add(SUMS_NAME, _sums(sums))
-    yield writer.close()
-
-
-def zip_response(node: NodeConfig, files: list[StoredFile]) -> StreamingResponse:
-    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    name = f"{node.node.slug}_contributions_{stamp}.zip"
-    return StreamingResponse(
-        zip_chunks(node, files),
-        media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{name}"'},
-    )
-
-
-def check_count(count: int, max_count: int) -> None:
-    if count > max_count:
-        raise HTTPException(422, f"at most {max_count} contributions per download")
-
-
-def check_size(files: list[StoredFile], max_bytes: int) -> None:
-    """Refuse FILES whose stored sizes (from their revisions, so before any
-    file is read) add up to more than MAX_BYTES."""
-    total = sum(f.size or 0 for f in files)
-    if total > max_bytes:
-        raise HTTPException(
-            422,
-            f"these contributions hold {total // 1024**2} MiB; a download is limited to "
-            f"{max_bytes // 1024**2} MiB, so download fewer at a time",
-        )

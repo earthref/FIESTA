@@ -1,16 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { api, download } from "../lib/api";
+import { api } from "../lib/api";
 import { nodeUrl } from "../lib/base";
-import { formatNumber } from "../lib/utils";
 import { ErrorMessage } from "./error-message";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/modal";
 import { Spinner } from "./ui/spinner";
-
-/** The API's default cap on one multi-contribution download
- * (`download_max_contributions`); a larger server cap still serves this many. */
-export const MAX_DOWNLOAD_CONTRIBUTIONS = 100;
 
 /** GET /contributions/{id}/download/info. */
 interface DownloadInfo {
@@ -22,18 +17,14 @@ interface DownloadInfo {
   stored: { size: number | null; sha256: string | null };
 }
 
-type Choice = "txt" | "gzip" | "zip" | "results";
+type Choice = "txt" | "gzip" | "zip";
 
 interface DownloadDialogProps {
   open: boolean;
   onClose: () => void;
-  /** One contribution's file, in a plain, gzip or zip download. */
-  contributionId?: string | number;
+  /** The contribution whose file downloads, plain, gzipped or zipped. */
+  contributionId: string | number;
   privateKey?: string;
-  /** Several contributions (a search's matches) as one zip: how many, and
-   * how to fetch their ids (at most MAX_DOWNLOAD_CONTRIBUTIONS). Offered only
-   * for more than one. */
-  results?: { count: number; fetchIds: (max: number) => Promise<string[]> };
 }
 
 function formatBytes(bytes: number): string {
@@ -47,82 +38,39 @@ function stem(name: string): string {
   return dot > 0 ? name.slice(0, dot) : name;
 }
 
-/** The download dialog (MagIC #509): one contribution's file as text,
- * gzip or zip, with the served file's SHA-256, or a search's matching
- * contributions as one zip. Options that cannot work are not shown. */
-export function DownloadDialog({
-  open,
-  onClose,
-  contributionId,
-  privateKey,
-  results,
-}: DownloadDialogProps) {
-  const single = contributionId !== undefined && contributionId !== "";
-  const several = !!results && results.count > 1;
-  const [choice, setChoice] = useState<Choice>(single ? "txt" : "results");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+/** The contribution modal's download dialog (MagIC #509): its file as text,
+ * gzip or zip, with the served file's SHA-256 and a link to the stored file
+ * unchanged. The search page's Download Results is DownloadResultsModal. */
+export function DownloadDialog({ open, onClose, contributionId, privateKey }: DownloadDialogProps) {
+  const [choice, setChoice] = useState<Choice>("txt");
 
   const keyParams: Record<string, string> = privateKey ? { private_key: privateKey } : {};
   const info = useQuery({
     queryKey: ["download-info", contributionId, privateKey],
     queryFn: () =>
       api<DownloadInfo>(`/contributions/${contributionId}/download/info`, { params: keyParams }),
-    enabled: open && single,
+    enabled: open,
     staleTime: 5 * 60_000,
   });
 
   const name = info.data?.filename ?? `contribution_${contributionId}.txt`;
-  const capped = several && results.count > MAX_DOWNLOAD_CONTRIBUTIONS;
-  const resultCount = several ? Math.min(results.count, MAX_DOWNLOAD_CONTRIBUTIONS) : 0;
+  const options: { value: Choice; label: string; detail: string }[] = [
+    {
+      value: "txt",
+      label: name,
+      detail: info.data ? `Text, ${formatBytes(info.data.size)}` : "Text",
+    },
+    { value: "gzip", label: `${name}.gz`, detail: "Compressed (gzip)" },
+    {
+      value: "zip",
+      label: `${stem(name)}.zip`,
+      detail: "Compressed (zip), with a SHA256SUMS checksum file",
+    },
+  ];
 
-  const options: { value: Choice; label: string; detail: string }[] = [];
-  if (single) {
-    options.push(
-      {
-        value: "txt",
-        label: name,
-        detail: info.data ? `Text, ${formatBytes(info.data.size)}` : "Text",
-      },
-      { value: "gzip", label: `${name}.gz`, detail: "Compressed (gzip)" },
-      {
-        value: "zip",
-        label: `${stem(name)}.zip`,
-        detail: "Compressed (zip), with a SHA256SUMS checksum file",
-      },
-    );
-  }
-  if (several) {
-    options.push({
-      value: "results",
-      label: capped
-        ? `The first ${formatNumber(resultCount)} of ${formatNumber(results.count)} matching contributions`
-        : `All ${formatNumber(resultCount)} matching contributions`,
-      detail: "One zip: a folder per contribution and a SHA256SUMS checksum file",
-    });
-  }
-  const selected = options.some((o) => o.value === choice) ? choice : options[0]?.value;
-
-  const start = async () => {
-    setError(null);
-    if (selected === "results" && results) {
-      setBusy(true);
-      try {
-        const ids = await results.fetchIds(MAX_DOWNLOAD_CONTRIBUTIONS);
-        if (ids.length === 0) throw new Error("No contributions to download.");
-        // Fetched with the session's token: the signed-in user's own
-        // unpublished matches download too.
-        await download(`/contributions/download?ids=${ids.join(",")}`, "contributions.zip");
-        onClose();
-      } catch (err) {
-        setError(err);
-      } finally {
-        setBusy(false);
-      }
-      return;
-    }
+  const start = () => {
     const params = new URLSearchParams(keyParams);
-    if (selected === "gzip" || selected === "zip") params.set("compress", selected);
+    if (choice === "gzip" || choice === "zip") params.set("compress", choice);
     const query = params.toString();
     const anchor = document.createElement("a");
     anchor.href = nodeUrl(`/contributions/${contributionId}/download${query ? `?${query}` : ""}`);
@@ -141,10 +89,7 @@ export function DownloadDialog({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={start} disabled={busy || !selected}>
-            {busy && <Spinner size="xs" />}
-            {busy ? "Preparing…" : "Download"}
-          </Button>
+          <Button onClick={start}>Download</Button>
         </>
       }
     >
@@ -159,7 +104,7 @@ export function DownloadDialog({
               type="radio"
               name="download-choice"
               className="mt-0.5 accent-[var(--node-color)]"
-              checked={selected === option.value}
+              checked={choice === option.value}
               onChange={() => setChoice(option.value)}
             />
             <span>
@@ -169,48 +114,42 @@ export function DownloadDialog({
           </label>
         ))}
       </fieldset>
-      {single && (
-        <div className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-600">
-          {info.isPending && <Spinner size="xs" />}
-          {info.data && (
-            <>
-              <div>
-                SHA-256 of {info.data.filename}:{" "}
-                <code className="break-all text-ink-strong">{info.data.sha256}</code>
-              </div>
-              <p className="mb-0 mt-1.5">
-                The download writes the contribution's ID and details into its contribution table
-                and drops a leading byte-order mark and stray separator lines. The archived file
-                {info.data.stored.sha256 && (
-                  <>
-                    {" "}
-                    (SHA-256 <code className="break-all">{info.data.stored.sha256}</code>)
-                  </>
-                )}{" "}
-                is also available{" "}
-                <a
-                  className="text-node-ink underline"
-                  href={nodeUrl(
-                    `/contributions/${contributionId}/download?${new URLSearchParams({
-                      ...keyParams,
-                      original: "true",
-                    })}`,
-                  )}
-                  download
-                >
-                  unchanged
-                </a>
-                .
-              </p>
-            </>
-          )}
-        </div>
-      )}
-      {error !== null && (
-        <div className="mt-3">
-          <ErrorMessage error={error} />
-        </div>
-      )}
+      <div className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-600">
+        {info.isPending && <Spinner size="xs" />}
+        {info.data && (
+          <>
+            <div>
+              SHA-256 of {info.data.filename}:{" "}
+              <code className="break-all text-ink-strong">{info.data.sha256}</code>
+            </div>
+            <p className="mb-0 mt-1.5">
+              The download writes the contribution's ID and details into its contribution table and
+              drops a leading byte-order mark and stray separator lines. The archived file
+              {info.data.stored.sha256 && (
+                <>
+                  {" "}
+                  (SHA-256 <code className="break-all">{info.data.stored.sha256}</code>)
+                </>
+              )}{" "}
+              is also available{" "}
+              <a
+                className="text-node-ink underline"
+                href={nodeUrl(
+                  `/contributions/${contributionId}/download?${new URLSearchParams({
+                    ...keyParams,
+                    original: "true",
+                  })}`,
+                )}
+                download
+              >
+                unchanged
+              </a>
+              .
+            </p>
+          </>
+        )}
+        {info.isError && <ErrorMessage error={info.error} />}
+      </div>
     </Modal>
   );
 }

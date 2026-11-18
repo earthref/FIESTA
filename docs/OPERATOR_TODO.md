@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-11-15
+Last updated: 2026-11-16
 
 ## A — Decisions
 
@@ -67,12 +67,6 @@ Last updated: 2026-11-15
       `legacy.exclude_ids: [88]` in `configurations/cdr.yaml` keeps #88 out of FIESTA
       entirely (decided 2026-11-10); remove it from that list to sync it as a private
       contribution, or once released.
-- [ ] **CDR 1.0 lacks most XRF element columns.** The OSU-MGR scans carry `al`, `si`,
-      `p`, `s`, `v`, `cr`, `ba`, `la`, `ce`, `pr`, `nd` and, on some cruises, `ag`,
-      `as`, `bi`, `cd`, `co`, `mo`, `sb`, `sc`, `se`, `sn`, `th`, `u`, none in
-      `configurations/cdr/data_models/1.0.json`, so FIESTA's CDR import will flag them. Adding
-      columns is allowed; approve adding them before the cdr-3 import. Unblocks:
-      valid XRF rows in FIESTA CDR.
 - [ ] **Rotate the `fiesta` OpenSearch password.** It is hard-coded in
       `osu-mgr/osu-mgr-pipeline` (`osu_mgr_to_cdr_pipeline.py`, `OPENSEARCH_HOST`,
       committed; private repo). Move it to that repo's `.env` (already loaded) and
@@ -155,6 +149,27 @@ Last updated: 2026-11-15
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
 
+## 2026-11-17 — Core row ids (row numbers and /<Node>/<id>.<row_id> links)
+
+- [ ] **Rebuild search on dev for the nodes whose data model has no `row_id` column.**
+      Once the "Core row ids" PR has deployed, run `fiesta rebuild` for `geomagia` and
+      `rd` (`make fiesta ENV_FILE=.env.prod NODE=geomagia ARGS="rebuild --yes"`, then
+      `rd`; a rebuild other items owe covers it too). Until then their search page's
+      Data view has no row numbers; the contribution modal's tabs and the
+      `/<Node>/<id>.<row_id>` links work without it. Nodes whose files already carry a
+      `row_id` (MagIC 3.0, CDR, KArAr, KdD, ERDA, SC, OSU-MGR) need nothing. Production
+      needs the same at cutover. Claude needs nothing after this.
+
+## 2026-11-16 — CDR XRF columns and depth plots
+
+- [ ] **OSU-MGR pipeline: magnetic susceptibility mapping.** If OSU-MGR MST data is
+      added to CDR, check `osu-mgr-pipeline/cdr_preview/parsers.py` first: it maps both
+      Geotek `MS1` (loop) and `MS2` (point sensor) to `mag_susc_chi_mass`, so one
+      overwrites the other. Geotek MS is usually volume susceptibility, not mass χ.
+      Decide with the curators which sensor goes where, and whether CDR needs a
+      volume-susceptibility column. Claude adds the column once decided. Unblocks:
+      correct susceptibility for OSU-MGR MST in CDR.
+
 ## 2026-11-16 — Upload size limit
 
 - [ ] **Keep the upload limit in step on fiesta-ct.** `FIESTA_MAX_UPLOAD_BYTES` (512 MiB,
@@ -164,6 +179,27 @@ Last updated: 2026-11-15
       allows 512 MiB request bodies, and change all three together from now on.
       Check: an upload between the proxy's old limit and 512 MiB gets the API's answer,
       not a 413 from nginx.
+
+## 2026-11-16 — References, Users and Admin at the FIESTA portal (root)
+
+References, Users and Admin (super admin settings and every node's settings page) are
+FIESTA pages at the root of the origin, FIESTA-branded: the portal bar and the user
+menu link `dev.earthref.org/references`, `/users`, `/admin`, `/admin/nodes/<slug>` from
+every node. Locally (`make up`) that already works. On dev the root redirects to
+`/MagIC/` and `/references` is a 404, so **those links 404 on dev until this is done**
+(the old `/MagIC/admin` etc. still load if typed).
+
+- [ ] **fiesta-ct: serve a FIESTA portal build at `/`.** In `deploy-fiesta.sh`, add one
+      more `vite build` with the default base (`/`), its `fiesta-env.js` listing every
+      served node (`window.__FIESTA__={"node":"magic","apiUrl":"","nodes":"magic,kdd,cdr,karar,erda,osu-mgr,sc,geomagia,rd"}`),
+      and in nginx route `location = /`, `/references`, `/users`, `/admin` and
+      `/admin/` (prefix) to its `index.html` (with `ssi on` like the node locations) —
+      **case-insensitively** since PR "clean URLs" (2026-11-17): the SPA now links
+      `/References`, `/Users`, `/Admin/Nodes`, `/Admin/Accounts`, so use
+      `location ~* ^/(references|users|admin)(/|$)` — plus
+      its `/assets/`, `/fiesta-env.js` and `/version.json` (`no-store`); drop the `/` →
+      `/MagIC/` redirect. `/v2/` already proxies to the API at the root. Check:
+      `https://dev.earthref.org/admin` shows the FIESTA header and the node list.
 
 ## 2026-11-15 — Crawlers: page heads, sitemaps, robots.txt, llms.txt
 
@@ -250,6 +286,19 @@ configurations/rd/README.md.
   without an age, and the Age filters match nothing on them. The API adds the index
   template on its own, so contributions indexed after the deploy are fine. Production
   needs the same rebuild at cutover. Claude needs nothing after this.
+
+## 2026-11-16 — Age filter fixes (negative ages, uncertainty roll-up)
+
+- [ ] **Rebuild the MagIC, KArAr, ERDA and SC search indexes on dev** once the "age
+  filter fixes" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`,
+  then `karar`, `erda`, `sc`; one rebuild also covers the 2026-11-13 item above if it is
+  still open). The shape of `summary._interval.age` is unchanged, but its values are
+  not: a lone `age_low`/`age_high` in years AD now points the right way, a young age's
+  2σ window stops at the present instead of running to negative ages, and KArAr leaves
+  measurement step ages out of its specimens', samples' and contributions' ages. Until
+  the rebuild, docs indexed before the deploy keep the old intervals (the Age filter
+  can match a KArAr contribution by a stray step age, and histograms reach below zero).
+  Production needs the same rebuild at cutover. Claude needs nothing after this.
 
 ## 2026-11-13 — dev host unresponsive
 
@@ -568,8 +617,8 @@ Every path outside the repo has to follow; the layout PR waits for the first ite
 - [ ] **Rebuild every node's search index after the records-and-rows change**
   (`fiesta rebuild --yes` per node, dev and production; covers the two rebuild
   items above). A level's rows sharing a name are now one doc, so Summaries
-  counts records and Rows their rows. Until the rebuild, old one-row docs
-  show Summaries = Rows, and the Rock Magnetism view says nothing is indexed.
+  counts records and Data (then Rows) their rows. Until the rebuild, old one-row docs
+  show Summaries = Data, and the Rock Magnetism view says nothing is indexed.
 - [ ] **Check the Rock Magnetism view against real use** with a rock magnetist
   (e.g. on dev after the rebuild): the panel set, and the rule that reads a
   contribution's coercivities/MDFs as mT when their median is above 1 T.
@@ -893,6 +942,13 @@ created it, without a password, on the first record. The owner maps are in the
       contributions on dev but has no password (a password reset to that mailbox).
 
 ## Done
+
+- [x] **CDR XRF element columns approved and added** (2026-11-16, PR #241): the user
+      asked for the columns the XRF contributions carry; 25 elements and the
+      scanner's normalisation columns are now in `configurations/cdr/data_models/1.0.json`,
+      so FIESTA's CDR import no longer flags them. CDR rebuilt on dev 2026-11-16
+      (`fiesta-cdr-build-b5e41653…`, 682 contributions, 18 min) and locally; dev search
+      returns `si`, `ba`, `la`, `nd` for contribution 668. Rebuild again at the production cutover.
 
 - [x] **Branch protection and Actions token on FIESTA** (2026-10-22): ruleset
       "Protect main" (PR + 1 approval + `CI` + `check-labels`, admin bypass PR-only),

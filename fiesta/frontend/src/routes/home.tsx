@@ -3,16 +3,19 @@ import { Link } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton, type IconButtonProps } from "../components/icon-button";
+import { quickLaunchViews } from "../components/quick-launch";
 import { isSourceMode } from "../components/source-mode-notice";
 import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
 import { nodeUrl } from "../lib/base";
+import { casedPath } from "../lib/canonical-path";
 import { useNodeConfig } from "../lib/config";
 import { sanitizeHtml } from "../lib/sanitize";
+import { searchPath } from "../lib/search-state";
 import type { HomeCard, HomeNews, NodeConfig, SearchPage } from "../lib/types";
 import { cx } from "../lib/utils";
-import { pluginHomeCards, pluginResourceCards } from "../plugins";
+import { type PluginHomeCard, pluginHomeCards, pluginResourceCards } from "../plugins";
 
 const RULE = "var(--er-line)";
 
@@ -79,6 +82,32 @@ export function Rule() {
   );
 }
 
+/** The quick-launch views as wide cards, in their order: a plugin's own home
+ * card where it has one for the view ("Poles / View"), else "<level> / Map" or
+ * "<view> / View"; then any plugin card for a view not launched. */
+function launchCards(config: NodeConfig): (PluginHomeCard & { icon?: string })[] {
+  const pluginCards = pluginHomeCards(config);
+  const used = new Set<string>();
+  const cards = quickLaunchViews(config).map((view) => {
+    const card = pluginCards.find((candidate) => candidate.view === view.name);
+    if (card) used.add(card.key);
+    return {
+      key: `launch-${view.name}`,
+      title: view.name === "Map" ? `${view.level}\nMap` : `${view.label}\nView`,
+      level: view.level,
+      view: view.name,
+      ...card,
+      icon: view.icon,
+    };
+  });
+  return [...cards, ...pluginCards.filter((card) => !used.has(card.key))];
+}
+
+/** Where a home card links: its search view, else its page. */
+function cardTo(card: PluginHomeCard): string | undefined {
+  return card.level ? searchPath(card.level, card.view) : card.to;
+}
+
 /** Resource cards for a node whose YAML defines none. */
 function defaultResources(config: NodeConfig): HomeCard[] {
   const cards: HomeCard[] = [
@@ -86,7 +115,7 @@ function defaultResources(config: NodeConfig): HomeCard[] {
       title: "Data\nModel",
       icon: "sitemap",
       corner_icon: "table",
-      to: `/data-models/${config.data_model_latest}`,
+      to: `/Data-Models/${config.data_model_latest}`,
       href: null,
     },
     ...pluginResourceCards(config),
@@ -95,7 +124,7 @@ function defaultResources(config: NodeConfig): HomeCard[] {
     title: "Vocabulary\nLists",
     icon: "list",
     corner_icon: "info",
-    to: "/vocabularies",
+    to: "/Vocabularies",
     href: null,
   });
   cards.push({
@@ -110,7 +139,7 @@ function defaultResources(config: NodeConfig): HomeCard[] {
       title: "Help\nPages",
       icon: "question",
       corner_icon: null,
-      to: "/help",
+      to: "/Help",
       href: null,
     });
   }
@@ -122,7 +151,8 @@ function cardProps(card: HomeCard): IconButtonProps {
     title: card.title,
     icon: card.icon,
     cornerIcon: card.corner_icon ?? undefined,
-    to: card.to ?? undefined,
+    // The node YAML's own resources may name a page in lowercase.
+    to: card.to ? casedPath(card.to) : undefined,
     href: card.href ?? undefined,
   };
 }
@@ -217,7 +247,7 @@ export function HomePage() {
           <div className="flex flex-wrap" style={threeCards}>
             <div className={threeCardClass} style={threeCard}>
               <IconButton
-                to="/search"
+                to="/Search"
                 icon="database"
                 cornerIcon="search"
                 title="Search Interface"
@@ -228,7 +258,7 @@ export function HomePage() {
               <>
                 <div className={threeCardClass} style={threeCard}>
                   <IconButton
-                    to="/upload"
+                    to="/Upload"
                     icon="table"
                     cornerIcon="add"
                     title="Upload Tool"
@@ -237,7 +267,7 @@ export function HomePage() {
                 </div>
                 <div className={threeCardClass} style={threeCard}>
                   <IconButton
-                    to="/private"
+                    to="/Private"
                     icon="file text outline"
                     cornerIcon="checkmark"
                     title="Private Workspace"
@@ -248,13 +278,20 @@ export function HomePage() {
             )}
           </div>
 
-          {/* Plugin cards (legacy: the full-width "Poles / View" tiny card),
+          {/* Quick launch (2026-11 decision): the node's main search views as
+              legacy's full-width "Poles / View" tiny cards, with their icons,
               side by side when a node has several */}
-          {pluginHomeCards(config).length > 0 && (
+          {launchCards(config).length > 0 && (
             <div className="flex gap-[0.875em]" style={{ marginTop: "0.875em" }}>
-              {pluginHomeCards(config).map(({ key, ...card }) => (
-                <div key={key} className="min-w-0 flex-1">
-                  <IconButton variant="wide" {...card} />
+              {launchCards(config).map((card) => (
+                <div key={card.key} className="min-w-0 flex-1">
+                  <IconButton
+                    variant="wide"
+                    title={card.title}
+                    subtitle={card.subtitle}
+                    icon={card.icon}
+                    to={cardTo(card)}
+                  />
                 </div>
               ))}
             </div>
@@ -281,7 +318,7 @@ export function HomePage() {
                 variant="wide"
                 fontSize={15}
                 titleEm={1}
-                to="/search"
+                to="/Search"
                 title={`View More Contributions in the ${config.key} Search Interface`}
               />
             </>
@@ -299,7 +336,7 @@ export function HomePage() {
             <>
               <p style={{ margin: "1em 0" }}>No news yet.</p>
               <p style={{ margin: "0 0 1em" }}>
-                <Link to="/contact" className="text-node-ink hover:underline">
+                <Link to="/Contact" className="text-node-ink hover:underline">
                   Contact the {config.key} team
                 </Link>
               </p>

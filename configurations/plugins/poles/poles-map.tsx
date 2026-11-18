@@ -3,7 +3,7 @@ import type { MapLine } from "@/components/map/lines-layer";
 import { ModeButtons, useSavedMode } from "@/components/map/map-mode";
 import type { MapPoint } from "@/components/map/map-points";
 import { Spinner } from "@/components/ui/spinner";
-import { type AgeScale, boundaryRings, formatAge, type Pole, uncertaintyRing } from "./poles-data";
+import { type AgeScale, formatAge, type Pole, uncertaintyRing } from "./poles-data";
 
 // MapLibre (~800 KB) loads with the first map.
 const MapLibreMap = lazy(() => import("@/components/map/maplibre-map"));
@@ -25,7 +25,8 @@ const ellipse = (pole: Pole, color: string, width: number, segments?: number): M
   return coords ? [{ coords, color, width, opacity: 0.9 }] : [];
 };
 
-/** A pole's VGPs as dots, `share` of them (evenly spaced in its list). */
+/** A pole's VGPs as dots, `share` of them (evenly spaced in its list); each
+ * hovers as its pole and a click selects the pole (and its grid row). */
 const vgpDots = (
   pole: Pole,
   color: string,
@@ -35,11 +36,16 @@ const vgpDots = (
 ): MapLine[] => {
   const vgps = pole.vgps ?? [];
   const count = share >= 1 ? vgps.length : Math.ceil(vgps.length * share);
+  const id = String(pole.index);
+  const label =
+    pole.age !== undefined ? `VGP of this pole, ${formatAge(pole.age)}` : "VGP of this pole";
   return Array.from({ length: count }, (_, i) => ({
     coords: [vgps[Math.floor((i * vgps.length) / count)]],
     color,
     width,
     opacity,
+    id,
+    label,
   }));
 };
 
@@ -48,7 +54,6 @@ interface PolesMapProps {
   /** Every match, when the search window cut the poles short (the count). */
   matched?: number;
   ageScale: AgeScale;
-  boundaries: unknown | null;
   plateColor: string;
   selectedColor: string;
   showEllipses: boolean;
@@ -62,11 +67,12 @@ interface PolesMapProps {
 
 /**
  * The poles on the search map's MapLibre views (globe, Mercator, and a globe
- * over either pole, where most poles crowd), with the plate boundaries and
+ * over either pole, where most poles crowd), with the plate boundaries (on by
+ * default here, the map's Plates toggle) and
  * each pole's uncertainty outline in its age colour (its a95 circle or dp/dm
  * ellipse, a ring the backend computed with PmagPy), over the VGPs averaged
  * into it as dots in the same colour (the selected pole's on top in the
- * selected colour). Replaces the legacy
+ * selected colour); clicking a VGP selects its pole. Replaces the legacy
  * pair of echarts-gl globes (view + antipode): the pole views show both
  * hemispheres' poles without one.
  */
@@ -74,7 +80,6 @@ export default function PolesMap({
   poles,
   matched,
   ageScale,
-  boundaries,
   plateColor,
   selectedColor,
   showEllipses,
@@ -100,17 +105,6 @@ export default function PolesMap({
     return at < 0 ? all : [...all.slice(0, at), ...all.slice(at + 1), all[at]];
   }, [poles, ageScale, selected, selectedColor]);
 
-  const plates = useMemo<MapLine[]>(
-    () =>
-      boundaryRings(boundaries).map((coords) => ({
-        coords,
-        color: plateColor,
-        width: 1.5,
-        opacity: 0.8,
-      })),
-    [boundaries, plateColor],
-  );
-
   const segments = Math.max(
     MIN_RING_SEGMENTS,
     Math.floor(RING_SEGMENT_BUDGET / Math.max(poles.length, 1)),
@@ -130,13 +124,12 @@ export default function PolesMap({
     // The selected pole's VGPs and ellipse on top, all of them, at full resolution.
     const chosen = selected !== null ? poles.find((pole) => pole.index === selected) : undefined;
     return [
-      ...plates,
       ...(showVgps ? vgps : []),
       ...(showEllipses ? ellipses : []),
       ...(chosen && showVgps ? vgpDots(chosen, selectedColor, 5, 1) : []),
       ...(chosen && showEllipses ? ellipse(chosen, selectedColor, 3) : []),
     ];
-  }, [plates, vgps, ellipses, poles, showEllipses, showVgps, selected, selectedColor]);
+  }, [vgps, ellipses, poles, showEllipses, showVgps, selected, selectedColor]);
 
   return (
     <div className="flex h-full flex-col gap-2 p-2">
@@ -155,6 +148,9 @@ export default function PolesMap({
             points={points}
             lines={lines}
             pointRadius={5}
+            // The plate boundaries start shown here (the map's Plates toggle).
+            plates
+            plateColor={plateColor}
             // Not `fit`: a pole map always opens on the whole globe (the world
             // in Mercator), turned to the poles' centroid, never zoomed in on them.
             focusKey={poles}

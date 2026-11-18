@@ -235,6 +235,19 @@ the latter become G5 work after cutover.*
       #231, #248, #253, #273, #274, #283, #310, #344, #398, #425, #426, #428,
       #490, #558; dropping a folder #40). Lab file formats (BGC and the other
       legacy converters, #588) as plugins that convert to contribution text.
+      - [x] Lab instrument formats (2026-11-16): a core `import_formats` plugin hook
+            (`ImportFormat`: sniff, companions, an options model, `convert`) and
+            `/import-formats` routes (list, sniff, convert: login, upload cap, worker
+            thread, temporary directory); the `pmag-lab-formats` plugin (MagIC) wraps
+            PmagPy's generic, 2G binary/ASCII, CIT (.sam + specimen files), SIO, JR6
+            (.jr6, .txt), Utrecht, LDEO and HUJI converters. Step 2 offers them as
+            "Lab Instrument Formats", picks one when the server is sure, shows the
+            converter's options (re-converting on change) and report (warnings,
+            defaults used, hierarchy counts, a naming-convention hint) above the
+            converted tables, and keeps `<file>-conversion-report.txt` (PmagPy version,
+            converter, options) with the originals.
+      - [ ] The other PmagPy converters (AGM, BGC, IODP SRM/JR6/DSCR/KLY4S, K15,
+            KLY4S, LIVDB, MINI, MST, PMD, SUFAR4, TDT, VFTB): one `PmagFormat` each.
 - [x] **C6 Reference enrichment** (2026-09-28) — Crossref, then DataCite, for
       each `reference_doi`, cached in the shared `doi_references` table and set on
       the search docs as the legacy `_reference` (title, journal, year, citation,
@@ -299,19 +312,22 @@ the latter become G5 work after cutover.*
       leading UTF-8 BOM from served legacy files (#621); the contribution ID and
       metadata in every downloaded file (#291, #315); no stray `>>>>` separators
       (#311); text cells starting with `@` survive Excel (#497). Compressed and
-      multi-contribution downloads (#463, #343) and a download dialog (#509, #316).
-      Shipped 2026-11-16: downloads are prepared on output, the bucket is never
-      edited (`fiesta.domain.download`: BOM, separators, the contribution
-      table's `downloadOnly()` columns and row ids from the workflow record);
-      `X-Checksum-SHA256` (served text), `X-Stored-SHA256` (revision snapshot)
-      and `Repr-Digest` headers, `file.sha256` on the contribution,
-      `/download/info`, `original=true` for the stored bytes; `compress=gzip|zip`;
-      `GET /contributions/download?ids=` streams a zip with `SHA256SUMS`
-      (100 contributions / 1 GiB stored, each visibility-checked); a download
-      dialog on Download Results and the contribution modal. #497: the
-      contributor column holds the name, not `@handle`; other `@` cells are
-      left alone (no quoting in the format) and the Excel text-import
-      workaround is documented ([api.md](api.md#downloads)).
+      multi-contribution downloads (#463, #343) and a download dialog (#509, #316):
+      done 2026-11-16 for the search page — Download Results opens a modal picking
+      contribution files (zip of up to 100) or the rows of chosen levels, as text,
+      Excel or JSON (`/search/{table}/download`). The rest shipped 2026-11-17:
+      downloads are prepared on output, the bucket is never edited
+      (`fiesta.domain.download`: BOM, separators, the contribution table's
+      `downloadOnly()` columns and row ids from the workflow record, numbered
+      before stray rows go so row links still match), for a single file and for
+      each file in Download Results' zip; `X-Checksum-SHA256` (served text),
+      `X-Stored-SHA256` (revision snapshot) and `Repr-Digest` headers,
+      `file.sha256` on the contribution, `/download/info`, `original=true` for
+      the stored bytes; `compress=gzip|zip`; a `SHA256SUMS` file in every zip; the
+      contribution modal's Download opens a dialog (text, gz or zip, its SHA-256,
+      the archived original). #497: the contributor column holds the name, not
+      `@handle`; other `@` cells are left alone (no quoting in the format) and the
+      Excel text-import workaround is documented ([api.md](api.md#downloads)).
 - [ ] **C10 Usage statistics.** Download counts per contribution (MagIC #135) and
       an internal contribution statistics page (#365).
 
@@ -331,6 +347,11 @@ the latter become G5 work after cutover.*
       boundaries and a95 / dp-dm outlines (deviations at the top of
       `configurations/plugins/poles/globe-spec.md`). A Rock Magnetism view (`rock-mag` plugin) shipped
       alongside it on the Specimens level.
+- [x] **D6 Quick-launch buttons** (2026-11-16, team meeting decision) — Map and
+      the node's plugin views one click away on the home and search pages,
+      configured per node (`search.map_level`, `search.quick_launch`,
+      `search.levels[].default_view`; admin Settings tab). Deviation recorded in
+      `legacy-ux-spec.md` §5.
 - [ ] **D5 Search and contribution-page issues from legacy MagIC.** Part of D2,
       listed so none are lost. Filters: lower levels return only matching rows
       (MagIC #213), the age range filter (#350), "contains" for ranges (#349), sort

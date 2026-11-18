@@ -5,7 +5,7 @@ import { useOpenContribution } from "@/lib/contribution-modal";
 import type { NodeConfig, SearchResult } from "@/lib/types";
 import { getPath } from "@/lib/utils";
 import type { ContributionTab, PluginGridCellProps, PluginModule } from "@/plugins";
-import { Ideogram } from "./argon-charts";
+import { type DatedItem, Ideogram } from "./argon-charts";
 import { type ArgonData, argonQuery, useArgon } from "./argon-data";
 import { AgeSpectrum } from "./argon-plots";
 import { AgeDistributionView } from "./argon-search";
@@ -157,7 +157,16 @@ function AgeDistributionTile(props: {
         const ages = plot.items.map((item) => item.age);
         const [min, max] = [Math.min(...ages), Math.max(...ages)];
         const digits = (v: number) => String(Number(v.toPrecision(Math.abs(v) >= 100 ? 5 : 4)));
-        const span = min === max ? digits(min) : `${digits(min)} – ${digits(max)}`;
+        // A sample's ages with their σ: its one age, or its youngest and
+        // oldest on a line each; a contribution's as their span.
+        const withSigma = (item: DatedItem) =>
+          `${trim(item.age)}${item.sigma != null ? ` ± ${trim(item.sigma)}` : ""}`;
+        const sorted = [...plot.items].sort((a, b) => a.age - b.age);
+        const lines = !props.sample
+          ? [`${min === max ? digits(min) : `${digits(min)} – ${digits(max)}`} ${plot.unit}`]
+          : sorted.length === 1
+            ? [`${withSigma(sorted[0])} ${plot.unit}`]
+            : [`${withSigma(sorted[0])} –`, `${withSigma(sorted[sorted.length - 1])} ${plot.unit}`];
         return (
           <span title={`${plot.items.length} specimen ages of ${where} (${plot.unit})`}>
             <Ideogram
@@ -168,9 +177,11 @@ function AgeDistributionTile(props: {
               withHistogram
               label={`Specimen ages of ${where}`}
             />
-            <span className="block truncate px-1 text-left text-xs">
-              {span} {plot.unit}
-            </span>
+            {lines.map((line) => (
+              <span key={line} className="block truncate px-1 text-left text-xs">
+                {line}
+              </span>
+            ))}
             <span className="block truncate px-1 text-left text-xs">
               {plot.items.length} specimen{plot.items.length === 1 ? "" : "s"}
             </span>
@@ -180,6 +191,9 @@ function AgeDistributionTile(props: {
     />
   );
 }
+
+/** Up to three decimals, no trailing zeros ("16.45", "0.025"). */
+const trim = (value: number) => String(Number(value.toFixed(3)));
 
 /** The search table a tab counts: its option's first level's. */
 function levelTable(config: NodeConfig, key: string): string | undefined {
@@ -229,7 +243,13 @@ const plateauPlugin: PluginModule = {
   // The specimen levels' search results: every matching specimen's age.
   levelSubTabs(level, config) {
     if (!levelsOption(config, "specimen_levels").includes(level.name)) return [];
-    return [{ name: "Age Distribution", render: (ctx) => <AgeDistributionView {...ctx} /> }];
+    return [
+      {
+        name: "Age Distribution",
+        icon: "bar-chart",
+        render: (ctx) => <AgeDistributionView {...ctx} />,
+      },
+    ];
   },
   // The summary grid's plot tile: an experiment's age spectrum, or a
   // specimen's experiments under its preferred age.
