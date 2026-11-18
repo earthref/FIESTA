@@ -109,7 +109,9 @@ export default function PmagPlotsView({
   const failed = active.find((query) => query.error);
   if (failed) return <ErrorMessage error={failed.error} className="m-3" />;
   if (active.some((query) => query.isPending)) return <PageSpinner label="Loading plots…" />;
-  return <PlotGrid type={type} items={items} selected={selected} onSelect={onSelect} />;
+  // Keyed by type: each tab starts with its own level, coordinates and filter
+  // (the equal-area tab's level would otherwise hide every demag plot).
+  return <PlotGrid key={type} type={type} items={items} selected={selected} onSelect={onSelect} />;
 }
 
 // --- items per plot type -------------------------------------------------------------------
@@ -314,7 +316,9 @@ function PlotGrid({
     setChosen(item.key);
     if (item.level) setLevel(item.level);
   }, [items, selected]);
-  const leveled = level ? items.filter((item) => item.level === level) : items;
+  // A level these items do not have (none at all, on a specimen-only tab) filters nothing.
+  const leveled =
+    level && levelCounts.has(level) ? items.filter((item) => item.level === level) : items;
   const coords = COORDS.filter((coord) => leveled.some((item) => item.coords?.includes(coord)));
   const [coord, setCoord] = useState<Coord>(() => coords[0] ?? "g");
   const needle = filter.trim().toLowerCase();
