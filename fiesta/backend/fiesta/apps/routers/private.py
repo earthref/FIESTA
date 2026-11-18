@@ -13,7 +13,7 @@ from fiesta.db.models import Contribution, ContributionStatus, Revision, User
 from fiesta.domain.parse import ParseError, parse_text, set_table_values
 from fiesta.jobs import tasks
 from fiesta.services import contributions as svc
-from fiesta.services import references
+from fiesta.services import downloads, references
 from fiesta.services.access import can_access, is_member, may_publish
 from fiesta.services.revisions import (
     enqueue,
@@ -440,21 +440,20 @@ async def download(
     user: CurrentUser,
     contribution_id: int,
     revision_id: str | None = None,
+    compress: downloads.Compression | None = None,
+    original: bool = False,
 ) -> Response:
     """The contribution's current file (or a revision's), for whoever may open
-    it in the workspace: its contributor, a shared workspace's member, a node admin."""
+    it in the workspace: its contributor, a shared workspace's member, a node
+    admin. Prepared like the public download (fiesta.domain.download), or as
+    stored with `original`; `compress` gzips or zips it."""
     c = await _own_contribution(session, node, user, contribution_id, write=False)
     if not c.head_revision:
         raise HTTPException(404, "this contribution has no file")
-    rev = await session.get(Revision, revision_id or c.head_revision)
-    if rev is None or rev.contribution_id != c.id:
-        raise HTTPException(404, "revision not found")
-    name = rev.snapshot["canonical"]
-    return Response(
-        await revision_file(session, node, c, name, rev.id),
-        media_type="text/plain",
-        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    served = await downloads.served_file(
+        session, node, c, revision_id=revision_id, original=original
     )
+    return downloads.file_response(served, compress)
 
 
 class ReassignIn(BaseModel):

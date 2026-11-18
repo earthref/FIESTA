@@ -19,6 +19,7 @@ import type {
 } from "../lib/types";
 import { cx, formatNumber, getPath, singularize } from "../lib/utils";
 import { type ContributionTab, pluginContributionTabs, type TabCountQuery } from "../plugins";
+import { DownloadDialog } from "./download-dialog";
 import { ErrorMessage } from "./error-message";
 import { bodiesOf } from "./map/bodies";
 import { BodyButtons, useBody } from "./map/map-mode";
@@ -230,6 +231,7 @@ function ModalHeader({
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const version = doc ? getPath(doc, "summary.contribution.version") : undefined;
   const citation = doc ? citationOf(doc) : undefined;
   const title = doc
@@ -275,14 +277,22 @@ function ModalHeader({
           {copied ? "Copied" : "Copy Link"}
         </button>
         {doc && (
-          <a
-            href={nodeUrl(`/contributions/${id}/download${keyQuery}`)}
-            download
+          <button
+            type="button"
+            onClick={() => setDownloading(true)}
             className={cx(button, "bg-node text-white hover:bg-node-dark")}
           >
             <Icon name="download" className="h-3.5 w-3.5" />
             Download
-          </a>
+          </button>
+        )}
+        {downloading && (
+          <DownloadDialog
+            open
+            onClose={() => setDownloading(false)}
+            contributionId={id}
+            privateKey={privateKey}
+          />
         )}
         <button
           type="button"

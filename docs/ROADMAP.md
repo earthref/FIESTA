@@ -308,14 +308,26 @@ the latter become G5 work after cutover.*
       values, and fixing values on the validation page (#263, #441, #518).
       MagIC-specific consistency checks (directions recomputed from `magn_x/y/z`
       to catch frame and sign-convention errors, #622) go in a plugin.
-- [ ] **C9 Downloads.** Expose the stored sha256 checksums (MagIC #613); strip a
+- [x] **C9 Downloads.** Expose the stored sha256 checksums (MagIC #613); strip a
       leading UTF-8 BOM from served legacy files (#621); the contribution ID and
       metadata in every downloaded file (#291, #315); no stray `>>>>` separators
       (#311); text cells starting with `@` survive Excel (#497). Compressed and
       multi-contribution downloads (#463, #343) and a download dialog (#509, #316):
       done 2026-11-16 for the search page — Download Results opens a modal picking
       contribution files (zip of up to 100) or the rows of chosen levels, as text,
-      Excel or JSON (`/search/{table}/download`).
+      Excel or JSON (`/search/{table}/download`). The rest shipped 2026-11-17:
+      downloads are prepared on output, the bucket is never edited
+      (`fiesta.domain.download`: BOM, separators, the contribution table's
+      `downloadOnly()` columns and row ids from the workflow record, numbered
+      before stray rows go so row links still match), for a single file and for
+      each file in Download Results' zip; `X-Checksum-SHA256` (served text),
+      `X-Stored-SHA256` (revision snapshot) and `Repr-Digest` headers,
+      `file.sha256` on the contribution, `/download/info`, `original=true` for
+      the stored bytes; `compress=gzip|zip`; a `SHA256SUMS` file in every zip; the
+      contribution modal's Download opens a dialog (text, gz or zip, its SHA-256,
+      the archived original). #497: the contributor column holds the name, not
+      `@handle`; other `@` cells are left alone (no quoting in the format) and the
+      Excel text-import workaround is documented ([api.md](api.md#downloads)).
 - [ ] **C10 Usage statistics.** Download counts per contribution (MagIC #135) and
       an internal contribution statistics page (#365).
 

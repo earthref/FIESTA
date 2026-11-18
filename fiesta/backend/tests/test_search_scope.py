@@ -254,17 +254,22 @@ async def test_download_results_files_zip_the_visible_contributions(app, client,
     import io
     import zipfile
 
-    from fiesta.apps.routers import v1
+    from fiesta.services import downloads
 
-    async def text(session, node, c):
-        return f"tab delimited\tcontribution\nid\n{c.id}\n"
+    async def served(session, node, c):
+        data = f"tab delimited\tcontribution\nid\n{c.id}\n".encode()
+        return downloads.ServedFile(c.filename, data, downloads.sha256(data), None)
 
-    monkeypatch.setattr(v1, "contribution_text", text)
+    monkeypatch.setattr(downloads, "served_file", served)
     url = "/v2/magic/search/contribution/download"
     response = await client.get(url, params={"files": True})
     assert response.status_code == 200, response.text
-    names = zipfile.ZipFile(io.BytesIO(response.content)).namelist()
-    assert sorted(names) == ["1/magic_contribution_1.txt", "4/magic_contribution_4.txt"]
+    archive = zipfile.ZipFile(io.BytesIO(response.content))
+    names = ["1/magic_contribution_1.txt", "4/magic_contribution_4.txt"]
+    assert sorted(archive.namelist()) == [*names, "SHA256SUMS"]
+    # SHA256SUMS lists every member's checksum (sha256sum -c lines).
+    sums = archive.read("SHA256SUMS").decode().splitlines()
+    assert sorted(sums) == sorted(f"{downloads.sha256(archive.read(n))}  {n}" for n in names)
     response = await client.get(url, params={"files": True, "format": "json"})
     archive = zipfile.ZipFile(io.BytesIO(response.content))
     assert archive.read("1/magic_contribution_1.json").startswith(b'{\n  "contribution"')
