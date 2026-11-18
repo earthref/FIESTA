@@ -21,13 +21,13 @@ id\tversion\tdata_model_version\treference\tlab_names
 12345\t1\t3.0\t10.1029/93JB00024\tPaleomagnetic Laboratory (AGICO Inc., Czech Republic)
 >>>>>>>>>>
 tab delimited\tlocations
-location\tlocation_type\tgeologic_classes\tlithologies\tage_unit\tlat_s\tlat_n\tlon_w\tlon_e
-Hawaii\tOutcrop\tIgneous\tBasalt\tMa\t19.0\t20.3\t203.9\t205.2
+location\tlocation_type\tgeologic_classes\tlithologies\tage\tage_unit\tlat_s\tlat_n\tlon_w\tlon_e
+Hawaii\tOutcrop\tIgneous\tBasalt\t0.5\tMa\t19.0\t20.3\t203.9\t205.2
 >>>>>>>>>>
 tab delimited\tsites
-site\tlocation\tcitations\tgeologic_types\tgeologic_classes\tlithologies\tage_unit\tlat\tlon\tmethod_codes
-HW01\tHawaii\tThis study\tLava Flow\tIgneous\tBasalt\tMa\t19.5\t204.5\tLP-DC3:SM-VSM
-HW02\tHawaii\tThis study\tLava Flow\tIgneous\tBasalt\tMa\t19.7\t204.6\tLP-DC3
+site\tlocation\tcitations\tgeologic_types\tgeologic_classes\tlithologies\tage\tage_unit\tlat\tlon\tmethod_codes
+HW01\tHawaii\tThis study\tLava Flow\tIgneous\tBasalt\t0.5\tMa\t19.5\t204.5\tLP-DC3:LP-HYS
+HW02\tHawaii\tThis study\tLava Flow\tIgneous\tBasalt\t0.5\tMa\t19.7\t204.6\tLP-DC3
 """
 
 

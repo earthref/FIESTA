@@ -308,6 +308,40 @@ the latter become G5 work after cutover.*
       values, and fixing values on the validation page (#263, #441, #518).
       MagIC-specific consistency checks (directions recomputed from `magn_x/y/z`
       to catch frame and sign-convention errors, #622) go in a plugin.
+      - [x] Every DSL call the node data models use is enforced (2026-11-16,
+            `domain/validate.py`, tests in `tests/test_validate.py` with the legacy
+            validate_contribution.tests.js cases): `requiredIf`, `requiredIfGroup`
+            (per row, #564), `requiredOneInGroup`, `requiredUnless`,
+            `requiredUnlessTable` as errors, as legacy MagIC had them;
+            `requiredIf<Column>("v")` (KArAr `requiredIfAgeCalculationMethod`) and
+            `requiredUnless<Group>()` (MagIC `requiredUnlessSynthetic`), which no
+            legacy validator implemented, only warn. `in("t.c")`; `matrix(r,c)`;
+            `type()` as a controlled vocabulary when one has the name (method codes),
+            and `doi`/`url`/`email` shape warnings (part of #263); Dictionary keys and
+            Matrix row keys against `cv()`. `key()` and `downloadOnly()` are metadata.
+            Not enforced, because the data cannot decide them: KArAr's 95
+            `requiredUnlessLegacy()`, MagIC's `requiredUnlessNatural()` and CDR
+            supplements' `requiredOneInGroup("Names")` (no such group); the
+            test lists them.
+      - [x] Empty `recommended()` column only warns (#590, pinned by a test).
+      - [x] Capitalisation is rejected with the right spelling, never fixed
+            silently: a vocabulary term (#453), a column or table name (#363) that
+            differs only in case says how the data model spells it. The upload
+            page's import step already corrects both (PR #204), so this catches
+            whole-file uploads and grid edits.
+      - [x] Integer cells beyond OpenSearch's long are errors (#485); a huge whole
+            number in a Number column is fine (rows index as text, `summary._num`
+            as double).
+      - [x] Missing tables (#423, #454): a required `in()` column whose table is
+            missing is one error naming the table; a required column absent from a
+            whole table is one error, not one per row. A blank reference DOI says to
+            fill in the Reference field (#491, #399). An unnamed column says which.
+            A workspace table with more than one row is an error.
+      - [x] Implausibly many significant digits (spreadsheet float artefacts)
+            warn, capped per column; data is never changed (#127, #133).
+      - [ ] Data-model defaults for blank cells (#410), a "maybe required" label
+            (#259), calculated values and fixing values on the validation page (#263
+            integrity checks beyond the shape warnings, #441, #518): not started.
 - [ ] **C9 Downloads.** Expose the stored sha256 checksums (MagIC #613); strip a
       leading UTF-8 BOM from served legacy files (#621); the contribution ID and
       metadata in every downloaded file (#291, #315); no stray `>>>>` separators
