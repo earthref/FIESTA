@@ -132,6 +132,10 @@ search:
   # found with the sidebar's filter search; they replaced the legacy CDR
   # sidebar's per-column bucket filters (search.jsx) on 2026-11-13.
   filters:
+    # The legacy CDR sidebar's Publication Year. Its other facets (scientists,
+    # analysts, software packages, cruise, ...) are data-model text columns,
+    # which the `text` filter lists one by one.
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year }
     - { type: text, label: Text }
     - { type: numeric, label: Numeric }
     - { type: exists, label: With / Without Data }
