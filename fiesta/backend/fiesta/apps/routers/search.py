@@ -199,7 +199,7 @@ def _parse_has(node, table: str, has: list[str] | None) -> list[dict] | None:
 
 
 HasQuery = Annotated[list[str] | None, Query()]
-# The Geospatial filter's plates: `plate=` codes (fiesta/plates.py), repeated.
+# The Geospatial filter's plates and provinces: `plate=` codes (fiesta/plates.py), repeated.
 PlateQuery = Annotated[list[str] | None, Query()]
 
 
