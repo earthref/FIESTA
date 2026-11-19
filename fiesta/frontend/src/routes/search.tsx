@@ -129,6 +129,7 @@ type SubTab = {
   render?: (ctx: PluginSubTabContext) => ReactNode;
   countTable?: string;
   records?: boolean;
+  fullWidth?: boolean;
 };
 function subTabsOf(config: NodeConfig | undefined, level: SearchLevel | undefined): SubTab[] {
   if (!config || !level) return [];
@@ -1903,7 +1904,8 @@ export function SearchPage(props: SearchPageProps) {
                       </div>
                     )}
                     {activeTab?.render && (
-                      <div>
+                      // A full-width tab cancels the view's 1em side padding.
+                      <div style={activeTab.fullWidth ? { margin: "0 -1em" } : undefined}>
                         {activeTab.render({
                           hits,
                           level,

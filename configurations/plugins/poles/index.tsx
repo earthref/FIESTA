@@ -774,6 +774,8 @@ const polesPlugin: PluginModule = {
         name: "Poles",
         icon: "globe",
         countTable: pconfig.table ?? "poles",
+        // The map and grid run edge to edge, as in the contribution modal.
+        fullWidth: true,
         render: (ctx) => <PolesMapView {...ctx} />,
       },
     ];

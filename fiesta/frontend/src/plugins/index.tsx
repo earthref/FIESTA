@@ -68,6 +68,9 @@ export interface PluginSubTab {
    * filters apply as on Summaries (and count its records), its count is the
    * level's matches, and it fetches them with `searchParams`. */
   records?: boolean;
+  /** The tab fills the search page's view edge to edge (a map, a grid), as in
+   * the contribution modal, instead of inside its side padding. */
+  fullWidth?: boolean;
 }
 
 export interface PluginFiltersProps {
