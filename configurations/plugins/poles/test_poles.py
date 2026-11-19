@@ -31,6 +31,14 @@ def test_poles_derive_docs(magic_node):
     assert doc["summary"]["_all"]["geologic_classes"] == ["Igneous"]
     # `alpha95` is not `pole_alpha95`, and there is no dp/dm: no ring.
     assert "_geometry" not in doc["summary"]["poles"]
+    assert "_num" not in doc["summary"]
+
+
+def test_pole_alpha95_is_indexed_as_the_locations_number_column(magic_node):
+    """The Pole A95 filter's field is the location docs' summary._num column."""
+    (doc,) = _docs(magic_node, {"pole_lat": 78.5, "pole_lon": 260, "pole_alpha95": 3.2})
+    assert doc["summary"]["_num"] == {"pole_alpha95": [3.2]}
+    assert "pole_alpha95" not in doc["summary"]["poles"]
 
 
 def test_pole_ages_are_the_nodes_intervals(magic_node):

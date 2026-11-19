@@ -253,7 +253,8 @@ class PolesOptions(PluginOptions):
     default_alpha95_max: float | None = Field(
         default=10.0,
         description="An unfiltered Poles view of more than `default_alpha95_above` poles "
-        "opens with a Pole A95 range filter up to this many degrees (null: never)",
+        "opens with the locations' Pole A95 range filter (summary._num.pole_alpha95) up to "
+        "this many degrees (null: never)",
     )
     default_alpha95_above: int = Field(
         default=1000,
@@ -326,15 +327,16 @@ class PolesPlugin(FiestaPlugin):
                     "lat": pole_lat,
                     "lon": ((pole_lon + 180) % 360) - 180,
                 }
-            # Numeric copies (JSON numbers map to numeric OpenSearch fields)
-            # so the alpha95 range filter works; string row values don't. The
+            # Numeric copies (JSON numbers map to numeric OpenSearch fields;
+            # string row values don't). The A95 is indexed where the location
+            # docs have theirs (summary._num.pole_alpha95), so one range
+            # filter narrows the poles and the location summaries alike. The
             # age is the node's interval (summary._interval.<name>, in years BP
             # whatever the age_unit: the Age filter and tile), its best
             # estimate in summary.poles.age for the color gradient and legend.
             numeric_block: dict[str, Any] = {"pole_lat": pole_lat, "pole_lon": pole_lon}
             alpha95 = _finite(row.get("pole_alpha95"))
-            if alpha95 is not None:
-                numeric_block["pole_alpha95"] = alpha95
+            numbers = {"_num": {"pole_alpha95": [alpha95]}} if alpha95 is not None else {}
             intervals = interval_blocks(node, [row], [options.age_interval])
             if age := intervals.get("_interval", {}).get(options.age_interval):
                 numeric_block["age"] = age["mid"]
@@ -353,6 +355,7 @@ class PolesPlugin(FiestaPlugin):
                         "locations": dict(row),
                         "poles": numeric_block,
                         "_all": all_block,
+                        **numbers,
                         **intervals,
                     },
                     "rows": [row],
@@ -363,7 +366,7 @@ class PolesPlugin(FiestaPlugin):
     def frontend_config(self, node: NodeConfig) -> dict:
         # The Age / Pole A95 / Geospatial controls on the Poles view are
         # `search.filters` entries in the node YAML (range on
-        # summary.poles.age and summary.poles.pole_alpha95, bbox).
+        # summary._interval.age.range and summary._num.pole_alpha95, bbox).
         return {
             "view": "poles",
             "table": "poles",
