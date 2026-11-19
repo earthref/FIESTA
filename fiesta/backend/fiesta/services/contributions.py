@@ -156,9 +156,12 @@ async def derive_artifacts(session, node, contribution):
         contributor = await session.get(User, contribution.contributor_id)
         docs = summarize(node, parsed, contribution_meta(contribution, contributor))
         add_derived_values(node, docs)
+        records = list(docs)
         for plugin in active_plugins(node):
             docs.extend(
-                plugin.derive_docs(node, parsed, contribution_meta(contribution, contributor))
+                plugin.derive_docs(
+                    node, parsed, contribution_meta(contribution, contributor), records
+                )
             )
         contribution.data_model_version = version
         contribution.status = ContributionStatus.READY
@@ -210,8 +213,9 @@ async def index_parsed(node, contribution, contributor, parsed, reference=None, 
     meta = contribution_meta(contribution, contributor, reference)
     docs = summarize(node, parsed, meta)
     add_derived_values(node, docs)
+    records = list(docs)
     for plugin in active_plugins(node):
-        docs.extend(plugin.derive_docs(node, parsed, meta))
+        docs.extend(plugin.derive_docs(node, parsed, meta, records))
     await ensure_index(get_opensearch(), node.search_index)
     await index_contribution_docs(
         get_opensearch(), node.search_index, contribution.id, docs, prune=prune

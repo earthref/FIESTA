@@ -210,13 +210,30 @@ class FiestaPlugin:
         return {}
 
     def derive_docs(
-        self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
+        self,
+        node: NodeConfig,
+        parsed: ParsedContribution,
+        contribution_meta: dict,
+        records: list[dict] | None = None,
     ) -> list[dict]:
         """Extra search documents derived from a contribution at summarize
         time (same shape as fiesta.domain.summarize docs: {type, summary,
         rows?}). Re-runs whenever the contribution is (re)processed and on
-        `fiesta rebuild`, so derived data is always reproducible."""
+        `fiesta rebuild`, so derived data is always reproducible. `records`
+        are the docs `summarize` built for it (the contribution's and its
+        hierarchy records', with the plugins' derived values), for a plugin
+        whose docs take a record's fields (`record_tables`); None from a
+        caller without them."""
         return []
+
+    def record_tables(self, node: NodeConfig) -> dict[str, str]:
+        """Its search tables whose docs are a hierarchy level's records seen
+        another way (`{"poles": "locations"}`): each carries that level's
+        filter fields (`summary._all`, `_num`, `_has`, `_interval`, positions)
+        as the level's own docs do, so the search routes take the level's
+        text / number / with-data columns for it and the level's sidebar
+        filters apply to and count its docs."""
+        return {}
 
     def derived_columns(self, node: NodeConfig) -> dict[str, Literal["text", "number"]]:
         """Columns it derives on the hierarchy's record docs (`derive_values`),

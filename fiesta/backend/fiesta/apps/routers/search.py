@@ -89,6 +89,18 @@ def _level_tables(node) -> set[str]:
     return tables
 
 
+def _records_table(node, table: str) -> str:
+    """The hierarchy table whose columns a search table's docs carry: its
+    own, or for a plugin's records-as-docs table (`record_tables`, the poles
+    of the locations) that level's."""
+    from fiesta.plugins import active_plugins
+
+    for plugin in active_plugins(node):
+        if records := plugin.record_tables(node).get(table):
+            return records
+    return table
+
+
 def _grid_columns(node, table: str) -> dict:
     level = next((lvl for lvl in _all_levels(node) if lvl.table == table), None)
     return {c.key: c for c in level_columns(node, level)} if level else {}
@@ -141,7 +153,7 @@ def _facet_names(node, table: str, facets: bool, facet: list[str] | None) -> lis
 
     if not facet:
         return node.search.facets if facets else []
-    allowed = set(node.search.facets) | set(node.text_columns(table))
+    allowed = set(node.search.facets) | set(node.text_columns(_records_table(node, table)))
     for column in _grid_columns(node, table).values():
         allowed.update(column.facets)
     for plugin in active_plugins(node):
@@ -182,7 +194,7 @@ def _parse_has(node, table: str, has: list[str] | None) -> list[dict] | None:
     matches no doc with data, every doc without)."""
     if not has:
         return None
-    tables = node.exists_tables(table)
+    tables = node.exists_tables(_records_table(node, table))
     listed = set(node.exists_columns(ANY_TABLE, node.hierarchy[0]))
     parsed = []
     for spec in has:
@@ -1154,7 +1166,7 @@ async def search_numbers(
     column picker. One request, an `exists` filter per column."""
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
-    columns = node.number_columns(table)
+    columns = node.number_columns(_records_table(node, table))
     body = build_search_body(
         table=table,
         query=query,
@@ -1210,11 +1222,12 @@ async def search_has(
     aggregation on `summary._has.<of>`."""
     if table not in _level_tables(node):
         raise HTTPException(404, f"unknown search table {table!r}")
-    if of not in node.exists_tables(table):
+    records = _records_table(node, table)
+    if of not in node.exists_tables(records):
         raise HTTPException(
-            422, f"of must be one of {node.exists_tables(table)} for {table!r}, got {of!r}"
+            422, f"of must be one of {node.exists_tables(records)} for {table!r}, got {of!r}"
         )
-    columns = node.exists_columns(of, table)
+    columns = node.exists_columns(of, records)
     body = build_search_body(
         table=table,
         query=query,
@@ -1259,15 +1272,15 @@ def _filter_count_clause(node, table: str, key: str) -> dict:
     if kind == "bbox" and not field:
         return {"exists": {"field": GEO_FIELD}}
     if kind == "numeric" and not field:
-        paths = [f"summary._num.{c}" for c in node.number_columns(table)]
+        paths = [f"summary._num.{c}" for c in node.number_columns(_records_table(node, table))]
     elif kind == "exists" and not field:
-        paths = [f"{HAS_FIELD}.{t}" for t in node.exists_tables(table)]
+        paths = [f"{HAS_FIELD}.{t}" for t in node.exists_tables(_records_table(node, table))]
     elif kind == "facet" and field:
         _facet_names(node, table, False, [field])
         paths = [facet_path(field)]
     elif kind == "range" and field:
         configured = {f.field for f in node.search.filters if f.type == "range"}
-        numbers = {f"summary._num.{c}" for c in node.number_columns(table)}
+        numbers = {f"summary._num.{c}" for c in node.number_columns(_records_table(node, table))}
         if field not in configured | numbers:
             raise HTTPException(
                 422, f"range must be a range filter or number column, got {field!r}"
@@ -1314,12 +1327,12 @@ async def search_filter_counts(
     expanded: list[str] = []
     for key in count:
         if key == "text:*":
-            expanded += [f"facet:{c}" for c in node.text_columns(table)]
+            expanded += [f"facet:{c}" for c in node.text_columns(_records_table(node, table))]
         elif key == "numeric:*":
             # Not the position columns: the Geospatial filter is theirs.
             expanded += [
                 f"range:summary._num.{c}"
-                for c in node.number_columns(table)
+                for c in node.number_columns(_records_table(node, table))
                 if c not in POSITION_COLUMNS
             ]
         else:
