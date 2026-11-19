@@ -2195,12 +2195,12 @@ def test_pages_and_filters_are_node_configuration(magic_node):
     public = magic_node.public_config()
     assert "pages" not in public["features"] and public["pages"][0]["slug"] == "about"
     assert public["facets"][0] == "method_codes"
-    age = next(
-        f
-        for f in magic_node.search.filters
-        if f.field == "summary._interval.age.range" and f.views == ["Poles"]
-    )
-    assert (age.type, age.levels, age.scale) == ("range", ["Locations"], 1e6)
+    alpha95 = next(f for f in magic_node.search.filters if f.views == ["Poles"])
+    assert (alpha95.type, alpha95.levels) == ("range", ["Locations"])
+    assert alpha95.field == "summary._num.pole_alpha95"
+    # The Poles view lists the Locations level's own filters too.
+    shared = [f.type for f in magic_node.search.filters if "Poles" in f.views and "Map" in f.views]
+    assert shared == ["range", "range", "numeric", "text", "exists"]
 
     # The pre-2026-09 `facets:` list still loads, as facet filters.
     legacy = SearchConfig(index="x", levels=[], facets=["lithologies", "method_codes"])

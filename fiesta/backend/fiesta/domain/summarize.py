@@ -352,6 +352,14 @@ def _num_block(numbers: _Numbers) -> dict:
     return {"_num": values} if values else {}
 
 
+def number_block(node: NodeConfig, table: str, rows: list[dict]) -> dict:
+    """The `summary._num` entry of these rows of a hierarchy table alone, for
+    a plugin's derived doc; {} without any."""
+    numbers = _Numbers()
+    numbers.add_rows(node, node.number_columns(table), rows)
+    return _num_block(numbers)
+
+
 def _has_value(value: Any) -> bool:
     """Whether a cell holds data (not blank, not an empty list)."""
     if value is None:

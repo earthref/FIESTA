@@ -48,6 +48,12 @@ async def contribution_doc_ids(
     return ids
 
 
+# Seconds a bulk request may take: a chunk of a large contribution's docs (500,
+# each with its rows) outlasts the client's 10 s default on a remote cluster,
+# which failed a whole `fiesta rebuild` (dev MagIC, 2026-11-19).
+BULK_TIMEOUT = 120
+
+
 async def index_contribution_docs(
     client: AsyncOpenSearch,
     index: str,
@@ -78,7 +84,7 @@ async def index_contribution_docs(
             }
         )
     if actions:
-        await async_bulk(client, actions, chunk_size=500)
+        await async_bulk(client, actions, chunk_size=500, request_timeout=BULK_TIMEOUT)
     if not prune:
         return
     current = {action["_id"] for action in actions}
@@ -89,6 +95,7 @@ async def index_contribution_docs(
             ({"_op_type": "delete", "_index": index, "_id": i} for i in stale),
             chunk_size=500,
             ignore_status=(404,),
+            request_timeout=BULK_TIMEOUT,
         )
     await client.indices.refresh(index=index)
 

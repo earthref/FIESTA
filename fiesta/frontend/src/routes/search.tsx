@@ -129,6 +129,7 @@ type SubTab = {
   render?: (ctx: PluginSubTabContext) => ReactNode;
   countTable?: string;
   records?: boolean;
+  levelFilters?: boolean;
   fullWidth?: boolean;
 };
 function subTabsOf(config: NodeConfig | undefined, level: SearchLevel | undefined): SubTab[] {
@@ -776,19 +777,38 @@ export function SearchPage(props: SearchPageProps) {
   // A plugin view's count: its own docs matching the search and its filters
   // (ranges on its summary block, the bbox), as it fetches them. Switching
   // sub-tabs never changes the level tabs' counts. Its docs are what the
-  // filter modals count while that view is open.
+  // filter modals count while that view is open. A `levelFilters` view's docs
+  // (the Poles of the Locations) carry the level's filter fields: they match
+  // the level's filters shown on it (ranges, the area and plates, with /
+  // without data), as the level's records do on Summaries.
   const countedTabs = subTabs.filter((tab) => tab.countTable);
-  const pluginParams = (table: string, query: string, rangeList: string[]) => ({
-    ...searchRequestParams(
-      query,
-      1,
-      0,
-      false,
-      rangeList.filter((r) => r.startsWith(`summary.${table}.`)),
-      bbox,
-    ),
-    ...scope,
-  });
+  const pluginParams = (table: string, query: string, rangeList: string[], hasList?: string[]) => {
+    const shared = countedTabs.find((tab) => tab.levelFilters && tab.countTable === table);
+    return {
+      ...(shared
+        ? searchRequestParams(
+            query,
+            1,
+            0,
+            false,
+            rangesFor(rangeList, applicableFilters(config, level?.name, shared.name)),
+            areaBbox(level),
+            undefined,
+            undefined,
+            hasList ?? hasAt(level, shared.name),
+            areaPlates(level),
+          )
+        : searchRequestParams(
+            query,
+            1,
+            0,
+            false,
+            rangeList.filter((r) => r.startsWith(`summary.${table}.`)),
+            bbox,
+          )),
+      ...scope,
+    };
+  };
   const pluginCounts = useQueries({
     queries: countedTabs.map(({ countTable = "" }) => {
       const params = pluginParams(countTable, q, ranges);
@@ -836,8 +856,10 @@ export function SearchPage(props: SearchPageProps) {
     parseQueryTokens(q).tokens.filter(([field]) => clearedFacets.includes(field)).length > 0;
   // A plugin view of its own docs renders from its own fetch; keep its ranges
   // out of the level query. One of the level's records (`records`) is searched
-  // as Summaries is.
-  const ownDocsView = !!activeTab?.render && !activeTab.records;
+  // as Summaries is, and so is the level under a `levelFilters` view, whose
+  // docs (`sharedTable`) the sidebar's filters count and its modals list.
+  const sharedTable = activeTab?.levelFilters ? activeTab.countTable : undefined;
+  const ownDocsView = !!activeTab?.render && !activeTab.records && !sharedTable;
   const queryRanges = ownDocsView ? undefined : activeRanges;
   const queryBbox = ownDocsView ? undefined : (areaBbox(level) ?? activeBbox);
   const queryPlates = ownDocsView ? undefined : areaPlates(level);
@@ -944,8 +966,17 @@ export function SearchPage(props: SearchPageProps) {
   });
   const modalParams = (query: string, rangeList: string[]) =>
     pluginTable ? pluginParams(pluginTable, query, rangeList) : levelParams(query, rangeList);
-  // A range filter's docs: a plugin view's block (summary.<table>.*), else the level's.
+  // The docs the level's own filters (the area, number and text columns,
+  // with / without data) count: a `levelFilters` view's, else the level's.
+  const viewTable = sharedTable ?? level?.table ?? "";
+  const viewParams = (query: string, rangeList: string[], hasList?: string[]) =>
+    sharedTable
+      ? pluginParams(sharedTable, query, rangeList, hasList)
+      : levelParams(query, rangeList, hasList);
+  // A range filter's docs: a `levelFilters` view's, a plugin view's block
+  // (summary.<table>.*), else the level's.
   const rangeTable = (filter: SearchFilter) => {
+    if (sharedTable) return sharedTable;
     const block = (filter.field ?? "").split(".")[1];
     return countedTabs.some((tab) => tab.countTable === block) ? block : (level?.table ?? "");
   };
@@ -968,7 +999,7 @@ export function SearchPage(props: SearchPageProps) {
   };
   if (level && !filtersPanel) {
     const levelTable = pluginTable ?? level.table;
-    if (level.geo) countOn("geo", level.table, levelParams(q, ranges));
+    if (level.geo) countOn("geo", viewTable, viewParams(q, ranges));
     for (const filter of filters) {
       if (filter.type === "range") {
         // As its modal counts: a plugin block's docs, else the level's.
@@ -979,9 +1010,9 @@ export function SearchPage(props: SearchPageProps) {
           table === level.table ? levelParams(q, ranges) : pluginParams(table, q, ranges),
         );
       } else if (filter.type === "numeric" || filter.type === "text") {
-        countOn(`${filter.type}:*`, level.table, levelParams(q, ranges));
+        countOn(`${filter.type}:*`, viewTable, viewParams(q, ranges));
       } else if (filter.type === "exists") {
-        countOn(countKey(filter), level.table, levelParams(q, ranges));
+        countOn(countKey(filter), viewTable, viewParams(q, ranges));
       } else {
         countOn(countKey(filter), levelTable, modalParams(q, ranges));
       }
@@ -1020,7 +1051,7 @@ export function SearchPage(props: SearchPageProps) {
   };
   // The level's number and text columns, as its `numeric:*` / `text:*` counts list them.
   const columnCounts = Object.keys(
-    filterCountQueries[countRequests.findIndex((group) => group.table === level?.table)]?.data
+    filterCountQueries[countRequests.findIndex((group) => group.table === viewTable)]?.data
       ?.counts ?? {},
   );
   const showText = filters.some((f) => f.type === "text");
@@ -1372,11 +1403,11 @@ export function SearchPage(props: SearchPageProps) {
         <ExistsModal
           title={sense ? "Without Data" : "With Data"}
           sense={sense}
-          table={level.table}
+          table={viewTable}
           levelName={level.name}
           tabs={existsTabs}
           has={activeHas}
-          paramsFor={(hasList) => levelParams(q, ranges, hasList)}
+          paramsFor={(hasList) => viewParams(q, ranges, hasList)}
           onApply={(next) => {
             close();
             setSearch({ has: [...has.filter((entry) => !activeHas.includes(entry)), ...next] });
@@ -1932,7 +1963,9 @@ export function SearchPage(props: SearchPageProps) {
                                 size: undefined,
                                 ...scope,
                               }
-                            : undefined,
+                            : sharedTable
+                              ? { ...pluginParams(sharedTable, q, ranges), size: undefined }
+                              : undefined,
                         })}
                       </div>
                     )}

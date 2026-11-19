@@ -302,14 +302,19 @@ configurations/rd/README.md.
 
 ## 2026-11-18 — Pole A95 filter on the locations' column
 
-- [ ] **Rebuild the MagIC search index on dev** once the "Pole A95 filter on the
-  locations' column" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`;
-  one rebuild also covers the open MagIC items above). The Poles view's Pole A95 filter
-  now reads `summary._num.pole_alpha95`, which pole docs indexed before the deploy do
-  not have. Until the rebuild the filter matches no such pole, and since an unfiltered
-  Poles view of more than 1,000 poles opens on Pole A95 ≤ 10°, the view opens empty
-  (clearing the filter shows the poles). Production needs the same rebuild at cutover.
-  Claude needs nothing after this.
+- [ ] **Rebuild the MagIC search index on dev** once the "Poles view: the Locations
+  level's filters" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`;
+  one rebuild also covers the open MagIC items above). Pole docs now carry their
+  location's filter fields (`summary._num`, `_all`, `_has`, positions), which those
+  indexed before the deploy do not have. Until the rebuild the Poles view's filters
+  match and count no such pole, and since an unfiltered Poles view of more than 1,000
+  poles opens on Pole A95 ≤ 10°, the view opens empty (clearing the filter shows the
+  poles). Two rebuilds from the laptop on 2026-11-19 (PR #268's code) failed on a 10 s
+  OpenSearch bulk timeout about ten minutes in, leaving the live index as it was; the
+  same PR raises the bulk timeout to 120 s. Production needs the same rebuild at cutover.
+- [ ] **Decide what to do with the unaliased index `fiesta-magic-build-338271b603be4f59993151820cacdb0a`**
+  on the dev cluster (created 2026-10-01, 9.2 GB, the same doc count as the live one):
+  it looks like a leftover of an earlier rebuild, and deleting it frees the space.
 
 ## 2026-11-13 — dev host unresponsive
 

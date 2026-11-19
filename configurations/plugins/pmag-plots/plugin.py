@@ -1259,7 +1259,11 @@ class PmagPlotsPlugin(FiestaPlugin):
         return ["pmag_plots"]
 
     def derive_docs(
-        self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
+        self,
+        node: NodeConfig,
+        parsed: ParsedContribution,
+        contribution_meta: dict,
+        records: list[dict] | None = None,
     ) -> list[dict]:
         index = _PlotIndex(parsed)
         counts = index.counts()

@@ -52,7 +52,8 @@ export interface PluginSubTabContext {
   setRanges?: (ranges: string[]) => void;
   /** A `records` tab's search as the level's request params (query, the
    * sidebar's ranges and area, grid filters, with/without data, scope), for
-   * its own fetch of the level's matches (`/search/{table}/values`). */
+   * its own fetch of the level's matches (`/search/{table}/values`); a
+   * `levelFilters` tab's, for the fetch of its own docs (no grid filters). */
   searchParams?: SearchParams;
 }
 
@@ -68,6 +69,12 @@ export interface PluginSubTab {
    * filters apply as on Summaries (and count its records), its count is the
    * level's matches, and it fetches them with `searchParams`. */
   records?: boolean;
+  /** The tab's own docs (`countTable`) are the level's records seen another
+   * way and carry their filter fields (the backend plugin's `record_tables`:
+   * the Poles of the Locations): the sidebar's filters are the level's, as
+   * the node YAML lists them for the view, and match and count its docs; the
+   * area and plates apply too. It fetches its docs with `searchParams`. */
+  levelFilters?: boolean;
   /** The tab fills the search page's view edge to edge (a map, a grid), as in
    * the contribution modal, instead of inside its side padding. */
   fullWidth?: boolean;

@@ -506,6 +506,7 @@ function PolesMapView({
   privateKey,
   scope,
   setRanges,
+  searchParams,
 }: PluginSubTabContext) {
   // The selected pole: its grid row (a map point's `index`).
   const [selected, setSelected] = useState<number | null>(null);
@@ -538,21 +539,28 @@ function PolesMapView({
   // later shows every pole.
   const [defaultPhase, setDefaultPhase] = useState<"undecided" | "applying" | "done">("undecided");
   const alpha95Max = pconfig.default_alpha95_max;
+  // On the search page the poles match the Locations level's filters
+  // (`searchParams`: the query, the sidebar's ranges, area, plates and with /
+  // without data, the scope); in a contribution's modal, only its own.
+  const filters = searchParams ?? {
+    ...scope,
+    query: query || undefined,
+    range: ranges.length > 0 ? ranges : undefined,
+    bbox: bbox || undefined,
+  };
   const unfiltered =
-    !query && ranges.length === 0 && !bbox && !contribution && !scope?.mine && !scope?.versions;
+    !contribution &&
+    !["query", "range", "bbox", "plate", "has", "mine", "versions"].some((key) => filters[key]);
   const canDefault = setRanges !== undefined && alpha95Max != null && unfiltered;
   const defaultPending =
     (defaultPhase === "undecided" && canDefault) || defaultPhase === "applying";
 
   const params = {
-    ...scope,
-    query: query || undefined,
-    range: ranges.length > 0 ? ranges : undefined,
-    bbox: bbox || undefined,
+    ...filters,
     contribution,
     private_key: contribution ? privateKey : undefined,
   };
-  const searchKey = ["plugin", "poles", "search", query, ranges, bbox, contribution, scope];
+  const searchKey = ["plugin", "poles", "search", filters, contribution];
   // The map's poles and the grid's rows are the same search in the same
   // (default) order, so a pole's position is its row.
   const fetchMapPage = (page: number) =>
@@ -776,6 +784,9 @@ const polesPlugin: PluginModule = {
         name: "Poles",
         icon: "globe",
         countTable: pconfig.table ?? "poles",
+        // A pole doc has its location's filter fields: the Locations level's
+        // filters apply to the poles and count them.
+        levelFilters: true,
         // The map and grid run edge to edge, as in the contribution modal.
         fullWidth: true,
         render: (ctx) => <PolesMapView {...ctx} />,
