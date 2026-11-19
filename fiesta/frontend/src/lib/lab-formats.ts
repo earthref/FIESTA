@@ -9,6 +9,7 @@
  */
 import type { JsonSchema } from "./admin";
 import { ApiError, api } from "./api";
+import { nodeUrl } from "./base";
 import { readBlocks, type Sheet } from "./importer";
 
 export interface LabFormat {
@@ -17,6 +18,8 @@ export interface LabFormat {
   description: string;
   extensions: string[];
   multi_file: boolean;
+  /** Example files to try (the one read as this format first), or none. */
+  example: string[];
   plugin: string;
   options_schema: JsonSchema;
 }
@@ -165,6 +168,18 @@ export async function readLabFile(
         : `Failed to convert this file: ${message}`,
     };
   }
+}
+
+/** A format's example files (GET /import-formats/{key}/example/{name}). */
+export async function labExampleFiles(format: LabFormat): Promise<NamedBytes[]> {
+  return Promise.all(
+    format.example.map(async (name) => {
+      const path = `/import-formats/${encodeURIComponent(format.key)}/example/${encodeURIComponent(name)}`;
+      const response = await fetch(nodeUrl(path));
+      if (!response.ok) throw new Error(`could not fetch the example ${name} (${response.status})`);
+      return { name, bytes: await response.arrayBuffer() };
+    }),
+  );
 }
 
 /** The name of a converted file's report, kept beside it as an attachment. */

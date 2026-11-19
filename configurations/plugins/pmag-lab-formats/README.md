@@ -68,6 +68,8 @@ original files in the upload):
   at a time per API process (a lock); a conversion of a typical file takes well
   under a second.
 - `fixtures/` holds small files trimmed from PmagPy's `data_files/convert_2_magic`
-  examples (published data; PmagPy is BSD-3-Clause), one per format.
+  examples (published data; PmagPy is BSD-3-Clause), one per format. They are
+  the tests' cases and each format's `example`, which the upload page's Step 1
+  offers to try or download; a new format adds its fixture to both.
 - A UI half is not needed: the core upload wizard renders the options from the
   JSON schema (`fiesta/frontend/src/components/lab-format-options.tsx`).

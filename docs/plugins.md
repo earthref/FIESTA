@@ -124,7 +124,12 @@ files, grouped as lab formats in its file-type menu. Each sets `key`, `label`,
 `description`, `extensions`, `multi_file` and `Options` (an `ImportOptions`
 pydantic model: what the contributor sets, served as JSON schema and rendered
 as the format's options form; an enum field may carry `x-enum-labels` in
-`json_schema_extra`), and implements:
+`json_schema_extra`), and optionally `example`: paths of small published files
+(the one read as this format first, then its companions) that the upload page's
+Step 1 lists under "Or import files straight from a lab instrument" with *Try
+the example* (read like dropped files, so they must sniff as the format) and
+*Download* (served by `GET /import-formats/{key}/example/{name}`; keep them
+your tests' fixtures). It implements:
 
 - `sniff(filename, head) -> float`: how sure it is (0–1) from the name and the
   first 16 KB; the import step picks the format at 0.8 or more.

@@ -1,6 +1,6 @@
 """The upload page's import formats: files the node's plugins convert to its
 text format (lab instrument output, say; fiesta.services.import_formats).
-Listing and sniffing are public and cheap (sniffing sees each file's first
+Listing, examples and sniffing are public and cheap (sniffing sees each file's first
 16 KB); converting is a contributor action like the upgrade (routers/upgrade):
 it needs a login, the request is capped at the upload limit, and the
 conversion runs in a worker thread in a temporary directory. Nothing is
@@ -12,6 +12,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 from starlette.concurrency import run_in_threadpool
 
@@ -78,6 +79,17 @@ async def list_import_formats(node: NodeDep) -> list[dict]:
     """The formats the node's plugins convert, each with its options' JSON
     schema (the import step's options form)."""
     return import_formats.describe(node)
+
+
+@router.get("/{key}/example/{name}")
+async def import_format_example(node: NodeDep, key: str, name: str) -> FileResponse:
+    """One of a format's example files (its `example` list): small published
+    files the upload page offers to try."""
+    try:
+        path = import_formats.example_file(node, key, name)
+    except KeyError:
+        raise HTTPException(404, f"no example file {name!r} for {key!r}") from None
+    return FileResponse(path, media_type="application/octet-stream", filename=path.name)
 
 
 def _sniff(node: NodeConfig, raw: bytes) -> dict:
