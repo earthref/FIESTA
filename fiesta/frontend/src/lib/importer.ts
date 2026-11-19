@@ -6,7 +6,13 @@
  * sheets become contribution text (one block per sheet) that
  * POST /private/contributions/{id}/import normalises and merges.
  */
-import type { DataModel, ExcelTemplate, ImportFormat, ImportSettings } from "./types";
+import type {
+  DataModel,
+  DataModelColumn,
+  ExcelTemplate,
+  ImportFormat,
+  ImportSettings,
+} from "./types";
 
 /** One table-shaped piece of a file: a spreadsheet sheet, a block of the
  * node's text format, or a whole delimited file. */
@@ -203,7 +209,26 @@ export interface SheetState {
   targets: (string | undefined)[];
   excludeColumns: number[];
   excludeRows: number[];
+  /** Settings the importer guessed rather than read from the file (the
+   * table from the column headers, the header-row count); cleared when the
+   * contributor sets them. */
+  guessed?: { table?: boolean; headerRows?: boolean };
+  /** Review items (by key, see import-review.ts) the contributor marked as
+   * looking right. */
+  dismissed?: string[];
+  /** The saved import template loaded into this sheet. */
+  templateId?: number | null;
 }
+
+/** How an input column's data-model column was found: picked by the
+ * contributor, or suggested by exact name, label, an older data model's name
+ * (`previous_columns`), a loose match (case, spacing, units), or the
+ * contributor's own earlier uploads. */
+export type MatchKind = "manual" | "name" | "label" | "alias" | "loose" | "remembered";
+
+/** Header -> column choices remembered from the contributor's earlier
+ * uploads, per table (headers lower-cased). */
+export type ColumnHints = Record<string, Record<string, string>>;
 
 export interface SheetErrors {
   data: string[];
@@ -217,6 +242,8 @@ export interface SheetImport {
   inColumnNames: string[];
   /** The data-model column each input column imports into (undefined: none). */
   outColumnNames: (string | undefined)[];
+  /** How each mapped column was found (undefined: not mapped). */
+  matches: (MatchKind | undefined)[];
   /** Input columns not imported: excluded, or into a download-only column. */
   skippedColumns: Set<number>;
   downloadOnly: Set<number>;
@@ -230,10 +257,21 @@ export interface SheetImport {
 }
 
 export function initialState(sheet: Sheet, model: DataModel | null): SheetState {
+  const nHeaderRows = sheet.nHeaderRows || guessHeaderRows(sheet.rows, model);
+  let table = knownTable(sheet.tableName, model) ?? sheet.tableName;
+  let tableGuessed = false;
+  if (!model?.tables[table]) {
+    const header = sheet.rows[Number(nHeaderRows) - 1] ?? [];
+    const guess = guessTable(header, model);
+    if (guess) {
+      table = guess;
+      tableGuessed = true;
+    }
+  }
   return {
     settings: {
-      table_name: sheet.tableName,
-      n_header_rows: sheet.nHeaderRows || guessHeaderRows(sheet.rows, model),
+      table_name: table,
+      n_header_rows: nHeaderRows,
       column_map: {},
       exclude_column_names: [],
       exclude_table: false,
@@ -241,7 +279,35 @@ export function initialState(sheet: Sheet, model: DataModel | null): SheetState 
     targets: [],
     excludeColumns: [],
     excludeRows: [],
+    guessed: { table: tableGuessed, headerRows: !sheet.nHeaderRows },
   };
+}
+
+/** A sheet or block name as a data-model table: exactly, ignoring case, or
+ * in the singular ("Site" for sites). */
+export function knownTable(name: string, model: DataModel | null): string | undefined {
+  const wanted = name.trim().toLowerCase();
+  if (!wanted || !model) return undefined;
+  return Object.keys(model.tables).find(
+    (table) => table.toLowerCase() === wanted || table.toLowerCase() === `${wanted}s`,
+  );
+}
+
+/** The table most of a header row's names belong to (at least half of them,
+ * and at least two), for a sheet whose name names no table. */
+export function guessTable(header: string[], model: DataModel | null): string | undefined {
+  const names = header.map((h) => h.trim()).filter(Boolean);
+  if (!model || names.length === 0) return undefined;
+  let best: string | undefined;
+  let bestCount = 0;
+  for (const [table, def] of Object.entries(model.tables)) {
+    const count = names.filter((n) => suggestMatch(n, def.columns)).length;
+    if (count > bestCount) {
+      best = table;
+      bestCount = count;
+    }
+  }
+  return bestCount >= 2 && bestCount * 2 >= names.length ? best : undefined;
 }
 
 function isDownloadOnly(column: { validations?: string[] } | undefined): boolean {
@@ -252,22 +318,59 @@ function isDownloadOnly(column: { validations?: string[] } | undefined): boolean
  * ignoring case (legacy suggester). */
 export function suggestColumn(
   header: string,
-  columns: Record<string, { label?: string }>,
+  columns: Record<string, DataModelColumn>,
 ): string | undefined {
+  return suggestMatch(header, columns)?.column;
+}
+
+/** A header loosely: lower case, units in brackets dropped, every run of
+ * other characters one underscore ("Lat (deg)" and "lat" agree). */
+export const looseName = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/\([^)]*\)|\[[^\]]*\]/g, " ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+/** The data-model column an input header names and how it was found: by
+ * exact name, then label (both ignoring case), then a name the column had
+ * in an older data model, then loosely (`looseName`) by name or label, then
+ * a choice remembered from the contributor's earlier uploads. */
+export function suggestMatch(
+  header: string,
+  columns: Record<string, DataModelColumn>,
+  remembered?: Record<string, string>,
+): { column: string; kind: MatchKind } | undefined {
   const wanted = header.trim().toLowerCase();
   if (!wanted) return undefined;
-  let byLabel: string | undefined;
-  for (const [name, column] of Object.entries(columns)) {
-    if (name.toLowerCase() === wanted) return name;
-    if (!byLabel && column.label?.toLowerCase() === wanted) byLabel = name;
-  }
-  return byLabel;
+  const entries = Object.entries(columns);
+  const find = (test: (name: string, column: DataModelColumn) => boolean) =>
+    entries.find(([name, column]) => test(name, column))?.[0];
+  const byName = find((name) => name.toLowerCase() === wanted);
+  if (byName) return { column: byName, kind: "name" };
+  const byLabel = find((_, column) => column.label?.toLowerCase() === wanted);
+  if (byLabel) return { column: byLabel, kind: "label" };
+  const byAlias = find((_, column) =>
+    (column.previous_columns ?? []).some(
+      (p) => (typeof p === "string" ? p : p.column).toLowerCase() === wanted,
+    ),
+  );
+  if (byAlias) return { column: byAlias, kind: "alias" };
+  const loose = looseName(wanted);
+  const byLoose =
+    loose &&
+    find((name, column) => looseName(name) === loose || looseName(column.label ?? "") === loose);
+  if (byLoose) return { column: byLoose, kind: "loose" };
+  const hint = remembered?.[wanted];
+  if (hint && columns[hint]) return { column: hint, kind: "remembered" };
+  return undefined;
 }
 
 export function computeSheet(
   rows: string[][],
   state: SheetState,
   model: DataModel | null,
+  hints?: ColumnHints,
 ): SheetImport {
   const { settings } = state;
   const errors: SheetErrors = { data: [], nHeaderRows: [], tableName: [], columnNames: [] };
@@ -298,10 +401,17 @@ export function computeSheet(
 
   const excluded = new Set(state.excludeColumns);
   const downloadOnly = new Set<number>();
+  const matches: (MatchKind | undefined)[] = [];
+  const remembered = hints?.[table];
   const outColumnNames = inColumnNames.map((name, i) => {
     const picked = state.targets[i];
-    if (picked !== undefined) return picked || undefined;
-    return columns ? suggestColumn(name, columns) : undefined;
+    if (picked !== undefined) {
+      matches[i] = picked ? "manual" : undefined;
+      return picked || undefined;
+    }
+    const match = columns && nHeaderRows > 0 ? suggestMatch(name, columns, remembered) : undefined;
+    matches[i] = match?.kind;
+    return match?.column;
   });
   outColumnNames.forEach((out, i) => {
     if (columns && out && isDownloadOnly(columns[out])) downloadOnly.add(i);
@@ -344,6 +454,7 @@ export function computeSheet(
       nHeaderRows,
       inColumnNames,
       outColumnNames,
+      matches,
       skippedColumns,
       downloadOnly,
       skippedRows,
@@ -367,6 +478,7 @@ export function computeSheet(
     nHeaderRows,
     inColumnNames,
     outColumnNames,
+    matches,
     skippedColumns,
     downloadOnly,
     skippedRows,
