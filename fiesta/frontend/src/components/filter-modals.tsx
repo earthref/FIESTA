@@ -11,7 +11,7 @@
 // - ExistsModal: the `exists` filter's columns with data (With Data) or
 //   without (Without Data), a tab per table the level's records cover.
 // - GeoModal: the geospatial area on the search's map, with its bounds as numbers,
-//   and the tectonic plates picked from a list.
+//   and the tectonic plates, cratons, blocks and terranes picked from lists.
 //
 // Each edits a draft and applies it with Apply, so a long list keeps its order
 // while values are picked and the search runs once.
@@ -45,7 +45,7 @@ import {
 import { type FacetValueDescription, usePluginFacetDescriptions } from "../plugins";
 import { type BrushRange, EChart, type EChartsOption } from "./echart";
 import { type Area, WHOLE_GLOBE } from "./map/map-points";
-import { usePlates } from "./map/plates";
+import { regionLabel, usePlates, useProvinces } from "./map/plates";
 import { type AreaRequest, SearchMap } from "./map/search-map";
 import {
   ANY_TABLE,
@@ -1301,8 +1301,7 @@ export function GeoModal({
   const byPlates = draftPlates.length > 0;
   const [draft, setDraft] = useState<Area | null>(byPlates ? null : area);
   const plateList = usePlates(plates !== undefined);
-  const plateName = (code: string) =>
-    plateList.data?.plates.find((plate) => plate.code === code)?.name ?? code;
+  const provinceList = useProvinces(plates !== undefined);
   const [bounds, setBounds] = useState<Bounds>(boundsOf(draft));
   const [request, setRequest] = useState<AreaRequest | null>(
     !area && !plates?.length && level.geo ? {} : null,
@@ -1408,10 +1407,37 @@ export function GeoModal({
                   ))}
               </select>
             </label>
+            <label className="flex items-center gap-1.5">
+              <span className="text-ink-muted">Cratons and blocks</span>
+              <select
+                value=""
+                disabled={!provinceList.data}
+                onChange={(event) => {
+                  const code = event.target.value;
+                  if (code) addPlate(code);
+                }}
+                className="rounded-sm border border-gray-300 bg-surface px-1.5 py-1"
+              >
+                <option value="">
+                  {provinceList.isPending
+                    ? "Loading…"
+                    : provinceList.error
+                      ? "The list could not be loaded"
+                      : "Add a craton, block or terrane…"}
+                </option>
+                {(provinceList.data?.plates ?? [])
+                  .filter((province) => !draftPlates.includes(province.code))
+                  .map((province) => (
+                    <option key={province.code} value={province.code}>
+                      {province.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
             {draftPlates.map((code) => (
               <Chip
                 key={code}
-                label={`${plateName(code)} plate`}
+                label={regionLabel(code, plateList.data, provinceList.data)}
                 onRemove={() => {
                   const rest = draftPlates.filter((other) => other !== code);
                   setDraftPlates(rest);
@@ -1430,7 +1456,7 @@ export function GeoModal({
         ) : (
           <p className="text-[13px] text-ink-muted">
             {byPlates
-              ? `Records on ${draftPlates.length === 1 ? "this present-day plate" : "any of these present-day plates"} (Bird 2003). Remove ${draftPlates.length === 1 ? "it" : "them"} to filter by bounds instead.`
+              ? `Records on ${draftPlates.length === 1 ? "this present-day outline" : "any of these present-day outlines"} (plates: Bird 2003; cratons, blocks and terranes: Hasterok et al. 2022). Remove ${draftPlates.length === 1 ? "it" : "them"} to filter by bounds instead.`
               : level.geo
                 ? `Drag the outline on the map or its corners, or type the bounds${plates !== undefined ? ", or pick a plate instead" : ""}. Filter by area draws a new one.`
                 : `Type the bounds in degrees${plates !== undefined ? ", or pick a plate instead" : ""}.`}

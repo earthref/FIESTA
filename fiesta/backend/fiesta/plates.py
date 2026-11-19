@@ -6,6 +6,13 @@ one feature per plate, `{code, name}`, its polygons split at the antimeridian
 and closed over a pole where they circle one, so that OpenSearch's geo_shape
 query reads them as drawn. The edges that adds (along ±180° and ±90°) are not
 boundaries, and the maps leave them out.
+
+`data/provinces.json` adds the `plate_block` vocabulary's cratons, blocks and
+terranes that have a present-day outline (Hasterok et al. 2022, made by
+fiesta/scripts/provinces.py): one feature per term, `{code, name, sources}`,
+its code a lower-case slug ("kaapvaal-craton"). The Geospatial filter takes
+both: `plate=` codes name plates (upper case) or provinces (lower case), and a
+record on any of them matches.
 """
 
 import json
@@ -15,6 +22,7 @@ from pathlib import Path
 from fastapi import HTTPException
 
 PLATES_FILE = Path(__file__).parent / "data" / "plates.json"
+PROVINCES_FILE = Path(__file__).parent / "data" / "provinces.json"
 
 
 @cache
@@ -23,10 +31,15 @@ def plates_geojson() -> dict:
 
 
 @cache
+def provinces_geojson() -> dict:
+    return json.loads(PROVINCES_FILE.read_text())
+
+
+@cache
 def _polygons() -> dict[str, list[list[list[list[float]]]]]:
-    """Each plate's polygons (rings of [lon, lat]) by its code."""
+    """Each plate's and province's polygons (rings of [lon, lat]) by its code."""
     out: dict[str, list] = {}
-    for feature in plates_geojson()["features"]:
+    for feature in plates_geojson()["features"] + provinces_geojson()["features"]:
         geometry = feature["geometry"]
         coordinates = geometry["coordinates"]
         out[feature["properties"]["code"]] = (
@@ -36,17 +49,20 @@ def _polygons() -> dict[str, list[list[list[list[float]]]]]:
 
 
 def parse_plates(values: list[str] | None) -> tuple[str, ...]:
-    """`plate=` codes (repeated, or comma separated), upper-cased and
-    de-duplicated in order; 422 for one that names no plate."""
+    """`plate=` codes (repeated, or comma separated), de-duplicated in order:
+    a plate's upper-cased, a province's lower-cased; 422 for one that names
+    neither."""
+    polygons = _polygons()
     codes: list[str] = []
     for value in values or []:
         for code in value.split(","):
-            code = code.strip().upper()
+            code = code.strip()
+            code = code.upper() if code.upper() in polygons else code.lower()
             if code and code not in codes:
                 codes.append(code)
-    unknown = [code for code in codes if code not in _polygons()]
+    unknown = [code for code in codes if code not in polygons]
     if unknown:
-        raise HTTPException(422, f"unknown plate code(s): {', '.join(unknown)}")
+        raise HTTPException(422, f"unknown plate or province code(s): {', '.join(unknown)}")
     return tuple(codes)
 
 

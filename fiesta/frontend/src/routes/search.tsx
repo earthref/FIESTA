@@ -28,7 +28,13 @@ import {
   useNumberFilter,
 } from "../components/filter-modals";
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
-import { parsePlates, usePlates } from "../components/map/plates";
+import {
+  isProvince,
+  parsePlates,
+  regionLabel,
+  usePlates,
+  useProvinces,
+} from "../components/map/plates";
 import { SearchMap } from "../components/map/search-map";
 import { type QuickLaunchView, quickLaunchViews } from "../components/quick-launch";
 import {
@@ -688,8 +694,7 @@ export function SearchPage(props: SearchPageProps) {
   const areaPlates = (entry: SearchLevel | undefined) =>
     plates.length > 0 && entry?.geo ? plates : undefined;
   const plateList = usePlates(plates.length > 0);
-  const plateName = (code: string) =>
-    plateList.data?.plates.find((plate) => plate.code === code)?.name ?? code;
+  const provinceList = useProvinces(plates.some(isProvince));
   const [filterModal, setFilterModal] = useState<FilterModalState | null>(null);
   // The sidebar's Find box over its filters.
   const [filterFind, setFilterFind] = useState("");
@@ -1281,7 +1286,7 @@ export function SearchPage(props: SearchPageProps) {
               : []),
             ...plates.map((code) => ({
               key: `plate:${code}`,
-              label: `${plateName(code)} plate`,
+              label: regionLabel(code, plateList.data, provinceList.data),
               onRemove: () => setPlates(plates.filter((other) => other !== code)),
             })),
           ],

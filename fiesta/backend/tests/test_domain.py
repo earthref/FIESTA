@@ -1944,6 +1944,7 @@ def test_api_mounts_every_node_router_once_under_v2(monkeypatch):
         "/v2/{repository}/workspaces",
         "/v2/{repository}/contributions/{contribution_id}/download",
         "/v2/basemap/plates",
+        "/v2/basemap/provinces",
         "/v2/{repository}/plugins/depth-plot/contributions/{contribution_id}/measurements",
         "/v2/admin/users",
         "/v2/admin/nodes/{slug}/publish",
@@ -2453,6 +2454,49 @@ def test_plates_data_and_filter():
     assert "geo_shape" not in str(build_search_body(table="sites", query=None))
 
 
+def test_provinces_data_and_filter():
+    """The plate_block terms' outlines: every name a vocabulary term, every
+    code a lower-case slug the filter takes beside the plate codes."""
+    import json
+    import re
+
+    from fiesta.plates import in_plates, parse_plates, plates_shape, provinces_geojson
+
+    features = provinces_geojson()["features"]
+    assert len(features) >= 50
+    for node in ("magic", "karar"):
+        vocabulary = json.loads((CONFIG_DIR / node / "controlled_vocabularies.json").read_text())
+        terms = {item["item"] for item in vocabulary["plate_block"]["items"]}
+        names = [f["properties"]["name"] for f in features]
+        assert [name for name in names if name not in terms] == []
+    codes = [f["properties"]["code"] for f in features]
+    assert len(set(codes)) == len(codes)
+    assert all(re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)+", code) for code in codes)
+    for feature in features:
+        geometry = feature["geometry"]
+        polygons = (
+            geometry["coordinates"]
+            if geometry["type"] == "MultiPolygon"
+            else [geometry["coordinates"]]
+        )
+        for ring in (ring for rings in polygons for ring in rings):
+            assert len(ring) >= 4 and ring[0] == ring[-1], feature["properties"]
+            assert all(-180 <= lon <= 180 and -90 <= lat <= 90 for lon, lat in ring)
+    for lat, lon, expected in (
+        (-26.2, 28.0, {"kaapvaal-craton", "kalahari-craton"}),  # Johannesburg
+        (-30.75, 121.47, {"yilgarn-craton"}),  # Kalgoorlie
+        (-21.2, 118.8, {"pilbara-craton"}),
+        (62.5, -114.4, {"slave-craton"}),  # Yellowknife
+        (35.7, 139.7, set()),  # Tokyo: on no listed province
+    ):
+        on = {c for c in codes if in_plates(lat, lon, (c,))}
+        assert on == expected, (lat, lon, on)
+    assert parse_plates(["kaapvaal-craton,af", "Kaapvaal-Craton"]) == ("kaapvaal-craton", "AF")
+    assert in_plates(-26.2, 28.0, parse_plates(["EU,kaapvaal-craton"]))
+    shape = plates_shape(("AF", "kaapvaal-craton"))
+    assert shape["type"] == "MultiPolygon" and len(shape["coordinates"]) >= 2
+
+
 def test_plates_route_revalidates():
     # A browser keeps no copy past a change: no-cache + ETag, 304 while unchanged.
     import asyncio
@@ -2464,6 +2508,11 @@ def test_plates_route_revalidates():
     etag = full.headers["etag"]
     assert asyncio.run(get_plates(f'"stale", {etag}')).status_code == 304
     assert asyncio.run(get_plates('"stale"')).status_code == 200
+    from fiesta.apps.routers.basemap import get_provinces
+
+    provinces = asyncio.run(get_provinces(None))
+    assert provinces.status_code == 200 and provinces.headers["etag"] != etag
+    assert asyncio.run(get_provinces(provinces.headers["etag"])).status_code == 304
 
 
 def test_map_points_name_the_rows_above_and_their_contribution():

@@ -93,9 +93,49 @@ export const usePlates = (enabled = true) =>
     staleTime: Number.POSITIVE_INFINITY,
   });
 
-/** The `plates` search param ("PA,EU") as codes. */
+/**
+ * The `plate_block` vocabulary's cratons, blocks and terranes (Hasterok et al.
+ * 2022), from /basemap/provinces: the Geospatial filter offers them beside the
+ * plates, under the same `plate=` param, by their lower-case codes
+ * ("kaapvaal-craton"). Read like the plates; `name` is the vocabulary term.
+ */
+export const PROVINCES_URL = apiUrl("/basemap/provinces");
+
+let provinces: Promise<Plates | null> | null = null;
+export const loadProvinces = () =>
+  (provinces ||= fetch(PROVINCES_URL, { cache: "no-cache" })
+    .then((response) => (response.ok ? response.json() : null))
+    .then((geojson) => (geojson ? readPlates(geojson) : null))
+    .catch(() => null));
+
+/** The provinces, for the Geospatial filter's list, chips and outlines. */
+export const useProvinces = (enabled = true) =>
+  useQuery({
+    queryKey: ["provinces"],
+    queryFn: async () => {
+      const loaded = await loadProvinces();
+      if (!loaded) throw new Error("The province list could not be loaded");
+      return loaded;
+    },
+    enabled,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+
+/** A province's code (a lower-case slug), not a plate's (two letters). */
+export const isProvince = (code: string) => code.includes("-");
+
+/** A filter chip's label for a plate ("Pacific plate") or a province (its
+ * vocabulary term, "Kaapvaal Craton"); the code until the lists load. */
+export const regionLabel = (code: string, plates?: Plates, provinces?: Plates) =>
+  isProvince(code)
+    ? (provinces?.plates.find((province) => province.code === code)?.name ?? code)
+    : `${plates?.plates.find((plate) => plate.code === code)?.name ?? code} plate`;
+
+/** The `plates` search param ("PA,EU,kaapvaal-craton") as codes: plates
+ * upper-cased, provinces lower-cased. */
 export const parsePlates = (value: string | undefined): string[] =>
   (value ?? "")
     .split(",")
-    .map((code) => code.trim().toUpperCase())
+    .map((code) => code.trim())
+    .map((code) => (isProvince(code) ? code.toLowerCase() : code.toUpperCase()))
     .filter(Boolean);

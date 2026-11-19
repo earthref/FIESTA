@@ -14,6 +14,9 @@ services serve it uncacheable, or slowly):
                                     (fiesta/plates.py; served from the repo,
                                     not fetched), for the maps' plate boundaries
                                     and the Geospatial filter's plate list
+    /v2/basemap/provinces           the cratons, blocks and terranes the
+                                    Geospatial filter also offers (likewise
+                                    from the repo, fiesta/plates.py)
 
 The SPA's maps (fiesta/frontend/src/components/map/basemap.ts) take the basemap's
 tiles straight from Esri and the other labels from OpenFreeMap.
@@ -24,12 +27,13 @@ import hashlib
 import json
 import math
 import time
+from pathlib import Path
 from typing import Any
 
 import httpx
 from fastapi import APIRouter, Header, HTTPException, Response
 
-from fiesta.plates import PLATES_FILE
+from fiesta.plates import PLATES_FILE, PROVINCES_FILE
 
 router = APIRouter(prefix="/basemap", tags=["basemap"])
 
@@ -187,7 +191,18 @@ async def get_plates(if_none_match: str | None = Header(default=None)) -> Respon
     data: it changes with the code, and a browser holding an old copy drew the
     old boundaries until it expired.
     """
-    body = PLATES_FILE.read_bytes()
+    return _revalidated(PLATES_FILE, if_none_match)
+
+
+@router.get("/provinces")
+async def get_provinces(if_none_match: str | None = Header(default=None)) -> Response:
+    """The `plate_block` vocabulary's cratons, blocks and terranes as GeoJSON
+    (fiesta/plates.py), revalidated like the plates."""
+    return _revalidated(PROVINCES_FILE, if_none_match)
+
+
+def _revalidated(path: Path, if_none_match: str | None) -> Response:
+    body = path.read_bytes()
     etag = f'"{hashlib.sha256(body).hexdigest()[:16]}"'
     headers = {"Cache-Control": "public, no-cache", "ETag": etag}
     if if_none_match and etag in [tag.strip() for tag in if_none_match.split(",")]:

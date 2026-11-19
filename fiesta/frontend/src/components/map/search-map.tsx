@@ -32,7 +32,7 @@ import {
   recordsOf,
   toMapPoint,
 } from "./map-points";
-import { usePlates } from "./plates";
+import { isProvince, usePlates, useProvinces } from "./plates";
 
 // MapLibre (~800 KB) loads with the first map.
 const MapLibreMap = lazy(() => import("./maplibre-map"));
@@ -299,15 +299,17 @@ export function SearchMap({
     scope,
   );
   // The filter's plates outlined on its map (the modal's), in the node color.
+  // Its cratons, blocks and terranes the same way.
   const plateList = usePlates(editArea && plates.length > 0);
+  const provinceList = useProvinces(editArea && plates.some(isProvince));
   const plateLines = useMemo<MapLine[]>(
     () =>
       editArea
-        ? (plateList.data?.plates ?? [])
+        ? [...(plateList.data?.plates ?? []), ...(provinceList.data?.plates ?? [])]
             .filter((plate) => plates.includes(plate.code))
             .flatMap((plate) => plate.lines.map((coords) => ({ coords, color, width: 2.5 })))
         : [],
-    [editArea, plateList.data, plates, color],
+    [editArea, plateList.data, provinceList.data, plates, color],
   );
   const fetched = inArea.data?.points;
   // Scaled to the values of the search's points (in the area, if any).
