@@ -175,8 +175,9 @@ search:
   # Filter sidebar controls (facet / range / bbox / numeric / exists), edited in the admin
   # UI's Search Filters tab. Facets aggregate on summary._all.<field>.raw and show
   # on every level's Summaries, Data and Map views; the poles range/bbox filters
-  # show on the Locations level's Poles view (the `poles` plugin indexes
-  # summary.poles.age in years, hence the Ma scale).
+  # show on the Locations level's Poles view. Its Pole A95 is the locations'
+  # pole_alpha95 number column (summary._num.pole_alpha95, which the `poles`
+  # plugin's docs index too), so it stays applied on the level's other views.
   # The Summaries / Data / Map views list a filter per column with data:
   # `numeric` adds every number column of the level as a range filter of its
   # own (summary._num, in its data-model unit), `text` every text column (and
@@ -194,7 +195,7 @@ search:
     - { type: text, label: Text, views: [Summaries, Data, Map] }
     - { type: exists, label: With / Without Data, views: [Summaries, Data, Map] }
     - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Locations], views: [Poles] }
-    - { type: range, label: Pole A95, field: summary.poles.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
+    - { type: range, label: Pole A95, field: summary._num.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
     - { type: bbox, label: Geospatial, levels: [Locations], views: [Poles] }
     # The `rock-mag` plugin's parameters (summary.rock_mag.<field>: fields in mT,
     # temperatures in °C) on the Specimens level's Rock Magnetism view.

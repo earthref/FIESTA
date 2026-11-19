@@ -326,7 +326,7 @@ filter per column (2026-11-13). A range needs a field
 indexed as a number (row values are text): a data-model number column's
 `summary._num.<column>`, an age interval `summary._interval.<name>.range`
 (a unit conversion's `interval`: matches on overlap, see api.md), or one a
-plugin indexes, e.g. `summary.poles.pole_alpha95`.
+plugin indexes, e.g. `summary.rock_mag.bc`.
 `numeric` picks any other number column, `exists` columns with or without data
 per table (`summary._has.<table>`, see api.md). Each search level's
 Summaries grid is its `columns` (tiles such as `citation`, `counts`, `map`,

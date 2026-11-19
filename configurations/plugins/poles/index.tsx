@@ -72,8 +72,10 @@ const MIN_MAP = 300;
 // border, less the side padding and border the map's width loses. The map is
 // at most as tall as it is wide.
 const MAP_CHROME = 36;
-// The search field the default Pole A95 filter sets (the sidebar's control).
-const ALPHA95_FIELD = "summary.poles.pole_alpha95";
+// The search field the default Pole A95 filter sets (the sidebar's control):
+// the locations' pole_alpha95 number column, which the pole docs index too, so
+// the filter carries over to the level's other views.
+const ALPHA95_FIELD = "summary._num.pole_alpha95";
 
 interface PolesPluginConfig {
   base_level?: string;

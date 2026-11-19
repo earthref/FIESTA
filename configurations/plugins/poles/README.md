@@ -49,7 +49,10 @@ a row's first click selects its pole (drawn on top of the others, the map
 turning or panning to centre it), and a
 second click on the selected row opens its contribution on the location row.
 The map is never taller than it is wide, leaving the grid at least two rows.
-The Age / A95 / Geospatial filters are `search.filters` entries; a search
+The Age / A95 / Geospatial filters are `search.filters` entries. Pole A95 is
+the locations' `pole_alpha95` number column (`summary._num.pole_alpha95`, which
+a pole doc indexes as its location does), so the range also filters the
+Locations level's Summaries, Data and Map views. A search
 page arriving on the view with no filters and more than
 `default_alpha95_above` poles sets the Pole A95 filter to ≤
 `default_alpha95_max`° once (clearing it shows every pole).

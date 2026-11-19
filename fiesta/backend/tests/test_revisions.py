@@ -70,7 +70,7 @@ def test_magic_seed_poles(magic_node):
         assert docs and all(doc["type"] == "poles" for doc in docs)
         for doc in docs:
             assert doc["summary"]["_all"]["_geo_point"]
-            assert doc["summary"]["poles"]["pole_alpha95"] > 0
+            assert doc["summary"]["_num"]["pole_alpha95"][0] > 0
             ages.add(doc["summary"]["poles"]["age"])
     assert len(ages) >= 2
 

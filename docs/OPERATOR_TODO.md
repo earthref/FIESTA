@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-11-16
+Last updated: 2026-11-18
 
 ## A — Decisions
 
@@ -299,6 +299,17 @@ configurations/rd/README.md.
   the rebuild, docs indexed before the deploy keep the old intervals (the Age filter
   can match a KArAr contribution by a stray step age, and histograms reach below zero).
   Production needs the same rebuild at cutover. Claude needs nothing after this.
+
+## 2026-11-18 — Pole A95 filter on the locations' column
+
+- [ ] **Rebuild the MagIC search index on dev** once the "Pole A95 filter on the
+  locations' column" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`;
+  one rebuild also covers the open MagIC items above). The Poles view's Pole A95 filter
+  now reads `summary._num.pole_alpha95`, which pole docs indexed before the deploy do
+  not have. Until the rebuild the filter matches no such pole, and since an unfiltered
+  Poles view of more than 1,000 poles opens on Pole A95 ≤ 10°, the view opens empty
+  (clearing the filter shows the poles). Production needs the same rebuild at cutover.
+  Claude needs nothing after this.
 
 ## 2026-11-13 — dev host unresponsive
 
