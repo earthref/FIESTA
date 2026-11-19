@@ -43,8 +43,10 @@ import {
   conversionReportName,
   isLabFormat,
   type LabConversion,
+  type LabFormat,
   type LabFormatKey,
   type LabSettings,
+  labExampleFiles,
   labFormatKey,
   labFormatsQuery,
   labKey,
@@ -67,6 +69,7 @@ import { cx, formatBytes } from "../lib/utils";
 import { DataImporter, type TemplateActions } from "./data-importer";
 import { ErrorMessage } from "./error-message";
 import { ImportOverview, type OverviewEntry } from "./import-overview";
+import { LabFormatList } from "./lab-format-list";
 import { LabConversionPanel } from "./lab-format-options";
 import { useLoginModal } from "./login-modal";
 import { Badge } from "./ui/badge";
@@ -600,6 +603,31 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
     }
   };
 
+  // A lab format's example: read like dropped files, so the server's sniffing
+  // picks the format and the files its conversion reads with the first.
+  const tryLabExample = async (format: LabFormat) => {
+    try {
+      await addFiles(await labExampleFiles(format));
+    } catch (err) {
+      setError(err);
+    }
+  };
+
+  const downloadLabExample = async (format: LabFormat) => {
+    try {
+      for (const file of await labExampleFiles(format)) {
+        const url = URL.createObjectURL(new Blob([file.bytes]));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      setError(err);
+    }
+  };
+
   const downloadExample = async (example: UploadExample) => {
     try {
       const blob = new Blob([await exampleBytes(example)]);
@@ -960,6 +988,17 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                   {key} text files, tab- or comma-delimited tables (.txt, .tsv, .csv) or Excel
                   workbooks (.xlsx, one table per sheet); data model version{" "}
                   {config.data_model_latest}
+                  {labFormats.length > 0 && (
+                    <>
+                      <br />
+                      Lab instrument files too:{" "}
+                      {labFormats
+                        .slice(0, 4)
+                        .map((f) => f.label.replace(/ File\b.*$/, ""))
+                        .join(", ")}
+                      {labFormats.length > 4 && ` and ${labFormats.length - 4} more (see below)`}
+                    </>
+                  )}
                 </span>
               )}
             </button>
@@ -1004,6 +1043,17 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                     />
                   ))}
                 </div>
+              </>
+            )}
+            {labFormats.length > 0 && (
+              <>
+                <hr className="my-4 border-gray-200" />
+                <LabFormatList
+                  formats={labFormats}
+                  nodeKey={key}
+                  onTry={tryLabExample}
+                  onDownload={downloadLabExample}
+                />
               </>
             )}
             {upgradable && (

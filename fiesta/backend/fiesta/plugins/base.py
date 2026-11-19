@@ -143,6 +143,10 @@ class ImportFormat:
     extensions: tuple[str, ...] = ()
     #: Whether one conversion reads several files (`companions`).
     multi_file: bool = False
+    #: An example the upload page offers to try (`GET /import-formats/{key}/
+    #: example/{name}`): small published files, the one read as this format
+    #: first, then the companions its conversion reads. Empty: none.
+    example: tuple[Path, ...] = ()
     #: The contributor's options (see ImportOptions). The plain base: none.
     Options: type[ImportOptions] = ImportOptions
 

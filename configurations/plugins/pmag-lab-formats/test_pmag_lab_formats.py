@@ -71,6 +71,20 @@ def test_sniffers_pick_every_example_and_the_cit_specimen_files(magic_node):
         assert (results[name]["format"], results[name]["companion_of"]) == ("pmag-cit", CIT[0])
 
 
+@pytest.mark.parametrize("key", list(CASES))
+def test_each_format_offers_its_fixture_as_its_example(magic_node, key):
+    """The upload page's "try an example" sends a format's example files on
+    their own: they are its test case, and they are read as it."""
+    names = CASES[key][0]
+    listed = {f["key"]: f for f in svc.describe(magic_node)}
+    assert listed[key]["example"] == names
+    assert all(svc.example_file(magic_node, key, name).is_file() for name in names)
+    results = {r["name"]: r for r in svc.sniff(magic_node, _files(names))}
+    assert results[names[0]]["format"] == key
+    assert results[names[0]]["confidence"] >= svc.AUTO_PICK
+    assert all(results[name]["companion_of"] == names[0] for name in names[1:])
+
+
 def test_a_cit_conversion_without_its_specimen_files_fails(magic_node):
     with pytest.raises(ImportConversionError, match="PmagPy's CIT"):
         svc.convert(magic_node, "pmag-cit", _files(CIT[:1]), {})

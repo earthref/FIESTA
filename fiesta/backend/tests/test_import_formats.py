@@ -3,6 +3,7 @@ fiesta.services.import_formats and the /import-formats routes), with a fake
 format; MagIC's PmagPy formats are tested in their plugin's folder."""
 
 import base64
+from pathlib import Path
 
 import httpx
 import pytest
@@ -22,6 +23,8 @@ from fiesta.plugins.base import (
 from fiesta.services import import_formats as svc
 from fiesta.settings import get_settings
 
+THIS_FILE = Path(__file__).read_bytes()
+
 
 class FakeOptions(ImportOptions):
     site_prefix: str = ""
@@ -34,6 +37,8 @@ class FakeFormat(ImportFormat):
     key = "fake"
     label = "Fake File"
     multi_file = True
+    #: Any small file serves as an example here: this one.
+    example = (Path(__file__),)
     Options = FakeOptions
 
     def sniff(self, filename, head):
@@ -97,6 +102,7 @@ def test_formats_are_listed_with_their_options_schema(magic_node, fake):
     assert [f["key"] for f in listed] == ["fake", "other"]
     assert listed[0]["plugin"] == "fake-formats" and listed[0]["multi_file"] is True
     assert set(listed[0]["options_schema"]["properties"]) == {"site_prefix", "fail"}
+    assert listed[0]["example"] == [Path(__file__).name] and listed[1]["example"] == []
 
 
 def test_two_plugins_may_not_supply_one_key(magic_node, monkeypatch):
@@ -204,6 +210,12 @@ async def test_import_format_endpoints(monkeypatch):
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://a") as c:
         listed = await c.get("/v2/magic/import-formats")
         assert [f["key"] for f in listed.json()] == ["fake", "other"]
+        # Example files are public; only the ones a format lists are served.
+        name = Path(__file__).name
+        example = await c.get(f"/v2/magic/import-formats/fake/example/{name}")
+        assert example.status_code == 200 and example.content == THIS_FILE
+        for path in ("fake/example/conftest.py", "other/example/" + name, "nope/example/x"):
+            assert (await c.get(f"/v2/magic/import-formats/{path}")).status_code == 404
         sniffed = await c.post(
             "/v2/magic/import-formats/sniff",
             json={"files": [{"name": "a.fake", "head": _b64(b"s1")}]},

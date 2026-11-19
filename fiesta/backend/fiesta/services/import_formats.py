@@ -61,11 +61,22 @@ def describe(node: NodeConfig) -> list[dict]:
             "description": fmt.description,
             "extensions": list(fmt.extensions),
             "multi_file": fmt.multi_file,
+            "example": [path.name for path in fmt.example],
             "plugin": plugin.name,
             "options_schema": fmt.options_schema(),
         }
         for key, (plugin, fmt) in import_formats(node).items()
     ]
+
+
+def example_file(node: NodeConfig, key: str, name: str) -> Path:
+    """One of a format's example files, by name. KeyError for an unknown
+    format or a name that is not one of its example files."""
+    _plugin, fmt = import_formats(node)[key]
+    for path in fmt.example:
+        if path.name == name and path.is_file():
+            return path
+    raise KeyError(name)
 
 
 def sniff(node: NodeConfig, files: list[UploadedFile]) -> list[dict]:
