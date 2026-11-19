@@ -3193,3 +3193,48 @@ def test_changed_rows_ignores_order_blanks_and_stamped_ids():
         }
     )
     assert changed_rows(current, previous) == {"sites": {"changed": 2, "removed": 2}}
+
+
+def test_bulk_indexing_retries_failures_in_transit(monkeypatch):
+    """A bulk call that times out or gets a proxy's 5xx is sent again; a
+    request the cluster refuses, and the last failure, are raised."""
+    import asyncio
+
+    from opensearchpy import ConnectionTimeout, RequestError, TransportError
+
+    from fiesta.search import documents
+
+    waits: list[float] = []
+
+    async def no_sleep(seconds):
+        waits.append(seconds)
+
+    monkeypatch.setattr(documents.asyncio, "sleep", no_sleep)
+
+    def failing(*errors):
+        calls = []
+
+        async def fake_bulk(client, actions, **options):
+            calls.append(options)
+            if len(calls) <= len(errors):
+                raise errors[len(calls) - 1]
+
+        monkeypatch.setattr(documents, "async_bulk", fake_bulk)
+        return calls
+
+    calls = failing(ConnectionTimeout("TIMEOUT", "", None), TransportError(500, "<html>"))
+    asyncio.run(documents.bulk(None, [{"_id": "1"}], ignore_status=(404,)))
+    assert len(calls) == 3 and waits == list(documents.BULK_RETRY_WAITS[:2])
+    assert calls[0]["max_chunk_bytes"] == documents.BULK_BYTES
+    assert calls[0]["request_timeout"] == documents.BULK_TIMEOUT
+    assert calls[0]["ignore_status"] == (404,)
+
+    calls = failing(RequestError(400, "mapper_parsing_exception"))
+    with pytest.raises(RequestError):
+        asyncio.run(documents.bulk(None, [{"_id": "1"}]))
+    assert len(calls) == 1
+
+    calls = failing(*[TransportError(502, "")] * 9)
+    with pytest.raises(TransportError):
+        asyncio.run(documents.bulk(None, [{"_id": "1"}]))
+    assert len(calls) == len(documents.BULK_RETRY_WAITS) + 1

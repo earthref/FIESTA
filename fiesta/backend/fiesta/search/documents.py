@@ -1,8 +1,10 @@
 """Indexing contribution documents into the node index."""
 
+import asyncio
 import logging
 
 from opensearchpy import AsyncOpenSearch, TransportError
+from opensearchpy import ConnectionError as TransitError
 from opensearchpy.helpers import async_bulk
 
 from fiesta.domain.summarize import doc_id
@@ -52,6 +54,40 @@ async def contribution_doc_ids(
 # each with its rows) outlasts the client's 10 s default on a remote cluster,
 # which failed a whole `fiesta rebuild` (dev MagIC, 2026-11-19).
 BULK_TIMEOUT = 120
+# A bulk request's size: the helper's 100 MB default is a body a proxy in front
+# of the cluster may refuse or fail to buffer.
+BULK_BYTES = 10 * 1024 * 1024
+# A bulk call that fails in transit (a timeout, a dropped connection, a 5xx or
+# 429 from the cluster or its proxy: nginx answered one request of a dev MagIC
+# rebuild with a 500, 2026-11-19) is sent again after each of these waits, in
+# seconds. Its actions carry their ids, so repeating them changes nothing.
+BULK_RETRY_WAITS = (5, 20, 60)
+BULK_RETRY_STATUS = {429, 500, 502, 503, 504}
+
+
+async def bulk(client: AsyncOpenSearch, actions: list[dict], **options) -> None:
+    """Send index / delete actions in bounded requests, again on a failure in
+    transit (BULK_RETRY_WAITS); any other error, and the last, is raised."""
+    for wait in (*BULK_RETRY_WAITS, None):
+        try:
+            await async_bulk(
+                client,
+                actions,
+                chunk_size=500,
+                max_chunk_bytes=BULK_BYTES,
+                request_timeout=BULK_TIMEOUT,
+                **options,
+            )
+            return
+        except TransportError as error:
+            # A connection error (a timeout too) has no HTTP status.
+            transient = (
+                isinstance(error, TransitError) or error.status_code in BULK_RETRY_STATUS
+            )
+            if wait is None or not transient:
+                raise
+            logger.warning("bulk request failed (%s); again in %s s", error, wait)
+            await asyncio.sleep(wait)
 
 
 async def index_contribution_docs(
@@ -84,18 +120,16 @@ async def index_contribution_docs(
             }
         )
     if actions:
-        await async_bulk(client, actions, chunk_size=500, request_timeout=BULK_TIMEOUT)
+        await bulk(client, actions)
     if not prune:
         return
     current = {action["_id"] for action in actions}
     stale = sorted(await contribution_doc_ids(client, index, contribution_id) - current)
     if stale:
-        await async_bulk(
+        await bulk(
             client,
-            ({"_op_type": "delete", "_index": index, "_id": i} for i in stale),
-            chunk_size=500,
+            [{"_op_type": "delete", "_index": index, "_id": i} for i in stale],
             ignore_status=(404,),
-            request_timeout=BULK_TIMEOUT,
         )
     await client.indices.refresh(index=index)
 
