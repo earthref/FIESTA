@@ -166,6 +166,10 @@ context's `searchParams` (the level search's request params) from
 on the home and search pages (on the first level offering it; the node YAML's
 `search.quick_launch` can pick and order them), drawn with the sub-tab's
 optional `icon` (an icon-map name; default `chart-line`, Poles uses `globe`).
+The search page's view pads a sub-tab by 1em at each side; `fullWidth: true`
+runs it edge to edge instead (Poles' map and grid, as in its modal tab). A
+contribution modal tab's pane has no padding, so a tab that wants some adds
+its own (Rock Magnetism's `px-3`).
 
 `sidebarFilters(levelName, subTabName, config)` adds filters to the facet
 sidebar after the node's own (`filtersPanel` instead replaces the whole
