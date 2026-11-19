@@ -1646,9 +1646,11 @@ export function SearchPage(props: SearchPageProps) {
                 />
               </div>
             )}
-            {/* `ui small basic attached segment`: transparent, borderless, scrolls */}
+            {/* `ui small basic attached segment`: transparent, borderless, scrolls.
+                Relative, so the filters' absolute sr-only labels are clipped
+                here instead of stretching the page to the whole list's height. */}
             <div
-              className="flex-1 overflow-y-scroll whitespace-nowrap"
+              className="relative flex-1 overflow-y-scroll whitespace-nowrap"
               style={{
                 border: "none",
                 margin: 0,
