@@ -144,17 +144,22 @@ function drawThumbnail(
 
   if (image) {
     const out = context.createImageData(w, h);
+    // The orthographic inverse in closed form (Snyder 1987, with sin c = ρ on
+    // the unit sphere): the same lon/lat as projection.invert to 1e-12° but
+    // several times faster, which matters at ~30k pixels per globe.
+    const [sinLat0, cosLat0] = [Math.sin(centerLat * RAD), Math.cos(centerLat * RAD)];
     for (let y = 0; y < h; y++) {
+      const v = (h / 2 - y - 0.5) / radius;
       for (let x = 0; x < w; x++) {
-        const [dx, dy] = [x + 0.5 - w / 2, y + 0.5 - h / 2];
-        if (dx * dx + dy * dy > radius * radius) continue;
-        const lonLat = projection.invert?.([x + 0.5, y + 0.5]);
-        if (!lonLat) continue;
-        const column = ((Math.floor(((lonLat[0] + 180) / 360) * WIDTH) % WIDTH) + WIDTH) % WIDTH;
-        const row = Math.min(
-          Math.max(Math.floor(((90 - lonLat[1]) / 180) * HEIGHT), 0),
-          HEIGHT - 1,
-        );
+        const u = (x + 0.5 - w / 2) / radius;
+        const rho2 = u * u + v * v;
+        if (rho2 > 1) continue;
+        const cosC = Math.sqrt(1 - rho2);
+        const sinLat = Math.min(Math.max(cosC * sinLat0 + v * cosLat0, -1), 1);
+        const lat = Math.asin(sinLat) / RAD;
+        const lon = centerLon + Math.atan2(u, cosC * cosLat0 - v * sinLat0) / RAD;
+        const column = ((Math.floor(((lon + 180) / 360) * WIDTH) % WIDTH) + WIDTH) % WIDTH;
+        const row = Math.min(Math.max(Math.floor(((90 - lat) / 180) * HEIGHT), 0), HEIGHT - 1);
         const from = (row * WIDTH + column) * 4;
         const to = (y * w + x) * 4;
         out.data[to] = image.data[from] * shade;
@@ -238,6 +243,17 @@ function drawThumbnail(
 const NO_RINGS: MapRing[] = [];
 const NO_DOTS: MapDots[] = [];
 
+// Finished globes by what they show, so a row scrolled back into view is put
+// back rather than drawn again pixel by pixel (40-160 kB each, oldest dropped).
+const DRAWN_SIZE = 64;
+const drawn = new Map<string, ImageData>();
+
+interface Content {
+  markers: MapMarker[];
+  rings: MapRing[];
+  dots: MapDots[];
+}
+
 export function MapThumbnail({
   markers,
   rings = NO_RINGS,
@@ -276,21 +292,40 @@ export function MapThumbnail({
     };
   }, [body]);
 
+  // The redraw follows what the globe shows, not the arrays' identity: the
+  // search grid builds its markers on every render, and every scroll step
+  // re-renders the rows, which redrew each globe (an Edge "page isn't
+  // responding" on the Locations grid).
+  const content = useMemo(
+    () => JSON.stringify({ markers: shown, rings, dots }),
+    [shown, rings, dots],
+  );
+  const spec = useMemo(() => JSON.parse(content) as Content, [content]);
+  const dim = mapDim(theme);
+
   useEffect(() => {
-    if (canvasRef.current && image !== undefined) {
-      drawThumbnail(
-        canvasRef.current,
-        shown,
-        rings,
-        dots,
-        width,
-        height,
-        image,
-        body,
-        mapDim(theme),
-      );
+    const canvas = canvasRef.current;
+    if (!canvas || image === undefined) return;
+    const scale = Math.min(window.devicePixelRatio || 1, 2);
+    const key = [content, body, width, height, dim, scale, image ? 1 : 0].join("|");
+    const cached = drawn.get(key);
+    if (cached) {
+      canvas.width = cached.width;
+      canvas.height = cached.height;
+      canvas.getContext("2d")?.putImageData(cached, 0, 0);
+      drawn.delete(key);
+      drawn.set(key, cached);
+      return;
     }
-  }, [shown, rings, dots, width, height, image, body, theme]);
+    drawThumbnail(canvas, spec.markers, spec.rings, spec.dots, width, height, image, body, dim);
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    drawn.set(key, context.getImageData(0, 0, canvas.width, canvas.height));
+    if (drawn.size > DRAWN_SIZE) {
+      const oldest = drawn.keys().next().value;
+      if (oldest !== undefined) drawn.delete(oldest);
+    }
+  }, [content, spec, width, height, image, body, dim]);
 
   return (
     <canvas

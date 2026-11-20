@@ -1,5 +1,6 @@
 import {
   type CSSProperties,
+  memo,
   type ReactNode,
   type Ref,
   useContext,
@@ -626,8 +627,10 @@ export interface SummaryCellProps {
 }
 
 /** One grid cell: the tile its column names, for one search record. A plugin
- * may render any tile itself (plateau-calculations' age spectrum in `plot`). */
-export function SummaryCell(props: SummaryCellProps) {
+ * may render any tile itself (plateau-calculations' age spectrum in `plot`).
+ * Memoized: the virtual grid re-renders every row in range on each scroll
+ * step, and a cell's record, column and level don't change with it. */
+export const SummaryCell = memo(function SummaryCell(props: SummaryCellProps) {
   const { data: config } = useNodeConfig();
   if (!config) return null;
   return (
@@ -639,7 +642,7 @@ export function SummaryCell(props: SummaryCellProps) {
       privateKey: props.privateKey,
     }) ?? <BuiltinCell {...props} config={config} />
   );
-}
+});
 
 function BuiltinCell({
   column,
