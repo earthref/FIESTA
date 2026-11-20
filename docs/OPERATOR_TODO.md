@@ -149,6 +149,25 @@ Last updated: 2026-11-18
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
 
+## 2026-11-20 — MagIC 3.0 pole reliability columns (MagIC issue #634)
+
+- [ ] **Add the new columns to the live Meteor `magic` index mapping, then deploy
+      MagIC.** The index is `dynamic: "strict"`, so once Meteor runs the new
+      model (MagIC PR #638), a contribution that uses a new column fails to
+      index until the mapping has it. From a checkout of that PR's branch:
+      `npm run -s data-model:mapping -- --base origin/master > mapping.json`,
+      then `curl -X PUT "$OPENSEARCH/magic/_mapping" -H 'Content-Type: application/json' --data-binary @mapping.json`
+      (if `magic` is an alias, aim at the concrete index behind it). It adds 11 fields under
+      `summary.{locations,sites,specimens,_all}`: the four #634 columns plus the seven
+      added on `main` in September–October, which are re-sent unchanged if they are
+      already mapped. No reindex is needed. FIESTA needs nothing: its mapping is
+      dynamic and its model was updated in the same change.
+- [ ] **Data model sheet: set Type = String** for `pole_vv_q_criteria`,
+      `pole_bc_q_criteria` and `pole_meert_r_criteria` and drop their
+      `max(1111111)`/`max(11111)` rules (the code ships them as String), or the next
+      `data-model:build` reverts them. The sheet's obsolete JSON column also has
+      broken JSON at row 195 (`sites.vgp_k`).
+
 ## 2026-11-17 — Core row ids (row numbers and /<Node>/<id>.<row_id> links)
 
 - [ ] **Rebuild search on dev for the nodes whose data model has no `row_id` column.**
