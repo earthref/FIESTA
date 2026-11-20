@@ -302,7 +302,10 @@ configurations/rd/README.md.
 
 ## 2026-11-18 — Pole A95 filter on the locations' column
 
-- [ ] **Rebuild the MagIC search index on dev** once the "Poles view: the Locations
+- [x] **Rebuild the MagIC search index on dev** (done 2026-11-19 from the laptop, on
+  PR #274's code: 7,698 contributions, 8,489,023 docs, about 8 hours, no bulk call
+  retried; the alias `fiesta-magic` is on `fiesta-magic-build-0547657ae1ca48169e8ae9baa9e10a31`,
+  and all 1,436 pole docs with an A95 carry `summary._num.pole_alpha95`) once the "Poles view: the Locations
   level's filters" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`;
   one rebuild also covers the open MagIC items above). Pole docs now carry their
   location's filter fields (`summary._num`, `_all`, `_has`, positions), which those
@@ -312,9 +315,12 @@ configurations/rd/README.md.
   poles). Two rebuilds from the laptop on 2026-11-19 (PR #268's code) failed on a 10 s
   OpenSearch bulk timeout about ten minutes in, leaving the live index as it was; the
   same PR raises the bulk timeout to 120 s. Production needs the same rebuild at cutover.
-- [ ] **Decide what to do with the unaliased index `fiesta-magic-build-338271b603be4f59993151820cacdb0a`**
-  on the dev cluster (created 2026-10-01, 9.2 GB, the same doc count as the live one):
-  it looks like a leftover of an earlier rebuild, and deleting it frees the space.
+- [ ] **Decide what to do with the two unaliased MagIC indices on the dev cluster**:
+  `fiesta-magic-build-338271b603be4f59993151820cacdb0a` (created 2026-10-01, 9.2 GB) and
+  `fiesta-magic-build-223703d4316e421e8a3d0bcd8cc865d4` (11.8 GB, the live index until
+  the 2026-11-19 rebuild). A rebuild moves the alias and keeps the index it replaced, so
+  each one leaves about 11 GB behind; both have the live index's doc count, and deleting
+  them frees the space (the second is the only way back to the pre-rebuild index).
 
 ## 2026-11-13 — dev host unresponsive
 
