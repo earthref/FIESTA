@@ -162,11 +162,11 @@ Last updated: 2026-11-18
       added on `main` in September–October, which are re-sent unchanged if they are
       already mapped. No reindex is needed. FIESTA needs nothing: its mapping is
       dynamic and its model was updated in the same change.
-- [ ] **Data model sheet: set Type = String** for `pole_vv_q_criteria`,
-      `pole_bc_q_criteria` and `pole_meert_r_criteria` and drop their
-      `max(1111111)`/`max(11111)` rules (the code ships them as String), or the next
-      `data-model:build` reverts them. The sheet's obsolete JSON column also has
-      broken JSON at row 195 (`sites.vgp_k`).
+- [x] **Data model sheet: set Type = String** for the three `*_criteria` columns.
+      Done 2026-11-20. Still open there: the examples `101101` (`pole_vv_q_criteria`,
+      7 criteria) and `011001` (`pole_bc_q_criteria`, 5 criteria) have the wrong
+      length; 3.0.js keeps `0101101` and `11001`, so `data-model:build --check`
+      reports those two until the sheet matches.
 
 ## 2026-11-17 — Core row ids (row numbers and /<Node>/<id>.<row_id> links)
 
