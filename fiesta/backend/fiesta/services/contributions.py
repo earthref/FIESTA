@@ -6,8 +6,10 @@ identical however the workflow is driven.
 """
 
 import gzip
+import io
 import json
 import logging
+from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -17,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fiesta.db.models import Contribution, ContributionStatus, User, ValidationResult
 from fiesta.domain.parse import ParseError, parse_text
-from fiesta.domain.summarize import summarize
+from fiesta.domain.summarize import summarize_stream
 from fiesta.domain.validate import guess_data_model_version, validate_contribution
 from fiesta.nodeconfig import NodeConfig
 from fiesta.search.client import get_opensearch
@@ -115,7 +117,6 @@ async def derive_artifacts(session, node, contribution):
     import uuid
 
     from fiesta.db.models import Revision
-    from fiesta.plugins import active_plugins, add_derived_values
     from fiesta.services.revisions import fingerprint, revision_file
 
     revision = await session.get(Revision, contribution.head_revision)
@@ -144,9 +145,9 @@ async def derive_artifacts(session, node, contribution):
         "plugins": node.features.plugins,
         "created_at": datetime.now(UTC).isoformat(),
     }
-    docs = []
     try:
         parsed = parse_text(raw.decode("utf-8"))
+        del raw
         version = guess_data_model_version(node, parsed)
         provenance["data_model_version"] = version
         provenance["model_hash"] = fingerprint(node.load_data_model(version))
@@ -154,15 +155,8 @@ async def derive_artifacts(session, node, contribution):
         errors = [e.as_dict() for e in report.errors]
         warnings = [w.as_dict() for w in report.warnings]
         contributor = await session.get(User, contribution.contributor_id)
-        docs = summarize(node, parsed, contribution_meta(contribution, contributor))
-        add_derived_values(node, docs)
-        records = list(docs)
-        for plugin in active_plugins(node):
-            docs.extend(
-                plugin.derive_docs(
-                    node, parsed, contribution_meta(contribution, contributor), records
-                )
-            )
+        meta = contribution_meta(contribution, contributor)
+        summary = _summary_gz(provenance, search_docs(node, parsed, meta))
         contribution.data_model_version = version
         contribution.status = ContributionStatus.READY
         contribution.error = None
@@ -171,19 +165,14 @@ async def derive_artifacts(session, node, contribution):
         warnings = []
         contribution.status = ContributionStatus.FAILED
         contribution.error = str(exc)
+        summary = _summary_gz(provenance, [])
     storage = Storage.for_node(node)
     validation_key = f"{prefix}/validation.json"
     await storage.put_json(
         validation_key,
         {"provenance": provenance, "is_valid": not errors, "errors": errors, "warnings": warnings},
     )
-    await storage.put_bytes(
-        f"{prefix}/summary.json.gz",
-        gzip.compress(
-            json.dumps({"provenance": provenance, "documents": docs}, default=str).encode()
-        ),
-        content_type="application/gzip",
-    )
+    await storage.put_bytes(f"{prefix}/summary.json.gz", summary, content_type="application/gzip")
     session.add(
         ValidationResult(
             contribution_id=contribution.id,
@@ -194,7 +183,18 @@ async def derive_artifacts(session, node, contribution):
             warnings=warnings,
         )
     )
-    return docs
+
+
+def _summary_gz(provenance: dict, docs: Iterable[dict]) -> bytes:
+    """summary.json.gz, `{"provenance": ..., "documents": [...]}`, compressed a
+    doc at a time so only the compressed file is ever held whole."""
+    buffer = io.BytesIO()
+    with gzip.GzipFile(fileobj=buffer, mode="wb") as out:
+        out.write(f'{{"provenance": {json.dumps(provenance, default=str)}, "documents": ['.encode())
+        for n, doc in enumerate(docs):
+            out.write(((", " if n else "") + json.dumps(doc, default=str)).encode())
+        out.write(b"]}")
+    return buffer.getvalue()
 
 
 async def process_contribution(session: AsyncSession, node: NodeConfig, contribution_id: int):
@@ -205,20 +205,37 @@ async def process_contribution(session: AsyncSession, node: NodeConfig, contribu
     await session.commit()
 
 
-async def index_parsed(node, contribution, contributor, parsed, reference=None, prune=True):
-    """Index a contribution's docs; `prune=False` for an index being rebuilt
-    (it has no older docs to delete)."""
-    from fiesta.plugins import active_plugins, add_derived_values
+def search_docs(node: NodeConfig, parsed, meta: dict) -> Iterator[dict]:
+    """A contribution's search docs, one at a time: `summarize_stream`'s with
+    the plugins' derived values, then the plugins' own (`derive_docs`). Only
+    the records a plugin's docs take fields from (the levels its
+    `record_tables` name, and the contribution's) are kept for it; every
+    other doc is dropped once its consumer has sent it on."""
+    from fiesta.plugins import active_plugins, with_derived_values
 
+    plugins = active_plugins(node)
+    kept = {node.hierarchy[0], *(t for p in plugins for t in p.record_tables(node).values())}
+    records = []
+    for doc in with_derived_values(node, summarize_stream(node, parsed, meta)):
+        if doc["type"] in kept:
+            records.append(doc)
+        yield doc
+    for plugin in plugins:
+        yield from plugin.derive_docs(node, parsed, meta, records)
+
+
+async def index_parsed(node, contribution, contributor, parsed, reference=None, prune=True):
+    """Index a contribution's docs, streamed into the bulk requests as they are
+    built; `prune=False` for an index being rebuilt (it has no older docs to
+    delete)."""
     meta = contribution_meta(contribution, contributor, reference)
-    docs = summarize(node, parsed, meta)
-    add_derived_values(node, docs)
-    records = list(docs)
-    for plugin in active_plugins(node):
-        docs.extend(plugin.derive_docs(node, parsed, meta, records))
     await ensure_index(get_opensearch(), node.search_index)
     await index_contribution_docs(
-        get_opensearch(), node.search_index, contribution.id, docs, prune=prune
+        get_opensearch(),
+        node.search_index,
+        contribution.id,
+        search_docs(node, parsed, meta),
+        prune=prune,
     )
 
 

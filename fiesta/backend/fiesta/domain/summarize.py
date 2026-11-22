@@ -65,6 +65,7 @@ without changing the document contract.
 
 import math
 import statistics
+from collections.abc import Iterator
 from typing import Any
 
 from fiesta.domain.data_model import column_values
@@ -503,12 +504,29 @@ def summarize(
     parsed: ParsedContribution,
     contribution_meta: dict,
 ) -> list[dict]:
-    """Build the search docs for one contribution.
+    """Build the search docs for one contribution: its contribution doc, then
+    its hierarchy records' (`summarize_stream`, held in one list).
 
     `contribution_meta` carries the workflow fields (id, version, timestamps,
     _contributor, _contributor_id, _private_key, _is_activated, _is_latest,
     _reference, ...) merged into `summary.contribution` on every doc.
     """
+    *records, contribution = summarize_stream(node, parsed, contribution_meta)
+    return [contribution, *records]
+
+
+def summarize_stream(
+    node: NodeConfig,
+    parsed: ParsedContribution,
+    contribution_meta: dict,
+) -> Iterator[dict]:
+    """`summarize`'s docs one at a time: each hierarchy record's, in order,
+    then the contribution's last (`fiesta.plugins.with_derived_values` gives it
+    its records' derived values as they pass). A first pass reads every record
+    for what its ancestors and the contribution take from it (points, columns
+    with data, intervals, inherited geography); a record's doc (its merged
+    row, `_all`, `_num` and rows) is built only when it is yielded, so a
+    consumer that sends docs on as they come never holds them all."""
     model = node.load_data_model(node.data_model.latest)
     hierarchy = node.hierarchy
 
@@ -516,7 +534,6 @@ def summarize(
     contribution_summary: dict[str, Any] = dict(contribution_rows[0]) if contribution_rows else {}
     contribution_summary.update(contribution_meta)
 
-    docs: list[dict] = []
     all_values: dict[str, set] = {}
     all_numbers = _Numbers()
     # The contribution's intervals: every table's rows' (the ages table's too).
@@ -533,8 +550,17 @@ def summarize(
     # position, only without any.
     placements: list[dict[str, Any]] = []
     named: dict[tuple[str, str], dict[str, Any]] = {}
-    # Each named record's geography, own and inherited ({("sites", "S1"): {...}}).
-    inherited: dict[tuple[str, str], dict[str, set]] = {}
+    # Each named record's geography, own and inherited, for the levels below
+    # it ({("sites", "S1"): (("location", {...}), ...)}).
+    inherited: dict[tuple[str, str], tuple[tuple[str, frozenset], ...]] = {}
+    # One frozen copy of each distinct value the first pass keeps per record
+    # (geography, columns with data): a level's records mostly share them, and
+    # a large contribution's 100k records' own copies took 300 MB.
+    shared: dict = {}
+
+    def share(value):
+        return shared.setdefault(value, value)
+
     geography = node.search.geography.columns
     areas = node.area_tables
     bodies = planetary_bodies(node, parsed)
@@ -584,18 +610,21 @@ def summarize(
                     for ancestor, column in ancestors
                     if (key := (ancestor, str(merged.get(column) or ""))) in inherited
                 ),
-                {},
+                (),
             )
-            for column, values in above.items():
+            for column, values in above:
                 bucket = row_all.setdefault(column, set())
                 if len(bucket) < MAX_ALL_VALUES:
                     bucket.update(values)
-            if name not in (None, ""):
-                inherited.setdefault(
-                    (level, str(name)),
-                    {c: set(row_all[c]) for c in geography if row_all.get(c)},
-                )
-            own_has = _columns_with_data(group, has_columns.get(level, set()))
+            if name not in (None, "") and index < len(levels) - 1:
+                key = (level, str(name))
+                if key not in inherited:
+                    inherited[key] = share(
+                        tuple(
+                            (c, share(frozenset(row_all[c]))) for c in geography if row_all.get(c)
+                        )
+                    )
+            own_has = share(frozenset(_columns_with_data(group, has_columns.get(level, set()))))
             contribution_has.setdefault(level, set()).update(own_has)
             row_numbers = _Numbers()
             row_numbers.add_rows(node, number_columns, group)
@@ -616,22 +645,14 @@ def summarize(
                 )
             if geo is not None and name not in (None, ""):
                 positions.setdefault(level, {}).setdefault(str(name), geo)
-            doc = {
-                "type": level,
-                "summary": {
-                    "contribution": contribution_summary,
-                    level: {**merged, "_n_results": len(group)},
-                    "_all": _finalize_all(row_all, None),
-                    **_num_block(row_numbers),
-                },
-                # Each row with its core id (/<Node>/<id>.<row_id>), whatever
-                # the file stamps or the data model declares.
-                "rows": [
-                    {**row, "row_id": str(rid)} if (rid := row_ids.get(id(row))) else row
-                    for row in group
-                ],
+            # Its doc is built when it is yielded, from these (`record_doc`).
+            record = {
+                "level": level,
+                "group": group,
+                "columns_def": columns_def,
+                "number_columns": number_columns,
+                "above": above,
             }
-            docs.append(doc)
             # The nearest record above it that it names.
             parent = next(
                 (
@@ -641,7 +662,7 @@ def summarize(
                 ),
                 None,
             )
-            placement = {"doc": doc, "body": body, "points": points, "own": own, "geo": geo}
+            placement = {"record": record, "body": body, "points": points, "own": own, "geo": geo}
             own_intervals = _Intervals()
             own_intervals.add_rows(node, group, level)
             placements.append(
@@ -687,7 +708,9 @@ def summarize(
             above["intervals_below"].update(placement["intervals"])
             above["intervals_below"].update(placement["intervals_below"])
             for table, columns in placement["has"].items():
-                above["has"].setdefault(table, set()).update(columns)
+                held = above["has"].get(table)
+                if held is None or not columns <= held:
+                    above["has"][table] = share(columns if held is None else held | columns)
             for key, point in placement["below"].items():
                 if len(above["below"]) >= MAX_GEO_POINTS:
                     break
@@ -696,17 +719,15 @@ def summarize(
     points: dict[PointKey, dict] = {}
     for placement in placements:
         mapped = placement["below" if placement["area"] else "points"]
-        body, geo, own = (placement[k] for k in ("body", "geo", "own"))
-        placement["doc"]["summary"].update(_has_block(placement["has"]))
-        intervals = placement["intervals"] or placement["intervals_below"]
-        placement["doc"]["summary"].update(intervals.finalize())
-        all_block = placement["doc"]["summary"]["_all"]
-        all_block.update(_placements(mapped) if mapped else placed(geo, body) if geo else {})
+        own, body = placement["own"], placement["body"]
         for key, point in (mapped or ({_point_key(own, body): own} if own else {})).items():
             if len(points) < MAX_GEO_POINTS:
                 points.setdefault(key, point)
 
-    contribution_doc = {
+    for placement in placements:
+        yield _record_doc(node, contribution_summary, row_ids, placement)
+
+    yield {
         "type": "contribution",
         "summary": {
             "contribution": contribution_summary,
@@ -721,7 +742,45 @@ def summarize(
             **level_counts,
         },
     }
-    return [contribution_doc, *docs]
+
+
+def _record_doc(
+    node: NodeConfig, contribution_summary: dict, row_ids: dict[int, int], placement: dict
+) -> dict:
+    """A hierarchy record's doc from what `summarize_stream`'s first pass kept
+    of it (its rows, the geography it inherits, and its and its descendants'
+    points, columns with data and intervals)."""
+    record = placement["record"]
+    level, group = record["level"], record["group"]
+    merged = merge_rows(group)
+    row_all: dict[str, set] = {}
+    _collect_all(record["columns_def"], group, row_all)
+    for column, values in record["above"]:
+        bucket = row_all.setdefault(column, set())
+        if len(bucket) < MAX_ALL_VALUES:
+            bucket.update(values)
+    row_numbers = _Numbers()
+    row_numbers.add_rows(node, record["number_columns"], group)
+    summary = {
+        "contribution": contribution_summary,
+        level: {**merged, "_n_results": len(group)},
+        "_all": _finalize_all(row_all, None),
+        **_num_block(row_numbers),
+    }
+    summary.update(_has_block(placement["has"]))
+    summary.update((placement["intervals"] or placement["intervals_below"]).finalize())
+    mapped = placement["below" if placement["area"] else "points"]
+    geo, body = placement["geo"], placement["body"]
+    summary["_all"].update(_placements(mapped) if mapped else placed(geo, body) if geo else {})
+    return {
+        "type": level,
+        "summary": summary,
+        # Each row with its core id (/<Node>/<id>.<row_id>), whatever the
+        # file stamps or the data model declares.
+        "rows": [
+            {**row, "row_id": str(rid)} if (rid := row_ids.get(id(row))) else row for row in group
+        ],
+    }
 
 
 def doc_id(contribution_id: int, doc_type: str, ordinal: int) -> str:

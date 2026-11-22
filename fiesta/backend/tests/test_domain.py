@@ -3139,9 +3139,7 @@ def test_every_row_has_a_core_id_that_stamp_ids_writes():
             "contribution": {"columns": {"id": {}}},
             "sections": {"columns": {"contribution_id": {}, "row_id": {}, "section": {}}},
             "notes": {"columns": {"note": {}}},
-            "measurements": {
-                "columns": {"contribution_id": {}, "row_id": {}, "measurement": {}}
-            },
+            "measurements": {"columns": {"contribution_id": {}, "row_id": {}, "measurement": {}}},
         }
     }
     text = (
@@ -3238,3 +3236,52 @@ def test_bulk_indexing_retries_failures_in_transit(monkeypatch):
     with pytest.raises(TransportError):
         asyncio.run(documents.bulk(None, [{"_id": "1"}]))
     assert len(calls) == len(documents.BULK_RETRY_WAITS) + 1
+
+
+def test_indexing_streams_docs_into_bulk_chunks(monkeypatch, magic_node):
+    """A contribution's docs are built as their bulk chunk is sent, never all
+    at once (the outbox reindex of a 100k-record contribution held them all
+    and left the dev host unresponsive), and are the docs `summarize` builds;
+    summary.json.gz is written from the same stream."""
+    import asyncio
+    import gzip
+    import json
+    import types
+
+    from fiesta.domain.summarize import summarize_stream
+    from fiesta.search import documents
+    from fiesta.services.contributions import _summary_gz, search_docs
+
+    built = 0
+
+    def docs(n):
+        nonlocal built
+        for i in range(n):
+            built += 1
+            yield {"type": "sites", "i": i}
+
+    chunks: list[tuple[int, int]] = []
+
+    async def fake_bulk(client, actions, **options):
+        chunks.append((len(actions), built))
+
+    async def no_refresh(index):
+        pass
+
+    monkeypatch.setattr(documents, "async_bulk", fake_bulk)
+    client = types.SimpleNamespace(indices=types.SimpleNamespace(refresh=no_refresh))
+    chunk = documents.BULK_CHUNK
+    asyncio.run(
+        documents.index_contribution_docs(client, "magic", 1, docs(2 * chunk + 1), prune=False)
+    )
+    # Each chunk went out once it was full: no doc built ahead of its chunk.
+    assert chunks == [(chunk, chunk), (chunk, 2 * chunk), (1, 2 * chunk + 1)]
+
+    parsed = parse_text(MAGIC_TEXT)
+    *records, contribution = summarize_stream(magic_node, parsed, {"id": 1})
+    assert contribution["type"] == "contribution"
+    assert summarize(magic_node, parsed, {"id": 1}) == [contribution, *records]
+    streamed = list(search_docs(magic_node, parsed, {"id": 1}))
+    assert {d["type"] for d in streamed} >= {"contribution", "locations", "sites"}
+    summary = json.loads(gzip.decompress(_summary_gz({"run": 1}, iter(streamed))))
+    assert summary == json.loads(json.dumps({"provenance": {"run": 1}, "documents": streamed}))

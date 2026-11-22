@@ -224,10 +224,12 @@ class FiestaPlugin:
         time (same shape as fiesta.domain.summarize docs: {type, summary,
         rows?}). Re-runs whenever the contribution is (re)processed and on
         `fiesta rebuild`, so derived data is always reproducible. `records`
-        are the docs `summarize` built for it (the contribution's and its
-        hierarchy records', with the plugins' derived values), for a plugin
-        whose docs take a record's fields (`record_tables`); None from a
-        caller without them."""
+        are docs `summarize` built for it, with the plugins' derived values,
+        for a plugin whose docs take a record's fields: when indexing, only
+        the contribution's and those of the levels the active plugins'
+        `record_tables` name, in record order (the other records' docs are
+        sent on, and dropped, as they are built); None from a caller
+        without them."""
         return []
 
     def record_tables(self, node: NodeConfig) -> dict[str, str]:
