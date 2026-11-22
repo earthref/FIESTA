@@ -26,6 +26,7 @@ import importlib.abc
 import importlib.util
 import inspect
 import sys
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 
 from fiesta.nodeconfig import CORE_GRID_CELLS
@@ -112,32 +113,45 @@ def add_derived_values(node, docs: list[dict]) -> None:
     (text) or `summary._num.<name>` (numbers), and the contribution doc's,
     the union of its records' (capped as summarize caps a column, keeping
     a number column's greatest)."""
+    contribution = [d for d in docs if d.get("type") == node.hierarchy[0]]
+    others = [d for d in docs if d.get("type") != node.hierarchy[0]]
+    for _ in with_derived_values(node, [*others, *contribution]):
+        pass
+
+
+def with_derived_values(node, docs: Iterable[dict]) -> Iterator[dict]:
+    """`add_derived_values` one doc at a time, for docs as
+    `fiesta.domain.summarize.summarize_stream` yields them: each record doc
+    gets its values as it passes, the contribution doc (which comes after
+    them) their union."""
     from fiesta.domain.summarize import MAX_ALL_VALUES
 
+    def merge(column: list, values) -> None:
+        merged = sorted({*column, *values})
+        if len(merged) > MAX_ALL_VALUES:
+            merged = [*merged[: MAX_ALL_VALUES - 1], merged[-1]]
+        column[:] = merged
+
     levels = set(node.hierarchy[1:])
-    contribution = next((d for d in docs if d.get("type") == node.hierarchy[0]), None)
-    for plugin in active_plugins(node):
-        kinds = plugin.derived_columns(node)
-        if not kinds:
-            continue
-        for doc in docs:
-            if doc.get("type") not in levels:
-                continue
-            derived = plugin.derive_values(node, doc["type"], doc.get("rows") or [])
-            for name, values in derived.items():
-                kind = kinds.get(name)
-                if kind is None or not values:
-                    continue
-                block = "_num" if kind == "number" else "_all"
-                cast = float if kind == "number" else str
-                for target in (doc, contribution):
-                    if target is None:
+    plugins = [(p, kinds) for p in active_plugins(node) if (kinds := p.derived_columns(node))]
+    # The records' values so far, capped as they are merged in.
+    union: dict[tuple[str, str], list] = {}
+    for doc in docs:
+        if doc.get("type") in levels:
+            for plugin, kinds in plugins:
+                derived = plugin.derive_values(node, doc["type"], doc.get("rows") or [])
+                for name, values in derived.items():
+                    kind = kinds.get(name)
+                    if kind is None or not values:
                         continue
-                    column = target["summary"].setdefault(block, {}).setdefault(name, [])
-                    merged = sorted({*column, *(cast(v) for v in values)})
-                    if len(merged) > MAX_ALL_VALUES:
-                        merged = [*merged[: MAX_ALL_VALUES - 1], merged[-1]]
-                    column[:] = merged
+                    block = "_num" if kind == "number" else "_all"
+                    cast = [(float if kind == "number" else str)(v) for v in values]
+                    merge(doc["summary"].setdefault(block, {}).setdefault(name, []), cast)
+                    merge(union.setdefault((block, name), []), cast)
+        elif doc.get("type") == node.hierarchy[0]:
+            for (block, name), values in union.items():
+                merge(doc["summary"].setdefault(block, {}).setdefault(name, []), values)
+        yield doc
 
 
 def active_plugins(node) -> list[FiestaPlugin]:

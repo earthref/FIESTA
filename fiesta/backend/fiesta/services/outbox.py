@@ -68,7 +68,10 @@ async def drain(node, limit=100, contribution_ids=None):
                 else:
                     raw = await revision_file(session, node, contribution)
                     try:
+                        # Only the parsed file is held whole: its docs go
+                        # into the bulk requests as they are built.
                         parsed = parse_text(raw.decode("utf-8"))
+                        del raw
                     except (ParseError, UnicodeDecodeError):
                         await delete_contribution_docs(
                             get_opensearch(), node.search_index, contribution.id

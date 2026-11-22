@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from collections.abc import Iterable
 
 from opensearchpy import AsyncOpenSearch, TransportError
 from opensearchpy import ConnectionError as TransitError
@@ -63,11 +64,28 @@ BULK_BYTES = 10 * 1024 * 1024
 # seconds. Its actions carry their ids, so repeating them changes nothing.
 BULK_RETRY_WAITS = (5, 20, 60)
 BULK_RETRY_STATUS = {429, 500, 502, 503, 504}
+# Actions taken from the iterable per bulk call: a generator's docs are built
+# only as their chunk is sent, so a large contribution is never held whole
+# (MagIC 19767's 109k docs, held at once by the outbox's reindex, took 1 GB
+# on top of the parsed file; that left fiesta-ct unresponsive).
+BULK_CHUNK = 500
 
 
-async def bulk(client: AsyncOpenSearch, actions: list[dict], **options) -> None:
-    """Send index / delete actions in bounded requests, again on a failure in
-    transit (BULK_RETRY_WAITS); any other error, and the last, is raised."""
+async def bulk(client: AsyncOpenSearch, actions: Iterable[dict], **options) -> None:
+    """Send index / delete actions BULK_CHUNK at a time, consuming ACTIONS as
+    it goes; each chunk again on a failure in transit (BULK_RETRY_WAITS). Any
+    other error, and the last, is raised (the chunks before it stay sent)."""
+    chunk: list[dict] = []
+    for action in actions:
+        chunk.append(action)
+        if len(chunk) >= BULK_CHUNK:
+            await _bulk_chunk(client, chunk, **options)
+            chunk = []
+    if chunk:
+        await _bulk_chunk(client, chunk, **options)
+
+
+async def _bulk_chunk(client: AsyncOpenSearch, actions: list[dict], **options) -> None:
     for wait in (*BULK_RETRY_WAITS, None):
         try:
             await async_bulk(
@@ -81,9 +99,7 @@ async def bulk(client: AsyncOpenSearch, actions: list[dict], **options) -> None:
             return
         except TransportError as error:
             # A connection error (a timeout too) has no HTTP status.
-            transient = (
-                isinstance(error, TransitError) or error.status_code in BULK_RETRY_STATUS
-            )
+            transient = isinstance(error, TransitError) or error.status_code in BULK_RETRY_STATUS
             if wait is None or not transient:
                 raise
             logger.warning("bulk request failed (%s); again in %s s", error, wait)
@@ -94,10 +110,11 @@ async def index_contribution_docs(
     client: AsyncOpenSearch,
     index: str,
     contribution_id: int,
-    docs: list[dict],
+    docs: Iterable[dict],
     prune: bool = True,
 ) -> None:
     """Write a contribution's docs, then delete only its stale ones, by id.
+    DOCS may be a generator: each is built only as its bulk chunk is sent.
 
     Doc ids are deterministic, so a write replaces a doc in place. Stale docs (a
     record the new revision no longer has) go after the write, never by a
@@ -107,23 +124,18 @@ async def index_contribution_docs(
     `prune` (an index being rebuilt, which has no older docs) nothing is
     looked up or deleted."""
     counters: dict[str, int] = {}
-    actions = []
-    for doc in docs:
-        ordinal = counters.get(doc["type"], 0)
-        counters[doc["type"]] = ordinal + 1
-        actions.append(
-            {
-                "_op_type": "index",
-                "_index": index,
-                "_id": doc_id(contribution_id, doc["type"], ordinal),
-                "_source": doc,
-            }
-        )
-    if actions:
-        await bulk(client, actions)
+    current: set[str] = set()
+
+    def actions():
+        for doc in docs:
+            ordinal = counters.get(doc["type"], 0)
+            counters[doc["type"]] = ordinal + 1
+            current.add(_id := doc_id(contribution_id, doc["type"], ordinal))
+            yield {"_op_type": "index", "_index": index, "_id": _id, "_source": doc}
+
+    await bulk(client, actions())
     if not prune:
         return
-    current = {action["_id"] for action in actions}
     stale = sorted(await contribution_doc_ids(client, index, contribution_id) - current)
     if stale:
         await bulk(
