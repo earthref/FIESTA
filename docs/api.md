@@ -700,7 +700,9 @@ exclude_table}`.
 
 ### Workspaces (`/v2/{repository}/workspaces`, Bearer or Basic)
 
-Shared workspaces: owners control membership, editors save, viewers read.
+Shared workspaces: owners control membership, editors save, viewers read. In
+data-source mode the list still answers and every write (POST, PUT, DELETE) is a
+409 naming where to contribute, as under `private/contributions`.
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
@@ -713,7 +715,8 @@ Shared workspaces: owners control membership, editors save, viewers read.
 ### Data-source sync (`/v2/{repository}/source`, node admin)
 
 A node in data-source mode (`FIESTA_CONTRIBUTIONS_MODE`, `contributions_mode` in
-its config) refuses every write under `private/contributions` with a 409 and is
+its config) refuses every write under `private/contributions`, `private/requests`
+and `workspaces` with a 409 and is
 fed by its sync script instead. Details: [data-sources.md](data-sources.md).
 
 | Method | Path | Body | Returns |

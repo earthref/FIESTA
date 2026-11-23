@@ -22,6 +22,8 @@ In `source` mode:
   activate, new version, edit, delete, attachments) is a 409 naming where to
   contribute (`node.links.website`). The `/v1` private create/update/append/delete
   routes refuse the same way, in their Koa-style error body.
+- `/v2/{node}/workspaces` (shared workspaces) and the admin-assistance requests
+  likewise answer reads and refuse every write with that 409.
 - `GET /v2/{node}/config` carries `contributions_mode: "source"`; the SPA's
   upload page and private workspace show that notice instead of the upload button.
   The home page's Upload Tool and Private Workspace cards and the search page's
