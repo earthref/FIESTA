@@ -37,31 +37,42 @@ export interface OrderableEntry {
   chips: readonly unknown[];
 }
 
-/** The sidebar's entries in order: the pinned ones first, in pin order (a pin
- * matches an entry's key or label, in any case; one matching none is
- * skipped), then the applied ones, then the rest by count, most first, the
- * configured order breaking ties. An entry no record has a value for is
- * hidden unless it is pinned or applied: a pinned filter with nothing to
- * pick shows (disabled) in its place. */
-export function orderSidebarEntries<T extends OrderableEntry>(entries: T[], pinned: string[]): T[] {
+/** The sidebar's entries in order, as two lists drawn with a rule between
+ * them (so the pins' out-of-order counts read as intended): `pinned`, in pin
+ * order (a pin matches an entry's key or label, in any case; one matching
+ * none is skipped), and `rest`: the applied ones, then the others by count,
+ * most first, the given order breaking ties. An entry no record has a value
+ * for is left out unless it is pinned or applied: a pinned filter with
+ * nothing to pick shows (disabled) in its place. */
+export function orderSidebarEntries<T extends OrderableEntry>(
+  entries: T[],
+  pinned: string[],
+): { pinned: T[]; rest: T[] } {
   const pins = pinned.map((name) => name.trim().toLowerCase());
   const pinOf = (entry: T) => {
     const key = entry.key.toLowerCase();
     const label = entry.label.toLowerCase();
-    const index = pins.findIndex((pin) => pin === key || pin === label);
-    return index < 0 ? Number.POSITIVE_INFINITY : index;
+    return pins.findIndex((pin) => pin === key || pin === label);
   };
-  return entries
-    .map((entry, order) => ({ entry, order, pin: pinOf(entry), applied: entry.chips.length > 0 }))
-    .filter(
-      ({ entry, pin, applied }) => pin !== Number.POSITIVE_INFINITY || applied || entry.count !== 0,
-    )
-    .sort(
-      (a, b) =>
-        (a.pin === b.pin ? 0 : a.pin < b.pin ? -1 : 1) ||
-        Number(b.applied) - Number(a.applied) ||
-        (b.entry.count ?? -1) - (a.entry.count ?? -1) ||
-        a.order - b.order,
-    )
-    .map(({ entry }) => entry);
+  const ranked = entries.map((entry, order) => ({
+    entry,
+    order,
+    pin: pinOf(entry),
+    applied: entry.chips.length > 0,
+  }));
+  return {
+    pinned: ranked
+      .filter(({ pin }) => pin >= 0)
+      .sort((a, b) => a.pin - b.pin || a.order - b.order)
+      .map(({ entry }) => entry),
+    rest: ranked
+      .filter(({ entry, pin, applied }) => pin < 0 && (applied || entry.count !== 0))
+      .sort(
+        (a, b) =>
+          Number(b.applied) - Number(a.applied) ||
+          (b.entry.count ?? -1) - (a.entry.count ?? -1) ||
+          a.order - b.order,
+      )
+      .map(({ entry }) => entry),
+  };
 }

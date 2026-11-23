@@ -119,12 +119,20 @@ export interface PluginFilterContext {
   filterCount?: number | null;
 }
 
-/** A filter a plugin adds to the search sidebar, after the node's own. */
+/** A filter a plugin adds to the search sidebar. It is ordered with the node's
+ * own (lib/pinned-filters.ts): pinned by its `label` or `key`, else by its
+ * count, hidden at zero unless pinned or applied. */
 export interface PluginFilter {
   key: string;
+  /** Its name in the sidebar, as `search.pinned_filters` and the filter search
+   * match it ("Periodic Table of Elements"). */
+  label: string;
   /** The query-token fields it sets; the sidebar's Clear removes them. A
    * field the search API counts must be a facet (a plugin's `search_facets`). */
   fields: string[];
+  /** false: its first field is not a facet (a radius token), so it shows no
+   * count and sorts after the counted filters; default counted. */
+  counted?: boolean;
   render: (ctx: PluginFilterContext) => ReactNode;
 }
 

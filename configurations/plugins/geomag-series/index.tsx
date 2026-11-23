@@ -47,6 +47,7 @@ const geomagSeriesPlugin: PluginModule = {
     if (column) {
       filters.push({
         key: "geomag-series-name",
+        label: options.name_search_label,
         fields: [column],
         render: (ctx) => (
           <NameSearchFilter ctx={ctx} column={column} label={options.name_search_label} />
@@ -56,7 +57,10 @@ const geomagSeriesPlugin: PluginModule = {
     if (options.radius_search) {
       filters.push({
         key: "geomag-series-radius",
+        label: "Radius Search",
         fields: [RADIUS_TOKEN],
+        // A position filter, not a facet: `facet:radius` would count 0.
+        counted: false,
         render: (ctx) => <RadiusFilter ctx={ctx} label="Radius Search" />,
       });
     }

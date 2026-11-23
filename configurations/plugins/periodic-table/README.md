@@ -27,7 +27,9 @@ Options (`plugins.periodic-table` in the node YAML):
 No routes: the backend's `search_facets` lets `GET /v2/{node}/search/{table}?facet=<column>`
 count the column, and the UI reuses the core facet counting and query tokens
 (the `sidebarFilters` hook, [docs/plugins.md](../../../docs/plugins.md)). The
-sidebar entry shows how many matches have an element (the host's `filterCount`);
+sidebar entry shows how many matches have an element (the host's `filterCount`),
+which places it among the other filters, unless the node pins it by its `label`
+(KdD: `search.pinned_filters: [Periodic Table of Elements, ...]`);
 the modal colors each element by its category in the conventional pastels,
 with a legend.
 

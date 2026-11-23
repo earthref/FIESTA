@@ -182,8 +182,13 @@ contribution modal tab's pane has no padding, so a tab that wants some adds
 its own (Rock Magnetism's `px-3`).
 
 `sidebarFilters(levelName, subTabName, config)` adds filters to the facet
-sidebar after the node's own (`filtersPanel` instead replaces the whole
-sidebar). Each `PluginFilter` names the query-token `fields` it sets, so the
+sidebar (`filtersPanel` instead replaces the whole sidebar). Since 2026-11-23
+they are ordered with the node's own (`lib/pinned-filters.ts`): a node's
+`search.pinned_filters` pins one by its `label` (also its name in the
+"Find a filter" search) or by `plugin:<key>`, and an unpinned one sorts by its
+count, hidden at zero unless applied; `counted: false` (a filter whose first
+field is not a facet, GEOMAGIA's Radius Search) shows no count and sorts after
+the counted ones. Each `PluginFilter` names the query-token `fields` it sets, so the
 sidebar's Clear removes them, and renders from a `PluginFilterContext`: the
 search's `q` and `setQuery`, the `table` its counts are on, `paramsFor(q)`
 (the request params a core facet modal counts with: ranges, bbox, grid
