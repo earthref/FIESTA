@@ -265,7 +265,7 @@ export function ContributionGrid({
         let chars = c.length + 3;
         for (const row of table.rows.slice(0, 50))
           chars = Math.max(chars, (row.cells[c] ?? "").length);
-        return Math.min(320, Math.max(72, chars * 7.5 + 18));
+        return Math.min(320, Math.max(72, chars * 8 + 18));
       }),
     [columns, active],
   );
@@ -575,7 +575,7 @@ export function ContributionGrid({
               aria-selected={selected}
               onClick={() => switchTable(name)}
               className={cx(
-                "-mb-px flex items-center gap-1.5 rounded-t-md border px-2.5 py-1.5 text-xs",
+                "-mb-px flex items-center gap-1.5 rounded-t-md border px-2.5 py-1.5 text-[13px]",
                 selected
                   ? "border-gray-200 border-b-surface bg-surface font-semibold text-ink-strong"
                   : "border-transparent text-gray-600 hover:bg-gray-50",
@@ -600,7 +600,7 @@ export function ContributionGrid({
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs">
+      <div className="flex flex-wrap items-center gap-2 text-[13px]">
         <ToolButton onClick={undo} disabled={!canUndo || readOnly} title="Undo (Ctrl+Z)">
           Undo
         </ToolButton>
@@ -627,7 +627,7 @@ export function ContributionGrid({
       </div>
 
       {tableIssues.length > 0 && (
-        <ul className="max-h-24 overflow-y-auto rounded-md border border-gray-200 bg-panel-soft px-3 py-1.5 text-xs">
+        <ul className="max-h-24 overflow-y-auto rounded-md border border-gray-200 bg-panel-soft px-3 py-1.5 text-[13px]">
           {tableIssues.map((issue, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: issues have no id
             <li key={i} className={issue.kind === "errors" ? "text-red-800" : "text-amber-800"}>
@@ -652,7 +652,7 @@ export function ContributionGrid({
             onCopy={onCopy}
             onCut={onCut}
             onPaste={onPaste}
-            className="relative h-[55vh] overflow-auto rounded-md border border-gray-200 bg-surface text-xs outline-hidden focus-visible:ring-2 focus-visible:ring-node"
+            className="relative h-[55vh] overflow-auto rounded-md border border-gray-200 bg-surface text-[13px] outline-hidden focus-visible:ring-2 focus-visible:ring-node"
           >
             <div
               style={{
@@ -807,7 +807,7 @@ export function ContributionGrid({
             </div>
           </div>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
             <span>
               {table.rows.length
                 ? `Rows ${offset + 1}–${offset + pageRows.length} of ${table.rows.length.toLocaleString()}`
@@ -1022,7 +1022,7 @@ function CellEditor({
             onCancel();
           }
         }}
-        className="absolute inset-0 h-full w-full bg-surface px-1.5 text-xs text-ink-strong outline-2 -outline-offset-2 outline-node"
+        className="absolute inset-0 h-full w-full bg-surface px-1.5 text-[13px] text-ink-strong outline-2 -outline-offset-2 outline-node"
       />
       {matches.length > 0 && (
         <div
@@ -1103,7 +1103,7 @@ function SidePanel({
   return (
     <aside
       aria-label="Selected cell"
-      className="flex max-h-[62vh] w-full shrink-0 flex-col gap-2 overflow-y-auto rounded-md border border-gray-200 bg-panel-soft p-3 text-xs lg:w-80"
+      className="flex max-h-[62vh] w-full shrink-0 flex-col gap-2 overflow-y-auto rounded-md border border-gray-200 bg-panel-soft p-3 text-[13px] lg:w-80"
     >
       <p className="text-gray-600">
         {validationPending
@@ -1267,7 +1267,7 @@ function ContextMenu({
     <div
       ref={ref}
       role="menu"
-      className="fixed z-[60] min-w-44 rounded-md border border-gray-200 bg-surface py-1 text-xs shadow-xl"
+      className="fixed z-[60] min-w-44 rounded-md border border-gray-200 bg-surface py-1 text-[13px] shadow-xl"
       style={{
         left: Math.min(menu.x, window.innerWidth - 190),
         top: Math.min(menu.y, window.innerHeight - 200),

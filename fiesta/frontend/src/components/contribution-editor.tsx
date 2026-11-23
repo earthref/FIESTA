@@ -194,15 +194,15 @@ export function ContributionEditor({
               onClick={() => switchMode(m)}
               className={
                 mode === m
-                  ? "bg-node px-3 py-1 text-xs font-semibold text-white"
-                  : "px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                  ? "bg-node px-3 py-1 text-[13px] font-semibold text-white"
+                  : "px-3 py-1 text-[13px] text-gray-700 hover:bg-gray-50"
               }
             >
               {m === "grid" ? "Grid" : "Text"}
             </button>
           ))}
         </div>
-        {dirty && <span className="text-xs font-medium text-purple-700">Unsaved edits</span>}
+        {dirty && <span className="text-[13px] font-medium text-purple-700">Unsaved edits</span>}
         <span className="ml-auto flex gap-2">
           <Button disabled={immutable || busy || !dirty} onClick={save}>
             {busy ? "Saving…" : "Save revision"}
@@ -242,7 +242,7 @@ export function ContributionEditor({
           </label>
           <textarea
             id="contribution-text"
-            className="my-2 min-h-[55vh] w-full border border-gray-300 bg-surface p-2 font-mono text-xs"
+            className="my-2 min-h-[55vh] w-full border border-gray-300 bg-surface p-2 font-mono text-[13px]"
             value={textDraft ?? value?.text ?? ""}
             disabled={immutable || busy || !value}
             onChange={(e) => setTextDraft(e.target.value)}
@@ -342,7 +342,6 @@ export function ContributionEditor({
               </span>
               <Button
                 variant="danger"
-                size="sm"
                 disabled={busy}
                 onClick={async () => {
                   if (await run(() => api(`${base}/deactivate`, { method: "POST" }))) {
@@ -355,7 +354,6 @@ export function ContributionEditor({
               </Button>
               <Button
                 variant="secondary"
-                size="sm"
                 disabled={busy}
                 onClick={() => setConfirmUnpublish(false)}
               >
@@ -363,7 +361,7 @@ export function ContributionEditor({
               </Button>
             </div>
           ) : (
-            <Button variant="danger" size="sm" onClick={() => setConfirmUnpublish(true)}>
+            <Button variant="danger" onClick={() => setConfirmUnpublish(true)}>
               Unpublish
             </Button>
           )}

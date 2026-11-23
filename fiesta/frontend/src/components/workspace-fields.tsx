@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import type { ContributionOut, Vocabularies, WorkspaceField } from "../lib/types";
 import { cx } from "../lib/utils";
@@ -55,13 +55,16 @@ function formatLinks(links: Link[]): string {
 /** One row of controls in a workspace card's Details column. */
 const segment = { marginBottom: "0.5em" } as const;
 
-const labelClass = (warn: boolean) =>
+/** A Details row's label, red while a required value is missing (also the
+ * card's DOI row). */
+export const labelClass = (warn: boolean) =>
   cx(
-    "flex shrink-0 items-center whitespace-nowrap rounded-l-sm px-[0.8em] text-[12px] font-bold",
+    "flex shrink-0 items-center whitespace-nowrap rounded-l-sm px-[0.8em] text-[13px] font-bold",
     warn ? "bg-danger text-white" : "bg-panel-strong text-gray-700",
   );
 
-const inputClass =
+/** A Details row's text input (also the card's DOI row), so every row is one height. */
+export const inputClass =
   "min-w-0 flex-1 border border-gray-300 bg-surface px-2 py-1 text-[13px] text-gray-900 placeholder:text-ink-faint focus:border-node focus:outline-hidden";
 
 function SaveButton({
@@ -79,7 +82,7 @@ function SaveButton({
       onClick={onClick}
       disabled={!dirty || pending}
       className={cx(
-        "shrink-0 rounded-r-sm px-2.5 py-1 text-[12px] font-medium whitespace-nowrap disabled:cursor-not-allowed",
+        "shrink-0 rounded-r-sm px-2.5 py-1 text-[13px] font-medium whitespace-nowrap disabled:cursor-not-allowed",
         dirty
           ? "bg-danger text-white hover:bg-danger-dark disabled:opacity-60"
           : "border border-l-0 border-gray-300 bg-surface text-gray-700 opacity-50",
@@ -148,7 +151,7 @@ function MultiSelect({
       {value.map((item) => (
         <span
           key={item}
-          className="inline-flex items-center gap-1 rounded-sm bg-panel-strong px-1.5 py-0.5 text-[12px] text-gray-800"
+          className="inline-flex items-center gap-1 rounded-sm bg-panel-strong px-1.5 py-0.5 text-[13px] text-gray-800"
         >
           {item}
           <button
@@ -228,21 +231,29 @@ function MultiSelect({
   );
 }
 
-/** The editable fields' segments of one in-preparation contribution card. */
+/** The editable fields' rows of one in-preparation contribution card:
+ * Labs, link entries and text fields, then `children` (the card's DOI row),
+ * then a "+" button per links field. A contribution without a file yet shows
+ * every field as a "+" button until it is opened or filled in; its first save
+ * starts the file. */
 export function WorkspaceFields({
   contribution,
   fields,
   disabled,
+  children,
 }: {
   contribution: ContributionOut;
   fields: WorkspaceField[];
   disabled: boolean;
+  children?: ReactNode;
 }) {
   const queryClient = useQueryClient();
   const idPrefix = `field-${contribution.id}`;
+  const fileless = !contribution.head_revision;
   const cells = useQuery({
     queryKey: ["private", "fields", contribution.id, contribution.head_revision],
     queryFn: () => api<Record<string, string>>(`/private/contributions/${contribution.id}/fields`),
+    enabled: !fileless,
   });
   const needsVocabularies = fields.some((field) => field.vocabulary);
   const vocabularies = useQuery({
@@ -255,6 +266,8 @@ export function WorkspaceFields({
   // Unsaved edits, by column (cleared once a save lands).
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  // Fields opened with their "+" button on a contribution without a file.
+  const [opened, setOpened] = useState<string[]>([]);
   const save = useMutation({
     mutationFn: (values: Record<string, string>) =>
       api<ContributionOut>(`/private/contributions/${contribution.id}/fields`, {
@@ -276,15 +289,20 @@ export function WorkspaceFields({
     onSettled: () => setSaving(null),
   });
 
-  if (!contribution.head_revision || !cells.data) {
-    return cells.error ? (
-      <div style={segment}>
-        <ErrorMessage error={cells.error} />
-      </div>
-    ) : null;
+  if (!fileless && !cells.data) {
+    return (
+      <>
+        {cells.error && (
+          <div style={segment}>
+            <ErrorMessage error={cells.error} />
+          </div>
+        )}
+        {children}
+      </>
+    );
   }
 
-  const saved = cells.data;
+  const saved = cells.data ?? {};
   const current = (column: string) => drafts[column] ?? saved[column] ?? "";
   const setDraft = (column: string, value: string) =>
     setDrafts((prev) => ({ ...prev, [column]: value }));
@@ -295,9 +313,12 @@ export function WorkspaceFields({
   const isDirty = (column: string) => column in drafts && drafts[column] !== (saved[column] ?? "");
   const busy = disabled || save.isPending;
 
-  const lists = fields.filter((field) => field.kind === "list");
+  const shown = (field: WorkspaceField) =>
+    !fileless || opened.includes(field.column) || current(field.column) !== "";
+  const lists = fields.filter((field) => field.kind === "list" && shown(field));
   const links = fields.filter((field) => field.kind === "links");
-  const texts = fields.filter((field) => field.kind === "text");
+  const texts = fields.filter((field) => field.kind === "text" && shown(field));
+  const addable = fields.filter((field) => field.kind === "links" || !shown(field));
 
   const optionsFor = (field: WorkspaceField) =>
     (field.vocabulary && vocabularies.data?.[field.vocabulary]?.items.map((item) => item.item)) ||
@@ -305,7 +326,7 @@ export function WorkspaceFields({
 
   return (
     <>
-      {(lists.length > 0 || links.length > 0) && (
+      {lists.length > 0 && (
         <div className="flex flex-wrap items-center gap-y-2" style={segment}>
           {lists.map((field) => {
             const value = parseList(current(field.column));
@@ -333,17 +354,6 @@ export function WorkspaceFields({
               </div>
             );
           })}
-          {links.map((field) => (
-            <button
-              key={field.column}
-              type="button"
-              disabled={busy}
-              onClick={() => setDraft(field.column, `${current(field.column)}${LINKS_DELIMITER}[]`)}
-              className="ml-2 inline-flex items-center gap-1 rounded-sm bg-node px-2.5 py-1 text-[12px] font-medium whitespace-nowrap text-white hover:bg-node-dark disabled:opacity-50"
-            >
-              <Icon name="plus" size="small" /> {field.label}
-            </button>
-          ))}
         </div>
       )}
 
@@ -410,7 +420,7 @@ export function WorkspaceFields({
               onClick={() =>
                 commit(field.column, formatLinks(entries.filter((_, i) => i !== index)))
               }
-              className="ml-2 rounded-sm border border-gray-300 bg-surface px-2.5 py-1 text-[12px] font-medium whitespace-nowrap text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="ml-2 rounded-sm border border-gray-300 bg-surface px-2.5 py-1 text-[13px] font-medium whitespace-nowrap text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
               Remove
             </button>
@@ -456,6 +466,28 @@ export function WorkspaceFields({
       {save.error && (
         <div style={{ ...segment, padding: 0 }}>
           <ErrorMessage error={save.error} />
+        </div>
+      )}
+
+      {children}
+
+      {addable.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {addable.map((field) => (
+            <button
+              key={field.column}
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                field.kind === "links"
+                  ? setDraft(field.column, `${current(field.column)}${LINKS_DELIMITER}[]`)
+                  : setOpened((prev) => [...prev, field.column])
+              }
+              className="inline-flex items-center gap-1 rounded-sm bg-node px-2.5 py-1 text-[13px] font-medium whitespace-nowrap text-white hover:bg-node-dark disabled:opacity-50"
+            >
+              <Icon name="plus" size="small" /> {field.label}
+            </button>
+          ))}
         </div>
       )}
     </>
