@@ -170,6 +170,8 @@ export interface NodeSettings {
     map_level?: string | null;
     /** The quick-launch buttons by name, in order; unset = Map, then every plugin view. */
     quick_launch?: string[] | null;
+    /** Filters kept at the top of the sidebar per level and view; unset = none. */
+    pinned_filters?: { levels?: string[]; views?: string[]; filters: string[] }[] | null;
     /** Pre-2026-09 shape, still loaded by the API as facet filters. */
     facets?: string[];
     filters?: SettingsFilter[];

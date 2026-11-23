@@ -14,7 +14,14 @@ from pathlib import Path
 from typing import Any, ClassVar, Literal, NamedTuple
 
 import yaml
-from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    PrivateAttr,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from fiesta.settings import get_settings
 
@@ -261,9 +268,9 @@ class SearchFilter(BaseModel):
     the level's `summary._num` columns as a range filter of its own (those no
     `range` filter has). `text`: each of the level's text columns
     (`NodeConfig.text_columns`) as a facet of its own (those no `facet`
-    filter has). A facet on `id` or `contributor` (search/queries.py
+    filter has). A facet on `id`, `contributor` or `author` (search/queries.py
     CONTRIBUTION_FACETS) is on the contribution block, not `_all`: every
-    node's Contribution ID and Contributor filters. `date` (range, on a date
+    node's Contribution ID, Contributor and Author filters. `date` (range, on a date
     field: summary.contribution.timestamp, Contributed On): bounds in epoch
     milliseconds, typed and shown as dates.
     `exists`: the with/without data picker, a tab per table the level's docs
@@ -601,6 +608,43 @@ class GeographyConfig(BaseModel):
         return [*self.geologic, *self.geographic]
 
 
+class PinnedFilters(BaseModel):
+    """Filters the search sidebar keeps at its top, in this order, whatever
+    their counts, on the `levels` and `views` (result sub-tabs) named; empty
+    means any. Where several rules match, the one naming views wins over one
+    naming only levels, and the first such rule over later ones. `filters`
+    are filter labels or keys as the sidebar shows them ("Age", "Geospatial",
+    "Author", a data-model column's label); one the sidebar has no entry for
+    is skipped."""
+
+    levels: list[str] = []
+    views: list[str] = []
+    filters: list[str]
+
+    @field_validator("levels", "views", "filters", mode="before")
+    @classmethod
+    def _strip(cls, value: object, info: ValidationInfo) -> object:
+        if not isinstance(value, list):
+            return value
+        names = [name.strip() if isinstance(name, str) else name for name in value]
+        if info.field_name == "views":
+            names = [normalize_view(name) if isinstance(name, str) else name for name in names]
+        return names
+
+    @model_validator(mode="after")
+    def _check_names(self) -> "PinnedFilters":
+        if not self.filters:
+            raise ValueError("pinned_filters: a rule needs at least one filter")
+        for field in ("levels", "views", "filters"):
+            names: list[str] = getattr(self, field)
+            if any(not name for name in names):
+                raise ValueError(f"pinned_filters: blank name in {field}")
+            folded = [name.casefold() for name in names]
+            if dupes := sorted({n for n in names if folded.count(n.casefold()) > 1}):
+                raise ValueError(f"pinned_filters: {field} repeats {dupes}")
+        return self
+
+
 class SearchConfig(BaseModel):
     index: str
     levels: list[SearchLevel]
@@ -622,6 +666,19 @@ class SearchConfig(BaseModel):
     # then every plugin view the node has; [] = none. A name the node has no
     # view for shows no button.
     quick_launch: list[str] | None = None
+    # Filters kept at the top of the sidebar per level and view (PinnedFilters).
+    pinned_filters: list[PinnedFilters] = []
+
+    @model_validator(mode="after")
+    def _pinned_levels(self) -> "SearchConfig":
+        names = [level.name for level in self.levels]
+        for rule in self.pinned_filters:
+            if unknown := [name for name in rule.levels if name not in names]:
+                raise ValueError(
+                    f"search.pinned_filters names levels {unknown} that are not search "
+                    f"levels {names}"
+                )
+        return self
 
     @model_validator(mode="after")
     def _quick_launch(self) -> "SearchConfig":
@@ -1388,6 +1445,8 @@ class NodeConfig(BaseModel):
             "search_levels": [self.public_level(lvl) for lvl in self.search.levels],
             "facets": self.search.facets,
             "filters": [f.model_dump() for f in self.search.filters],
+            # The filters each level and view keeps at the top of its sidebar.
+            "pinned_filters": [p.model_dump() for p in self.search.pinned_filters],
             # The base unit of the summary._num columns a unit conversion puts
             # in one ({"age": "years BP"}), for the numeric filter's picker.
             "number_units": {

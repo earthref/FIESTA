@@ -62,10 +62,11 @@ search:
         - { column: sources, label: Sources, width: 180 }
   extra_types: []
   filters:
-    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
+    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, reference authors, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
+    - { type: facet, field: author, label: Author }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
     # The legacy GERMRD search form: reservoir, element / isotope, reference.
     - { type: facet, field: reservoir, label: Reservoir }
@@ -78,6 +79,13 @@ search:
     - { type: text, label: Text }
     - { type: numeric, label: Numeric }
     - { type: exists, label: With / Without Data }
+  # Filters kept at the top of the sidebar, in this order, whatever their
+  # counts (one with no values shows disabled); the rest follow by count. A
+  # rule's `levels` / `views` (empty = any) say where it applies; the most
+  # specific matching rule wins. Names are sidebar labels as spelled above;
+  # one with no filter is skipped. The legacy GERMRD search form's order.
+  pinned_filters:
+    - { filters: [Reservoir, Element / Isotope / Ratio, Quantity, Reference] }
 
 storage:
   bucket: rd

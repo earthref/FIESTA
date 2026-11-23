@@ -79,6 +79,7 @@ import {
   useOpenContribution,
 } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
+import { orderSidebarEntries, pinnedFilterNames } from "../lib/pinned-filters";
 import { type SearchSettings, SearchSettingsContext, useSavedSearch } from "../lib/saved-search";
 import { type SearchState, slug, slugMatches } from "../lib/search-state";
 import type {
@@ -277,7 +278,7 @@ type SidebarEntry = {
 
 /** Query tokens on the contribution block (search/queries.py
  * CONTRIBUTION_TERMS), never a text column's facet. */
-const CONTRIBUTION_TOKENS = new Set(["id", "private_key", "doi", "contributor", "orcid"]);
+const CONTRIBUTION_TOKENS = new Set(["id", "private_key", "doi", "contributor", "orcid", "author"]);
 
 /** An area's extent as one chip's text. */
 function areaText(area: Area): string {
@@ -1252,8 +1253,9 @@ export function SearchPage(props: SearchPageProps) {
   // The sidebar's entries: Geospatial, each configured filter, the
   // `numeric` filter's number columns and the `text` filter's text columns
   // each a filter of its own (those no range / facet filter has), and the
-  // `exists` filter as With Data and Without Data. Applied ones lead, then
-  // the most records; those no record has a value for are hidden.
+  // `exists` filter as With Data and Without Data. Pinned ones lead, then
+  // applied ones, then the most records; those no record has a value for are
+  // hidden unless pinned or applied.
   const facetChips = (field: string): FilterChip[] =>
     queryTokens
       .filter(([f]) => f === field)
@@ -1358,17 +1360,11 @@ export function SearchPage(props: SearchPageProps) {
     }
   }
   const findNeedle = filterFind.trim().toLowerCase();
-  const sidebarEntries = entries
-    .map((entry, order) => ({ entry, order, applied: entry.chips.length > 0 }))
-    .filter(({ entry, applied }) => applied || entry.count !== 0)
-    .filter(({ entry }) => !findNeedle || entry.label.toLowerCase().includes(findNeedle))
-    .sort(
-      (a, b) =>
-        Number(b.applied) - Number(a.applied) ||
-        (b.entry.count ?? -1) - (a.entry.count ?? -1) ||
-        a.order - b.order,
-    )
-    .map(({ entry }) => entry);
+  // The node's pinned filters for this level and view lead (lib/pinned-filters.ts).
+  const sidebarEntries = orderSidebarEntries(
+    entries,
+    pinnedFilterNames(config?.pinned_filters, level?.name, activeTab?.name),
+  ).filter((entry) => !findNeedle || entry.label.toLowerCase().includes(findNeedle));
 
   const renderFilterModal = () => {
     if (!filterModal) return null;
