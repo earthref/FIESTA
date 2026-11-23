@@ -120,6 +120,13 @@ Last updated: 2026-11-18
       `indices:data/read/scroll/clear`. The search map scrolls its points and the role
       may not clear a scroll (403). The API now ignores that, and each context expires
       after 1 minute, so the map works without it; the grant only frees contexts sooner.
+      Since 2026-11-23 the map scrolls only past 10,000 docs and stops trying to clear
+      after the first refusal.
+- [ ] (Optional, 2026-11-23) If the API logs `index stats refused (indices:monitor/stats)`,
+      grant the `fiesta` role `indices:monitor/stats` on the node indices. The map caches
+      its points until the index changes, read from index stats; without them cached maps
+      expire after 60 s instead, so a newly published contribution can take a minute to
+      appear on the public map.
 
 ## C — Data
 
