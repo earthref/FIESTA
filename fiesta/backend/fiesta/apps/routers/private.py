@@ -324,7 +324,8 @@ async def set_fields(
     payload: FieldsIn,
 ) -> ContributionOut:
     """Set `workspace.fields` columns in the canonical file (a new revision;
-    the rest of the file is left as it was)."""
+    the rest of the file is left as it was). A contribution without a file yet
+    gets one holding just the workspace table."""
     contribution = await _own_contribution(
         session, node, user, contribution_id, allow_activated=False
     )
@@ -333,7 +334,9 @@ async def set_fields(
         raise HTTPException(422, f"not editable in the workspace: {', '.join(unknown)}")
     if not payload.values:
         raise HTTPException(422, "no fields to set")
-    text = await _workspace_text(session, node, contribution)
+    text = (
+        await _workspace_text(session, node, contribution) if contribution.head_revision else ""
+    )
     try:
         parse_text(text)
     except ParseError as exc:
