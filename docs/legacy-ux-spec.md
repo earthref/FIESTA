@@ -416,7 +416,7 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
 
 `client/modules/magic/components/private_contributions.jsx`
 
-**Deviation (data-source mode, 2026-11-09):** while a node's `contributions_mode` is `source` the API refuses every write, so the SPA hides the private workspace: `/private` and `/upload` show only the source-mode notice, and the home page's Upload Tool and Private Workspace cards, the search page's Private Workspace button and the portal bar's user-name link to `/private` are left out (the name stays as plain text). They return unchanged at the cutover to `public`.
+**Deviation (data-source mode, 2026-11-09):** while a node's `contributions_mode` is `source` the API refuses every write, so the SPA hides the private workspace: `/private` and `/upload` show only the source-mode notice, and the portal bar's user-name link to `/private` is left out (the name stays as plain text). Since 2026-11-23 the home page's Upload Tool and Private Workspace cards and the search page's signed-in Private Workspace button are shown disabled rather than left out (half opacity, a not-allowed cursor, `aria-disabled`, no navigation), with the tooltip "<node key> is currently a read-only FIESTA node", so a visitor sees the node will take contributions; the user menu's Private Workspace entry stays hidden. They return unchanged at the cutover to `public`.
 
 ```
 ui list (margin:0)

@@ -58,7 +58,7 @@ import {
   pickedRanges,
   rangesFor,
 } from "../components/search-filters";
-import { isSourceMode } from "../components/source-mode-notice";
+import { isSourceMode, readOnlyReason } from "../components/source-mode-notice";
 import {
   formatGridFilters,
   type GridSort,
@@ -1496,15 +1496,31 @@ export function SearchPage(props: SearchPageProps) {
             </button>
           );
         })}
-        {user && !isSourceMode(config) && (
+        {user && (
           <div className="ml-auto flex items-center self-center" style={{ paddingRight: 0 }}>
-            <Link
-              to="/Private"
-              className="inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
-              style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
-            >
-              Private Workspace
-            </Link>
+            {readOnlyReason(config) ? (
+              // A read-only (data-source mode) node shows it disabled, with why.
+              // biome-ignore lint/a11y/useSemanticElements: a disabled link has no href to give an <a>
+              <span
+                role="link"
+                aria-disabled="true"
+                tabIndex={0}
+                title={readOnlyReason(config)}
+                className="inline-flex cursor-not-allowed items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white opacity-50"
+                style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
+              >
+                Private Workspace
+                <span className="sr-only">{readOnlyReason(config)}</span>
+              </span>
+            ) : (
+              <Link
+                to="/Private"
+                className="inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
+                style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
+              >
+                Private Workspace
+              </Link>
+            )}
           </div>
         )}
       </div>

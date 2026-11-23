@@ -24,6 +24,10 @@ In `source` mode:
   routes refuse the same way, in their Koa-style error body.
 - `GET /v2/{node}/config` carries `contributions_mode: "source"`; the SPA's
   upload page and private workspace show that notice instead of the upload button.
+  The home page's Upload Tool and Private Workspace cards and the search page's
+  Private Workspace button stay in place but disabled, with the tooltip
+  "<node key> is currently a read-only FIESTA node" (`readOnlyReason` in
+  `source-mode-notice.tsx`); the user menu leaves Private Workspace out.
 - `/v2/{node}/source` accepts the sync (below). In `public` mode it refuses
   writes, so a sync script left running after the cutover changes nothing.
 

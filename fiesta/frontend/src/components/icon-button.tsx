@@ -42,6 +42,9 @@ export interface IconButtonProps {
   fontSize?: number;
   /** Title size in em of the card font (legacy header 1.2857, small header 1.0714). */
   titleEm?: number;
+  /** Show the button disabled, with this as its tooltip, instead of a link (a
+   * write tool on a read-only node keeps its place and says why it is off). */
+  disabledReason?: string;
 }
 
 /** Split a config title on "\n" into lines (legacy `<br/>` in `.title`). */
@@ -70,6 +73,7 @@ export function IconButton({
   variant = "card",
   fontSize,
   titleEm,
+  disabledReason,
 }: IconButtonProps) {
   const small = variant === "small";
   const wide = variant === "wide";
@@ -156,6 +160,22 @@ export function IconButton({
     </>
   );
 
+  if (disabledReason) {
+    return (
+      // biome-ignore lint/a11y/useSemanticElements: a disabled link has no href to give an <a>
+      <div
+        role="link"
+        aria-disabled="true"
+        tabIndex={0}
+        title={disabledReason}
+        className={cx(className, "cursor-not-allowed opacity-50")}
+        style={style}
+      >
+        {content}
+        <span className="sr-only">{disabledReason}</span>
+      </div>
+    );
+  }
   if (href) {
     return (
       <a
