@@ -7,7 +7,6 @@ import type { MapColorOption, SearchLevel, SearchScope } from "../../lib/types";
 import { singularize } from "../../lib/utils";
 import { Icon } from "../ui/icon";
 import { Spinner } from "../ui/spinner";
-import { MERCATOR_LAT } from "./basemap";
 import { BODIES, type Body, bodiesOf } from "./bodies";
 import { defaultArea, type Extent } from "./default-area";
 import type { MapLine } from "./lines-layer";
@@ -20,13 +19,23 @@ import {
   RAMP,
   valueAt,
 } from "./map-colors";
-import { BodyButtons, ModeButtons, mapButtonClass, useBody, useSavedMode } from "./map-mode";
+import {
+  BODY_PLACES,
+  BodyButtons,
+  IN_MODE,
+  MODE_PLACES,
+  ModeButtons,
+  mapButtonClass,
+  useBody,
+  useSavedMode,
+} from "./map-mode";
 import {
   type ApiMapContribution,
   type ApiMapPoint,
   type Area,
   areaToBbox,
   type MapPoint,
+  MODES,
   type Mode,
   pointKey,
   recordsOf,
@@ -51,17 +60,6 @@ interface MapPointsPage {
 // its map the same way.
 const COLOR_SETTING = "map.color";
 const isString = (value: unknown) => typeof value === "string";
-
-// Where a body's or a view's records are, in its disabled button's tooltip.
-const BODY_PLACES: Record<Body, string> = {
-  earth: "on Earth",
-  moon: "on the Moon",
-};
-const MODE_PLACES: Record<Exclude<Mode, "globe">, string> = {
-  flat: "within the Mercator map's ±85°",
-  north: "in the northern hemisphere",
-  south: "in the southern hemisphere",
-};
 
 function usePoints(
   level: SearchLevel,
@@ -382,12 +380,9 @@ export function SearchMap({
     const on = (each: Body) => colored.filter((p) => (p.body ?? "earth") === each);
     return {
       bodies: Object.fromEntries(BODIES.map(([each]) => [each, records(on(each))])),
-      modes: {
-        globe: records(points),
-        flat: records(points.filter((p) => Math.abs(p.lat) <= MERCATOR_LAT)),
-        north: records(points.filter((p) => p.lat >= 0)),
-        south: records(points.filter((p) => p.lat <= 0)),
-      } satisfies Record<Mode, number>,
+      modes: Object.fromEntries(
+        MODES.map(([each]) => [each, records(points.filter((p) => IN_MODE[each](p.lat)))]),
+      ) as Record<Mode, number>,
     };
   }, [fetched, colored, points, level.table]);
   // A disabled button's tooltip: where there are none, and, for a filtered

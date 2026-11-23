@@ -21,11 +21,21 @@ import { cx, formatNumber, getPath, singularize } from "../lib/utils";
 import { type ContributionTab, pluginContributionTabs, type TabCountQuery } from "../plugins";
 import { ErrorMessage } from "./error-message";
 import { bodiesOf } from "./map/bodies";
-import { BodyButtons, useBody } from "./map/map-mode";
+import {
+  BODY_PLACES,
+  BodyButtons,
+  IN_MODE,
+  MODE_PLACES,
+  ModeButtons,
+  useBody,
+  useSavedMode,
+} from "./map/map-mode";
 import {
   type ApiMapContribution,
   type ApiMapPoint,
   type MapPoint,
+  MODES,
+  type Mode,
   toMapPoint,
 } from "./map/map-points";
 import { citationOf, DefinitionTable, firstString, formatDateLL, InlineHtml } from "./result-item";
@@ -1204,55 +1214,72 @@ function MapPanel({
     () => (layer?.points ?? []).filter((p) => (p.body ?? "earth") === body),
     [layer, body],
   );
+  // The view (Globe / Mercator / poles), remembered apart from the search map's,
+  // with the points each one draws in its button.
+  const [mode, setMode] = useSavedMode("contribution-map-mode");
+  const modeCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        MODES.map(([each]) => [each, points.filter((p) => IN_MODE[each](p.lat)).length]),
+      ) as Record<Mode, number>,
+    [points],
+  );
   if (!layer) return <PageSpinner label="Loading the map…" />;
+  const records = layer.level.name.toLowerCase();
   return (
     <div className="flex h-full min-h-[420px] flex-col gap-2 p-4 sm:p-6">
-      {(layers.length > 1 || body !== "earth" || bodies.length > 1) && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
-          <BodyButtons
-            bodies={bodies}
-            body={body}
-            setBody={setBody}
-            counts={Object.fromEntries(
-              bodies.map((each) => [
-                each,
-                layer.points.filter((p) => (p.body ?? "earth") === each).length,
-              ]),
-            )}
-          />
-          {layers.length > 1 && (
-            <div className="inline-flex self-start">
-              {layers.map((entry, index) => {
-                const active = entry === layer;
-                return (
-                  <button
-                    key={entry.level.table}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setTable(entry.level.table)}
-                    className={cx(
-                      "border px-2 py-1 font-bold",
-                      active
-                        ? "border-node bg-node text-white"
-                        : "border-gray-300 bg-surface text-gray-700 hover:bg-gray-50",
-                      index === 0 ? "rounded-l-sm" : "-ml-px",
-                      index === layers.length - 1 && "rounded-r-sm",
-                    )}
-                  >
-                    {entry.level.name} ({formatNumber(entry.points.length)})
-                  </button>
-                );
-              })}
-            </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
+        <BodyButtons
+          bodies={bodies}
+          body={body}
+          setBody={setBody}
+          counts={Object.fromEntries(
+            bodies.map((each) => [
+              each,
+              layer.points.filter((p) => (p.body ?? "earth") === each).length,
+            ]),
           )}
-        </div>
-      )}
+        />
+        {layers.length > 1 && (
+          <div className="inline-flex self-start">
+            {layers.map((entry, index) => {
+              const active = entry === layer;
+              return (
+                <button
+                  key={entry.level.table}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setTable(entry.level.table)}
+                  className={cx(
+                    "border px-2 py-1 font-bold",
+                    active
+                      ? "border-node bg-node text-white"
+                      : "border-gray-300 bg-surface text-gray-700 hover:bg-gray-50",
+                    index === 0 ? "rounded-l-sm" : "-ml-px",
+                    index === layers.length - 1 && "rounded-r-sm",
+                  )}
+                >
+                  {entry.level.name} ({formatNumber(entry.points.length)})
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <ModeButtons
+          mode={mode}
+          setMode={setMode}
+          counts={modeCounts}
+          emptyTitle={(each) =>
+            `No mapped ${records} ${each === "globe" ? BODY_PLACES[body] : MODE_PLACES[each]}`
+          }
+        />
+      </div>
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-sm border border-gray-300">
         <Suspense fallback={<PageSpinner label="Loading the map…" />}>
           <MapLibreMap
             // A new map per level, fitted to its records.
             key={layer.level.table}
-            mode="globe"
+            mode={mode}
             body={body}
             points={points}
             fit

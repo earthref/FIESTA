@@ -1,6 +1,26 @@
 import { useState } from "react";
+import { MERCATOR_LAT } from "./basemap";
 import { BODIES, type Body } from "./bodies";
 import { MODES, type Mode } from "./map-points";
+
+/** Whether a point at `lat` is drawn in each view (for its button's count). */
+export const IN_MODE: Record<Mode, (lat: number) => boolean> = {
+  globe: () => true,
+  flat: (lat) => Math.abs(lat) <= MERCATOR_LAT,
+  north: (lat) => lat >= 0,
+  south: (lat) => lat <= 0,
+};
+
+// Where a body's or a view's records are, in its disabled button's tooltip.
+export const BODY_PLACES: Record<Body, string> = {
+  earth: "on Earth",
+  moon: "on the Moon",
+};
+export const MODE_PLACES: Record<Exclude<Mode, "globe">, string> = {
+  flat: "within the Mercator map's ±85°",
+  north: "in the northern hemisphere",
+  south: "in the southern hemisphere",
+};
 
 /** A map's view mode, remembered in this browser under `key`. */
 export function useSavedMode(key: string, fallback: Mode = "globe") {
