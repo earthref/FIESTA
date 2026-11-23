@@ -32,6 +32,7 @@ test("the most specific matching rule wins", () => {
   assert.deepEqual(pinnedFilterNames(rules.slice(1), "Locations", undefined), []);
 });
 
+const labels = (list: { label: string }[]) => list.map((e) => e.label);
 const entry = (key: string, label: string, count: number | null | undefined, applied = false) => ({
   key,
   label,
@@ -53,23 +54,47 @@ test("pinned first in pin order, then applied, then by count", () => {
     entry("facet:c", "Gamma", undefined),
   ];
   const ordered = orderSidebarEntries(entries, ["age", "FACET:AUTHOR", "Geospatial", "Missing"]);
-  assert.deepEqual(
-    ordered.map((e) => e.label),
-    // Age has no values but is pinned: shown; Lithology is hidden.
-    [
-      "Age",
-      "Author",
-      "Geospatial",
-      "Site",
-      "Contributor",
-      "Publication Year",
-      "Alpha",
-      "Beta",
-      "Gamma",
-    ],
-  );
-  assert.deepEqual(
-    orderSidebarEntries(entries, []).map((e) => e.label),
-    ["Site", "Contributor", "Publication Year", "Geospatial", "Alpha", "Beta", "Author", "Gamma"],
-  );
+  // Age has no values but is pinned: shown; Lithology is hidden.
+  assert.deepEqual(labels(ordered.pinned), ["Age", "Author", "Geospatial"]);
+  assert.deepEqual(labels(ordered.rest), [
+    "Site",
+    "Contributor",
+    "Publication Year",
+    "Alpha",
+    "Beta",
+    "Gamma",
+  ]);
+  const unpinned = orderSidebarEntries(entries, []);
+  assert.deepEqual(unpinned.pinned, []);
+  assert.deepEqual(labels(unpinned.rest), [
+    "Site",
+    "Contributor",
+    "Publication Year",
+    "Geospatial",
+    "Alpha",
+    "Beta",
+    "Author",
+    "Gamma",
+  ]);
+});
+
+test("a plugin filter is ordered as the node's own", () => {
+  const entries = [
+    entry("range:year", "Publication Year", 40),
+    entry("plugin:periodic-table", "Periodic Table of Elements", 120),
+    entry("plugin:geomag-series-radius", "Radius Search", null),
+    entry("facet:rock", "Rock Type", 0),
+  ];
+  // Unpinned: by count, an uncounted one after the counted.
+  assert.deepEqual(labels(orderSidebarEntries(entries, []).rest), [
+    "Periodic Table of Elements",
+    "Publication Year",
+    "Radius Search",
+  ]);
+  // Pinned by its label or its key.
+  for (const pin of ["Periodic Table of Elements", "plugin:periodic-table"]) {
+    const { pinned, rest } = orderSidebarEntries(entries, ["Publication Year", pin]);
+    assert.deepEqual(labels(pinned), ["Publication Year", "Periodic Table of Elements"]);
+    assert.deepEqual(labels(rest), ["Radius Search"]);
+  }
 });

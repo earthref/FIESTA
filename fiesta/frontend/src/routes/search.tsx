@@ -267,13 +267,15 @@ type FilterModalState =
   | { kind: "geo"; title: string; target: "area" | "bbox" };
 
 /** One filter in the sidebar: its count (undefined loading, null uncounted),
- * applied values and modal. */
+ * applied values and modal; a plugin's (the KdD periodic table) draws itself
+ * with `render` instead. */
 type SidebarEntry = {
   key: string;
   label: string;
   count: number | null | undefined;
   chips: FilterChip[];
   open: () => void;
+  render?: () => ReactNode;
 };
 
 /** Query tokens on the contribution block (search/queries.py
@@ -1023,9 +1025,10 @@ export function SearchPage(props: SearchPageProps) {
         countOn(countKey(filter), levelTable, modalParams(q, ranges));
       }
     }
-    // A plugin filter (the KdD periodic table) counts its first field, a facet.
+    // A plugin filter (the KdD periodic table) counts its first field, a facet
+    // (not one that says it is uncounted, as GEOMAGIA's radius).
     for (const filter of pluginFilters) {
-      if (filter.fields[0])
+      if (filter.counted !== false && filter.fields[0])
         countOn(`facet:${filter.fields[0]}`, levelTable, modalParams(q, ranges));
     }
   }
@@ -1359,12 +1362,57 @@ export function SearchPage(props: SearchPageProps) {
       });
     }
   }
+  // Plugin filters are ordered with the rest, by their label and first field's count.
+  for (const filter of pluginFilters) {
+    const count =
+      filter.counted !== false && filter.fields[0]
+        ? filterCount(`facet:${filter.fields[0]}`)
+        : null;
+    entries.push({
+      key: `plugin:${filter.key}`,
+      label: filter.label,
+      count,
+      chips: filter.fields.flatMap(facetChips),
+      open: () => {},
+      render: () =>
+        config &&
+        filter.render({
+          levelName: level.name,
+          subTabName: activeTab?.name,
+          config,
+          q,
+          setQuery: (next) => setSearch({ q: next }),
+          table: pluginTable ?? level.table,
+          paramsFor: (query) => modalParams(query, ranges),
+          count: bucketCount,
+          filterCount: count,
+        }),
+    });
+  }
   const findNeedle = filterFind.trim().toLowerCase();
-  // The node's pinned filters for this level and view lead (lib/pinned-filters.ts).
-  const sidebarEntries = orderSidebarEntries(
+  const found = (entry: SidebarEntry) =>
+    !findNeedle || entry.label.toLowerCase().includes(findNeedle);
+  // The node's pinned filters for this level and view lead, above a rule
+  // (lib/pinned-filters.ts); then applied filters and the rest by count.
+  const ordered = orderSidebarEntries(
     entries,
     pinnedFilterNames(config?.pinned_filters, level?.name, activeTab?.name),
-  ).filter((entry) => !findNeedle || entry.label.toLowerCase().includes(findNeedle));
+  );
+  const pinnedEntries = ordered.pinned.filter(found);
+  const restEntries = ordered.rest.filter(found);
+  const sidebarEntries = [...pinnedEntries, ...restEntries];
+  const renderSidebarEntry = (entry: SidebarEntry) =>
+    entry.render ? (
+      <Fragment key={entry.key}>{entry.render()}</Fragment>
+    ) : (
+      <FilterEntry
+        key={entry.key}
+        label={entry.label}
+        count={entry.count}
+        chips={entry.chips}
+        onOpen={entry.open}
+      />
+    );
 
   const renderFilterModal = () => {
     if (!filterModal) return null;
@@ -1686,7 +1734,8 @@ export function SearchPage(props: SearchPageProps) {
                   value={filterFind}
                   onChange={(event) => setFilterFind(event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter") sidebarEntries[0]?.open();
+                    if (event.key === "Enter")
+                      sidebarEntries.find((entry) => !entry.render)?.open();
                   }}
                   placeholder="Find a filter"
                   aria-label="Find a filter"
@@ -1740,37 +1789,21 @@ export function SearchPage(props: SearchPageProps) {
               />
               {filtersPanel ?? (
                 <>
-                  {sidebarEntries.map((entry) => (
-                    <FilterEntry
-                      key={entry.key}
-                      label={entry.label}
-                      count={entry.count}
-                      chips={entry.chips}
-                      onOpen={entry.open}
+                  {pinnedEntries.map(renderSidebarEntry)}
+                  {pinnedEntries.length > 0 && restEntries.length > 0 && (
+                    // The pinned filters keep their order; below, by count.
+                    <hr
+                      aria-label="Pinned filters above, the rest by count below"
+                      className="border-0"
+                      style={{ borderTop: "2px solid var(--er-ink-faint)", margin: "0.5em 1em" }}
                     />
-                  ))}
+                  )}
+                  {restEntries.map(renderSidebarEntry)}
                   {findNeedle && sidebarEntries.length === 0 && (
                     <p className="px-[1em] py-3 text-[13px] text-ink-faint">
                       No filter matches “{filterFind.trim()}”.
                     </p>
                   )}
-                  {pluginFilters.map((filter) => (
-                    <Fragment key={filter.key}>
-                      {filter.render({
-                        levelName: level.name,
-                        subTabName: activeTab?.name,
-                        config,
-                        q,
-                        setQuery: (next) => setSearch({ q: next }),
-                        table: pluginTable ?? level.table,
-                        paramsFor: (query) => modalParams(query, ranges),
-                        count: bucketCount,
-                        filterCount: filter.fields[0]
-                          ? filterCount(`facet:${filter.fields[0]}`)
-                          : null,
-                      })}
-                    </Fragment>
-                  ))}
                   {filters.length === 0 && pluginFilters.length === 0 && !level.geo && (
                     <p className="px-[1em] py-3 text-[13px] text-ink-faint">
                       No filters for this view.

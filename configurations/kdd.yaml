@@ -93,10 +93,12 @@ search:
   # Filters kept at the top of the sidebar, in this order, whatever their
   # counts (one with no values shows disabled); the rest follow by count. A
   # rule's `levels` / `views` (empty = any) say where it applies; the most
-  # specific matching rule wins. Names are sidebar labels as spelled above;
+  # specific matching rule wins. Names are sidebar labels as spelled above,
+  # or a plugin filter's label (the periodic table's `label` option, by
+  # default Periodic Table of Elements);
   # one with no filter is skipped.
   pinned_filters:
-    - { filters: [Publication Year, Author, Contributor] }
+    - { filters: [Periodic Table of Elements, Publication Year, Author, Contributor] }
 
 storage:
   bucket: kdd

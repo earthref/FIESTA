@@ -397,24 +397,29 @@ search:
 ```
 
 - Pinned filters lead the sidebar in the order listed, whatever their counts;
-  one with no values on the current search still shows, disabled. Applied
-  filters come next, then the others by count (`lib/pinned-filters.ts`).
+  one with no values on the current search still shows, disabled. A grey
+  rule separates them from the rest: applied filters, then the others by count
+  (`lib/pinned-filters.ts`).
 - Where several rules match a level and view, the most specific wins: naming
   views counts 2, naming levels 1, so a level + view rule beats a view rule,
   which beats a level rule, which beats a rule naming neither. Between equals
   the first wins. Rules do not merge.
 - A name is a sidebar entry's label as the node spells it (a configured
-  filter's `label`, `Geospatial`, `With Data` / `Without Data`, or a data-model
-  column's label for the `numeric` / `text` filters' entries), in any case; an
-  entry key such as `facet:author` also works. A name with no entry on that
+  filter's `label`, `Geospatial`, `With Data` / `Without Data`, a data-model
+  column's label for the `numeric` / `text` filters' entries, or a plugin
+  filter's label: KdD's `Periodic Table of Elements`, GEOMAGIA's `Radius
+  Search`), in any case; an entry key such as `facet:author` or
+  `plugin:periodic-table` also works. Unpinned plugin filters sort by count
+  like the rest. A name with no entry on that
   level and view is skipped, so a rule never invents a filter.
 - The loader refuses an empty `filters`, a blank name, a name twice in one
   list (in any case) and a level the node does not have; `Rows` is read as
   `Data`.
 
 The Search Filters admin tab edits the rules under "Pinned at the top", with
-suggestions for the filters (Geospatial, the configured labels, With / Without
-Data, the data model's column labels) and views; saving writes
+suggestions for the filters (Geospatial, the configured labels, the active
+plugins' filters, With / Without Data, the data model's column labels) and
+views; saving writes
 `search.pinned_filters` only when the rules changed, and removes it when none
 are left.
 

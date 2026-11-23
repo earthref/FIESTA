@@ -255,7 +255,8 @@ shows, disabled). Each rule applies on the `levels` and `views` it names (empty:
 any; `Rows` is read as `Data`); where several match, the SPA takes the most
 specific (naming views counts 2, naming levels 1) and the first of equals. A
 name matches a sidebar entry's label or key in any case ("Age", "Geospatial",
-"With Data", a data-model column's label); one matching none is skipped. The
+"With Data", a data-model column's label, a plugin filter's label such as
+"Periodic Table of Elements"); one matching none is skipped. The
 loader refuses an empty `filters`, a blank name, a name twice in one list (in
 any case) and a level the node does not have.
 

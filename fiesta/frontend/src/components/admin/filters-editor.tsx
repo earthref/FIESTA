@@ -16,8 +16,10 @@ import {
   type SettingsOp,
   settingsFilters,
 } from "../../lib/admin";
-import { ApiError } from "../../lib/api";
+import { ApiError, api } from "../../lib/api";
+import type { NodeConfig } from "../../lib/types";
 import { normalizeView } from "../../lib/utils";
+import { pluginSidebarFilters } from "../../plugins";
 import { ErrorMessage } from "../error-message";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -159,10 +161,26 @@ export function FiltersEditor({
       for (const col of Object.values(t.columns)) if (col.label) labels.add(col.label);
     return [...labels].sort();
   }, [model.data]);
+  // The plugins' sidebar filters on any level (the KdD periodic table), from
+  // the node's served config: their labels pin them too.
+  const served = useQuery({
+    queryKey: [...adminKeys.node(slug), "served-config"],
+    queryFn: () => api<NodeConfig>(`/v2/${slug}/config`),
+  });
+  const pluginLabels = useMemo(
+    () =>
+      served.data
+        ? settings.search.levels.flatMap((level) =>
+            pluginSidebarFilters(served.data, level.name, undefined).map((f) => f.label),
+          )
+        : [],
+    [served.data, settings.search.levels],
+  );
   const pinFilters = [
     ...new Set([
       "Geospatial",
       ...rows.flatMap((r) => (r.filter.label ? [r.filter.label] : [])),
+      ...pluginLabels,
       "With Data",
       "Without Data",
       ...columnLabels,
