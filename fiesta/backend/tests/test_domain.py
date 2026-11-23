@@ -1607,6 +1607,7 @@ def test_contribution_filters_on_every_node():
         ), node.node.slug
     assert facet_path("id") == "summary.contribution.id"
     assert facet_path("contributor") == "summary.contribution._contributor.raw"
+    assert facet_path("author") == "summary.contribution._reference.authors._name.raw"
     assert facet_path("site") == "summary._all.site.raw"
     body = build_search_body(
         table="sites",
@@ -1622,6 +1623,53 @@ def test_contribution_filters_on_every_node():
         SearchFilter(type="facet", field="private_key")
     with pytest.raises(ValidationError):
         SearchFilter(type="facet", field="id", date=True)
+
+
+def test_every_node_has_an_author_facet():
+    """Every node's sidebar has an Author filter on the reference's authors,
+    on the same views as its Contributor filter."""
+    for node in load_deployment().nodes.values():
+        by_field = {f.field: f for f in node.search.filters if f.type == "facet"}
+        assert "author" in by_field, node.node.slug
+        author, contributor = by_field["author"], by_field["contributor"]
+        assert (author.levels, author.views) == (contributor.levels, contributor.views)
+
+
+def test_pinned_filters_validation(magic_node):
+    from pydantic import ValidationError
+
+    from fiesta.nodeconfig import PinnedFilters
+
+    rule = PinnedFilters(
+        levels=[" Locations "], views=["Rows", "Poles"], filters=[" Age", "Geospatial"]
+    )
+    assert (rule.levels, rule.views, rule.filters) == (
+        ["Locations"],
+        ["Data", "Poles"],
+        ["Age", "Geospatial"],
+    )
+    assert PinnedFilters(filters=["Age"]).levels == PinnedFilters(filters=["Age"]).views == []
+    for bad in (
+        {"filters": []},
+        {"filters": ["Age", "  "]},
+        {"filters": ["Age", "age"]},
+        {"filters": ["Age"], "views": ["Data", "Rows"]},
+        {"filters": ["Age"], "levels": ["Sites", ""]},
+    ):
+        with pytest.raises(ValidationError):
+            PinnedFilters.model_validate(bad)
+
+    def node_with(pinned):
+        search = {**magic_node.search.model_dump(), "pinned_filters": pinned}
+        return magic_node.model_validate({**magic_node.model_dump(), "search": search})
+
+    pinned = [{"levels": ["Locations"], "views": ["Poles"], "filters": ["Age", "Pole A95"]}]
+    public = node_with(pinned).public_config()
+    assert public["pinned_filters"] == [
+        {"levels": ["Locations"], "views": ["Poles"], "filters": ["Age", "Pole A95"]}
+    ]
+    with pytest.raises(ValueError, match="not search levels"):
+        node_with([{"levels": ["Cruises"], "filters": ["Age"]}])
 
 
 def test_search_filter_views_read_legacy_rows_as_data():

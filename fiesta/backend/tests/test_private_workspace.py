@@ -10,7 +10,7 @@ import pytest
 from fastapi import HTTPException
 
 from fiesta.apps.deps import require_public_contributions
-from fiesta.apps.routers import assistance, private
+from fiesta.apps.routers import assistance, private, workspaces
 from fiesta.db.models import (
     AssistanceRequest,
     AuditEvent,
@@ -440,6 +440,13 @@ async def _ask(session, actor=BOB, reason="approve"):
 
 def test_request_writes_are_refused_in_data_source_mode():
     assert any(d.dependency is require_public_contributions for d in assistance.router.dependencies)
+
+
+@pytest.mark.parametrize(
+    "router", [private.router, workspaces.router], ids=["private", "workspaces"]
+)
+def test_workspace_writes_are_refused_in_data_source_mode(router):
+    assert any(d.dependency is require_public_contributions for d in router.dependencies)
 
 
 @pytest.mark.asyncio

@@ -5,6 +5,15 @@ export function isSourceMode(config?: NodeConfig): boolean {
   return config?.contributions_mode === "source";
 }
 
+/** Why a write control (Upload Tool, Private Workspace) is shown disabled: the
+ * node is read-only while it mirrors its data source. Undefined when the node
+ * takes contributions here. */
+export function readOnlyReason(config?: NodeConfig): string | undefined {
+  return config && isSourceMode(config)
+    ? `${config.key} is currently a read-only FIESTA node`
+    : undefined;
+}
+
 /** Where to contribute while a node mirrors its data source (contributions_mode
  * "source"); nothing when the node takes contributions here. */
 export function SourceModeNotice({ config }: { config?: NodeConfig }) {

@@ -58,7 +58,7 @@ import {
   pickedRanges,
   rangesFor,
 } from "../components/search-filters";
-import { isSourceMode } from "../components/source-mode-notice";
+import { isSourceMode, readOnlyReason } from "../components/source-mode-notice";
 import {
   formatGridFilters,
   type GridSort,
@@ -79,6 +79,7 @@ import {
   useOpenContribution,
 } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
+import { orderSidebarEntries, pinnedFilterNames } from "../lib/pinned-filters";
 import { type SearchSettings, SearchSettingsContext, useSavedSearch } from "../lib/saved-search";
 import { type SearchState, slug, slugMatches } from "../lib/search-state";
 import type {
@@ -277,7 +278,7 @@ type SidebarEntry = {
 
 /** Query tokens on the contribution block (search/queries.py
  * CONTRIBUTION_TERMS), never a text column's facet. */
-const CONTRIBUTION_TOKENS = new Set(["id", "private_key", "doi", "contributor", "orcid"]);
+const CONTRIBUTION_TOKENS = new Set(["id", "private_key", "doi", "contributor", "orcid", "author"]);
 
 /** An area's extent as one chip's text. */
 function areaText(area: Area): string {
@@ -1252,8 +1253,9 @@ export function SearchPage(props: SearchPageProps) {
   // The sidebar's entries: Geospatial, each configured filter, the
   // `numeric` filter's number columns and the `text` filter's text columns
   // each a filter of its own (those no range / facet filter has), and the
-  // `exists` filter as With Data and Without Data. Applied ones lead, then
-  // the most records; those no record has a value for are hidden.
+  // `exists` filter as With Data and Without Data. Pinned ones lead, then
+  // applied ones, then the most records; those no record has a value for are
+  // hidden unless pinned or applied.
   const facetChips = (field: string): FilterChip[] =>
     queryTokens
       .filter(([f]) => f === field)
@@ -1358,17 +1360,11 @@ export function SearchPage(props: SearchPageProps) {
     }
   }
   const findNeedle = filterFind.trim().toLowerCase();
-  const sidebarEntries = entries
-    .map((entry, order) => ({ entry, order, applied: entry.chips.length > 0 }))
-    .filter(({ entry, applied }) => applied || entry.count !== 0)
-    .filter(({ entry }) => !findNeedle || entry.label.toLowerCase().includes(findNeedle))
-    .sort(
-      (a, b) =>
-        Number(b.applied) - Number(a.applied) ||
-        (b.entry.count ?? -1) - (a.entry.count ?? -1) ||
-        a.order - b.order,
-    )
-    .map(({ entry }) => entry);
+  // The node's pinned filters for this level and view lead (lib/pinned-filters.ts).
+  const sidebarEntries = orderSidebarEntries(
+    entries,
+    pinnedFilterNames(config?.pinned_filters, level?.name, activeTab?.name),
+  ).filter((entry) => !findNeedle || entry.label.toLowerCase().includes(findNeedle));
 
   const renderFilterModal = () => {
     if (!filterModal) return null;
@@ -1496,15 +1492,31 @@ export function SearchPage(props: SearchPageProps) {
             </button>
           );
         })}
-        {user && !isSourceMode(config) && (
+        {user && (
           <div className="ml-auto flex items-center self-center" style={{ paddingRight: 0 }}>
-            <Link
-              to="/Private"
-              className="inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
-              style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
-            >
-              Private Workspace
-            </Link>
+            {readOnlyReason(config) ? (
+              // A read-only (data-source mode) node shows it disabled, with why.
+              // biome-ignore lint/a11y/useSemanticElements: a disabled link has no href to give an <a>
+              <span
+                role="link"
+                aria-disabled="true"
+                tabIndex={0}
+                title={readOnlyReason(config)}
+                className="inline-flex cursor-not-allowed items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white opacity-50"
+                style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
+              >
+                Private Workspace
+                <span className="sr-only">{readOnlyReason(config)}</span>
+              </span>
+            ) : (
+              <Link
+                to="/Private"
+                className="inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
+                style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
+              >
+                Private Workspace
+              </Link>
+            )}
           </div>
         )}
       </div>

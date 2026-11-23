@@ -2,7 +2,8 @@
 // A filter is a facet (aggregate a data-model column), a range (a numeric
 // summary.* path a plugin indexes) or a bounding box. Saving writes the whole
 // list and clears the legacy search.facets key. Column suggestions come from the
-// node's latest data model.
+// node's latest data model. Below the list, the filters pinned at the top of the
+// sidebar per level and view (search.pinned_filters), written only when changed.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
@@ -40,6 +41,33 @@ interface Row {
   filter: SettingsFilter;
 }
 
+/** A search.pinned_filters rule (lib/pinned-filters.ts), its lists filled in. */
+interface PinRule {
+  levels: string[];
+  views: string[];
+  filters: string[];
+}
+interface PinRow {
+  id: string;
+  rule: PinRule;
+}
+type SettingsPins = NonNullable<NodeSettings["search"]["pinned_filters"]>;
+
+const pinRules = (pins: SettingsPins | null | undefined): PinRule[] =>
+  (pins ?? []).map((rule) => ({
+    levels: rule.levels ?? [],
+    // A draft from before the Data view's rename may still say Rows.
+    views: [...new Set((rule.views ?? []).map(normalizeView))],
+    filters: rule.filters ?? [],
+  }));
+const pinRows = (rules: PinRule[]): PinRow[] => rules.map((rule) => ({ id: nextId(), rule }));
+// As written to the YAML: an empty levels / views list (any) left out.
+const pinYaml = (rule: PinRule) => ({
+  ...(rule.levels.length ? { levels: rule.levels } : {}),
+  ...(rule.views.length ? { views: rule.views } : {}),
+  filters: rule.filters,
+});
+
 interface DataColumn {
   label?: string;
   type?: string;
@@ -70,6 +98,17 @@ export function FiltersEditor({
   useEffect(() => {
     setRows(initial.map((filter) => ({ id: nextId(), filter })));
   }, [initial]);
+
+  // The filters pinned at the top of the sidebar, per level and view.
+  const initialPins = useMemo(
+    () => pinRules(settings.search.pinned_filters),
+    [settings.search.pinned_filters],
+  );
+  const [pins, setPins] = useState<PinRow[]>(() => pinRows(initialPins));
+  const [editingPin, setEditingPin] = useState<{ id: string | null; rule: PinRule } | null>(null);
+  useEffect(() => {
+    setPins(pinRows(initialPins));
+  }, [initialPins]);
 
   // The latest data model, for facet/range field suggestions.
   const dmPath = `${settings.data_model.dir}/${settings.data_model.latest}.json`;
@@ -104,6 +143,32 @@ export function FiltersEditor({
   }, [model.data]);
 
   const levelNames = settings.search.levels.map((l) => l.name);
+  // A pin's suggestions: the sidebar's views (the result sub-tabs, those the
+  // filters name, the quick-launch views) and its entries (Geospatial, the
+  // configured labels, With / Without Data, the data model's column labels).
+  const pinViews = [
+    ...new Set([
+      ...VIEWS,
+      ...rows.flatMap((r) => (r.filter.views ?? []).map(normalizeView)),
+      ...(settings.search.quick_launch ?? []),
+    ]),
+  ];
+  const columnLabels = useMemo(() => {
+    const labels = new Set<string>();
+    for (const t of Object.values(model.data?.tables ?? {}))
+      for (const col of Object.values(t.columns)) if (col.label) labels.add(col.label);
+    return [...labels].sort();
+  }, [model.data]);
+  const pinFilters = [
+    ...new Set([
+      "Geospatial",
+      ...rows.flatMap((r) => (r.filter.label ? [r.filter.label] : [])),
+      "With Data",
+      "Without Data",
+      ...columnLabels,
+    ]),
+  ];
+  const pinsChanged = JSON.stringify(pins.map((p) => p.rule)) !== JSON.stringify(initialPins);
 
   const save = useMutation({
     mutationFn: () => {
@@ -111,6 +176,11 @@ export function FiltersEditor({
       // Drop the pre-2026-09 facets key it replaces.
       if (settings.search.facets !== undefined)
         ops.push({ path: ["search", "facets"], value: null });
+      if (pinsChanged)
+        ops.push({
+          path: ["search", "pinned_filters"],
+          value: pins.length ? pins.map((p) => pinYaml(p.rule)) : null,
+        });
       return patchSettings(slug, ops, settingsLock);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.node(slug) }),
@@ -122,6 +192,21 @@ export function FiltersEditor({
     const next = [...rows];
     [next[index], next[target]] = [next[target], next[index]];
     setRows(next);
+  };
+  const movePin = (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= pins.length) return;
+    const next = [...pins];
+    [next[index], next[target]] = [next[target], next[index]];
+    setPins(next);
+  };
+  const applyPin = (id: string | null, rule: PinRule) => {
+    setPins(
+      id === null
+        ? [...pins, { id: nextId(), rule }]
+        : pins.map((p) => (p.id === id ? { ...p, rule } : p)),
+    );
+    setEditingPin(null);
   };
 
   const apply = (id: string | null, filter: SettingsFilter) => {
@@ -135,7 +220,8 @@ export function FiltersEditor({
 
   const dirty =
     JSON.stringify(rows.map((r) => r.filter)) !== JSON.stringify(initial) ||
-    settings.search.facets !== undefined;
+    settings.search.facets !== undefined ||
+    pinsChanged;
 
   return (
     <div className="space-y-3">
@@ -147,7 +233,10 @@ export function FiltersEditor({
             type="button"
             variant="ghost"
             disabled={!dirty}
-            onClick={() => setRows(initial.map((filter) => ({ id: nextId(), filter })))}
+            onClick={() => {
+              setRows(initial.map((filter) => ({ id: nextId(), filter })));
+              setPins(pinRows(initialPins));
+            }}
           >
             Reset
           </Button>
@@ -235,6 +324,93 @@ export function FiltersEditor({
       >
         + Add Filter
       </Button>
+
+      <h3 className="pt-3 text-sm font-bold text-gray-700">Pinned at the top</h3>
+      <p className="text-sm text-gray-600">
+        These filters lead the sidebar, in this order, whatever their counts (one with no values
+        shows disabled), on the levels and views a rule names; empty means any. Where several rules
+        apply, one naming views wins over one naming only levels, and the first over later ones. A
+        name the sidebar has no filter for is skipped.
+      </p>
+      <Table>
+        <THead>
+          <tr>
+            <Th>Filters</Th>
+            <Th>Levels</Th>
+            <Th>Views</Th>
+            <Th />
+          </tr>
+        </THead>
+        <TBody>
+          {pins.map((pin, index) => (
+            <Tr key={pin.id}>
+              <Td>{pin.rule.filters.join(", ")}</Td>
+              <Td className="text-xs text-gray-600">{pin.rule.levels.join(", ") || "all"}</Td>
+              <Td className="text-xs text-gray-600">{pin.rule.views.join(", ") || "all"}</Td>
+              <Td className="whitespace-nowrap">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Move up"
+                  disabled={index === 0}
+                  onClick={() => movePin(index, -1)}
+                >
+                  ↑
+                </Button>{" "}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Move down"
+                  disabled={index === pins.length - 1}
+                  onClick={() => movePin(index, 1)}
+                >
+                  ↓
+                </Button>{" "}
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setEditingPin({ id: pin.id, rule: pin.rule })}
+                >
+                  Edit
+                </Button>{" "}
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => setPins(pins.filter((p) => p.id !== pin.id))}
+                >
+                  Delete
+                </Button>
+              </Td>
+            </Tr>
+          ))}
+          {pins.length === 0 && (
+            <Tr>
+              <Td className="text-gray-500">
+                Nothing pinned: the sidebar lists applied filters, then the most records.
+              </Td>
+            </Tr>
+          )}
+        </TBody>
+      </Table>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setEditingPin({ id: null, rule: { levels: [], views: [], filters: [] } })}
+      >
+        + Add Pinned Filters
+      </Button>
+
+      {editingPin && (
+        <PinModal
+          id={editingPin.id}
+          rule={editingPin.rule}
+          filterOptions={pinFilters}
+          levelNames={levelNames}
+          viewOptions={pinViews}
+          onClose={() => setEditingPin(null)}
+          onApply={applyPin}
+        />
+      )}
 
       {editing && (
         <FilterModal
@@ -401,6 +577,92 @@ function FilterModal({
             <TagInput values={views} options={VIEWS} placeholder="Add a view" onChange={setViews} />
           </Field>
         </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** The edit form for one pinned-filters rule, one <Modal>. */
+function PinModal({
+  id,
+  rule,
+  filterOptions,
+  levelNames,
+  viewOptions,
+  onClose,
+  onApply,
+}: {
+  id: string | null;
+  rule: PinRule;
+  filterOptions: string[];
+  levelNames: string[];
+  viewOptions: string[];
+  onClose: () => void;
+  onApply: (id: string | null, rule: PinRule) => void;
+}) {
+  const [filters, setFilters] = useState<string[]>(rule.filters);
+  const [levels, setLevels] = useState<string[]>(rule.levels);
+  const [views, setViews] = useState<string[]>(rule.views);
+  // The API refuses a name twice in any case ("Age", "age").
+  const repeated = (names: string[]) =>
+    names.filter((name, index) =>
+      names.some((other, before) => before < index && other.toLowerCase() === name.toLowerCase()),
+    );
+  const error =
+    filters.length === 0
+      ? "Pin at least one filter"
+      : [filters, levels, views].some((names) => repeated(names).length > 0)
+        ? `Named twice: ${[...repeated(filters), ...repeated(levels), ...repeated(views)].join(", ")}`
+        : null;
+
+  return (
+    <Modal
+      open
+      wide
+      onClose={onClose}
+      title={id === null ? "New Pinned Filters" : "Edit Pinned Filters"}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={!!error} onClick={() => onApply(id, { levels, views, filters })}>
+            Apply
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-3 text-sm">
+        <Field
+          label="Filters"
+          hint={
+            error ??
+            "In the order they lead the sidebar: a filter's label as the sidebar shows it (Geospatial, a configured label, With Data, a column's label)"
+          }
+        >
+          <TagInput
+            values={filters}
+            options={filterOptions}
+            placeholder="Add a filter"
+            onChange={setFilters}
+          />
+        </Field>
+        <Field label="Levels" hint="Search levels the pins apply on; empty = every level">
+          <TagInput
+            values={levels}
+            options={levelNames}
+            placeholder="Add a level"
+            onChange={setLevels}
+          />
+        </Field>
+        <Field label="Views" hint="Result sub-tabs the pins apply on; empty = every view">
+          <TagInput
+            values={views}
+            options={viewOptions}
+            placeholder="Add a view"
+            onChange={setViews}
+          />
+        </Field>
       </div>
     </Modal>
   );

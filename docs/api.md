@@ -207,6 +207,10 @@ after its YAML is merged and deployed, because the frontend is built per node.
     {"type": "range", "field": "summary.poles.age", "label": "Age", "levels": ["Locations"], "views": ["Poles"], "unit": "Ma", "scale": 1000000.0, "min": null, "max": null},
     {"type": "bbox", "field": null, "label": "Geospatial", "levels": ["Locations"], "views": ["Poles"], "unit": null, "scale": 1.0, "min": null, "max": null}
   ],
+  "pinned_filters": [
+    {"levels": [], "views": [], "filters": ["Age", "Geospatial", "Author", "Contributor"]},
+    {"levels": ["Locations"], "views": ["Poles"], "filters": ["Age", "Pole A95", "Geospatial"]}
+  ],
   "map_colors": [
     {"label": "Age", "field": "age", "unit": "Ma", "scale": 1000000.0, "log": true, "tables": ["locations", "sites"]}
   ],
@@ -243,7 +247,19 @@ restricted to the search `levels` and result `views` (Summaries, Data, a plugin
 tab) it names, empty meaning all (a legacy `Rows`, the Data view's name until
 2026-11-16, is read and served as `Data`). `facets` lists the facet filters' fields (what
 `facets=true` aggregates; the pre-2026-09 YAML key `search.facets` still loads as
-facet filters). `map_colors` are the node YAML's `search.map_colors`, what the
+facet filters).
+
+`pinned_filters` are the node YAML's `search.pinned_filters`: the filters the
+sidebar keeps at its top, in order, whatever their counts (one with no values
+shows, disabled). Each rule applies on the `levels` and `views` it names (empty:
+any; `Rows` is read as `Data`); where several match, the SPA takes the most
+specific (naming views counts 2, naming levels 1) and the first of equals. A
+name matches a sidebar entry's label or key in any case ("Age", "Geospatial",
+"With Data", a data-model column's label); one matching none is skipped. The
+loader refuses an empty `filters`, a blank name, a name twice in one list (in
+any case) and a level the node does not have.
+
+`map_colors` are the node YAML's `search.map_colors`, what the
 Map tab's "Color by" menu offers (as `color_by` on `/search/{table}/points`) on
 the levels whose table is in `tables`; `field` is a column or a `summary.*`
 path, and a value / `scale` is what the legend shows. `bodies` are the planetary
@@ -276,7 +292,7 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet, a text column of the level (the `text` filter's), or a facet of the level's grid columns, else 422; `id` and `contributor` aggregate the contribution block's `summary.contribution.id` / `_contributor.raw`, keys always strings), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `plate` (repeatable, or comma separated: a plate code from `/v2/basemap/plates`, e.g. `PA`, or a province code from `/v2/basemap/provinces`, e.g. `kaapvaal-craton`: a position on any of them; with `bbox`, both apply; unknown codes 422), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below), `source` (repeatable `summary.<block>.<name>`, 1–50: each result holds only those fields, for a view paging through thousands of matches) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet, a text column of the level (the `text` filter's), or a facet of the level's grid columns, else 422; `id`, `contributor` and `author` aggregate the contribution block's `summary.contribution.id` / `_contributor.raw` / `_reference.authors._name.raw`, keys always strings), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `plate` (repeatable, or comma separated: a plate code from `/v2/basemap/plates`, e.g. `PA`, or a province code from `/v2/basemap/provinces`, e.g. `kaapvaal-craton`: a position on any of them; with `bbox`, both apply; unknown codes 422), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below), `source` (repeatable `summary.<block>.<name>`, 1–50: each result holds only those fields, for a view paging through thousands of matches) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/extent` | `query`, `range`, `filter`, `has`, `contribution`, `private_key?`, `mine?` / `versions?` | `{total, bounds?, center?}`: where the matches with a position on Earth are, without fetching them: `bounds` `[west, south, east, north]` (a geo_bounds; west is east of east across the antimeridian) and `center` `[lon, lat]`, the centroid of the busiest zoom-4 geotile (~22.5°); both absent when none is positioned; 404 for a level without positions (the Geospatial filter's default area, at most 20° each way) |
 | GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` | `SearchValues` |
@@ -319,7 +335,10 @@ table.
 `summary._all.<column>.raw` exactly, `||` OR-ing values within a token and
 tokens AND-ed; a value with a `*` is a wildcard matched ignoring case
 (`site_name:"*kenya*"`, a name containing "kenya"; not on the contribution-block
-terms `id`, `doi`, `contributor`, `orcid`, `private_key`).
+terms `id`, `doi`, `contributor`, `orcid`, `author`, `private_key`). `author`
+(2026-11-23) is the contribution's reference authors as cited
+(`summary.contribution._reference.authors._name.raw`, `author:"A. Koppers"`),
+every node's Author filter.
 `radius:"<lat>,<lon>,<km>"` (2026-11-14) matches docs with a position
 (`summary._all._geo_point`) within that great-circle distance of the centre
 (OpenSearch arc distance, capped at π·6371 km; longitude −360..360, wrapped);
@@ -700,7 +719,9 @@ exclude_table}`.
 
 ### Workspaces (`/v2/{repository}/workspaces`, Bearer or Basic)
 
-Shared workspaces: owners control membership, editors save, viewers read.
+Shared workspaces: owners control membership, editors save, viewers read. In
+data-source mode the list still answers and every write (POST, PUT, DELETE) is a
+409 naming where to contribute, as under `private/contributions`.
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
@@ -713,7 +734,8 @@ Shared workspaces: owners control membership, editors save, viewers read.
 ### Data-source sync (`/v2/{repository}/source`, node admin)
 
 A node in data-source mode (`FIESTA_CONTRIBUTIONS_MODE`, `contributions_mode` in
-its config) refuses every write under `private/contributions` with a 409 and is
+its config) refuses every write under `private/contributions`, `private/requests`
+and `workspaces` with a 409 and is
 fed by its sync script instead. Details: [data-sources.md](data-sources.md).
 
 | Method | Path | Body | Returns |

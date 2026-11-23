@@ -94,6 +94,15 @@ export interface HomeNews {
   link: string | null;
 }
 
+/** Filters pinned at the top of the sidebar, in order, on the levels and
+ * views named (backend `PinnedFilters`; empty = any). `filters` are entry
+ * labels or keys ("Age", "Geospatial", "facet:author"). */
+export interface PinnedFilters {
+  levels: string[];
+  views: string[];
+  filters: string[];
+}
+
 /** One filter sidebar control (backend `SearchFilter`). `levels` / `views`
  * empty = shown on every search level / result view. */
 export interface SearchFilter {
@@ -194,6 +203,9 @@ export interface NodeConfig {
   /** The quick-launch buttons by name, in order (node YAML `search.quick_launch`):
    * "Map" and plugin search views; null = Map, then every plugin view. */
   quick_launch?: string[] | null;
+  /** Filters kept at the top of the search sidebar per level and view (node
+   * YAML `search.pinned_filters`; lib/pinned-filters.ts). */
+  pinned_filters?: PinnedFilters[];
   /** Keys of every node the API serves; the portal bar links them to their
    * instances next to this one off the production hosts (lib/portals.ts). */
   deployment_nodes?: string[];

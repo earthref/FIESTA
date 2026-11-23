@@ -215,11 +215,21 @@ search:
     - { type: facet, field: location_type, views: [Rock Magnetism] }
     - { type: facet, field: plate_blocks, views: [Rock Magnetism] }
     - { type: facet, field: tectonic_settings, views: [Rock Magnetism] }
-    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
+    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, reference authors, timestamp).
     - { type: facet, field: id, label: Contribution ID, views: [Summaries, Data, Map] }
     - { type: facet, field: doi, label: Contribution DOI, views: [Summaries, Data, Map] }
     - { type: facet, field: contributor, label: Contributor, views: [Summaries, Data, Map] }
+    - { type: facet, field: author, label: Author, views: [Summaries, Data, Map] }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true, views: [Summaries, Data, Map] }
+  # Filters kept at the top of the sidebar, in this order, whatever their
+  # counts (one with no values shows disabled); the rest follow by count. A
+  # rule's `levels` / `views` (empty = any) say where it applies; the most
+  # specific matching rule wins (naming views beats naming only levels).
+  # Names are sidebar labels as spelled above; one with no filter is skipped.
+  pinned_filters:
+    - { filters: [Age, Geospatial, Author, Contributor] }
+    - { levels: [Locations], views: [Poles], filters: [Age, Pole A95, Geospatial] }
+    - { levels: [Specimens], views: [Rock Magnetism], filters: [Geospatial, Mr/Ms, Bcr/Bc] }
   # The Map view's "Color by" menu: a column (offered on the levels whose table
   # has it) or a summary.* path, parsed as a number; `scale` as a range
   # filter's. Age is a record's median age in years BP (summary._interval
