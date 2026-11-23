@@ -2446,6 +2446,86 @@ def test_map_points_from_a_search_doc():
     # Plates narrow the drawn points the same way (and leave out other bodies').
     on_plate = _map_points(contribution, "contribution", None, None, (), ("AF",))
     assert [(p["lon"], p.get("body")) for p in on_plate] == [(10.0, None)]
+    # A "nan" position is no point (nor invalid JSON in the response).
+    nan = {"summary": {"_all": {"_geo_point": {"lat": "nan", "lon": 1}}}}
+    assert _map_points(nan, "sites") == []
+
+
+async def test_index_cache_follows_the_index(monkeypatch):
+    from opensearchpy.exceptions import AuthorizationException
+
+    from fiesta.search import cache as cache_mod
+    from fiesta.search.cache import IndexCache
+
+    class Indices:
+        refreshes = 1
+        refused = False
+
+        async def stats(self, index, **_):
+            if self.refused:
+                raise AuthorizationException(403, "security_exception", {})
+            totals = {"refresh": {"external_total": self.refreshes}}
+            return {"indices": {f"{index}-build-1": {"primaries": totals}}}
+
+    client = type("Client", (), {"indices": Indices()})()
+    clock = [100.0]
+    monkeypatch.setattr(cache_mod.time, "monotonic", lambda: clock[0])
+    cache = IndexCache(max_bytes=10)
+    token = await cache.token(client, "magic")
+    cache.put(("k",), token, b"12345")
+    assert cache.get(("k",), await cache.token(client, "magic")) == b"12345"
+    # A refresh (any write a search can see) retires it, once TOKEN_TTL passes.
+    client.indices.refreshes = 2
+    assert cache.get(("k",), await cache.token(client, "magic")) == b"12345"
+    clock[0] += cache_mod.TOKEN_TTL
+    assert cache.get(("k",), await cache.token(client, "magic")) is None
+    # Bounded by size: the least recently used goes first; too big is not kept.
+    token = await cache.token(client, "magic")
+    for key in "abc":
+        cache.put((key,), token, b"1234")
+    assert [cache.get((k,), token) for k in "abc"] == [None, b"1234", b"1234"]
+    cache.put(("big",), token, b"x" * 11)
+    assert cache.get(("big",), token) is None
+    # Without index stats, entries expire after FALLBACK_TTL instead.
+    client.indices.refused = True
+    clock[0] += cache_mod.TOKEN_TTL
+    assert await cache.token(client, "magic") is None
+    cache.put(("k",), None, b"1")
+    clock[0] += cache_mod.FALLBACK_TTL - 1
+    assert cache.get(("k",), None) == b"1"
+    clock[0] += 1
+    assert cache.get(("k",), None) is None
+
+
+async def test_map_scroll_skips_the_scroll_for_one_page(monkeypatch):
+    from opensearchpy.exceptions import AuthorizationException
+
+    from fiesta.apps.routers import search as search_mod
+
+    calls = []
+
+    class Client:
+        async def search(self, index, body, scroll=None):
+            calls.append("scroll" if scroll else "search")
+            hits = [{"_source": {"n": 1}}, {"_source": {"n": 2}}]
+            return {"_scroll_id": "s", "hits": {"total": {"value": 2}, "hits": hits}}
+
+        async def clear_scroll(self, **_):
+            calls.append("clear")
+            raise AuthorizationException(403, "security_exception", {})
+
+    monkeypatch.setattr(search_mod, "get_opensearch", lambda: Client())
+    monkeypatch.setattr(search_mod, "_clear_scroll_refused", False)
+    node = type("Node", (), {"search_index": "magic"})()
+    seen = []
+    # Counted to fit one page: a plain search, nothing to clear.
+    assert await search_mod._scroll(node, {}, seen.append, lambda: False, 2) == 2
+    assert calls == ["search"] and len(seen) == 2
+    # Uncounted: a scroll; a refused clear is not tried again.
+    calls.clear()
+    await search_mod._scroll(node, {}, seen.append, lambda: False)
+    await search_mod._scroll(node, {}, seen.append, lambda: False)
+    assert calls == ["scroll", "clear", "scroll"]
 
 
 def test_plates_data_and_filter():
@@ -2790,7 +2870,7 @@ def test_large_maps_are_unique_locations(magic_node, monkeypatch):
             buckets = pages[len(requests) - 1]
             return {"aggregations": {"locations": {"buckets": buckets, "after_key": {"x": 1}}}}
 
-    monkeypatch.setattr(router, "MAP_PAGE_SIZE", 2)
+    monkeypatch.setattr(router, "MAP_AGG_PAGE_SIZE", 2)
     points, truncated = asyncio.run(router._location_points(Client(), "i", {"match_all": {}}))
     # The centroid is exact, even past Web Mercator's limit; no centroid, no point.
     assert points == [{"id": 7, "lat": 88.5, "lon": 10.0, "count": 40}]

@@ -14,7 +14,7 @@ from typing import Annotated, Any, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBasicCredentials
-from opensearchpy.exceptions import NotFoundError, TransportError
+from opensearchpy.exceptions import AuthorizationException, NotFoundError, TransportError
 from sqlalchemy import select
 
 from fiesta.apps.deps import (
@@ -41,6 +41,7 @@ from fiesta.domain.jsonld import contribution_jsonld
 from fiesta.domain.parse import ParsedContribution, ParseError, export_text, parse_text
 from fiesta.nodeconfig import ANY_TABLE, POSITION_COLUMNS, MapColor
 from fiesta.plates import in_plates, parse_plates
+from fiesta.search.cache import IndexCache
 from fiesta.search.client import get_opensearch
 from fiesta.search.grid import (
     ROW_SORT_PREFIX,
@@ -400,6 +401,12 @@ MAP_PAGE_SIZE = 10_000
 # at 30k locations, 3 s against 9 s to scroll the docs, and a tenth the size).
 MAP_DOCS_LIMIT = 10_000
 MAP_PRECISION = 24
+# Composite buckets per page: all of them at once. Every `after` page re-scans
+# every match (5 pages of 10k took 1.6 s on 375k docs, one page of 50k 0.8 s);
+# 50k stays under OpenSearch's default search.max_buckets (65,535).
+MAP_AGG_PAGE_SIZE = MAX_MAP_POINTS
+# Finished map responses (JSON) per API process, until the index changes.
+_points_cache = IndexCache(max_bytes=48 * 1024 * 1024)
 GEO_FIELD = "summary._all._geo_point"
 # Positions on another planetary body ({lat, lon, body}; see summarize.py).
 BODY_FIELD = "summary._all._body_point"
@@ -416,9 +423,11 @@ def _to_float(value: Any) -> float | None:
     if isinstance(value, list):
         value = value[0] if value else None
     try:
-        return float(value)
+        number = float(value)
     except (TypeError, ValueError):
         return None
+    # "nan" / "inf" parse, but are no position or color (and no JSON).
+    return number if math.isfinite(number) else None
 
 
 def _get_path(source: dict, path: str) -> Any:
@@ -609,9 +618,10 @@ async def _location_points(
     color values); and whether MAX_MAP_POINTS cut it short."""
     points: list[dict] = []
     after = None
+    size = MAP_AGG_PAGE_SIZE
     while len(points) < MAX_MAP_POINTS:
         composite: dict[str, Any] = {
-            "size": MAP_PAGE_SIZE,
+            "size": size,
             "sources": [
                 {"tile": {"geotile_grid": {"field": GEO_FIELD, "precision": MAP_PRECISION}}},
                 {"contribution": {"terms": {"field": "summary.contribution.id"}}},
@@ -619,34 +629,40 @@ async def _location_points(
         }
         if after:
             composite["after"] = after
-        response = await client.search(
-            index=index,
-            body={
-                "size": 0,
-                "query": query,
-                "aggs": {
-                    "locations": {
-                        "composite": composite,
-                        # Exact, unlike the tile's centre (and not clamped to Web
-                        # Mercator's ±85.05°).
-                        "aggs": {
-                            "at": {"geo_centroid": {"field": GEO_FIELD}},
-                            **({"value": value} if value else {}),
-                        },
-                    }
-                },
+        body = {
+            "size": 0,
+            "query": query,
+            "aggs": {
+                "locations": {
+                    "composite": composite,
+                    # Exact, unlike the tile's centre (and not clamped to Web
+                    # Mercator's ±85.05°).
+                    "aggs": {
+                        "at": {"geo_centroid": {"field": GEO_FIELD}},
+                        **({"value": value} if value else {}),
+                    },
+                }
             },
-        )
+        }
+        try:
+            response = await client.search(index=index, body=body)
+        except TransportError as exc:
+            # A cluster with a lower search.max_buckets: page as before.
+            if "too_many_buckets" not in str(exc) or size <= MAP_PAGE_SIZE:
+                raise
+            size = MAP_PAGE_SIZE
+            continue
         locations = response["aggregations"]["locations"]
         points += [p for b in locations["buckets"] if (p := _location_point(b))]
         after = locations.get("after_key")
-        if len(locations["buckets"]) < MAP_PAGE_SIZE or not after:
+        if len(locations["buckets"]) < size or not after:
             return points, False
     return points[:MAX_MAP_POINTS], True
 
 
 @router.get("/search/{table}/points", response_model=MapPoints, response_model_exclude_none=True)
 async def search_points(
+    request: Request,
     session: SessionDep,
     node: NodeDep,
     scope: ScopeDep,
@@ -660,17 +676,83 @@ async def search_points(
     contribution: int | None = None,
     private_key: str | None = None,
     color_by: str | None = None,
-) -> MapPoints:
+) -> Response:
     """Every positioned doc matching a search, for the search page's map; past
     MAP_DOCS_LIMIT matches at a level of single points (not the contribution
     level, not areas; one contribution's modal too), their unique locations
     with a `count` each instead. `color_by` (a node `map_colors` field) adds
-    each point's `value`: the doc's number, or a location's records' mean."""
+    each point's `value`: the doc's number, or a location's records' mean.
+
+    A public search's response (no `mine`, no private key) is the same for
+    every caller, so it is kept until the index changes (search.cache)."""
     if table not in node.geo_tables:
         raise HTTPException(404, f"search table {table!r} has no positions")
     color = node.map_color(table, color_by) if color_by else None
     if color_by and color is None:
         raise HTTPException(400, f"{color_by!r} is not a map color of {table!r}")
+    cacheable = not scope.mine and private_key is None and "private_key" not in (query or "")
+    if cacheable:
+        key = (node.search_index, table, tuple(sorted(request.query_params.multi_items())))
+        token = await _points_cache.token(get_opensearch(), node.search_index)
+        if (cached := _points_cache.get(key, token)) is not None:
+            return Response(cached, media_type="application/json")
+    found = await _search_points(
+        session,
+        node,
+        scope,
+        table,
+        query,
+        range_,
+        bbox,
+        plate,
+        filter_,
+        has,
+        contribution,
+        private_key,
+        color,
+    )
+    # Built as plain dicts and dumped once: validating 30k+ points through
+    # MapPoints (the declared shape) cost more than the search on a big map.
+    body = json.dumps(found, separators=(",", ":")).encode()
+    if cacheable:
+        _points_cache.put(key, token, body)
+    return Response(body, media_type="application/json")
+
+
+def _points_result(
+    total: int, points: list[dict], truncated: bool, contributions: dict[str, dict]
+) -> dict:
+    """MapPoints as JSON-ready dicts, without the None fields it would exclude."""
+    for point in points:
+        if point.get("id", 0) is None:
+            del point["id"]
+    return {
+        "total": total,
+        "points": points,
+        "truncated": truncated,
+        "contributions": {
+            cid: {k: v for k, v in label.items() if v is not None}
+            for cid, label in contributions.items()
+        },
+    }
+
+
+async def _search_points(
+    session,
+    node,
+    scope,
+    table,
+    query,
+    range_,
+    bbox,
+    plate,
+    filter_,
+    has,
+    contribution,
+    private_key,
+    color,
+) -> dict:
+    """search_points' search, uncached, as _points_result."""
     area = _parse_bbox(bbox)
     plates = parse_plates(plate)
     body = build_search_body(
@@ -701,52 +783,51 @@ async def search_points(
         body["_source"].append(color.path(table))
         if color.unit_column:
             body["_source"].append(f"summary.{table}.{color.unit_column}")
-    if table != "contribution" and table not in node.area_tables:
-        client = get_opensearch()
-        try:
-            count = await client.count(index=node.search_index, body={"query": body["query"]})
-        except NotFoundError:
-            return MapPoints(total=0, points=[])
-        if count["count"] > MAP_DOCS_LIMIT:
-            value = color and await _value_script(client, node.search_index, table, color)
-            points, truncated = await _location_points(
-                client, node.search_index, body["query"], value
-            )
-            # The locations are Earth's (a geotile grid); the few records on
-            # other bodies are plotted one by one.
-            elsewhere = {
-                **body,
-                "query": {"bool": {"filter": [body["query"], {"exists": {"field": BODY_FIELD}}]}},
-            }
-            await _scroll(
-                node,
-                elsewhere,
-                lambda source: points.extend(
-                    _map_points(source, table, area, color, parents, plates)
-                ),
-                lambda: len(points) >= MAX_MAP_POINTS,
-            )
-            points = points[:MAX_MAP_POINTS]
-            return MapPoints(
-                total=count["count"],
-                points=points,
-                truncated=truncated,
-                contributions=await _contribution_labels(node, points),
-            )
+    client = get_opensearch()
+    try:
+        # Also whether _scroll needs a scroll at all.
+        count = (await client.count(index=node.search_index, body={"query": body["query"]}))[
+            "count"
+        ]
+    except NotFoundError:
+        return _points_result(0, [], False, {})
+    if count > MAP_DOCS_LIMIT and table != "contribution" and table not in node.area_tables:
+        value = color and await _value_script(client, node.search_index, table, color)
+        points, truncated = await _location_points(client, node.search_index, body["query"], value)
+        # The locations are Earth's (a geotile grid); the few records on
+        # other bodies are plotted one by one.
+        elsewhere = {
+            **body,
+            "query": {"bool": {"filter": [body["query"], {"exists": {"field": BODY_FIELD}}]}},
+        }
+        await _scroll(
+            node,
+            elsewhere,
+            lambda source: points.extend(_map_points(source, table, area, color, parents, plates)),
+            lambda: len(points) >= MAX_MAP_POINTS,
+        )
+        points = points[:MAX_MAP_POINTS]
+        return _points_result(count, points, truncated, await _contribution_labels(node, points))
     points: list[dict] = []
-    total = await _scroll(
-        node,
-        body,
-        lambda source: points.extend(_map_points(source, table, area, color, parents, plates)),
-        lambda: len(points) >= MAX_MAP_POINTS,
-    )
+    # A contribution doc is its own tooltip: its labels come with its points
+    # rather than from a second search of the same docs.
+    labels: dict[str, dict] | None = {} if table == "contribution" else None
+    if labels is not None:
+        body["_source"] += LABEL_FIELDS
+
+    def collect(source: dict) -> None:
+        found = _map_points(source, table, area, color, parents, plates)
+        points.extend(found)
+        if found and labels is not None:
+            summary = (source.get("summary") or {}).get("contribution") or {}
+            if summary.get("id") is not None:
+                labels[str(summary["id"])] = _contribution_label(summary)
+
+    total = await _scroll(node, body, collect, lambda: len(points) >= MAX_MAP_POINTS, count)
     points = points[:MAX_MAP_POINTS]
-    return MapPoints(
-        total=total,
-        points=points,
-        truncated=total > MAX_MAP_POINTS,
-        contributions=await _contribution_labels(node, points),
-    )
+    if labels is None:
+        labels = await _contribution_labels(node, points)
+    return _points_result(total, points, total > MAX_MAP_POINTS, labels)
 
 
 # The extent's `center`: the centroid of the busiest geotile at this zoom
@@ -870,27 +951,51 @@ async def _contribution_labels(node, points: list[dict]) -> dict[str, dict]:
                     ]
                 }
             },
-            "_source": [
-                "summary.contribution.id",
-                "summary.contribution._reference",
-                "summary.contribution._contributor",
-                "summary.contribution.timestamp",
-            ],
+            "_source": ["summary.contribution.id", *LABEL_FIELDS],
         },
         collect,
         lambda: False,
+        len(ids),
     )
     return labels
 
 
-async def _scroll(node, body: dict, collect, full) -> int:
+# What _contribution_label reads.
+LABEL_FIELDS = [
+    "summary.contribution._reference",
+    "summary.contribution._contributor",
+    "summary.contribution.timestamp",
+]
+# Set once the cluster refuses indices:data/read/scroll/clear (the production
+# `fiesta` role): every later clear would be one more refused round trip.
+_clear_scroll_refused = False
+
+
+async def _scroll(node, body: dict, collect, full, total: int | None = None) -> int:
     """Pass every hit's `_source` of a search to `collect`, a page of
     MAP_PAGE_SIZE at a time, until there are none left or `full()`; returns
-    the search's total."""
+    the search's total. One the caller counted (`total`) to fit one page is
+    a plain search, with no scroll context to open and clear."""
+    global _clear_scroll_refused
     body["size"] = MAP_PAGE_SIZE
     body["sort"] = ["_doc"]
     body.pop("from", None)
     client = get_opensearch()
+    if total is not None and total <= MAP_PAGE_SIZE:
+        try:
+            response = await client.search(
+                index=node.search_index, body={**body, "track_total_hits": True}
+            )
+        except NotFoundError:
+            return 0
+        hits = response["hits"]
+        found = hits["total"]["value"] if isinstance(hits["total"], dict) else hits["total"]
+        if found <= MAP_PAGE_SIZE:
+            if not full():
+                for hit in hits["hits"]:
+                    collect(hit["_source"])
+            return found
+        # Grew past one page since it was counted: scroll it from the start.
     try:
         response = await client.search(index=node.search_index, body=body, scroll="1m")
     except NotFoundError:
@@ -910,9 +1015,12 @@ async def _scroll(node, body: dict, collect, full) -> int:
     finally:
         # Best effort: the production `fiesta` role may not clear scrolls
         # (indices:data/read/scroll/clear), and the context expires in 1m anyway.
-        if scroll_id:
+        if scroll_id and not _clear_scroll_refused:
             try:
                 await client.clear_scroll(scroll_id=scroll_id, ignore=(404,))
+            except AuthorizationException:
+                _clear_scroll_refused = True
+                logger.warning("scroll clear refused; scrolls now expire on their own (1m)")
             except TransportError as exc:
                 logger.warning("could not clear the search scroll: %s", exc)
     return total
