@@ -477,9 +477,11 @@ return x;
 """
 
 
-async def _value_script(client, index: str, table: str, color: MapColor) -> dict:
-    """The avg aggregation of a MapColor's values, reading each path's doc
-    values: its `.raw` keyword when it is text, else the field itself."""
+async def _color_doc_fields(
+    client, index: str, table: str, color: MapColor
+) -> tuple[str | None, str | None]:
+    """A MapColor's value and unit fields with doc values: each path's `.raw`
+    keyword when it is text, else the field itself (None: not mapped)."""
     paths = [color.path(table)]
     if color.unit_column:
         paths.append(f"summary.{table}.{color.unit_column}")
@@ -500,14 +502,19 @@ async def _value_script(client, index: str, table: str, color: MapColor) -> dict
             return f"{path}.raw"
         return path if mapped.get(path, "text") != "text" else None
 
-    field = doc_field(paths[0])
+    return doc_field(paths[0]), doc_field(paths[1]) if color.unit_column else None
+
+
+async def _value_script(client, index: str, table: str, color: MapColor) -> dict:
+    """The avg aggregation of a MapColor's values, read from doc values."""
+    field, unit = await _color_doc_fields(client, index, table, color)
     return {
         "avg": {
             "script": {
                 "source": VALUE_SCRIPT,
                 "params": {
                     "fields": [field] if field else [],
-                    "unit": doc_field(paths[1]) if color.unit_column else None,
+                    "unit": unit,
                     "factors": color.unit_factors,
                     "offsets": color.unit_offsets,
                 },
@@ -823,7 +830,42 @@ async def _search_points(
             if summary.get("id") is not None:
                 labels[str(summary["id"])] = _contribution_label(summary)
 
-    total = await _scroll(node, body, collect, lambda: len(points) >= MAX_MAP_POINTS, count)
+    def full() -> bool:
+        return len(points) >= MAX_MAP_POINTS
+
+    # Docs only on Earth are read from doc values: loading each one's
+    # _source (summary._all's unions) was most of a big map's search (sites,
+    # 8.5k docs: 1.2-2.2 s against 0.3-0.5 s). Docs on other bodies keep
+    # _source, which pairs each `_body_point`'s lat, lon and body.
+    text = [
+        *([f"summary.{table}.{table.removesuffix('s')}"] if table != "contribution" else []),
+        *(
+            f"summary.{block}.{parent.removesuffix('s')}"
+            for parent in parents
+            for block in (parent, "_all")
+        ),
+    ]
+    color_fields = await _color_doc_fields(client, node.search_index, table, color) if color else ()
+    on_earth = {
+        **body,
+        "_source": False,
+        "docvalue_fields": [
+            GEO_FIELD,
+            "summary.contribution.id",
+            *(f"{path}.raw" for path in text),
+            *(f for f in color_fields if f),
+            *(LABEL_DOC_FIELDS if labels is not None else []),
+        ],
+        "query": {
+            "bool": {"filter": [body["query"]], "must_not": [{"exists": {"field": BODY_FIELD}}]}
+        },
+    }
+    elsewhere = {
+        **body,
+        "query": {"bool": {"filter": [body["query"], {"exists": {"field": BODY_FIELD}}]}},
+    }
+    total = await _scroll(node, on_earth, collect, full, count)
+    total += await _scroll(node, elsewhere, collect, full, count)
     points = points[:MAX_MAP_POINTS]
     if labels is None:
         labels = await _contribution_labels(node, points)
@@ -910,11 +952,11 @@ def _citation(reference: Any) -> str | None:
     """A contribution's `_reference` as its short citation (as the search
     results label it): its citation, long citation or title, or the text."""
     if isinstance(reference, dict):
-        return next(
-            (str(reference[k]) for k in ("citation", "long_citation", "title") if reference.get(k)),
-            None,
-        )
+        return next((str(reference[k]) for k in CITATION_KEYS if reference.get(k)), None)
     return _first_text(reference)
+
+
+CITATION_KEYS = ("citation", "long_citation", "title")
 
 
 def _contribution_label(summary: dict) -> dict:
@@ -951,7 +993,9 @@ async def _contribution_labels(node, points: list[dict]) -> dict[str, dict]:
                     ]
                 }
             },
-            "_source": ["summary.contribution.id", *LABEL_FIELDS],
+            # Doc values: a contribution doc's _source is the biggest of all.
+            "_source": False,
+            "docvalue_fields": ["summary.contribution.id", *LABEL_DOC_FIELDS],
         },
         collect,
         lambda: False,
@@ -960,10 +1004,17 @@ async def _contribution_labels(node, points: list[dict]) -> dict[str, dict]:
     return labels
 
 
-# What _contribution_label reads.
+# What _contribution_label reads, from _source and from doc values (the
+# `_reference` keys _citation tries; a timestamp's doc value is the same
+# instant in another format, ...Z for ...+00:00).
 LABEL_FIELDS = [
     "summary.contribution._reference",
     "summary.contribution._contributor",
+    "summary.contribution.timestamp",
+]
+LABEL_DOC_FIELDS = [
+    *(f"summary.contribution._reference.{key}.raw" for key in CITATION_KEYS),
+    "summary.contribution._contributor.raw",
     "summary.contribution.timestamp",
 ]
 # Set once the cluster refuses indices:data/read/scroll/clear (the production
@@ -971,8 +1022,42 @@ LABEL_FIELDS = [
 _clear_scroll_refused = False
 
 
+def _geo_value(value: Any) -> dict | None:
+    """A geo_point doc value ("lat, lon", or {lat, lon}) as {lat, lon}. Doc
+    values are quantized (~5 mm); 6 decimals give back any position stored
+    to 6 places or fewer."""
+    if isinstance(value, str):
+        lat, _, lon = value.partition(",")
+    elif isinstance(value, dict):
+        lat, lon = value.get("lat"), value.get("lon")
+    else:
+        return None
+    lat, lon = _to_float(lat), _to_float(lon)
+    return None if lat is None or lon is None else {"lat": round(lat, 6), "lon": round(lon, 6)}
+
+
+def _hit_source(hit: dict) -> dict:
+    """A hit's `_source`, or (a search with `_source: false`) its doc values
+    shaped as the _source paths they stand for: `.raw` dropped, a single
+    value unwrapped, `_geo_point` a list of {lat, lon}."""
+    if "_source" in hit:
+        return hit["_source"]
+    source: dict = {}
+    for name, values in (hit.get("fields") or {}).items():
+        path = name.removesuffix(".raw")
+        value: Any = values[0] if len(values) == 1 else values
+        if path == GEO_FIELD:
+            value = [point for v in values if (point := _geo_value(v))]
+        *parents, leaf = path.split(".")
+        at = source
+        for key in parents:
+            at = at.setdefault(key, {})
+        at[leaf] = value
+    return source
+
+
 async def _scroll(node, body: dict, collect, full, total: int | None = None) -> int:
-    """Pass every hit's `_source` of a search to `collect`, a page of
+    """Pass every hit's `_source` (_hit_source) of a search to `collect`, a page of
     MAP_PAGE_SIZE at a time, until there are none left or `full()`; returns
     the search's total. One the caller counted (`total`) to fit one page is
     a plain search, with no scroll context to open and clear."""
@@ -993,7 +1078,7 @@ async def _scroll(node, body: dict, collect, full, total: int | None = None) -> 
         if found <= MAP_PAGE_SIZE:
             if not full():
                 for hit in hits["hits"]:
-                    collect(hit["_source"])
+                    collect(_hit_source(hit))
             return found
         # Grew past one page since it was counted: scroll it from the start.
     try:
@@ -1006,7 +1091,7 @@ async def _scroll(node, body: dict, collect, full, total: int | None = None) -> 
     try:
         while hits["hits"] and not full():
             for hit in hits["hits"]:
-                collect(hit["_source"])
+                collect(_hit_source(hit))
             if len(hits["hits"]) < MAP_PAGE_SIZE:
                 break
             response = await client.scroll(scroll_id=scroll_id, scroll="1m")

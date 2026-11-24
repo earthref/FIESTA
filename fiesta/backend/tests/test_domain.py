@@ -2451,6 +2451,42 @@ def test_map_points_from_a_search_doc():
     assert _map_points(nan, "sites") == []
 
 
+def test_map_points_from_doc_values():
+    from fiesta.apps.routers.search import _contribution_label, _hit_source, _map_points
+
+    # As OpenSearch returns docvalue_fields: lists, `.raw` keywords, quantized
+    # "lat, lon" strings.
+    hit = {
+        "fields": {
+            "summary._all._geo_point": ["10.499999972060323, -20.000000016763806"],
+            "summary.contribution.id": [7],
+            "summary.sites.site.raw": ["S1"],
+            "summary._all.location.raw": ["L1"],
+            "summary.contribution._reference.citation.raw": ["Doe (2020)"],
+            "summary.contribution._contributor.raw": ["Jo Doe"],
+            "summary.contribution.timestamp": ["2026-05-07T23:46:54.343Z"],
+        }
+    }
+    source = _hit_source(hit)
+    assert _map_points(source, "sites", parents=("locations",)) == [
+        {
+            "id": 7,
+            "name": "S1",
+            "parents": [{"table": "locations", "name": "L1"}],
+            "lat": 10.5,
+            "lon": -20.0,
+        }
+    ]
+    assert _contribution_label(source["summary"]["contribution"]) == {
+        "citation": "Doe (2020)",
+        "contributor": "Jo Doe",
+        "timestamp": "2026-05-07T23:46:54.343Z",
+    }
+    # A hit with _source is passed through; one with no doc values is empty.
+    assert _hit_source({"_source": {"a": 1}}) == {"a": 1}
+    assert _map_points(_hit_source({}), "sites") == []
+
+
 async def test_index_cache_follows_the_index(monkeypatch):
     from opensearchpy.exceptions import AuthorizationException
 
