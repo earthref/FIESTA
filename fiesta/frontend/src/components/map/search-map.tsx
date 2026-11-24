@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api";
 import { useNodeConfig } from "../../lib/config";
 import { useSearchSetting } from "../../lib/saved-search";
@@ -41,7 +41,7 @@ import {
   recordsOf,
   toMapPoint,
 } from "./map-points";
-import { isProvince, usePlates, useProvinces } from "./plates";
+import { isProvince, outlineCenter, usePlates, useProvinces } from "./plates";
 
 // MapLibre (~800 KB) loads with the first map.
 const MapLibreMap = lazy(() => import("./maplibre-map"));
@@ -309,6 +309,27 @@ export function SearchMap({
         : [],
     [editArea, plateList.data, provinceList.data, plates, color],
   );
+  // A plate, craton or block added to the filter is brought to the middle of
+  // the map (the globe turned to it, the Mercator map panned), at the same
+  // zoom, once its outline has loaded; the last one added when several are.
+  const shownPlates = useRef(plates);
+  const [addedPlate, setAddedPlate] = useState<string | null>(null);
+  useEffect(() => {
+    const added = plates.filter((code) => !shownPlates.current.includes(code));
+    shownPlates.current = plates;
+    if (editArea && added.length) setAddedPlate(added[added.length - 1]);
+  }, [plates, editArea]);
+  const [centerOn, setCenterOn] = useState<{ lon: number; lat: number } | null>(null);
+  useEffect(() => {
+    if (!addedPlate) return;
+    const outline = [...(plateList.data?.plates ?? []), ...(provinceList.data?.plates ?? [])].find(
+      (plate) => plate.code === addedPlate,
+    );
+    if (!outline) return;
+    setAddedPlate(null);
+    const center = outlineCenter(outline.lines);
+    if (center) setCenterOn(center);
+  }, [addedPlate, plateList.data, provinceList.data]);
   const fetched = inArea.data?.points;
   // Scaled to the values of the search's points (in the area, if any).
   const scale = useMemo(
@@ -480,6 +501,7 @@ export function SearchMap({
             area={editArea && onEarth ? area : null}
             onAreaChange={onAreaChange}
             zoomTo={onEarth ? zoomTo : null}
+            centerOn={onEarth ? centerOn : null}
             focusKey={focusKey}
             context={context}
             lines={onEarth ? plateLines : undefined}

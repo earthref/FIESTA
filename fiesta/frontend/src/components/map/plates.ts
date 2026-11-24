@@ -121,6 +121,34 @@ export const useProvinces = (enabled = true) =>
     staleTime: Number.POSITIVE_INFINITY,
   });
 
+const DEGREES = 180 / Math.PI;
+
+/**
+ * Where to centre a map on an outline: the mean of its boundary on the sphere
+ * (each edge's midpoint weighted by its length, as unit vectors), so an
+ * outline across the antimeridian is centred on it and one around a pole
+ * (Antarctica) on the pole. Null for no boundary.
+ */
+export const outlineCenter = (lines: [number, number][][]): { lon: number; lat: number } | null => {
+  const vector = ([lon, lat]: [number, number]) => {
+    const [l, p] = [lon / DEGREES, lat / DEGREES];
+    return [Math.cos(p) * Math.cos(l), Math.cos(p) * Math.sin(l), Math.sin(p)];
+  };
+  let [x, y, z] = [0, 0, 0];
+  for (const line of lines) {
+    for (let i = 1; i < line.length; i++) {
+      const [a, b] = [vector(line[i - 1]), vector(line[i])];
+      const length = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+      x += (a[0] + b[0]) * length;
+      y += (a[1] + b[1]) * length;
+      z += (a[2] + b[2]) * length;
+    }
+  }
+  const r = Math.hypot(x, y, z);
+  if (!(r > 1e-12)) return null;
+  return { lon: Math.atan2(y, x) * DEGREES, lat: Math.asin(z / r) * DEGREES };
+};
+
 /** A province's code (a lower-case slug), not a plate's (two letters). */
 export const isProvince = (code: string) => code.includes("-");
 
