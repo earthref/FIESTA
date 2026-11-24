@@ -37,10 +37,9 @@ export interface OrderableEntry {
   chips: readonly unknown[];
 }
 
-/** The sidebar's entries in order, as two lists drawn with a rule between
- * them (so the pins' out-of-order counts read as intended): `pinned`, in pin
- * order (a pin matches an entry's key or label, in any case; one matching
- * none is skipped), and `rest`: the applied ones, then the others by count,
+/** The sidebar's entries in order, as two lists drawn one after the other:
+ * `pinned`, in pin order (a pin matches an entry's key or label, in any case;
+ * one matching none is skipped), and `rest`: the applied ones, then the others by count,
  * most first, the given order breaking ties. An entry no record has a value
  * for is left out unless it is pinned or applied: a pinned filter with
  * nothing to pick shows (disabled) in its place. */

@@ -1392,7 +1392,7 @@ export function SearchPage(props: SearchPageProps) {
   const findNeedle = filterFind.trim().toLowerCase();
   const found = (entry: SidebarEntry) =>
     !findNeedle || entry.label.toLowerCase().includes(findNeedle);
-  // The node's pinned filters for this level and view lead, above a rule
+  // The node's pinned filters for this level and view lead
   // (lib/pinned-filters.ts); then applied filters and the rest by count.
   const ordered = orderSidebarEntries(
     entries,
@@ -1790,14 +1790,6 @@ export function SearchPage(props: SearchPageProps) {
               {filtersPanel ?? (
                 <>
                   {pinnedEntries.map(renderSidebarEntry)}
-                  {pinnedEntries.length > 0 && restEntries.length > 0 && (
-                    // The pinned filters keep their order; below, by count.
-                    <hr
-                      aria-label="Pinned filters above, the rest by count below"
-                      className="border-0"
-                      style={{ borderTop: "2px solid var(--er-ink-faint)", margin: "0.5em 1em" }}
-                    />
-                  )}
                   {restEntries.map(renderSidebarEntry)}
                   {findNeedle && sidebarEntries.length === 0 && (
                     <p className="px-[1em] py-3 text-[13px] text-ink-faint">
