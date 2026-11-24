@@ -9,7 +9,13 @@ from sqlalchemy import select
 
 from fiesta.apps.deps import CurrentUser, NodeDep, SessionDep, require_public_contributions
 from fiesta.apps.schemas import ContributionOut, JobOut, NameIn, ReferenceIn, ValidationOut
-from fiesta.db.models import Contribution, ContributionStatus, Revision, User
+from fiesta.db.models import (
+    PUBLICATION_PROFILE,
+    Contribution,
+    ContributionStatus,
+    Revision,
+    User,
+)
 from fiesta.domain.parse import ParseError, parse_text, set_table_values
 from fiesta.jobs import tasks
 from fiesta.services import contributions as svc
@@ -334,9 +340,7 @@ async def set_fields(
         raise HTTPException(422, f"not editable in the workspace: {', '.join(unknown)}")
     if not payload.values:
         raise HTTPException(422, "no fields to set")
-    text = (
-        await _workspace_text(session, node, contribution) if contribution.head_revision else ""
-    )
+    text = await _workspace_text(session, node, contribution) if contribution.head_revision else ""
     try:
         parse_text(text)
     except ParseError as exc:
@@ -387,6 +391,16 @@ async def activate(
     validation = await svc.latest_validation(session, contribution_id)
     if validation is None or not validation.is_valid:
         raise HTTPException(409, "contribution must pass validation before publishing")
+    # The published record names its contributor: their profile must be complete
+    # (an admin approving someone's version waits for the contributor's too).
+    owner = await session.get(User, contribution.contributor_id) or user
+    if missing := owner.profile_missing:
+        whose = "your" if owner.id == user.id else f"the contributor's ({owner.name})"
+        needs = ", ".join(PUBLICATION_PROFILE[m] for m in missing)
+        raise HTTPException(
+            409,
+            f"complete {whose} EarthRef profile before publishing: {needs} (Account page)",
+        )
     if node.workspace.require_reference:
         row = await references.resolve(session, contribution.reference_doi)
         if row is None or row.status != "ok":
@@ -398,7 +412,6 @@ async def activate(
     await svc.activate(session, node, contribution, actor_id=user.id)
     # It stays the contributor's (an admin approving someone's version
     # publishes it for them), so the news goes to the contributor.
-    owner = await session.get(User, contribution.contributor_id) or user
     approved = f" (approved by {user.name})" if owner.id != user.id else ""
     await tasks.send_email.defer_async(
         to=owner.email,

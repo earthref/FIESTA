@@ -44,9 +44,19 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(255))
     handle: Mapped[str | None] = mapped_column(String(255), unique=True)
     orcid: Mapped[str | None] = mapped_column(String(19), unique=True)
+    # Kept for HTTP Basic (/v1) and scripts' POST /v2/auth/login; people sign in
+    # with an emailed link or an external account (UserIdentity), never a password.
     password_hash: Mapped[str | None] = mapped_column(String(255))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    # Publication requires these (User.profile_missing); `name` is the display
+    # name, kept as "<first> <last>" once both are set.
+    first_name: Mapped[str | None] = mapped_column(String(255))
+    last_name: Mapped[str | None] = mapped_column(String(255))
+    affiliation: Mapped[str | None] = mapped_column(String(512))
+    # Set by an emailed sign-in link or a provider that vouches for the
+    # address; cleared when the email changes.
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     settings: Mapped[dict] = mapped_column(JSON, default=dict)
 
@@ -71,6 +81,61 @@ class User(Base):
     def is_node_admin(self, node_slug: str) -> bool:
         """Super admin, or an admin of the node with this slug."""
         return self.is_admin or any(role.node == node_slug for role in self._loaded_roles())
+
+    @property
+    def profile_missing(self) -> list[str]:
+        """What this account lacks before it may publish, in PUBLICATION_PROFILE order."""
+        missing = [f for f in ("first_name", "last_name", "affiliation") if not getattr(self, f)]
+        return missing + ([] if self.email_verified_at else ["verified_email"])
+
+
+# Labels for User.profile_missing, in the order publication asks for them.
+PUBLICATION_PROFILE = {
+    "first_name": "first name",
+    "last_name": "last name",
+    "affiliation": "affiliation",
+    "verified_email": "a verified email address",
+}
+
+
+class UserIdentity(Base):
+    """An external sign-in (provider + its stable subject id) linked to an account."""
+
+    __tablename__ = "user_identities"
+    __table_args__ = (
+        UniqueConstraint("provider", "subject", name="uq_user_identities_subject"),
+        {"schema": SHARED_SCHEMA},
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(f"{SHARED_SCHEMA}.users.id", ondelete="CASCADE"), index=True
+    )
+    provider: Mapped[str] = mapped_column(String(32))  # google | microsoft | github | orcid
+    subject: Mapped[str] = mapped_column(String(255))
+    email: Mapped[str | None] = mapped_column(String(255))  # as the provider last gave it
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class LoginToken(Base):
+    """A one-time secret: an emailed sign-in link (`email`, `email_change`) or an
+    OAuth hand-off code (`oauth`: the provider's profile and the flow's nonce in
+    `payload`, resolved to an account only when the tab that started the flow
+    redeems it). Only its sha256 is stored."""
+
+    __tablename__ = "login_tokens"
+    __table_args__ = {"schema": SHARED_SCHEMA}
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    purpose: Mapped[str] = mapped_column(String(16))
+    email: Mapped[str | None] = mapped_column(String(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey(f"{SHARED_SCHEMA}.users.id", ondelete="CASCADE")
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    payload: Mapped[dict | None] = mapped_column(JSON)
 
 
 class ContributionStatus(enum.StrEnum):

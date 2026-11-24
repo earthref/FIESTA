@@ -1,7 +1,7 @@
 #!/bin/bash
 # End-to-end FIESTA workflow test against a running compose stack
 # (`make up FIESTA_NODE=magic`). Exercises, all on the one /v2 API:
-# register -> login -> create -> upload -> async worker processing ->
+# emailed sign-in link -> profile -> create -> upload -> async worker processing ->
 # validation -> publish -> search/facets -> download -> notification email.
 #
 # Ports are overridable: API_PORT, MAILPIT_PORT.
@@ -11,7 +11,6 @@ V2=http://localhost:${API_PORT:-8000}/v2
 API=$V2/magic
 MAILPIT=http://localhost:${MAILPIT_PORT:-8025}
 EMAIL=${E2E_EMAIL:-test@earthref.org}
-PASSWORD=${E2E_PASSWORD:-testpassword}
 
 FILE=$(mktemp --suffix=.txt)
 trap 'rm -f "$FILE"' EXIT
@@ -35,15 +34,20 @@ json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
 echo "== health =="
 curl -sf "$V2/health-check" | json '"status: %s | repositories: %s" % (d["status"], d["repositories"])'
 
-echo "== register =="
-curl -sf -X POST "$V2/auth/register" -H 'Content-Type: application/json' \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"name\":\"Test User\"}" || echo "(already exists)"
-echo
-
-echo "== login =="
-TOKEN=$(curl -sf -X POST "$V2/auth/login" -d "username=$EMAIL&password=$PASSWORD" | json 'd["access_token"]')
+echo "== sign up / sign in (emailed one-time link, read from mailpit) =="
+curl -sf -X POST "$V2/auth/email-link" -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$EMAIL\",\"return_to\":\"http://localhost:${FRONTEND_PORT:-8080}/MagIC/\"}" >/dev/null
+SECRET=$(curl -sf "$MAILPIT/api/v1/message/latest" \
+  | python3 -c "import json,re,sys; print(re.search(r'#fiesta_link=([\w-]+)', json.load(sys.stdin)['Text']).group(1))")
+TOKEN=$(curl -sf -X POST "$V2/auth/email-link/verify" -H 'Content-Type: application/json' \
+  -d "{\"token\":\"$SECRET\"}" | json 'd["access_token"]')
 AUTH="Authorization: Bearer $TOKEN"
 echo "token ok"
+
+echo "== profile (publication needs first and last name, affiliation, verified email) =="
+curl -sf -X PATCH "$V2/auth/me" -H "$AUTH" -H 'Content-Type: application/json' \
+  -d '{"first_name":"Test","last_name":"User","affiliation":"EarthRef CI"}' \
+  | json '"missing for publication: %s" % (d["profile_missing"] or "nothing")'
 
 echo "== node config (same process, two nodes) =="
 curl -sf "$API/config" | json '"magic: " + d["title"]'
@@ -107,13 +111,13 @@ curl -s -o /dev/null -w "method-codes on kdd: HTTP %{http_code}\n" "$V2/kdd/plug
 curl -sf "$V2/basemap/plates" | json '"plates: %d" % len(d["features"])'
 
 echo "== notification email (mailpit; the worker sends it asynchronously) =="
-MESSAGES=0
+PUBLISHED=0
 for _ in $(seq 1 15); do
-  MESSAGES=$(curl -s "$MAILPIT/api/v1/messages" | json 'd["total"]' 2>/dev/null || echo 0)
-  [ "$MESSAGES" -ge 1 ] && break
+  PUBLISHED=$(curl -s "$MAILPIT/api/v1/messages" | json "sum('Contribution $CID published' in m['Subject'] for m in d['messages'])" 2>/dev/null || echo 0)
+  [ "$PUBLISHED" -ge 1 ] && break
   sleep 2
 done
-[ "$MESSAGES" -ge 1 ] || { echo "TIMEOUT waiting for the publication email"; curl -si "$MAILPIT/api/v1/messages" | head -5; exit 1; }
+[ "$PUBLISHED" -ge 1 ] || { echo "TIMEOUT waiting for the publication email"; curl -si "$MAILPIT/api/v1/messages" | head -5; exit 1; }
 curl -sf "$MAILPIT/api/v1/messages" | json '"messages: %d | latest: %s" % (d["total"], d["messages"][0]["Subject"])'
 
 echo "ALL E2E CHECKS PASSED"

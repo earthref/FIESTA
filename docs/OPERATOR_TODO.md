@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-11-18
+Last updated: 2026-11-24
 
 ## A — Decisions
 
@@ -115,7 +115,40 @@ Last updated: 2026-11-18
       Safe with bearer tokens and no cookies. Unblocks: B2.
 - [ ] **EZID account** for DOI minting (username/password names TBD when C1 is built).
       Unblocks: C1 live path.
-- [ ] **ORCID API client** (client id/secret, redirect URI per host). Unblocks: C2.
+- [ ] **Sign-in origins on dev (2026-11-24)**: set
+      `FIESTA_SIGN_IN_ORIGINS='["https://dev.earthref.org"]'` on the dev API host.
+      Sign-in links and provider hand-offs only return to `api.site_url`
+      (earthref.org), CORS origins and these, so without it every sign-in on dev
+      answers 422. Production needs nothing (earthref.org is `api.site_url`).
+- [ ] **Sign-in apps (2026-11-24)** for passwordless sign-in (C2). Until these
+      exist only emailed links are offered, which needs working `FIESTA_SMTP_*` on
+      dev and production (the API sends sign-in links itself, not the worker).
+      Register one OAuth app per provider and set its pair on the API host:
+      - Google (Cloud console, OAuth client "Web application"):
+        `FIESTA_GOOGLE_CLIENT_ID` / `FIESTA_GOOGLE_CLIENT_SECRET`.
+      - Microsoft (Entra ID app registration, account types "any organizational
+        directory and personal Microsoft accounts", Web platform):
+        `FIESTA_MICROSOFT_CLIENT_ID` / `FIESTA_MICROSOFT_CLIENT_SECRET`. In Token
+        configuration add the optional ID-token claims `email`, `given_name`,
+        `family_name` and `xms_edov`. Without `xms_edov`, work and school accounts
+        cannot sign up directly (their email is not trusted); they sign in by
+        email first and connect Microsoft.
+      - GitHub (OAuth App, not a GitHub App): `FIESTA_GITHUB_CLIENT_ID` /
+        `FIESTA_GITHUB_CLIENT_SECRET`. GitHub takes one callback URL: use the
+        host root (`https://earthref.org/`); any path below it is accepted.
+      - ORCID (public API client; replaces the old ORCID item):
+        `FIESTA_ORCID_CLIENT_ID` / `FIESTA_ORCID_CLIENT_SECRET`
+        (`FIESTA_ORCID_URL=https://sandbox.orcid.org` to test on a sandbox client).
+      Redirect URI to register with each: `<base>/auth/oauth/<provider>/callback`,
+      where `<base>` is `FIESTA_OAUTH_REDIRECT_BASE` if set (recommended: one fixed
+      value per host, e.g. `https://earthref.org/MagIC/v2` and
+      `https://dev.earthref.org/MagIC/v2`), otherwise the public `/v2` root of the
+      node the person signs in from (one URI per node prefix). Unblocks: C2.
+- [ ] **Decision (2026-11-24): existing accounts' profiles.** Legacy-synced accounts
+      get first/last names from `er_users` (and an affiliation where one exists), but
+      most have no affiliation or verified email, so they finish their profile on
+      first publication. Confirm that is acceptable, or ask for a bulk email
+      telling contributors before the cutover.
 - [ ] (Optional, 2026-09-27) Grant the OpenSearch `fiesta` role
       `indices:data/read/scroll/clear`. The search map scrolls its points and the role
       may not clear a scroll (403). The API now ignores that, and each context expires

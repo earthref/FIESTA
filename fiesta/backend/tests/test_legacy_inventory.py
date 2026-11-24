@@ -275,12 +275,17 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
     assert sha.sha256 != entry.sha256 and b"S2" in (tmp_path / sha.source).read_bytes()
 
     owners = json.loads((tmp_path / "owners.json").read_text())
+    # Given/family names carry over: publication needs a first and last name.
+    profile = {"affiliation": None}
     assert owners == [
         {
             "handle": "alice",
             "email": "alice@example.org",
             "name": "Alice Ng",
             "orcid": "0000-0002-1825-0097",
+            **profile,
+            "first_name": "Alice",
+            "last_name": "Ng",
             "contributions": [7, 9, 15, 19],
         },
         {
@@ -288,6 +293,9 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
             "email": "bob@example.org",
             "name": "Bob Lee",
             "orcid": None,
+            **profile,
+            "first_name": "Bob",
+            "last_name": "Lee",
             "contributions": [12, 14, 18],
         },
         {
@@ -295,6 +303,9 @@ async def test_build_inventory_from_index_and_buckets(karar_node, tmp_path, monk
             "email": "carol@example.org",
             "name": "C. Diaz",
             "orcid": None,
+            **profile,
+            "first_name": None,
+            "last_name": None,
             "contributions": [13, 17, 20],
         },
     ]
@@ -356,6 +367,9 @@ async def test_legacy_accounts_carry_bcrypt_passwords():
         "email": "bob@example.org",
         "name": "B. Lee",
         "orcid": None,
+        "first_name": None,
+        "last_name": None,
+        "affiliation": None,
         "password_hash": None,
     }
 

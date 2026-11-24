@@ -215,12 +215,27 @@ def _account_fields(user: dict, fallback_name: str) -> dict | None:
     full = " ".join(p for p in (name.get("given"), name.get("family")) if p) or name.get(
         "published"
     )
+    affiliation = user.get("affiliation")
     return {
         "handle": user.get("handle") or None,  # None: the account never chose one
         "email": str(email).lower(),
         "name": full or fallback_name,
         "orcid": (user.get("orcid") or {}).get("id") or None,  # "" is not unique
+        "first_name": name.get("given") or None,
+        "last_name": name.get("family") or None,
+        "affiliation": (affiliation.strip() or None) if isinstance(affiliation, str) else None,
     }
+
+
+def fill_profile(user: User, account: dict) -> bool:
+    """Copy an er_users account's given/family name and affiliation into USER's
+    blank profile fields (publication needs them); True when one was filled."""
+    filled = False
+    for field, limit in (("first_name", 255), ("last_name", 255), ("affiliation", 512)):
+        if isinstance(account.get(field), str) and account[field] and not getattr(user, field):
+            setattr(user, field, account[field][:limit])
+            filled = True
+    return filled
 
 
 class HashCache:
@@ -557,16 +572,16 @@ async def ensure_owners(node, owners: list[dict], *, apply=False) -> dict:
                 ).scalar_one_or_none()
             ):
                 orcid = None
-            session.add(
-                User(email=email, name=owner.get("name") or email, handle=handle, orcid=orcid)
-            )
+            user = User(email=email, name=owner.get("name") or email, handle=handle, orcid=orcid)
+            fill_profile(user, owner)
+            session.add(user)
             report["created"] += 1
         if apply:
             await session.commit()
     return report
 
 
-_ACCOUNT_SOURCE = ["id", "email", "handle", "name", "orcid", "_password"]
+_ACCOUNT_SOURCE = ["id", "email", "handle", "name", "orcid", "affiliation", "_password"]
 
 
 async def legacy_accounts(client, users_index: str) -> tuple[dict[str, dict], dict]:
@@ -609,14 +624,15 @@ async def sync_legacy_users(node, *, client=None, apply=False) -> dict:
     Until cutover the legacy apps own passwords, so a legacy hash replaces the one
     stored here whenever they differ; re-run to pick up password changes. New
     accounts keep their legacy handle and ORCID unless another account already
-    holds them; names, handles and ORCIDs of existing accounts are left untouched.
+    holds them; names, handles and ORCIDs of existing accounts are left untouched,
+    except that blank first/last names and affiliations are filled in.
     """
     if client is None:
         from fiesta.search.client import get_opensearch
 
         client = get_opensearch()
     accounts, report = await legacy_accounts(client, node.legacy.users_index)
-    report.update(created=0, passwords_updated=0, unchanged=0)
+    report.update(created=0, passwords_updated=0, profiles_filled=0, unchanged=0)
     async with get_sessionmaker(node.node.slug)() as session:
         users = (await session.execute(select(User))).scalars().all()
         by_email = {u.email.lower(): u for u in users}
@@ -625,6 +641,8 @@ async def sync_legacy_users(node, *, client=None, apply=False) -> dict:
         for email, account in sorted(accounts.items()):
             user = by_email.get(email)
             if user is not None:
+                if fill_profile(user, account):
+                    report["profiles_filled"] += 1
                 if account["password_hash"] and user.password_hash != account["password_hash"]:
                     user.password_hash = account["password_hash"]
                     report["passwords_updated"] += 1
@@ -637,15 +655,15 @@ async def sync_legacy_users(node, *, client=None, apply=False) -> dict:
             orcid = account["orcid"]
             if orcid and orcid in orcids:
                 orcid = None
-            session.add(
-                User(
-                    email=email,
-                    name=account["name"][:255],
-                    handle=handle,
-                    orcid=orcid,
-                    password_hash=account["password_hash"],
-                )
+            created = User(
+                email=email,
+                name=account["name"][:255],
+                handle=handle,
+                orcid=orcid,
+                password_hash=account["password_hash"],
             )
+            fill_profile(created, account)
+            session.add(created)
             if handle:
                 handles.add(handle.lower())
             if orcid:

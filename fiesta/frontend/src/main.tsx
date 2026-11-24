@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { AuthProvider } from "./lib/auth";
 import { REDIRECT } from "./lib/base";
 import { initializeLocalLogin } from "./lib/local-login";
+import { initializeSignIn } from "./lib/sign-in";
 import { router } from "./router";
 import "./index.css";
 
@@ -42,14 +43,17 @@ window.addEventListener("vite:preloadError", (event) => {
 });
 
 const root = createRoot(rootElement);
-initializeLocalLogin().then(() =>
-  root.render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <RouterProvider router={router} />
-        </AuthProvider>
-      </QueryClientProvider>
-    </StrictMode>,
-  ),
-);
+// A sign-in returning in the fragment first: local login keeps the account it chose.
+initializeSignIn()
+  .then(initializeLocalLogin)
+  .then(() =>
+    root.render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
+        </QueryClientProvider>
+      </StrictMode>,
+    ),
+  );

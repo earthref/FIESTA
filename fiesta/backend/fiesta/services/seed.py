@@ -1,6 +1,7 @@
 """Config-selected development fixtures, applied through the revision service."""
 
 import asyncio
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -93,7 +94,8 @@ async def settle_seed_events(node, keys):
 async def ensure_accounts(session, manifest):
     """The manifest's local accounts by key, created when missing. An existing account
     is never updated, except that `admin: true` grants super admin to a stack seeded
-    before the flag existed (it is never revoked)."""
+    before the flag existed (it is never revoked), and a missing publication profile
+    (first and last name, affiliation, verified email) is filled in."""
     users = {}
     for account in manifest["accounts"]:
         user = (
@@ -111,8 +113,20 @@ async def ensure_accounts(session, manifest):
             await session.flush()
         elif account.get("admin") and not user.is_admin:
             user.is_admin = True
+        _complete_profile(user, account)
         users[account["key"]] = user
     return users
+
+
+def _complete_profile(user, account) -> None:
+    """Local accounts can publish: names from the manifest's `name` (or its
+    first_name / last_name), its `affiliation`, and the example.test address
+    counted as verified."""
+    first, _, last = account["name"].rpartition(" ")
+    user.first_name = user.first_name or account.get("first_name") or first or account["name"]
+    user.last_name = user.last_name or account.get("last_name") or last
+    user.affiliation = user.affiliation or account.get("affiliation") or "Local development"
+    user.email_verified_at = user.email_verified_at or datetime.now(UTC)
 
 
 LOCAL_DEVELOPER = "developer@example.test"
@@ -130,11 +144,11 @@ async def ensure_local_accounts(session):
     def developer():
         return session.execute(select(User).where(User.email == LOCAL_DEVELOPER))
 
-    if user := (await developer()).scalar_one_or_none():
+    if (user := (await developer()).scalar_one_or_none()) and not user.profile_missing:
         return user
     node = next((n for n in get_deployment().node_list if n.development.seed_manifest), None)
     if node is None:
-        return None
+        return user  # None on a stack without a seed manifest
     _, manifest = load_seed(node)
     try:
         await ensure_accounts(session, manifest)

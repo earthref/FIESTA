@@ -209,8 +209,15 @@ the latter become G5 work after cutover.*
       DataCite related identifiers (#228, #229); schema.org `unitCode` (#508).
       Decision: publishing with a URL instead of a DOI (#16) — today a resolving
       DOI is required.
-- [ ] **C2 ORCID OAuth login** (the `users.orcid` column exists; no flow). Client
-      registration — **BLOCKED (operator)**.
+- [ ] **C2 Passwordless sign-in** (2026-11-24, code done): emailed one-time links
+      plus Google, Microsoft, GitHub and ORCID OAuth replace password sign-up and
+      login in the SPA (`fiesta.services.sign_in`, docs/api.md "Authentication").
+      Deviation from Meteor MagIC, which required an ORCID sign-up: ORCID is one
+      option among four, and it alone cannot create an account unless the ORCID
+      record shares a verified email. Publishing now needs the contributor's first
+      and last name, affiliation and a verified email. Passwords remain only for
+      scripts and HTTP Basic. Each provider's app registration — **BLOCKED
+      (operator)**; until then only emailed links are offered.
 - [x] **C3 Contribution upgrade** (2026-11-14) 2.x → 3.0 (MagIC) — a core engine
       (`fiesta.domain.upgrade`) walks any node's data-model chain from the models'
       `previous_columns` (renames, splits, merges, row merging, a report of every
