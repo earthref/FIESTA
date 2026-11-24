@@ -307,10 +307,19 @@ export interface UserOut {
   id: number;
   email: string;
   name: string;
-  /** Alternative login name (the login form takes an email or a handle). */
+  /** Alternative name for the password (script / HTTP Basic) login. */
   handle: string | null;
+  /** Set by connecting ORCID (or a legacy import), never typed in. */
   orcid: string | null;
-  /** False for an account imported without a password: it sets one without the current one. */
+  first_name: string | null;
+  last_name: string | null;
+  affiliation: string | null;
+  email_verified: boolean;
+  /** What publishing still needs: first_name, last_name, affiliation, verified_email. */
+  profile_missing: string[];
+  /** Connected external sign-ins: google, microsoft, github, orcid. */
+  sign_ins: string[];
+  /** A password for scripts and HTTP Basic; people sign in without one. */
   has_password: boolean;
   /** Super admin: every node, node creation, accounts. */
   is_admin: boolean;

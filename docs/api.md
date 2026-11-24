@@ -34,11 +34,38 @@ All endpoints return JSON unless noted. Errors follow
 
 Two schemes are accepted; the private routes take either.
 
-- **Bearer token** — `POST /v2/auth/login` (OAuth2 password form) returns a
-  HS256 JWT; send it as `Authorization: Bearer <jwt>`. This is what the SPA uses.
+- **Bearer token** — a HS256 JWT, sent as `Authorization: Bearer <jwt>`. People
+  get one by signing in **without a password** (`fiesta.services.sign_in`):
+  - *Emailed link*: `POST /v2/auth/email-link` mails a one-time link (15 min,
+    `FIESTA_SIGN_IN_LINK_MINUTES`) back to the page it was asked from, with the
+    secret in the URL fragment (`#fiesta_link=…`); `POST /v2/auth/email-link/verify`
+    redeems it. The first use creates the account; every use verifies the address.
+  - *External account* (Google, Microsoft, GitHub, ORCID; each offered once its
+    `FIESTA_<PROVIDER>_CLIENT_ID`/`_SECRET` are set): `POST /v2/auth/oauth/{p}/start`
+    gives the provider URL; the provider returns to `/v2/auth/oauth/{p}/callback`,
+    which redirects to the starting page with a 2-minute hand-off code
+    (`#fiesta_login=…&nonce=…`, or `#fiesta_login_error=…`) for `POST /v2/auth/exchange`.
+    The SPA keeps the nonce in `sessionStorage` and ignores results from flows it
+    did not start. A first sign-in joins the account with the same email only
+    when the provider vouches for it (Google `email_verified`; a Microsoft
+    personal account or `xms_edov`; a GitHub verified email; an ORCID public
+    verified email) and creates an account only from such an address; ORCID also
+    matches `users.orcid`. Anything else signs in by email first and connects
+    the provider from the account page (`link: true`).
+
+  `return_to` must be a page on a configured origin: `api.site_url`'s, a
+  `FIESTA_CORS_ORIGINS` one, or a `FIESTA_SIGN_IN_ORIGINS` one (a copy of the site
+  on another host, e.g. `["https://dev.earthref.org"]`); never the request's
+  `Host`, which would let a forged header mail someone a link to another site. `POST /v2/auth/login` (OAuth2 password form) remains for
+  scripts and service accounts (data-source syncs, `e2e.sh`); the SPA never offers it.
 - **HTTP Basic** — EarthRef account email or handle + password. Kept for legacy
   `api.earthref.org` clients; the legacy routes accept Basic only, while the
   shared private-workspace routes accept either scheme.
+
+**Publication profile.** Publishing (`POST .../activate`) needs the
+contributor's first name, last name, affiliation and a verified email; until
+then it answers 409 naming what is missing. `UserOut.profile_missing` lists the
+same (`first_name`, `last_name`, `affiliation`, `verified_email`).
 
 ## Node-less routes
 
@@ -46,13 +73,20 @@ Two schemes are accepted; the private routes take either.
 |---|---|---|---|
 | GET | `/v2/health-check` | — | `{status, database, search, storage, repositories}` |
 | GET | `/v2/authenticate` | Basic | `UserOut` (legacy Basic check) |
-| POST | `/v2/auth/register` | — | `UserOut` (201); body `{email, password, name}`, password ≥ 8 chars |
-| POST | `/v2/auth/login` | — | `{access_token, token_type: "bearer"}`; OAuth2 password form (`username`, `password`) |
-| GET | `/v2/auth/me` | Bearer/Basic | `UserOut` |
+| GET | `/v2/auth/providers` | — | `{providers: [{id, name}], email_link: true}`: the external sign-ins configured here |
+| POST | `/v2/auth/email-link` | — | 202 `{sent: true}`; body `{email, return_to}`; mails a one-time sign-in link (also signs up); the answer never says whether the account exists; at most 5 per address per link lifetime (more are silently dropped); 503 when SMTP fails |
+| POST | `/v2/auth/email-link/verify` | — | `{access_token, ...}`; body `{token}` (the link's secret); 400 when expired or used. Creates the account on first use, marks the email verified, and applies an email change |
+| POST | `/v2/auth/oauth/{provider}/start` | —/Bearer | `{url}` to send the browser to; body `{return_to, nonce, link}` (`link: true` connects the provider to the signed-in account; 401 without one); 404 for a provider not configured |
+| GET | `/v2/auth/oauth/{provider}/callback` | — | 303 to `return_to#fiesta_login=<code>&nonce=…` or `#fiesta_login_error=<message>&nonce=…`; 400 page for an expired or foreign `state`. Each provider app registers `<FIESTA_OAUTH_REDIRECT_BASE or the public /v2 root>/auth/oauth/<provider>/callback` |
+| POST | `/v2/auth/exchange` | — | `{access_token, ...}`; body `{token, nonce}` (the callback's hand-off code, single use, 2 minutes, and the nonce `start` was given). The account is linked or created here, never at the callback, so a flow finished in someone else's browser attaches nothing; 400 with the reason (an unverified email, an identity linked elsewhere, a wrong nonce, which also spends the code) |
+| DELETE | `/v2/auth/identities/{provider}` | Bearer/Basic | 204; disconnects that provider (the emailed link always remains) |
+| POST | `/v2/auth/email-change` | Bearer/Basic | 202; body `{email, return_to}`; mails a confirmation link to the new address, which becomes the account's (verified) when the link is redeemed; 409 when another account has it or while any served node is in data-source mode; 429 after 5 links |
+| POST | `/v2/auth/login` | — | `{access_token, token_type: "bearer"}`; OAuth2 password form (`username`, `password`), for scripts and service accounts |
+| GET | `/v2/auth/me` | Bearer/Basic | `UserOut` (with `first_name`, `last_name`, `affiliation`, `email_verified`, `profile_missing`, `sign_ins`) |
 | GET | `/v2/auth/settings` | Bearer/Basic | the account's settings JSON object |
 | PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
-| PATCH | `/v2/auth/me` | Bearer/Basic | `UserOut`; body any of `{name, email, handle, orcid}` (the user's own account; `""`/`null` clears a handle or ORCID; handle `[A-Za-z0-9_.-]{2,64}`, ORCID `0000-0000-0000-000X`); 409 on a value another account has, and on an email change while any served node is in data-source mode (legacy sync matches owners by email) |
-| POST | `/v2/auth/password` | Bearer/Basic | 204; body `{current_password, new_password}` (≥ 8 chars); 403 when the account has a password and `current_password` does not match |
+| PATCH | `/v2/auth/me` | Bearer/Basic | `UserOut`; body any of `{first_name, last_name, affiliation, handle, name}` (the user's own account; `""`/`null` clears one; handle `[A-Za-z0-9_.-]{2,64}`); with both first and last names the display `name` becomes "first last". The email changes through `/email-change`, the ORCID iD only through connecting ORCID (or an admin); 409 on a handle another account has |
+| POST | `/v2/auth/password` | Bearer/Basic | 204; body `{current_password, new_password}` (≥ 8 chars); 403 when the account has a password and `current_password` does not match. The password serves scripts and HTTP Basic only |
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in `developer@example.test` only against local dev infrastructure, first creating the seed manifest's accounts on an unseeded stack (`null` elsewhere) |
 | GET | `/v2/basemap/{world\|arctic}` | — | JPEG: Esri Ocean as a 1024×512 plate carrée world image (blank past ±85.05°) and its Arctic band; fetched from Esri once a day and cached in the API process, for the result thumbnails |
 | GET | `/v2/basemap/moon` | — | JPEG: the Moon (LROC WAC) as a 1024×512 plate carrée image, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on the Moon |
@@ -598,7 +632,7 @@ A link from before the saved searches (`/MagIC/search?q=basalt&level=Sites`,
 | GET | `/{id}/reference` | | `{doi, status: none\|ok\|not_found\|error, citation, title}`: whether the DOI resolves at Crossref/DataCite, asked now when the cache does not know |
 | GET | `/{id}/fields` | | `{column: cell}` for the node's `workspace.fields`, from the canonical file's `workspace.table` (`""` when empty) |
 | PUT | `/{id}/fields` | `{values: {column: cell}, expected_revision, request_key}` | `ContributionOut` (sets those columns in the canonical file as a new revision; 422 for a column not in `workspace.fields`; unpublished only) |
-| POST | `/{id}/activate` | | `ContributionOut` (publishes; requires `status=ready`, passing validation and, with `workspace.require_reference`, a DOI that resolves). Who may: see [Publishing a new version](#publishing-a-new-version); 403 for anyone else ("an admin has to approve this version"); 409 when another version of the same predecessor was published first. Publishing someone else's draft keeps them its contributor and emails them |
+| POST | `/{id}/activate` | | `ContributionOut` (publishes; requires `status=ready`, passing validation, the contributor's complete publication profile (first and last name, affiliation, verified email; 409 naming what is missing) and, with `workspace.require_reference`, a DOI that resolves). Who may: see [Publishing a new version](#publishing-a-new-version); 403 for anyone else ("an admin has to approve this version"); 409 when another version of the same predecessor was published first. Publishing someone else's draft keeps them its contributor and emails them |
 | POST | `/{id}/deactivate` | | `ContributionOut` (unpublishes; node admins only, 403 otherwise: contributors correct published data with a new version) |
 | PUT | `/{id}/name` | `{name}` | `ContributionOut` (the contributor's label, legacy `_name`; any version, published too; saves no revision; empty clears it) |
 | DELETE | `/{id}` | | 204 (private, unactivated only) |

@@ -131,6 +131,27 @@ class Settings(BaseSettings):
     smtp_port: int = 1025
     smtp_from: str = "noreply@earthref.org"
 
+    # Sign-in (fiesta.auth): an emailed one-time link, or an external account.
+    # A provider is offered once its client id and secret are both set. Each
+    # provider's app registers one redirect URI, <oauth_redirect_base>/auth/
+    # oauth/<provider>/callback; empty derives the base from the request
+    # (the API's public /v2 root, which differs per node prefix).
+    sign_in_link_minutes: int = 15
+    # Origins a sign-in may return to (where links point), besides api.site_url's
+    # and cors_origins: a copy of the site on another host (["https://dev.earthref.org"]).
+    # Never taken from request headers, which a client can forge.
+    sign_in_origins: list[str] = []
+    oauth_redirect_base: str = ""
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    microsoft_client_id: str = ""
+    microsoft_client_secret: str = ""
+    github_client_id: str = ""
+    github_client_secret: str = ""
+    orcid_client_id: str = ""
+    orcid_client_secret: str = ""
+    orcid_url: str = "https://orcid.org"  # https://sandbox.orcid.org to test
+
     # OpenAlex API key (openalex.org/settings/api), sent with the reference
     # lookups when set; empty uses the anonymous allowance.
     openalex_api_key: str = ""

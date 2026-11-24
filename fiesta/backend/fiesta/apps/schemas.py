@@ -14,19 +14,32 @@ class UserOut(BaseModel):
     name: str
     handle: str | None = None
     orcid: str | None = None
-    has_password: bool = False  # False for an account imported without one
+    first_name: str | None = None
+    last_name: str | None = None
+    affiliation: str | None = None
+    email_verified: bool = False
+    # What publication still needs: first_name, last_name, affiliation, verified_email.
+    profile_missing: list[str] = []
+    sign_ins: list[str] = []  # connected providers (google, microsoft, github, orcid)
+    has_password: bool = False  # a password for scripts and HTTP Basic (/v1)
     is_admin: bool = False  # super admin: every node, node creation, accounts
     admin_nodes: list[str] = []  # slugs of the nodes this user administers
     settings: dict = {}
 
     @classmethod
-    def from_db(cls, user: User) -> "UserOut":
+    def from_db(cls, user: User, sign_ins: list[str] | None = None) -> "UserOut":
         return cls(
             id=user.id,
             email=user.email,
             name=user.name,
             handle=user.handle,
             orcid=user.orcid,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            affiliation=user.affiliation,
+            email_verified=user.email_verified_at is not None,
+            profile_missing=user.profile_missing,
+            sign_ins=sign_ins or [],
             has_password=user.password_hash is not None,
             is_admin=user.is_admin,
             admin_nodes=user.admin_nodes,
@@ -34,21 +47,47 @@ class UserOut(BaseModel):
         )
 
 
-class RegisterIn(BaseModel):
-    email: EmailStr
-    password: str
-    name: str
-
-
 class AccountPatchIn(BaseModel):
     """The signed-in user's own account fields (PATCH /v2/auth/me); an empty
-    handle or ORCID clears it."""
+    value clears it. `name` (the display name) is used only while the first or
+    last name is missing; with both, it is "<first> <last>"."""
 
-    email: EmailStr | None = None
     name: str | None = Field(default=None, min_length=1, max_length=255)
+    first_name: str | None = Field(default=None, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
+    affiliation: str | None = Field(default=None, max_length=512)
     # No "@": login accepts an email or a handle in the same field.
     handle: str | None = Field(default=None, pattern=r"^([A-Za-z0-9_.-]{2,64})?$")
-    orcid: str | None = Field(default=None, pattern=r"^(\d{4}-\d{4}-\d{4}-\d{3}[\dX])?$")
+
+
+class ProvidersOut(BaseModel):
+    providers: list[dict[str, str]]  # [{id, name}] configured on this deployment
+    email_link: bool = True
+
+
+class EmailLinkIn(BaseModel):
+    email: EmailStr
+    return_to: str  # the web app page to come back to (its origin must be this site's)
+
+
+class EmailChangeIn(EmailLinkIn):
+    pass
+
+
+class OAuthStartIn(BaseModel):
+    return_to: str
+    # Kept by the web app and echoed in the callback's fragment: it accepts a
+    # sign-in only from a flow it started.
+    nonce: str = Field(min_length=16, max_length=128)
+    link: bool = False  # connect to the signed-in account instead of signing in
+
+
+class SecretIn(BaseModel):
+    token: str = Field(min_length=16, max_length=256)
+
+
+class ExchangeIn(SecretIn):
+    nonce: str = Field(min_length=16, max_length=128)  # the one OAuthStartIn sent
 
 
 class PasswordIn(BaseModel):

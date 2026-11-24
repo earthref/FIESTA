@@ -15,6 +15,7 @@ import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
 import { contributionPath } from "../lib/search-state";
+import { PROFILE_LABELS } from "../lib/sign-in";
 import type {
   ContributionOut,
   ContributionStatus,
@@ -814,6 +815,24 @@ export function ContributionCard({
               </button>
             </>
           )}
+        </>
+      ),
+    });
+  }
+  // The published record names its contributor (the API checks theirs when an
+  // admin approves someone's version; the card shows the signed-in owner's).
+  if (!published && !othersContribution && user?.profile_missing.length) {
+    steps.push({
+      key: "profile",
+      state: "todo",
+      label: "Complete your EarthRef profile",
+      detail: (
+        <>
+          Publishing needs your {user.profile_missing.map((m) => PROFILE_LABELS[m] ?? m).join(", ")}
+          .{" "}
+          <Link to="/Account" className="text-node-ink underline hover:opacity-80">
+            Open your account
+          </Link>
         </>
       ),
     });
