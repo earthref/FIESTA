@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { TooltipLayer } from "./components/ui/tooltip";
 import { AuthProvider } from "./lib/auth";
 import { REDIRECT } from "./lib/base";
 import { initializeLocalLogin } from "./lib/local-login";
@@ -53,6 +54,7 @@ initializeSignIn()
           <AuthProvider>
             <RouterProvider router={router} />
           </AuthProvider>
+          <TooltipLayer />
         </QueryClientProvider>
       </StrictMode>,
     ),
