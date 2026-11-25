@@ -12,10 +12,12 @@ import {
 import type { Body } from "./bodies";
 import { BODY_BASEMAPS } from "./body-basemaps";
 import { geologyTiles } from "./geology-tiles";
+import { extendsLasso, finishLasso, type LonLat, unwrapNext } from "./lasso";
 import { createLinesLayer, type LinesLayer, type MapLine } from "./lines-layer";
 import {
   type Area,
   colocatedIndex,
+  escapeHtml,
   type MapPoint,
   type Mode,
   markerTooltip,
@@ -24,7 +26,7 @@ import {
   spotName,
 } from "./map-points";
 import { isOccluded, mapSize } from "./map-view";
-import { loadPlates, PLATE_COLOR } from "./plates";
+import { loadPlates, PLATE_COLOR, type RegionFeatures } from "./plates";
 import { createPolarCapsLayer } from "./polar-caps";
 
 // MapLibre 6 can't find its worker inside a bundle: Vite bundles it as an
@@ -164,6 +166,9 @@ const MARKER_STYLE =
 const TOOLTIP_CLASS =
   "absolute z-10 hidden whitespace-nowrap bg-white rounded border border-gray-300 shadow px-2.5 py-1.5 text-sm text-gray-700 leading-snug";
 const wrap180 = (degrees: number) => (((degrees % 360) + 540) % 360) - 180;
+// A region's tooltip on the Geospatial filter's map: its name and what a click does.
+const regionTooltip = ({ name, selected }: { name: string; selected: boolean }) =>
+  `<b>${escapeHtml(name)}</b><br/><span style="color:#6b7280">Click to ${selected ? "deselect" : "select"}</span>`;
 
 // Where a view looks to show the points' centre of mass: in the globe and
 // Mercator views, their centre; in the pole views, with the pole still
@@ -615,6 +620,15 @@ const MapLibreMap: FC<{
   // toggle turns them on and off either way. In `plateColor`.
   plates?: boolean;
   plateColor?: string;
+  // Outlines to pick from (the Geospatial filter's plates or blocks): filled,
+  // outlined and named, the selected ones in the node's colour; hovering one
+  // highlights it and clicking it calls onRegionClick with its code.
+  regions?: RegionFeatures | null;
+  onRegionClick?: (code: string) => void;
+  // Dragging draws a lasso instead of moving the map; onLasso gets its
+  // vertices (lasso.ts) when the drag ends, and whether Shift was held.
+  lasso?: boolean;
+  onLasso?: (vertices: LonLat[], add: boolean) => void;
 }> = ({
   mode,
   body = "earth",
@@ -633,7 +647,19 @@ const MapLibreMap: FC<{
   pointRadius = 3,
   plates = false,
   plateColor = PLATE_COLOR,
+  regions,
+  onRegionClick,
+  lasso = false,
+  onLasso,
 }) => {
+  const regionsRef = useRef(regions ?? null);
+  regionsRef.current = regions ?? null;
+  // Shows the latest regions once the style has loaded.
+  const setRegionsRef = useRef<(() => void) | null>(null);
+  const onRegionClickRef = useRef(onRegionClick);
+  onRegionClickRef.current = onRegionClick;
+  const lassoRef = useRef({ on: lasso, onLasso });
+  lassoRef.current = { on: lasso, onLasso };
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
@@ -788,6 +814,9 @@ const MapLibreMap: FC<{
           points: { type: "geojson", data: collection([]) },
           area: { type: "geojson", data: collection([]) },
           context: { type: "geojson", data: collection([]) },
+          regions: { type: "geojson", data: collection([]), promoteId: "code" },
+          "region-labels": { type: "geojson", data: collection([]) },
+          lasso: { type: "geojson", data: collection([]) },
         },
         layers: [
           { id: "background", type: "background", paint: { "background-color": "#000000" } },
@@ -820,6 +849,49 @@ const MapLibreMap: FC<{
                 },
               ]
             : []),
+          // The regions to pick: a faint fill (stronger hovered, strongest
+          // selected) and their boundaries, in the node's colour once
+          // hovered or selected.
+          {
+            id: "regions-fill",
+            type: "fill",
+            source: "regions",
+            filter: ["in", ["geometry-type"], ["literal", ["Polygon", "MultiPolygon"]]],
+            paint: {
+              "fill-color": [
+                "case",
+                ["get", "selected"],
+                areaColor(),
+                ["boolean", ["feature-state", "hover"], false],
+                areaColor(),
+                "#ffffff",
+              ],
+              "fill-opacity": [
+                "case",
+                ["get", "selected"],
+                ["case", ["boolean", ["feature-state", "hover"], false], 0.5, 0.35],
+                ["boolean", ["feature-state", "hover"], false],
+                0.2,
+                0.04,
+              ],
+            },
+          },
+          {
+            id: "regions-edge",
+            type: "line",
+            source: "regions",
+            filter: ["in", ["geometry-type"], ["literal", ["LineString", "MultiLineString"]]],
+            paint: {
+              "line-color": [
+                "case",
+                ["any", ["get", "selected"], ["boolean", ["feature-state", "hover"], false]],
+                areaColor(),
+                "#ffffff",
+              ],
+              "line-width": ["case", ["boolean", ["feature-state", "hover"], false], 2.5, 1],
+              "line-opacity": 0.9,
+            },
+          },
           {
             id: "context-points",
             type: "circle",
@@ -845,6 +917,13 @@ const MapLibreMap: FC<{
             source: "area",
             filter: ["==", ["geometry-type"], "LineString"],
             paint: { "line-color": areaColor(), "line-width": 2, "line-dasharray": [3, 2] },
+          },
+          // A lasso being drawn.
+          {
+            id: "lasso-line",
+            type: "line",
+            source: "lasso",
+            paint: { "line-color": areaColor(), "line-width": 2.5 },
           },
           {
             id: "points",
@@ -934,6 +1013,25 @@ const MapLibreMap: FC<{
       if (!loaded || removed) return;
       map.setGlyphs(loaded.glyphs);
       if (body === "earth") addEarthLabels(loaded);
+      // The regions' names (the Geospatial filter's plates or blocks), the
+      // selected ones first where they collide.
+      map.addLayer({
+        id: "region-labels",
+        type: "symbol",
+        source: "region-labels",
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 12,
+          "text-max-width": 8,
+          "symbol-sort-key": ["case", ["get", "selected"], 0, 1],
+        },
+        paint: {
+          "text-color": ["case", ["get", "selected"], areaColor(), "#1f2937"],
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.5,
+        },
+      });
       // The records' names, over everything (and not turned off with the
       // basemap's labels), on a white box like the tooltip's.
       if (labelPoints) {
@@ -1134,6 +1232,47 @@ const MapLibreMap: FC<{
       );
     };
 
+    // The regions to pick, the one under the pointer (its feature state), and
+    // the one whose tooltip is up.
+    let hovered: string | null = null;
+    let tipRegion: string | null = null;
+    const hover = (code: string | null) => {
+      if (code === hovered) return;
+      if (hovered !== null)
+        map.setFeatureState({ source: "regions", id: hovered }, { hover: false });
+      hovered = code;
+      if (code !== null) map.setFeatureState({ source: "regions", id: code }, { hover: true });
+    };
+    const setRegions = () => {
+      const shown = regionsRef.current;
+      (map.getSource("regions") as maplibregl.GeoJSONSource).setData(
+        shown?.shapes ?? collection([]),
+      );
+      (map.getSource("region-labels") as maplibregl.GeoJSONSource).setData(
+        shown?.labels ?? collection([]),
+      );
+      // setData keeps feature states, so the hovered one stays lit while it's
+      // still shown (selected or deselected); gone (another tool), so is its tooltip.
+      const isShown = (code: string | null) =>
+        code !== null && Boolean(shown?.shapes.features.some((f) => f.properties?.code === code));
+      if (hovered !== null && !isShown(hovered)) hover(null);
+      if (tipRegion !== null && !isShown(tipRegion)) {
+        tipRegion = null;
+        tooltip.hide();
+      }
+    };
+    const regionAt = (point: maplibregl.PointLike) => {
+      if (!regionsRef.current) return null;
+      const [feature] = map.queryRenderedFeatures(point, { layers: ["regions-fill"] });
+      return feature
+        ? {
+            code: String(feature.properties.code),
+            name: String(feature.properties.name),
+            selected: Boolean(feature.properties.selected),
+          }
+        : null;
+    };
+
     // Points (and the view on them) that arrived while the style was loading.
     // (isStyleLoaded() is also false while tiles load, so it can't gate these.)
     map.on("load", () => {
@@ -1156,6 +1295,8 @@ const MapLibreMap: FC<{
       syncArea();
       setContextRef.current = setContext;
       setContext();
+      setRegionsRef.current = setRegions;
+      setRegions();
       const linesLayer = createLinesLayer("lines", !globe);
       linesLayer.setLines(linesRef.current);
       map.addLayer(linesLayer, "context-points");
@@ -1305,8 +1446,82 @@ const MapLibreMap: FC<{
     };
     // Touches start MapLibre's gestures with their own events.
     const onTouchStart = (e: TouchEvent) => {
-      if (moving) e.stopPropagation();
+      if (moving || drawing) e.stopPropagation();
     };
+
+    // Drawing a lasso: caught before the area's drag and MapLibre's own (as
+    // that is). Its path is kept unwrapped (each step the shorter way round),
+    // and a step that would cross it is skipped until the pointer is clear.
+    let drawing: {
+      pointerId: number;
+      path: { lonLat: LonLat; x: number; y: number }[];
+      add: boolean;
+    } | null = null;
+    const drawLasso = () => {
+      const coordinates = drawing?.path.map((p) => p.lonLat) ?? [];
+      (map.getSource("lasso") as maplibregl.GeoJSONSource).setData(
+        collection(
+          coordinates.length > 1
+            ? [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates } }]
+            : [],
+        ),
+      );
+    };
+    const lassoPoint = (e: PointerEvent) => {
+      const [x, y] = canvasPoint(e);
+      const { lng, lat } = map.unproject([x, y]);
+      if (!Number.isFinite(lng) || !Number.isFinite(lat) || Math.abs(lat) > 90) return null;
+      // Off the globe's edge, unproject gives the nearest point of its rim.
+      if (globe && isOccluded(map, { lng, lat })) return null;
+      return { lng, lat, x, y };
+    };
+    const onLassoStart = (e: PointerEvent) => {
+      if (!lassoRef.current.on || (e.pointerType === "mouse" && e.button !== 0)) return;
+      if ((e.target as HTMLElement).closest(".maplibregl-control-container")) return;
+      const at = lassoPoint(e);
+      if (!at) return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      tooltip.hide();
+      drawing = {
+        pointerId: e.pointerId,
+        path: [{ lonLat: [at.lng, at.lat], x: at.x, y: at.y }],
+        add: e.shiftKey,
+      };
+      container.setPointerCapture(e.pointerId);
+    };
+    const onLassoMove = (e: PointerEvent) => {
+      if (drawing?.pointerId !== e.pointerId) return;
+      e.stopImmediatePropagation();
+      const at = lassoPoint(e);
+      if (!at) return;
+      const { path } = drawing;
+      const last = path[path.length - 1];
+      if (Math.hypot(at.x - last.x, at.y - last.y) < 3) return;
+      const lonLat = unwrapNext(last.lonLat, [at.lng, at.lat]);
+      if (
+        !extendsLasso(
+          path.map((p) => p.lonLat),
+          lonLat,
+        )
+      )
+        return;
+      path.push({ lonLat, x: at.x, y: at.y });
+      drawLasso();
+    };
+    const onLassoEnd = (e: PointerEvent) => {
+      if (drawing?.pointerId !== e.pointerId) return;
+      e.stopImmediatePropagation();
+      const { path, add } = drawing;
+      drawing = null;
+      drawLasso();
+      const vertices = e.type === "pointerup" ? finishLasso(path) : null;
+      if (vertices) lassoRef.current.onLasso?.(vertices, add);
+    };
+    container.addEventListener("pointerdown", onLassoStart, true);
+    container.addEventListener("pointermove", onLassoMove, true);
+    container.addEventListener("pointerup", onLassoEnd, true);
+    container.addEventListener("pointercancel", onLassoEnd, true);
     container.addEventListener("pointerdown", onMoveStart, true);
     container.addEventListener("pointermove", onMove, true);
     container.addEventListener("pointerup", onMoveEnd, true);
@@ -1540,14 +1755,38 @@ const MapLibreMap: FC<{
     const viewMoving = (e: maplibregl.MapMouseEvent) =>
       map.isMoving() || (e.originalEvent as MouseEvent).buttons !== 0;
     map.on("mousemove", (e) => {
-      if (overMarker) return;
+      if (overMarker || drawing) return;
       const members = hitTest(e);
       const dot = members || viewMoving(e) ? undefined : dotTest(e);
-      const html = members ? markerTooltip(members) : dot ? dotTooltip(dot) : null;
+      // A region to pick, under no record.
+      const region = members || dot || viewMoving(e) ? null : regionAt(e.point);
+      hover(region?.code ?? null);
+      const html = members
+        ? markerTooltip(members)
+        : dot
+          ? dotTooltip(dot)
+          : region
+            ? regionTooltip(region)
+            : null;
       canvas.style.cursor =
-        members || dot ? "pointer" : onOutline(e.point.x, e.point.y) ? "move" : "";
+        members || dot || region
+          ? "pointer"
+          : lassoRef.current.on
+            ? "crosshair"
+            : onOutline(e.point.x, e.point.y)
+              ? "move"
+              : "";
+      tipRegion = html && region ? region.code : null;
       if (html) tooltip.show(html, e.point.x, e.point.y);
       else tooltip.scheduleHide();
+    });
+    // Off the map, a region's tooltip goes (a record's stays a moment, for its links).
+    map.on("mouseout", () => {
+      hover(null);
+      if (tipRegion !== null) {
+        tipRegion = null;
+        tooltip.hide();
+      }
     });
     map.on("movestart", tooltip.hide);
     // Several records at one spot are opened from the tooltip's links.
@@ -1557,6 +1796,19 @@ const MapLibreMap: FC<{
       else if (!members) {
         const id = dotTest(e)?.id;
         if (id !== undefined) onSelectRef.current?.(id);
+        else {
+          const region = regionAt(e.point);
+          if (region) {
+            onRegionClickRef.current?.(region.code);
+            // The tooltip says what the next click does.
+            tipRegion = region.code;
+            tooltip.show(
+              regionTooltip({ ...region, selected: !region.selected }),
+              e.point.x,
+              e.point.y,
+            );
+          }
+        }
       }
     });
 
@@ -1579,12 +1831,17 @@ const MapLibreMap: FC<{
       setPointsRef.current = null;
       syncAreaRef.current = null;
       setContextRef.current = null;
+      setRegionsRef.current = null;
       linesLayerRef.current = null;
       removed = true;
       attributionObserver.disconnect();
       for (const { marker } of polarLabels) marker.remove();
       for (const marker of markers) marker.remove();
       for (const handle of handles) handle.remove();
+      container.removeEventListener("pointerdown", onLassoStart, true);
+      container.removeEventListener("pointermove", onLassoMove, true);
+      container.removeEventListener("pointerup", onLassoEnd, true);
+      container.removeEventListener("pointercancel", onLassoEnd, true);
       container.removeEventListener("pointerdown", onMoveStart, true);
       container.removeEventListener("pointermove", onMove, true);
       container.removeEventListener("pointerup", onMoveEnd, true);
@@ -1614,6 +1871,11 @@ const MapLibreMap: FC<{
   useEffect(() => {
     setContextRef.current?.();
   }, [context]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the regions reach the map through regionsRef
+  useEffect(() => {
+    setRegionsRef.current?.();
+  }, [regions]);
 
   useEffect(() => {
     linesLayerRef.current?.setLines(allLines);

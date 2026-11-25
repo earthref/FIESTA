@@ -2618,6 +2618,69 @@ def test_plates_data_and_filter():
     assert "geo_shape" not in str(build_search_body(table="sites", query=None))
 
 
+def test_lasso_filter():
+    """A lasso drawn on the Geospatial filter's map rides in `plate=` inline:
+    split at the antimeridian, closed over a pole it circles, never crossing
+    itself."""
+    from fastapi import HTTPException
+
+    from fiesta.plates import in_plates, parse_plates, plates_shape
+
+    def lasso(*vertices):
+        return "lasso:" + "~".join(f"{lon}_{lat}" for lon, lat in vertices)
+
+    def rings(code):
+        return [polygon[0] for polygon in plates_shape((code,))["coordinates"]]
+
+    def valid(code):
+        for ring in rings(code):
+            assert ring[0] == ring[-1]
+            assert all(-180 <= lon <= 180 and -90 <= lat <= 90 for lon, lat in ring)
+            # Anticlockwise, as OpenSearch reads an outer ring.
+            pairs = zip(ring, ring[1:], strict=False)
+            assert sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in pairs) > 0
+
+    hawaii = lasso((-157, 18), (-154, 18), (-154, 21), (-157, 21))
+    valid(hawaii)
+    assert in_plates(19.6, -155.5, (hawaii,)) and in_plates(19.6, 204.5, (hawaii,))
+    assert not in_plates(0, 0, (hawaii,))
+    # Clockwise, across the antimeridian: two polygons, one either side.
+    fiji = lasso((170, -10), (170, 10), (-170, 10), (-170, -10))
+    valid(fiji)
+    assert len(rings(fiji)) == 2
+    assert in_plates(-5, 178.1, (fiji,)) and in_plates(-5, -175, (fiji,))
+    assert not in_plates(-5, 160, (fiji,)) and not in_plates(-5, -160, (fiji,))
+    # A concave one across it twice on each side still pairs up its crossings.
+    comb = lasso(
+        (170, 0), (-170, 0), (-170, 2), (175, 2), (175, 8), (-170, 8), (-170, 10), (170, 10)
+    )
+    valid(comb)
+    assert len(rings(comb)) == 3
+    assert in_plates(1, 178, (comb,)) and in_plates(9, -172, (comb,)) and in_plates(5, 172, (comb,))
+    assert not in_plates(5, 178, (comb,)) and not in_plates(5, -175, (comb,))
+    # Circling the north pole from 100°E: closed over it, split at 180°.
+    arctic = lasso(*[(100 + 45 * i, 70) for i in range(8)])
+    valid(arctic)
+    assert (
+        in_plates(89, 0, (arctic,))
+        and in_plates(75, 179, (arctic,))
+        and in_plates(75, -1, (arctic,))
+    )
+    assert not in_plates(60, 0, (arctic,)) and not in_plates(-89, 0, (arctic,))
+    antarctic = lasso(*[(-45 * i, -70) for i in range(8)])
+    valid(antarctic)
+    assert in_plates(-89, 30, (antarctic,)) and not in_plates(89, 30, (antarctic,))
+    assert parse_plates([f"pa,{hawaii}", hawaii]) == ("PA", hawaii)
+    for bad in (
+        lasso((0, 0), (10, 10), (10, 0), (0, 10)),  # a bow tie
+        lasso((0, 0), (10, 10)),
+        lasso((0, 0), (10, 95), (10, 0)),
+        "lasso:0_0~nope",
+    ):
+        with pytest.raises(HTTPException):
+            parse_plates([bad])
+
+
 def test_provinces_data_and_filter():
     """The plate_block terms' outlines: every name a vocabulary term, every
     code a lower-case slug the filter takes beside the plate codes."""
