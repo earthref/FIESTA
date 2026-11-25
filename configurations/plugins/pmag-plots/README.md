@@ -84,7 +84,9 @@ millisecond.
   with `xy` or a plane's `circle`) and Fisher mean (`xy`, α95 `circle`);
 - `arai`: per specimen its steps, pTRM checks, tail checks and the published
   interpretation's fit (`b`, `b_sigma`, `f`, `g`, `q`, `line`, `int_calc`);
-- `hyst`: per loop its fields and moments.
+- `hyst`: per loop its fields and moments;
+- `hystfit`: the slope corrections, by `<specimen>:<experiment>`; computed
+  only when asked for (tens of milliseconds a loop), then cached like the rest.
 
 UI: a tab per plot type with a coordinate-system and level switch and a name
 filter. The selected plot (the first, or `?plot=<key>`) is drawn large and
@@ -96,6 +98,17 @@ larger view; the cards scroll virtually (the layout is core
 plots). A search grid's Plot tile opens its
 contribution's tab with that plot selected (`?plot=`: a specimen's name, or an
 equal-area group's `<level>:<name>`, which the thumbnail carries as `level`).
+
+The Hysteresis tab's **Slope correction** switch draws each loop as PmagPy's
+`rockmag.process_hyst_loop` processes it (gridded, centered, drift-corrected)
+less a high-field slope: *Automatic* is the IRM decision tree (the linear fit
+for a saturated loop, the approach-to-saturation fit otherwise, and no
+correction for a statistically linear loop or one still open at the highest
+fields), *Linear* and *Approach to saturation* force one fit (rockmag's
+`fit_linear_loop` / `fit_open_loop` / `NL_fit`). The plot's note gives the
+fit's χHF, Ms, Bc and the loop's Mr and Brh. *None*, the default, is the loop
+as measured. `hysteresis_fit` calls rockmag's functions one by one, because
+`process_hyst_loop` keeps one fit, prints, and stops at the tree's two exits.
 
 Options: `plot_types` (the tabs, in order).
 
