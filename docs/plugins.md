@@ -238,6 +238,12 @@ net, surface for marker halos, the node color lightened in dark mode) inside
 `build`, which `EChart` re-runs on a theme switch (a memoized series takes
 `usePlotColors()` as a dependency). Data colors (red/blue series) stay as they are.
 
+Tooltips are the native ones, restyled: set `title=` on an HTML element (or put
+a `<title>` child in an SVG shape) and the app's `TooltipLayer`
+(`@/components/ui/tooltip`) shows it in the theme's colors, flipped or shifted
+to stay inside the viewport. Do not build a tooltip of your own; a plot's rich
+hover box that cannot be a plain text takes `tooltipClass` from the same module.
+
 ## The plugins
 
 | Plugin | Node | What |
