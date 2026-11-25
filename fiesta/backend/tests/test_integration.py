@@ -837,6 +837,7 @@ async def test_contribution_versions_and_row_stats():
         assert stats["previous"] == {"id": first["id"], "version": 1}
         assert stats["tables"]["sites"] == {"changed": 1, "removed": 1}
         assert "locations" not in stats["tables"]
+        assert stats["rows"]["sites"] >= 1 and stats["rows"]["contribution"] == 1
         first_stats = (await client.get(f"/v2/magic/contributions/{first['id']}/rows")).json()
         assert first_stats["previous"] is None
 

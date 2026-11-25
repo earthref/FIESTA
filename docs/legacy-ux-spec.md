@@ -272,10 +272,10 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
   numbers, and cells with validation issues take the online editor's colors
   (errors red, warnings amber, the messages as a tooltip; a whole-row issue
   tints the row), and a level tab counts its rows with errors (`bg-danger`,
-  the workspace's dark red) and warnings (yellow). Both are for the
-  contributor (2026-11-13): a deployment shows them only on a private
-  (unactivated) contribution; a local stack (localhost) shows them on every
-  contribution.
+  the workspace's dark red) and warnings (yellow). Both are for everyone
+  (2026-11-25, reversing 2026-11-13's contributor-only rule): a public
+  contribution shows them too, so readers can see when an older contribution
+  fails today's stricter validation and help fix it.
   Both run edge to edge of their view (the cells carry the padding, as on
   Summaries) under a three-row sticky header per column: its name (the data
   model's label, sorting), field (the column in the file) and type ("Number
@@ -306,7 +306,9 @@ rebuild reproduces these exactly (see `fiesta/frontend/src/routes/search.tsx`,
   and a group's counted tabs appear together once its counts are all known,
   so no tab shows and then vanishes): **Records** — Contribution
   (reference, links and DOIs, revision history, the contribution row's values),
-  then each search level's rows in it (100 at a time); **Assets** — Map (a
+  then each search level's rows in it (100 at a time), then (2026-11-25) the
+  data model's other tables with rows in the file (MagIC criteria, images),
+  counted from the file as no search level indexes them; **Assets** — Map (a
   MapLibre globe of one level's records, labelled with their names, levels
   switchable; opens on the level with the most records), then plugin tabs
   (Poles, Depth Plots, Age Plots). Since 2026-11-11 the modal spans the
