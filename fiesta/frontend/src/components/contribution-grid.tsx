@@ -162,6 +162,8 @@ export function ContributionGrid({
     const tables = new Map<string, (ValidationIssue & { kind: keyof CellIssues })[]>();
     // Per table, the columns with issues: the ids of their rows, or null for the whole column.
     const columns = new Map<string, Map<string, Set<number> | null>>();
+    // Per table, the issues on a whole column (a recommended column with no values, …).
+    const columnIssues = new Map<string, Map<string, CellIssues>>();
     const flag = (issue: ValidationIssue, rowId?: number) => {
       if (!issue.column) return;
       const byColumn = columns.get(issue.table) ?? new Map<string, Set<number> | null>();
@@ -175,6 +177,13 @@ export function ContributionGrid({
         ? base.find((t) => t.name === issue.table)?.rows[issue.row - 1]?.id
         : undefined;
       flag(issue, rowId);
+      if (rowId === undefined && issue.column) {
+        const byColumn = columnIssues.get(issue.table) ?? new Map<string, CellIssues>();
+        columnIssues.set(issue.table, byColumn);
+        const entry = byColumn.get(issue.column) ?? { errors: [], warnings: [] };
+        byColumn.set(issue.column, entry);
+        entry[kind].push(issue.message);
+      }
       if (rowId === undefined || !issue.column) {
         const list = tables.get(issue.table) ?? [];
         list.push({ ...issue, kind });
@@ -188,7 +197,7 @@ export function ContributionGrid({
     };
     for (const issue of validation?.errors ?? []) add(issue, "errors");
     for (const issue of validation?.warnings ?? []) add(issue, "warnings");
-    return { cells, tables, columns };
+    return { cells, tables, columns, columnIssues };
   }, [validation, base]);
 
   const isEdited = useCallback(
@@ -235,6 +244,29 @@ export function ContributionGrid({
     }
     return rows;
   }, [server]);
+  /** The columns of a table with a cell edited since the saved revision (cached per table object). */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a fresh cache per saved revision
+  const editedCache = useMemo(() => new WeakMap<GridTable, Set<string>>(), [original]);
+  const editedColumnsOf = (t: GridTable) => {
+    let edited = editedCache.get(t);
+    if (!edited) {
+      edited = new Set<string>();
+      for (const row of t.rows) {
+        const saved = original.get(row.id);
+        if (saved === row) continue;
+        for (const column of new Set([
+          ...Object.keys(row.cells),
+          ...Object.keys(saved?.cells ?? {}),
+        ]))
+          if (isEdited(row, column)) edited.add(column);
+      }
+      editedCache.set(t, edited);
+    }
+    return edited;
+  };
+  /** A whole column's issues in the saved revision, until one of its cells is edited. */
+  const columnIssuesOf = (t: GridTable, column: string): CellIssues | undefined =>
+    editedColumnsOf(t).has(column) ? undefined : server.columnIssues.get(t.name)?.get(column);
   const countsOf = (t: GridTable) => {
     const cached = countCache.get(t);
     if (cached) return cached;
@@ -271,6 +303,12 @@ export function ContributionGrid({
       if (rowEdited) edited += 1;
       if (rowError) errors += 1;
       if (rowWarning) warnings += 1;
+    }
+    // Whole-column issues count once each, beside the rows.
+    for (const column of server.columnIssues.get(t.name)?.keys() ?? []) {
+      const issues = columnIssuesOf(t, column);
+      if (issues?.errors.length) errors += 1;
+      if (issues?.warnings.length) warnings += 1;
     }
     const result = { errors, warnings, edited, rows: t.rows.filter(rowHasValues).length };
     countCache.set(t, result);
@@ -627,12 +665,15 @@ export function ContributionGrid({
             >
               {model.tables[name]?.label ?? name}
               {!!count?.errors && (
-                <Badge className="bg-red-700 text-white" title="Rows with errors">
+                <Badge className="bg-red-700 text-white" title="Rows and columns with errors">
                   {count.errors}
                 </Badge>
               )}
               {!!count?.warnings && (
-                <Badge className="bg-amber-300 text-amber-950" title="Rows with warnings">
+                <Badge
+                  className="bg-amber-300 text-amber-950"
+                  title="Rows and columns with warnings"
+                >
                   {count.warnings}
                 </Badge>
               )}
@@ -728,6 +769,7 @@ export function ContributionGrid({
                   const column = columns[vc.index];
                   const def = modelTable?.columns[column];
                   const vocabulary = vocabularyOf(def);
+                  const columnIssues = columnIssuesOf(table, column);
                   return (
                     // biome-ignore lint/a11y/useSemanticElements: a virtualized grid of absolutely positioned cells, not a <table>
                     <div
@@ -741,11 +783,17 @@ export function ContributionGrid({
                           : "not in the data model",
                       ]
                         .filter(Boolean)
+                        .concat(columnIssues?.errors ?? [], columnIssues?.warnings ?? [])
                         .join(" · ")}
                       className={cx(
                         "absolute top-0 flex h-full items-center truncate border-b border-r border-gray-200 px-1.5 font-semibold",
                         def ? "text-gray-800" : "text-red-700",
                         isReadOnly(def) && "text-gray-500",
+                        columnIssues?.errors.length
+                          ? "bg-red-50 text-red-800"
+                          : columnIssues?.warnings.length
+                            ? "bg-amber-200 text-amber-950"
+                            : null,
                       )}
                       style={{ left: vc.start, width: vc.size }}
                     >
@@ -802,6 +850,7 @@ export function ContributionGrid({
                       const column = columns[c];
                       const value = row?.cells[column] ?? "";
                       const issues = row ? issuesOf(active, row, column) : null;
+                      const columnIssues = columnIssuesOf(table, column);
                       const edited = row ? isEdited(row, column) : false;
                       const isFocus = focus.r === r && focus.c === c;
                       const locked = !editable(c);
@@ -831,11 +880,16 @@ export function ContributionGrid({
                               ? "z-30 overflow-visible"
                               : "truncate",
                             locked && "bg-gray-50 text-gray-500",
+                            // A cell's own issues, else its whole column's.
                             issues?.errors.length
                               ? "bg-red-50 text-red-800"
                               : issues?.warnings.length
                                 ? "bg-amber-100 text-amber-900"
-                                : null,
+                                : columnIssues?.errors.length
+                                  ? "bg-red-50"
+                                  : columnIssues?.warnings.length
+                                    ? "bg-amber-50"
+                                    : null,
                             inRange(r, c) && !isFocus && "bg-node-soft",
                             edited && "ring-2 ring-purple-500 ring-inset",
                             isFocus && "z-[5] outline-2 -outline-offset-2 outline-node",
