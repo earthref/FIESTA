@@ -60,6 +60,14 @@ const loadImage = (src: string) =>
     image.src = src;
   });
 
+// Every canvas here is read back pixel by pixel (the basemap once, each globe
+// for the cache) and written with putImageData, so it is kept in CPU memory.
+// A GPU-backed canvas (Edge and Chrome with hardware acceleration) stalls on
+// each readback: ~5s of them froze the search grid as its globes drew, and
+// the page's counts and plots waited behind them.
+const context2d = (canvas: HTMLCanvasElement) =>
+  canvas.getContext("2d", { willReadFrequently: true });
+
 const basemaps = new Map<Body, Promise<ImageData | null>>();
 function loadBasemap(body: Body): Promise<ImageData | null> {
   const cached = basemaps.get(body);
@@ -77,7 +85,7 @@ function loadBasemap(body: Body): Promise<ImageData | null> {
       const canvas = document.createElement("canvas");
       canvas.width = WIDTH;
       canvas.height = HEIGHT;
-      const context = canvas.getContext("2d");
+      const context = context2d(canvas);
       if (!context) return null;
       context.drawImage(image, 0, 0, WIDTH, HEIGHT);
       if (body === "earth") {
@@ -134,7 +142,7 @@ function drawThumbnail(
   const radius = (Math.min(width, height) / 2 - 2) * scale;
   canvas.width = w;
   canvas.height = h;
-  const context = canvas.getContext("2d");
+  const context = context2d(canvas);
   if (!context) return;
   const [centerLon, centerLat] = sphericalCentroid(markers);
   const projection = geoOrthographic()
@@ -312,13 +320,13 @@ export function MapThumbnail({
     if (cached) {
       canvas.width = cached.width;
       canvas.height = cached.height;
-      canvas.getContext("2d")?.putImageData(cached, 0, 0);
+      context2d(canvas)?.putImageData(cached, 0, 0);
       drawn.delete(key);
       drawn.set(key, cached);
       return;
     }
     drawThumbnail(canvas, spec.markers, spec.rings, spec.dots, width, height, image, body, dim);
-    const context = canvas.getContext("2d");
+    const context = context2d(canvas);
     if (!context) return;
     drawn.set(key, context.getImageData(0, 0, canvas.width, canvas.height));
     if (drawn.size > DRAWN_SIZE) {
