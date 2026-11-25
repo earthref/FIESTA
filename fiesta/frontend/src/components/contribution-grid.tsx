@@ -102,7 +102,14 @@ export function ContributionGrid({
   onDirtyChange: (dirty: boolean) => void;
 }) {
   // --- document, history and the saved revision's rows ------------------------------------
-  const base = useMemo(() => parseContribution(baseText), [baseText]);
+  // A saved text that is not a contribution file (a failed upload) opens as an empty grid.
+  const [base, baseError] = useMemo((): [GridDoc, string | null] => {
+    try {
+      return [parseContribution(baseText), null];
+    } catch (e) {
+      return [[], (e as Error).message];
+    }
+  }, [baseText]);
   const initial = useMemo(
     () => (draftText === null ? base : alignDraft(base, parseContribution(draftText))),
     [base, draftText],
@@ -210,13 +217,21 @@ export function ContributionGrid({
   /** Per table: rows with errors, rows edited, rows (cached per table object). */
   // biome-ignore lint/correctness/useExhaustiveDependencies: a fresh cache whenever the issues change
   const countCache = useMemo(
-    () => new WeakMap<GridTable, { errors: number; edited: number; rows: number }>(),
+    () =>
+      new WeakMap<GridTable, { errors: number; warnings: number; edited: number; rows: number }>(),
     [issuesOf],
   );
-  const serverErrorRows = useMemo(() => {
-    const rows = new Set<string>();
+  /** Per row (`table\0id`) with issues in the saved revision: its columns, and which kinds. */
+  const serverRows = useMemo(() => {
+    const rows = new Map<string, { columns: string[]; errors: boolean; warnings: boolean }>();
     for (const [k, entry] of server.cells) {
-      if (entry.errors.length) rows.add(k.slice(0, k.lastIndexOf("\u0000")));
+      const cut = k.lastIndexOf("\u0000");
+      const rowKey = k.slice(0, cut);
+      const row = rows.get(rowKey) ?? { columns: [], errors: false, warnings: false };
+      rows.set(rowKey, row);
+      row.columns.push(k.slice(cut + 1));
+      if (entry.errors.length) row.errors = true;
+      if (entry.warnings.length) row.warnings = true;
     }
     return rows;
   }, [server]);
@@ -227,28 +242,37 @@ export function ContributionGrid({
       .filter(([, c]) => isRequired(c))
       .map(([name]) => name);
     let errors = 0;
+    let warnings = 0;
     let edited = 0;
     for (const row of t.rows) {
       const saved = original.get(row.id);
+      const flagged = serverRows.get(`${t.name}\u0000${row.id}`);
       if (saved === row) {
-        if (serverErrorRows.has(`${t.name}\u0000${row.id}`)) errors += 1;
+        if (flagged?.errors) errors += 1;
+        if (flagged?.warnings) warnings += 1;
         continue;
       }
       const columns = new Set([
         ...Object.keys(row.cells),
         ...Object.keys(saved?.cells ?? {}),
         ...required,
+        ...(flagged?.columns ?? []),
       ]);
       let rowEdited = false;
       let rowError = false;
+      let rowWarning = false;
       for (const column of columns) {
         if (isEdited(row, column)) rowEdited = true;
-        if (!rowError && issuesOf(t.name, row, column).errors.length) rowError = true;
+        if (rowError && rowWarning) continue;
+        const issues = issuesOf(t.name, row, column);
+        if (issues.errors.length) rowError = true;
+        if (issues.warnings.length) rowWarning = true;
       }
       if (rowEdited) edited += 1;
       if (rowError) errors += 1;
+      if (rowWarning) warnings += 1;
     }
-    const result = { errors, edited, rows: t.rows.filter(rowHasValues).length };
+    const result = { errors, warnings, edited, rows: t.rows.filter(rowHasValues).length };
     countCache.set(t, result);
     return result;
   };
@@ -607,6 +631,11 @@ export function ContributionGrid({
                   {count.errors}
                 </Badge>
               )}
+              {!!count?.warnings && (
+                <Badge className="bg-amber-300 text-amber-950" title="Rows with warnings">
+                  {count.warnings}
+                </Badge>
+              )}
               {!!count?.edited && (
                 <Badge className="bg-purple-700 text-white" title="Rows edited">
                   {count.edited}
@@ -646,6 +675,12 @@ export function ContributionGrid({
         </label>
       </div>
 
+      {baseError && (
+        <p className="rounded-md border border-gray-200 bg-panel-soft px-3 py-1.5 text-[13px] text-gray-700">
+          The saved file holds no contribution tables ({baseError}), so the grid starts empty. Text
+          mode shows the file as it was saved; saving edits made here replaces it.
+        </p>
+      )}
       {tableIssues.length > 0 && (
         <ul className="max-h-24 overflow-y-auto rounded-md border border-gray-200 bg-panel-soft px-3 py-1.5 text-[13px]">
           {tableIssues.map((issue, i) => (
@@ -777,7 +812,10 @@ export function ContributionGrid({
                           role="gridcell"
                           tabIndex={-1}
                           aria-selected={inRange(r, c)}
-                          title={issues?.errors.join("\n") || undefined}
+                          title={
+                            (issues && [...issues.errors, ...issues.warnings].join("\n")) ||
+                            undefined
+                          }
                           onMouseDown={(e) => onCellMouseDown(e, { r, c })}
                           onMouseEnter={() => dragging.current && select({ r, c }, true)}
                           onDoubleClick={() => startEdit({ r, c })}
@@ -793,7 +831,11 @@ export function ContributionGrid({
                               ? "z-30 overflow-visible"
                               : "truncate",
                             locked && "bg-gray-50 text-gray-500",
-                            issues?.errors.length ? "bg-red-50 text-red-800" : null,
+                            issues?.errors.length
+                              ? "bg-red-50 text-red-800"
+                              : issues?.warnings.length
+                                ? "bg-amber-100 text-amber-900"
+                                : null,
                             inRange(r, c) && !isFocus && "bg-node-soft",
                             edited && "ring-2 ring-purple-500 ring-inset",
                             isFocus && "z-[5] outline-2 -outline-offset-2 outline-node",
