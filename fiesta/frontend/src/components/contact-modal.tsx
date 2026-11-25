@@ -35,7 +35,7 @@ export function useContact(): ContactContextValue {
   return context;
 }
 
-const label = "mb-1 block text-sm font-medium text-gray-700";
+const label = "mb-1 block text-base font-medium text-gray-700";
 
 /** "Having trouble? Email Us": a message to the webmaster (POST /v2/contact)
  * with the screenshot taken when the form opened, which the sender can drop. */
@@ -93,13 +93,14 @@ function ContactDialog({
         open
         onClose={onClose}
         title="Email Us"
+        largeTitle
         footer={
           <Button variant="secondary" onClick={onClose}>
             Close
           </Button>
         }
       >
-        <div className="space-y-2 text-sm text-gray-700" role="status">
+        <div className="space-y-2 text-base text-gray-700" role="status">
           <p className="font-medium">Thank you, your message has been sent.</p>
           <p>We will reply to {email.trim()} as soon as we can.</p>
         </div>
@@ -112,6 +113,7 @@ function ContactDialog({
       open
       onClose={onClose}
       title="Email Us"
+      largeTitle
       wide
       footer={
         <>
@@ -125,7 +127,7 @@ function ContactDialog({
       }
     >
       <form id="contact-form" onSubmit={onSubmit} className="space-y-3">
-        <p className="text-sm text-gray-600">
+        <p className="text-base text-gray-600">
           Having trouble with {repository} or your EarthRef account? Send us a message; we reply by
           email. You can also write to{" "}
           <a href={`mailto:${WEBMASTER}`} className="text-node-ink hover:underline">
@@ -139,6 +141,7 @@ function ContactDialog({
               Name
             </label>
             <Input
+              className="text-base!"
               id="contact-name"
               autoComplete="name"
               required
@@ -152,6 +155,7 @@ function ContactDialog({
               Email
             </label>
             <Input
+              className="text-base!"
               id="contact-email"
               type="email"
               autoComplete="email"
@@ -166,6 +170,7 @@ function ContactDialog({
             Subject
           </label>
           <Input
+            className="text-base!"
             id="contact-subject"
             maxLength={200}
             value={subject}
@@ -183,7 +188,7 @@ function ContactDialog({
             rows={6}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            className="w-full rounded-md border border-gray-300 bg-surface px-3 py-2 text-[13px] text-gray-900 placeholder:text-ink-faint focus:border-node focus:outline-hidden focus:ring-1 focus:ring-node"
+            className="w-full rounded-md border border-gray-300 bg-surface px-3 py-2 text-base text-gray-900 placeholder:text-ink-faint focus:border-node focus:outline-hidden focus:ring-1 focus:ring-node"
             placeholder="What were you trying to do, and what happened?"
           />
         </div>
@@ -199,7 +204,7 @@ function ContactDialog({
           onChange={(event) => setWebsite(event.target.value)}
         />
         <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <label className="flex items-center gap-2 text-base font-medium text-gray-700">
             <input
               type="checkbox"
               checked={attach && image !== null}
@@ -210,9 +215,9 @@ function ContactDialog({
           </label>
           <div className="mt-2">
             {image === undefined ? (
-              <p className="text-xs text-gray-500">Taking the screenshot…</p>
+              <p className="text-sm text-gray-500">Taking the screenshot…</p>
             ) : image === null ? (
-              <p className="text-xs text-gray-500">The screenshot could not be taken.</p>
+              <p className="text-sm text-gray-500">The screenshot could not be taken.</p>
             ) : (
               <img
                 src={image}
