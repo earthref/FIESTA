@@ -21,6 +21,7 @@ from fiesta.apps.routers import (
     auth,
     basemap,
     config,
+    contact,
     import_formats,
     imports,
     portal,
@@ -126,6 +127,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router, prefix="/v2")
     app.include_router(basemap.router, prefix="/v2")
+    app.include_router(contact.router, prefix="/v2")
     # Before the /v2/{repository} routers: "admin" is a reserved node slug.
     app.include_router(admin.router, prefix="/v2/admin")
     # Likewise "portal": the cross-node Users and References grids.

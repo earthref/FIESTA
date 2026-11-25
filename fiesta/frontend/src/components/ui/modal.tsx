@@ -16,6 +16,10 @@ interface ModalProps {
   largeTitle?: boolean;
 }
 
+/** Open modals, innermost last: Escape closes only the top one (the contact
+ * form opens over the sign-in modal). */
+const openModals: object[] = [];
+
 export function Modal({
   open,
   onClose,
@@ -35,12 +39,17 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
+    const self = {};
+    openModals.push(self);
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close.current();
+      if (event.key === "Escape" && openModals[openModals.length - 1] === self) close.current();
     };
     document.addEventListener("keydown", onKeyDown);
     panelRef.current?.focus();
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      openModals.splice(openModals.indexOf(self), 1);
+    };
   }, [open]);
 
   if (!open) return null;
