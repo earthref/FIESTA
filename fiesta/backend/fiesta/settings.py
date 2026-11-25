@@ -130,6 +130,8 @@ class Settings(BaseSettings):
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_from: str = "noreply@earthref.org"
+    # Where "Having trouble? Email Us" messages go (POST /v2/contact).
+    contact_email: str = "webmaster@earthref.org"
 
     # Sign-in (fiesta.auth): an emailed one-time link, or an external account.
     # A provider is offered once its client id and secret are both set. Each

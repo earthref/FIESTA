@@ -24,6 +24,7 @@
     "echarts": "^6.1.0",
     "lucide-react": "1.65.0",
     "maplibre-gl": "^6.16.0",
+    "modern-screenshot": "^4.7.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"

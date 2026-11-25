@@ -19,6 +19,7 @@ import {
   startProviderSignIn,
 } from "../lib/sign-in";
 import { ErrorMessage } from "./error-message";
+import { HavingTroubleButton } from "./footer";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Modal } from "./ui/modal";
@@ -80,12 +81,9 @@ function LoginModalDialog({
 
   const footer = (
     <>
-      <a
-        href="mailto:webmaster@earthref.org"
-        className="mr-auto inline-flex items-center rounded-md border border-gray-300 bg-surface px-3.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-      >
-        Having Trouble? Email Us
-      </a>
+      <div className="mr-auto flex">
+        <HavingTroubleButton style={{ margin: 0 }} />
+      </div>
       <Button variant="secondary" onClick={onClose}>
         Cancel
       </Button>
