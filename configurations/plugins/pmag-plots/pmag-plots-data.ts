@@ -172,11 +172,57 @@ export interface HystLoop extends Where {
   m: number[];
 }
 
+/** A high-field fit to take out of a loop (PmagPy `rockmag`). */
+export type SlopeFit = "linear" | "nonlinear";
+/** The hysteresis tab's switch: as measured, the decision tree's fit, or one of the two. */
+export type SlopeCorrection = "none" | "auto" | SlopeFit;
+
+export const SLOPE_CORRECTIONS: { value: SlopeCorrection; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "auto", label: "Automatic" },
+  { value: "linear", label: "Linear" },
+  { value: "nonlinear", label: "Approach to saturation" },
+];
+
+export interface HighFieldFit {
+  /** The high-field slope per mT, in the loop's moment unit. */
+  slope: number;
+  chi_hf: number | null;
+  ms: number | null;
+  /** mT. */
+  bc: number | null;
+  /** The fit's window starts at this fraction of the maximum field. */
+  cutoff: number;
+  /** F of the nonlinear fit's improvement over a linear one. */
+  fnl_lin?: number | null;
+}
+
+/** A loop gridded, centered and drift-corrected, with its high-field fits. */
+export interface HystFit {
+  chi_unit: string;
+  field: number[];
+  m: number[];
+  /** The fit the IRM decision tree takes; none for a linear or an open loop. */
+  auto: SlopeFit | null;
+  linear_loop: boolean;
+  closed: boolean;
+  saturated: boolean;
+  /** χHF of a whole-loop regression (what a statistically linear loop reports). */
+  chi_hf_loop: number | null;
+  q: number | null;
+  mr: number | null;
+  /** mT. */
+  brh: number | null;
+  fits: Partial<Record<SlopeFit, HighFieldFit>>;
+}
+
 export interface PlotData {
   demag: { net: Net; specimens: DemagSpecimen[] };
   eqarea: { net: Net; plots: EqAreaGroup[] };
   arai: { specimens: AraiSpecimen[] };
   hyst: { loops: HystLoop[] };
+  /** By `<specimen>:<experiment>`; computed when a slope correction is first picked. */
+  hystfit: { loops: Record<string, HystFit> };
 }
 
 // --- labels --------------------------------------------------------------------------------

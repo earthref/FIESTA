@@ -4,7 +4,9 @@ geometry, the row cleaning that keeps PmagPy from raising, and the counts."""
 import asyncio
 import gzip
 import json
+import math
 
+import numpy as np
 import pytest
 from pmagpy import pmag
 
@@ -22,6 +24,8 @@ from fiesta.plugins.pmag_plots import (
     compute_plots,
     compute_thumbnails,
     fisher_mean,
+    hysteresis_fit,
+    hysteresis_fits,
     net,
 )
 
@@ -432,6 +436,58 @@ def test_pmag_plots_sequence_order_repairs_lost_zeros():
     assert [r["i"] for r in _by_sequence([{"sequence": "2", "i": 0}, {"i": 1}])] == [0, 1]
 
 
+def _loop(chi: float, coercivity: float = 0.02, n: int = 200) -> tuple[list[float], list[float]]:
+    """A saturating loop (Ms 1, the given Bc in tesla) on a high-field slope
+    of `chi` per tesla, measured from +1 T down and back, with a little noise."""
+    down = np.linspace(1, -1, n)
+    fields = np.concatenate([down, down[::-1]])
+    ferro = np.concatenate(
+        [np.tanh((down + coercivity) / 0.05), np.tanh((down[::-1] - coercivity) / 0.05)]
+    )
+    noise = np.random.default_rng(1).normal(0, 0.003, 2 * n)
+    return fields.tolist(), (ferro + chi * fields + noise).tolist()
+
+
+def test_pmag_plots_hysteresis_slope_corrections_are_rockmags():
+    from pmagpy import rockmag
+
+    fields, moments = _loop(0.8)
+    fit = hysteresis_fit(fields, moments)
+    assert fit is not None
+    # Saturated and closed: the decision tree takes the linear high-field fit.
+    assert (fit["auto"], fit["saturated"], fit["closed"], fit["linear_loop"]) == (
+        "linear",
+        True,
+        True,
+        False,
+    )
+    linear, nonlinear = fit["fits"]["linear"], fit["fits"]["nonlinear"]
+    # The slope per mT as plotted, χHF = slope per tesla · μ0, Ms and Bc in mT.
+    assert linear["slope"] == pytest.approx(0.8e-3, rel=0.02)
+    assert linear["chi_hf"] == pytest.approx(0.8 * 4e-7 * math.pi, rel=0.02)
+    assert linear["ms"] == pytest.approx(1, rel=0.02)
+    assert linear["bc"] == pytest.approx(20, rel=0.03)
+    assert nonlinear["slope"] == pytest.approx(0.8e-3, rel=0.05)
+    assert fit["brh"] is not None and 0 < fit["mr"] < 1
+    # The processed loop is gridded and in mT; less its slope it saturates at Ms.
+    assert len(fit["field"]) == len(fit["m"]) and max(fit["field"]) == pytest.approx(1000, rel=0.02)
+    corrected = [m - linear["slope"] * f for f, m in zip(fit["field"], fit["m"], strict=True)]
+    assert max(corrected) == pytest.approx(1, abs=0.02)
+    # The same numbers as process_hyst_loop's own run of the tree.
+    expected = rockmag.process_hyst_loop(
+        np.array(fields), np.array(moments), show_results_table=False, show_plot=False
+    )
+    assert linear["chi_hf"] == pytest.approx(expected["chi_HF"], rel=1e-4)
+    assert linear["ms"] == pytest.approx(expected["Ms"], rel=1e-4)
+    assert linear["bc"] == pytest.approx(expected["Bc"] * 1e3, rel=1e-4)
+    assert fit["m"] == pytest.approx(expected["drift_corrected_M"].tolist(), rel=1e-4, abs=1e-6)
+
+    # Loops PmagPy cannot process have no fit, and never raise.
+    assert hysteresis_fit([0.1 * i for i in range(12)], [1.0] * 12) is None
+    assert hysteresis_fit([], []) is None
+    assert hysteresis_fits(parse_text(PMAG_TEXT)) == {}
+
+
 NO_MEASUREMENTS_TEXT = """tab delimited\tcontribution
 id\tversion\tdata_model_version
 99\t1\t3.0
@@ -534,6 +590,12 @@ async def test_pmag_plots_cache_computes_each_kind_once_and_warms_the_rest():
     assert set(plots._kinds) == set(KINDS)
     assert plots._source is None
     assert (await plots.get("hyst")) is plots._kinds["hyst"].result()
+    # The slope corrections are computed only when asked for (a second read:
+    # the parsed file was let go), and then cached like any kind.
+    body, _ = await plots.get("hystfit")
+    assert json.loads(body) == {"loops": {}}  # the fixture's 21 collinear points are no loop
+    assert reads == 2 and plots._source is None
+    assert (await plots.get("hystfit"))[0] is body and reads == 2
 
 
 @pytest.mark.asyncio
