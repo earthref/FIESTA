@@ -153,10 +153,21 @@ export function ContributionGrid({
   const server = useMemo(() => {
     const cells = new Map<string, CellIssues>();
     const tables = new Map<string, (ValidationIssue & { kind: keyof CellIssues })[]>();
+    // Per table, the columns with issues: the ids of their rows, or null for the whole column.
+    const columns = new Map<string, Map<string, Set<number> | null>>();
+    const flag = (issue: ValidationIssue, rowId?: number) => {
+      if (!issue.column) return;
+      const byColumn = columns.get(issue.table) ?? new Map<string, Set<number> | null>();
+      columns.set(issue.table, byColumn);
+      if (rowId === undefined) byColumn.set(issue.column, null);
+      else if (!byColumn.has(issue.column)) byColumn.set(issue.column, new Set([rowId]));
+      else byColumn.get(issue.column)?.add(rowId);
+    };
     const add = (issue: ValidationIssue, kind: keyof CellIssues) => {
       const rowId = issue.row
         ? base.find((t) => t.name === issue.table)?.rows[issue.row - 1]?.id
         : undefined;
+      flag(issue, rowId);
       if (rowId === undefined || !issue.column) {
         const list = tables.get(issue.table) ?? [];
         list.push({ ...issue, kind });
@@ -170,7 +181,7 @@ export function ContributionGrid({
     };
     for (const issue of validation?.errors ?? []) add(issue, "errors");
     for (const issue of validation?.warnings ?? []) add(issue, "warnings");
-    return { cells, tables };
+    return { cells, tables, columns };
   }, [validation, base]);
 
   const isEdited = useCallback(
@@ -255,8 +266,17 @@ export function ContributionGrid({
       for (const row of t?.rows ?? [])
         for (const [k, v] of Object.entries(row.cells)) if (v) filled.add(k);
     }
-    return all.filter((c) => filled.has(c) || isRequired(modelTable?.columns[c]));
-  }, [modelTable, table, baseTable, showEmptyColumns]);
+    // A column with a validation issue shows while a row the issue is on is still in the table.
+    const rowIds = new Set(table.rows.map((row) => row.id));
+    const flagged = server.columns.get(active);
+    const hasIssue = (c: string) => {
+      const rows = flagged?.get(c);
+      if (rows === null) return true;
+      for (const id of rows ?? []) if (rowIds.has(id)) return true;
+      return false;
+    };
+    return all.filter((c) => filled.has(c) || isRequired(modelTable?.columns[c]) || hasIssue(c));
+  }, [modelTable, table, baseTable, showEmptyColumns, server, active]);
   // Widths follow the table, not each keystroke.
   // biome-ignore lint/correctness/useExhaustiveDependencies: table.rows changes per edit
   const widths = useMemo(
