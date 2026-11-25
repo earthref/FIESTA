@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EChart, type EChartsOption } from "@/components/echart";
+import { EChart, type EChartsOption, PlotsPending } from "@/components/echart";
 import { ErrorMessage } from "@/components/error-message";
 import { Choices, PlotCard, PlotFilter, PlotLayout } from "@/components/plot-grid";
 import { PageSpinner } from "@/components/ui/spinner";
@@ -130,35 +130,33 @@ export default function PmagPlotsView({
   // Keyed by type: each tab starts with its own level, coordinates and filter
   // (the equal-area tab's level would otherwise hide every demag plot).
   return (
-    <PlotGrid
-      key={type}
-      type={type}
-      items={items}
-      selected={selected}
-      onSelect={onSelect}
-      controls={
-        kind === "hyst" && (
-          <>
-            <Choices
-              label="Slope correction"
-              options={SLOPE_CORRECTIONS}
-              value={slope}
-              onChange={setSlope}
-            />
-            {fitting && hystfit.isPending && (
-              <span className="text-gray-500" role="status">
-                Fitting the loops…
-              </span>
-            )}
-            {fitting && hystfit.error && (
-              <span className="text-red-700" role="alert">
-                The slope corrections could not be computed; the loops are as measured.
-              </span>
-            )}
-          </>
-        )
-      }
-    />
+    // Until the fits arrive the loops are still drawn as measured.
+    <PlotsPending pending={fitting && hystfit.isPending}>
+      <PlotGrid
+        key={type}
+        type={type}
+        items={items}
+        selected={selected}
+        onSelect={onSelect}
+        controls={
+          kind === "hyst" && (
+            <>
+              <Choices
+                label="Slope correction"
+                options={SLOPE_CORRECTIONS}
+                value={slope}
+                onChange={setSlope}
+              />
+              {fitting && hystfit.error && (
+                <span className="text-red-700" role="alert">
+                  The slope corrections could not be computed; the loops are as measured.
+                </span>
+              )}
+            </>
+          )
+        }
+      />
+    </PlotsPending>
   );
 }
 
