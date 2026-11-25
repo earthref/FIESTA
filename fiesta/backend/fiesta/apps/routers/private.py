@@ -1,11 +1,14 @@
 """Private workspace: the contribution workflow (Bearer auth)."""
 
+import contextlib
+import json
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Header, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Response, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
+from starlette.concurrency import run_in_threadpool
 
 from fiesta.apps.deps import CurrentUser, NodeDep, SessionDep, require_public_contributions
 from fiesta.apps.schemas import ContributionOut, JobOut, NameIn, ReferenceIn, ValidationOut
@@ -18,6 +21,7 @@ from fiesta.db.models import (
 )
 from fiesta.domain.parse import ParseError, parse_text, set_table_values
 from fiesta.jobs import tasks
+from fiesta.services import attachments as att
 from fiesta.services import contributions as svc
 from fiesta.services import references
 from fiesta.services.access import can_access, is_member, may_publish
@@ -25,6 +29,7 @@ from fiesta.services.revisions import (
     enqueue,
     locked,
     revision_file,
+    safe_name,
     save_revision,
     snapshot_for,
 )
@@ -144,6 +149,7 @@ async def upload_file(
         files=files,
         canonical=canonical,
         operation="upload",
+        meta=att.upload_meta(files, canonical),
     )
     await session.commit()
     return await workspace_out(session, contribution, user)
@@ -157,14 +163,16 @@ async def import_tables(
     contribution_id: int,
     data: UploadFile,
     originals: Annotated[list[UploadFile] | None, File()] = None,
+    sources: Annotated[str | None, Form()] = None,
     expected_revision: str | None = Header(None, alias="If-Match"),
     request_key: str = Header(..., alias="Idempotency-Key"),
 ) -> ContributionOut:
     """The upload page's import step: `data` is the contribution text the
     browser converted the files to (one block per imported sheet), `originals`
-    the files as uploaded. Each table it brings replaces the contribution's
+    the files as uploaded, `sources` a JSON list naming the original each block
+    of `data` came from. Each table it brings replaces the contribution's
     table of that name in a new revision (from `If-Match`); the originals are
-    kept as attachments."""
+    kept as attachments, with the rows each brought in."""
     from fiesta.services.imports import save_import
 
     contribution = await _own_contribution(
@@ -174,6 +182,14 @@ async def import_tables(
         text = (await data.read()).decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(422, "the imported tables must be UTF-8 text") from None
+    try:
+        names = json.loads(sources) if sources is not None else None
+    except ValueError:
+        names = ""
+    if names is not None and not (
+        isinstance(names, list) and all(isinstance(n, str) for n in names)
+    ):
+        raise HTTPException(422, "sources must be a JSON list of file names")
     await save_import(
         session,
         node,
@@ -183,6 +199,7 @@ async def import_tables(
         originals={f.filename or "upload": await f.read() for f in originals or []},
         expected_revision=expected_revision,
         request_key=request_key,
+        sources=names,
     )
     await session.commit()
     return await workspace_out(session, contribution, user)
@@ -592,15 +609,55 @@ async def restore(
     return await workspace_out(session, c, user)
 
 
+async def _attachment_cards(session, node, c) -> list[dict]:
+    """The head revision's attachments (fiesta.services.attachments.cards)."""
+    snapshot = await snapshot_for(session, c)
+    text = None
+    if any(n != snapshot["canonical"] for n in snapshot["files"]):
+        with contextlib.suppress(HTTPException):
+            text = (await revision_file(session, node, c)).decode("utf-8", "replace")
+    return att.cards(snapshot, text)
+
+
 @router.get("/{contribution_id}/attachments")
 async def attachments(session: SessionDep, node: NodeDep, user: CurrentUser, contribution_id: int):
+    """The files kept beside the canonical text: where each came from, the rows
+    of each table it brought in (an upload-tool original) or that name it, and
+    `locked`, why it cannot be removed (null: it can)."""
+    c = await _own_contribution(session, node, user, contribution_id, write=False)
+    return await _attachment_cards(session, node, c)
+
+
+@router.get("/{contribution_id}/attachments/{name}/thumbnail")
+async def attachment_thumbnail(
+    session: SessionDep,
+    node: NodeDep,
+    user: CurrentUser,
+    contribution_id: int,
+    name: str,
+    revision_id: str | None = None,
+):
+    """A small WebP of an image or of a PDF's first page (404 when the file
+    cannot be drawn). Callers add `?sha=` so the browser caches it per content."""
+    from fiesta.services.thumbnails import MAX_BYTES, thumbnail
+
     c = await _own_contribution(session, node, user, contribution_id, write=False)
     snapshot = await snapshot_for(session, c)
-    return [
-        {"name": n, "size": f["size"], "sha256": f["sha256"]}
-        for n, f in snapshot["files"].items()
-        if n != snapshot["canonical"]
-    ]
+    file = snapshot["files"].get(name)
+    kind = att.kind(name)
+    if name == snapshot["canonical"] or kind not in {"image", "pdf"}:
+        raise HTTPException(404, "no thumbnail for this file")
+    if file and file["size"] > MAX_BYTES:
+        raise HTTPException(404, "the file is too large for a thumbnail")
+    data = await revision_file(session, node, c, name, revision_id)
+    image = await run_in_threadpool(thumbnail, data, kind)
+    if image is None:
+        raise HTTPException(404, "the file cannot be drawn")
+    return Response(
+        image,
+        media_type="image/webp",
+        headers={"Cache-Control": "private, max-age=31536000, immutable"},
+    )
 
 
 @router.get("/{contribution_id}/attachments/{name}")
@@ -631,6 +688,11 @@ async def attachment_upload(
     request_key: str = Header(..., alias="Idempotency-Key"),
 ):
     c = await _own_contribution(session, node, user, contribution_id)
+    snapshot = await snapshot_for(session, c)
+    if safe_name(name) == snapshot["canonical"]:
+        raise HTTPException(409, "an attachment cannot replace the contribution's own file")
+    if (snapshot.get("attachments") or {}).get(name, {}).get("origin") == att.UPLOAD:
+        raise HTTPException(409, f"{name} was kept by the upload tool and cannot be replaced")
     await save_revision(
         session,
         node,
@@ -640,6 +702,7 @@ async def attachment_upload(
         request_key=request_key,
         files={name: await file.read()},
         operation="attachment",
+        meta={name: {"origin": att.ATTACHMENT}},
     )
     await session.commit()
     return await workspace_out(session, c, user)
@@ -655,6 +718,11 @@ async def attachment_remove(
     payload: RestoreIn,
 ):
     c = await _own_contribution(session, node, user, contribution_id)
+    card = next((a for a in await _attachment_cards(session, node, c) if a["name"] == name), None)
+    if card is None:
+        raise HTTPException(404, f"no attachment named {name}")
+    if card["locked"]:
+        raise HTTPException(409, f"{name} cannot be removed: {card['locked']}")
     await save_revision(
         session,
         node,
@@ -711,6 +779,7 @@ async def new_version(session: SessionDep, node: NodeDep, user: CurrentUser, con
         canonical=snapshot["canonical"],
         reference_doi=snapshot["reference_doi"],
         operation="new-version",
+        meta=snapshot.get("attachments"),
     )
     await session.commit()
     return await workspace_out(session, c, user)

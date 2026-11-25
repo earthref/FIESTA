@@ -532,7 +532,7 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
       document.getElementById(`sheet-${k}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
     );
   };
-  const blocks: { table: string; rows: number; text: string }[] = [];
+  const blocks: { table: string; rows: number; text: string; file: string }[] = [];
   let nImportErrors = 0;
   files.forEach((file, i) => {
     if (file.error) nImportErrors++;
@@ -542,7 +542,12 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
       nImportErrors += result.nErrors > 0 ? 1 : 0;
       const text = sheetBlock(sheet.rows, file.states[j], result);
       if (text)
-        blocks.push({ table: file.states[j].settings.table_name.trim(), rows: result.nRows, text });
+        blocks.push({
+          table: file.states[j].settings.table_name.trim(),
+          rows: result.nRows,
+          text,
+          file: file.name,
+        });
     });
   });
   const sourceErrors = singleSourceErrors(
@@ -834,6 +839,8 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
         new Blob([blocks.map((b) => b.text).join("\n>>>>>>>>>>\n")], { type: "text/plain" }),
         "import.txt",
       );
+      // The file each block came from: the server records the rows each original brought in.
+      formData.append("sources", JSON.stringify(blocks.map((b) => b.file)));
       for (const file of files) {
         formData.append("originals", new Blob([file.bytes]), file.name);
         if (file.upgrade?.report_text)
