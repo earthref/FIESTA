@@ -420,6 +420,8 @@ export interface ContributionVersion {
 export interface ContributionRowStats {
   validated: boolean;
   previous: { id: number; version: number } | null;
+  /** Rows per table of the file (every table it holds, level or not). */
+  rows?: Record<string, number>;
   tables: Record<
     string,
     { errors?: number; warnings?: number; changed?: number; removed?: number }

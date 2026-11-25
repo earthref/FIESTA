@@ -126,6 +126,30 @@ def parse_text(text: str) -> ParsedContribution:
     return parsed
 
 
+def table_row_counts(text: str) -> dict[str, int]:
+    """Rows per table, as `parse_text` counts them but without building the
+    rows (a file it rejects is counted as far as its blocks read)."""
+    counts: dict[str, int] = {}
+    table: str | None = None
+    state = 0  # 0: the block's "tab<TAB>table" line is next, 1: its columns, 2: rows
+    for line in text.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        if line.startswith(">>>"):
+            state = 0
+        elif not line.strip():
+            continue
+        elif state == 0:
+            header = line.split("\t")
+            table = header[1].strip() if len(header) > 1 else None
+            state = 1
+        elif state == 1:
+            if table is not None:
+                counts.setdefault(table, 0)
+            state = 2
+        elif table is not None:
+            counts[table] += 1
+    return counts
+
+
 def block_tables(text: str) -> list[str]:
     """The table name of every block in the text, in file order (a table
     split over several blocks is listed once per block). Call it only on text

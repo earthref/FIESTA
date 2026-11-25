@@ -12,7 +12,13 @@ from fiesta.domain.importer import (
     normalise_value,
     single_source_errors,
 )
-from fiesta.domain.parse import ParsedContribution, block_tables, export_text, parse_text
+from fiesta.domain.parse import (
+    ParsedContribution,
+    block_tables,
+    export_text,
+    parse_text,
+    table_row_counts,
+)
 from fiesta.domain.validate import Validator, validate_contribution
 from fiesta.nodeconfig import ExcelTemplate
 from fiesta.services.imports import original_names, upload_files
@@ -97,6 +103,9 @@ def test_single_source_tables():
         "tab delimited\tmeasurements\nmeasurement\nm2\n"
     )
     assert block_tables(text) == ["measurements", "sites", "measurements"]
+    assert table_row_counts(text) == {
+        table: len(rows) for table, rows in parse_text(text).tables.items()
+    }
     assert single_source_errors(block_tables(text), ["measurements"]) == [
         "There is more than one measurements table in this upload. "
         "Please combine them before uploading."

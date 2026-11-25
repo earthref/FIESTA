@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fiesta.db.models import Contribution, User
 from fiesta.domain.compare import changed_rows, issue_rows
-from fiesta.domain.parse import parse_text
+from fiesta.domain.parse import parse_text, table_row_counts
 from fiesta.nodeconfig import NodeConfig
 from fiesta.services.contributions import latest_validation, load_file
 
@@ -114,13 +114,33 @@ async def _changes(
     return changes
 
 
+# Rows per table of recently viewed files.
+_COUNTS: OrderedDict[tuple, dict[str, int]] = OrderedDict()
+_COUNTS_SIZE = 64
+
+
+async def _row_counts(node: NodeConfig, contribution: Contribution) -> dict[str, int]:
+    key = _file_key(node, contribution)
+    counts = _COUNTS.get(key)
+    if counts is None:
+        raw = await load_file(node, contribution.id, contribution.filename)
+        counts = await asyncio.to_thread(
+            lambda: table_row_counts(raw.decode("utf-8", errors="replace"))
+        )
+        _COUNTS[key] = counts
+        while len(_COUNTS) > _COUNTS_SIZE:
+            _COUNTS.popitem(last=False)
+    _COUNTS.move_to_end(key)
+    return counts
+
+
 async def row_stats(
     session: AsyncSession, node: NodeConfig, contribution: Contribution
 ) -> dict[str, Any]:
     """Per table: rows flagged by the current revision's validation (`errors`,
     `warnings`, absent when it was never validated) and rows differing from
     the previous published version (`changed`, `removed`, absent when there is
-    none)."""
+    none); `rows` counts the file's rows per table."""
     tables: dict[str, dict[str, int]] = {}
     report = await latest_validation(session, contribution.id)
     if report is not None:
@@ -139,6 +159,7 @@ async def row_stats(
             tables.setdefault(table, {}).update(counts)
     return {
         "validated": report is not None,
+        "rows": await _row_counts(node, contribution) if contribution.filename else {},
         "previous": {"id": previous.id, "version": previous.version} if previous else None,
         "tables": tables,
     }
