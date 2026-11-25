@@ -158,7 +158,8 @@ export const spotName = (members: MapPoint[]) => {
 };
 
 const MAX_TOOLTIP_IDS = 12;
-const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+export const escapeHtml = (text: string) =>
+  text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 // A point whose own contribution isn't its id (a plugin's, e.g. a pole) and
 // that carries no `source` names it by number.

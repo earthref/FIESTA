@@ -104,6 +104,27 @@ export function ModeButtons({
   return <ButtonGroup options={MODES} value={mode} setValue={setMode} {...counts} />;
 }
 
+/** What dragging or clicking on the Geospatial filter's map does: drag a
+ * Box, draw a Lasso, or pick Plates or Blocks (cratons, blocks and terranes). */
+export type GeoTool = "box" | "lasso" | "plates" | "blocks";
+export const GEO_TOOLS: [GeoTool, string][] = [
+  ["box", "Box"],
+  ["lasso", "Lasso"],
+  ["plates", "Plates"],
+  ["blocks", "Blocks"],
+];
+
+/** The Box / Lasso / Plates / Blocks buttons. */
+export function ToolButtons({
+  tool,
+  setTool,
+}: {
+  tool: GeoTool;
+  setTool: (tool: GeoTool) => void;
+}) {
+  return <ButtonGroup options={GEO_TOOLS} value={tool} setValue={setTool} />;
+}
+
 /** The Earth / Moon buttons, for `bodies` (in BODIES order); none
  * when Earth is the only one. */
 export function BodyButtons({

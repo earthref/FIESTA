@@ -29,6 +29,7 @@ import {
 } from "../components/filter-modals";
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
 import {
+  isPlate,
   isProvince,
   parsePlates,
   regionLabel,
@@ -714,7 +715,7 @@ export function SearchPage(props: SearchPageProps) {
   const plates = parsePlates(search.plates);
   const areaPlates = (entry: SearchLevel | undefined) =>
     plates.length > 0 && entry?.geo ? plates : undefined;
-  const plateList = usePlates(plates.length > 0);
+  const plateList = usePlates(plates.some(isPlate));
   const provinceList = useProvinces(plates.some(isProvince));
   const [filterModal, setFilterModal] = useState<FilterModalState | null>(null);
   // The sidebar's Find box over its filters.
