@@ -6,7 +6,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import * as echarts from "echarts/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EChart } from "@/components/echart";
+import { EChart, PlotsPending } from "@/components/echart";
 import { ErrorMessage } from "@/components/error-message";
 import { PageSpinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
@@ -667,20 +667,23 @@ export default function FieldModelsView({
           )}
           <div className={tab === "curves" ? "space-y-3" : "hidden"}>
             {components.map((component) => (
-              <CurveChart
-                key={component.key}
-                result={result}
-                component={component}
-                order={order}
-                hidden={hidden[component.key] ?? EMPTY}
-                setHidden={(set) => setHidden((h) => ({ ...h, [component.key]: set }))}
-                measurements={showData ? records : null}
-                regionColors={colorsByRegion}
-                showErrors={showErrors}
-                showEnsemble={showEnsemble}
-                cursorYear={cursorYear}
-                filePrefix={node.slug}
-              />
+              // A new search's records are on their way: the curves still
+              // carry the last one's measurements and site locations.
+              <PlotsPending key={component.key} pending={values.isPlaceholderData}>
+                <CurveChart
+                  result={result}
+                  component={component}
+                  order={order}
+                  hidden={hidden[component.key] ?? EMPTY}
+                  setHidden={(set) => setHidden((h) => ({ ...h, [component.key]: set }))}
+                  measurements={showData ? records : null}
+                  regionColors={colorsByRegion}
+                  showErrors={showErrors}
+                  showEnsemble={showEnsemble}
+                  cursorYear={cursorYear}
+                  filePrefix={node.slug}
+                />
+              </PlotsPending>
             ))}
           </div>
           {tab === "global" && (
