@@ -537,18 +537,35 @@ export function SearchPage(props: SearchPageProps) {
   // does not scroll (legacy onWindowResize). The fixed footer's height comes
   // from --footer-h (set by Footer), so a footer that wraps taller on a narrow
   // viewport no longer covers the bottom of the results.
+  //
+  // Measured once at mount, the region was often not there yet (the page
+  // spinner shows until the config, level and saved search are ready), so
+  // its height stayed unset: it grew to the grid's whole virtual height, the
+  // page scrolled instead of the grid, and the virtual grid rendered every
+  // loaded row at once (Edge "page isn't responding"). So it is measured
+  // when the page is ready, and again whenever the content above it changes
+  // height (the web font arriving, a banner), as well as on a window resize.
   const regionRef = useRef<HTMLDivElement>(null);
   const [regionHeight, setRegionHeight] = useState<string>();
+  const pageReady = !!(config && level && saved.ready);
   useEffect(() => {
+    if (!pageReady) return;
     const update = () => {
       if (!regionRef.current) return;
-      const top = regionRef.current.getBoundingClientRect().top;
+      const top = Math.round(regionRef.current.getBoundingClientRect().top + window.scrollY);
       setRegionHeight(`max(300px, calc(100vh - ${top}px - var(--footer-h, 48px) - 31px))`);
     };
     update();
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
+    // The body's height follows the content above the region (the region's
+    // own height is fixed), so a header that grows or shrinks resizes it.
+    const observer = new ResizeObserver(update);
+    observer.observe(document.body);
+    return () => {
+      window.removeEventListener("resize", update);
+      observer.disconnect();
+    };
+  }, [pageReady]);
 
   const setSearch = (next: {
     q?: string;
