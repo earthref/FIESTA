@@ -126,6 +126,8 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
         root = "/v2/magic/private/contributions"
         c = (await client.post(root)).json()
         path = f"{root}/{c['id']}"
+        # Nothing saved yet: empty content, not a missing revision.
+        assert (await client.get(path + "/content")).json() == {"revision_id": None, "text": ""}
         edit = {"expected_revision": None, "request_key": str(uuid.uuid4()), "text": raw}
         first = await client.put(path + "/content", json=edit)
         assert first.status_code == 200, first.text

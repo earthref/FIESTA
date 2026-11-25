@@ -540,6 +540,9 @@ async def content(
     revision_id: str | None = None,
 ):
     c = await _own_contribution(session, node, user, contribution_id, write=False)
+    # Nothing saved yet: an empty text, which the editor opens as an empty grid.
+    if revision_id is None and not c.head_revision and not c.filename:
+        return {"revision_id": None, "text": ""}
     data = await revision_file(session, node, c, revision_id=revision_id)
     return {"revision_id": revision_id or c.head_revision, "text": data.decode("utf-8")}
 

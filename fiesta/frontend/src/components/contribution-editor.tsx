@@ -18,7 +18,8 @@ const ContributionGrid = lazy(() =>
   import("./contribution-grid").then((m) => ({ default: m.ContributionGrid })),
 );
 
-type Content = { revision_id: string; text: string };
+/** `revision_id` is null while nothing has been saved (the grid opens empty). */
+type Content = { revision_id: string | null; text: string };
 type Revision = {
   id: string;
   parent_id: string | null;
@@ -140,7 +141,7 @@ export function ContributionEditor({
     return run(() =>
       api(`${base}/content`, {
         method: "PUT",
-        json: { text, expected_revision: value?.revision_id, request_key: requestKey },
+        json: { text, expected_revision: value?.revision_id ?? null, request_key: requestKey },
       }),
     );
   };
@@ -263,7 +264,10 @@ export function ContributionEditor({
             api(`${base}/attachments/${encodeURIComponent(file.name)}`, {
               method: "PUT",
               formData,
-              headers: { "If-Match": value.revision_id, "Idempotency-Key": crypto.randomUUID() },
+              headers: {
+                ...(value.revision_id ? { "If-Match": value.revision_id } : {}),
+                "Idempotency-Key": crypto.randomUUID(),
+              },
             }),
           );
         }}
@@ -282,7 +286,7 @@ export function ContributionEditor({
                   api(`${base}/attachments/${encodeURIComponent(file.name)}`, {
                     method: "DELETE",
                     json: {
-                      expected_revision: value?.revision_id,
+                      expected_revision: value?.revision_id ?? null,
                       request_key: crypto.randomUUID(),
                     },
                   }),
@@ -309,7 +313,7 @@ export function ContributionEditor({
                   api(`${base}/revisions/${revision.id}/restore`, {
                     method: "POST",
                     json: {
-                      expected_revision: value?.revision_id,
+                      expected_revision: value?.revision_id ?? null,
                       request_key: crypto.randomUUID(),
                     },
                   }),
