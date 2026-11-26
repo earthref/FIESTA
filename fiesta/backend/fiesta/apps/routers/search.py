@@ -57,8 +57,8 @@ from fiesta.search.queries import (
     build_search_body,
     facet_path,
 )
+from fiesta.services import downloads
 from fiesta.services.access import constrain_search
-from fiesta.services.contributions import load_file
 from fiesta.services.history import (
     locate_row,
     locate_row_id,
@@ -1582,7 +1582,14 @@ async def get_contribution(
     session: SessionDep, node: NodeDep, contribution_id: int, private_key: str | None = None
 ) -> dict:
     contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
-    return await _contribution_doc(node, contribution)
+    doc = await _contribution_doc(node, contribution)
+    # The stored canonical file and its archival checksum. What /download
+    # serves differs (fiesta.domain.download); /download/info has its checksum.
+    try:
+        stored = await downloads.locate(session, node, contribution)
+    except HTTPException:
+        return doc
+    return {**doc, "file": {"name": stored.name, "size": stored.size, "sha256": stored.sha256}}
 
 
 @router.get("/contributions/{contribution_id}/jsonld")
@@ -1733,17 +1740,33 @@ async def locate_contribution_row(
 
 @router.get("/contributions/{contribution_id}/download")
 async def download_contribution(
-    session: SessionDep, node: NodeDep, contribution_id: int, private_key: str | None = None
+    session: SessionDep,
+    node: NodeDep,
+    contribution_id: int,
+    private_key: str | None = None,
+    compress: downloads.Compression | None = None,
+    original: bool = False,
 ) -> Response:
+    """The canonical file, prepared for download (fiesta.domain.download), or
+    byte for byte as stored with `original`; `compress` gzips or zips it."""
     contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
     if not contribution.filename:
         raise HTTPException(404, "this contribution has no file")
-    data = await load_file(node, contribution.id, contribution.filename)
-    return Response(
-        content=data,
-        media_type="text/plain",
-        headers={"Content-Disposition": f'attachment; filename="{contribution.filename}"'},
-    )
+    served = await downloads.served_file(session, node, contribution, original=original)
+    return downloads.file_response(served, compress)
+
+
+@router.get("/contributions/{contribution_id}/download/info")
+async def download_info(
+    session: SessionDep, node: NodeDep, contribution_id: int, private_key: str | None = None
+) -> dict:
+    """What /download serves: its name, size and sha256, and the stored file's."""
+    contribution = await _get_visible_contribution(session, node, contribution_id, private_key)
+    if not contribution.filename:
+        raise HTTPException(404, "this contribution has no file")
+    stored = await downloads.locate(session, node, contribution)
+    served = downloads.serve(node, stored, await downloads.read(node, stored))
+    return downloads.file_info(served, stored)
 
 
 # ---- Download Results ------------------------------------------------------------
@@ -1881,9 +1904,9 @@ async def download_results(
 async def _download_files(session, node, scope, query, level_body, format_, stamp) -> Response:
     """Download Results' contribution files: the first MAX_DOWNLOAD_FILES
     matches in the search's order, each `<id>/<slug>_contribution_<id>.<txt|json>`
-    in one zip, laid out as the v1 API's archives are."""
-    from fiesta.apps.routers.v1 import contribution_text
-
+    in one zip, laid out as the v1 API's archives are, and SHA256SUMS of the
+    members last. Each file is prepared as a single download is
+    (fiesta.domain.download: BOM, separators, the contribution's metadata)."""
     body = level_body("contribution", MAX_DOWNLOAD_FILES)
     await _constrain(session, node, body, query, None, None, scope)
     body["_source"] = ["summary.contribution.id"]
@@ -1903,25 +1926,35 @@ async def _download_files(session, node, scope, query, level_body, format_, stam
     }
     buffer = io.BytesIO()
     added = size = 0
+    sums: list[tuple[str, str]] = []
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for contribution_id in ids:
             contribution = found.get(contribution_id)
-            text = contribution and await contribution_text(session, node, contribution)
-            if not text:
+            if contribution is None:
                 continue
-            size += len(text)
+            try:
+                served = await downloads.served_file(session, node, contribution)
+            except HTTPException:
+                continue
+            if not served.data:
+                continue
+            size += len(served.data)
             if added and size > MAX_DOWNLOAD_BYTES:
                 break
             stem = f"{contribution.id}/{node.node.slug}_contribution_{contribution.id}"
             if format_ == "json":
                 try:
-                    content = json.dumps(parse_text(text).tables, indent=2)
+                    tables = parse_text(served.data.decode("utf-8", errors="replace")).tables
                 except ParseError:
                     continue
-                zf.writestr(f"{stem}.json", content)
+                path, content = f"{stem}.json", json.dumps(tables, indent=2).encode()
             else:
-                zf.writestr(f"{stem}.txt", text)
+                path, content = f"{stem}.txt", served.data
+            zf.writestr(path, content)
+            sums.append((path, downloads.sha256(content)))
             added += 1
+        if sums:
+            zf.writestr(downloads.SUMS_NAME, downloads.sums(sums))
     if not added:
         raise HTTPException(404, "no matching contribution has a file")
     name = f"{node.node.key} Download - {stamp}.zip"

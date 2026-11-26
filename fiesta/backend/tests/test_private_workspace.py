@@ -2,6 +2,7 @@
 contribution, download its file, prepare and publish a new version, and see
 or act on an assistance request, with a fake session holding the rows."""
 
+import hashlib
 import uuid
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -25,6 +26,7 @@ from fiesta.db.models import (
 )
 from fiesta.jobs import tasks
 from fiesta.services import contributions as svc
+from fiesta.services import downloads
 from fiesta.services.access import chain_contributors
 
 ADA, BOB, CAROL, ADMIN, OTHER_ADMIN, SUPER = 1, 2, 3, 4, 5, 6
@@ -254,28 +256,40 @@ async def test_reassign_needs_another_existing_account(to, status):
 @pytest.mark.parametrize(
     ("actor", "allowed"), [(ADA, True), (CAROL, True), (ADMIN, True), (BOB, False)]
 )
-async def test_download_is_for_those_who_may_open_it(monkeypatch, actor, allowed):
-    async def revision_file(session, node, contribution, name=None, revision_id=None):
-        return b"tab\tcontribution\n"
+async def test_download_is_for_those_who_may_open_it(monkeypatch, magic_node, actor, allowed):
+    stored = "﻿tab delimited\tcontribution\nreference\n10.1/x\n".encode()
 
-    monkeypatch.setattr(private, "revision_file", revision_file)
+    async def read(node, file):
+        return stored
+
+    monkeypatch.setattr(downloads, "read", read)
+    name = "magic_contribution_42.txt"
+    entry = {"key": "k", "sha256": hashlib.sha256(stored).hexdigest(), "size": len(stored)}
     revision = Revision(
         id="rev-1",
         contribution_id=42,
-        snapshot={"canonical": "magic_contribution_42.txt", "files": {}},
+        snapshot={"canonical": name, "files": {name: entry}, "data_model_version": "3.0"},
     )
     session = FakeSession(_contribution(), revision)
-    call = private.download(session, _node(), session.users[actor], 42)
+    call = private.download(session, magic_node, session.users[actor], 42)
     if not allowed:
         with pytest.raises(HTTPException) as err:
             await call
         assert err.value.status_code == 404
         return
     response = await call
-    assert response.body == b"tab\tcontribution\n"
-    assert response.headers["content-disposition"] == (
-        'attachment; filename="magic_contribution_42.txt"'
+    # Prepared like the public download: no BOM, the workflow's download-only
+    # values (unpublished: no timestamp), the contributor by name.
+    assert response.body == (
+        b"tab delimited\tcontribution\n"
+        b"id\treference\tversion\tcontributor\tdata_model_version\n"
+        b"42\t10.1/x\t1\tAda\t3.0\n"
     )
+    assert response.headers["content-disposition"] == f'attachment; filename="{name}"'
+    assert response.headers["x-checksum-sha256"] == hashlib.sha256(response.body).hexdigest()
+    assert response.headers["x-stored-sha256"] == entry["sha256"]
+    original = await private.download(session, magic_node, session.users[actor], 42, original=True)
+    assert original.body == stored
 
 
 # -- new versions: anyone signed in prepares one; its chain or an admin publishes --
