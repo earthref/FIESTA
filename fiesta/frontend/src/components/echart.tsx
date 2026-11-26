@@ -9,11 +9,12 @@ import {
 } from "echarts/components";
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
-import { useEffect, useRef, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { plotColors } from "../lib/plot-colors";
 import { useTheme } from "../lib/theme";
 import { cx } from "../lib/utils";
 import { Icon, type IconName } from "./ui/icon";
+import { Spinner } from "./ui/spinner";
 
 echarts.use([
   CustomChart,
@@ -71,6 +72,19 @@ const WHEEL_STEP = 1.2;
  * reset made in this chart, and a changed `xView` (null: the full range) sets
  * this chart's, kept when a rebuild resets the rest of its view.
  */
+const PendingContext = createContext(false);
+
+/**
+ * Marks every chart inside it as out of date while `pending`: the controls
+ * already say something the plots do not show yet (new data on its way with
+ * the previous still drawn, a fit being computed). Each chart then carries a
+ * spinner over it (as one does for its own `pending`), and takes no pointer
+ * input until it is current again.
+ */
+export function PlotsPending({ pending, children }: { pending: boolean; children: ReactNode }) {
+  return <PendingContext.Provider value={pending}>{children}</PendingContext.Provider>;
+}
+
 export function EChart({
   build,
   height,
@@ -82,6 +96,7 @@ export function EChart({
   xView,
   onXView,
   label,
+  pending = false,
 }: {
   build: (size: Size) => EChartsOption;
   height: number;
@@ -93,7 +108,9 @@ export function EChart({
   xView?: Range | null;
   onXView?: (x: Range | undefined) => void;
   label: string;
+  pending?: boolean;
 }) {
+  const stale = useContext(PendingContext) || pending;
   const divRef = useRef<HTMLDivElement>(null);
   // `build` reads the theme's plot colors (plotColors()), so a switch rebuilds.
   const { theme } = useTheme();
@@ -339,7 +356,13 @@ export function EChart({
   const shown = brush ? tools : tools.filter(([m]) => m !== "select");
 
   return (
-    <div className="group relative">
+    <div className="group relative" aria-busy={stale || undefined}>
+      {stale && (
+        // Over the chart and its tools: what is drawn is not what the controls say.
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/60">
+          <Spinner size={height < 120 ? "md" : "lg"} />
+        </div>
+      )}
       <div
         ref={divRef}
         style={{ height, width: "100%" }}

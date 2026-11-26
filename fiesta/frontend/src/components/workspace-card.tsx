@@ -15,6 +15,7 @@ import { siteUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { useOpenContribution } from "../lib/contribution-modal";
 import { contributionPath } from "../lib/search-state";
+import { PROFILE_LABELS } from "../lib/sign-in";
 import type {
   ContributionOut,
   ContributionStatus,
@@ -34,7 +35,7 @@ import { Input } from "./ui/input";
 import { Modal } from "./ui/modal";
 import { Spinner } from "./ui/spinner";
 import { fetchValidation, ValidationModal, validationKey } from "./validation-modal";
-import { WorkspaceFields } from "./workspace-fields";
+import { inputClass, labelClass, WorkspaceFields } from "./workspace-fields";
 
 // One private-workspace contribution as a card: a header with what it is and
 // its everyday actions, then (in preparation) its details beside a checklist
@@ -143,12 +144,6 @@ const readinessEdge = {
   warning: "border-l-amber-400",
   success: "border-l-success",
 } as const;
-
-const fieldLabel = (warn: boolean) =>
-  cx(
-    "flex shrink-0 items-center whitespace-nowrap rounded-l-sm px-[0.8em] text-[12px] font-bold",
-    warn ? "bg-danger text-white" : "bg-panel-strong text-gray-700",
-  );
 
 function ConfirmModal({
   title,
@@ -824,6 +819,24 @@ export function ContributionCard({
       ),
     });
   }
+  // The published record names its contributor (the API checks theirs when an
+  // admin approves someone's version; the card shows the signed-in owner's).
+  if (!published && !othersContribution && user?.profile_missing.length) {
+    steps.push({
+      key: "profile",
+      state: "todo",
+      label: "Complete your EarthRef profile",
+      detail: (
+        <>
+          Publishing needs your {user.profile_missing.map((m) => PROFILE_LABELS[m] ?? m).join(", ")}
+          .{" "}
+          <Link to="/Account" className="text-node-ink underline hover:opacity-80">
+            Open your account
+          </Link>
+        </>
+      ),
+    });
+  }
   const remaining = steps.filter(blocks);
   const canPublish = !published && remaining.length === 0 && !busy;
   const validationStep = steps.find((step) => step.key === "validation");
@@ -908,6 +921,53 @@ export function ContributionCard({
 
   const doiDirty = doi.trim() !== (contribution.reference_doi ?? "");
   const doiRecheck = requireReference && !!reference.data && reference.data.status !== "ok";
+
+  // The DOI row (the same label, input and Save as the workspace fields'
+  // rows) and the resolved citation under it.
+  const doiRow = (
+    <>
+      <form
+        className="flex min-w-0"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!doiMutation.isPending) doiMutation.mutate();
+        }}
+      >
+        <label
+          htmlFor={`doi-${contribution.id}`}
+          className={labelClass(requireReference && !doi.trim())}
+        >
+          DOI
+        </label>
+        <input
+          id={`doi-${contribution.id}`}
+          value={doi}
+          onChange={(event) => setDoi(event.target.value)}
+          placeholder={requireReference ? "The study's DOI (required)" : "10.1029/…"}
+          title="After your paper is published, its DOI can take up to a day to register (usually an hour or two). Save the DOI again to check once more."
+          className={cx(inputClass, requireReference && !doi.trim() && "border-danger")}
+        />
+        <button
+          type="submit"
+          disabled={busy || (!doiDirty && !doiRecheck)}
+          className={cx(
+            "shrink-0 rounded-r-sm px-2.5 py-1 text-[13px] font-medium whitespace-nowrap disabled:cursor-not-allowed",
+            doiDirty
+              ? "bg-danger text-white hover:bg-danger-dark disabled:opacity-60"
+              : "border border-l-0 border-gray-300 bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50",
+          )}
+        >
+          {doiMutation.isPending ? "Saving…" : doiRecheck && !doiDirty ? "Recheck" : "Save"}
+        </button>
+      </form>
+      {reference.data?.status === "ok" && reference.data.title && (
+        <p className="mt-1.5 text-[13px] text-gray-600" title={reference.data.title}>
+          <Icon name="check" size="small" /> {reference.data.citation ?? "DOI found"} —{" "}
+          {reference.data.title}
+        </p>
+      )}
+    </>
+  );
 
   // Title, meta line, status.
   const identity = (
@@ -1082,6 +1142,13 @@ export function ContributionCard({
               {identity}
               <div className="mt-2.5">{actions}</div>
             </header>
+            <div className="px-4">
+              <Contents
+                contribution={contribution}
+                doc={doc}
+                processing={processing || validating}
+              />
+            </div>
             <section aria-labelledby={`details-${contribution.id}`} className="min-w-0 px-4 py-3">
               <h3
                 id={`details-${contribution.id}`}
@@ -1089,61 +1156,17 @@ export function ContributionCard({
               >
                 Details
               </h3>
-              {workspaceFields.length > 0 && (
+              {workspaceFields.length > 0 ? (
                 <WorkspaceFields
                   contribution={contribution}
                   fields={workspaceFields}
                   disabled={busy}
-                />
-              )}
-              <form
-                className="flex min-w-0"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (!doiMutation.isPending) doiMutation.mutate();
-                }}
-              >
-                <label
-                  htmlFor={`doi-${contribution.id}`}
-                  className={fieldLabel(requireReference && !doi.trim())}
                 >
-                  DOI
-                </label>
-                <Input
-                  id={`doi-${contribution.id}`}
-                  value={doi}
-                  onChange={(event) => setDoi(event.target.value)}
-                  placeholder={requireReference ? "The study's DOI (required)" : "10.1029/…"}
-                  title="After your paper is published, its DOI can take up to a day to register (usually an hour or two). Save the DOI again to check once more."
-                  className={cx(
-                    "flex-1 rounded-none py-1 text-[13px]",
-                    requireReference && !doi.trim() && "border-danger",
-                  )}
-                />
-                <button
-                  type="submit"
-                  disabled={busy || (!doiDirty && !doiRecheck)}
-                  className={cx(
-                    "shrink-0 rounded-r-sm px-3 py-1 text-[13px] font-medium whitespace-nowrap disabled:cursor-not-allowed",
-                    doiDirty
-                      ? "bg-danger text-white hover:bg-danger-dark disabled:opacity-60"
-                      : "border border-l-0 border-gray-300 bg-surface text-gray-700 hover:bg-gray-50 disabled:opacity-50",
-                  )}
-                >
-                  {doiMutation.isPending ? "Saving…" : doiRecheck && !doiDirty ? "Recheck" : "Save"}
-                </button>
-              </form>
-              {reference.data?.status === "ok" && reference.data.title && (
-                <p className="mt-1.5 text-[12px] text-gray-600" title={reference.data.title}>
-                  <Icon name="check" size="small" /> {reference.data.citation ?? "DOI found"} —{" "}
-                  {reference.data.title}
-                </p>
+                  {doiRow}
+                </WorkspaceFields>
+              ) : (
+                doiRow
               )}
-              <Contents
-                contribution={contribution}
-                doc={doc}
-                processing={processing || validating}
-              />
             </section>
             {actionError !== null && (
               <div className="px-4 pb-3">

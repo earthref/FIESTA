@@ -13,6 +13,7 @@ import {
   unitSpan,
 } from "../lib/timescale";
 import { cx } from "../lib/utils";
+import { tooltipClass } from "./ui/tooltip";
 
 const ROW = 24;
 /** A cell narrower than this (px) shows no name; hover still names it. */
@@ -118,7 +119,10 @@ export function TimescaleStrip({
       {hover && (
         <div
           role="tooltip"
-          className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-sm border border-line bg-surface px-2 py-1 text-[13px] text-ink shadow-md"
+          className={cx(
+            tooltipClass,
+            "absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap",
+          )}
           style={{
             left: `calc(${left}px + (100% - ${left + right}px) * ${Math.min(88, Math.max(12, hover.center)) / 100})`,
             top: hover.row * ROW,

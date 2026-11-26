@@ -174,9 +174,8 @@ search:
   extra_types: []
   # Filter sidebar controls (facet / range / bbox / numeric / exists), edited in the admin
   # UI's Search Filters tab. Facets aggregate on summary._all.<field>.raw and show
-  # on every level's Summaries, Data and Map views; the poles range/bbox filters
-  # show on the Locations level's Poles view (the `poles` plugin indexes
-  # summary.poles.age in years, hence the Ma scale).
+  # on every level's Summaries, Data and Map views, and on the Locations
+  # level's Poles view (see `filters` below).
   # The Summaries / Data / Map views list a filter per column with data:
   # `numeric` adds every number column of the level as a range filter of its
   # own (summary._num, in its data-model unit), `text` every text column (and
@@ -186,16 +185,18 @@ search:
   # legacy per-column facets and ranges were dropped): Publication Year, and
   # Age: each row's age interval in years BP (unit_conversions below, whatever
   # its age_unit), matching a record any of whose intervals overlaps the range
-  # typed in Ma with the time scale. Plugin views keep their own filters.
+  # typed in Ma with the time scale. Plugin views keep their own filters, but
+  # the Poles view: a pole doc has its location's filter fields, so it lists
+  # the Locations level's filters (the Geospatial area and plates too, where
+  # the location is), which stay applied across the level's views and count
+  # poles there, plus Pole A95 (the locations' pole_alpha95 number column).
   filters:
-    - { type: range, label: Publication Year, field: summary.contribution._reference.year, views: [Summaries, Data, Map] }
-    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Locations, Sites, Samples, Specimens], views: [Summaries, Data, Map] }
-    - { type: numeric, label: Numeric, views: [Summaries, Data, Map] }
-    - { type: text, label: Text, views: [Summaries, Data, Map] }
-    - { type: exists, label: With / Without Data, views: [Summaries, Data, Map] }
-    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Locations], views: [Poles] }
-    - { type: range, label: Pole A95, field: summary.poles.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
-    - { type: bbox, label: Geospatial, levels: [Locations], views: [Poles] }
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year, views: [Summaries, Data, Map, Poles] }
+    - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Locations, Sites, Samples, Specimens], views: [Summaries, Data, Map, Poles] }
+    - { type: range, label: Pole A95, field: summary._num.pole_alpha95, unit: "°", levels: [Locations], views: [Poles] }
+    - { type: numeric, label: Numeric, views: [Summaries, Data, Map, Poles] }
+    - { type: text, label: Text, views: [Summaries, Data, Map, Poles] }
+    - { type: exists, label: With / Without Data, views: [Summaries, Data, Map, Poles] }
     # The `rock-mag` plugin's parameters (summary.rock_mag.<field>: fields in mT,
     # temperatures in °C) on the Specimens level's Rock Magnetism view.
     - { type: range, label: Mr/Ms, field: summary.rock_mag.mr_ms, levels: [Specimens], views: [Rock Magnetism] }
@@ -214,11 +215,21 @@ search:
     - { type: facet, field: location_type, views: [Rock Magnetism] }
     - { type: facet, field: plate_blocks, views: [Rock Magnetism] }
     - { type: facet, field: tectonic_settings, views: [Rock Magnetism] }
-    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
+    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, reference authors, timestamp).
     - { type: facet, field: id, label: Contribution ID, views: [Summaries, Data, Map] }
     - { type: facet, field: doi, label: Contribution DOI, views: [Summaries, Data, Map] }
     - { type: facet, field: contributor, label: Contributor, views: [Summaries, Data, Map] }
+    - { type: facet, field: author, label: Author, views: [Summaries, Data, Map] }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true, views: [Summaries, Data, Map] }
+  # Filters kept at the top of the sidebar, in this order, whatever their
+  # counts (one with no values shows disabled); the rest follow by count. A
+  # rule's `levels` / `views` (empty = any) say where it applies; the most
+  # specific matching rule wins (naming views beats naming only levels).
+  # Names are sidebar labels as spelled above; one with no filter is skipped.
+  pinned_filters:
+    - { filters: [Age, Geospatial, Author, Contributor] }
+    - { levels: [Locations], views: [Poles], filters: [Age, Pole A95, Geospatial] }
+    - { levels: [Specimens], views: [Rock Magnetism], filters: [Geospatial, Mr/Ms, Bcr/Bc] }
   # The Map view's "Color by" menu: a column (offered on the levels whose table
   # has it) or a summary.* path, parsed as a number; `scale` as a range
   # filter's. Age is a record's median age in years BP (summary._interval
@@ -348,7 +359,6 @@ plugins:
     # With no filters and more than 1,000 poles, the view opens filtered to Pole A95 ≤ 10°.
     default_alpha95_max: 10
     default_alpha95_above: 1000
-    facet_columns: [method_codes, geologic_classes, geologic_types, lithologies, location_type, plate_blocks, tectonic_settings, citations]
   rock-mag:
     base_level: Specimens # the Rock Magnetism view is a sub-tab of this level
     source_table: specimens

@@ -52,7 +52,8 @@ export interface PluginSubTabContext {
   setRanges?: (ranges: string[]) => void;
   /** A `records` tab's search as the level's request params (query, the
    * sidebar's ranges and area, grid filters, with/without data, scope), for
-   * its own fetch of the level's matches (`/search/{table}/values`). */
+   * its own fetch of the level's matches (`/search/{table}/values`); a
+   * `levelFilters` tab's, for the fetch of its own docs (no grid filters). */
   searchParams?: SearchParams;
 }
 
@@ -68,6 +69,15 @@ export interface PluginSubTab {
    * filters apply as on Summaries (and count its records), its count is the
    * level's matches, and it fetches them with `searchParams`. */
   records?: boolean;
+  /** The tab's own docs (`countTable`) are the level's records seen another
+   * way and carry their filter fields (the backend plugin's `record_tables`:
+   * the Poles of the Locations): the sidebar's filters are the level's, as
+   * the node YAML lists them for the view, and match and count its docs; the
+   * area and plates apply too. It fetches its docs with `searchParams`. */
+  levelFilters?: boolean;
+  /** The tab fills the search page's view edge to edge (a map, a grid), as in
+   * the contribution modal, instead of inside its side padding. */
+  fullWidth?: boolean;
 }
 
 export interface PluginFiltersProps {
@@ -109,12 +119,20 @@ export interface PluginFilterContext {
   filterCount?: number | null;
 }
 
-/** A filter a plugin adds to the search sidebar, after the node's own. */
+/** A filter a plugin adds to the search sidebar. It is ordered with the node's
+ * own (lib/pinned-filters.ts): pinned by its `label` or `key`, else by its
+ * count, hidden at zero unless pinned or applied. */
 export interface PluginFilter {
   key: string;
+  /** Its name in the sidebar, as `search.pinned_filters` and the filter search
+   * match it ("Periodic Table of Elements"). */
+  label: string;
   /** The query-token fields it sets; the sidebar's Clear removes them. A
    * field the search API counts must be a facet (a plugin's `search_facets`). */
   fields: string[];
+  /** false: its first field is not a facet (a radius token), so it shows no
+   * count and sorts after the counted filters; default counted. */
+  counted?: boolean;
   render: (ctx: PluginFilterContext) => ReactNode;
 }
 

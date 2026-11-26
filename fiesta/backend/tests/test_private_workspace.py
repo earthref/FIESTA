@@ -11,7 +11,7 @@ import pytest
 from fastapi import HTTPException
 
 from fiesta.apps.deps import require_public_contributions
-from fiesta.apps.routers import assistance, private
+from fiesta.apps.routers import assistance, private, workspaces
 from fiesta.db.models import (
     AssistanceRequest,
     AuditEvent,
@@ -33,6 +33,15 @@ ADA, BOB, CAROL, ADMIN, OTHER_ADMIN, SUPER = 1, 2, 3, 4, 5, 6
 
 
 def _users():
+    users = _accounts()
+    for user in users.values():  # every one may publish (User.profile_missing)
+        user.first_name, user.last_name = user.name, "Tester"
+        user.affiliation = "Example University"
+        user.email_verified_at = datetime(2026, 1, 1, tzinfo=UTC)
+    return users
+
+
+def _accounts():
     return {
         ADA: User(id=ADA, email="ada@example.test", name="Ada", handle="ada", is_admin=False),
         BOB: User(id=BOB, email="bob@example.test", name="Bob", handle="bob", is_admin=False),
@@ -366,6 +375,24 @@ async def test_first_versions_publish_as_before(outbox):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("actor", [ADA, ADMIN])
+async def test_publish_needs_the_contributors_complete_profile(outbox, actor):
+    # Publication names the contributor: first and last name, affiliation and a
+    # verified email first, whoever presses Publish (an approving admin too).
+    session = _chain(ADA)
+    ada = session.users[ADA]
+    ada.affiliation, ada.email_verified_at = None, None
+    with pytest.raises(HTTPException) as err:
+        await private.activate(session, _node(), session.users[actor], DRAFT)
+    assert err.value.status_code == 409
+    assert "affiliation, a verified email address" in err.value.detail
+    assert ("your" in err.value.detail) == (actor == ADA)
+    assert not session.contribution.is_activated and not outbox
+    ada.affiliation, ada.email_verified_at = "Scripps", datetime.now(UTC)
+    assert (await private.activate(session, _node(), session.users[actor], DRAFT)).is_activated
+
+
+@pytest.mark.asyncio
 async def test_publish_refused_once_another_version_superseded_it(outbox):
     session = _chain(ADA)
     session.contributions[V2].is_latest = False
@@ -454,6 +481,13 @@ async def _ask(session, actor=BOB, reason="approve"):
 
 def test_request_writes_are_refused_in_data_source_mode():
     assert any(d.dependency is require_public_contributions for d in assistance.router.dependencies)
+
+
+@pytest.mark.parametrize(
+    "router", [private.router, workspaces.router], ids=["private", "workspaces"]
+)
+def test_workspace_writes_are_refused_in_data_source_mode(router):
+    assert any(d.dependency is require_public_contributions for d in router.dependencies)
 
 
 @pytest.mark.asyncio

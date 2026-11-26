@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { type BrushRange, EChart, type EChartsOption } from "@/components/echart";
+import { type BrushRange, EChart, type EChartsOption, PlotsPending } from "@/components/echart";
 import { ErrorMessage } from "@/components/error-message";
 import { PageSpinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
@@ -187,15 +187,18 @@ export default function RockMagView({
         Drag over a plot to select specimens on every plot; click a point to open its contribution.
       </p>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <DayPlot {...panelProps} />
-        <SquarenessPlot {...panelProps} />
-        <TransitionsPlot {...panelProps} />
-        <JelinekPlot {...panelProps} />
-        <DistributionPanel {...panelProps} />
-        <StereonetPanel {...panelProps} />
-        <ExplorerPanel {...panelProps} />
-      </div>
+      {/* A new search's specimens are on their way: the plots still show the last one's. */}
+      <PlotsPending pending={values.isPlaceholderData}>
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+          <DayPlot {...panelProps} />
+          <SquarenessPlot {...panelProps} />
+          <TransitionsPlot {...panelProps} />
+          <JelinekPlot {...panelProps} />
+          <DistributionPanel {...panelProps} />
+          <StereonetPanel {...panelProps} />
+          <ExplorerPanel {...panelProps} />
+        </div>
+      </PlotsPending>
 
       {selection && (
         <SelectionTable

@@ -28,7 +28,14 @@ import {
   useNumberFilter,
 } from "../components/filter-modals";
 import { type Area, areaToBbox, formatArea, parseArea } from "../components/map/map-points";
-import { parsePlates, usePlates } from "../components/map/plates";
+import {
+  isPlate,
+  isProvince,
+  parsePlates,
+  regionLabel,
+  usePlates,
+  useProvinces,
+} from "../components/map/plates";
 import { SearchMap } from "../components/map/search-map";
 import { type QuickLaunchView, quickLaunchViews } from "../components/quick-launch";
 import {
@@ -52,7 +59,7 @@ import {
   pickedRanges,
   rangesFor,
 } from "../components/search-filters";
-import { isSourceMode } from "../components/source-mode-notice";
+import { isSourceMode, readOnlyReason } from "../components/source-mode-notice";
 import {
   formatGridFilters,
   type GridSort,
@@ -73,6 +80,7 @@ import {
   useOpenContribution,
 } from "../lib/contribution-modal";
 import { usePagedItems } from "../lib/paged";
+import { orderSidebarEntries, pinnedFilterNames } from "../lib/pinned-filters";
 import { type SearchSettings, SearchSettingsContext, useSavedSearch } from "../lib/saved-search";
 import { type SearchState, slug, slugMatches } from "../lib/search-state";
 import type {
@@ -129,6 +137,8 @@ type SubTab = {
   render?: (ctx: PluginSubTabContext) => ReactNode;
   countTable?: string;
   records?: boolean;
+  levelFilters?: boolean;
+  fullWidth?: boolean;
 };
 function subTabsOf(config: NodeConfig | undefined, level: SearchLevel | undefined): SubTab[] {
   if (!config || !level) return [];
@@ -258,18 +268,20 @@ type FilterModalState =
   | { kind: "geo"; title: string; target: "area" | "bbox" };
 
 /** One filter in the sidebar: its count (undefined loading, null uncounted),
- * applied values and modal. */
+ * applied values and modal; a plugin's (the KdD periodic table) draws itself
+ * with `render` instead. */
 type SidebarEntry = {
   key: string;
   label: string;
   count: number | null | undefined;
   chips: FilterChip[];
   open: () => void;
+  render?: () => ReactNode;
 };
 
 /** Query tokens on the contribution block (search/queries.py
  * CONTRIBUTION_TERMS), never a text column's facet. */
-const CONTRIBUTION_TOKENS = new Set(["id", "private_key", "doi", "contributor", "orcid"]);
+const CONTRIBUTION_TOKENS = new Set(["id", "private_key", "doi", "contributor", "orcid", "author"]);
 
 /** An area's extent as one chip's text. */
 function areaText(area: Area): string {
@@ -526,18 +538,35 @@ export function SearchPage(props: SearchPageProps) {
   // does not scroll (legacy onWindowResize). The fixed footer's height comes
   // from --footer-h (set by Footer), so a footer that wraps taller on a narrow
   // viewport no longer covers the bottom of the results.
+  //
+  // Measured once at mount, the region was often not there yet (the page
+  // spinner shows until the config, level and saved search are ready), so
+  // its height stayed unset: it grew to the grid's whole virtual height, the
+  // page scrolled instead of the grid, and the virtual grid rendered every
+  // loaded row at once (Edge "page isn't responding"). So it is measured
+  // when the page is ready, and again whenever the content above it changes
+  // height (the web font arriving, a banner), as well as on a window resize.
   const regionRef = useRef<HTMLDivElement>(null);
   const [regionHeight, setRegionHeight] = useState<string>();
+  const pageReady = !!(config && level && saved.ready);
   useEffect(() => {
+    if (!pageReady) return;
     const update = () => {
       if (!regionRef.current) return;
-      const top = regionRef.current.getBoundingClientRect().top;
+      const top = Math.round(regionRef.current.getBoundingClientRect().top + window.scrollY);
       setRegionHeight(`max(300px, calc(100vh - ${top}px - var(--footer-h, 48px) - 31px))`);
     };
     update();
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
+    // The body's height follows the content above the region (the region's
+    // own height is fixed), so a header that grows or shrinks resizes it.
+    const observer = new ResizeObserver(update);
+    observer.observe(document.body);
+    return () => {
+      window.removeEventListener("resize", update);
+      observer.disconnect();
+    };
+  }, [pageReady]);
 
   const setSearch = (next: {
     q?: string;
@@ -686,9 +715,8 @@ export function SearchPage(props: SearchPageProps) {
   const plates = parsePlates(search.plates);
   const areaPlates = (entry: SearchLevel | undefined) =>
     plates.length > 0 && entry?.geo ? plates : undefined;
-  const plateList = usePlates(plates.length > 0);
-  const plateName = (code: string) =>
-    plateList.data?.plates.find((plate) => plate.code === code)?.name ?? code;
+  const plateList = usePlates(plates.some(isPlate));
+  const provinceList = useProvinces(plates.some(isProvince));
   const [filterModal, setFilterModal] = useState<FilterModalState | null>(null);
   // The sidebar's Find box over its filters.
   const [filterFind, setFilterFind] = useState("");
@@ -775,19 +803,38 @@ export function SearchPage(props: SearchPageProps) {
   // A plugin view's count: its own docs matching the search and its filters
   // (ranges on its summary block, the bbox), as it fetches them. Switching
   // sub-tabs never changes the level tabs' counts. Its docs are what the
-  // filter modals count while that view is open.
+  // filter modals count while that view is open. A `levelFilters` view's docs
+  // (the Poles of the Locations) carry the level's filter fields: they match
+  // the level's filters shown on it (ranges, the area and plates, with /
+  // without data), as the level's records do on Summaries.
   const countedTabs = subTabs.filter((tab) => tab.countTable);
-  const pluginParams = (table: string, query: string, rangeList: string[]) => ({
-    ...searchRequestParams(
-      query,
-      1,
-      0,
-      false,
-      rangeList.filter((r) => r.startsWith(`summary.${table}.`)),
-      bbox,
-    ),
-    ...scope,
-  });
+  const pluginParams = (table: string, query: string, rangeList: string[], hasList?: string[]) => {
+    const shared = countedTabs.find((tab) => tab.levelFilters && tab.countTable === table);
+    return {
+      ...(shared
+        ? searchRequestParams(
+            query,
+            1,
+            0,
+            false,
+            rangesFor(rangeList, applicableFilters(config, level?.name, shared.name)),
+            areaBbox(level),
+            undefined,
+            undefined,
+            hasList ?? hasAt(level, shared.name),
+            areaPlates(level),
+          )
+        : searchRequestParams(
+            query,
+            1,
+            0,
+            false,
+            rangeList.filter((r) => r.startsWith(`summary.${table}.`)),
+            bbox,
+          )),
+      ...scope,
+    };
+  };
   const pluginCounts = useQueries({
     queries: countedTabs.map(({ countTable = "" }) => {
       const params = pluginParams(countTable, q, ranges);
@@ -835,8 +882,10 @@ export function SearchPage(props: SearchPageProps) {
     parseQueryTokens(q).tokens.filter(([field]) => clearedFacets.includes(field)).length > 0;
   // A plugin view of its own docs renders from its own fetch; keep its ranges
   // out of the level query. One of the level's records (`records`) is searched
-  // as Summaries is.
-  const ownDocsView = !!activeTab?.render && !activeTab.records;
+  // as Summaries is, and so is the level under a `levelFilters` view, whose
+  // docs (`sharedTable`) the sidebar's filters count and its modals list.
+  const sharedTable = activeTab?.levelFilters ? activeTab.countTable : undefined;
+  const ownDocsView = !!activeTab?.render && !activeTab.records && !sharedTable;
   const queryRanges = ownDocsView ? undefined : activeRanges;
   const queryBbox = ownDocsView ? undefined : (areaBbox(level) ?? activeBbox);
   const queryPlates = ownDocsView ? undefined : areaPlates(level);
@@ -943,8 +992,17 @@ export function SearchPage(props: SearchPageProps) {
   });
   const modalParams = (query: string, rangeList: string[]) =>
     pluginTable ? pluginParams(pluginTable, query, rangeList) : levelParams(query, rangeList);
-  // A range filter's docs: a plugin view's block (summary.<table>.*), else the level's.
+  // The docs the level's own filters (the area, number and text columns,
+  // with / without data) count: a `levelFilters` view's, else the level's.
+  const viewTable = sharedTable ?? level?.table ?? "";
+  const viewParams = (query: string, rangeList: string[], hasList?: string[]) =>
+    sharedTable
+      ? pluginParams(sharedTable, query, rangeList, hasList)
+      : levelParams(query, rangeList, hasList);
+  // A range filter's docs: a `levelFilters` view's, a plugin view's block
+  // (summary.<table>.*), else the level's.
   const rangeTable = (filter: SearchFilter) => {
+    if (sharedTable) return sharedTable;
     const block = (filter.field ?? "").split(".")[1];
     return countedTabs.some((tab) => tab.countTable === block) ? block : (level?.table ?? "");
   };
@@ -967,7 +1025,7 @@ export function SearchPage(props: SearchPageProps) {
   };
   if (level && !filtersPanel) {
     const levelTable = pluginTable ?? level.table;
-    if (level.geo) countOn("geo", level.table, levelParams(q, ranges));
+    if (level.geo) countOn("geo", viewTable, viewParams(q, ranges));
     for (const filter of filters) {
       if (filter.type === "range") {
         // As its modal counts: a plugin block's docs, else the level's.
@@ -978,16 +1036,17 @@ export function SearchPage(props: SearchPageProps) {
           table === level.table ? levelParams(q, ranges) : pluginParams(table, q, ranges),
         );
       } else if (filter.type === "numeric" || filter.type === "text") {
-        countOn(`${filter.type}:*`, level.table, levelParams(q, ranges));
+        countOn(`${filter.type}:*`, viewTable, viewParams(q, ranges));
       } else if (filter.type === "exists") {
-        countOn(countKey(filter), level.table, levelParams(q, ranges));
+        countOn(countKey(filter), viewTable, viewParams(q, ranges));
       } else {
         countOn(countKey(filter), levelTable, modalParams(q, ranges));
       }
     }
-    // A plugin filter (the KdD periodic table) counts its first field, a facet.
+    // A plugin filter (the KdD periodic table) counts its first field, a facet
+    // (not one that says it is uncounted, as GEOMAGIA's radius).
     for (const filter of pluginFilters) {
-      if (filter.fields[0])
+      if (filter.counted !== false && filter.fields[0])
         countOn(`facet:${filter.fields[0]}`, levelTable, modalParams(q, ranges));
     }
   }
@@ -1019,7 +1078,7 @@ export function SearchPage(props: SearchPageProps) {
   };
   // The level's number and text columns, as its `numeric:*` / `text:*` counts list them.
   const columnCounts = Object.keys(
-    filterCountQueries[countRequests.findIndex((group) => group.table === level?.table)]?.data
+    filterCountQueries[countRequests.findIndex((group) => group.table === viewTable)]?.data
       ?.counts ?? {},
   );
   const showText = filters.some((f) => f.type === "text");
@@ -1215,8 +1274,9 @@ export function SearchPage(props: SearchPageProps) {
   // The sidebar's entries: Geospatial, each configured filter, the
   // `numeric` filter's number columns and the `text` filter's text columns
   // each a filter of its own (those no range / facet filter has), and the
-  // `exists` filter as With Data and Without Data. Applied ones lead, then
-  // the most records; those no record has a value for are hidden.
+  // `exists` filter as With Data and Without Data. Pinned ones lead, then
+  // applied ones, then the most records; those no record has a value for are
+  // hidden unless pinned or applied.
   const facetChips = (field: string): FilterChip[] =>
     queryTokens
       .filter(([f]) => f === field)
@@ -1280,7 +1340,7 @@ export function SearchPage(props: SearchPageProps) {
               : []),
             ...plates.map((code) => ({
               key: `plate:${code}`,
-              label: `${plateName(code)} plate`,
+              label: regionLabel(code, plateList.data, provinceList.data),
               onRemove: () => setPlates(plates.filter((other) => other !== code)),
             })),
           ],
@@ -1320,18 +1380,57 @@ export function SearchPage(props: SearchPageProps) {
       });
     }
   }
+  // Plugin filters are ordered with the rest, by their label and first field's count.
+  for (const filter of pluginFilters) {
+    const count =
+      filter.counted !== false && filter.fields[0]
+        ? filterCount(`facet:${filter.fields[0]}`)
+        : null;
+    entries.push({
+      key: `plugin:${filter.key}`,
+      label: filter.label,
+      count,
+      chips: filter.fields.flatMap(facetChips),
+      open: () => {},
+      render: () =>
+        config &&
+        filter.render({
+          levelName: level.name,
+          subTabName: activeTab?.name,
+          config,
+          q,
+          setQuery: (next) => setSearch({ q: next }),
+          table: pluginTable ?? level.table,
+          paramsFor: (query) => modalParams(query, ranges),
+          count: bucketCount,
+          filterCount: count,
+        }),
+    });
+  }
   const findNeedle = filterFind.trim().toLowerCase();
-  const sidebarEntries = entries
-    .map((entry, order) => ({ entry, order, applied: entry.chips.length > 0 }))
-    .filter(({ entry, applied }) => applied || entry.count !== 0)
-    .filter(({ entry }) => !findNeedle || entry.label.toLowerCase().includes(findNeedle))
-    .sort(
-      (a, b) =>
-        Number(b.applied) - Number(a.applied) ||
-        (b.entry.count ?? -1) - (a.entry.count ?? -1) ||
-        a.order - b.order,
-    )
-    .map(({ entry }) => entry);
+  const found = (entry: SidebarEntry) =>
+    !findNeedle || entry.label.toLowerCase().includes(findNeedle);
+  // The node's pinned filters for this level and view lead
+  // (lib/pinned-filters.ts); then applied filters and the rest by count.
+  const ordered = orderSidebarEntries(
+    entries,
+    pinnedFilterNames(config?.pinned_filters, level?.name, activeTab?.name),
+  );
+  const pinnedEntries = ordered.pinned.filter(found);
+  const restEntries = ordered.rest.filter(found);
+  const sidebarEntries = [...pinnedEntries, ...restEntries];
+  const renderSidebarEntry = (entry: SidebarEntry) =>
+    entry.render ? (
+      <Fragment key={entry.key}>{entry.render()}</Fragment>
+    ) : (
+      <FilterEntry
+        key={entry.key}
+        label={entry.label}
+        count={entry.count}
+        chips={entry.chips}
+        onOpen={entry.open}
+      />
+    );
 
   const renderFilterModal = () => {
     if (!filterModal) return null;
@@ -1371,11 +1470,11 @@ export function SearchPage(props: SearchPageProps) {
         <ExistsModal
           title={sense ? "Without Data" : "With Data"}
           sense={sense}
-          table={level.table}
+          table={viewTable}
           levelName={level.name}
           tabs={existsTabs}
           has={activeHas}
-          paramsFor={(hasList) => levelParams(q, ranges, hasList)}
+          paramsFor={(hasList) => viewParams(q, ranges, hasList)}
           onApply={(next) => {
             close();
             setSearch({ has: [...has.filter((entry) => !activeHas.includes(entry)), ...next] });
@@ -1459,15 +1558,31 @@ export function SearchPage(props: SearchPageProps) {
             </button>
           );
         })}
-        {user && !isSourceMode(config) && (
+        {user && (
           <div className="ml-auto flex items-center self-center" style={{ paddingRight: 0 }}>
-            <Link
-              to="/Private"
-              className="inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
-              style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
-            >
-              Private Workspace
-            </Link>
+            {readOnlyReason(config) ? (
+              // A read-only (data-source mode) node shows it disabled, with why.
+              // biome-ignore lint/a11y/useSemanticElements: a disabled link has no href to give an <a>
+              <span
+                role="link"
+                aria-disabled="true"
+                tabIndex={0}
+                title={readOnlyReason(config)}
+                className="inline-flex cursor-not-allowed items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white opacity-50"
+                style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
+              >
+                Private Workspace
+                <span className="sr-only">{readOnlyReason(config)}</span>
+              </span>
+            ) : (
+              <Link
+                to="/Private"
+                className="inline-flex items-center whitespace-nowrap rounded-sm bg-node px-3 text-[13px] font-bold text-white hover:bg-node-dark"
+                style={{ paddingTop: "0.5em", paddingBottom: "0.5em" }}
+              >
+                Private Workspace
+              </Link>
+            )}
           </div>
         )}
       </div>
@@ -1637,7 +1752,8 @@ export function SearchPage(props: SearchPageProps) {
                   value={filterFind}
                   onChange={(event) => setFilterFind(event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter") sidebarEntries[0]?.open();
+                    if (event.key === "Enter")
+                      sidebarEntries.find((entry) => !entry.render)?.open();
                   }}
                   placeholder="Find a filter"
                   aria-label="Find a filter"
@@ -1645,9 +1761,11 @@ export function SearchPage(props: SearchPageProps) {
                 />
               </div>
             )}
-            {/* `ui small basic attached segment`: transparent, borderless, scrolls */}
+            {/* `ui small basic attached segment`: transparent, borderless, scrolls.
+                Relative, so the filters' absolute sr-only labels are clipped
+                here instead of stretching the page to the whole list's height. */}
             <div
-              className="flex-1 overflow-y-scroll whitespace-nowrap"
+              className="relative flex-1 overflow-y-scroll whitespace-nowrap"
               style={{
                 border: "none",
                 margin: 0,
@@ -1689,37 +1807,13 @@ export function SearchPage(props: SearchPageProps) {
               />
               {filtersPanel ?? (
                 <>
-                  {sidebarEntries.map((entry) => (
-                    <FilterEntry
-                      key={entry.key}
-                      label={entry.label}
-                      count={entry.count}
-                      chips={entry.chips}
-                      onOpen={entry.open}
-                    />
-                  ))}
+                  {pinnedEntries.map(renderSidebarEntry)}
+                  {restEntries.map(renderSidebarEntry)}
                   {findNeedle && sidebarEntries.length === 0 && (
                     <p className="px-[1em] py-3 text-[13px] text-ink-faint">
                       No filter matches “{filterFind.trim()}”.
                     </p>
                   )}
-                  {pluginFilters.map((filter) => (
-                    <Fragment key={filter.key}>
-                      {filter.render({
-                        levelName: level.name,
-                        subTabName: activeTab?.name,
-                        config,
-                        q,
-                        setQuery: (next) => setSearch({ q: next }),
-                        table: pluginTable ?? level.table,
-                        paramsFor: (query) => modalParams(query, ranges),
-                        count: bucketCount,
-                        filterCount: filter.fields[0]
-                          ? filterCount(`facet:${filter.fields[0]}`)
-                          : null,
-                      })}
-                    </Fragment>
-                  ))}
                   {filters.length === 0 && pluginFilters.length === 0 && !level.geo && (
                     <p className="px-[1em] py-3 text-[13px] text-ink-faint">
                       No filters for this view.
@@ -1903,7 +1997,8 @@ export function SearchPage(props: SearchPageProps) {
                       </div>
                     )}
                     {activeTab?.render && (
-                      <div>
+                      // A full-width tab cancels the view's 1em side padding.
+                      <div style={activeTab.fullWidth ? { margin: "0 -1em" } : undefined}>
                         {activeTab.render({
                           hits,
                           level,
@@ -1930,7 +2025,9 @@ export function SearchPage(props: SearchPageProps) {
                                 size: undefined,
                                 ...scope,
                               }
-                            : undefined,
+                            : sharedTable
+                              ? { ...pluginParams(sharedTable, q, ranges), size: undefined }
+                              : undefined,
                         })}
                       </div>
                     )}

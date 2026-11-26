@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api";
 import { useNodeConfig } from "../../lib/config";
 import { useSearchSetting } from "../../lib/saved-search";
@@ -7,9 +7,9 @@ import type { MapColorOption, SearchLevel, SearchScope } from "../../lib/types";
 import { singularize } from "../../lib/utils";
 import { Icon } from "../ui/icon";
 import { Spinner } from "../ui/spinner";
-import { MERCATOR_LAT } from "./basemap";
 import { BODIES, type Body, bodiesOf } from "./bodies";
 import { defaultArea, type Extent } from "./default-area";
+import { encodeLasso, isLasso, type LonLat, lassoOutline } from "./lasso";
 import type { MapLine } from "./lines-layer";
 import {
   type ColorScale,
@@ -20,19 +20,38 @@ import {
   RAMP,
   valueAt,
 } from "./map-colors";
-import { BodyButtons, ModeButtons, mapButtonClass, useBody, useSavedMode } from "./map-mode";
+import {
+  BODY_PLACES,
+  BodyButtons,
+  type GeoTool,
+  IN_MODE,
+  MODE_PLACES,
+  ModeButtons,
+  mapButtonClass,
+  ToolButtons,
+  useBody,
+  useSavedMode,
+} from "./map-mode";
 import {
   type ApiMapContribution,
   type ApiMapPoint,
   type Area,
   areaToBbox,
   type MapPoint,
+  MODES,
   type Mode,
   pointKey,
   recordsOf,
   toMapPoint,
 } from "./map-points";
-import { usePlates } from "./plates";
+import {
+  isPlate,
+  isProvince,
+  outlineCenter,
+  regionFeatures,
+  usePlates,
+  useProvinces,
+} from "./plates";
 
 // MapLibre (~800 KB) loads with the first map.
 const MapLibreMap = lazy(() => import("./maplibre-map"));
@@ -51,17 +70,6 @@ interface MapPointsPage {
 // its map the same way.
 const COLOR_SETTING = "map.color";
 const isString = (value: unknown) => typeof value === "string";
-
-// Where a body's or a view's records are, in its disabled button's tooltip.
-const BODY_PLACES: Record<Body, string> = {
-  earth: "on Earth",
-  moon: "on the Moon",
-};
-const MODE_PLACES: Record<Exclude<Mode, "globe">, string> = {
-  flat: "within the Mercator map's ±85°",
-  north: "in the northern hemisphere",
-  south: "in the southern hemisphere",
-};
 
 function usePoints(
   level: SearchLevel,
@@ -206,6 +214,12 @@ export type AreaRequest = { mode?: Mode; zoomTo?: boolean };
  * grey; the Map tab only shows the search, an area included (2026-11-13).
  * Records on the Moon are on its map (the Earth / Moon buttons); the area is
  * on Earth. So are the filter's `plates`, which the modal's map outlines.
+ * With a `tool` (the modal's, where it offers plates), the Box / Lasso /
+ * Plates / Blocks buttons choose what the map does: the box above; a lasso
+ * drawn by dragging (replacing the last one, or added with Shift); or every
+ * plate, or every craton, block and terrane, named on the map to click and
+ * select or deselect. Lassos, plates and blocks all go to onRegionsChange as
+ * the filter's codes (lasso.ts).
  */
 export function SearchMap({
   level,
@@ -224,6 +238,9 @@ export function SearchMap({
   onSelect,
   color,
   scope,
+  tool,
+  onToolChange,
+  onRegionsChange,
 }: {
   level: SearchLevel;
   query: string;
@@ -248,6 +265,11 @@ export function SearchMap({
   onAreaRequestDone?: () => void;
   onSelect: (contributionId: string) => void;
   color: string;
+  /** What dragging and clicking on the map does (with editArea). */
+  tool?: GeoTool;
+  onToolChange?: (tool: GeoTool) => void;
+  /** The filter's plate, block and lasso codes, as picked or drawn on the map. */
+  onRegionsChange?: (codes: string[]) => void;
 }) {
   // The view mode, remembered in this browser for every search map.
   const [mode, setMode] = useSavedMode("search-map-mode");
@@ -299,16 +321,71 @@ export function SearchMap({
     scope,
   );
   // The filter's plates outlined on its map (the modal's), in the node color.
-  const plateList = usePlates(editArea && plates.length > 0);
+  // Its cratons, blocks and terranes the same way.
+  // Lassos the same way.
+  const picking = editArea ? tool : undefined;
+  const plateList = usePlates(editArea && (plates.some(isPlate) || picking === "plates"));
+  const provinceList = useProvinces(editArea && (plates.some(isProvince) || picking === "blocks"));
   const plateLines = useMemo<MapLine[]>(
     () =>
       editArea
-        ? (plateList.data?.plates ?? [])
-            .filter((plate) => plates.includes(plate.code))
-            .flatMap((plate) => plate.lines.map((coords) => ({ coords, color, width: 2.5 })))
+        ? [
+            ...[...(plateList.data?.plates ?? []), ...(provinceList.data?.plates ?? [])]
+              .filter((plate) => plates.includes(plate.code))
+              .flatMap((plate) => plate.lines),
+            ...plates.filter(isLasso).flatMap((code) => {
+              const outline = lassoOutline(code);
+              return outline ? [outline] : [];
+            }),
+          ].map((coords) => ({ coords, color, width: 2.5 }))
         : [],
-    [editArea, plateList.data, plates, color],
+    [editArea, plateList.data, provinceList.data, plates, color],
   );
+  // The plates, or the cratons, blocks and terranes, to pick on the map.
+  const pickList =
+    picking === "plates" ? plateList.data : picking === "blocks" ? provinceList.data : undefined;
+  const regions = useMemo(
+    () => (pickList ? regionFeatures(pickList, plates) : null),
+    [pickList, plates],
+  );
+  // Codes picked or drawn on the map, which it doesn't then move to.
+  const pickedOnMap = useRef(new Set<string>());
+  const toggleRegion = (code: string) => {
+    if (!plates.includes(code)) pickedOnMap.current.add(code);
+    onRegionsChange?.(
+      plates.includes(code) ? plates.filter((other) => other !== code) : [...plates, code],
+    );
+  };
+  // A new lasso replaces the last one, or, with Shift held, adds to them.
+  const addLasso = (vertices: LonLat[], add: boolean) => {
+    const code = encodeLasso(vertices);
+    pickedOnMap.current.add(code);
+    onRegionsChange?.([...(add ? plates : plates.filter((other) => !isLasso(other))), code]);
+  };
+  // A plate, craton or block added to the filter (from the modal's lists, not
+  // the map) is brought to the middle of the map (the globe turned to it, the
+  // Mercator map panned), at the same zoom, once its outline has loaded; the
+  // last one added when several are.
+  const shownPlates = useRef(plates);
+  const [addedPlate, setAddedPlate] = useState<string | null>(null);
+  useEffect(() => {
+    const added = plates.filter(
+      (code) => !shownPlates.current.includes(code) && !pickedOnMap.current.has(code),
+    );
+    shownPlates.current = plates;
+    if (editArea && added.length) setAddedPlate(added[added.length - 1]);
+  }, [plates, editArea]);
+  const [centerOn, setCenterOn] = useState<{ lon: number; lat: number } | null>(null);
+  useEffect(() => {
+    if (!addedPlate) return;
+    const outline = [...(plateList.data?.plates ?? []), ...(provinceList.data?.plates ?? [])].find(
+      (plate) => plate.code === addedPlate,
+    );
+    if (!outline) return;
+    setAddedPlate(null);
+    const center = outlineCenter(outline.lines);
+    if (center) setCenterOn(center);
+  }, [addedPlate, plateList.data, provinceList.data]);
   const fetched = inArea.data?.points;
   // Scaled to the values of the search's points (in the area, if any).
   const scale = useMemo(
@@ -380,12 +457,9 @@ export function SearchMap({
     const on = (each: Body) => colored.filter((p) => (p.body ?? "earth") === each);
     return {
       bodies: Object.fromEntries(BODIES.map(([each]) => [each, records(on(each))])),
-      modes: {
-        globe: records(points),
-        flat: records(points.filter((p) => Math.abs(p.lat) <= MERCATOR_LAT)),
-        north: records(points.filter((p) => p.lat >= 0)),
-        south: records(points.filter((p) => p.lat <= 0)),
-      } satisfies Record<Mode, number>,
+      modes: Object.fromEntries(
+        MODES.map(([each]) => [each, records(points.filter((p) => IN_MODE[each](p.lat)))]),
+      ) as Record<Mode, number>,
     };
   }, [fetched, colored, points, level.table]);
   // A disabled button's tooltip: where there are none, and, for a filtered
@@ -427,7 +501,10 @@ export function SearchMap({
           counts={counts?.modes}
           emptyTitle={(each) => noneMapped(inMode(each))}
         />
-        {!editArea || areaDisabled ? null : area ? (
+        {editArea && tool && onToolChange && onEarth && (
+          <ToolButtons tool={tool} setTool={onToolChange} />
+        )}
+        {!editArea || areaDisabled || (tool && tool !== "box") ? null : area ? (
           <button
             type="button"
             onClick={() => onAreaChange(null)}
@@ -483,9 +560,14 @@ export function SearchMap({
             area={editArea && onEarth ? area : null}
             onAreaChange={onAreaChange}
             zoomTo={onEarth ? zoomTo : null}
+            centerOn={onEarth ? centerOn : null}
             focusKey={focusKey}
             context={context}
             lines={onEarth ? plateLines : undefined}
+            regions={onEarth ? regions : null}
+            onRegionClick={toggleRegion}
+            lasso={onEarth && picking === "lasso"}
+            onLasso={addLasso}
           />
         </Suspense>
         {colorOption && inArea.data && points.length > 0 && (

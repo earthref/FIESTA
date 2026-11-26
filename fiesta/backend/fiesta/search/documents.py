@@ -1,8 +1,11 @@
 """Indexing contribution documents into the node index."""
 
+import asyncio
 import logging
+from collections.abc import Iterable
 
 from opensearchpy import AsyncOpenSearch, TransportError
+from opensearchpy import ConnectionError as TransitError
 from opensearchpy.helpers import async_bulk
 
 from fiesta.domain.summarize import doc_id
@@ -48,14 +51,70 @@ async def contribution_doc_ids(
     return ids
 
 
+# Seconds a bulk request may take: a chunk of a large contribution's docs (500,
+# each with its rows) outlasts the client's 10 s default on a remote cluster,
+# which failed a whole `fiesta rebuild` (dev MagIC, 2026-11-19).
+BULK_TIMEOUT = 120
+# A bulk request's size: the helper's 100 MB default is a body a proxy in front
+# of the cluster may refuse or fail to buffer.
+BULK_BYTES = 10 * 1024 * 1024
+# A bulk call that fails in transit (a timeout, a dropped connection, a 5xx or
+# 429 from the cluster or its proxy: nginx answered one request of a dev MagIC
+# rebuild with a 500, 2026-11-19) is sent again after each of these waits, in
+# seconds. Its actions carry their ids, so repeating them changes nothing.
+BULK_RETRY_WAITS = (5, 20, 60)
+BULK_RETRY_STATUS = {429, 500, 502, 503, 504}
+# Actions taken from the iterable per bulk call: a generator's docs are built
+# only as their chunk is sent, so a large contribution is never held whole
+# (MagIC 19767's 109k docs, held at once by the outbox's reindex, took 1 GB
+# on top of the parsed file; that left fiesta-ct unresponsive).
+BULK_CHUNK = 500
+
+
+async def bulk(client: AsyncOpenSearch, actions: Iterable[dict], **options) -> None:
+    """Send index / delete actions BULK_CHUNK at a time, consuming ACTIONS as
+    it goes; each chunk again on a failure in transit (BULK_RETRY_WAITS). Any
+    other error, and the last, is raised (the chunks before it stay sent)."""
+    chunk: list[dict] = []
+    for action in actions:
+        chunk.append(action)
+        if len(chunk) >= BULK_CHUNK:
+            await _bulk_chunk(client, chunk, **options)
+            chunk = []
+    if chunk:
+        await _bulk_chunk(client, chunk, **options)
+
+
+async def _bulk_chunk(client: AsyncOpenSearch, actions: list[dict], **options) -> None:
+    for wait in (*BULK_RETRY_WAITS, None):
+        try:
+            await async_bulk(
+                client,
+                actions,
+                chunk_size=500,
+                max_chunk_bytes=BULK_BYTES,
+                request_timeout=BULK_TIMEOUT,
+                **options,
+            )
+            return
+        except TransportError as error:
+            # A connection error (a timeout too) has no HTTP status.
+            transient = isinstance(error, TransitError) or error.status_code in BULK_RETRY_STATUS
+            if wait is None or not transient:
+                raise
+            logger.warning("bulk request failed (%s); again in %s s", error, wait)
+            await asyncio.sleep(wait)
+
+
 async def index_contribution_docs(
     client: AsyncOpenSearch,
     index: str,
     contribution_id: int,
-    docs: list[dict],
+    docs: Iterable[dict],
     prune: bool = True,
 ) -> None:
     """Write a contribution's docs, then delete only its stale ones, by id.
+    DOCS may be a generator: each is built only as its bulk chunk is sent.
 
     Doc ids are deterministic, so a write replaces a doc in place. Stale docs (a
     record the new revision no longer has) go after the write, never by a
@@ -65,29 +124,23 @@ async def index_contribution_docs(
     `prune` (an index being rebuilt, which has no older docs) nothing is
     looked up or deleted."""
     counters: dict[str, int] = {}
-    actions = []
-    for doc in docs:
-        ordinal = counters.get(doc["type"], 0)
-        counters[doc["type"]] = ordinal + 1
-        actions.append(
-            {
-                "_op_type": "index",
-                "_index": index,
-                "_id": doc_id(contribution_id, doc["type"], ordinal),
-                "_source": doc,
-            }
-        )
-    if actions:
-        await async_bulk(client, actions, chunk_size=500)
+    current: set[str] = set()
+
+    def actions():
+        for doc in docs:
+            ordinal = counters.get(doc["type"], 0)
+            counters[doc["type"]] = ordinal + 1
+            current.add(_id := doc_id(contribution_id, doc["type"], ordinal))
+            yield {"_op_type": "index", "_index": index, "_id": _id, "_source": doc}
+
+    await bulk(client, actions())
     if not prune:
         return
-    current = {action["_id"] for action in actions}
     stale = sorted(await contribution_doc_ids(client, index, contribution_id) - current)
     if stale:
-        await async_bulk(
+        await bulk(
             client,
-            ({"_op_type": "delete", "_index": index, "_id": i} for i in stale),
-            chunk_size=500,
+            [{"_op_type": "delete", "_index": index, "_id": i} for i in stale],
             ignore_status=(404,),
         )
     await client.indices.refresh(index=index)

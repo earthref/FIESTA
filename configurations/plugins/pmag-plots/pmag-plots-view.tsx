@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EChart, type EChartsOption } from "@/components/echart";
+import { EChart, type EChartsOption, PlotsPending } from "@/components/echart";
 import { ErrorMessage } from "@/components/error-message";
 import { Choices, PlotCard, PlotFilter, PlotLayout } from "@/components/plot-grid";
 import { PageSpinner } from "@/components/ui/spinner";
@@ -23,11 +23,15 @@ import {
   type Coord,
   type DemagSpecimen,
   type DirectionSet,
-  type Kind,
+  type HystFit,
+  type HystLoop,
   nf,
   PLOTS,
   type PlotData,
   type PlotType,
+  SLOPE_CORRECTIONS,
+  type SlopeCorrection,
+  type SlopeFit,
   whereOf,
 } from "./pmag-plots-data";
 
@@ -58,10 +62,15 @@ const LEGENDS: Record<PlotType, string> = {
   demag: "Intensity over its maximum at each treatment step · ◆ steps flagged bad",
   arai: "● ZI steps · □ IZ steps · △ pTRM checks · ■ pTRM tail checks · dashed: slope over the published interpretation's steps",
   deremag: "● NRM remaining · ■ pTRM gained, over the NRM, at each temperature",
-  hyst: "Moment against applied field",
+  hyst: "Moment against applied field · slope corrections are PmagPy's (rockmag): the loop gridded, centered and drift-corrected, less its high-field slope",
 };
 
-function useKind<K extends Kind>(kind: K, id: string, privateKey?: string, enabled = true) {
+function useKind<K extends keyof PlotData>(
+  kind: K,
+  id: string,
+  privateKey?: string,
+  enabled = true,
+) {
   return useQuery({
     queryKey: ["plugin", "pmag-plots", kind, id, privateKey],
     queryFn: () =>
@@ -92,29 +101,72 @@ export default function PmagPlotsView({
   const eqarea = useKind("eqarea", id, privateKey, kind === "eqarea");
   const arai = useKind("arai", id, privateKey, kind === "arai");
   const hyst = useKind("hyst", id, privateKey, kind === "hyst");
+  // The slope corrections are computed for every loop when one is first picked.
+  const [slope, setSlope] = useState<SlopeCorrection>("none");
+  const fitting = kind === "hyst" && slope !== "none";
+  const hystfit = useKind("hystfit", id, privateKey, fitting);
   const queries = { demag, eqarea, arai, hyst };
   const active = type === "eqarea" ? [eqarea, demag] : [queries[kind]];
 
   const items = useMemo(
     () =>
-      plotItems(type, {
-        demag: demag.data,
-        eqarea: eqarea.data,
-        arai: arai.data,
-        hyst: hyst.data,
-      }),
-    [type, demag.data, eqarea.data, arai.data, hyst.data],
+      plotItems(
+        type,
+        {
+          demag: demag.data,
+          eqarea: eqarea.data,
+          arai: arai.data,
+          hyst: hyst.data,
+          hystfit: hystfit.data,
+        },
+        slope,
+      ),
+    [type, demag.data, eqarea.data, arai.data, hyst.data, hystfit.data, slope],
   );
 
   const failed = active.find((query) => query.error);
   if (failed) return <ErrorMessage error={failed.error} className="m-3" />;
   if (active.some((query) => query.isPending)) return <PageSpinner label="Loading plots…" />;
-  return <PlotGrid type={type} items={items} selected={selected} onSelect={onSelect} />;
+  // Keyed by type: each tab starts with its own level, coordinates and filter
+  // (the equal-area tab's level would otherwise hide every demag plot).
+  return (
+    // Until the fits arrive the loops are still drawn as measured.
+    <PlotsPending pending={fitting && hystfit.isPending}>
+      <PlotGrid
+        key={type}
+        type={type}
+        items={items}
+        selected={selected}
+        onSelect={onSelect}
+        controls={
+          kind === "hyst" && (
+            <>
+              <Choices
+                label="Slope correction"
+                options={SLOPE_CORRECTIONS}
+                value={slope}
+                onChange={setSlope}
+              />
+              {fitting && hystfit.error && (
+                <span className="text-red-700" role="alert">
+                  The slope corrections could not be computed; the loops are as measured.
+                </span>
+              )}
+            </>
+          )
+        }
+      />
+    </PlotsPending>
+  );
 }
 
 // --- items per plot type -------------------------------------------------------------------
 
-function plotItems(type: PlotType, data: Partial<PlotData>): PlotItem[] {
+function plotItems(
+  type: PlotType,
+  data: Partial<PlotData>,
+  slope: SlopeCorrection = "none",
+): PlotItem[] {
   const specimenItem = (s: DemagSpecimen | AraiSpecimen) => ({
     key: s.specimen,
     title: s.specimen,
@@ -175,15 +227,83 @@ function plotItems(type: PlotType, data: Partial<PlotData>): PlotItem[] {
         note: () => araiNote(s),
       }));
     case "hyst":
-      return (data.hyst?.loops ?? []).map((loop) => ({
-        key: `${loop.specimen}:${loop.experiment}`,
-        title: loop.specimen,
-        where: [loop.experiment, whereOf(loop)].filter(Boolean).join(" · "),
-        names: [loop.specimen, loop.experiment, loop.site, loop.location].join(" ").toLowerCase(),
-        build: (size, _coord, large) => hysteresisOption(size, loop, large),
-        note: () => `${loop.field.length} measurements`,
-      }));
+      return (data.hyst?.loops ?? []).map((loop) => {
+        const key = `${loop.specimen}:${loop.experiment}`;
+        const fits = slope === "none" ? undefined : data.hystfit?.loops;
+        const fit = fits?.[key];
+        const method = fit ? slopeFit(fit, slope) : null;
+        const drawn = fit ? slopeCorrected(loop, fit, method) : loop;
+        return {
+          key,
+          title: loop.specimen,
+          where: [loop.experiment, whereOf(loop)].filter(Boolean).join(" · "),
+          names: [loop.specimen, loop.experiment, loop.site, loop.location].join(" ").toLowerCase(),
+          build: (size, _coord, large) => hysteresisOption(size, drawn, large),
+          note: () => (
+            <>
+              <div>{loop.field.length} measurements</div>
+              {fit
+                ? hystNote(loop, fit, slope, method)
+                : fits && <div>PmagPy could not process this loop: it is drawn as measured.</div>}
+            </>
+          ),
+        };
+      });
   }
+}
+
+/** The fit a slope correction takes out of this loop, if it has it. */
+function slopeFit(fit: HystFit, slope: SlopeCorrection): SlopeFit | null {
+  if (slope === "none") return null;
+  const method = slope === "auto" ? fit.auto : slope;
+  return method && fit.fits[method] ? method : null;
+}
+
+/** The processed loop less the fit's high-field slope (rockmag.hyst_slope_correction). */
+function slopeCorrected(loop: HystLoop, fit: HystFit, method: SlopeFit | null): HystLoop {
+  const slope = (method && fit.fits[method]?.slope) || 0;
+  return { ...loop, field: fit.field, m: fit.m.map((m, i) => m - slope * fit.field[i]) };
+}
+
+function hystNote(
+  loop: HystLoop,
+  fit: HystFit,
+  slope: SlopeCorrection,
+  method: SlopeFit | null,
+): ReactNode {
+  const chosen = method ? fit.fits[method] : undefined;
+  const percent = chosen ? `${Math.round(chosen.cutoff * 100)}%` : "";
+  const state = slope === "auto" ? ` (${fit.saturated ? "" : "not "}saturated loop)` : "";
+  let what: string;
+  if (chosen && method === "linear")
+    what = `Linear high-field fit above ${percent} of the maximum field${state}: its slope removed`;
+  else if (chosen)
+    what = `Approach-to-saturation fit (χHF·H + Ms + a₁/H + a₂/H²) above ${percent} of the maximum field${state}: its χHF·H removed`;
+  else if (slope !== "auto") what = "This fit failed for the loop: no slope is removed";
+  else if (fit.linear_loop)
+    what = `Statistically linear loop: only its high-field susceptibility is defined${
+      fit.chi_hf_loop !== null ? ` (χHF ${nf(fit.chi_hf_loop)} ${fit.chi_unit})` : ""
+    }, no slope is removed`;
+  else if (!fit.closed)
+    what =
+      "Open at the highest fields: Ms and χHF cannot be separated, so no slope is removed (Linear and Approach to saturation fit it anyway)";
+  else what = "No high-field fit: no slope is removed";
+  const stat = (label: string, value: number | null | undefined, unit: string) =>
+    value !== null && value !== undefined ? [`${label} ${nf(value)} ${unit}`] : [];
+  const stats = [
+    ...stat("χHF", chosen?.chi_hf, fit.chi_unit),
+    ...stat("Ms", chosen?.ms, loop.unit),
+    ...stat("Mr", fit.mr, loop.unit),
+    ...(chosen?.ms && fit.mr !== null ? [`Mr/Ms ${nf(fit.mr / chosen.ms)}`] : []),
+    ...stat("Bc", chosen?.bc, "mT"),
+    ...stat("Brh", fit.brh, "mT"),
+  ];
+  return (
+    <>
+      <div>{what}</div>
+      <div>{[...stats, "gridded, centered and drift-corrected"].join(" · ")}</div>
+    </>
+  );
 }
 
 function coordsOf(specimen: DemagSpecimen): Coord[] {
@@ -288,11 +408,14 @@ function PlotGrid({
   items,
   selected,
   onSelect,
+  controls: typeControls,
 }: {
   type: PlotType;
   items: PlotItem[];
   selected?: string;
   onSelect?: (key: string) => void;
+  /** The plot type's own switches, after the level and coordinates. */
+  controls?: ReactNode;
 }) {
   const [filter, setFilter] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
@@ -314,7 +437,9 @@ function PlotGrid({
     setChosen(item.key);
     if (item.level) setLevel(item.level);
   }, [items, selected]);
-  const leveled = level ? items.filter((item) => item.level === level) : items;
+  // A level these items do not have (none at all, on a specimen-only tab) filters nothing.
+  const leveled =
+    level && levelCounts.has(level) ? items.filter((item) => item.level === level) : items;
   const coords = COORDS.filter((coord) => leveled.some((item) => item.coords?.includes(coord)));
   const [coord, setCoord] = useState<Coord>(() => coords[0] ?? "g");
   const needle = filter.trim().toLowerCase();
@@ -356,6 +481,7 @@ function PlotGrid({
           onChange={setCoord}
         />
       )}
+      {typeControls}
       <PlotFilter
         value={filter}
         onChange={(next) => {

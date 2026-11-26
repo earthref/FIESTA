@@ -2,15 +2,20 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from fiesta.apps.deps import CurrentUser, NodeDep, SessionDep
+from fiesta.apps.deps import CurrentUser, NodeDep, SessionDep, require_public_contributions
 from fiesta.db.models import AuditEvent, Contribution, User, Workspace, WorkspaceMember
 from fiesta.services.access import workspace_owner
 
-router = APIRouter(prefix="/workspaces", tags=["workspaces"])
+# In data-source mode a node is read-only: workspaces are read, never changed.
+router = APIRouter(
+    prefix="/workspaces",
+    tags=["workspaces"],
+    dependencies=[Depends(require_public_contributions)],
+)
 
 
 class WorkspaceIn(BaseModel):

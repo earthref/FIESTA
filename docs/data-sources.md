@@ -22,8 +22,14 @@ In `source` mode:
   activate, new version, edit, delete, attachments) is a 409 naming where to
   contribute (`node.links.website`). The `/v1` private create/update/append/delete
   routes refuse the same way, in their Koa-style error body.
+- `/v2/{node}/workspaces` (shared workspaces) and the admin-assistance requests
+  likewise answer reads and refuse every write with that 409.
 - `GET /v2/{node}/config` carries `contributions_mode: "source"`; the SPA's
   upload page and private workspace show that notice instead of the upload button.
+  The home page's Upload Tool and Private Workspace cards and the search page's
+  Private Workspace button stay in place but disabled, with the tooltip
+  "<node key> is currently a read-only FIESTA node" (`readOnlyReason` in
+  `source-mode-notice.tsx`); the user menu leaves Private Workspace out.
 - `/v2/{node}/source` accepts the sync (below). In `public` mode it refuses
   writes, so a sync script left running after the cutover changes nothing.
 

@@ -21,13 +21,13 @@ id\tversion\tdata_model_version\treference\tlab_names
 12345\t1\t3.0\t10.1029/93JB00024\tPaleomagnetic Laboratory (AGICO Inc., Czech Republic)
 >>>>>>>>>>
 tab delimited\tlocations
-location\tlocation_type\tgeologic_classes\tlithologies\tage_unit\tlat_s\tlat_n\tlon_w\tlon_e
-Hawaii\tOutcrop\tIgneous\tBasalt\tMa\t19.0\t20.3\t203.9\t205.2
+location\tlocation_type\tgeologic_classes\tlithologies\tage\tage_unit\tlat_s\tlat_n\tlon_w\tlon_e
+Hawaii\tOutcrop\tIgneous\tBasalt\t0.5\tMa\t19.0\t20.3\t203.9\t205.2
 >>>>>>>>>>
 tab delimited\tsites
-site\tlocation\tcitations\tgeologic_types\tgeologic_classes\tlithologies\tage_unit\tlat\tlon\tmethod_codes
-HW01\tHawaii\tThis study\tLava Flow\tIgneous\tBasalt\tMa\t19.5\t204.5\tLP-DC3:SM-VSM
-HW02\tHawaii\tThis study\tLava Flow\tIgneous\tBasalt\tMa\t19.7\t204.6\tLP-DC3
+site\tlocation\tcitations\tgeologic_types\tgeologic_classes\tlithologies\tage\tage_unit\tlat\tlon\tmethod_codes
+HW01\tHawaii\tThis study\tLava Flow\tIgneous\tBasalt\t0.5\tMa\t19.5\t204.5\tLP-DC3:LP-HYS
+HW02\tHawaii\tThis study\tLava Flow\tIgneous\tBasalt\t0.5\tMa\t19.7\t204.6\tLP-DC3
 """
 
 
@@ -1607,6 +1607,7 @@ def test_contribution_filters_on_every_node():
         ), node.node.slug
     assert facet_path("id") == "summary.contribution.id"
     assert facet_path("contributor") == "summary.contribution._contributor.raw"
+    assert facet_path("author") == "summary.contribution._reference.authors._name.raw"
     assert facet_path("site") == "summary._all.site.raw"
     body = build_search_body(
         table="sites",
@@ -1622,6 +1623,53 @@ def test_contribution_filters_on_every_node():
         SearchFilter(type="facet", field="private_key")
     with pytest.raises(ValidationError):
         SearchFilter(type="facet", field="id", date=True)
+
+
+def test_every_node_has_an_author_facet():
+    """Every node's sidebar has an Author filter on the reference's authors,
+    on the same views as its Contributor filter."""
+    for node in load_deployment().nodes.values():
+        by_field = {f.field: f for f in node.search.filters if f.type == "facet"}
+        assert "author" in by_field, node.node.slug
+        author, contributor = by_field["author"], by_field["contributor"]
+        assert (author.levels, author.views) == (contributor.levels, contributor.views)
+
+
+def test_pinned_filters_validation(magic_node):
+    from pydantic import ValidationError
+
+    from fiesta.nodeconfig import PinnedFilters
+
+    rule = PinnedFilters(
+        levels=[" Locations "], views=["Rows", "Poles"], filters=[" Age", "Geospatial"]
+    )
+    assert (rule.levels, rule.views, rule.filters) == (
+        ["Locations"],
+        ["Data", "Poles"],
+        ["Age", "Geospatial"],
+    )
+    assert PinnedFilters(filters=["Age"]).levels == PinnedFilters(filters=["Age"]).views == []
+    for bad in (
+        {"filters": []},
+        {"filters": ["Age", "  "]},
+        {"filters": ["Age", "age"]},
+        {"filters": ["Age"], "views": ["Data", "Rows"]},
+        {"filters": ["Age"], "levels": ["Sites", ""]},
+    ):
+        with pytest.raises(ValidationError):
+            PinnedFilters.model_validate(bad)
+
+    def node_with(pinned):
+        search = {**magic_node.search.model_dump(), "pinned_filters": pinned}
+        return magic_node.model_validate({**magic_node.model_dump(), "search": search})
+
+    pinned = [{"levels": ["Locations"], "views": ["Poles"], "filters": ["Age", "Pole A95"]}]
+    public = node_with(pinned).public_config()
+    assert public["pinned_filters"] == [
+        {"levels": ["Locations"], "views": ["Poles"], "filters": ["Age", "Pole A95"]}
+    ]
+    with pytest.raises(ValueError, match="not search levels"):
+        node_with([{"levels": ["Cruises"], "filters": ["Age"]}])
 
 
 def test_search_filter_views_read_legacy_rows_as_data():
@@ -1944,6 +1992,7 @@ def test_api_mounts_every_node_router_once_under_v2(monkeypatch):
         "/v2/{repository}/workspaces",
         "/v2/{repository}/contributions/{contribution_id}/download",
         "/v2/basemap/plates",
+        "/v2/basemap/provinces",
         "/v2/{repository}/plugins/depth-plot/contributions/{contribution_id}/measurements",
         "/v2/admin/users",
         "/v2/admin/nodes/{slug}/publish",
@@ -2195,12 +2244,12 @@ def test_pages_and_filters_are_node_configuration(magic_node):
     public = magic_node.public_config()
     assert "pages" not in public["features"] and public["pages"][0]["slug"] == "about"
     assert public["facets"][0] == "method_codes"
-    age = next(
-        f
-        for f in magic_node.search.filters
-        if f.field == "summary._interval.age.range" and f.views == ["Poles"]
-    )
-    assert (age.type, age.levels, age.scale) == ("range", ["Locations"], 1e6)
+    alpha95 = next(f for f in magic_node.search.filters if f.views == ["Poles"])
+    assert (alpha95.type, alpha95.levels) == ("range", ["Locations"])
+    assert alpha95.field == "summary._num.pole_alpha95"
+    # The Poles view lists the Locations level's own filters too.
+    shared = [f.type for f in magic_node.search.filters if "Poles" in f.views and "Map" in f.views]
+    assert shared == ["range", "range", "numeric", "text", "exists"]
 
     # The pre-2026-09 `facets:` list still loads, as facet filters.
     legacy = SearchConfig(index="x", levels=[], facets=["lithologies", "method_codes"])
@@ -2397,6 +2446,122 @@ def test_map_points_from_a_search_doc():
     # Plates narrow the drawn points the same way (and leave out other bodies').
     on_plate = _map_points(contribution, "contribution", None, None, (), ("AF",))
     assert [(p["lon"], p.get("body")) for p in on_plate] == [(10.0, None)]
+    # A "nan" position is no point (nor invalid JSON in the response).
+    nan = {"summary": {"_all": {"_geo_point": {"lat": "nan", "lon": 1}}}}
+    assert _map_points(nan, "sites") == []
+
+
+def test_map_points_from_doc_values():
+    from fiesta.apps.routers.search import _contribution_label, _hit_source, _map_points
+
+    # As OpenSearch returns docvalue_fields: lists, `.raw` keywords, quantized
+    # "lat, lon" strings.
+    hit = {
+        "fields": {
+            "summary._all._geo_point": ["10.499999972060323, -20.000000016763806"],
+            "summary.contribution.id": [7],
+            "summary.sites.site.raw": ["S1"],
+            "summary._all.location.raw": ["L1"],
+            "summary.contribution._reference.citation.raw": ["Doe (2020)"],
+            "summary.contribution._contributor.raw": ["Jo Doe"],
+            "summary.contribution.timestamp": ["2026-05-07T23:46:54.343Z"],
+        }
+    }
+    source = _hit_source(hit)
+    assert _map_points(source, "sites", parents=("locations",)) == [
+        {
+            "id": 7,
+            "name": "S1",
+            "parents": [{"table": "locations", "name": "L1"}],
+            "lat": 10.5,
+            "lon": -20.0,
+        }
+    ]
+    assert _contribution_label(source["summary"]["contribution"]) == {
+        "citation": "Doe (2020)",
+        "contributor": "Jo Doe",
+        "timestamp": "2026-05-07T23:46:54.343Z",
+    }
+    # A hit with _source is passed through; one with no doc values is empty.
+    assert _hit_source({"_source": {"a": 1}}) == {"a": 1}
+    assert _map_points(_hit_source({}), "sites") == []
+
+
+async def test_index_cache_follows_the_index(monkeypatch):
+    from opensearchpy.exceptions import AuthorizationException
+
+    from fiesta.search import cache as cache_mod
+    from fiesta.search.cache import IndexCache
+
+    class Indices:
+        refreshes = 1
+        refused = False
+
+        async def stats(self, index, **_):
+            if self.refused:
+                raise AuthorizationException(403, "security_exception", {})
+            totals = {"refresh": {"external_total": self.refreshes}}
+            return {"indices": {f"{index}-build-1": {"primaries": totals}}}
+
+    client = type("Client", (), {"indices": Indices()})()
+    clock = [100.0]
+    monkeypatch.setattr(cache_mod.time, "monotonic", lambda: clock[0])
+    cache = IndexCache(max_bytes=10)
+    token = await cache.token(client, "magic")
+    cache.put(("k",), token, b"12345")
+    assert cache.get(("k",), await cache.token(client, "magic")) == b"12345"
+    # A refresh (any write a search can see) retires it, once TOKEN_TTL passes.
+    client.indices.refreshes = 2
+    assert cache.get(("k",), await cache.token(client, "magic")) == b"12345"
+    clock[0] += cache_mod.TOKEN_TTL
+    assert cache.get(("k",), await cache.token(client, "magic")) is None
+    # Bounded by size: the least recently used goes first; too big is not kept.
+    token = await cache.token(client, "magic")
+    for key in "abc":
+        cache.put((key,), token, b"1234")
+    assert [cache.get((k,), token) for k in "abc"] == [None, b"1234", b"1234"]
+    cache.put(("big",), token, b"x" * 11)
+    assert cache.get(("big",), token) is None
+    # Without index stats, entries expire after FALLBACK_TTL instead.
+    client.indices.refused = True
+    clock[0] += cache_mod.TOKEN_TTL
+    assert await cache.token(client, "magic") is None
+    cache.put(("k",), None, b"1")
+    clock[0] += cache_mod.FALLBACK_TTL - 1
+    assert cache.get(("k",), None) == b"1"
+    clock[0] += 1
+    assert cache.get(("k",), None) is None
+
+
+async def test_map_scroll_skips_the_scroll_for_one_page(monkeypatch):
+    from opensearchpy.exceptions import AuthorizationException
+
+    from fiesta.apps.routers import search as search_mod
+
+    calls = []
+
+    class Client:
+        async def search(self, index, body, scroll=None):
+            calls.append("scroll" if scroll else "search")
+            hits = [{"_source": {"n": 1}}, {"_source": {"n": 2}}]
+            return {"_scroll_id": "s", "hits": {"total": {"value": 2}, "hits": hits}}
+
+        async def clear_scroll(self, **_):
+            calls.append("clear")
+            raise AuthorizationException(403, "security_exception", {})
+
+    monkeypatch.setattr(search_mod, "get_opensearch", lambda: Client())
+    monkeypatch.setattr(search_mod, "_clear_scroll_refused", False)
+    node = type("Node", (), {"search_index": "magic"})()
+    seen = []
+    # Counted to fit one page: a plain search, nothing to clear.
+    assert await search_mod._scroll(node, {}, seen.append, lambda: False, 2) == 2
+    assert calls == ["search"] and len(seen) == 2
+    # Uncounted: a scroll; a refused clear is not tried again.
+    calls.clear()
+    await search_mod._scroll(node, {}, seen.append, lambda: False)
+    await search_mod._scroll(node, {}, seen.append, lambda: False)
+    assert calls == ["scroll", "clear", "scroll"]
 
 
 def test_plates_data_and_filter():
@@ -2453,6 +2618,112 @@ def test_plates_data_and_filter():
     assert "geo_shape" not in str(build_search_body(table="sites", query=None))
 
 
+def test_lasso_filter():
+    """A lasso drawn on the Geospatial filter's map rides in `plate=` inline:
+    split at the antimeridian, closed over a pole it circles, never crossing
+    itself."""
+    from fastapi import HTTPException
+
+    from fiesta.plates import in_plates, parse_plates, plates_shape
+
+    def lasso(*vertices):
+        return "lasso:" + "~".join(f"{lon}_{lat}" for lon, lat in vertices)
+
+    def rings(code):
+        return [polygon[0] for polygon in plates_shape((code,))["coordinates"]]
+
+    def valid(code):
+        for ring in rings(code):
+            assert ring[0] == ring[-1]
+            assert all(-180 <= lon <= 180 and -90 <= lat <= 90 for lon, lat in ring)
+            # Anticlockwise, as OpenSearch reads an outer ring.
+            pairs = zip(ring, ring[1:], strict=False)
+            assert sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in pairs) > 0
+
+    hawaii = lasso((-157, 18), (-154, 18), (-154, 21), (-157, 21))
+    valid(hawaii)
+    assert in_plates(19.6, -155.5, (hawaii,)) and in_plates(19.6, 204.5, (hawaii,))
+    assert not in_plates(0, 0, (hawaii,))
+    # Clockwise, across the antimeridian: two polygons, one either side.
+    fiji = lasso((170, -10), (170, 10), (-170, 10), (-170, -10))
+    valid(fiji)
+    assert len(rings(fiji)) == 2
+    assert in_plates(-5, 178.1, (fiji,)) and in_plates(-5, -175, (fiji,))
+    assert not in_plates(-5, 160, (fiji,)) and not in_plates(-5, -160, (fiji,))
+    # A concave one across it twice on each side still pairs up its crossings.
+    comb = lasso(
+        (170, 0), (-170, 0), (-170, 2), (175, 2), (175, 8), (-170, 8), (-170, 10), (170, 10)
+    )
+    valid(comb)
+    assert len(rings(comb)) == 3
+    assert in_plates(1, 178, (comb,)) and in_plates(9, -172, (comb,)) and in_plates(5, 172, (comb,))
+    assert not in_plates(5, 178, (comb,)) and not in_plates(5, -175, (comb,))
+    # Circling the north pole from 100°E: closed over it, split at 180°.
+    arctic = lasso(*[(100 + 45 * i, 70) for i in range(8)])
+    valid(arctic)
+    assert (
+        in_plates(89, 0, (arctic,))
+        and in_plates(75, 179, (arctic,))
+        and in_plates(75, -1, (arctic,))
+    )
+    assert not in_plates(60, 0, (arctic,)) and not in_plates(-89, 0, (arctic,))
+    antarctic = lasso(*[(-45 * i, -70) for i in range(8)])
+    valid(antarctic)
+    assert in_plates(-89, 30, (antarctic,)) and not in_plates(89, 30, (antarctic,))
+    assert parse_plates([f"pa,{hawaii}", hawaii]) == ("PA", hawaii)
+    for bad in (
+        lasso((0, 0), (10, 10), (10, 0), (0, 10)),  # a bow tie
+        lasso((0, 0), (10, 10)),
+        lasso((0, 0), (10, 95), (10, 0)),
+        "lasso:0_0~nope",
+    ):
+        with pytest.raises(HTTPException):
+            parse_plates([bad])
+
+
+def test_provinces_data_and_filter():
+    """The plate_block terms' outlines: every name a vocabulary term, every
+    code a lower-case slug the filter takes beside the plate codes."""
+    import json
+    import re
+
+    from fiesta.plates import in_plates, parse_plates, plates_shape, provinces_geojson
+
+    features = provinces_geojson()["features"]
+    assert len(features) >= 50
+    for node in ("magic", "karar"):
+        vocabulary = json.loads((CONFIG_DIR / node / "controlled_vocabularies.json").read_text())
+        terms = {item["item"] for item in vocabulary["plate_block"]["items"]}
+        names = [f["properties"]["name"] for f in features]
+        assert [name for name in names if name not in terms] == []
+    codes = [f["properties"]["code"] for f in features]
+    assert len(set(codes)) == len(codes)
+    assert all(re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)+", code) for code in codes)
+    for feature in features:
+        geometry = feature["geometry"]
+        polygons = (
+            geometry["coordinates"]
+            if geometry["type"] == "MultiPolygon"
+            else [geometry["coordinates"]]
+        )
+        for ring in (ring for rings in polygons for ring in rings):
+            assert len(ring) >= 4 and ring[0] == ring[-1], feature["properties"]
+            assert all(-180 <= lon <= 180 and -90 <= lat <= 90 for lon, lat in ring)
+    for lat, lon, expected in (
+        (-26.2, 28.0, {"kaapvaal-craton", "kalahari-craton"}),  # Johannesburg
+        (-30.75, 121.47, {"yilgarn-craton"}),  # Kalgoorlie
+        (-21.2, 118.8, {"pilbara-craton"}),
+        (62.5, -114.4, {"slave-craton"}),  # Yellowknife
+        (35.7, 139.7, set()),  # Tokyo: on no listed province
+    ):
+        on = {c for c in codes if in_plates(lat, lon, (c,))}
+        assert on == expected, (lat, lon, on)
+    assert parse_plates(["kaapvaal-craton,af", "Kaapvaal-Craton"]) == ("kaapvaal-craton", "AF")
+    assert in_plates(-26.2, 28.0, parse_plates(["EU,kaapvaal-craton"]))
+    shape = plates_shape(("AF", "kaapvaal-craton"))
+    assert shape["type"] == "MultiPolygon" and len(shape["coordinates"]) >= 2
+
+
 def test_plates_route_revalidates():
     # A browser keeps no copy past a change: no-cache + ETag, 304 while unchanged.
     import asyncio
@@ -2464,6 +2735,11 @@ def test_plates_route_revalidates():
     etag = full.headers["etag"]
     assert asyncio.run(get_plates(f'"stale", {etag}')).status_code == 304
     assert asyncio.run(get_plates('"stale"')).status_code == 200
+    from fiesta.apps.routers.basemap import get_provinces
+
+    provinces = asyncio.run(get_provinces(None))
+    assert provinces.status_code == 200 and provinces.headers["etag"] != etag
+    assert asyncio.run(get_provinces(provinces.headers["etag"])).status_code == 304
 
 
 def test_map_points_name_the_rows_above_and_their_contribution():
@@ -2693,7 +2969,7 @@ def test_large_maps_are_unique_locations(magic_node, monkeypatch):
             buckets = pages[len(requests) - 1]
             return {"aggregations": {"locations": {"buckets": buckets, "after_key": {"x": 1}}}}
 
-    monkeypatch.setattr(router, "MAP_PAGE_SIZE", 2)
+    monkeypatch.setattr(router, "MAP_AGG_PAGE_SIZE", 2)
     points, truncated = asyncio.run(router._location_points(Client(), "i", {"match_all": {}}))
     # The centroid is exact, even past Web Mercator's limit; no centroid, no point.
     assert points == [{"id": 7, "lat": 88.5, "lon": 10.0, "count": 40}]
@@ -3090,9 +3366,7 @@ def test_every_row_has_a_core_id_that_stamp_ids_writes():
             "contribution": {"columns": {"id": {}}},
             "sections": {"columns": {"contribution_id": {}, "row_id": {}, "section": {}}},
             "notes": {"columns": {"note": {}}},
-            "measurements": {
-                "columns": {"contribution_id": {}, "row_id": {}, "measurement": {}}
-            },
+            "measurements": {"columns": {"contribution_id": {}, "row_id": {}, "measurement": {}}},
         }
     }
     text = (
@@ -3144,3 +3418,97 @@ def test_changed_rows_ignores_order_blanks_and_stamped_ids():
         }
     )
     assert changed_rows(current, previous) == {"sites": {"changed": 2, "removed": 2}}
+
+
+def test_bulk_indexing_retries_failures_in_transit(monkeypatch):
+    """A bulk call that times out or gets a proxy's 5xx is sent again; a
+    request the cluster refuses, and the last failure, are raised."""
+    import asyncio
+
+    from opensearchpy import ConnectionTimeout, RequestError, TransportError
+
+    from fiesta.search import documents
+
+    waits: list[float] = []
+
+    async def no_sleep(seconds):
+        waits.append(seconds)
+
+    monkeypatch.setattr(documents.asyncio, "sleep", no_sleep)
+
+    def failing(*errors):
+        calls = []
+
+        async def fake_bulk(client, actions, **options):
+            calls.append(options)
+            if len(calls) <= len(errors):
+                raise errors[len(calls) - 1]
+
+        monkeypatch.setattr(documents, "async_bulk", fake_bulk)
+        return calls
+
+    calls = failing(ConnectionTimeout("TIMEOUT", "", None), TransportError(500, "<html>"))
+    asyncio.run(documents.bulk(None, [{"_id": "1"}], ignore_status=(404,)))
+    assert len(calls) == 3 and waits == list(documents.BULK_RETRY_WAITS[:2])
+    assert calls[0]["max_chunk_bytes"] == documents.BULK_BYTES
+    assert calls[0]["request_timeout"] == documents.BULK_TIMEOUT
+    assert calls[0]["ignore_status"] == (404,)
+
+    calls = failing(RequestError(400, "mapper_parsing_exception"))
+    with pytest.raises(RequestError):
+        asyncio.run(documents.bulk(None, [{"_id": "1"}]))
+    assert len(calls) == 1
+
+    calls = failing(*[TransportError(502, "")] * 9)
+    with pytest.raises(TransportError):
+        asyncio.run(documents.bulk(None, [{"_id": "1"}]))
+    assert len(calls) == len(documents.BULK_RETRY_WAITS) + 1
+
+
+def test_indexing_streams_docs_into_bulk_chunks(monkeypatch, magic_node):
+    """A contribution's docs are built as their bulk chunk is sent, never all
+    at once (the outbox reindex of a 100k-record contribution held them all
+    and left the dev host unresponsive), and are the docs `summarize` builds;
+    summary.json.gz is written from the same stream."""
+    import asyncio
+    import gzip
+    import json
+    import types
+
+    from fiesta.domain.summarize import summarize_stream
+    from fiesta.search import documents
+    from fiesta.services.contributions import _summary_gz, search_docs
+
+    built = 0
+
+    def docs(n):
+        nonlocal built
+        for i in range(n):
+            built += 1
+            yield {"type": "sites", "i": i}
+
+    chunks: list[tuple[int, int]] = []
+
+    async def fake_bulk(client, actions, **options):
+        chunks.append((len(actions), built))
+
+    async def no_refresh(index):
+        pass
+
+    monkeypatch.setattr(documents, "async_bulk", fake_bulk)
+    client = types.SimpleNamespace(indices=types.SimpleNamespace(refresh=no_refresh))
+    chunk = documents.BULK_CHUNK
+    asyncio.run(
+        documents.index_contribution_docs(client, "magic", 1, docs(2 * chunk + 1), prune=False)
+    )
+    # Each chunk went out once it was full: no doc built ahead of its chunk.
+    assert chunks == [(chunk, chunk), (chunk, 2 * chunk), (1, 2 * chunk + 1)]
+
+    parsed = parse_text(MAGIC_TEXT)
+    *records, contribution = summarize_stream(magic_node, parsed, {"id": 1})
+    assert contribution["type"] == "contribution"
+    assert summarize(magic_node, parsed, {"id": 1}) == [contribution, *records]
+    streamed = list(search_docs(magic_node, parsed, {"id": 1}))
+    assert {d["type"] for d in streamed} >= {"contribution", "locations", "sites"}
+    summary = json.loads(gzip.decompress(_summary_gz({"run": 1}, iter(streamed))))
+    assert summary == json.loads(json.dumps({"provenance": {"run": 1}, "documents": streamed}))

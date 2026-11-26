@@ -1,6 +1,7 @@
 import { Outlet, useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AutoReload } from "../components/auto-reload";
+import { ContactProvider } from "../components/contact-modal";
 import { ErrorMessage } from "../components/error-message";
 import { Footer } from "../components/footer";
 import { LoginModalProvider } from "../components/login-modal";
@@ -103,23 +104,27 @@ export function RootLayout() {
     );
   }
 
+  // ContactProvider outside LoginModalProvider: its modal renders after (so
+  // above) the sign-in modal, whose "Having trouble?" button opens it.
   return (
-    <LoginModalProvider>
-      <div className="min-h-screen bg-surface">
-        <PortalBar />
-        {/* layout-content: padding-top 4em clears the fixed bar (layout.less:41-44); the
+    <ContactProvider>
+      <LoginModalProvider>
+        <div className="min-h-screen bg-surface">
+          <PortalBar />
+          {/* layout-content: padding-top 4em clears the fixed bar (layout.less:41-44); the
             bottom tracks the fixed footer's measured height, which grows as it wraps. */}
-        <div className="pt-[4em] sm:pb-[calc(var(--footer-h,3.5em)_+_0.5em)]">
-          {/* Every page uses the legacy `.full-width` layout variant (padding 0 2em). */}
-          <NodeHeader />
-          {!portal && <NodeMenu />}
-          <main className="clear-both w-full px-[2em] pt-[1.25em] lg:pt-0">
-            <Outlet />
-          </main>
+          <div className="pt-[4em] sm:pb-[calc(var(--footer-h,3.5em)_+_0.5em)]">
+            {/* Every page uses the legacy `.full-width` layout variant (padding 0 2em). */}
+            <NodeHeader />
+            {!portal && <NodeMenu />}
+            <main className="clear-both w-full px-[2em] pt-[1.25em] lg:pt-0">
+              <Outlet />
+            </main>
+          </div>
+          <Footer />
+          <AutoReload />
         </div>
-        <Footer />
-        <AutoReload />
-      </div>
-    </LoginModalProvider>
+      </LoginModalProvider>
+    </ContactProvider>
   );
 }

@@ -104,7 +104,12 @@ Local compose databases created before this layout have their tables in
 Infrastructure/secrets come from `FIESTA_*` env vars (see
 `fiesta/backend/fiesta/settings.py`): `FIESTA_DATABASE_URL`, `FIESTA_OPENSEARCH_URL`,
 `FIESTA_S3_ENDPOINT/ACCESS_KEY/SECRET_KEY`, `FIESTA_SECRET_KEY`,
-`FIESTA_SMTP_*`, `FIESTA_CORS_ORIGINS`, and for the ops worker and its
+`FIESTA_SMTP_*` (the API mails sign-in links itself, so it needs SMTP too, not
+only the worker), `FIESTA_CORS_ORIGINS`, the sign-in providers'
+`FIESTA_{GOOGLE,MICROSOFT,GITHUB,ORCID}_CLIENT_ID/_SECRET` with
+`FIESTA_OAUTH_REDIRECT_BASE`, and `FIESTA_SIGN_IN_ORIGINS` on any host other than
+`api.site_url`'s (docs/api.md "Authentication"; a provider without
+both values is simply not offered), and for the ops worker and its
 watchdog `FIESTA_SLACK_BOT_TOKEN` (optionally `FIESTA_OPS_CONFIG_FILE`).
 Everything node-specific lives in the YAML, not in env vars.
 

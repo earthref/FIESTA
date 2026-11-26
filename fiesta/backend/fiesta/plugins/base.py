@@ -143,6 +143,10 @@ class ImportFormat:
     extensions: tuple[str, ...] = ()
     #: Whether one conversion reads several files (`companions`).
     multi_file: bool = False
+    #: An example the upload page offers to try (`GET /import-formats/{key}/
+    #: example/{name}`): small published files, the one read as this format
+    #: first, then the companions its conversion reads. Empty: none.
+    example: tuple[Path, ...] = ()
     #: The contributor's options (see ImportOptions). The plain base: none.
     Options: type[ImportOptions] = ImportOptions
 
@@ -210,13 +214,32 @@ class FiestaPlugin:
         return {}
 
     def derive_docs(
-        self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
+        self,
+        node: NodeConfig,
+        parsed: ParsedContribution,
+        contribution_meta: dict,
+        records: list[dict] | None = None,
     ) -> list[dict]:
         """Extra search documents derived from a contribution at summarize
         time (same shape as fiesta.domain.summarize docs: {type, summary,
         rows?}). Re-runs whenever the contribution is (re)processed and on
-        `fiesta rebuild`, so derived data is always reproducible."""
+        `fiesta rebuild`, so derived data is always reproducible. `records`
+        are docs `summarize` built for it, with the plugins' derived values,
+        for a plugin whose docs take a record's fields: when indexing, only
+        the contribution's and those of the levels the active plugins'
+        `record_tables` name, in record order (the other records' docs are
+        sent on, and dropped, as they are built); None from a caller
+        without them."""
         return []
+
+    def record_tables(self, node: NodeConfig) -> dict[str, str]:
+        """Its search tables whose docs are a hierarchy level's records seen
+        another way (`{"poles": "locations"}`): each carries that level's
+        filter fields (`summary._all`, `_num`, `_has`, `_interval`, positions)
+        as the level's own docs do, so the search routes take the level's
+        text / number / with-data columns for it and the level's sidebar
+        filters apply to and count its docs."""
+        return {}
 
     def derived_columns(self, node: NodeConfig) -> dict[str, Literal["text", "number"]]:
         """Columns it derives on the hierarchy's record docs (`derive_values`),

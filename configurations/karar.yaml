@@ -134,15 +134,28 @@ search:
   # row's age interval in years BP (unit_conversions below), matching a record
   # any of whose intervals overlaps the range typed in Ma.
   filters:
+    # The legacy KArAr sidebar's Publication Year. Its other facets (scientists,
+    # analysts, software packages, lithology, ...) are data-model text columns,
+    # which the `text` filter lists one by one.
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year }
     - { type: range, label: Age, field: summary._interval.age.range, unit: Ma, scale: 1.0e6, timescale: true, levels: [Contributions, Samples, Specimens, Experiments] }
     - { type: text, label: Text }
     - { type: numeric, label: Numeric }
     - { type: exists, label: With / Without Data }
-    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
+    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, reference authors, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
+    - { type: facet, field: author, label: Author }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
+  # Filters kept at the top of the sidebar, in this order, whatever their
+  # counts (one with no values shows disabled); the rest follow by count. A
+  # rule's `levels` / `views` (empty = any) say where it applies; the most
+  # specific matching rule wins. Names are sidebar labels as spelled above;
+  # one with no filter is skipped. Age is the curated Age filter (Ma, each
+  # row's age interval), not the raw Preferred Age column.
+  pinned_filters:
+    - { filters: [Age, Geospatial, Author, Contributor] }
   # Ages in one unit (years BP) whatever their age_unit, as MagIC's: in
   # summary._num, and each specimen's / experiment's as one interval in
   # summary._interval.age (the Age filter, tile and sort): age_low..age_high,

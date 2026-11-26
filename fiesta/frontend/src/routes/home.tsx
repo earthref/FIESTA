@@ -4,7 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { ErrorMessage } from "../components/error-message";
 import { IconButton, type IconButtonProps } from "../components/icon-button";
 import { quickLaunchViews } from "../components/quick-launch";
-import { isSourceMode } from "../components/source-mode-notice";
+import { readOnlyReason } from "../components/source-mode-notice";
 import { SummaryGrid } from "../components/summary-grid";
 import { PageSpinner } from "../components/ui/spinner";
 import { api } from "../lib/api";
@@ -254,28 +254,27 @@ export function HomePage() {
                 subtitle="Browse, combine, and save datasets."
               />
             </div>
-            {!isSourceMode(config) && (
-              <>
-                <div className={threeCardClass} style={threeCard}>
-                  <IconButton
-                    to="/Upload"
-                    icon="table"
-                    cornerIcon="add"
-                    title="Upload Tool"
-                    subtitle="Import data into your private workspace."
-                  />
-                </div>
-                <div className={threeCardClass} style={threeCard}>
-                  <IconButton
-                    to="/Private"
-                    icon="file text outline"
-                    cornerIcon="checkmark"
-                    title="Private Workspace"
-                    subtitle={`Manage your contributions to ${config.key}.`}
-                  />
-                </div>
-              </>
-            )}
+            {/* A read-only (data-source mode) node shows both disabled, with why */}
+            <div className={threeCardClass} style={threeCard}>
+              <IconButton
+                to="/Upload"
+                icon="table"
+                cornerIcon="add"
+                title="Upload Tool"
+                subtitle="Import data into your private workspace."
+                disabledReason={readOnlyReason(config)}
+              />
+            </div>
+            <div className={threeCardClass} style={threeCard}>
+              <IconButton
+                to="/Private"
+                icon="file text outline"
+                cornerIcon="checkmark"
+                title="Private Workspace"
+                subtitle={`Manage your contributions to ${config.key}.`}
+                disabledReason={readOnlyReason(config)}
+              />
+            </div>
           </div>
 
           {/* Quick launch (2026-11 decision): the node's main search views as

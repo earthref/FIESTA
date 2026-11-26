@@ -126,6 +126,8 @@ async def test_revision_workflow_and_migration(tmp_path, monkeypatch):
         root = "/v2/magic/private/contributions"
         c = (await client.post(root)).json()
         path = f"{root}/{c['id']}"
+        # Nothing saved yet: empty content, not a missing revision.
+        assert (await client.get(path + "/content")).json() == {"revision_id": None, "text": ""}
         edit = {"expected_revision": None, "request_key": str(uuid.uuid4()), "text": raw}
         first = await client.put(path + "/content", json=edit)
         assert first.status_code == 200, first.text
@@ -837,6 +839,7 @@ async def test_contribution_versions_and_row_stats():
         assert stats["previous"] == {"id": first["id"], "version": 1}
         assert stats["tables"]["sites"] == {"changed": 1, "removed": 1}
         assert "locations" not in stats["tables"]
+        assert stats["rows"]["sites"] >= 1 and stats["rows"]["contribution"] == 1
         first_stats = (await client.get(f"/v2/magic/contributions/{first['id']}/rows")).json()
         assert first_stats["previous"] is None
 
@@ -890,12 +893,21 @@ async def test_upload_import_into_existing_contribution_and_templates():
                 ("data", ("import.txt", first_body.encode())),
                 ("originals", ("sites.xlsx", b"PK-original")),
             ],
+            data={"sources": json.dumps(["sites.xlsx"] * 3)},
             headers={"Idempotency-Key": str(uuid.uuid4())},
         )
         assert first.status_code == 200, first.text
         head = first.json()["head_revision"]
-        names = [a["name"] for a in (await client.get(path + "/attachments")).json()]
-        assert names == ["sites.xlsx"]
+        (card,) = (await client.get(path + "/attachments")).json()
+        assert card["name"] == "sites.xlsx" and card["origin"] == "upload"
+        assert card["rows"] == {"contribution": 1, "sites": 1, "samples": 1}
+        assert card["locked"], "an upload-tool original is the record of its rows"
+        removal = await client.request(
+            "DELETE",
+            path + "/attachments/sites.xlsx",
+            json={"expected_revision": head, "request_key": str(uuid.uuid4())},
+        )
+        assert removal.status_code == 409, removal.text
         text = (await client.get(path + "/content")).json()["text"]
         assert parse_text(text).tables["sites"][0]["dir_n_samples"] == "4"
 

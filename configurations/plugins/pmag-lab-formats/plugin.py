@@ -466,6 +466,15 @@ def _text_head(head: bytes) -> list[str]:
     return [line for line in re.split(r"\r\n|\r|\n", text) if line.strip()]
 
 
+#: Small files trimmed from PmagPy's data_files/convert_2_magic examples
+#: (published data, BSD-3-Clause): the tests' cases and each format's example.
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def _fixtures(*names: str) -> tuple[Path, ...]:
+    return tuple(FIXTURES / name for name in names)
+
+
 class PmagFormat(ImportFormat):
     """One `pmagpy.convert_2_magic` converter."""
 
@@ -545,6 +554,7 @@ class GenericFormat(PmagFormat):
         "treatment_type, moment, dec_s, inc_s (dec_g, inc_g, dec_t, inc_t optional)."
     )
     extensions = (".txt",)
+    example = _fixtures("generic_magic_example.txt")
     Options = GenericOptions
     function = "generic"
     file_arg = "magfile"
@@ -586,6 +596,7 @@ class TwoGBinFormat(PmagFormat):
     label = "2G Binary File"
     description = "A 2G Enterprises magnetometer binary file (.dat), one specimen per file."
     extensions = (".dat",)
+    example = _fixtures("mn001-1a.dat")
     Options = TwoGBinOptions
     function = "_2g_bin"
     input_arg = "input_dir"
@@ -601,6 +612,7 @@ class TwoGAscFormat(PmagFormat):
     label = "2G ASCII File"
     description = "A 2G Enterprises magnetometer ASCII export (.asc)."
     extensions = (".asc",)
+    example = _fixtures("DR3B.asc")
     Options = TwoGAscOptions
     function = "_2g_asc"
     input_arg = "input_dir"
@@ -622,6 +634,7 @@ class CitFormat(PmagFormat):
         "read with the specimen files it names (pick them all together)."
     )
     extensions = (".sam",)
+    example = _fixtures("PI47-.sam", "PI47-1a", "PI47-2a", "PI47-3a")
     multi_file = True
     Options = CitOptions
     function = "cit"
@@ -656,6 +669,7 @@ class SioFormat(PmagFormat):
         "declination, inclination per line."
     )
     extensions = (".dat", ".sio")
+    example = _fixtures("sio_af_example.dat")
     Options = SioOptions
     function = "sio"
     reported_defaults = ("codelist", "samp_con", "location")
@@ -678,6 +692,7 @@ class Jr6Format(PmagFormat):
     label = "AGICO JR6 File (.jr6)"
     description = "An AGICO JR-6 spinner magnetometer file in the .jr6 format."
     extensions = (".jr6",)
+    example = _fixtures("AF.jr6")
     Options = Jr6Options
     function = "jr6_jr6"
 
@@ -690,6 +705,7 @@ class Jr6TxtFormat(PmagFormat):
     label = "AGICO JR6 File (.txt)"
     description = "An AGICO JR-6 spinner magnetometer file in the Rema6 text format."
     extensions = (".txt",)
+    example = _fixtures("AF.txt")
     Options = Jr6TxtOptions
     function = "jr6_txt"
 
@@ -702,6 +718,7 @@ class UtrechtFormat(PmagFormat):
     label = "Utrecht File"
     description = "The Utrecht (Fort Hoofddijk) magnetometer format."
     extensions = (".af", ".th", ".tt")
+    example = _fixtures("Utrecht_Example.af")
     Options = UtrechtOptions
     function = "utrecht"
 
@@ -717,6 +734,7 @@ class LdeoFormat(PmagFormat):
     label = "LDEO File"
     description = "The Lamont-Doherty (LDEO) magnetometer format."
     extensions = (".dat",)
+    example = _fixtures("ldeo_magic_example.dat")
     Options = LdeoOptions
     function = "ldeo"
     file_arg = "magfile"
@@ -734,6 +752,7 @@ class HujiFormat(PmagFormat):
     label = "HUJI File"
     description = "The Hebrew University (HUJI) magnetometer format (new style)."
     extensions = (".txt",)
+    example = _fixtures("Massada_AF_HUJI.txt")
     Options = HujiOptions
     function = "huji"
     file_arg = "magfile"

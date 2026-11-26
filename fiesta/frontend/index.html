@@ -30,10 +30,13 @@
         } catch {}
       })();
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- crossorigin: lets the contact form's screenshot (lib/screenshot.ts) read
+         the @font-face rules and embed Open Sans. -->
     <link
       rel="stylesheet"
+      crossorigin="anonymous"
       href="https://fonts.googleapis.com/css?family=Open+Sans:400,700,400italic,700italic&subset=latin"
     />
   </head>

@@ -83,7 +83,8 @@ tests import it as `fiesta.plugins.<name>` with dashes as underscores
 |---|---|---|
 | `check(node, options)` | startup and every validation / publication | reject options that do not fit this node (tables, columns, levels) with a `ValueError` |
 | `jsonld(node, doc, catalog_url)` | every contribution JSON-LD (`/contributions/{id}/jsonld`, the page head crawlers read) | schema.org properties added to the contribution's `Dataset`: a list extends the core's, anything else fills a property the core left unset (method-codes: `measurementTechnique`) |
-| `derive_docs(node, parsed, meta)` | every (re)process and `fiesta rebuild` | extra search documents derived from contribution rows (e.g. one `poles` doc per location row with `pole_lat`/`pole_lon`) — always reproducible from the bucket |
+| `derive_docs(node, parsed, meta, records)` | every (re)process and `fiesta rebuild` | extra search documents derived from contribution rows (e.g. one `poles` doc per location row with `pole_lat`/`pole_lon`) — always reproducible from the bucket; `records` are the docs `summarize` built (None from a caller without them) |
+| `record_tables(node)` | every search request on its tables | its search tables whose docs are a level's records seen another way (`{"poles": "locations"}`): each doc carries that level's filter fields (`summary._all`, `_num`, `_has`, `_interval`, positions), so the search routes take the level's text / number / with-data columns for the table and the level's sidebar filters match and count its docs (the UI tab's `levelFilters`) |
 | `derived_columns(node)` + `derive_values(node, table, rows)` | every (re)process and `fiesta rebuild` | extra columns on the hierarchy's own record docs, from each record's rows (`fiesta.plugins.add_derived_values`): a "text" one is a `summary._all.<name>` keyword (a YAML `facet` filter, `<name>:"<value>"` tokens), a "number" one `summary._num.<name>` (a YAML `range` filter and its histogram); the contribution doc gets the union of its records'. The node checks accept YAML filters on them as on data-model columns (a name must not be one). E.g. `geomag-series`'s `data_type`, `pi_family`, `age_error` |
 | `search_levels(node)` | config load | extra search tabs; merged into `GET /v2/{node}/config` `search_levels` and the search API's allowed tables |
 | `search_facets(node)` | every search request with `facet=` | extra columns the search API counts as facet buckets for the plugin's own sidebar filter (the periodic table's `element`); a pick is the usual `<column>:"<value>"` query token |
@@ -123,7 +124,12 @@ files, grouped as lab formats in its file-type menu. Each sets `key`, `label`,
 `description`, `extensions`, `multi_file` and `Options` (an `ImportOptions`
 pydantic model: what the contributor sets, served as JSON schema and rendered
 as the format's options form; an enum field may carry `x-enum-labels` in
-`json_schema_extra`), and implements:
+`json_schema_extra`), and optionally `example`: paths of small published files
+(the one read as this format first, then its companions) that the upload page's
+Step 1 lists under "Or import files straight from a lab instrument" with *Try
+the example* (read like dropped files, so they must sniff as the format) and
+*Download* (served by `GET /import-formats/{key}/example/{name}`; keep them
+your tests' fixtures). It implements:
 
 - `sniff(filename, head) -> float`: how sure it is (0–1) from the name and the
   first 16 KB; the import step picks the format at 0.8 or more.
@@ -157,7 +163,11 @@ in that contribution and hidden when there are none.
 
 A level sub-tab (`levelSubTabs`) shows either its own docs (`countTable`,
 e.g. `rock_mag`: it fetches them with the context's `query`, `ranges` and
-`bbox`, and the sidebar counts them) or, with `records: true`, the level's own
+`bbox`, and the sidebar counts them; with `levelFilters: true`, for docs
+that carry the level's filter fields (`record_tables`, the Poles of the
+Locations), the sidebar lists the level's filters as the node YAML names
+them for the view, they and the area / plates match and count its docs, and
+it fetches them with `searchParams`) or, with `records: true`, the level's own
 records drawn another way, as Map draws them (`geomag-series`'s Plots): the
 sidebar's filters, area, grid filters and with/without data apply as on
 Summaries, its count is the level's, and it fetches the matches with the
@@ -166,10 +176,19 @@ context's `searchParams` (the level search's request params) from
 on the home and search pages (on the first level offering it; the node YAML's
 `search.quick_launch` can pick and order them), drawn with the sub-tab's
 optional `icon` (an icon-map name; default `chart-line`, Poles uses `globe`).
+The search page's view pads a sub-tab by 1em at each side; `fullWidth: true`
+runs it edge to edge instead (Poles' map and grid, as in its modal tab). A
+contribution modal tab's pane has no padding, so a tab that wants some adds
+its own (Rock Magnetism's `px-3`).
 
 `sidebarFilters(levelName, subTabName, config)` adds filters to the facet
-sidebar after the node's own (`filtersPanel` instead replaces the whole
-sidebar). Each `PluginFilter` names the query-token `fields` it sets, so the
+sidebar (`filtersPanel` instead replaces the whole sidebar). Since 2026-11-23
+they are ordered with the node's own (`lib/pinned-filters.ts`): a node's
+`search.pinned_filters` pins one by its `label` (also its name in the
+"Find a filter" search) or by `plugin:<key>`, and an unpinned one sorts by its
+count, hidden at zero unless applied; `counted: false` (a filter whose first
+field is not a facet, GEOMAGIA's Radius Search) shows no count and sorts after
+the counted ones. Each `PluginFilter` names the query-token `fields` it sets, so the
 sidebar's Clear removes them, and renders from a `PluginFilterContext`: the
 search's `q` and `setQuery`, the `table` its counts are on, `paramsFor(q)`
 (the request params a core facet modal counts with: ranges, bbox, grid
@@ -218,6 +237,12 @@ an echarts option reads `plotColors()` (`@/lib/plot-colors`: text, grid, axis,
 net, surface for marker halos, the node color lightened in dark mode) inside
 `build`, which `EChart` re-runs on a theme switch (a memoized series takes
 `usePlotColors()` as a dependency). Data colors (red/blue series) stay as they are.
+
+Tooltips are the native ones, restyled: set `title=` on an HTML element (or put
+a `<title>` child in an SVG shape) and the app's `TooltipLayer`
+(`@/components/ui/tooltip`) shows it in the theme's colors, flipped or shifted
+to stay inside the viewport. Do not build a tooltip of your own; a plot's rich
+hover box that cannot be a plain text takes `tooltipClass` from the same module.
 
 ## The plugins
 

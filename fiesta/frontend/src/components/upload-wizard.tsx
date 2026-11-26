@@ -23,6 +23,7 @@ import { useAuth } from "../lib/auth";
 import { nodeUrl } from "../lib/base";
 import { useNodeConfig } from "../lib/config";
 import { dataModelQuery, unwrapModel } from "../lib/data-model";
+import { loadColumnHints, rememberColumns, reviewSheet, SOFT_MATCHES } from "../lib/import-review";
 import {
   computeSheet,
   decodeText,
@@ -36,13 +37,16 @@ import {
   type SheetState,
   sheetBlock,
   singleSourceErrors,
+  templateSettings,
 } from "../lib/importer";
 import {
   conversionReportName,
   isLabFormat,
   type LabConversion,
+  type LabFormat,
   type LabFormatKey,
   type LabSettings,
+  labExampleFiles,
   labFormatKey,
   labFormatsQuery,
   labKey,
@@ -64,6 +68,8 @@ import { mayNeedUpgrade, type UpgradeResult, upgradeText } from "../lib/upgrade"
 import { cx, formatBytes } from "../lib/utils";
 import { DataImporter, type TemplateActions } from "./data-importer";
 import { ErrorMessage } from "./error-message";
+import { ImportOverview, type OverviewEntry } from "./import-overview";
+import { LabFormatList } from "./lab-format-list";
 import { LabConversionPanel } from "./lab-format-options";
 import { useLoginModal } from "./login-modal";
 import { Badge } from "./ui/badge";
@@ -480,15 +486,53 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
     enabled: contributionId !== null && phase === "done",
   });
 
-  // Every sheet's import, and the blocks of the ready ones.
+  // Columns this browser remembers the contributor picking in earlier uploads.
+  const nodeKey = config?.key ?? "";
+  const hints = useMemo(() => loadColumnHints(nodeKey), [nodeKey]);
+  // Every sheet's import and its review, and the blocks of the ready ones.
   const imports = useMemo(
     () =>
       files.map((file) =>
-        file.sheets.map((sheet, j) => computeSheet(sheet.rows, file.states[j], model)),
+        file.sheets.map((sheet, j) => computeSheet(sheet.rows, file.states[j], model, hints)),
       ),
-    [files, model],
+    [files, model, hints],
   );
-  const blocks: { table: string; rows: number; text: string }[] = [];
+  const reviews = useMemo(
+    () =>
+      files.map((file, i) =>
+        file.sheets.map((sheet, j) =>
+          reviewSheet(sheet.rows, file.states[j], imports[i][j], model),
+        ),
+      ),
+    [files, imports, model],
+  );
+  const sheetKey = (i: number, j: number) => `${files[i]?.id}:${files[i]?.format}:${j}`;
+  // Cards open once: those needing something start open, the rest closed.
+  const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    setOpenCards((current) => {
+      let changed = false;
+      const next = { ...current };
+      files.forEach((file, i) => {
+        file.sheets.forEach((_, j) => {
+          const k = `${file.id}:${file.format}:${j}`;
+          const review = reviews[i]?.[j];
+          if (review && next[k] === undefined) {
+            next[k] = review.status === "fix" || review.status === "review";
+            changed = true;
+          }
+        });
+      });
+      return changed ? next : current;
+    });
+  }, [files, reviews]);
+  const openCard = (k: string) => {
+    setOpenCards((current) => ({ ...current, [k]: true }));
+    requestAnimationFrame(() =>
+      document.getElementById(`sheet-${k}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+  const blocks: { table: string; rows: number; text: string; file: string }[] = [];
   let nImportErrors = 0;
   files.forEach((file, i) => {
     if (file.error) nImportErrors++;
@@ -498,7 +542,12 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
       nImportErrors += result.nErrors > 0 ? 1 : 0;
       const text = sheetBlock(sheet.rows, file.states[j], result);
       if (text)
-        blocks.push({ table: file.states[j].settings.table_name.trim(), rows: result.nRows, text });
+        blocks.push({
+          table: file.states[j].settings.table_name.trim(),
+          rows: result.nRows,
+          text,
+          file: file.name,
+        });
     });
   });
   const sourceErrors = singleSourceErrors(
@@ -554,6 +603,31 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
       await addFiles([
         { name: exampleName(example), bytes: await exampleBytes(example), format: example.format },
       ]);
+    } catch (err) {
+      setError(err);
+    }
+  };
+
+  // A lab format's example: read like dropped files, so the server's sniffing
+  // picks the format and the files its conversion reads with the first.
+  const tryLabExample = async (format: LabFormat) => {
+    try {
+      await addFiles(await labExampleFiles(format));
+    } catch (err) {
+      setError(err);
+    }
+  };
+
+  const downloadLabExample = async (format: LabFormat) => {
+    try {
+      for (const file of await labExampleFiles(format)) {
+        const url = URL.createObjectURL(new Blob([file.bytes]));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
     } catch (err) {
       setError(err);
     }
@@ -632,6 +706,100 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
       ),
     );
 
+  // Upload-wide shortcuts: accept every suggested (non-exact) match, leave
+  // out every unmatched column.
+  const softAt = (i: number, j: number) => {
+    const r = imports[i][j];
+    return r.inColumnNames
+      .map((_, c) => c)
+      .filter((c) => {
+        const kind = r.matches[c];
+        return (
+          !r.skippedColumns.has(c) && !!kind && SOFT_MATCHES.has(kind) && !!r.outColumnNames[c]
+        );
+      });
+  };
+  const unmatchedAt = (i: number, j: number) => {
+    const r = imports[i][j];
+    const settings = files[i].states[j].settings;
+    const columns = model?.tables[settings.table_name.trim()]?.columns;
+    if (!columns || settings.exclude_table) return [];
+    return r.inColumnNames
+      .map((_, c) => c)
+      .filter((c) => !r.skippedColumns.has(c) && !columns[r.outColumnNames[c] ?? ""]);
+  };
+  const eachSheet = (update: (i: number, j: number, state: SheetState) => SheetState) =>
+    setFiles((current) =>
+      current.map((f, i) => ({ ...f, states: f.states.map((s, j) => update(i, j, s)) })),
+    );
+  const acceptAllSuggestions = () =>
+    eachSheet((i, j, state) => {
+      const targets = [...state.targets];
+      for (const c of softAt(i, j)) targets[c] = imports[i][j].outColumnNames[c];
+      return { ...state, targets };
+    });
+  const leaveOutAllUnmatched = () =>
+    eachSheet((i, j, state) => ({
+      ...state,
+      excludeColumns: [...new Set([...state.excludeColumns, ...unmatchedAt(i, j)])],
+    }));
+  // Sheets laid out alike (the same headers) can take one sheet's settings.
+  const headersKey = (i: number, j: number) => imports[i]?.[j]?.inColumnNames.join("\t") ?? "";
+  const sameHeadersAs = (i: number, j: number) => {
+    const wanted = headersKey(i, j);
+    const found: string[] = [];
+    files.forEach((f, a) => {
+      f.sheets.forEach((_, b) => {
+        if ((a !== i || b !== j) && headersKey(a, b) === wanted) found.push(`${a}:${b}`);
+      });
+    });
+    return found;
+  };
+  const applyToSameHeaders = (i: number, j: number) => {
+    const from = files[i].states[j];
+    const others = new Set(sameHeadersAs(i, j));
+    eachSheet((a, b, state) =>
+      others.has(`${a}:${b}`)
+        ? {
+            ...state,
+            settings: { ...from.settings },
+            targets: [...from.targets],
+            excludeColumns: [...from.excludeColumns],
+            guessed: {},
+            dismissed: [...(from.dismissed ?? [])],
+          }
+        : state,
+    );
+  };
+
+  // Sheets whose columns were set by hand and kept in no template: offered
+  // as templates before continuing.
+  const [templateNames, setTemplateNames] = useState<Record<string, string>>({});
+  const [skipTemplates, setSkipTemplates] = useState(false);
+  const unsavedSheets: { i: number; j: number; label: string }[] = [];
+  files.forEach((file, i) => {
+    file.sheets.forEach((sheet, j) => {
+      const state = file.states[j];
+      const result = imports[i]?.[j];
+      if (!result || state.settings.exclude_table || state.templateId || result.nErrors > 0) return;
+      if (result.matches.includes("manual") || state.excludeColumns.length > 0)
+        unsavedSheets.push({ i, j, label: sheet.label || file.name });
+    });
+  });
+  const saveTemplate = async (i: number, j: number) => {
+    const name = templateNames[sheetKey(i, j)]?.trim();
+    if (!name) return;
+    try {
+      const made = await templateActions.create(
+        name,
+        templateSettings(files[i].states[j], imports[i][j]),
+      );
+      setSheetState(i, j, { ...files[i].states[j], templateId: made.id });
+    } catch (err) {
+      setError(err);
+    }
+  };
+
   const onDrop = (event: DragEvent) => {
     event.preventDefault();
     setDragging(false);
@@ -671,6 +839,8 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
         new Blob([blocks.map((b) => b.text).join("\n>>>>>>>>>>\n")], { type: "text/plain" }),
         "import.txt",
       );
+      // The file each block came from: the server records the rows each original brought in.
+      formData.append("sources", JSON.stringify(blocks.map((b) => b.file)));
       for (const file of files) {
         formData.append("originals", new Blob([file.bytes]), file.name);
         if (file.upgrade?.report_text)
@@ -689,6 +859,20 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
         formData,
         headers,
       });
+      // Columns picked by hand are suggested in this browser's next upload.
+      const picks: { table: string; header: string; column: string }[] = [];
+      files.forEach((file, i) => {
+        file.sheets.forEach((_, j) => {
+          const result = imports[i][j];
+          const table = file.states[j].settings.table_name.trim();
+          result.inColumnNames.forEach((header, c) => {
+            const column = result.outColumnNames[c];
+            if (column && result.matches[c] === "manual" && !result.skippedColumns.has(c))
+              picks.push({ table, header, column });
+          });
+        });
+      });
+      rememberColumns(nodeKey, picks);
       setPhase("processing");
     },
     onError: (err) => {
@@ -711,6 +895,54 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
   const uploadedTables = new Map<string, number>();
   for (const b of blocks) uploadedTables.set(b.table, (uploadedTables.get(b.table) ?? 0) + b.rows);
   const key = config?.key ?? "";
+
+  // The overview's lines, one per sheet of every readable file.
+  const sheetTitle = (i: number, j: number) => {
+    const file = files[i];
+    const label = file.sheets[j]?.label;
+    return file.sheets.length > 1 || (label && file.format === "excel")
+      ? `${file.name} › ${label || `Table ${j + 1}`}`
+      : file.name;
+  };
+  const entries: OverviewEntry[] = [];
+  let nSoft = 0;
+  let nUnmatched = 0;
+  files.forEach((file, i) => {
+    file.sheets.forEach((_, j) => {
+      const result = imports[i]?.[j];
+      const review = reviews[i]?.[j];
+      if (!result || !review) return;
+      const table = file.states[j].settings.table_name.trim();
+      entries.push({
+        key: sheetKey(i, j),
+        title: sheetTitle(i, j),
+        table,
+        known: !!model?.tables[table],
+        result,
+        review,
+      });
+      if (!file.states[j].settings.exclude_table) {
+        nSoft += softAt(i, j).length;
+        nUnmatched += unmatchedAt(i, j).length;
+      }
+    });
+  });
+  const nToFix = entries.filter((e) => e.review.status === "fix").length;
+  const nToReview = entries.reduce((n, e) => n + e.review.nReview, 0);
+  // Files the contributor should read about: unreadable, upgraded with a
+  // guessed version, warnings, errors or blank defaults to choose, or
+  // converted from a lab format with warnings, defaults or hints.
+  const fileProblems = files.filter((f) => {
+    const report = f.upgrade?.report;
+    return (
+      !!f.error ||
+      (!!report &&
+        (report.guessed ||
+          report.defaults.some((d) => d.count > 0) ||
+          report.notes.some((n) => n.level !== "info"))) ||
+      !!f.lab?.notes.some((n) => n.level !== "info" || n.kind !== "converter")
+    );
+  }).length;
 
   return (
     <div className="upload-contribution">
@@ -763,6 +995,17 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                   {key} text files, tab- or comma-delimited tables (.txt, .tsv, .csv) or Excel
                   workbooks (.xlsx, one table per sheet); data model version{" "}
                   {config.data_model_latest}
+                  {labFormats.length > 0 && (
+                    <>
+                      <br />
+                      Lab instrument files too:{" "}
+                      {labFormats
+                        .slice(0, 4)
+                        .map((f) => f.label.replace(/ File\b.*$/, ""))
+                        .join(", ")}
+                      {labFormats.length > 4 && ` and ${labFormats.length - 4} more (see below)`}
+                    </>
+                  )}
                 </span>
               )}
             </button>
@@ -809,6 +1052,17 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                 </div>
               </>
             )}
+            {labFormats.length > 0 && (
+              <>
+                <hr className="my-4 border-gray-200" />
+                <LabFormatList
+                  formats={labFormats}
+                  nodeKey={key}
+                  onTry={tryLabExample}
+                  onDownload={downloadLabExample}
+                />
+              </>
+            )}
             {upgradable && (
               <p className="mt-3 text-[13px] text-gray-600">
                 Files in an older {key} data model version are upgraded to version {latest} as they
@@ -829,6 +1083,18 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
               Reading and translating the {files.length === 1 ? "file" : "files"} for uploading:
             </h3>
             {reading && <Spinner className="h-5 w-5" label="Reading…" />}
+            {!reading && entries.length > 0 && (
+              <ImportOverview
+                entries={entries}
+                nFiles={files.length}
+                fileProblems={fileProblems}
+                onOpen={openCard}
+                onAcceptAll={acceptAllSuggestions}
+                onLeaveOutUnmatched={leaveOutAllUnmatched}
+                nSoft={nSoft}
+                nUnmatched={nUnmatched}
+              />
+            )}
             {files.map((file, i) => (
               <div key={file.id} className="border-t border-gray-200 py-3 first:border-t-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -840,12 +1106,6 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                   <span className="break-all font-bold text-gray-900">{file.name}</span>
                   <Badge>{formatBytes(file.bytes.byteLength)}</Badge>
                   {file.error && <Badge variant="danger">1 Read Error</Badge>}
-                  {(imports[i] ?? []).filter((r) => r.nErrors > 0).length > 0 && (
-                    <Badge variant="danger">
-                      {(imports[i] ?? []).filter((r) => r.nErrors > 0).length} Table(s) With Import
-                      Errors
-                    </Badge>
-                  )}
                 </div>
                 <label className="mt-2 flex items-center gap-2 text-[13px]">
                   <span className="shrink-0 font-semibold text-gray-700">Import File Type</span>
@@ -895,17 +1155,30 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                     {file.error}
                   </p>
                 ) : (
-                  file.sheets.map((sheet, j) => (
-                    <DataImporter
-                      // biome-ignore lint/suspicious/noArrayIndexKey: a file's sheets are positional and re-read together
-                      key={`${file.id}-${file.format}-${j}`}
-                      sheet={sheet}
-                      state={file.states[j]}
-                      onChange={(state) => setSheetState(i, j, state)}
-                      model={model}
-                      templates={templateActions}
-                    />
-                  ))
+                  file.sheets.map((sheet, j) => {
+                    const k = sheetKey(i, j);
+                    const result = imports[i]?.[j];
+                    const review = reviews[i]?.[j];
+                    if (!result || !review) return null;
+                    return (
+                      <DataImporter
+                        key={k}
+                        anchor={`sheet-${k}`}
+                        sheet={sheet}
+                        title={sheetTitle(i, j)}
+                        state={file.states[j]}
+                        onChange={(state) => setSheetState(i, j, state)}
+                        model={model}
+                        templates={templateActions}
+                        result={result}
+                        review={review}
+                        open={openCards[k] ?? false}
+                        onToggle={() => setOpenCards((c) => ({ ...c, [k]: !(c[k] ?? false) }))}
+                        sameHeaders={sameHeadersAs(i, j).length}
+                        onApplyToSameHeaders={() => applyToSameHeaders(i, j)}
+                      />
+                    );
+                  })
                 )}
               </div>
             ))}
@@ -917,13 +1190,65 @@ export function UploadWizard({ initialTarget }: { initialTarget?: number }) {
                 {message}
               </p>
             ))}
-            <div className="mt-4 flex gap-2">
+            {user && !skipTemplates && importReady && unsavedSheets.length > 0 && (
+              <div className="mt-4 rounded-md border border-gray-200 px-3 py-2 text-[13px]">
+                <p className="text-gray-800">
+                  You set columns by hand in{" "}
+                  {unsavedSheets.length === 1 ? "this table" : `${unsavedSheets.length} tables`}.
+                  Save the settings as a template for your next file laid out the same way?
+                </p>
+                {unsavedSheets.map(({ i, j, label }) => {
+                  const k = sheetKey(i, j);
+                  return (
+                    <div key={k} className="mt-1.5 flex flex-wrap items-center gap-2">
+                      <span className="min-w-40 font-semibold text-gray-700">{label}</span>
+                      <Input
+                        aria-label={`Template name for ${label}`}
+                        className="w-56 py-1 text-[13px]"
+                        placeholder="Template name"
+                        value={templateNames[k] ?? ""}
+                        onChange={(event) =>
+                          setTemplateNames((names) => ({ ...names, [k]: event.target.value }))
+                        }
+                      />
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={!templateNames[k]?.trim()}
+                        onClick={() => saveTemplate(i, j)}
+                      >
+                        Save template
+                      </Button>
+                    </div>
+                  );
+                })}
+                <button
+                  type="button"
+                  className="mt-1.5 text-[12px] text-gray-500 underline"
+                  onClick={() => setSkipTemplates(true)}
+                >
+                  No thanks
+                </button>
+              </div>
+            )}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <Button variant="secondary" onClick={reset}>
                 Start over
               </Button>
               <Button onClick={() => setStep(3)} disabled={!importReady || reading}>
                 Continue
               </Button>
+              {!reading && entries.length > 0 && (
+                <span className="text-[13px] text-gray-600">
+                  {nToFix > 0 || sourceErrors.length > 0
+                    ? `Fix ${nToFix + sourceErrors.length} ${
+                        nToFix + sourceErrors.length === 1 ? "table" : "tables"
+                      } to continue.`
+                    : nToReview > 0
+                      ? `${nToReview} ${nToReview === 1 ? "item" : "items"} to review: you can continue without them, and validation runs after the upload.`
+                      : ""}
+                </span>
+              )}
             </div>
           </div>
         )}

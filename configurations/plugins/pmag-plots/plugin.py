@@ -31,11 +31,14 @@ one cached PNG and a count.
 """
 
 import asyncio
+import contextlib
 import gzip
+import io
 import json
 import logging
 import math
 import random
+import warnings
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
@@ -60,6 +63,10 @@ from fiesta.services.contributions import load_file
 PLOT_TYPES = ["eqarea", "zijd", "demag", "arai", "deremag", "hyst"]
 PlotType = Literal["eqarea", "zijd", "demag", "arai", "deremag", "hyst"]
 Kind = Literal["demag", "eqarea", "arai", "hyst"]
+# Served like a kind but only on request (the hysteresis tab's slope-correction
+# switch): each loop takes PmagPy tens of milliseconds, so it is never computed
+# in the background.
+LazyKind = Literal["hystfit"]
 
 logger = logging.getLogger(__name__)
 
@@ -912,6 +919,118 @@ def hysteresis_loops(parsed: ParsedContribution, hierarchy: _Hierarchy) -> list[
     return items
 
 
+# --- hysteresis slope corrections ----------------------------------------------------------
+
+# χHF = slope (per tesla) · μ0, in the unit that follows from the moment's.
+MU_0 = 4 * math.pi * 1e-7
+CHI_UNITS = {"Am²": "m³", "A/m": "SI", "Am²/kg": "m³/kg"}
+# The approach-to-saturation fit's window, as process_hyst_loop calls it.
+NONLINEAR_CUTOFF = 0.6
+
+
+def _stat(value: Any, scale: float = 1.0) -> float | None:
+    number = _finite(value)
+    return None if number is None else _sig(number * scale)
+
+
+def hysteresis_fit(fields: list[float], moments: list[float]) -> dict | None:
+    """One loop (fields in tesla) through PmagPy's `rockmag.process_hyst_loop`
+    steps: gridded, centered and drift-corrected, with both high-field fits
+    the IRM decision tree chooses between: `linear` (χHF·H + Ms over the
+    saturated high-field window) and `nonlinear` (approach to saturation,
+    χHF·H + Ms + a₁/H + a₂/H²). `auto` names the one the tree takes: linear
+    for a saturated loop, nonlinear otherwise, and neither for a statistically
+    linear loop (only χHF is defined) or one still open at the highest fields
+    (Ms and χHF cannot be separated). The functions are called one by one
+    because process_hyst_loop keeps a single fit, prints, and stops at those
+    two exits; a loop PmagPy cannot process has no fit."""
+    from pmagpy import rockmag  # imports matplotlib and scipy: only when asked for
+
+    try:
+        with (
+            warnings.catch_warnings(),
+            contextlib.redirect_stdout(io.StringIO()),
+            np.errstate(all="ignore"),
+        ):
+            warnings.simplefilter("ignore")
+            raw_h, raw_m = rockmag.sanitize_hyst_inputs(fields, moments)
+            descending_first = rockmag.measured_descending_first(raw_h)
+            grid_h, grid_m = rockmag.grid_hyst_loop(raw_h, raw_m)
+            linearity = rockmag.hyst_linearity_test(grid_h, grid_m)
+            centering = rockmag.hyst_loop_centering(grid_h, grid_m)
+            if centering["Q"] < 2:  # too noisy to shift the field
+                h, m = grid_h, grid_m - centering["opt_M_offset"]
+            else:
+                h, m = centering["centered_H"], centering["centered_M"]
+            m = rockmag.Me_drift_correction(h, m, descending_first=descending_first)
+            upper_h, mr, mrh, _mih, me, brh = rockmag.calc_Mr_Mrh_Mih_Brh(h, m)
+            closed = bool(rockmag.loop_closure_test(upper_h, mrh, Me=me)["loop_is_closed"])
+            saturation = rockmag.hyst_loop_saturation_test(h, m)
+            saturated = bool(saturation["loop_is_saturated"])
+            h, m = np.asarray(h, dtype=float), np.asarray(m, dtype=float)
+
+            def fit(chi_hf: float, ms: float, **more: Any) -> dict:
+                bc = rockmag.calc_Bc(h, rockmag.hyst_slope_correction(h, m, chi_hf))
+                item = {
+                    # Per mT, as the loop is plotted.
+                    "slope": _stat(chi_hf / MU_0, 1e-3),
+                    "chi_hf": _stat(chi_hf),
+                    "ms": _stat(ms),
+                    "bc": _stat(bc, 1e3),
+                    **more,
+                }
+                return item if item["slope"] is not None else {}
+
+            cutoff = saturation["saturation_cutoff"] if saturated else 0.8
+            fits = {"linear": fit(*rockmag.linear_HF_fit(h, m, cutoff), cutoff=cutoff)}
+            try:
+                nonlinear = rockmag.hyst_HF_nonlinear_optimization(h, m, NONLINEAR_CUTOFF, "IRM")
+                fits["nonlinear"] = fit(
+                    nonlinear["chi_HF"],
+                    nonlinear["Ms"],
+                    cutoff=NONLINEAR_CUTOFF,
+                    fnl_lin=_stat(nonlinear["Fnl_lin"]),
+                )
+            except Exception:  # the optimizer raises on a window it cannot fit
+                pass
+            fits = {name: item for name, item in fits.items() if item}
+            is_linear = bool(linearity["loop_is_linear"])
+            auto = None if is_linear or not closed else "linear" if saturated else "nonlinear"
+            if not (np.isfinite(h).all() and np.isfinite(m).all()):
+                return None
+            return {
+                "field": [_r(value * 1e3, 3) for value in h],
+                "m": [_sig(value) for value in m],
+                "auto": auto if auto in fits else None,
+                "linear_loop": is_linear,
+                "closed": closed,
+                "saturated": saturated,
+                "chi_hf_loop": _stat(linearity["slope"], MU_0),
+                "q": _stat(centering["Q"]),
+                "mr": _stat(mr),
+                "brh": _stat(brh, 1e3),
+                "fits": fits,
+            }
+    except Exception:  # PmagPy raises on loops it cannot grid, split or fit
+        return None
+
+
+def hysteresis_fits(parsed: ParsedContribution) -> dict[str, dict]:
+    """Each loop's processed data and high-field fits, by `<specimen>:<experiment>`."""
+    fits = {}
+    for specimen, experiment, column, rows in _hysteresis_groups(parsed):
+        fields = [_num(r, "meas_field_dc") or 0.0 for r in rows]
+        # Fields over 5 T are loops recorded in mT (as hysteresis_loops reads them).
+        scale = 1e-3 if max(abs(f) for f in fields) > 5 else 1
+        fit = hysteresis_fit([f * scale for f in fields], [_num(r, column) or 0.0 for r in rows])
+        if fit is not None:
+            fits[f"{specimen}:{experiment}"] = {
+                "chi_unit": CHI_UNITS[MOMENT_COLUMNS[column]],
+                **fit,
+            }
+    return fits
+
+
 # --- all together --------------------------------------------------------------------------
 
 
@@ -929,8 +1048,12 @@ def _counts(demag: int, eqarea: int, arai: int, hyst: int) -> dict[str, int]:
 KINDS: tuple[Kind, ...] = ("demag", "eqarea", "arai", "hyst")
 
 
-def compute_kind(parsed: ParsedContribution, hierarchy: _Hierarchy, kind: Kind) -> dict:
+def compute_kind(
+    parsed: ParsedContribution, hierarchy: _Hierarchy, kind: Kind | LazyKind
+) -> dict:
     """One kind of plot data, as GET /contributions/{id}/{kind} serves it."""
+    if kind == "hystfit":
+        return {"loops": hysteresis_fits(parsed)}
     if kind == "demag":
         return {"net": net(), "specimens": demag_specimens(parsed, hierarchy)}
     if kind == "eqarea":
@@ -1171,11 +1294,11 @@ class _Plots:
     async def _load(self) -> tuple[ParsedContribution, _Hierarchy]:
         return await asyncio.to_thread(_parse, await self._read())
 
-    async def _compute(self, kind: Kind) -> tuple[bytes, bytes]:
+    async def _compute(self, kind: Kind | LazyKind) -> tuple[bytes, bytes]:
         parsed, hierarchy = await self._parsed()
         return await asyncio.to_thread(lambda: encode(compute_kind(parsed, hierarchy, kind)))
 
-    async def _encoded(self, kind: Kind) -> tuple[bytes, bytes]:
+    async def _encoded(self, kind: Kind | LazyKind) -> tuple[bytes, bytes]:
         task = self._kinds.get(kind)
         if task is None:
             task = self._kinds[kind] = asyncio.create_task(self._compute(kind))
@@ -1187,10 +1310,12 @@ class _Plots:
                 del self._kinds[kind]  # retried by the next request
             raise
 
-    async def get(self, kind: Kind) -> tuple[bytes, bytes]:
+    async def get(self, kind: Kind | LazyKind) -> tuple[bytes, bytes]:
         encoded = await self._encoded(kind)
         if self._warming is None:
             self._warming = asyncio.create_task(self._warm())
+        elif self._warming.done():
+            self._release()  # a lazy kind asked for after the warm-up re-read the file
         return encoded
 
     async def _warm(self) -> None:
@@ -1199,7 +1324,10 @@ class _Plots:
                 await self._encoded(kind)
             except Exception:
                 logger.exception("pmag-plots: computing %s in the background failed", kind)
-        if len(self._kinds) == len(KINDS):  # failed kinds were dropped: keep the source
+        self._release()
+
+    def _release(self) -> None:
+        if all(kind in self._kinds for kind in KINDS):  # failed kinds were dropped: keep it
             self._source = None
 
 
@@ -1259,7 +1387,11 @@ class PmagPlotsPlugin(FiestaPlugin):
         return ["pmag_plots"]
 
     def derive_docs(
-        self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
+        self,
+        node: NodeConfig,
+        parsed: ParsedContribution,
+        contribution_meta: dict,
+        records: list[dict] | None = None,
     ) -> list[dict]:
         index = _PlotIndex(parsed)
         counts = index.counts()
@@ -1322,14 +1454,16 @@ class PmagPlotsPlugin(FiestaPlugin):
             session: SessionDep,
             node: NodeDep,
             contribution_id: int,
-            kind: Kind,
+            kind: Kind | LazyKind,
             private_key: str | None = None,
         ) -> Response:
             """One kind of plot data for a contribution: `demag` (steps per
             specimen in each coordinate system, with their fits), `eqarea`
             (interpreted directions per location or site, with Fisher means),
             both with the equal-area net and every position on it; `arai`
-            (paired Thellier steps per specimen) or `hyst` (hysteresis loops)."""
+            (paired Thellier steps per specimen), `hyst` (hysteresis loops) or
+            `hystfit` (each loop gridded, centered and drift-corrected, with its
+            linear and approach-to-saturation high-field fits)."""
             contribution = await load_visible_contribution(
                 session, node, contribution_id, private_key
             )

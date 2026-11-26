@@ -345,6 +345,7 @@ const plugin: PluginModule = {
     return [
       {
         key: "periodic-table",
+        label: options.label,
         fields: [options.column],
         render: (ctx) => <PeriodicTableFilter ctx={ctx} options={options} />,
       },

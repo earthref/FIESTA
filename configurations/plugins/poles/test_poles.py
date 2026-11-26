@@ -5,6 +5,7 @@ import math
 import pytest
 
 from fiesta.domain.parse import parse_text
+from fiesta.domain.summarize import summarize
 from fiesta.plugins import active_plugins
 from fiesta.plugins import poles as poles_module
 from fiesta.plugins.poles import PolesPlugin
@@ -26,11 +27,60 @@ def test_poles_derive_docs(magic_node):
     doc = docs[0]
     assert doc["type"] == "poles"
     assert doc["summary"]["locations"]["pole_lat"] == "78.5"
-    # 260°E normalizes to -100 for the OpenSearch geo_point
-    assert doc["summary"]["_all"]["_geo_point"] == {"lat": 78.5, "lon": -100.0}
+    assert doc["summary"]["poles"] == {"pole_lat": 78.5, "pole_lon": 260.0}
     assert doc["summary"]["_all"]["geologic_classes"] == ["Igneous"]
+    # The doc is positioned where its location is (it has no position here),
+    # never at the pole.
+    assert "_geo_point" not in doc["summary"]["_all"]
     # `alpha95` is not `pole_alpha95`, and there is no dp/dm: no ring.
     assert "_geometry" not in doc["summary"]["poles"]
+    assert "pole_alpha95" not in doc["summary"]["_num"]
+
+
+def test_pole_docs_carry_their_locations_filter_fields(magic_node):
+    """A pole doc matches the Locations level's filters as its location's
+    record doc does: the record's summary._all (text, positions) and
+    summary._has, the row's own numbers and age."""
+    text = (
+        "tab delimited\tcontribution\nid\n99\n>>>>>>>>>>\n"
+        "tab delimited\tlocations\n"
+        "location\tlocation_type\tlat_s\tlat_n\tlon_w\tlon_e\tpole_lat\tpole_lon"
+        "\tpole_alpha95\tage\tage_unit\n"
+        "Hawaii\tOutcrop\t19\t20\t204\t205\t80\t10\t4\t2\tMa\n"
+        "Hawaii\tOutcrop\t19\t20\t204\t205\t70\t20\t12\t\t\n"
+        ">>>>>>>>>>\n"
+        "tab delimited\tsites\n"
+        "site\tlocation\tlat\tlon\tage\tage_unit\n"
+        "S1\tHawaii\t19.5\t204.5\t5\tMa\n"
+    )
+    parsed = parse_text(text)
+    records = summarize(magic_node, parsed, {"id": 99})
+    (location,) = [doc for doc in records if doc["type"] == "locations"]
+    first, second = PolesPlugin().derive_docs(magic_node, parsed, {"id": 99}, records)
+    for doc in (first, second):
+        assert doc["type"] == "poles"
+        assert doc["summary"]["_all"] == location["summary"]["_all"]
+        assert doc["summary"]["_all"]["_geo_point"]
+        assert doc["summary"]["_has"] == location["summary"]["_has"]
+        assert "sites" in doc["summary"]["_has"]
+    # Rows sharing a location name are poles of their own: each its numbers.
+    assert first["summary"]["_num"]["pole_alpha95"] == [4.0]
+    assert second["summary"]["_num"]["pole_alpha95"] == [12.0]
+    assert location["summary"]["_num"]["pole_alpha95"] == [4.0, 12.0]
+    # Its own age, else its location record's intervals (here its row's and its site's).
+    assert first["summary"]["_interval"]["age"]["range"] == [{"gte": 2e6, "lte": 2e6}]
+    assert first["summary"]["poles"]["age"] == 2e6
+    assert second["summary"]["_interval"] == location["summary"]["_interval"]
+    # Without the records, the plugin summarizes the contribution itself.
+    assert PolesPlugin().derive_docs(magic_node, parsed, {"id": 99}) == [first, second]
+    assert PolesPlugin().record_tables(magic_node) == {"poles": "locations"}
+
+
+def test_pole_alpha95_is_indexed_as_the_locations_number_column(magic_node):
+    """The Pole A95 filter's field is the location docs' summary._num column."""
+    (doc,) = _docs(magic_node, {"pole_lat": 78.5, "pole_lon": 260, "pole_alpha95": 3.2})
+    assert doc["summary"]["_num"]["pole_alpha95"] == [3.2]
+    assert "pole_alpha95" not in doc["summary"]["poles"]
 
 
 def test_pole_ages_are_the_nodes_intervals(magic_node):
@@ -102,7 +152,7 @@ def test_alpha95_ring_is_a_circle_of_radius_alpha95(magic_node):
         assert -180 <= lon < 180
         assert _distance(78.5, 260, lat, lon) == pytest.approx(3.2, abs=0.02)
     # The geometry is on the pole block only, never unioned into _all.
-    assert set(doc["summary"]["_all"]) == {"pole_lat", "pole_lon", "_geo_point"}
+    assert "_geometry" not in doc["summary"]["_all"]
 
 
 def test_dp_dm_ring_has_dp_along_the_site_pole_great_circle(magic_node):
@@ -199,7 +249,6 @@ def test_a_pmagpy_failure_only_drops_that_ring(magic_node, monkeypatch):
 def test_out_of_range_pole_latitude_keeps_its_doc_without_ring(magic_node):
     (doc,) = _docs(magic_node, {"pole_lat": 95, "pole_lon": 10, "pole_alpha95": 3})
     assert _geometry(doc) is None
-    assert "_geo_point" not in doc["summary"]["_all"]
 
 
 # --- VGPs ---------------------------------------------------------------------

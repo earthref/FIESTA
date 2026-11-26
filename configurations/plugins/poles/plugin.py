@@ -39,7 +39,7 @@ from pmagpy import pmag
 from pydantic import BaseModel, Field, field_validator
 
 from fiesta.domain.parse import ParsedContribution
-from fiesta.domain.summarize import interval_blocks
+from fiesta.domain.summarize import group_rows, interval_blocks, number_block, summarize
 from fiesta.nodeconfig import NodeConfig, normalize_view
 from fiesta.plugins.base import FiestaPlugin, PluginOptions
 from fiesta.plugins.util import to_float
@@ -212,7 +212,7 @@ class AgeColors(BaseModel):
     selected: str = "#800080"
 
 
-# The columns a pole doc's summary._all carries (the legacy facet columns).
+# The legacy facet columns (the unused `facet_columns` option's default).
 FACET_COLUMNS = [
     "method_codes",
     "geologic_classes",
@@ -253,7 +253,8 @@ class PolesOptions(PluginOptions):
     default_alpha95_max: float | None = Field(
         default=10.0,
         description="An unfiltered Poles view of more than `default_alpha95_above` poles "
-        "opens with a Pole A95 range filter up to this many degrees (null: never)",
+        "opens with the locations' Pole A95 range filter (summary._num.pole_alpha95) up to "
+        "this many degrees (null: never)",
     )
     default_alpha95_above: int = Field(
         default=1000,
@@ -262,8 +263,8 @@ class PolesOptions(PluginOptions):
     )
     facet_columns: list[str] = Field(
         default=FACET_COLUMNS,
-        description="Location columns copied (colon-delimited lists split) into a pole's "
-        "summary._all, for its facets and free-text search",
+        description="Unused: a pole's summary._all is now its location record's (every "
+        "text column). Kept so a node YAML that still lists it loads",
     )
 
     @field_validator("after_sub_tab")
@@ -300,42 +301,52 @@ class PolesPlugin(FiestaPlugin):
     def search_tables(self, node: NodeConfig) -> list[str]:
         return ["poles"]
 
+    def record_tables(self, node: NodeConfig) -> dict[str, str]:
+        return {"poles": "locations"}
+
     def derive_docs(
-        self, node: NodeConfig, parsed: ParsedContribution, contribution_meta: dict
+        self,
+        node: NodeConfig,
+        parsed: ParsedContribution,
+        contribution_meta: dict,
+        records: list[dict] | None = None,
     ) -> list[dict]:
         docs: list[dict] = []
         options = self.options(node)
-        facet_columns = options.facet_columns
+        rows = parsed.tables.get("locations", [])
+        if not any(row.get("pole_lat") and row.get("pole_lon") for row in rows):
+            return docs
+        if records is None:
+            records = summarize(node, parsed, contribution_meta)
+        # Each row's location record doc: the docs are in the records' order.
+        location_docs = [doc for doc in records if doc.get("type") == "locations"]
+        record_of = {
+            id(row): doc
+            for group, doc in zip(group_rows(rows, "location"), location_docs, strict=False)
+            for row in group
+        }
         sites = SiteIndex(parsed.tables.get("sites", []))
-        for row in parsed.tables.get("locations", []):
+        for row in rows:
             pole_lat = _finite(row.get("pole_lat"))
             pole_lon = _finite(row.get("pole_lon"))
             if pole_lat is None or pole_lon is None:
                 continue
-            all_block: dict[str, Any] = {
-                "pole_lat": [str(pole_lat)],
-                "pole_lon": [str(pole_lon)],
-            }
-            for column in facet_columns:
-                if row.get(column):
-                    all_block[column] = [
-                        v.strip() for v in str(row[column]).split(":") if v.strip()
-                    ]
-            if -90 <= pole_lat <= 90:
-                all_block["_geo_point"] = {
-                    "lat": pole_lat,
-                    "lon": ((pole_lon + 180) % 360) - 180,
-                }
-            # Numeric copies (JSON numbers map to numeric OpenSearch fields)
-            # so the alpha95 range filter works; string row values don't. The
-            # age is the node's interval (summary._interval.<name>, in years BP
-            # whatever the age_unit: the Age filter and tile), its best
-            # estimate in summary.poles.age for the color gradient and legend.
+            # A pole is its location seen another way, so its doc has the
+            # location record's filter fields and the Locations level's
+            # filters match both alike: summary._all (the record's text
+            # values, inherited geography and positions: where the location
+            # is, not the pole) and summary._has from the record; summary._num
+            # and the age interval (summary._interval.<name>, in years BP
+            # whatever the age_unit) from this row, as rows sharing a
+            # location name are poles of their own, the record's intervals
+            # (its sites' ages) when the row has no age. The pole's position
+            # and the age's best estimate (the color gradient and legend) are
+            # numbers in summary.poles.
+            record = record_of.get(id(row), {}).get("summary", {})
             numeric_block: dict[str, Any] = {"pole_lat": pole_lat, "pole_lon": pole_lon}
-            alpha95 = _finite(row.get("pole_alpha95"))
-            if alpha95 is not None:
-                numeric_block["pole_alpha95"] = alpha95
             intervals = interval_blocks(node, [row], [options.age_interval])
+            if not intervals and "_interval" in record:
+                intervals = {"_interval": record["_interval"]}
             if age := intervals.get("_interval", {}).get(options.age_interval):
                 numeric_block["age"] = age["mid"]
             # The outline the map draws (unindexed; see the module docstring).
@@ -352,7 +363,9 @@ class PolesPlugin(FiestaPlugin):
                         "contribution": contribution_meta,
                         "locations": dict(row),
                         "poles": numeric_block,
-                        "_all": all_block,
+                        "_all": dict(record.get("_all", {})),
+                        **({"_has": record["_has"]} if "_has" in record else {}),
+                        **number_block(node, "locations", [row]),
                         **intervals,
                     },
                     "rows": [row],
@@ -363,7 +376,7 @@ class PolesPlugin(FiestaPlugin):
     def frontend_config(self, node: NodeConfig) -> dict:
         # The Age / Pole A95 / Geospatial controls on the Poles view are
         # `search.filters` entries in the node YAML (range on
-        # summary.poles.age and summary.poles.pole_alpha95, bbox).
+        # summary._interval.age.range and summary._num.pole_alpha95, bbox).
         return {
             "view": "poles",
             "table": "poles",

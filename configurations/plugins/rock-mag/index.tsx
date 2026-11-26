@@ -58,7 +58,10 @@ const rockMagPlugin: PluginModule = {
         countTable: rconfig.table ?? "rock_mag",
         render: ({ id, privateKey }) => (
           <Suspense fallback={<PageSpinner label="Loading plots…" />}>
-            <RockMagView query="" ranges={[]} contribution={id} privateKey={privateKey} />
+            {/* The modal's tab pane has no padding of its own (the search page's view has 1em). */}
+            <div className="px-3 py-1">
+              <RockMagView query="" ranges={[]} contribution={id} privateKey={privateKey} />
+            </div>
           </Suspense>
         ),
       },

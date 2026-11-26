@@ -94,6 +94,15 @@ export interface HomeNews {
   link: string | null;
 }
 
+/** Filters pinned at the top of the sidebar, in order, on the levels and
+ * views named (backend `PinnedFilters`; empty = any). `filters` are entry
+ * labels or keys ("Age", "Geospatial", "facet:author"). */
+export interface PinnedFilters {
+  levels: string[];
+  views: string[];
+  filters: string[];
+}
+
 /** One filter sidebar control (backend `SearchFilter`). `levels` / `views`
  * empty = shown on every search level / result view. */
 export interface SearchFilter {
@@ -194,6 +203,9 @@ export interface NodeConfig {
   /** The quick-launch buttons by name, in order (node YAML `search.quick_launch`):
    * "Map" and plugin search views; null = Map, then every plugin view. */
   quick_launch?: string[] | null;
+  /** Filters kept at the top of the search sidebar per level and view (node
+   * YAML `search.pinned_filters`; lib/pinned-filters.ts). */
+  pinned_filters?: PinnedFilters[];
   /** Keys of every node the API serves; the portal bar links them to their
    * instances next to this one off the production hosts (lib/portals.ts). */
   deployment_nodes?: string[];
@@ -295,10 +307,19 @@ export interface UserOut {
   id: number;
   email: string;
   name: string;
-  /** Alternative login name (the login form takes an email or a handle). */
+  /** Alternative name for the password (script / HTTP Basic) login. */
   handle: string | null;
+  /** Set by connecting ORCID (or a legacy import), never typed in. */
   orcid: string | null;
-  /** False for an account imported without a password: it sets one without the current one. */
+  first_name: string | null;
+  last_name: string | null;
+  affiliation: string | null;
+  email_verified: boolean;
+  /** What publishing still needs: first_name, last_name, affiliation, verified_email. */
+  profile_missing: string[];
+  /** Connected external sign-ins: google, microsoft, github, orcid. */
+  sign_ins: string[];
+  /** A password for scripts and HTTP Basic; people sign in without one. */
   has_password: boolean;
   /** Super admin: every node, node creation, accounts. */
   is_admin: boolean;
@@ -399,6 +420,8 @@ export interface ContributionVersion {
 export interface ContributionRowStats {
   validated: boolean;
   previous: { id: number; version: number } | null;
+  /** Rows per table of the file (every table it holds, level or not). */
+  rows?: Record<string, number>;
   tables: Record<
     string,
     { errors?: number; warnings?: number; changed?: number; removed?: number }

@@ -326,7 +326,7 @@ filter per column (2026-11-13). A range needs a field
 indexed as a number (row values are text): a data-model number column's
 `summary._num.<column>`, an age interval `summary._interval.<name>.range`
 (a unit conversion's `interval`: matches on overlap, see api.md), or one a
-plugin indexes, e.g. `summary.poles.pole_alpha95`.
+plugin indexes, e.g. `summary.rock_mag.bc`.
 `numeric` picks any other number column, `exists` columns with or without data
 per table (`summary._has.<table>`, see api.md). Each search level's
 Summaries grid is its `columns` (tiles such as `citation`, `counts`, `map`,
@@ -379,6 +379,49 @@ options under `plugins.<name>` (validated against the plugin's `Options`
 model; the Plugins tab of the node admin page switches plugins on and edits
 their options through a form generated from that model's schema) — see
 [plugins.md](plugins.md) for the authoring guide.
+
+### Pinned filters
+
+The search sidebar lists applied filters first, then the rest by how many of
+the search's records have a value, and hides those no record has. A node can
+pin the filters it wants found first with `search.pinned_filters`, a list of
+rules, each the `filters` to pin in order plus the `levels` and `views`
+(result sub-tabs: Summaries, Data, Map, a plugin view) it applies on, empty
+meaning any:
+
+```yaml
+search:
+  pinned_filters:
+    - { filters: [Age, Geospatial, Author, Contributor] }
+    - { levels: [Locations], views: [Poles], filters: [Age, Pole A95, Geospatial] }
+```
+
+- Pinned filters lead the sidebar in the order listed, whatever their counts;
+  one with no values on the current search still shows, disabled. A grey
+  rule separates them from the rest: applied filters, then the others by count
+  (`lib/pinned-filters.ts`).
+- Where several rules match a level and view, the most specific wins: naming
+  views counts 2, naming levels 1, so a level + view rule beats a view rule,
+  which beats a level rule, which beats a rule naming neither. Between equals
+  the first wins. Rules do not merge.
+- A name is a sidebar entry's label as the node spells it (a configured
+  filter's `label`, `Geospatial`, `With Data` / `Without Data`, a data-model
+  column's label for the `numeric` / `text` filters' entries, or a plugin
+  filter's label: KdD's `Periodic Table of Elements`, GEOMAGIA's `Radius
+  Search`), in any case; an entry key such as `facet:author` or
+  `plugin:periodic-table` also works. Unpinned plugin filters sort by count
+  like the rest. A name with no entry on that
+  level and view is skipped, so a rule never invents a filter.
+- The loader refuses an empty `filters`, a blank name, a name twice in one
+  list (in any case) and a level the node does not have; `Rows` is read as
+  `Data`.
+
+The Search Filters admin tab edits the rules under "Pinned at the top", with
+suggestions for the filters (Geospatial, the configured labels, the active
+plugins' filters, With / Without Data, the data model's column labels) and
+views; saving writes
+`search.pinned_filters` only when the rules changed, and removes it when none
+are left.
 
 ## CLI
 

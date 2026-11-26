@@ -7,6 +7,7 @@ import { useNodeConfig } from "../lib/config";
 import { indexVocabularies, parseContribution } from "../lib/contribution-grid";
 import { dataModelQuery, unwrapModel } from "../lib/data-model";
 import type { ContributionOut, ValidationResult, Vocabularies } from "../lib/types";
+import { type AttachmentCard, AttachmentCards } from "./attachment-cards";
 import type { GridApi } from "./contribution-grid";
 import { ErrorMessage } from "./error-message";
 import { Button } from "./ui/button";
@@ -18,7 +19,8 @@ const ContributionGrid = lazy(() =>
   import("./contribution-grid").then((m) => ({ default: m.ContributionGrid })),
 );
 
-type Content = { revision_id: string; text: string };
+/** `revision_id` is null while nothing has been saved (the grid opens empty). */
+type Content = { revision_id: string | null; text: string };
 type Revision = {
   id: string;
   parent_id: string | null;
@@ -26,8 +28,12 @@ type Revision = {
   operation: string;
   files: string[];
 };
-type Attachment = { name: string; size: number };
-type Mode = "grid" | "text";
+type Mode = "grid" | "text" | "attachments";
+const MODE_LABELS: Record<Mode, string> = {
+  grid: "Tables",
+  text: "Text",
+  attachments: "Attachments",
+};
 /** How long the editor waits for the worker to validate a saved revision (3 s polls). */
 const VALIDATION_POLLS = 60;
 
@@ -46,6 +52,8 @@ export function ContributionEditor({
   const [gridSeed, setGridSeed] = useState<string | null>(null);
   const [gridDirty, setGridDirty] = useState(false);
   const [gridKey, setGridKey] = useState(0);
+  // Table or text edits carried while the Attachments tab shows (null: none).
+  const [parked, setParked] = useState<string | null>(null);
   const gridApi = useRef<GridApi | null>(null);
   // A retried save of the same text reuses its idempotency key; new text gets a new one.
   const lastSave = useRef<{ text: string; key: string } | null>(null);
@@ -61,7 +69,7 @@ export function ContributionEditor({
   });
   const files = useQuery({
     queryKey: [base, "attachments"],
-    queryFn: () => api<Attachment[]>(`${base}/attachments`),
+    queryFn: () => api<AttachmentCard[]>(`${base}/attachments`),
   });
   const value = content.data;
   const { data: config } = useNodeConfig();
@@ -104,10 +112,25 @@ export function ContributionEditor({
   const validationPending = validation.data?.length === 0 && polls < VALIDATION_POLLS;
 
   const immutable = !!contribution.published_revision;
-  const dirty = mode === "grid" ? gridDirty : textDraft !== null && textDraft !== value?.text;
+  const changed = (draft: string | null) => draft !== null && draft !== value?.text;
+  const dirty =
+    mode === "grid" ? gridDirty : mode === "text" ? changed(textDraft) : changed(parked);
   const onGridDirty = useCallback((next: boolean) => setGridDirty(next), []);
+  /** The current tab's unsaved contribution text (null: none). */
+  const draft = (): string | null => {
+    const text =
+      mode === "grid"
+        ? gridDirty
+          ? (gridApi.current?.getText() ?? null)
+          : gridSeed
+        : mode === "text"
+          ? textDraft
+          : parked;
+    return changed(text) ? text : null;
+  };
   const discard = () => {
     setTextDraft(null);
+    setParked(null);
     setGridSeed(null);
     setGridDirty(false);
     setGridKey((k) => k + 1);
@@ -134,36 +157,65 @@ export function ContributionEditor({
   };
   const save = () => {
     const text =
-      mode === "grid" ? (gridApi.current?.getText() ?? "") : (textDraft ?? value?.text ?? "");
+      mode === "grid" ? (gridApi.current?.getText() ?? "") : (draft() ?? value?.text ?? "");
     if (lastSave.current?.text !== text) lastSave.current = { text, key: crypto.randomUUID() };
     const requestKey = lastSave.current.key;
     return run(() =>
       api(`${base}/content`, {
         method: "PUT",
-        json: { text, expected_revision: value?.revision_id, request_key: requestKey },
+        json: { text, expected_revision: value?.revision_id ?? null, request_key: requestKey },
       }),
     );
   };
   const switchMode = (next: Mode) => {
     if (next === mode) return;
     setError(null);
-    if (next === "text") {
-      setTextDraft(gridDirty ? (gridApi.current?.getText() ?? null) : gridSeed);
-    } else {
-      if (textDraft !== null && textDraft !== value?.text) {
+    const text = draft();
+    if (next === "text") setTextDraft(text);
+    else if (next === "attachments") setParked(text);
+    else {
+      if (text !== null) {
         try {
-          parseContribution(textDraft);
+          parseContribution(text);
         } catch (e) {
-          setError(new Error(`The text cannot be shown as a grid: ${(e as Error).message}`));
+          setError(new Error(`The text cannot be shown as tables: ${(e as Error).message}`));
           return;
         }
-        setGridSeed(textDraft);
-      } else setGridSeed(null);
+      }
+      setGridSeed(text);
       setGridDirty(false);
       setGridKey((k) => k + 1);
     }
     setMode(next);
   };
+  /** Attaches the files one after another, each against the revision the last made. */
+  const addAttachments = (picked: File[]) =>
+    run(async () => {
+      let revisionId = value?.revision_id ?? null;
+      for (const file of picked) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const saved = await api<ContributionOut>(
+          `${base}/attachments/${encodeURIComponent(file.name)}`,
+          {
+            method: "PUT",
+            formData,
+            headers: {
+              ...(revisionId ? { "If-Match": revisionId } : {}),
+              "Idempotency-Key": crypto.randomUUID(),
+            },
+          },
+        );
+        revisionId = saved.head_revision;
+      }
+    });
+  const removeAttachment = (name: string) =>
+    run(() =>
+      api(`${base}/attachments/${encodeURIComponent(name)}`, {
+        method: "DELETE",
+        json: { expected_revision: value?.revision_id ?? null, request_key: crypto.randomUUID() },
+      }),
+    );
   const close = () => {
     if (dirty && !window.confirm("Discard the unsaved edits?")) return;
     onClose();
@@ -186,7 +238,7 @@ export function ContributionEditor({
       )}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <div className="inline-flex overflow-hidden rounded-md border border-gray-300">
-          {(["grid", "text"] as const).map((m) => (
+          {(["grid", "text", "attachments"] as const).map((m) => (
             <button
               key={m}
               type="button"
@@ -194,15 +246,18 @@ export function ContributionEditor({
               onClick={() => switchMode(m)}
               className={
                 mode === m
-                  ? "bg-node px-3 py-1 text-xs font-semibold text-white"
-                  : "px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                  ? "bg-node px-3 py-1 text-[13px] font-semibold text-white"
+                  : "px-3 py-1 text-[13px] text-gray-700 hover:bg-gray-50"
               }
             >
-              {m === "grid" ? "Grid" : "Text"}
+              {MODE_LABELS[m]}
+              {m === "attachments" && !!files.data?.length && (
+                <span className="ml-1 tabular-nums opacity-80">({files.data.length})</span>
+              )}
             </button>
           ))}
         </div>
-        {dirty && <span className="text-xs font-medium text-purple-700">Unsaved edits</span>}
+        {dirty && <span className="text-[13px] font-medium text-green-700">Unsaved edits</span>}
         <span className="ml-auto flex gap-2">
           <Button disabled={immutable || busy || !dirty} onClick={save}>
             {busy ? "Saving…" : "Save revision"}
@@ -235,6 +290,22 @@ export function ContributionEditor({
             />
           </Suspense>
         )
+      ) : mode === "attachments" ? (
+        <AttachmentCards
+          base={base}
+          cards={files.data}
+          model={model.data}
+          disabled={immutable || busy || !value || dirty}
+          disabledNote={
+            immutable
+              ? "Published files are read-only. Create a new version to change them."
+              : dirty
+                ? "Save or cancel the table edits before adding or removing files."
+                : undefined
+          }
+          onAdd={(picked) => void addAttachments(picked)}
+          onRemove={(name) => void removeAttachment(name)}
+        />
       ) : (
         <>
           <label className="block text-sm font-medium" htmlFor="contribution-text">
@@ -242,58 +313,13 @@ export function ContributionEditor({
           </label>
           <textarea
             id="contribution-text"
-            className="my-2 min-h-[55vh] w-full border border-gray-300 bg-surface p-2 font-mono text-xs"
+            className="my-2 min-h-[55vh] w-full border border-gray-300 bg-surface p-2 font-mono text-[13px]"
             value={textDraft ?? value?.text ?? ""}
             disabled={immutable || busy || !value}
             onChange={(e) => setTextDraft(e.target.value)}
           />
         </>
       )}
-      <h3 className="mt-4 font-semibold">Attachments</h3>
-      <input
-        type="file"
-        aria-label="Add attachment"
-        disabled={immutable || busy || !value || dirty}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file || !value) return;
-          const formData = new FormData();
-          formData.append("file", file);
-          void run(() =>
-            api(`${base}/attachments/${encodeURIComponent(file.name)}`, {
-              method: "PUT",
-              formData,
-              headers: { "If-Match": value.revision_id, "Idempotency-Key": crypto.randomUUID() },
-            }),
-          );
-        }}
-      />
-      <ul>
-        {files.data?.map((file) => (
-          <li key={file.name} className="my-2 flex items-center gap-2">
-            <span>
-              {file.name} ({file.size} bytes)
-            </span>
-            <Button
-              variant="secondary"
-              disabled={immutable || busy || dirty}
-              onClick={() =>
-                run(() =>
-                  api(`${base}/attachments/${encodeURIComponent(file.name)}`, {
-                    method: "DELETE",
-                    json: {
-                      expected_revision: value?.revision_id,
-                      request_key: crypto.randomUUID(),
-                    },
-                  }),
-                )
-              }
-            >
-              Remove
-            </Button>
-          </li>
-        ))}
-      </ul>
       <h3 className="mt-4 font-semibold">Saved revisions</h3>
       <ul>
         {history.data?.map((revision) => (
@@ -309,7 +335,7 @@ export function ContributionEditor({
                   api(`${base}/revisions/${revision.id}/restore`, {
                     method: "POST",
                     json: {
-                      expected_revision: value?.revision_id,
+                      expected_revision: value?.revision_id ?? null,
                       request_key: crypto.randomUUID(),
                     },
                   }),
@@ -342,7 +368,6 @@ export function ContributionEditor({
               </span>
               <Button
                 variant="danger"
-                size="sm"
                 disabled={busy}
                 onClick={async () => {
                   if (await run(() => api(`${base}/deactivate`, { method: "POST" }))) {
@@ -355,7 +380,6 @@ export function ContributionEditor({
               </Button>
               <Button
                 variant="secondary"
-                size="sm"
                 disabled={busy}
                 onClick={() => setConfirmUnpublish(false)}
               >
@@ -363,7 +387,7 @@ export function ContributionEditor({
               </Button>
             </div>
           ) : (
-            <Button variant="danger" size="sm" onClick={() => setConfirmUnpublish(true)}>
+            <Button variant="danger" onClick={() => setConfirmUnpublish(true)}>
               Unpublish
             </Button>
           )}

@@ -70,7 +70,7 @@ def test_magic_seed_poles(magic_node):
         assert docs and all(doc["type"] == "poles" for doc in docs)
         for doc in docs:
             assert doc["summary"]["_all"]["_geo_point"]
-            assert doc["summary"]["poles"]["pole_alpha95"] > 0
+            assert doc["summary"]["_num"]["pole_alpha95"][0] > 0
             ages.add(doc["summary"]["poles"]["age"])
     assert len(ages) >= 2
 
@@ -159,7 +159,7 @@ async def test_local_login_signs_in_developer(monkeypatch, seeded):
         value.scalar_one_or_none.return_value = user
         return value
 
-    developer = SimpleNamespace(id=123)
+    developer = SimpleNamespace(id=123, profile_missing=[])
     session = AsyncMock()
     lookups = [result(developer)] if seeded else [result(None), result(developer)]
     session.execute.side_effect = lookups
@@ -198,6 +198,11 @@ def _modes(monkeypatch, *modes):
 
     monkeypatch.setattr(auth, "ensure_unique_user_fields", unique)
 
+    async def identities(session, user_id):
+        return []
+
+    monkeypatch.setattr(auth.sign_in, "identities", identities)
+
 
 @pytest.mark.asyncio
 async def test_account_edits_own_fields(monkeypatch):
@@ -208,38 +213,35 @@ async def test_account_edits_own_fields(monkeypatch):
 
     _modes(monkeypatch, "public")
     user = _account(handle="old", orcid="0000-0002-1825-0097")
-    payload = AccountPatchIn(name=" New Name ", email="New@Example.org", handle="", orcid=None)
-    out = await update_me(payload, user, AsyncMock())
-    assert (out.name, out.email, out.handle, out.orcid) == (
-        "New Name",
-        "new@example.org",
-        None,
-        None,
-    )
+    out = await update_me(AccountPatchIn(name=" New Name ", handle=""), user, AsyncMock())
+    assert (out.name, out.handle, out.orcid) == ("New Name", None, "0000-0002-1825-0097")
     assert out.has_password
+    assert out.profile_missing == ["first_name", "last_name", "affiliation", "verified_email"]
+    # With first and last names, the display name follows them.
+    payload = AccountPatchIn(first_name=" Ada ", last_name="Lovelace", affiliation="Scripps")
+    out = await update_me(payload, user, AsyncMock())
+    assert (out.name, out.first_name, out.affiliation) == ("Ada Lovelace", "Ada", "Scripps")
+    assert out.profile_missing == ["verified_email"]
+    # The email and ORCID iD are not self-edited here (email-change, connect ORCID).
+    assert "email" not in AccountPatchIn.model_fields and "orcid" not in AccountPatchIn.model_fields
 
 
 @pytest.mark.asyncio
 async def test_account_email_change_refused_while_a_node_syncs(monkeypatch):
     from unittest.mock import AsyncMock
 
-    from fiesta.apps.routers.auth import update_me
-    from fiesta.apps.schemas import AccountPatchIn
+    from fiesta.apps.routers import auth
+    from fiesta.apps.schemas import EmailChangeIn
 
     _modes(monkeypatch, "public", "source")
-    user = _account()
+    monkeypatch.setattr(auth, "checked_return", lambda url: url)
+    payload = EmailChangeIn(email="new@example.org", return_to="http://local/MagIC/account")
     with pytest.raises(HTTPException) as err:
-        await update_me(AccountPatchIn(email="new@example.org"), user, AsyncMock())
+        await auth.email_change(payload, _account(), AsyncMock())
     assert err.value.status_code == 409 and "N1" in err.value.detail
-    # The unchanged address (any case) and the other fields still save.
-    payload = AccountPatchIn(email="OLD@example.org", name="Renamed")
-    out = await update_me(payload, user, AsyncMock())
-    assert (out.email, out.name) == ("old@example.org", "Renamed")
 
 
-@pytest.mark.parametrize(
-    "fields", [{"handle": "a@b"}, {"handle": "x"}, {"orcid": "1234"}, {"name": ""}]
-)
+@pytest.mark.parametrize("fields", [{"handle": "a@b"}, {"handle": "x"}, {"name": ""}])
 def test_account_patch_rejects_bad_fields(fields):
     from pydantic import ValidationError
 

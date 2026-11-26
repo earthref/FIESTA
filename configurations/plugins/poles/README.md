@@ -49,15 +49,26 @@ a row's first click selects its pole (drawn on top of the others, the map
 turning or panning to centre it), and a
 second click on the selected row opens its contribution on the location row.
 The map is never taller than it is wide, leaving the grid at least two rows.
-The Age / A95 / Geospatial filters are `search.filters` entries; a search
-page arriving on the view with no filters and more than
+A pole is its location seen another way, so its doc has the location
+record's filter fields (`record_tables`: `poles` → `locations`) and the Poles
+view is a `levelFilters` tab: its sidebar lists the Locations level's filters
+(the node YAML's `search.filters` with `Poles` among their `views`:
+Publication Year, Age, every number and text column, With / Without Data) and
+the level's Geospatial filter (the area and the present-day plates: where the
+location is, not where the pole is), which stay applied across the level's
+views and count poles here. The doc takes `summary._all` and `summary._has`
+from its location's record doc, `summary._num` and the age interval from its
+own row (rows sharing a location name are poles of their own), and the
+record's intervals (its sites' ages) when the row has no age. Pole A95 is
+the locations' `pole_alpha95` number column (`summary._num.pole_alpha95`). A
+search page arriving on the view with no filters and more than
 `default_alpha95_above` poles sets the Pole A95 filter to ≤
 `default_alpha95_max`° once (clearing it shows every pole).
 
 Options: `display_columns`, `base_level`, `after_sub_tab`, `age_color`,
 `plate_boundary_color`, `default_alpha95_max` (10; null for no default
-filter), `default_alpha95_above` (1000), `facet_columns` (the location
-columns a pole doc's `summary._all` carries, lists split).
+filter), `default_alpha95_above` (1000), `facet_columns` (unused: a pole
+doc's `summary._all` is its location record's; kept so older YAML loads).
 
 The plate boundaries are the platform's (`GET /v2/basemap/plates`, every map's
 plates toggle); the Poles map turns them on by default, in `plate_boundary_color`.

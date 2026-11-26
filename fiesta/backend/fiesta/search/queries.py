@@ -28,10 +28,12 @@ CONTRIBUTION_TERMS = {
     "doi": "summary.contribution._reference.doi.raw",
     "contributor": "summary.contribution._contributor.raw",
     "orcid": "summary.contribution._reference.authors._orcid.raw",
+    # The reference's authors as cited ("A. Koppers"): every node's Author filter.
+    "author": "summary.contribution._reference.authors._name.raw",
 }
 # The contribution-block terms a facet filter can be on (every node's
-# Contribution ID and Contributor filters); never the private key.
-CONTRIBUTION_FACETS = {"id", "contributor", "doi", "orcid"}
+# Contribution ID, Contributor and Author filters); never the private key.
+CONTRIBUTION_FACETS = {"id", "contributor", "doi", "orcid", "author"}
 # Search doc fields no search response returns.
 PRIVATE_SOURCE = ["summary.contribution._private_key"]
 # Date fields: a range filter's bounds and histogram are epoch milliseconds.

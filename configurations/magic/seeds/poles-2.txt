@@ -7,6 +7,6 @@ location	location_type	geologic_classes	lithologies	age_unit	lat_s	lat_n	lon_w	l
 Synthetic Iceland lava flows pole example 2	Outcrop	Igneous	Basalt	Ma	63	66	335	345	-60	35	8	120
 >>>>>>>>>>
 tab delimited	sites
-site	location	citations	geologic_types	geologic_classes	lithologies	age_unit	lat	lon	method_codes
-DEMO2-01	Synthetic Iceland lava flows pole example 2	This study	Lava Flow	Igneous	Basalt	Ma	64.5	340.0	LP-DC3:SM-VSM
-DEMO2-02	Synthetic Iceland lava flows pole example 2	This study	Lava Flow	Igneous	Basalt	Ma	64.6	340.1	LP-DC3
+site	location	citations	geologic_types	geologic_classes	lithologies	age	age_unit	lat	lon	method_codes
+DEMO2-01	Synthetic Iceland lava flows pole example 2	This study	Lava Flow	Igneous	Basalt	0.5	Ma	64.5	340.0	LP-DC3:LP-HYS
+DEMO2-02	Synthetic Iceland lava flows pole example 2	This study	Lava Flow	Igneous	Basalt	0.5	Ma	64.6	340.1	LP-DC3

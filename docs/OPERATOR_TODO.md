@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-11-16
+Last updated: 2026-11-24
 
 ## A — Decisions
 
@@ -115,11 +115,51 @@ Last updated: 2026-11-16
       Safe with bearer tokens and no cookies. Unblocks: B2.
 - [ ] **EZID account** for DOI minting (username/password names TBD when C1 is built).
       Unblocks: C1 live path.
-- [ ] **ORCID API client** (client id/secret, redirect URI per host). Unblocks: C2.
+- [ ] **Sign-in origins on dev (2026-11-24)**: set
+      `FIESTA_SIGN_IN_ORIGINS='["https://dev.earthref.org"]'` on the dev API host.
+      Sign-in links and provider hand-offs only return to `api.site_url`
+      (earthref.org), CORS origins and these, so without it every sign-in on dev
+      answers 422. Production needs nothing (earthref.org is `api.site_url`).
+- [ ] **Sign-in apps (2026-11-24)** for passwordless sign-in (C2). Until these
+      exist only emailed links are offered, which needs working `FIESTA_SMTP_*` on
+      dev and production (the API sends sign-in links itself, not the worker).
+      Register one OAuth app per provider and set its pair on the API host:
+      - Google (Cloud console, OAuth client "Web application"):
+        `FIESTA_GOOGLE_CLIENT_ID` / `FIESTA_GOOGLE_CLIENT_SECRET`.
+      - Microsoft (Entra ID app registration, account types "any organizational
+        directory and personal Microsoft accounts", Web platform):
+        `FIESTA_MICROSOFT_CLIENT_ID` / `FIESTA_MICROSOFT_CLIENT_SECRET`. In Token
+        configuration add the optional ID-token claims `email`, `given_name`,
+        `family_name` and `xms_edov`. Without `xms_edov`, work and school accounts
+        cannot sign up directly (their email is not trusted); they sign in by
+        email first and connect Microsoft.
+      - GitHub (OAuth App, not a GitHub App): `FIESTA_GITHUB_CLIENT_ID` /
+        `FIESTA_GITHUB_CLIENT_SECRET`. GitHub takes one callback URL: use the
+        host root (`https://earthref.org/`); any path below it is accepted.
+      - ORCID (public API client; replaces the old ORCID item):
+        `FIESTA_ORCID_CLIENT_ID` / `FIESTA_ORCID_CLIENT_SECRET`
+        (`FIESTA_ORCID_URL=https://sandbox.orcid.org` to test on a sandbox client).
+      Redirect URI to register with each: `<base>/auth/oauth/<provider>/callback`,
+      where `<base>` is `FIESTA_OAUTH_REDIRECT_BASE` if set (recommended: one fixed
+      value per host, e.g. `https://earthref.org/MagIC/v2` and
+      `https://dev.earthref.org/MagIC/v2`), otherwise the public `/v2` root of the
+      node the person signs in from (one URI per node prefix). Unblocks: C2.
+- [ ] **Decision (2026-11-24): existing accounts' profiles.** Legacy-synced accounts
+      get first/last names from `er_users` (and an affiliation where one exists), but
+      most have no affiliation or verified email, so they finish their profile on
+      first publication. Confirm that is acceptable, or ask for a bulk email
+      telling contributors before the cutover.
 - [ ] (Optional, 2026-09-27) Grant the OpenSearch `fiesta` role
       `indices:data/read/scroll/clear`. The search map scrolls its points and the role
       may not clear a scroll (403). The API now ignores that, and each context expires
       after 1 minute, so the map works without it; the grant only frees contexts sooner.
+      Since 2026-11-23 the map scrolls only past 10,000 docs and stops trying to clear
+      after the first refusal.
+- [ ] (Optional, 2026-11-23) If the API logs `index stats refused (indices:monitor/stats)`,
+      grant the `fiesta` role `indices:monitor/stats` on the node indices. The map caches
+      its points until the index changes, read from index stats; without them cached maps
+      expire after 60 s instead, so a newly published contribution can take a minute to
+      appear on the public map.
 
 ## C — Data
 
@@ -148,6 +188,25 @@ Last updated: 2026-11-16
       References grid sorted by MagIC, rows with a count above 1. Versions whose parent is
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
+
+## 2026-11-20 — MagIC 3.0 pole reliability columns (MagIC issue #634)
+
+- [ ] **Add the new columns to the live Meteor `magic` index mapping, then deploy
+      MagIC.** The index is `dynamic: "strict"`, so once Meteor runs the new
+      model (MagIC PR #638), a contribution that uses a new column fails to
+      index until the mapping has it. From a checkout of that PR's branch:
+      `npm run -s data-model:mapping -- --base origin/master > mapping.json`,
+      then `curl -X PUT "$OPENSEARCH/magic/_mapping" -H 'Content-Type: application/json' --data-binary @mapping.json`
+      (if `magic` is an alias, aim at the concrete index behind it). It adds 11 fields under
+      `summary.{locations,sites,specimens,_all}`: the four #634 columns plus the seven
+      added on `main` in September–October, which are re-sent unchanged if they are
+      already mapped. No reindex is needed. FIESTA needs nothing: its mapping is
+      dynamic and its model was updated in the same change.
+- [x] **Data model sheet: set Type = String** for the three `*_criteria` columns.
+      Done 2026-11-20. Still open there: the examples `101101` (`pole_vv_q_criteria`,
+      7 criteria) and `011001` (`pole_bc_q_criteria`, 5 criteria) have the wrong
+      length; 3.0.js keeps `0101101` and `11001`, so `data-model:build --check`
+      reports those two until the sheet matches.
 
 ## 2026-11-17 — Core row ids (row numbers and /<Node>/<id>.<row_id> links)
 
@@ -299,6 +358,28 @@ configurations/rd/README.md.
   the rebuild, docs indexed before the deploy keep the old intervals (the Age filter
   can match a KArAr contribution by a stray step age, and histograms reach below zero).
   Production needs the same rebuild at cutover. Claude needs nothing after this.
+
+## 2026-11-18 — Pole A95 filter on the locations' column
+
+- [x] **Rebuild the MagIC search index on dev** (done 2026-11-19 from the laptop, on
+  PR #274's code: 7,698 contributions, 8,489,023 docs, about 8 hours, no bulk call
+  retried; the alias `fiesta-magic` is on `fiesta-magic-build-0547657ae1ca48169e8ae9baa9e10a31`,
+  and all 1,436 pole docs with an A95 carry `summary._num.pole_alpha95`) once the "Poles view: the Locations
+  level's filters" PR has deployed (`make fiesta ENV_FILE=.env.prod NODE=magic ARGS="rebuild --yes"`;
+  one rebuild also covers the open MagIC items above). Pole docs now carry their
+  location's filter fields (`summary._num`, `_all`, `_has`, positions), which those
+  indexed before the deploy do not have. Until the rebuild the Poles view's filters
+  match and count no such pole, and since an unfiltered Poles view of more than 1,000
+  poles opens on Pole A95 ≤ 10°, the view opens empty (clearing the filter shows the
+  poles). Two rebuilds from the laptop on 2026-11-19 (PR #268's code) failed on a 10 s
+  OpenSearch bulk timeout about ten minutes in, leaving the live index as it was; the
+  same PR raises the bulk timeout to 120 s. Production needs the same rebuild at cutover.
+- [ ] **Decide what to do with the two unaliased MagIC indices on the dev cluster**:
+  `fiesta-magic-build-338271b603be4f59993151820cacdb0a` (created 2026-10-01, 9.2 GB) and
+  `fiesta-magic-build-223703d4316e421e8a3d0bcd8cc865d4` (11.8 GB, the live index until
+  the 2026-11-19 rebuild). A rebuild moves the alias and keeps the index it replaced, so
+  each one leaves about 11 GB behind; both have the live index's doc count, and deleting
+  them frees the space (the second is the only way back to the pre-rebuild index).
 
 ## 2026-11-13 — dev host unresponsive
 

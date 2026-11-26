@@ -34,11 +34,38 @@ All endpoints return JSON unless noted. Errors follow
 
 Two schemes are accepted; the private routes take either.
 
-- **Bearer token** — `POST /v2/auth/login` (OAuth2 password form) returns a
-  HS256 JWT; send it as `Authorization: Bearer <jwt>`. This is what the SPA uses.
+- **Bearer token** — a HS256 JWT, sent as `Authorization: Bearer <jwt>`. People
+  get one by signing in **without a password** (`fiesta.services.sign_in`):
+  - *Emailed link*: `POST /v2/auth/email-link` mails a one-time link (15 min,
+    `FIESTA_SIGN_IN_LINK_MINUTES`) back to the page it was asked from, with the
+    secret in the URL fragment (`#fiesta_link=…`); `POST /v2/auth/email-link/verify`
+    redeems it. The first use creates the account; every use verifies the address.
+  - *External account* (Google, Microsoft, GitHub, ORCID; each offered once its
+    `FIESTA_<PROVIDER>_CLIENT_ID`/`_SECRET` are set): `POST /v2/auth/oauth/{p}/start`
+    gives the provider URL; the provider returns to `/v2/auth/oauth/{p}/callback`,
+    which redirects to the starting page with a 2-minute hand-off code
+    (`#fiesta_login=…&nonce=…`, or `#fiesta_login_error=…`) for `POST /v2/auth/exchange`.
+    The SPA keeps the nonce in `sessionStorage` and ignores results from flows it
+    did not start. A first sign-in joins the account with the same email only
+    when the provider vouches for it (Google `email_verified`; a Microsoft
+    personal account or `xms_edov`; a GitHub verified email; an ORCID public
+    verified email) and creates an account only from such an address; ORCID also
+    matches `users.orcid`. Anything else signs in by email first and connects
+    the provider from the account page (`link: true`).
+
+  `return_to` must be a page on a configured origin: `api.site_url`'s, a
+  `FIESTA_CORS_ORIGINS` one, or a `FIESTA_SIGN_IN_ORIGINS` one (a copy of the site
+  on another host, e.g. `["https://dev.earthref.org"]`); never the request's
+  `Host`, which would let a forged header mail someone a link to another site. `POST /v2/auth/login` (OAuth2 password form) remains for
+  scripts and service accounts (data-source syncs, `e2e.sh`); the SPA never offers it.
 - **HTTP Basic** — EarthRef account email or handle + password. Kept for legacy
   `api.earthref.org` clients; the legacy routes accept Basic only, while the
   shared private-workspace routes accept either scheme.
+
+**Publication profile.** Publishing (`POST .../activate`) needs the
+contributor's first name, last name, affiliation and a verified email; until
+then it answers 409 naming what is missing. `UserOut.profile_missing` lists the
+same (`first_name`, `last_name`, `affiliation`, `verified_email`).
 
 ## Node-less routes
 
@@ -46,14 +73,22 @@ Two schemes are accepted; the private routes take either.
 |---|---|---|---|
 | GET | `/v2/health-check` | — | `{status, database, search, storage, repositories}` |
 | GET | `/v2/authenticate` | Basic | `UserOut` (legacy Basic check) |
-| POST | `/v2/auth/register` | — | `UserOut` (201); body `{email, password, name}`, password ≥ 8 chars |
-| POST | `/v2/auth/login` | — | `{access_token, token_type: "bearer"}`; OAuth2 password form (`username`, `password`) |
-| GET | `/v2/auth/me` | Bearer/Basic | `UserOut` |
+| GET | `/v2/auth/providers` | — | `{providers: [{id, name}], email_link: true}`: the external sign-ins configured here |
+| POST | `/v2/auth/email-link` | — | 202 `{sent: true}`; body `{email, return_to}`; mails a one-time sign-in link (also signs up); the answer never says whether the account exists; at most 5 per address per link lifetime (more are silently dropped); 503 when SMTP fails |
+| POST | `/v2/auth/email-link/verify` | — | `{access_token, ...}`; body `{token}` (the link's secret); 400 when expired or used. Creates the account on first use, marks the email verified, and applies an email change |
+| POST | `/v2/auth/oauth/{provider}/start` | —/Bearer | `{url}` to send the browser to; body `{return_to, nonce, link}` (`link: true` connects the provider to the signed-in account; 401 without one); 404 for a provider not configured |
+| GET | `/v2/auth/oauth/{provider}/callback` | — | 303 to `return_to#fiesta_login=<code>&nonce=…` or `#fiesta_login_error=<message>&nonce=…`; 400 page for an expired or foreign `state`. Each provider app registers `<FIESTA_OAUTH_REDIRECT_BASE or the public /v2 root>/auth/oauth/<provider>/callback` |
+| POST | `/v2/auth/exchange` | — | `{access_token, ...}`; body `{token, nonce}` (the callback's hand-off code, single use, 2 minutes, and the nonce `start` was given). The account is linked or created here, never at the callback, so a flow finished in someone else's browser attaches nothing; 400 with the reason (an unverified email, an identity linked elsewhere, a wrong nonce, which also spends the code) |
+| DELETE | `/v2/auth/identities/{provider}` | Bearer/Basic | 204; disconnects that provider (the emailed link always remains) |
+| POST | `/v2/auth/email-change` | Bearer/Basic | 202; body `{email, return_to}`; mails a confirmation link to the new address, which becomes the account's (verified) when the link is redeemed; 409 when another account has it or while any served node is in data-source mode; 429 after 5 links |
+| POST | `/v2/auth/login` | — | `{access_token, token_type: "bearer"}`; OAuth2 password form (`username`, `password`), for scripts and service accounts |
+| GET | `/v2/auth/me` | Bearer/Basic | `UserOut` (with `first_name`, `last_name`, `affiliation`, `email_verified`, `profile_missing`, `sign_ins`) |
 | GET | `/v2/auth/settings` | Bearer/Basic | the account's settings JSON object |
 | PUT | `/v2/auth/settings` | Bearer/Basic | saved settings (body is a JSON object, capped at 16 KiB) |
-| PATCH | `/v2/auth/me` | Bearer/Basic | `UserOut`; body any of `{name, email, handle, orcid}` (the user's own account; `""`/`null` clears a handle or ORCID; handle `[A-Za-z0-9_.-]{2,64}`, ORCID `0000-0000-0000-000X`); 409 on a value another account has, and on an email change while any served node is in data-source mode (legacy sync matches owners by email) |
-| POST | `/v2/auth/password` | Bearer/Basic | 204; body `{current_password, new_password}` (≥ 8 chars); 403 when the account has a password and `current_password` does not match |
+| PATCH | `/v2/auth/me` | Bearer/Basic | `UserOut`; body any of `{first_name, last_name, affiliation, handle, name}` (the user's own account; `""`/`null` clears one; handle `[A-Za-z0-9_.-]{2,64}`); with both first and last names the display `name` becomes "first last". The email changes through `/email-change`, the ORCID iD only through connecting ORCID (or an admin); 409 on a handle another account has |
+| POST | `/v2/auth/password` | Bearer/Basic | 204; body `{current_password, new_password}` (≥ 8 chars); 403 when the account has a password and `current_password` does not match. The password serves scripts and HTTP Basic only |
 | POST | `/v2/auth/local-login` | — | `{access_token, ...}` or `null` — signs in `developer@example.test` only against local dev infrastructure, first creating the seed manifest's accounts on an unseeded stack (`null` elsewhere) |
+| POST | `/v2/contact` | —/Bearer | 202 `{sent: true}`; body `{name, email, subject?, message, page?, repository?, screenshot?, website?}`: the "Having trouble? Email Us" form, mailed to `contact_email` (default webmaster@earthref.org) as `[<repository> Help] <subject>` with the sender as Reply-To, the page, browser and account, and `screenshot` (a PNG/JPEG/WebP data URL, ≤ 6 MB) attached; `website` is a honeypot (filled ⇒ dropped, still 202); 429 past 5 per sender or 60 per API process an hour; 503 when SMTP fails |
 | GET | `/v2/basemap/{world\|arctic}` | — | JPEG: Esri Ocean as a 1024×512 plate carrée world image (blank past ±85.05°) and its Arctic band; fetched from Esri once a day and cached in the API process, for the result thumbnails |
 | GET | `/v2/basemap/moon` | — | JPEG: the Moon (LROC WAC) as a 1024×512 plate carrée image, pole to pole, from USGS Astrogeology's WMS; cached the same way, for the thumbnails of records on the Moon |
 | GET | `/v2/portal/users` | — | `{nodes, total, users: [{id, name, handle, orcid, counts, total}]}`: every user with a public contribution (activated, latest, not deleted) and how many they have per node; no email. Query `q` (every word in name/handle/ORCID), `sort` (`total`, a node slug, `name`, `handle`, `orcid`), `order` (`asc`\|`desc`), `offset`, `limit` (≤ 1000, default 100). The portal's Users page |
@@ -62,6 +97,7 @@ Two schemes are accepted; the private routes take either.
 | GET | `/v2/portal/references/{doi}` | — | one cached DOI's `{reference, abstract?, openalex?, citations_by_year?, topics?, keywords?, open_access?}` (see "Search & retrieval", `summary.contribution._reference`); 404 until fetched. The contribution panel's Reference section |
 | GET | `/v2/basemap/undersea-features` | — | GeoJSON `FeatureCollection` of the IHO-IOC GEBCO Gazetteer of Undersea Feature Names (NOAA NCEI's feature service), each `{name, kind: point\|line\|area}` with areas reduced to their middle point; fetched once a day and cached, for the Map tab's labels |
 | GET | `/v2/basemap/plates` | — | GeoJSON `FeatureCollection` of Earth's present-day tectonic plates (Bird 2003, PB2002: 52 plates), each `{code, name}`, its polygons split at the antimeridian and closed over a pole where they circle one; served from the repo (`fiesta/backend/fiesta/data/plates.json`) with `Cache-Control: no-cache` and an ETag of its content (304 to a matching `If-None-Match`), so a changed file reaches browsers at once, for every map's plate boundaries and the Geospatial filter's plates |
+| GET | `/v2/basemap/provinces` | — | GeoJSON `FeatureCollection` of the `plate_block` vocabulary's cratons, blocks and terranes that have a present-day outline (Hasterok et al. 2022's geologic provinces, Zenodo 10.5281/zenodo.6586972, CC-BY-4.0), each `{code, name, sources}`: `name` the vocabulary term, `code` its lower-case slug (`kaapvaal-craton`), `sources` the provinces and province groups it unites (`fiesta/scripts/province_terms.json`, built by `fiesta/scripts/provinces.py`); served and revalidated like the plates (`fiesta/backend/fiesta/data/provinces.json`), for the Geospatial filter's cratons and blocks |
 | GET | `/v2/seo/head/{path}` | — | HTML fragment for the SPA shell's `<head>` (nginx SSI, `fiesta.apps.routers.seo`): `<title>`, description, canonical link and Open Graph tags for the SPA path as requested (`/MagIC/20907`, `/MagIC/search?contribution=20907`, `/MagIC/about`), plus JSON-LD: a public contribution's `Dataset` (as `/contributions/{id}/jsonld`), a node home's `DataCatalog`; `<meta name="robots" content="noindex">` off the `api.site_url` host and for private, unknown or account pages. Always 200 |
 | GET | `/v2/seo/body/{path}` | — | HTML fragment inside the shell's root element: the same page as plain HTML for crawlers that run no JavaScript (a contribution's summary, a content page's text without markup, a node's links); React replaces it on start |
 | GET | `/v2/robots.txt` | — | robots.txt (served at `/robots.txt`): crawlers and AI crawlers allowed, account routes disallowed, every served node's sitemap listed; `Disallow: /` off the `api.site_url` host |
@@ -174,7 +210,8 @@ after its YAML is merged and deployed, because the frontend is built per node.
 | GET | `/v2/{repository}/config/vocabularies/suggested` | same shape |
 | GET | `/v2/{repository}/config/vocabularies/plugins` | the `cv()` lists active plugins supply (method codes): `{<name>: {label, case_insensitive, items: [{item, label}]}}`, `label` = the item's definition or null; the grid editor's pulldowns |
 | POST | `/v2/{repository}/upgrade` | JSON `{text, unknown_columns?: keep\|drop, renames?: {"table.column": name}, defaults?: {key: bool}}` → `{upgraded, from_version, to_version, guessed, text, report, report_text}`: contribution text in an older data-model version upgraded to the latest (`fiesta.domain.upgrade` + the active plugins' `upgrade_steps`), or `upgraded: false` (text and report null) when it is already in the latest version or in none the node knows. The version is the contribution table's `data_model_version`/`magic_version`, else guessed from the tables and columns. `report`: `{steps, notes: [{level, kind, message, step, table, column, to, count}], defaults: [{key, label, on, count, step}], rows_in, rows_out}` — kinds `renamed`, `merged`, `dropped_column`, `dropped_value`, `dropped_row`, `dropped_table`, `unknown_column`, `unknown_table`, `converted`, `conversion`, `merged_rows`, `collision`, `version`. Columns and tables the old model does not define are kept under their own names unless `unknown_columns` is `drop`; `renames` apply before upgrading (`""` drops a column); `defaults` switches the old model's blank defaults. Stateless (nothing is stored) but a contributor action: Bearer or Basic auth (401 without), the body capped at the upload limit (`FIESTA_MAX_UPLOAD_BYTES`, 512 MiB like the SPA's nginx; 413 over it, by `Content-Length` before reading or while a chunked body streams), and the conversion runs in a worker thread; 422 when the text does not parse |
-| GET | `/v2/{repository}/import-formats` | → `[{key, label, description, extensions, multi_file, plugin, options_schema}]`: file formats the active plugins convert to the node's text format in the upload page's import step (`FiestaPlugin.import_formats`, `fiesta.services.import_formats`; MagIC's lab instrument formats are the `pmag-lab-formats` plugin). `options_schema` is the format's options model's JSON schema (an enum may carry `x-enum-labels`). Public |
+| GET | `/v2/{repository}/import-formats` | → `[{key, label, description, extensions, multi_file, example, plugin, options_schema}]`: file formats the active plugins convert to the node's text format in the upload page's import step (`FiestaPlugin.import_formats`, `fiesta.services.import_formats`; MagIC's lab instrument formats are the `pmag-lab-formats` plugin). `options_schema` is the format's options model's JSON schema (an enum may carry `x-enum-labels`); `example` the names of its example files (the one read as the format first), or `[]`. Public |
+| GET | `/v2/{repository}/import-formats/{key}/example/{name}` | → one of a format's example files (`application/octet-stream`), which the upload page's Step 1 offers to try or download. 404 for a format the node does not have or a name not in its `example`. Public |
 | POST | `/v2/{repository}/import-formats/sniff` | JSON `{files: [{name, head}]}` (`head`: the file's first 16 KB, base64; up to 1000 files) → `{auto_pick, files: [{name, format, confidence, companion_of}]}`: per file, the format most sure of it (`confidence` 0–1; the import step picks it at `auto_pick`, 0.8, or more) and, for a file a confident multi-file format reads with another (a CIT `.sam` file's specimen files), that file's name. Public; capped at 24 MB |
 | POST | `/v2/{repository}/import-formats/{key}/convert` | JSON `{files: [{name, data}], options?}` (`data` base64; the file read as this format first, then the companions it reads; `options`: only those the contributor set) → `{format, label, plugin, files, tool: {name, version, function}, options, options_set, text, tables: {table: rows}, hierarchy: [{table, count}], notes: [{level, kind, message, count}], report_text}`: the files converted in a temporary directory, in a worker thread; `text` is the node's multi-table text the import step reads as its sheets, `hierarchy` the row counts of the node's hierarchy tables, `notes` kinds `converter` (what the converter printed), `default` (an option left at a default that shapes the result), `hint` (e.g. every specimen its own sample and site), and `report_text` the report the upload page keeps beside the originals (`<name>-conversion-report.txt`). Stateless but a contributor action: Bearer or Basic auth (401 without), capped at the upload limit (413), 404 for a format the node does not have, 422 for options that do not fit the schema or a failed conversion (the detail names the converter's error and first warnings) |
 
@@ -204,6 +241,10 @@ after its YAML is merged and deployed, because the frontend is built per node.
     {"type": "facet", "field": "method_codes", "label": null, "levels": [], "views": ["Summaries", "Data"], "unit": null, "scale": 1.0, "min": null, "max": null},
     {"type": "range", "field": "summary.poles.age", "label": "Age", "levels": ["Locations"], "views": ["Poles"], "unit": "Ma", "scale": 1000000.0, "min": null, "max": null},
     {"type": "bbox", "field": null, "label": "Geospatial", "levels": ["Locations"], "views": ["Poles"], "unit": null, "scale": 1.0, "min": null, "max": null}
+  ],
+  "pinned_filters": [
+    {"levels": [], "views": [], "filters": ["Age", "Geospatial", "Author", "Contributor"]},
+    {"levels": ["Locations"], "views": ["Poles"], "filters": ["Age", "Pole A95", "Geospatial"]}
   ],
   "map_colors": [
     {"label": "Age", "field": "age", "unit": "Ma", "scale": 1000000.0, "log": true, "tables": ["locations", "sites"]}
@@ -241,7 +282,20 @@ restricted to the search `levels` and result `views` (Summaries, Data, a plugin
 tab) it names, empty meaning all (a legacy `Rows`, the Data view's name until
 2026-11-16, is read and served as `Data`). `facets` lists the facet filters' fields (what
 `facets=true` aggregates; the pre-2026-09 YAML key `search.facets` still loads as
-facet filters). `map_colors` are the node YAML's `search.map_colors`, what the
+facet filters).
+
+`pinned_filters` are the node YAML's `search.pinned_filters`: the filters the
+sidebar keeps at its top, in order, whatever their counts (one with no values
+shows, disabled). Each rule applies on the `levels` and `views` it names (empty:
+any; `Rows` is read as `Data`); where several match, the SPA takes the most
+specific (naming views counts 2, naming levels 1) and the first of equals. A
+name matches a sidebar entry's label or key in any case ("Age", "Geospatial",
+"With Data", a data-model column's label, a plugin filter's label such as
+"Periodic Table of Elements"); one matching none is skipped. The
+loader refuses an empty `filters`, a blank name, a name twice in one list (in
+any case) and a level the node does not have.
+
+`map_colors` are the node YAML's `search.map_colors`, what the
 Map tab's "Color by" menu offers (as `color_by` on `/search/{table}/points`) on
 the levels whose table is in `tables`; `field` is a column or a `summary.*`
 path, and a value / `scale` is what the legend shows. `bodies` are the planetary
@@ -274,9 +328,9 @@ needs `publish.api`.
 
 | Method | Path | Query params | Returns |
 |---|---|---|---|
-| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet, a text column of the level (the `text` filter's), or a facet of the level's grid columns, else 422; `id` and `contributor` aggregate the contribution block's `summary.contribution.id` / `_contributor.raw`, keys always strings), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `plate` (repeatable plate code from `/v2/basemap/plates`, e.g. `PA`: a position on any of them; with `bbox`, both apply; unknown codes 422), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below), `source` (repeatable `summary.<block>.<name>`, 1–50: each result holds only those fields, for a view paging through thousands of matches) | `SearchPage` |
+| GET | `/v2/{repository}/search/{table}` | `query` (free text / `term:"value"` tokens), `size` (default 10, 1–1000), `from`, `facets` (bool), `facet` (repeatable column: aggregate these instead of the sidebar's facets — a sidebar facet, a text column of the level (the `text` filter's), or a facet of the level's grid columns, else 422; `id`, `contributor` and `author` aggregate the contribution block's `summary.contribution.id` / `_contributor.raw` / `_reference.authors._name.raw`, keys always strings), `facet_size` (values per facet, default 100, 1–2000; a filter modal asks for the whole list), `range` (repeatable `field:gte:lte`), `bbox` (`minLon,minLat,maxLon,maxLat`), `plate` (repeatable, or comma separated: a plate code from `/v2/basemap/plates`, e.g. `PA`, or a province code from `/v2/basemap/provinces`, e.g. `kaapvaal-craton`, or a lasso drawn on the Geospatial filter's map, inline as `lasso:<lon>_<lat>~<lon>_<lat>~…` (3–200 vertices in drawing order, each edge the shorter way round in longitude; one circling a pole is closed over the nearer pole, one across the antimeridian is split there; one that crosses itself 422): a position on any of them; with `bbox`, both apply; unknown codes 422), `sort` (see below), `filter` (repeatable `<column>:<text>`, see below), `has` (repeatable `[!]<table>:<column>`, see below), `contribution` + `private_key?` (see below), `mine?` / `versions?` (scope, see below), `totals` (bool, see below), `source` (repeatable `summary.<block>.<name>`, 1–50: each result holds only those fields, for a view paging through thousands of matches) | `SearchPage` |
 | GET | `/v2/{repository}/search/{table}/extent` | `query`, `range`, `filter`, `has`, `contribution`, `private_key?`, `mine?` / `versions?` | `{total, bounds?, center?}`: where the matches with a position on Earth are, without fetching them: `bounds` `[west, south, east, north]` (a geo_bounds; west is east of east across the antimeridian) and `center` `[lon, lat]`, the centroid of the busiest zoom-4 geotile (~22.5°); both absent when none is positioned; 404 for a level without positions (the Geospatial filter's default area, at most 20° each way) |
-| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` |
+| GET | `/v2/{repository}/search/{table}/points` | `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` (as above), `color_by?` | `MapPoints` — a public search's response (no `mine`, no private key) is kept per API process until the node's index changes (its name, index/delete totals and refreshes; `fiesta.search.cache`), or 60 s where the role may not read index stats |
 | GET | `/v2/{repository}/search/{table}/values` | `field` (repeatable, 1–50, `summary.<block>.<name>`), `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` | `SearchValues` |
 | GET | `/v2/{repository}/search/{table}/histogram` | `field` (a numeric `summary.<block>.<name>`, else 422), `bins` (1–200; default from how many values there are, 2·n^⅓ between 10 and 100), `log` (bool), `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` | `SearchHistogram` |
 | GET | `/v2/{repository}/search/{table}/numbers` | `query`, `range`, `bbox`, `plate`, `filter`, `has`, `contribution`, `private_key?` | `{total, columns: {<column>: n}}` — the level's number columns (`summary._num.<column>`, data-model order) and how many matches have a value of each, zeros included (the `numeric` filter's column picker) |
@@ -290,7 +344,7 @@ needs `publish.api`.
 | GET | `/v2/{repository}/llms.txt` | | llms.txt (served at `/<Key>/llms.txt`, `text/markdown`): what the node holds, how many public contributions, how to search, download and read them through the API, its data model and pages |
 | GET | `/v2/{repository}/contributions/{id}/jsonld` | `private_key?` | the contribution as a schema.org `Dataset` (`application/ld+json`, after Science-on-Schema.org; `fiesta.domain.jsonld`): `@id`/`url` its landing page `<api.site_url>/<Key>/<id>`, the DOI `<doi.prefix>/<id>` (activated only), creators with ORCIDs and the cited article from the reference, keywords from vocabulary columns, `spatialCoverage` (bounding box + points), `temporalCoverage` (years BP), `variableMeasured` (data-model label/unit, min/max from `summary._num`), provider/license from the node YAML's `jsonld` block, `funding` (MonetaryGrants) from its `jsonld.funding_column`, the download under the proxy's `X-Forwarded-Prefix`, and what active plugins add (`FiestaPlugin.jsonld`; method-codes: `measurementTechnique` as defined terms); the contribution modal's admin-only JSON-LD tab, and the contribution page's head (`/v2/seo/head`) |
 | GET | `/v2/{repository}/contributions/{id}/versions` | `private_key?` | the `previous_id` chain, oldest first: every published version plus this one — `[{id, version, data_model_version, timestamp, contributor, is_activated, is_latest}]` |
-| GET | `/v2/{repository}/contributions/{id}/rows` | `private_key?` | per-table row stats — `{validated, previous: {id, version} \| null, tables: {<table>: {errors?, warnings?, changed?, removed?}}}`: distinct rows the current revision's validation flagged, and rows added/edited (`changed`) or dropped (`removed`) since the previous published version, ignoring the stamped `row_id`/`contribution_id` (the contribution modal's level-tab badges) |
+| GET | `/v2/{repository}/contributions/{id}/rows` | `private_key?` | per-table row stats — `{validated, previous: {id, version} \| null, rows: {<table>: n}, tables: {<table>: {errors?, warnings?, changed?, removed?}}}`: `rows` counts the file's rows in every table it holds (the modal's tabs for tables no search level indexes), distinct rows the current revision's validation flagged, and rows added/edited (`changed`) or dropped (`removed`) since the previous published version, ignoring the stamped `row_id`/`contribution_id` (the contribution modal's level-tab badges) |
 | GET | `/v2/{repository}/contributions/{id}/tables/{table}` | `private_key?`, `sort?` (`<column>:asc\|desc`), `from?`, `size?` (≤1000, default 100) | one page of a data-model table of the contribution's current file, in file order or sorted over the whole table (numbers numerically, blanks last) — `{total, columns, validated, column_issues: {<column>: {severity, messages}}, rows: [{row, values, issues: {<column> \| "": {severity: error\|warning, messages}}}]}`; `row` is the 1-based position in the file's table that validation issues name, `""` an issue on the whole row (the contribution modal's level tabs; 404 for a table not in the data model, no rows for a file without it) |
 | GET | `/v2/{repository}/contributions/{id}/tables/{table}/locate` | `values` (a row as a JSON object), `private_key?` | where a search doc's row sits in the file's table — `{row}`, the 1-based position of the first row whose named columns all equal `values` as text (blank matching blank), or null (the search page's Data grid opening the modal on that row) |
 | GET | `/v2/{repository}/contributions/{id}/rows/{row_id}` | `private_key?` | where a persistent row link points — `{table, row}`: the table holding the row with that core `row_id` and its 1-based position there; 404 when no row has it. Every row of a contribution outside its `contribution` table has a core `row_id`, 1..N across the file in file order, whatever its data model declares (`ParsedContribution.row_ids`): table pages return it per row (`row_id`), search docs' `rows` carry it, and `stamp_ids` writes the same number where the data model has a `row_id` column. The SPA's `/<Node>/<id>.<row_id>` (a row) and `/<Node>/<id>.<row_id>.<column>` (a data point: that row's column) open the modal's level tab on the row, the column's cell outlined; the Data grid and the modal's level tabs show each row's number, `<id>.<row_id>`, as a button that copies that link |
@@ -318,7 +372,10 @@ table.
 `summary._all.<column>.raw` exactly, `||` OR-ing values within a token and
 tokens AND-ed; a value with a `*` is a wildcard matched ignoring case
 (`site_name:"*kenya*"`, a name containing "kenya"; not on the contribution-block
-terms `id`, `doi`, `contributor`, `orcid`, `private_key`).
+terms `id`, `doi`, `contributor`, `orcid`, `author`, `private_key`). `author`
+(2026-11-23) is the contribution's reference authors as cited
+(`summary.contribution._reference.authors._name.raw`, `author:"A. Koppers"`),
+every node's Author filter.
 `radius:"<lat>,<lon>,<km>"` (2026-11-14) matches docs with a position
 (`summary._all._geo_point`) within that great-circle distance of the centre
 (OpenSearch arc distance, capped at π·6371 km; longitude −360..360, wrapped);
@@ -622,28 +679,29 @@ tab-delimited) and set those columns to Text instead of double-clicking it.
 | POST | `` | | `ContributionOut` (201; allocates `id` + `private_key`) |
 | GET | `/{id}` | | `ContributionOut` |
 | PUT | `/{id}/file` | multipart `file`; headers `Idempotency-Key` (required), `If-Match` (revision; omit only for the first upload) | `ContributionOut` (stores file, enqueues processing). A file in an older data-model version is stored upgraded to the latest (as `POST /upgrade`, undefined columns kept), with the file as uploaded and `upgrade-report.txt` as attachments |
-| POST | `/{id}/import` | multipart `data` (contribution text, one block per imported sheet, as the upload page converts it) + `originals` (0..n files as uploaded); headers `Idempotency-Key` (required), `If-Match` (the revision the upload was prepared against; omit only for the first upload) | `ContributionOut`. The upload page's save: values are normalised against the latest data model (Integer `3.0` → `3`; controlled-vocabulary terms re-cased, a one-letter typo corrected when unambiguous, `t`/`1`/`yes` → `True` in a True/False vocabulary), each table it brings **replaces** that table of the contribution and the others are kept (in `workspace.table`, the contribution's workspace fields and `reference` survive where the upload leaves them blank), and the originals become attachments of the new revision (`original-<name>` when one is named like the canonical file). Text in an older data-model version is upgraded first and `upgrade-report.txt` joins the attachments (the upload page upgrades as it reads a file and sends the report as an original). 422 when the text does not parse, has no rows, or brings a `upload.single_source_tables` table from two sheets; 409 when `If-Match` is not the head |
+| POST | `/{id}/import` | multipart `data` (contribution text, one block per imported sheet, as the upload page converts it) + `originals` (0..n files as uploaded) + `sources` (optional JSON list: the original each block of `data` was converted from, in block order); headers `Idempotency-Key` (required), `If-Match` (the revision the upload was prepared against; omit only for the first upload) | `ContributionOut`. The upload page's save: values are normalised against the latest data model (Integer `3.0` → `3`; controlled-vocabulary terms re-cased, a one-letter typo corrected when unambiguous, `t`/`1`/`yes` → `True` in a True/False vocabulary), each table it brings **replaces** that table of the contribution and the others are kept (in `workspace.table`, the contribution's workspace fields and `reference` survive where the upload leaves them blank), and the originals become attachments of the new revision (`original-<name>` when one is named like the canonical file), each with `origin` `upload` and, from `sources`, the rows per table it brought in (none are attributed when `sources` does not match the blocks). Text in an older data-model version is upgraded first and `upgrade-report.txt` joins the attachments (the upload page upgrades as it reads a file and sends the report as an original). 422 when the text does not parse, has no rows, or brings a `upload.single_source_tables` table from two sheets; 409 when `If-Match` is not the head |
 | POST | `/{id}/validate` | | `{job_id}` (async validation; a Postgres outbox event id) |
 | GET | `/{id}/validation` | | `ValidationResult` (404 if never validated) |
 | PUT | `/{id}/reference` | `{doi, expected_revision, request_key}` | `ContributionOut` (a DOI the registries did not know is asked for again) |
 | GET | `/{id}/reference` | | `{doi, status: none\|ok\|not_found\|error, citation, title}`: whether the DOI resolves at Crossref/DataCite, asked now when the cache does not know |
 | GET | `/{id}/fields` | | `{column: cell}` for the node's `workspace.fields`, from the canonical file's `workspace.table` (`""` when empty) |
 | PUT | `/{id}/fields` | `{values: {column: cell}, expected_revision, request_key}` | `ContributionOut` (sets those columns in the canonical file as a new revision; 422 for a column not in `workspace.fields`; unpublished only) |
-| POST | `/{id}/activate` | | `ContributionOut` (publishes; requires `status=ready`, passing validation and, with `workspace.require_reference`, a DOI that resolves). Who may: see [Publishing a new version](#publishing-a-new-version); 403 for anyone else ("an admin has to approve this version"); 409 when another version of the same predecessor was published first. Publishing someone else's draft keeps them its contributor and emails them |
+| POST | `/{id}/activate` | | `ContributionOut` (publishes; requires `status=ready`, passing validation, the contributor's complete publication profile (first and last name, affiliation, verified email; 409 naming what is missing) and, with `workspace.require_reference`, a DOI that resolves). Who may: see [Publishing a new version](#publishing-a-new-version); 403 for anyone else ("an admin has to approve this version"); 409 when another version of the same predecessor was published first. Publishing someone else's draft keeps them its contributor and emails them |
 | POST | `/{id}/deactivate` | | `ContributionOut` (unpublishes; node admins only, 403 otherwise: contributors correct published data with a new version) |
 | PUT | `/{id}/name` | `{name}` | `ContributionOut` (the contributor's label, legacy `_name`; any version, published too; saves no revision; empty clears it) |
 | DELETE | `/{id}` | | 204 (private, unactivated only) |
 | GET | `/{id}/download` | `revision_id?`, `compress?`, `original?` | the canonical file (`text/plain`, `Content-Disposition: attachment` with its name) for anyone who may open the contribution here, prepared and labelled like the public download ([Downloads](#downloads)); 404 before the first upload |
 | PUT | `/{id}/contributor` | `{user}` (email or handle, any case, `@` optional) | `ContributionOut` (reassigns a private contribution: its contributor or a node admin only, 403 for a shared workspace's editor; 404 for an unknown account, 409 if published or already theirs; records a `reassign` audit event and re-indexes, no revision) |
-| GET | `/{id}/content` | `revision_id?` | `{revision_id, text}` (canonical file text) |
+| GET | `/{id}/content` | `revision_id?` | `{revision_id, text}` (canonical file text; `{revision_id: null, text: ""}` while nothing has been saved, so the editor opens an empty grid) |
 | PUT | `/{id}/content` | `{text, expected_revision, request_key}` | `ContributionOut` (JSON edit) |
 | GET | `/{id}/revisions` | | revision history `[{id, parent_id, actor_id, operation, created_at, files}]` |
 | POST | `/{id}/revisions/{revision_id}/restore` | `{expected_revision, request_key}` | `ContributionOut` |
 | GET | `/{id}/revisions/{revision_id}/validation` | | validation reports recorded against that revision |
-| GET | `/{id}/attachments` | | `[{name, size, sha256}]` (non-canonical files) |
+| GET | `/{id}/attachments` | | `[{name, size, sha256, kind, origin, added_at, rows, referenced, locked}]`: the non-canonical files of the head revision (`fiesta.services.attachments`). `kind` image\|svg\|pdf\|text\|spreadsheet\|archive\|other (from the extension); `origin` `upload` (kept by the upload tool: an original or its upgrade/conversion report), `attachment` (added through PUT below) or null (written before origins were recorded, or by a legacy import or /v1); `rows` `{table: n}` the rows an upload-tool original brought in; `referenced` `{table: n}` the rows of the canonical text with a cell naming the file (the whole value, or after `/`, `:` or a space; case-insensitive); `locked` why it cannot be removed (an upload-tool file, or a referenced one), else null |
 | GET | `/{id}/attachments/{name}` | `revision_id?` | file bytes (`application/octet-stream`) |
-| PUT | `/{id}/attachments/{name}` | multipart `file`; `Idempotency-Key` + `If-Match` headers | `ContributionOut` |
-| DELETE | `/{id}/attachments/{name}` | `{expected_revision, request_key}` | `ContributionOut` |
+| GET | `/{id}/attachments/{name}/thumbnail` | `revision_id?`, `sha?` (a cache key: the response is `immutable`) | a WebP of at most 320 px a side of an image or a PDF's first page, rendered on request and never stored; 404 for other kinds, files over 64 MB, or files that cannot be drawn |
+| PUT | `/{id}/attachments/{name}` | multipart `file`; `Idempotency-Key` + `If-Match` headers | `ContributionOut`; recorded with `origin` `attachment`. 409 for the canonical file's name or an upload-tool file's |
+| DELETE | `/{id}/attachments/{name}` | `{expected_revision, request_key}` | `ContributionOut`; 409 when the file is `locked`, 404 when there is none of that name |
 | POST | `/{id}/versions` | | `ContributionOut` (201; the caller's private draft of the next version). Anyone signed in, from the latest version of a published contribution; those who may save the original also from a withdrawn one, and their draft joins its shared workspace and keeps its name. 409 when a later version exists, 404 for a private contribution the caller cannot save |
 
 ```json
@@ -751,7 +809,9 @@ exclude_table}`.
 
 ### Workspaces (`/v2/{repository}/workspaces`, Bearer or Basic)
 
-Shared workspaces: owners control membership, editors save, viewers read.
+Shared workspaces: owners control membership, editors save, viewers read. In
+data-source mode the list still answers and every write (POST, PUT, DELETE) is a
+409 naming where to contribute, as under `private/contributions`.
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
@@ -764,7 +824,8 @@ Shared workspaces: owners control membership, editors save, viewers read.
 ### Data-source sync (`/v2/{repository}/source`, node admin)
 
 A node in data-source mode (`FIESTA_CONTRIBUTIONS_MODE`, `contributions_mode` in
-its config) refuses every write under `private/contributions` with a 409 and is
+its config) refuses every write under `private/contributions`, `private/requests`
+and `workspaces` with a 409 and is
 fed by its sync script instead. Details: [data-sources.md](data-sources.md).
 
 | Method | Path | Body | Returns |

@@ -77,14 +77,28 @@ search:
   # `numeric`: each number column as a range; `exists`: With / Without Data),
   # found with the sidebar's filter search (2026-11-13).
   filters:
+    # The legacy KdD sidebar's Publication Year. Its other facets (rock types,
+    # minerals, Kd definition and types) are data-model text columns, which
+    # the `text` filter lists one by one.
+    - { type: range, label: Publication Year, field: summary.contribution._reference.year }
     - { type: text, label: Text }
     - { type: numeric, label: Numeric }
     - { type: exists, label: With / Without Data }
-    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, timestamp).
+    # Every node's contribution filters (the contribution block's id, reference DOI, contributor, reference authors, timestamp).
     - { type: facet, field: id, label: Contribution ID }
     - { type: facet, field: doi, label: Contribution DOI }
     - { type: facet, field: contributor, label: Contributor }
+    - { type: facet, field: author, label: Author }
     - { type: range, field: summary.contribution.timestamp, label: Contributed On, date: true }
+  # Filters kept at the top of the sidebar, in this order, whatever their
+  # counts (one with no values shows disabled); the rest follow by count. A
+  # rule's `levels` / `views` (empty = any) say where it applies; the most
+  # specific matching rule wins. Names are sidebar labels as spelled above,
+  # or a plugin filter's label (the periodic table's `label` option, by
+  # default Periodic Table of Elements);
+  # one with no filter is skipped.
+  pinned_filters:
+    - { filters: [Periodic Table of Elements, Publication Year, Author, Contributor] }
 
 storage:
   bucket: kdd

@@ -11,7 +11,7 @@
 // - ExistsModal: the `exists` filter's columns with data (With Data) or
 //   without (Without Data), a tab per table the level's records cover.
 // - GeoModal: the geospatial area on the search's map, with its bounds as numbers,
-//   and the tectonic plates picked from a list.
+//   and the tectonic plates, cratons, blocks and terranes picked from lists.
 //
 // Each edits a draft and applies it with Apply, so a long list keeps its order
 // while values are picked and the search runs once.
@@ -44,8 +44,10 @@ import {
 } from "../lib/utils";
 import { type FacetValueDescription, usePluginFacetDescriptions } from "../plugins";
 import { type BrushRange, EChart, type EChartsOption } from "./echart";
+import { isLasso } from "./map/lasso";
+import type { GeoTool } from "./map/map-mode";
 import { type Area, WHOLE_GLOBE } from "./map/map-points";
-import { usePlates } from "./map/plates";
+import { isPlate, isProvince, regionLabel, usePlates, useProvinces } from "./map/plates";
 import { type AreaRequest, SearchMap } from "./map/search-map";
 import {
   ANY_TABLE,
@@ -1258,6 +1260,15 @@ const areaOf = (b: Bounds): Area | null => {
   return [west, south, east, north];
 };
 
+// What the map's Lasso, Plates and Blocks tools do.
+const TOOL_HINTS: Record<Exclude<GeoTool, "box">, string> = {
+  lasso:
+    "Drag on the map to draw around the records you want; a new lasso replaces the last one, or hold Shift to add another.",
+  plates: "Click present-day plates on the map to select or deselect them (Bird 2003).",
+  blocks:
+    "Click cratons, blocks and terranes on the map to select or deselect them (Hasterok et al. 2022).",
+};
+
 /**
  * The geospatial area: its bounds as numbers, or present-day plates picked
  * from a list instead (`plates`, the level's area, not a plugin view's bbox:
@@ -1301,8 +1312,7 @@ export function GeoModal({
   const byPlates = draftPlates.length > 0;
   const [draft, setDraft] = useState<Area | null>(byPlates ? null : area);
   const plateList = usePlates(plates !== undefined);
-  const plateName = (code: string) =>
-    plateList.data?.plates.find((plate) => plate.code === code)?.name ?? code;
+  const provinceList = useProvinces(plates !== undefined);
   const [bounds, setBounds] = useState<Bounds>(boundsOf(draft));
   const [request, setRequest] = useState<AreaRequest | null>(
     !area && !plates?.length && level.geo ? {} : null,
@@ -1316,6 +1326,27 @@ export function GeoModal({
   const addPlate = (code: string) => {
     setDraftPlates([...draftPlates, code]);
     fromMap(null);
+  };
+  // What the map's drags and clicks do: opened on the kind of outline the
+  // filter has (a lasso, then plates, then blocks), else the box.
+  const [tool, setTool] = useState<GeoTool>(() =>
+    draftPlates.some(isLasso)
+      ? "lasso"
+      : draftPlates.some(isPlate)
+        ? "plates"
+        : draftPlates.some(isProvince)
+          ? "blocks"
+          : "box",
+  );
+  // Back to the box with nothing chosen, the default area is drawn again.
+  const changeTool = (next: GeoTool) => {
+    setTool(next);
+    if (next === "box" && !draft && draftPlates.length === 0 && level.geo) setRequest({});
+  };
+  // Outlines picked or drawn on the map; a new one drops the bounds.
+  const changeRegions = (next: string[]) => {
+    if (next.some((code) => !draftPlates.includes(code))) fromMap(null);
+    setDraftPlates(next);
   };
   const typed = (key: keyof Bounds, value: string) => {
     const next = { ...bounds, [key]: value };
@@ -1408,15 +1439,42 @@ export function GeoModal({
                   ))}
               </select>
             </label>
+            <label className="flex items-center gap-1.5">
+              <span className="text-ink-muted">Cratons and blocks</span>
+              <select
+                value=""
+                disabled={!provinceList.data}
+                onChange={(event) => {
+                  const code = event.target.value;
+                  if (code) addPlate(code);
+                }}
+                className="rounded-sm border border-gray-300 bg-surface px-1.5 py-1"
+              >
+                <option value="">
+                  {provinceList.isPending
+                    ? "Loading…"
+                    : provinceList.error
+                      ? "The list could not be loaded"
+                      : "Add a craton, block or terrane…"}
+                </option>
+                {(provinceList.data?.plates ?? [])
+                  .filter((province) => !draftPlates.includes(province.code))
+                  .map((province) => (
+                    <option key={province.code} value={province.code}>
+                      {province.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
             {draftPlates.map((code) => (
               <Chip
                 key={code}
-                label={`${plateName(code)} plate`}
+                label={regionLabel(code, plateList.data, provinceList.data)}
                 onRemove={() => {
                   const rest = draftPlates.filter((other) => other !== code);
                   setDraftPlates(rest);
                   // The last one gone, the bounds are back with the default area.
-                  if (rest.length === 0 && level.geo) setRequest({});
+                  if (rest.length === 0 && tool === "box" && level.geo) setRequest({});
                 }}
               />
             ))}
@@ -1429,11 +1487,13 @@ export function GeoModal({
           </p>
         ) : (
           <p className="text-[13px] text-ink-muted">
-            {byPlates
-              ? `Records on ${draftPlates.length === 1 ? "this present-day plate" : "any of these present-day plates"} (Bird 2003). Remove ${draftPlates.length === 1 ? "it" : "them"} to filter by bounds instead.`
-              : level.geo
-                ? `Drag the outline on the map or its corners, or type the bounds${plates !== undefined ? ", or pick a plate instead" : ""}. Filter by area draws a new one.`
-                : `Type the bounds in degrees${plates !== undefined ? ", or pick a plate instead" : ""}.`}
+            {level.geo && plates !== undefined && tool !== "box"
+              ? `${TOOL_HINTS[tool]}${byPlates ? ` Records on any of the ${draftPlates.length === 1 ? "outline" : `${draftPlates.length} outlines`} chosen match.` : ""}`
+              : byPlates
+                ? `Records on ${draftPlates.length === 1 ? "this present-day outline" : "any of these present-day outlines"} (plates: Bird 2003; cratons, blocks and terranes: Hasterok et al. 2022). Remove ${draftPlates.length === 1 ? "it" : "them"} to filter by bounds instead.`
+                : level.geo
+                  ? `Drag the outline on the map or its corners, or type the bounds${plates !== undefined ? ", or pick a plate instead" : ""}. Filter by area draws a new one.`
+                  : `Type the bounds in degrees${plates !== undefined ? ", or pick a plate instead" : ""}.`}
           </p>
         )}
         {level.geo && (
@@ -1454,6 +1514,9 @@ export function GeoModal({
               onAreaRequestDone={() => setRequest(null)}
               onSelect={() => {}}
               color={color}
+              tool={plates !== undefined ? tool : undefined}
+              onToolChange={changeTool}
+              onRegionsChange={changeRegions}
             />
           </div>
         )}

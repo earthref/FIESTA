@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { type CSSProperties, useEffect, useRef } from "react";
 import { assetUrl } from "../lib/base";
-import { inkColor, useNodeConfig } from "../lib/config";
-import { PORTALS, usePortalIdentity } from "../lib/portals";
+import { inkColor } from "../lib/config";
+import { PORTALS } from "../lib/portals";
+import { useContact } from "./contact-modal";
 import { Icon } from "./ui/icon";
 
 /** `ui header <color>` at 1rem: bold, node-colored inline link. */
@@ -21,6 +22,27 @@ function basicButtonStyle(color: string) {
   } as const;
 }
 
+/** The footer's "Having trouble? Email Us" button (also in the sign-in modal):
+ * screenshots the page and opens the contact form. */
+export function HavingTroubleButton({ style }: { style?: CSSProperties }) {
+  const { openContact } = useContact();
+  return (
+    <button
+      type="button"
+      onClick={openContact}
+      className="inline-block cursor-pointer self-center bg-panel-soft text-center hover:bg-panel sm:whitespace-nowrap"
+      style={{ ...basicButtonStyle("var(--node-ink)"), ...style }}
+    >
+      <Icon
+        name="mail"
+        style={{ width: "1.18em", height: "1em", margin: "0 0.42857143em 0 -0.21428571em" }}
+      />
+      <b>Having trouble?</b>
+      {" Email Us"}
+    </button>
+  );
+}
+
 const earthrefColor = inkColor(PORTALS[0]?.color ?? "#006600");
 
 /**
@@ -30,9 +52,6 @@ const earthrefColor = inkColor(PORTALS[0]?.color ?? "#006600");
  * them, centred by the left/right menus' auto margins.
  */
 export function Footer() {
-  const { data: config } = useNodeConfig();
-  const portal = usePortalIdentity();
-
   // The fixed footer wraps to more lines as the viewport narrows; publish its
   // height as --footer-h so the page padding and the search page's scroll
   // regions clear it. 0 below `sm`, where the footer is in normal flow.
@@ -103,18 +122,7 @@ export function Footer() {
           </div>
         </div>
         <div className="flex min-w-0 shrink flex-col items-center sm:min-w-fit sm:shrink-0 xl:flex-row">
-          <a
-            href={`mailto:webmaster@earthref.org?subject=[${(!portal && config?.key) || "FIESTA"} Help]`}
-            className="inline-block self-center bg-panel-soft text-center hover:bg-panel sm:whitespace-nowrap"
-            style={basicButtonStyle("var(--node-ink)")}
-          >
-            <Icon
-              name="mail"
-              style={{ width: "1.18em", height: "1em", margin: "0 0.42857143em 0 -0.21428571em" }}
-            />
-            <b>Having trouble?</b>
-            {" Email Us"}
-          </a>
+          <HavingTroubleButton />
           <a
             href="https://github.com/earthref/FIESTA#readme"
             target="_blank"

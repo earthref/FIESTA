@@ -209,8 +209,15 @@ the latter become G5 work after cutover.*
       DataCite related identifiers (#228, #229); schema.org `unitCode` (#508).
       Decision: publishing with a URL instead of a DOI (#16) — today a resolving
       DOI is required.
-- [ ] **C2 ORCID OAuth login** (the `users.orcid` column exists; no flow). Client
-      registration — **BLOCKED (operator)**.
+- [ ] **C2 Passwordless sign-in** (2026-11-24, code done): emailed one-time links
+      plus Google, Microsoft, GitHub and ORCID OAuth replace password sign-up and
+      login in the SPA (`fiesta.services.sign_in`, docs/api.md "Authentication").
+      Deviation from Meteor MagIC, which required an ORCID sign-up: ORCID is one
+      option among four, and it alone cannot create an account unless the ORCID
+      record shares a verified email. Publishing now needs the contributor's first
+      and last name, affiliation and a verified email. Passwords remain only for
+      scripts and HTTP Basic. Each provider's app registration — **BLOCKED
+      (operator)**; until then only emailed links are offered.
 - [x] **C3 Contribution upgrade** (2026-11-14) 2.x → 3.0 (MagIC) — a core engine
       (`fiesta.domain.upgrade`) walks any node's data-model chain from the models'
       `previous_columns` (renames, splits, merges, row merging, a report of every
@@ -296,6 +303,12 @@ the latter become G5 work after cutover.*
             is capped at the upload limit (`FIESTA_MAX_UPLOAD_BYTES`) and converts in
             a worker thread; the Upgrade page and the upload page's Step 2 ask a
             signed-out user to log in.
+      - [x] Step 2 overview (2026-11-16): an upload-wide summary and per-table
+            status, a "needs your attention" list with inline fixes (guessed
+            table/header row, soft column matches, type/range/required value
+            checks from the data model), a filtered column list instead of a
+            pulldown per column, bulk actions, template offers and remembered
+            columns (`lib/import-review.ts`; legacy-ux-spec.md "Step 2 overview").
 - [ ] **C8 Finish the validator.** `domain/validate.py` accepts but does not enforce
       `requiredIf`/`requiredUnless` variants, `in`, `matrix` and `type`. Enforce
       them, `requiredIfGroup` per row, not per table (MagIC #564, which is why the
@@ -308,6 +321,40 @@ the latter become G5 work after cutover.*
       values, and fixing values on the validation page (#263, #441, #518).
       MagIC-specific consistency checks (directions recomputed from `magn_x/y/z`
       to catch frame and sign-convention errors, #622) go in a plugin.
+      - [x] Every DSL call the node data models use is enforced (2026-11-16,
+            `domain/validate.py`, tests in `tests/test_validate.py` with the legacy
+            validate_contribution.tests.js cases): `requiredIf`, `requiredIfGroup`
+            (per row, #564), `requiredOneInGroup`, `requiredUnless`,
+            `requiredUnlessTable` as errors, as legacy MagIC had them;
+            `requiredIf<Column>("v")` (KArAr `requiredIfAgeCalculationMethod`) and
+            `requiredUnless<Group>()` (MagIC `requiredUnlessSynthetic`), which no
+            legacy validator implemented, only warn. `in("t.c")`; `matrix(r,c)`;
+            `type()` as a controlled vocabulary when one has the name (method codes),
+            and `doi`/`url`/`email` shape warnings (part of #263); Dictionary keys and
+            Matrix row keys against `cv()`. `key()` and `downloadOnly()` are metadata.
+            Not enforced, because the data cannot decide them: KArAr's 95
+            `requiredUnlessLegacy()`, MagIC's `requiredUnlessNatural()` and CDR
+            supplements' `requiredOneInGroup("Names")` (no such group); the
+            test lists them.
+      - [x] Empty `recommended()` column only warns (#590, pinned by a test).
+      - [x] Capitalisation is rejected with the right spelling, never fixed
+            silently: a vocabulary term (#453), a column or table name (#363) that
+            differs only in case says how the data model spells it. The upload
+            page's import step already corrects both (PR #204), so this catches
+            whole-file uploads and grid edits.
+      - [x] Integer cells beyond OpenSearch's long are errors (#485); a huge whole
+            number in a Number column is fine (rows index as text, `summary._num`
+            as double).
+      - [x] Missing tables (#423, #454): a required `in()` column whose table is
+            missing is one error naming the table; a required column absent from a
+            whole table is one error, not one per row. A blank reference DOI says to
+            fill in the Reference field (#491, #399). An unnamed column says which.
+            A workspace table with more than one row is an error.
+      - [x] Implausibly many significant digits (spreadsheet float artefacts)
+            warn, capped per column; data is never changed (#127, #133).
+      - [ ] Data-model defaults for blank cells (#410), a "maybe required" label
+            (#259), calculated values and fixing values on the validation page (#263
+            integrity checks beyond the shape warnings, #441, #518): not started.
 - [x] **C9 Downloads.** Expose the stored sha256 checksums (MagIC #613); strip a
       leading UTF-8 BOM from served legacy files (#621); the contribution ID and
       metadata in every downloaded file (#291, #315); no stray `>>>>` separators

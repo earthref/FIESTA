@@ -77,11 +77,15 @@ async def save_revision(
     restore=None,
     allow_published=False,
     source_timestamp=None,
+    meta=None,
 ):
+    """`meta`: the `attachments` entries (fiesta.services.attachments) of the
+    files written; a file written without one loses any it had."""
     if not request_key or len(request_key) > 128:
         raise HTTPException(422, "an idempotency key of 1–128 characters is required")
     files = dict(files or {})
     remove = remove or []
+    meta = meta or {}
     for name in [*files, *remove]:
         safe_name(name)
     request_hash = fingerprint(
@@ -93,6 +97,7 @@ async def save_revision(
             "canonical": canonical,
             "reference": reference_doi,
             "restore": restore,
+            **({"meta": meta} if meta else {}),
         }
     )
     contribution = await locked(session, contribution.id)
@@ -153,13 +158,20 @@ async def save_revision(
                 snapshot["reference_doi"] = reference
         except (ParseError, UnicodeDecodeError):
             pass  # Invalid drafts are still saved and receive a validation report.
+    created_at = source_timestamp or utcnow()
+    attachments = snapshot.setdefault("attachments", {})
     for name, data in files.items():
         key = f"contributions/{contribution.id}/blobs/{digest(data)}/{name}"
         if not await storage.exists(key):
             await storage.put_bytes(key, data, content_type="application/octet-stream")
         snapshot["files"][name] = {"key": key, "sha256": digest(data), "size": len(data)}
+        if name in meta and name != snapshot["canonical"]:
+            attachments[name] = {"added_at": created_at.isoformat(), **meta[name]}
+        else:
+            attachments.pop(name, None)
     for name in remove:
         snapshot["files"].pop(name, None)
+        attachments.pop(name, None)
     if snapshot["canonical"] and snapshot["canonical"] not in snapshot["files"]:
         raise HTTPException(422, "the canonical file cannot be missing")
     if reference_doi is not None:
@@ -177,7 +189,7 @@ async def save_revision(
         request_key=request_key,
         request_hash=request_hash,
         snapshot=snapshot,
-        created_at=source_timestamp or utcnow(),
+        created_at=created_at,
     )
     await storage.put_json(
         f"contributions/{contribution.id}/revisions/{revision.id}/manifest.json",
