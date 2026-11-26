@@ -615,7 +615,16 @@ export function ContributionGrid({
   const focusRow = pageRows[focus.r];
   const focusDef = focusColumn ? modelTable?.columns[focusColumn] : undefined;
   const focusValue = focusRow?.cells[focusColumn ?? ""] ?? "";
-  const focusIssues = focusRow && focusColumn ? issuesOf(active, focusRow, focusColumn) : null;
+  // The focused cell's issues, with its whole column's.
+  const focusCell = focusRow && focusColumn ? issuesOf(active, focusRow, focusColumn) : null;
+  const focusWhole = focusColumn ? columnIssuesOf(table, focusColumn) : undefined;
+  const focusIssues =
+    focusCell || focusWhole
+      ? {
+          errors: [...(focusCell?.errors ?? []), ...(focusWhole?.errors ?? [])],
+          warnings: [...(focusCell?.warnings ?? []), ...(focusWhole?.warnings ?? [])],
+        }
+      : null;
   const vocabularyOf = useCallback(
     (column?: DataModelColumn) => columnVocabulary(column, lookup),
     [lookup],
@@ -634,7 +643,10 @@ export function ContributionGrid({
     [doc],
   );
 
-  const tableIssues = server.tables.get(active) ?? [];
+  // Listed above the grid: the issues no cell or column of the grid can show.
+  const tableIssues = (server.tables.get(active) ?? []).filter(
+    (issue) => !issue.column || !columns.includes(issue.column),
+  );
   const virtualRows = rows.getVirtualItems();
   const virtualCols = cols.getVirtualItems();
 
@@ -678,7 +690,7 @@ export function ContributionGrid({
                 </Badge>
               )}
               {!!count?.edited && (
-                <Badge className="bg-purple-700 text-white" title="Rows edited">
+                <Badge className="bg-green-700 text-white" title="Rows edited">
                   {count.edited}
                 </Badge>
               )}
@@ -725,8 +737,15 @@ export function ContributionGrid({
       {tableIssues.length > 0 && (
         <ul className="max-h-24 overflow-y-auto rounded-md border border-gray-200 bg-panel-soft px-3 py-1.5 text-[13px]">
           {tableIssues.map((issue, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: issues have no id
-            <li key={i} className={issue.kind === "errors" ? "text-red-800" : "text-amber-800"}>
+            <li
+              // biome-ignore lint/suspicious/noArrayIndexKey: issues have no id
+              key={i}
+              className={
+                issue.kind === "errors"
+                  ? "text-red-800"
+                  : "my-0.5 w-fit rounded-sm bg-amber-100 px-1.5 text-amber-950"
+              }
+            >
               {issue.kind === "errors" ? "Error: " : "Warning: "}
               {issue.message}
             </li>
@@ -891,7 +910,7 @@ export function ContributionGrid({
                                     ? "bg-amber-50"
                                     : null,
                             inRange(r, c) && !isFocus && "bg-node-soft",
-                            edited && "ring-2 ring-purple-500 ring-inset",
+                            edited && "ring-2 ring-green-600 ring-inset",
                             isFocus && "z-[5] outline-2 -outline-offset-2 outline-node",
                           )}
                           style={{ left: vc.start, width: vc.size }}

@@ -203,7 +203,7 @@ export function ContributionEditor({
             </button>
           ))}
         </div>
-        {dirty && <span className="text-[13px] font-medium text-purple-700">Unsaved edits</span>}
+        {dirty && <span className="text-[13px] font-medium text-green-700">Unsaved edits</span>}
         <span className="ml-auto flex gap-2">
           <Button disabled={immutable || busy || !dirty} onClick={save}>
             {busy ? "Saving…" : "Save revision"}
