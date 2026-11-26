@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { LegendComponent, TitleComponent } from "echarts/components";
 import * as echarts from "echarts/core";
 import { useCallback, useMemo, useState } from "react";
-import { EChart, type EChartsOption } from "@/components/echart";
+import { EChart, type EChartsOption, PlotsPending } from "@/components/echart";
 import { ErrorMessage } from "@/components/error-message";
 import type { SearchParams } from "@/components/filter-modals";
 import { useColumnLabel } from "@/components/filter-modals";
@@ -284,15 +284,18 @@ export default function GeomagSeriesView({ options, searchParams, onOpen }: Geom
               <Icon name="camera" />
             </button>
           </header>
-          <SeriesPlot
-            data={data}
-            options={options}
-            plot={plot}
-            hoverLabels={hoverLabels}
-            xView={xView}
-            onXView={onXView}
-            onOpen={onOpen}
-          />
+          {/* A new search's records are on their way: the plot still shows the last one's. */}
+          <PlotsPending pending={values.isPlaceholderData}>
+            <SeriesPlot
+              data={data}
+              options={options}
+              plot={plot}
+              hoverLabels={hoverLabels}
+              xView={xView}
+              onXView={onXView}
+              onOpen={onOpen}
+            />
+          </PlotsPending>
         </section>
       ))}
       {options.color_by && <Legend groups={data.groups} />}

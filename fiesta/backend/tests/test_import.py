@@ -21,7 +21,9 @@ from fiesta.domain.parse import (
 )
 from fiesta.domain.validate import Validator, validate_contribution
 from fiesta.nodeconfig import ExcelTemplate
+from fiesta.services.attachments import block_rows, cards, references, refusal, upload_meta
 from fiesta.services.imports import original_names, upload_files
+from fiesta.services.thumbnails import thumbnail
 
 CLASSES = ["Extrusive", "Igneous", "Not Specified", "Sedimentary"]
 
@@ -212,3 +214,78 @@ def test_original_names():
         {"sites.xlsx": b"x", "magic_contribution_1.txt": b"y"}, "magic_contribution_1.txt"
     )
     assert kept == {"sites.xlsx": b"x", "original-magic_contribution_1.txt": b"y"}
+
+
+def test_upload_originals_record_their_rows(magic_node):
+    """Each block of the upload page's import text is counted against the
+    file it came from; a whole-file upload's original brought every row."""
+    text = (
+        "tab\tsites\nsite\tlat\ns1\t1\ns2\t2\n>>>>>>>>>>\n"
+        "tab\tsamples\nsample\tsite\nx1\ts1\n>>>>>>>>>>\n"
+        "tab\tsites\nsite\ns3\n"
+    )
+    rows = block_rows(text, ["a.xlsx", "b.csv", "a.xlsx"])
+    assert rows == {"a.xlsx": {"sites": 3}, "b.csv": {"samples": 1}}
+    assert block_rows(text, ["a.xlsx"]) == {}
+    canonical = "magic_contribution_1.txt"
+    example = next(e for e in magic_node.upload.examples if e.file.endswith("2.5.txt"))
+    files = upload_files(
+        magic_node, magic_node.asset_path(example.file).read_bytes(), "old.txt", canonical
+    )
+    meta = upload_meta(files, canonical)
+    assert meta["upgrade-report.txt"] == {"origin": "upload", "rows": {}}
+    assert meta["old.txt"]["origin"] == "upload" and meta["old.txt"]["rows"]["sites"] == 24
+
+
+def test_attachment_references_and_locks():
+    text = (
+        "tab\tcontribution\nid\tdescription\n1\tsee Fig1.PNG\n>>>>>>>>>>\n"
+        "tab\tsites\nsite\timage\tnotes\n"
+        "s1\thttps://x.org/files/fig1.png\tfig1.png\n"
+        "s2\tfig1.png.bak\t\n"
+        "s3\tplots:notes.pdf\t\n"
+        "s4\tmyfig1.png\t\n"
+    )
+    refs = references(text, ["fig1.png", "notes.pdf", "unused.txt"])
+    assert refs == {
+        "fig1.png": {"contribution": 1, "sites": 1},
+        "notes.pdf": {"sites": 1},
+        "unused.txt": {},
+    }
+    snapshot = {
+        "canonical": "c.txt",
+        "files": {
+            n: {"size": 1, "sha256": "x"} for n in ["c.txt", "fig1.png", "unused.txt", "a.xlsx"]
+        },
+        "attachments": {
+            "a.xlsx": {"origin": "upload", "rows": {"sites": 4}, "added_at": "t"},
+            "unused.txt": {"origin": "attachment", "added_at": "t"},
+        },
+    }
+    out = {c["name"]: c for c in cards(snapshot, text)}
+    assert set(out) == {"fig1.png", "unused.txt", "a.xlsx"}
+    assert out["a.xlsx"]["rows"] == {"sites": 4} and "upload tool" in out["a.xlsx"]["locked"]
+    assert out["fig1.png"]["origin"] is None and out["fig1.png"]["locked"].startswith("2 rows")
+    assert out["fig1.png"]["kind"] == "image" and out["a.xlsx"]["kind"] == "spreadsheet"
+    assert out["unused.txt"]["locked"] is None
+    assert refusal({"origin": None, "referenced": {"sites": 1}}).startswith("1 row ")
+
+
+def test_thumbnails():
+    import io
+
+    import pypdfium2 as pdfium
+    from PIL import Image
+
+    raw = io.BytesIO()
+    Image.new("I;16", (1200, 600), 40000).save(raw, "TIFF")
+    image = Image.open(io.BytesIO(thumbnail(raw.getvalue(), "image")))
+    assert image.format == "WEBP" and image.size == (320, 160)
+    pdf = pdfium.PdfDocument.new()
+    pdf.new_page(612, 792)
+    out = io.BytesIO()
+    pdf.save(out)
+    image = Image.open(io.BytesIO(thumbnail(out.getvalue(), "pdf")))
+    assert max(image.size) == 320
+    assert thumbnail(b"not an image", "image") is None
+    assert thumbnail(raw.getvalue(), "text") is None

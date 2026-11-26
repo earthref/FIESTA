@@ -3,7 +3,7 @@
 // element, coloured by a pattern column. Lazily loaded with echarts.
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { EChart, type EChartsOption } from "@/components/echart";
+import { EChart, type EChartsOption, PlotsPending } from "@/components/echart";
 import { ErrorMessage } from "@/components/error-message";
 import { PageSpinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
@@ -90,7 +90,12 @@ export default function KdPlotsView({
         No partition coefficients to plot.
       </p>
     );
-  return <Plots data={data} options={options} onOpen={onOpen} />;
+  return (
+    // A new search's values are on their way: the plots still show the last one's.
+    <PlotsPending pending={values.isPlaceholderData}>
+      <Plots data={data} options={options} onOpen={onOpen} />
+    </PlotsPending>
+  );
 }
 
 function Plots({
