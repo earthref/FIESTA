@@ -15,6 +15,7 @@ from fiesta.domain.parse import (
 )
 from fiesta.domain.validate import Validator
 from fiesta.nodeconfig import NodeConfig
+from fiesta.services.attachments import UPLOAD, block_rows
 from fiesta.services.contributions import default_filename
 from fiesta.services.revisions import revision_file, safe_name, save_revision
 from fiesta.services.upgrades import REPORT_NAME, upgrade_parsed, upgraded_text
@@ -76,13 +77,17 @@ async def save_import(
     originals: dict[str, bytes],
     expected_revision: str | None,
     request_key: str,
+    sources: list[str] | None = None,
 ):
+    """`sources`: the original each block of `text` was converted from, in
+    block order, so each kept original records the rows it brought in."""
     try:
         imported = parse_text(text)
     except ParseError as exc:
         raise HTTPException(422, f"the imported tables cannot be read: {exc}") from None
     if not any(imported.tables.values()):
         raise HTTPException(422, "there are no rows to import")
+    rows = block_rows(text, sources) if sources is not None else {}
     if errors := single_source_errors(block_tables(text), node.upload.single_source_tables):
         raise HTTPException(422, " ".join(errors))
     # Tables written against an older data model are upgraded first; the
@@ -102,10 +107,19 @@ async def save_import(
         keep.append("reference")
     merged = merge(current, imported, keep_table=node.workspace.table, keep_columns=keep)
     canonical = contribution.filename or default_filename(node, contribution.id)
+    kept: dict[str, dict[str, int]] = {}  # rows per table, by the name each original is kept as
+    for name in originals:
+        (as_name,) = original_names({name: b""}, canonical)
+        per_file = kept.setdefault(as_name, {})
+        for table, n in rows.get(name, {}).items():
+            per_file[table] = per_file.get(table, 0) + n
     files = {
         **original_names(originals, canonical),
         **reports,
         canonical: export_text(merged, model).encode(),
+    }
+    meta = {
+        name: {"origin": UPLOAD, "rows": kept.get(name, {})} for name in files if name != canonical
     }
     return await save_revision(
         session,
@@ -117,4 +131,5 @@ async def save_import(
         files=files,
         canonical=canonical,
         operation="import",
+        meta=meta,
     )

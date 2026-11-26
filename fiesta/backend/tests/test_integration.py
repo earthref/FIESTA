@@ -893,12 +893,21 @@ async def test_upload_import_into_existing_contribution_and_templates():
                 ("data", ("import.txt", first_body.encode())),
                 ("originals", ("sites.xlsx", b"PK-original")),
             ],
+            data={"sources": json.dumps(["sites.xlsx"] * 3)},
             headers={"Idempotency-Key": str(uuid.uuid4())},
         )
         assert first.status_code == 200, first.text
         head = first.json()["head_revision"]
-        names = [a["name"] for a in (await client.get(path + "/attachments")).json()]
-        assert names == ["sites.xlsx"]
+        (card,) = (await client.get(path + "/attachments")).json()
+        assert card["name"] == "sites.xlsx" and card["origin"] == "upload"
+        assert card["rows"] == {"contribution": 1, "sites": 1, "samples": 1}
+        assert card["locked"], "an upload-tool original is the record of its rows"
+        removal = await client.request(
+            "DELETE",
+            path + "/attachments/sites.xlsx",
+            json={"expected_revision": head, "request_key": str(uuid.uuid4())},
+        )
+        assert removal.status_code == 409, removal.text
         text = (await client.get(path + "/content")).json()["text"]
         assert parse_text(text).tables["sites"][0]["dir_n_samples"] == "4"
 
