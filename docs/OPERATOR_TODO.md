@@ -5,7 +5,7 @@ registrations, production access, and product judgement calls. A "you'll need to
 set X" said in chat and not written here is lost by the next session.
 Maintained by `/operator-todo`. Never put a secret VALUE here, only its name.
 
-Last updated: 2026-11-24
+Last updated: 2026-11-27
 
 ## A — Decisions
 
@@ -188,6 +188,30 @@ Last updated: 2026-11-24
       References grid sorted by MagIC, rows with a count above 1. Versions whose parent is
       missing from the legacy index (9595, 8065, 8011, 7551 here) were imported unlinked
       by design.
+- [ ] **Remove legacy MagIC contributions 20904 and 20922** (2026-11-27, Nick's
+      request). They were uploaded while the upload code was being changed, and no
+      data DOI was minted for them. Each has already been replaced by a contribution
+      with a data DOI: 20904 (Roperch 2023, `10.1016/j.pepi.2023.107076`, @user8936) by
+      20940, and 20922 (`10.1029/2021TC006990`) by 20891. The live summaries on
+      2026-11-27 showed both as activated and latest, with `_history` of length 1, so
+      no older version has to be made latest again. This needs write access to the
+      Meteor `magic` index, and the legacy Deactivate button is only shown when the app
+      runs in development mode (`Meteor.isDevelopment`). Do it in this order:
+      1. Deactivate each one (what `esDeactivateContribution` does):
+         `POST magic/_update_by_query?refresh=true` with
+         `{"script":{"source":"ctx._source.summary.contribution._is_activated = \"false\""},"query":{"term":{"summary.contribution.id":20904}}}`,
+         then the same for 20922.
+      2. Wait for one hourly `magic-source` sync, which copies the change to dev as
+         private. Today dev has 20904 public and does not have 20922. The sync never
+         treats a missing record as a deletion, and dev's private DELETE is refused in
+         source mode, so a record deleted without this step stays public on dev.
+      3. Delete each one (what `esDeletePrivateContribution` does):
+         `POST magic/_delete_by_query?refresh=true` with
+         `{"query":{"term":{"summary.contribution.id":20904}}}`, then the same for 20922.
+         This step is optional. Neither legacy method touches S3, so
+         `magic-activated-contributions/<id>/` remains unless you remove it yourself.
+      After this, Claude can check that
+      `https://dev.earthref.org/v2/magic/contributions/20904` returns 404.
 
 ## 2026-11-20 — MagIC 3.0 pole reliability columns (MagIC issue #634)
 
